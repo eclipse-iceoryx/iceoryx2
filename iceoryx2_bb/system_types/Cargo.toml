@@ -1,10 +1,14 @@
 [package]
 name = "iceoryx2_bb_system_types"
 description = "Iceoryx2: strong types that represents low level constructs like file, path, ip address, etc..."
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
-repository = { workspace = true }
-edition = { workspace = true }
 
 [dependencies]
 iceoryx2_bb_container = { workspace = true }

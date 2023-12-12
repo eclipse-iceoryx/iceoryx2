@@ -1,10 +1,14 @@
 [package]
 name = "iceoryx2_pal_posix"
 description = "Iceoryx2: A posix layer that ensures uniform posix behavior on all platforms according to https://posix.opengroup.org"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
-repository = { workspace = true }
-edition = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }

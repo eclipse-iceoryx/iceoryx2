@@ -1,9 +1,13 @@
 [package]
 name = "iceoryx2_pal_settings"
 description = "Iceoryx2: platform specific settings"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
-repository = { workspace = true }
-edition = { workspace = true }
 
 [dependencies]

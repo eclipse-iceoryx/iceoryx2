@@ -23,12 +23,16 @@ members = [
 ]
 
 [workspace.package]
-rust-version = "1.72.1"
-version = "0.0.1"
-repository = "https://github.com/larry-robotics/iceoryx2"
-edition = "2021"
 categories = ["network-programming"]
 description = "Iceoryx2: Lock-Free Zero-Copy Interprocess Communication"
+edition = "2021"
+homepage = "iceoryx.io"
+keywords = ["zero-copy", "ipc", "shared-memory", "publish-subscribe", "request-response"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/eclipse-iceoryx/iceoryx2"
+rust-version = "1.72.1"
+version = "0.0.1"
 
 [workspace.dependencies]
 iceoryx2_bb_threadsafe = { path = "iceoryx2_bb/threadsafe/" }
