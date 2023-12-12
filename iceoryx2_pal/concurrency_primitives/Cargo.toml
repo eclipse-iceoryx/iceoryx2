@@ -1,0 +1,12 @@
+[package]
+name = "iceoryx2_pal_concurrency_primitives"
+description = "Iceoryx2: low-level basic building blocks to implement posix mutex, condition variables etc."
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+
+[dev-dependencies]
+iceoryx2_bb_testing = { workspace = true }

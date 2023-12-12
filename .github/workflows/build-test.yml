@@ -1,0 +1,225 @@
+name: Unit-Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, release* ]
+
+jobs:
+  preflight-check:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Check format of all commit messages
+        run: ./internal/scripts/ci_test_commit_msg.sh
+
+      - name: Check license header
+        run: ./internal/scripts/ci_test_spdx_license_header.sh
+
+  windows:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: windows-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Prepare system
+        run: |
+          mkdir "C:\Temp\iceoryx2\services"
+          mkdir "C:\Temp\iceoryx2\tests"
+          mkdir "C:\Temp\iceoryx2\shm"
+          icacls "C:\Temp" /t /c /grant Everyone:F
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets
+
+      - name: Run cargo test
+        run: cargo test --workspace --no-fail-fast
+
+  grcov:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build and cache grcov
+      uses: ./.github/actions/build-and-cache-rust-tool
+      with:
+        rust-toolchain: stable
+        rust-components: llvm-tools-preview
+        check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
+        print-version-cmd: grcov --version
+        cache-key: cache-1-${{ runner.os }}-grcov
+        artifact-path: ~/.cargo/bin/grcov
+        artifact-name: ${{ runner.os }}-grcov
+
+  coverage:
+    needs: grcov
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: sudo apt-get -y install libacl1-dev llvm
+
+    - name: Create test users and groups
+      run: |
+        sudo useradd testuser1
+        sudo useradd testuser2
+        sudo groupadd testgroup1
+        sudo groupadd testgroup2
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@v1
+      with:
+        toolchain: stable
+        components: llvm-tools-preview
+
+    - name: Download artifact grcov
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ runner.os }}-grcov
+        path: ~/.cargo/bin
+
+    - name: Make grcov artifacts executable
+      run: chmod +x ~/.cargo/bin/grcov
+
+    - name: Generate raw coverage results
+      run: ./internal/scripts/generate-cov-report.sh --generate
+
+    - name: Generate coverage results for html artifacts
+      run: ./internal/scripts/generate-cov-report.sh --html
+
+    - name: Archive coverage-html artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-html
+        path: target/debug/coverage/html/*
+        retention-days: 90
+
+    - name: Generate coverage report for Codecov
+      run: ./internal/scripts/generate-cov-report.sh --lcov
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: target/debug/coverage/lcov.info
+        fail_ci_if_error: true
+
+#   linux_x64:
+#     timeout-minutes: 10
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout sources
+#         uses: actions/checkout@v3
+#
+#       - name: Install dependencies
+#         run: sudo apt-get -y install libacl1-dev
+#
+#       - name: Create test users and groups
+#         run: |
+#           sudo useradd testuser1
+#           sudo useradd testuser2
+#           sudo groupadd testgroup1
+#           sudo groupadd testgroup2
+#
+#       - name: Setup Rust
+#         uses: dtolnay/rust-toolchain@v1
+#         with:
+#           toolchain: stable
+#           components: rustfmt, clippy
+#
+#       - name: Run cargo fmt
+#         run: cargo fmt --all -- --check
+#
+#       - name: Run cargo clippy
+#         run: cargo clippy -- -D warnings
+#
+#       - name: Run cargo build
+#         run: cargo build --workspace --all-targets
+#
+#       - name: Run cargo test
+#         run: cargo test --workspace --no-fail-fast
+#
+#   freebsd:
+#     timeout-minutes: 20
+#     runs-on: macos-12
+#     steps:
+#       - name: Checkout sources
+#         uses: actions/checkout@v3
+# 
+#       - name: Install FreeBSD
+#         id: Test
+#         uses: vmactions/freebsd-vm@v0
+#         with:
+#           usesh: true
+#           copyback: false
+#           mem: 4096
+#           prepare: |
+#             pkg install -y git curl bash llvm17
+#             pw user add testuser1
+#             pw user add testuser2
+#             pw group add testgroup1
+#             pw group add testgroup2
+#             mkdir -p /mnt/mqueue/
+#             mount -t mqueuefs null /mnt/mqueue/
+#             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+#             git config --global --add safe.directory /Users/runner/work/iceoryx2/iceoryx2
+#           run: |
+#             ln -sf ~/.cargo/bin/* /usr/bin/
+#             cargo fmt --all -- --check
+#             cargo clippy -- -D warnings
+#             cargo test --workspace -- --test-threads=1
+# 
+#   mac_os_no_bb_posix__cal__iceoryx2:
+#     timeout-minutes: 20
+#     runs-on: macos-latest
+#     steps:
+#       - name: Checkout sources
+#         uses: actions/checkout@v3
+#
+#       - name: Setup Rust
+#         uses: dtolnay/rust-toolchain@v1
+#         with:
+#           toolchain: stable
+#           components: rustfmt, clippy
+# 
+#       - name: Run cargo fmt
+#         run: cargo fmt --all -- --check
+# 
+#       - name: Run cargo clippy
+#         run: cargo clippy -- -D warnings
+#
+#       - name: Run cargo build
+#         run: cargo build --workspace --all-targets
+
+#       - name: Run cargo test subset
+#         run: |
+#           cargo test
+#             -p iceoryx2_pal_concurrency_primitives 
+#             -p iceoryx2_pal_posix
+#             -p iceoryx2_bb_container
+#             -p iceoryx2_bb_elementary
+#             -p iceoryx2_bb_lock_free
+#             -p iceoryx2_bb_log
+#             -p iceoryx2_bb_memory
+#             -p iceoryx2_bb_system_types
+#             -p iceoryx2_bb_testing
+#             --lib --bins --tests

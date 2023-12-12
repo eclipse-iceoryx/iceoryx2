@@ -1,0 +1,18 @@
+[package]
+name = "iceoryx2_bb_log"
+description = "Iceoryx2: the internal logger"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[features]
+# Enables https://crates.io/crates/log as default logger
+logger_log = ["dep:log"]
+# Enables https://crates.io/crates/tracing as default logger
+logger_tracing = ["dep:tracing"]
+
+[dependencies]
+termsize = { workspace = true }
+log = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }

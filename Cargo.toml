@@ -1,0 +1,76 @@
+[workspace]
+resolver = "2"
+members = [
+    "iceoryx2_bb/lock_free/",
+    "iceoryx2_bb/threadsafe/",
+    "iceoryx2_bb/container",
+    "iceoryx2_bb/elementary",
+    "iceoryx2_bb/log",
+    "iceoryx2_bb/memory",
+    "iceoryx2_bb/posix",
+    "iceoryx2_bb/system_types",
+    "iceoryx2_bb/testing",
+
+    "iceoryx2_cal",
+    "iceoryx2",
+    "iceoryx2_pal/concurrency_primitives",
+    "iceoryx2_pal/posix/",
+    "iceoryx2_pal/settings/",
+
+    "examples",
+
+    "benchmarks/publish_subscribe"
+]
+
+[workspace.package]
+rust-version = "1.72.1"
+version = "0.0.1"
+repository = "https://github.com/larry-robotics/iceoryx2"
+edition = "2021"
+categories = ["network-programming"]
+description = "Iceoryx2: Lock-Free Zero-Copy Interprocess Communication"
+
+[workspace.dependencies]
+iceoryx2_bb_threadsafe = { path = "iceoryx2_bb/threadsafe/" }
+iceoryx2_bb_lock_free = { path = "iceoryx2_bb/lock_free/" }
+iceoryx2_bb_container = { path = "iceoryx2_bb/container/" }
+iceoryx2_bb_elementary = { path = "iceoryx2_bb/elementary/" }
+iceoryx2_bb_log = { path = "iceoryx2_bb/log/" }
+iceoryx2_bb_memory = { path = "iceoryx2_bb/memory/" }
+iceoryx2_bb_posix = { path = "iceoryx2_bb/posix/" }
+iceoryx2_bb_system_types = { path = "iceoryx2_bb/system_types/" }
+iceoryx2_bb_testing = { path = "iceoryx2_bb/testing/" }
+
+iceoryx2_pal_concurrency_primitives = { path = "iceoryx2_pal/concurrency_primitives/" }
+iceoryx2_pal_posix = { path = "iceoryx2_pal/posix/" }
+iceoryx2_pal_settings = { path = "iceoryx2_pal/settings/" }
+
+iceoryx2_cal = { path = "iceoryx2_cal" }
+
+iceoryx2 = { path = "iceoryx2/" }
+
+bindgen = { version = "0.65.1" }
+bitflags = { version = "1.3.2" }
+cc = { version = "1.0" }
+cdr = { version = "0.2.4" }
+clap = { version = "3.2.0", features = ["derive"] }
+enum-iterator = { version = "1.2.0" }
+generic-tests = { version = "0.1.2" }
+lazy_static = { version = "1.4.0" }
+log = { version = "0.4.20" }
+once_cell = { version = "1.16.0" }
+ouroboros = { version = "0.17.2" }
+pin-init = { version = "0.2.0" }
+serde = { version = "1.0.139", features = ["derive"] }
+sha1_smol = { version = "1.0.0" }
+termsize = { version = "0.1" }
+tiny-fn = { version = "0.1.5" }
+toml = { version = "0.5.9" }
+tracing = { version = "0.1.40" }
+windows-sys = { version = "0.48.0", features = ["Win32_Security", "Win32_Security_Authorization", "Win32_System_Memory", "Win32_System_Threading", "Win32_Foundation", "Win32_System_WindowsProgramming", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Diagnostics_Debug", "Win32_System_SystemInformation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Console", "Win32_Networking_WinSock"] }
+
+[profile.release]
+strip = true
+lto = true
+# opt-level = "z"
+panic = "abort"

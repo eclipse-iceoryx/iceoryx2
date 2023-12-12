@@ -1,0 +1,283 @@
+#
+# Notes
+#
+# Cirrus CI has a concurrency limit of 24 CPU cores for open source projects.
+# This means we should not have more than 12 pipelines with more than 2 CPUs
+# in each pipeline running parallel
+#
+# Documentation:
+# - https://cirrus-ci.org/examples/
+# - https://cirrus-ci.org/guide/writing-tasks/
+#
+
+---
+
+#
+# Templates
+#
+
+# Constants
+
+iox2_task_timeout_template: &IOX2_TASK_TIMEOUT
+  timeout_in: 30m  # This needs to be reasonable large in order not to run in a timeout in the docker image re-builds
+
+iox2_common_cpu_and_memory_config_for_build_and_test_template: &IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
+  cpu: 2
+  memory: 4GB
+
+# Container
+
+iox2_container_ubuntu_22_04_x64_template: &IOX2_CONTAINER_UBUNTU_22_04_X64
+  <<: *IOX2_TASK_TIMEOUT
+  container:
+    dockerfile: internal/docker/ubuntu-22.04
+    <<: *IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
+
+iox2_container_ubuntu_22_04_aarch64_template: &IOX2_CONTAINER_UBUNTU_22_04_AARCH64
+  <<: *IOX2_TASK_TIMEOUT
+  arm_container:
+    dockerfile: internal/docker/ubuntu-22.04
+    <<: *IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
+
+iox2_container_arch_linux_x64_template: &IOX2_CONTAINER_ARCH_LINUX_X64
+  <<: *IOX2_TASK_TIMEOUT
+  container:
+    dockerfile: internal/docker/archlinux-base-devel
+    <<: *IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
+
+iox2_container_windows_server_2019_x64_template: &IOX2_CONTAINER_WINDOWS_SERVER_2019_X64
+  <<: *IOX2_TASK_TIMEOUT
+  windows_container:
+    dockerfile: internal/docker/windowsservercore-2019
+    <<: *IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
+
+iox2_container_freebsd_x64_template: &IOX2_CONTAINER_FREEBSD_X64
+  <<: *IOX2_TASK_TIMEOUT
+  freebsd_instance:
+    image_family: freebsd-13-2
+    <<: *IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
+
+iox2_container_macos_aarch64_template: &IOX2_CONTAINER_MACOS_AARCH64
+  <<: *IOX2_TASK_TIMEOUT
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-ventura-base:latest
+    <<: *IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
+
+# Build and Test
+
+iox2_cargo_fmt_and_clippy_template: &IOX2_CARGO_FMT_AND_CLIPPY
+  cargo_fmt_and_clippy_script:
+    - cargo fmt --all -- --check
+    - cargo clippy -- -D warnings
+
+iox2_common_build_debug_template: &IOX2_COMMON_BUILD_DEBUG
+  build_script: cargo build --workspace --all-targets
+
+iox2_common_build_and_test_debug_template: &IOX2_COMMON_BUILD_AND_TEST_DEBUG
+  <<: *IOX2_COMMON_BUILD_DEBUG
+  test_script: cargo test --workspace --no-fail-fast
+
+iox2_common_build_release_template: &IOX2_COMMON_BUILD_RELEASE
+  build_script: cargo build --release --workspace --all-targets
+
+iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
+  <<: *IOX2_COMMON_BUILD_RELEASE
+  test_script: cargo test --release --tests --workspace --no-fail-fast
+
+#
+# Filter to run the CI only on the main branch or for pull request to the main branch
+#
+
+only_if: $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH == 'main')
+
+#
+# Preflight-Check with Ubuntu x86 stable debug
+#
+
+preflight_check_task:
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+  set_toolchain_script: rustup default stable
+  # TODO iox2-#8: add more preflight-checks here
+  <<: *IOX2_CARGO_FMT_AND_CLIPPY
+  <<: *IOX2_COMMON_BUILD_DEBUG # only build without tests to not slow down other tasks due to failures in flaky tests
+  doc_script: cargo doc
+
+#
+# Ubuntu x86
+#
+
+# Pipeline 1
+
+# TODO iox2-#8: Add code coverage
+# ubuntu_22_04_x64_stable_debug_coverage_task:
+#   depends_on: preflight_check
+#   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+#   set_toolchain_script: rustup default stable
+#   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+# Pipeline 2
+
+ubuntu_22_04_x64_stable_debug_task:
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_CARGO_FMT_AND_CLIPPY
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+  linux_only_doc_test_script: cargo test --doc -- --ignored
+
+ubuntu_22_04_x64_beta_debug_task:
+  depends_on: ubuntu_22_04_x64_stable_debug
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+  set_toolchain_script: rustup default beta
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+ubuntu_22_04_x64_nightly_debug_task:
+  depends_on: ubuntu_22_04_x64_beta_debug
+  allow_failures: true
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+  set_toolchain_script: rustup default nightly
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+# Pipeline 3
+
+ubuntu_22_04_x64_stable_release_task:
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
+
+#
+# Ubuntu aarch64
+#
+
+# Pipeline 4
+
+ubuntu_22_04_aarch64_stable_debug_task:
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_CARGO_FMT_AND_CLIPPY
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+ubuntu_22_04_aarch64_beta_debug_task:
+  depends_on: ubuntu_22_04_aarch64_stable_debug
+  allow_failures: true
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
+  set_toolchain_script: rustup default beta
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+# Pipeline 5
+
+ubuntu_22_04_aarch64_stable_release_task:
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
+
+#
+# Arch Linux x86
+#
+
+# Pipeline 6
+
+arch_linux_x64_stable_debug_task:
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_ARCH_LINUX_X64
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_CARGO_FMT_AND_CLIPPY
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+arch_linux_x64_beta_debug_task:
+  depends_on: arch_linux_x64_stable_debug
+  <<: *IOX2_CONTAINER_ARCH_LINUX_X64
+  set_toolchain_script: rustup default beta
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+# Pipeline 7
+
+arch_linux_x64_stable_release_task:
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_ARCH_LINUX_X64
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
+
+#
+# Windows Server 2019 x86
+#
+
+# Pipeline 8
+
+windows_server_2019_x64_stable_debug_task:
+  # TODO iox2-#43: fix iceoryx2_cal list (underlying shm) tests
+  only_if: false
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_WINDOWS_SERVER_2019_X64
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_CARGO_FMT_AND_CLIPPY
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+windows_server_2019_x64_stable_release_task:
+  # TODO iox2-#43: fix iceoryx2_cal list (underlying shm) tests
+  only_if: false
+  depends_on: windows_server_2019_x64_stable_debug
+  <<: *IOX2_CONTAINER_WINDOWS_SERVER_2019_X64
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
+
+#
+# FreeBSD
+#
+
+# Pipeline 9
+
+freebsd_x64_stable_debug_task:
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_FREEBSD_X64
+  env:
+    PATH: /root/.cargo/bin:$PATH
+    HOME: /root  # must be set manually to '/root' or 'rustup' will throw an error
+  setup_script:
+    - uname -a
+    - pkg install -y git llvm
+    - pw useradd testuser1
+    - pw useradd testuser2
+    - pw groupadd testgroup1
+    - pw groupadd testgroup2
+    - kldload mqueuefs
+    - mkdir -p /mnt/mqueue/
+    - mount -t mqueuefs null /mnt/mqueue/
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
+    - rustup component add clippy rustfmt
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_CARGO_FMT_AND_CLIPPY
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+
+#
+# macOS
+#
+
+# Pipeline 10
+
+macos_aarch64_stable_debug_task:
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_MACOS_AARCH64
+  env:
+    PATH: /Users/admin/.cargo/bin:$PATH
+  setup_script:
+    - uname -a
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
+    - rustup component add clippy rustfmt
+  set_toolchain_script: rustup default stable
+  <<: *IOX2_CARGO_FMT_AND_CLIPPY
+  <<: *IOX2_COMMON_BUILD_DEBUG
+  test_script:
+    - cargo test -p iceoryx2_pal_concurrency_primitives
+                 -p iceoryx2_pal_posix
+                 -p iceoryx2_bb_container
+                 -p iceoryx2_bb_elementary
+                 -p iceoryx2_bb_lock_free
+                 -p iceoryx2_bb_log
+                 -p iceoryx2_bb_memory
+                 -p iceoryx2_bb_system_types
+                 -p iceoryx2_bb_testing
+                 --lib --bins --tests --no-fail-fast

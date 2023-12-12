@@ -1,0 +1,31 @@
+[package]
+name = "iceoryx2_cal"
+description = "Iceoryx2: high-level traits and implementations that represents OS primitives in an exchangeable fashion"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+iceoryx2_bb_posix = { workspace = true }
+iceoryx2_bb_container = { workspace = true }
+iceoryx2_bb_system_types = { workspace = true }
+iceoryx2_bb_log = { workspace = true }
+iceoryx2_bb_elementary = { workspace = true }
+iceoryx2_bb_memory = { workspace = true }
+iceoryx2_bb_lock_free = { workspace = true }
+iceoryx2_bb_threadsafe = { workspace = true }
+iceoryx2_bb_testing = { workspace = true }
+
+once_cell = { workspace = true }
+lazy_static = { workspace = true }
+serde = { workspace = true }
+cdr = { workspace = true }
+toml = { workspace = true }
+sha1_smol = { workspace = true }
+tiny-fn = { workspace = true }
+ouroboros = { workspace = true }
+
+[dev-dependencies]
+iceoryx2_pal_posix = { workspace = true }
+generic-tests = { workspace = true }

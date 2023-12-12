@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1
+
+# Select base image
+FROM ubuntu:22.04
+
+# Disable prompt during packages installation
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Add '/root/.cargo/bin' to path; this is required sind '.cargo/env' cannot easily be sourced in the docker image
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Minimize the number of layers (RUN, COPY and ADD create layers)
+# https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#minimize-the-number-of-layers
+RUN echo "#### Installing dependencies" \
+  && apt update && apt install -y \
+       clang \
+       curl \
+       git \
+       libacl1-dev \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt clean \
+  && echo "#### Install minimal Rust toolchain" \
+  && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path \
+  && echo "#### Adding beta and nightly toolchain" \
+  && rustup toolchain add \
+       beta \
+       nightly \
+  && echo "#### Adding more components like 'clippy', 'rustfmt', etc." \
+  && rustup component add \
+       clippy \
+       llvm-tools-preview \
+       rustfmt \
+  && echo "#### Installing cargo-nextest" \
+  && cargo install cargo-nextest --locked \
+  && echo "Installing grcov" \
+  && cargo install grcov \
+  && echo "#### Creating users and groups required for tests" \
+  && useradd testuser1 \
+  && useradd testuser2 \
+  && groupadd testgroup1 \
+  && groupadd testgroup2
+
+# Set additional environment variables, e.g. 'ENV FOO=BAR'
