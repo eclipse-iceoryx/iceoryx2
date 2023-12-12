@@ -1,0 +1,61 @@
+name: 'Build and cache any Rust tools'
+description: 'Build and cache any Rust tools like cargo-nextest'
+inputs:
+  rust-toolchain:
+    description: 'The Rust toolchain to be used, e.g. "stable"'
+    required: true
+  rust-components:
+    description: 'Additional Rust components, e.g. "rustfmt"'
+    required: false
+    default: ""
+  check-and-install-cmd:
+    description: 'Command to check and install if not yet cached, e.g. "foo --version > /dev/null || cargo install foo"'
+    required: true
+  print-version-cmd:
+    description: 'Command print the version in the build log, e.g. "foo --version"'
+    required: true
+  cache-key:
+    description: 'Unique key for the caching of the builds, e.g. "cache-1-linux-foo"'
+    required: true
+  artifact-path:
+    description: 'The path to the artifact to upload, e.g. "~/.cargo/bin/foo"'
+    required: true
+  artifact-name:
+    description: 'The name of the artifact to be downloaded in a follow up CI runner, e.g. "linux-foo"'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@v1
+      with:
+        toolchain: ${{ inputs.rust-toolchain }}
+        components: ${{ inputs.rust-components }}
+    - name: Create version_info file
+      run: |
+        rustc --version > version_info
+        cargo --version >> version_info
+        cat version_info
+      shell: bash
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+        key: ${{ inputs.cache-key }}-${{ hashFiles('version_info') }}
+    - name: Install if not available
+      run: ${{ inputs.check-and-install-cmd }}
+      shell: bash
+    - name: Print version
+      run: ${{ inputs.print-version-cmd }}
+      shell: bash
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.artifact-path }}
+        retention-days: 1
+        if-no-files-found: error

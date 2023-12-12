@@ -1,0 +1,26 @@
+[global]
+root_path                                   = '/tmp/iceoryx2/'
+prefix                                      = 'iox2_'
+
+[global.service]
+directory                                   = 'services'
+publisher_data_segment_suffix               = '.publisher_data'
+static_config_storage_suffix                = '.service'
+dynamic_config_storage_suffix               = '.dynamic'
+connection_suffix                           = '.connection'
+creation_timeout.secs                       = 0
+creation_timeout.nanos                      = 500000000
+
+[defaults.publish_subscribe]
+max_subscribers                             = 8
+max_publishers                              = 2
+publisher_history_size                      = 1
+subscriber_max_buffer_size                  = 2
+subscriber_max_borrowed_samples             = 2
+publisher_max_loaned_samples                = 2
+enable_safe_overflow                        = true
+unable_to_deliver_strategy                  = 'block' # or 'discard_sample'
+
+[defaults.event]
+max_listeners                               = 2
+max_notifiers                               = 16

@@ -1,0 +1,20 @@
+[package]
+name = "iceoryx2_bb_memory"
+description = "Iceoryx2: allocators and tools for memory management"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+iceoryx2_bb_lock_free = { workspace = true }
+iceoryx2_bb_elementary = { workspace = true }
+iceoryx2_bb_log = { workspace = true }
+iceoryx2_bb_posix = { workspace = true }
+
+tiny-fn = { workspace = true }
+lazy_static = { workspace = true }
+pin-init = { workspace = true }
+
+[dev-dependencies]
+iceoryx2_bb_testing = { workspace = true }

@@ -1,0 +1,16 @@
+[package]
+name = "iceoryx2_bb_threadsafe"
+description = "Iceoryx2: threadsafe non-lock-free containers and constructs"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+iceoryx2_bb_container = { workspace = true }
+iceoryx2_bb_posix = { workspace = true }
+iceoryx2_bb_log = { workspace = true }
+
+[dev-dependencies]
+iceoryx2_bb_testing = { workspace = true }
+iceoryx2_pal_posix = { workspace = true }

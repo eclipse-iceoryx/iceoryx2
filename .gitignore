@@ -1,0 +1,7 @@
+target/
+debug/
+
+Cargo.lock
+**/*.rs.bk
+*.pdb
+**/rusty-tags.vi

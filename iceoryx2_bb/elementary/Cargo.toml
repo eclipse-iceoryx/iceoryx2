@@ -1,0 +1,17 @@
+[package]
+name = "iceoryx2_bb_elementary"
+description = "Iceoryx2: elementary constructs that have no dependencies at all"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dev-dependencies]
+iceoryx2_bb_container = { workspace = true }
+iceoryx2_bb_memory = { workspace = true }
+iceoryx2_bb_lock_free = { workspace = true }
+iceoryx2_bb_testing = { workspace = true }
+
+generic-tests = { workspace = true }
+pin-init = { workspace = true }
+

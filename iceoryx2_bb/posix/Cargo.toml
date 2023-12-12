@@ -1,0 +1,24 @@
+[package]
+name = "iceoryx2_bb_posix"
+description = "Iceoryx2: high level safe abstractions for low level unsafe posix constructs"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+iceoryx2_bb_container = { workspace = true }
+iceoryx2_bb_system_types = { workspace = true }
+iceoryx2_bb_elementary = { workspace = true }
+iceoryx2_bb_log = { workspace = true }
+iceoryx2_pal_posix = { workspace = true }
+iceoryx2_pal_settings = { workspace = true }
+
+lazy_static = { workspace = true }
+bitflags = { workspace = true }
+enum-iterator = { workspace = true }
+tiny-fn = { workspace = true }
+
+[dev-dependencies]
+iceoryx2_bb_testing = { workspace = true }
+generic-tests = { workspace = true }

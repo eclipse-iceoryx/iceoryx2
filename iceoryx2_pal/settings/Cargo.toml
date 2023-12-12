@@ -1,0 +1,9 @@
+[package]
+name = "iceoryx2_pal_settings"
+description = "Iceoryx2: platform specific settings"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]

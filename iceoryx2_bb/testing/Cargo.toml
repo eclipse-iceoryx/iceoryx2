@@ -1,0 +1,10 @@
+[package]
+name = "iceoryx2_bb_testing"
+description = "Iceoryx2: simple testing primitives"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+iceoryx2_pal_settings = { workspace = true }

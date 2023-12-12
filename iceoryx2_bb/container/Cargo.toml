@@ -1,0 +1,20 @@
+[package]
+name = "iceoryx2_bb_container"
+description = "Iceoryx2: IPC shared memory compatible containers"
+rust-version = { workspace = true }
+version = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+iceoryx2_bb_elementary = { workspace = true }
+iceoryx2_bb_log = { workspace = true }
+
+[dev-dependencies]
+pin-init = { workspace = true }
+generic-tests = { workspace = true }
+iceoryx2_bb_memory = { workspace = true }
+iceoryx2_bb_system_types = { workspace = true }
+iceoryx2_bb_testing = { workspace = true }

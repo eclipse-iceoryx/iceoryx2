@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+
+# NOTE: On Windows 'ENV' does not set environment variables persistently. One needs to use 'SetEnvironmentVariable' and set it in three targets.
+# This is an example on how to append to the 'PATH' environment variable
+# RUN [Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';C:\foo\bin', [EnvironmentVariableTarget]::Machine); \
+#     [Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';C:\foo\LLVM\bin', [EnvironmentVariableTarget]::Process); \
+#     [Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';C:\foo\bin', [EnvironmentVariableTarget]::User)
+
+# NOTE: When the Chocolatey package manaer is used, one has to make the newly set environment variables accessible by the following commands
+# RUN Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1; \
+#     refreshenv
+
+# Select base image
+FROM cirrusci/windowsservercore:visualstudio2022-2022.06.23
+
+SHELL ["powershell.exe", "-NoLogo", "-NoProfile", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+RUN choco install -y rustup.install; \
+    Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1; \
+    refreshenv; \
+    rustup toolchain add beta; \
+    rustup component add rustfmt clippy; \
+    Remove-Item C:\ProgramData\chocolatey\logs\* -Force -Recurse ; \
+    Remove-Item $Env:localappdata\Nuget\Cache\*nupkg ; \
+    Remove-Item $Env:temp\* -Force -Recurse ; \
+    mkdir "C:\Temp\iceoryx2\services" ; \
+    mkdir "C:\Temp\iceoryx2\tests" ; \
+    mkdir "C:\Temp\iceoryx2\shm" ; \
+    icacls "C:\Temp" /t /c /grant Everyone:F
