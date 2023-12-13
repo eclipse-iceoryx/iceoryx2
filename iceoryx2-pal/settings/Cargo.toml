@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2_pal_concurrency_primitives"
-description = "Iceoryx2: low-level basic building blocks to implement posix mutex, condition variables etc."
+name = "iceoryx2-pal-settings"
+description = "Iceoryx2: [internal] platform specific settings"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -11,6 +11,3 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-
-[dev-dependencies]
-iceoryx2_bb_testing = { workspace = true }

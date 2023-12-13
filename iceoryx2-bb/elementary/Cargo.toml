@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2_bb_elementary"
-description = "Iceoryx2: elementary constructs that have no dependencies at all"
+name = "iceoryx2-bb-elementary"
+description = "Iceoryx2: [internal] elementary constructs that have no dependencies at all"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -11,10 +11,10 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dev-dependencies]
-iceoryx2_bb_container = { workspace = true }
-iceoryx2_bb_memory = { workspace = true }
-iceoryx2_bb_lock_free = { workspace = true }
-iceoryx2_bb_testing = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-memory = { workspace = true }
+iceoryx2-bb-lock-free = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
 
 generic-tests = { workspace = true }
 pin-init = { workspace = true }

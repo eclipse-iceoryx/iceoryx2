@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2_pal_posix"
-description = "Iceoryx2: A posix layer that ensures uniform posix behavior on all platforms according to https://posix.opengroup.org"
+name = "iceoryx2-pal-posix"
+description = "Iceoryx2: [internal] A posix layer that ensures uniform posix behavior on all platforms according to https://posix.opengroup.org"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -15,12 +15,12 @@ cc = { workspace = true }
 bindgen = { workspace = true }
 
 [dependencies]
-iceoryx2_pal_concurrency_primitives = { workspace = true }
-iceoryx2_pal_settings = { workspace = true }
+iceoryx2-pal-concurrency-primitives = { workspace = true }
+iceoryx2-pal-settings = { workspace = true }
 lazy_static = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { workspace = true }
 
 [dev-dependencies]
-iceoryx2_bb_testing = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }

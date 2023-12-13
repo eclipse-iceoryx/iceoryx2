@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2_bb_lock_free"
-description = "Iceoryx2: lock-free containers and constructs"
+name = "iceoryx2-bb-lock-free"
+description = "Iceoryx2: [internal] lock-free containers and constructs"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -11,14 +11,14 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-iceoryx2_bb_log = { workspace = true }
-iceoryx2_bb_elementary = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
 
 tiny-fn = { workspace = true }
 
 [dev-dependencies]
-iceoryx2_bb_posix = { workspace = true }
-iceoryx2_bb_memory = { workspace = true }
-iceoryx2_bb_testing = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-memory = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
 pin-init = { workspace = true }
 generic-tests = { workspace = true }

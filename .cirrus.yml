@@ -271,13 +271,13 @@ macos_aarch64_stable_debug_task:
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
   <<: *IOX2_COMMON_BUILD_DEBUG
   test_script:
-    - cargo test -p iceoryx2_pal_concurrency_primitives
-                 -p iceoryx2_pal_posix
-                 -p iceoryx2_bb_container
-                 -p iceoryx2_bb_elementary
-                 -p iceoryx2_bb_lock_free
-                 -p iceoryx2_bb_log
-                 -p iceoryx2_bb_memory
-                 -p iceoryx2_bb_system_types
-                 -p iceoryx2_bb_testing
+    - cargo test -p iceoryx2-pal-concurrency-primitives
+                 -p iceoryx2-pal-posix
+                 -p iceoryx2-bb-container
+                 -p iceoryx2-bb-elementary
+                 -p iceoryx2-bb-lock-free
+                 -p iceoryx2-bb-log
+                 -p iceoryx2-bb-memory
+                 -p iceoryx2-bb-system-types
+                 -p iceoryx2-bb-testing
                  --lib --bins --tests --no-fail-fast

@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2_bb_posix"
-description = "Iceoryx2: high level safe abstractions for low level unsafe posix constructs"
+name = "iceoryx2-bb-posix"
+description = "Iceoryx2: [internal] high level safe abstractions for low level unsafe posix constructs"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -11,12 +11,12 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-iceoryx2_bb_container = { workspace = true }
-iceoryx2_bb_system_types = { workspace = true }
-iceoryx2_bb_elementary = { workspace = true }
-iceoryx2_bb_log = { workspace = true }
-iceoryx2_pal_posix = { workspace = true }
-iceoryx2_pal_settings = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
+iceoryx2-pal-settings = { workspace = true }
 
 lazy_static = { workspace = true }
 bitflags = { workspace = true }
@@ -24,5 +24,5 @@ enum-iterator = { workspace = true }
 tiny-fn = { workspace = true }
 
 [dev-dependencies]
-iceoryx2_bb_testing = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
 generic-tests = { workspace = true }
