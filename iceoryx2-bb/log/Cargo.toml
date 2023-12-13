@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2_bb_log"
+name = "iceoryx2-bb-log"
 description = "Iceoryx2: the internal logger"
 categories = { workspace = true }
 edition = { workspace = true }

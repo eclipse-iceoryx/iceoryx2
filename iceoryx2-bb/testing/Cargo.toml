@@ -1,6 +1,6 @@
 [package]
-name = "benchmark_publish_subscribe"
-description = "Iceoryx2: benchmark for publish-subscribe messaging pattern"
+name = "iceoryx2-bb-testing"
+description = "Iceoryx2: [internal] simple testing primitives"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -11,7 +11,4 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-iceoryx2_bb_log = { workspace = true }
-iceoryx2 = { workspace = true }
-iceoryx2_bb_posix = { workspace = true }
-iceoryx2_bb_container = { workspace = true }
+iceoryx2-pal-settings = { workspace = true }

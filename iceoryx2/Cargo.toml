@@ -6,25 +6,26 @@ edition = { workspace = true }
 homepage = { workspace = true }
 keywords = { workspace = true }
 license = { workspace = true }
+readme = "../README.md"
 repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
 [features]
 # Enables https://crates.io/crates/log as default logger
-logger_log = ["iceoryx2_bb_log/logger_log"]
+logger_log = ["iceoryx2-bb-log/logger_log"]
 # Enables https://crates.io/crates/tracing as default logger
-logger_tracing = ["iceoryx2_bb_log/logger_tracing"]
+logger_tracing = ["iceoryx2-bb-log/logger_tracing"]
 
 [dependencies]
-iceoryx2_bb_container = { workspace = true }
-iceoryx2_bb_system_types = { workspace = true }
-iceoryx2_bb_lock_free = { workspace = true }
-iceoryx2_bb_log = { workspace = true }
-iceoryx2_bb_memory = { workspace = true }
-iceoryx2_bb_posix = { workspace = true }
-iceoryx2_bb_elementary = { workspace = true }
-iceoryx2_cal = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-lock-free = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-bb-memory = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-cal = { workspace = true }
 
 lazy_static = { workspace = true }
 serde = { workspace = true }
@@ -34,5 +35,5 @@ sha1_smol = { workspace = true }
 tiny-fn = { workspace = true }
 
 [dev-dependencies]
-iceoryx2_bb_testing = { workspace = true }
+iceoryx2-bb-testing = { workspace = true }
 generic-tests = { workspace = true }
