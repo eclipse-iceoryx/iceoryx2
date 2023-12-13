@@ -15,6 +15,7 @@
 #[macro_use]
 pub mod enum_gen;
 pub mod allocator;
+pub mod bump_allocator;
 pub mod lazy_singleton;
 pub mod math;
 pub mod owning_pointer;
