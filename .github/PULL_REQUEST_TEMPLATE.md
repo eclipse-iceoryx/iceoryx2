@@ -19,7 +19,7 @@
 [commit-guidelines]: https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 [eca]: http://www.eclipse.org/legal/ECA.php
 [testing]: https://github.com/eclipse-iceoryx/iceoryx/blob/master/doc/website/concepts/best-practice-for-testing.md
-[changelog]: https://github.com/larry-robotics/iceoryx2/blob/main/doc/release-notes/iceoryx2-unreleased.md
+[changelog]: https://github.com/eclipse-iceoryx/iceoryx2/blob/main/doc/release-notes/iceoryx2-unreleased.md
 
 ## Checklist for the PR Reviewer
 
