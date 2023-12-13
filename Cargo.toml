@@ -15,7 +15,7 @@ members = [
     "iceoryx2",
     "iceoryx2-pal/concurrency-primitives",
     "iceoryx2-pal/posix/",
-    "iceoryx2-pal/settings/",
+    "iceoryx2-pal/configuration/",
 
     "examples",
 
@@ -47,7 +47,7 @@ iceoryx2-bb-testing = { version = "0.0.1", path = "iceoryx2-bb/testing/" }
 
 iceoryx2-pal-concurrency-primitives = { version = "0.0.1", path = "iceoryx2-pal/concurrency-primitives/" }
 iceoryx2-pal-posix = { version = "0.0.1", path = "iceoryx2-pal/posix/" }
-iceoryx2-pal-settings = { version = "0.0.1", path = "iceoryx2-pal/settings/" }
+iceoryx2-pal-configuration = { version = "0.0.1", path = "iceoryx2-pal/configuration/" }
 
 iceoryx2-cal = { version = "0.0.1", path = "iceoryx2-cal" }
 

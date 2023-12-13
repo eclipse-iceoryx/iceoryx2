@@ -28,7 +28,7 @@
 //! ```
 
 use iceoryx2_bb_container::semantic_string;
-use iceoryx2_pal_settings::FILENAME_LENGTH;
+use iceoryx2_pal_configuration::FILENAME_LENGTH;
 
 semantic_string! {
   /// Represents a file name. The restriction are choosen in a way that it is platform independent.

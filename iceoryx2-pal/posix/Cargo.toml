@@ -16,7 +16,7 @@ bindgen = { workspace = true }
 
 [dependencies]
 iceoryx2-pal-concurrency-primitives = { workspace = true }
-iceoryx2-pal-settings = { workspace = true }
+iceoryx2-pal-configuration = { workspace = true }
 lazy_static = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]

@@ -21,4 +21,5 @@ macro_rules! test_requires {
     }
 }
 
-pub const AT_LEAST_TIMING_VARIANCE: f32 = iceoryx2_pal_settings::settings::AT_LEAST_TIMING_VARIANCE;
+pub const AT_LEAST_TIMING_VARIANCE: f32 =
+    iceoryx2_pal_configuration::settings::AT_LEAST_TIMING_VARIANCE;

@@ -31,12 +31,12 @@ use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 
 use iceoryx2_bb_log::fail;
-use iceoryx2_pal_settings::{FILENAME_LENGTH, PATH_SEPARATOR, ROOT};
+use iceoryx2_pal_configuration::{FILENAME_LENGTH, PATH_SEPARATOR, ROOT};
 
 use crate::file_path::FilePath;
 use iceoryx2_bb_container::semantic_string::*;
 
-const PATH_LENGTH: usize = iceoryx2_pal_settings::PATH_LENGTH;
+const PATH_LENGTH: usize = iceoryx2_pal_configuration::PATH_LENGTH;
 
 semantic_string! {
   name: Path,
@@ -88,9 +88,9 @@ impl Path {
         let msg = format!("Unable to add entry \"{}\" to path since it would exceed the maximum supported path length of {} or the entry contains invalid symbols.",
             entry, PATH_LENGTH);
         if !self.is_empty()
-            && self.as_bytes()[self.len() - 1] != iceoryx2_pal_settings::PATH_SEPARATOR
+            && self.as_bytes()[self.len() - 1] != iceoryx2_pal_configuration::PATH_SEPARATOR
         {
-            fail!(from self, when self.push(iceoryx2_pal_settings::PATH_SEPARATOR),
+            fail!(from self, when self.push(iceoryx2_pal_configuration::PATH_SEPARATOR),
                 "{}", msg);
         }
 

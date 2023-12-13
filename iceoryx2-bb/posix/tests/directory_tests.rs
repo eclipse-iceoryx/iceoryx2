@@ -21,7 +21,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_settings::PATH_SEPARATOR;
+use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 struct TestFixture {
     files: Vec<FilePath>,

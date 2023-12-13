@@ -39,11 +39,11 @@ pub const ADAPTIVE_WAIT_FINAL_WAITING_TIME: Duration = Duration::from_millis(10)
 
 // directories
 pub const TEMP_DIRECTORY: Path =
-    unsafe { Path::new_unchecked(iceoryx2_pal_settings::TEMP_DIRECTORY) };
+    unsafe { Path::new_unchecked(iceoryx2_pal_configuration::TEMP_DIRECTORY) };
 pub const TEST_DIRECTORY: Path =
-    unsafe { Path::new_unchecked(iceoryx2_pal_settings::TEST_DIRECTORY) };
+    unsafe { Path::new_unchecked(iceoryx2_pal_configuration::TEST_DIRECTORY) };
 pub const SHARED_MEMORY_DIRECTORY: Path =
-    unsafe { Path::new_unchecked(iceoryx2_pal_settings::SHARED_MEMORY_DIRECTORY) };
+    unsafe { Path::new_unchecked(iceoryx2_pal_configuration::SHARED_MEMORY_DIRECTORY) };
 
 // TODO unable to verify?
 pub const ACL_LIST_CAPACITY: u32 = 25;
