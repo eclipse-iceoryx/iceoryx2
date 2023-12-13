@@ -18,7 +18,7 @@ use windows_sys::Win32::{
 
 use crate::posix::{c_string_length, ntohs, types::*};
 use core::{cell::UnsafeCell, panic};
-use iceoryx2_pal_concurrency_primitives::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 
 use super::win32_udp_port_to_uds_name::{PortToUds, MAX_UDS_NAME_LEN};

@@ -17,11 +17,11 @@
 use std::fmt::Debug;
 use std::sync::atomic::AtomicU64;
 
-use iceoryx2_pal_concurrency_primitives::barrier::Barrier;
-use iceoryx2_pal_concurrency_primitives::condition_variable::*;
-use iceoryx2_pal_concurrency_primitives::mutex::Mutex;
-use iceoryx2_pal_concurrency_primitives::rwlock::*;
-use iceoryx2_pal_concurrency_primitives::semaphore::Semaphore;
+use iceoryx2_pal_concurrency_sync::barrier::Barrier;
+use iceoryx2_pal_concurrency_sync::condition_variable::*;
+use iceoryx2_pal_concurrency_sync::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::rwlock::*;
+use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
 use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Networking::WinSock::{SOCKADDR_IN, TIMEVAL};
 

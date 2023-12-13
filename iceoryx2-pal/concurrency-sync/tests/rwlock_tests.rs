@@ -16,7 +16,7 @@ use std::{
 };
 
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_concurrency_primitives::{barrier::Barrier, rwlock::*};
+use iceoryx2_pal_concurrency_sync::{barrier::Barrier, rwlock::*};
 
 const TIMEOUT: Duration = Duration::from_millis(25);
 

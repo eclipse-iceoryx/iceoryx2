@@ -23,8 +23,8 @@ use std::{
     time::UNIX_EPOCH,
 };
 
-use iceoryx2_pal_concurrency_primitives::rwlock::*;
-use iceoryx2_pal_concurrency_primitives::{barrier::Barrier, mutex::Mutex};
+use iceoryx2_pal_concurrency_sync::rwlock::*;
+use iceoryx2_pal_concurrency_sync::{barrier::Barrier, mutex::Mutex};
 use windows_sys::Win32::{
     Foundation::{CloseHandle, ERROR_TIMEOUT, STILL_ACTIVE, WAIT_FAILED},
     System::{
