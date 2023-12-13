@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use iceoryx2_pal_settings::PATH_SEPARATOR;
+use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 use crate::posix::*;
 

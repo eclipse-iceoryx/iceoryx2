@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-pal-settings"
+name = "iceoryx2-pal-configuration"
 description = "Iceoryx2: [internal] platform specific settings"
 categories = { workspace = true }
 edition = { workspace = true }

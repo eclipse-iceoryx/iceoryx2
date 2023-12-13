@@ -213,7 +213,7 @@ jobs:
 #       - name: Run cargo test subset
 #         run: |
 #           cargo test
-#             -p iceoryx2_pal_concurrency_primitives 
+#             -p iceoryx2_pal_concurrency_sync 
 #             -p iceoryx2_pal_posix
 #             -p iceoryx2_bb_container
 #             -p iceoryx2_bb_elementary

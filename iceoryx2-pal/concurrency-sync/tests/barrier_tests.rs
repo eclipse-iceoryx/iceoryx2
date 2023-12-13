@@ -13,7 +13,7 @@
 use std::sync::atomic::{AtomicI32, Ordering};
 
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_concurrency_primitives::barrier::*;
+use iceoryx2_pal_concurrency_sync::barrier::*;
 
 #[test]
 fn barrier_with_multiple_waiter_works() {

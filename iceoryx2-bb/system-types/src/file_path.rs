@@ -35,7 +35,7 @@ use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_log::fail;
-use iceoryx2_pal_settings::{PATH_LENGTH, PATH_SEPARATOR};
+use iceoryx2_pal_configuration::{PATH_LENGTH, PATH_SEPARATOR};
 
 semantic_string! {
   /// Represents a file path. The restriction are choosen in a way that it is platform independent.

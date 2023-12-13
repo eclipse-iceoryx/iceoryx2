@@ -17,7 +17,7 @@
 use crate::posix::{constants::*, settings::*, to_dir_search_string, types::*, Errno, Struct};
 use crate::win32call;
 
-use iceoryx2_pal_settings::PATH_SEPARATOR;
+use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use windows_sys::Win32::Storage::FileSystem::{
     FindClose, FindFirstFileA, FindNextFileA, FILE_ATTRIBUTE_DIRECTORY, WIN32_FIND_DATAA,
 };

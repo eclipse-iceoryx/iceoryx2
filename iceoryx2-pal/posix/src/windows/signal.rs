@@ -14,7 +14,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use iceoryx2_pal_concurrency_primitives::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use windows_sys::Win32::{
     Foundation::{FALSE, TRUE},
     System::{
