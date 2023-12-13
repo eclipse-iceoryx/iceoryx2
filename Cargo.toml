@@ -10,6 +10,7 @@ members = [
     "iceoryx2-bb/posix",
     "iceoryx2-bb/system-types",
     "iceoryx2-bb/testing",
+    "iceoryx2-bb/trait-tests",
 
     "iceoryx2-cal",
     "iceoryx2",

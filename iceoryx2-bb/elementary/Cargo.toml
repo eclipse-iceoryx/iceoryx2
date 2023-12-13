@@ -11,9 +11,6 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-container = { workspace = true }
-iceoryx2-bb-memory = { workspace = true }
-iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 
 generic-tests = { workspace = true }
