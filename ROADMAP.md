@@ -1,16 +1,18 @@
 # Roadmap
 
-## Milestones
+## Moonshots
 
-* [ ] d-bus replacement
-* [ ] `#![no_std]` on `nightly` on the unix platform
-* [ ] `#![no_std]` on `stable` on the unix platform
+* [ ] high performance d-bus alternative (thanks to true zero-copy)
+* [ ] `#![no_std]` on `nightly` on all tier 1 platforms
+* [ ] `#![no_std]` on `stable` on all tier 1 platforms
+* [ ] completely dynamic setup with dynamic shared memory
 
 ## Language Bindings
 
-* [ ] C / C++
-* [ ] Python
+* [ ] C
+* [ ] C++
 * [ ] Lua
+* [ ] Python
 * [ ] Zig
 
 ## Building Blocks
@@ -22,18 +24,26 @@
 ## Gateways
 
 * [ ] Host2Host Communication based on <https://github.com/smoltcp-rs/smoltcp>
-* [ ] zbus
-* [ ] sommr
-* [ ] data-rs
-* [ ] rustdds
+* [ ] mqtt (rumqtt)
+* [ ] dds (rustdds or dustdds)
 * [ ] zenoh
-* [ ] rumqtt
+* [ ] someip (maybe sommr)
+* [ ] dbus (zbus)
 
-## Microservices
+## Microservices (Quality of Life Improvements)
+
+### Iceoryx Tooling
 
 * [ ] Service Discovery
-* [ ] Health Monitor
 * [ ] Introspection Service
+* [ ] Process Monitor (process can register and cleans up resources when process dies)
+* [ ] Health Monitor
+* [ ] Basic command line introspection tooling
+* [ ] Tooling for advanced introspection, cool WebGUI
+* [ ] Command line client as interface to microservices
+
+### Tools and Gadgets
+
 * [ ] System Monitor (show CPU load etc. like top)
 
 ## Communication
@@ -48,14 +58,17 @@
 * [ ] PubSub, ReqRes, Pipeline variant that works with copies (poor mans mixed criticality)
 * [ ] Zero-copy GPU communication with Cuda, NvSci, Vulkan
 * [ ] Zero-copy across hypervisor partitions
-* [ ] Zero-copy via QEmu ivshmem: <https://www.qemu.org/docs/master/system/devices/ivshmem.html>
+* [ ] Zero-copy via QEMU ivshmem: <https://www.qemu.org/docs/master/system/devices/ivshmem.html>
+* [ ] Support dynamic sized types in a memory efficient manner
+  * Buddy allocator for sender data-segment
+  * Introduce runtime fixed-size types
 
 ## Robustness
 
 * [ ] Add ability to recover samples when subscriber died
   * add sample tracker into ZeroCopyConnection
   * add detection when subscriber returns non-received samples
-* [ ] Huge Communication Setup Support
+* [ ] Large Communication Setup Support
   * handle the restriction of a max amount of posix shared memory objects of an OS
   * add `iceoryx2_cal` implementations that are using the `SharedMemoryGroup`
 
@@ -84,12 +97,6 @@
 * [ ] ROS2 rmw binding
 * [ ] dora-rs integration
 
-## Tooling
-
-* [ ] Basic command line introspection tooling
-* [ ] Tooling for advanced introspection, cool WebGUI
-* [ ] command line client as interface to microservices
-
 ## Safety & Security
 
 * [ ] Mixed Criticallity setup, e.g. applications do not interfer with each other
@@ -99,8 +106,9 @@
 
 ## Development
 
-* [ ] Tracing integration for advanced performance measurements, see google chrome chrome://tracing/ and flame graphs
-       See lttng, add trace points to the source code on the important functions
+* [ ] Tracing integration for advanced performance measurements, see google chrome
+        chrome://tracing/ and flame graphs
+        See lttng, add trace points to the source code on the important functions
 
 ## Quality Of Life Improvements
 
@@ -108,13 +116,8 @@
   * all error classes should implement `std::error::Error` for the non `no_std` build  (maybe use `thiserror`)
   * should be compatible with `anyhow` and `eyre`
   * explore error pyramid concept
-* [ ] Evaluate crate `log` and `tracing` as backend for iceoryx2 logger
-  * `log` / `tracing` / `console_logger` one of them should be the default logger, depending on feature flagA
-* [ ] Use `&str` and UTF-8 in `ServiceName`, there is no need for a length or ASCII restriction
 * [ ] Rename `enable_safe_overflow` into `set_safe_overflow` in `ServiceBuilder` `publish_subscribe`
   * or maybe rename it into behavior: queue and ringbuffer, get inspired by crossbeam queues
-* [ ] Rename `publisher::loan` into `publisher::loan_uninit` and provide `publisher::loan` with default
-    constructed type
 * [ ] Provide `[T]` (slice) as special transmission type for pub/sub
   * `loan_slice`, `loan_uninit_slice` and `loan_uninit_slice_with_alignment`
 * [ ] QoS feature for blocking publisher or pub/sub failures to perform custom error handling or expert behavior
