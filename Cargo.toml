@@ -33,26 +33,26 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/eclipse-iceoryx/iceoryx2"
 rust-version = "1.72.1"
-version = "0.0.4"
+version = "0.0.5"
 
 [workspace.dependencies]
-iceoryx2-bb-threadsafe = { version = "0.0.4", path = "iceoryx2-bb/threadsafe/" }
-iceoryx2-bb-lock-free = { version = "0.0.4", path = "iceoryx2-bb/lock-free/" }
-iceoryx2-bb-container = { version = "0.0.4", path = "iceoryx2-bb/container/" }
-iceoryx2-bb-elementary = { version = "0.0.4", path = "iceoryx2-bb/elementary/" }
-iceoryx2-bb-log = { version = "0.0.4", path = "iceoryx2-bb/log/" }
-iceoryx2-bb-memory = { version = "0.0.4", path = "iceoryx2-bb/memory/" }
-iceoryx2-bb-posix = { version = "0.0.4", path = "iceoryx2-bb/posix/" }
-iceoryx2-bb-system-types = { version = "0.0.4", path = "iceoryx2-bb/system-types/" }
-iceoryx2-bb-testing = { version = "0.0.4", path = "iceoryx2-bb/testing/" }
+iceoryx2-bb-threadsafe = { version = "0.0.5", path = "iceoryx2-bb/threadsafe/" }
+iceoryx2-bb-lock-free = { version = "0.0.5", path = "iceoryx2-bb/lock-free/" }
+iceoryx2-bb-container = { version = "0.0.5", path = "iceoryx2-bb/container/" }
+iceoryx2-bb-elementary = { version = "0.0.5", path = "iceoryx2-bb/elementary/" }
+iceoryx2-bb-log = { version = "0.0.5", path = "iceoryx2-bb/log/" }
+iceoryx2-bb-memory = { version = "0.0.5", path = "iceoryx2-bb/memory/" }
+iceoryx2-bb-posix = { version = "0.0.5", path = "iceoryx2-bb/posix/" }
+iceoryx2-bb-system-types = { version = "0.0.5", path = "iceoryx2-bb/system-types/" }
+iceoryx2-bb-testing = { version = "0.0.5", path = "iceoryx2-bb/testing/" }
 
-iceoryx2-pal-concurrency-sync = { version = "0.0.4", path = "iceoryx2-pal/concurrency-sync/" }
-iceoryx2-pal-posix = { version = "0.0.4", path = "iceoryx2-pal/posix/" }
-iceoryx2-pal-configuration = { version = "0.0.4", path = "iceoryx2-pal/configuration/" }
+iceoryx2-pal-concurrency-sync = { version = "0.0.5", path = "iceoryx2-pal/concurrency-sync/" }
+iceoryx2-pal-posix = { version = "0.0.5", path = "iceoryx2-pal/posix/" }
+iceoryx2-pal-configuration = { version = "0.0.5", path = "iceoryx2-pal/configuration/" }
 
-iceoryx2-cal = { version = "0.0.4", path = "iceoryx2-cal" }
+iceoryx2-cal = { version = "0.0.5", path = "iceoryx2-cal" }
 
-iceoryx2 = { version = "0.0.4", path = "iceoryx2/" }
+iceoryx2 = { version = "0.0.5", path = "iceoryx2/" }
 
 bindgen = { version = "0.65.1" }
 bitflags = { version = "1.3.2" }
