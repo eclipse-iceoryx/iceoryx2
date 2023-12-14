@@ -46,7 +46,7 @@
 //!
 //! ```
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
-//! use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 //! use std::ptr::NonNull;
 //!
@@ -54,9 +54,7 @@
 //! const MEM_SIZE: usize = RelocatableQueue::<u128>::const_memory_size(QUEUE_CAPACITY);
 //! let mut memory = [0u8; MEM_SIZE];
 //!
-//! let bump_allocator = BumpAllocator::new(
-//!                         unsafe { NonNull::new_unchecked(memory.as_mut_ptr() as *mut u8) },
-//!                         MEM_SIZE);
+//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 //!
 //! let queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
 //! unsafe { queue.init(&bump_allocator).expect("queue init failed") };

@@ -17,7 +17,5 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 
 [dev-dependencies]
-pin-init = { workspace = true }
 generic-tests = { workspace = true }
-iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }

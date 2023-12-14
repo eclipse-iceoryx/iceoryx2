@@ -11,10 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_container::vec::*;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_memory::{bump_allocator::BumpAllocator, memory::Memory};
 use iceoryx2_bb_testing::assert_that;
-use pin_init::init_stack;
 
 const SUT_CAPACITY: usize = 128;
 type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
@@ -70,15 +69,10 @@ fn fixed_size_vec_push_pop_works() {
 
 #[test]
 fn vec_push_pop_works_with_uninitialized_memory() {
-    init_stack!(
-        memory =
-            Memory::<{ Vec::<usize>::const_memory_size(129_usize) }, BumpAllocator>::new_filled(
-                0xff,
-            )
-    );
-    let memory = memory.unwrap();
+    let mut memory = [0u8; 1024];
+    let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
     let mut sut = unsafe { Vec::<usize>::new_uninit(SUT_CAPACITY) };
-    unsafe { assert_that!(sut.init(memory.allocator()), is_ok) };
+    unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
     for i in 0..sut.capacity() {
         let element = i * 2 + 3;
