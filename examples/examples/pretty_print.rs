@@ -1,4 +1,4 @@
-use std::error::Error;
+
 
 use iceoryx2::service::{zero_copy, Service, service_name::ServiceName};
 
