@@ -60,13 +60,6 @@ pub type uint = crate::internal::uint;
 pub type ushort = crate::internal::ushort;
 pub type void = core::ffi::c_void;
 
-pub type acl_t = crate::internal::acl_t;
-pub type acl_permset_t = crate::internal::acl_permset_t;
-pub type acl_entry_t = crate::internal::acl_entry_t;
-pub type acl_type_t = crate::internal::acl_type_t;
-pub type acl_tag_t = crate::internal::acl_tag_t;
-pub type acl_perm_t = crate::internal::acl_perm_t;
-
 pub type sigset_t = crate::internal::sigset_t;
 impl Struct for sigset_t {}
 

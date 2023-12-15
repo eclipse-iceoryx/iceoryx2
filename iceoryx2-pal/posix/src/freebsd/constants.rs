@@ -19,21 +19,6 @@ pub const CPU_SETSIZE: usize = crate::internal::CPU_SETSIZE as _;
 pub const FD_SETSIZE: usize = crate::internal::FD_SETSIZE as _;
 pub const NULL_TERMINATOR: char = 0;
 
-pub const ACL_READ: acl_perm_t = crate::internal::ACL_READ;
-pub const ACL_WRITE: acl_perm_t = crate::internal::ACL_WRITE;
-pub const ACL_EXECUTE: acl_perm_t = crate::internal::ACL_EXECUTE;
-
-pub const ACL_UNDEFINED_TAG: acl_tag_t = crate::internal::ACL_UNDEFINED_TAG as _;
-pub const ACL_USER_OBJ: acl_tag_t = crate::internal::ACL_USER_OBJ as _;
-pub const ACL_USER: acl_tag_t = crate::internal::ACL_USER as _;
-pub const ACL_GROUP_OBJ: acl_tag_t = crate::internal::ACL_GROUP_OBJ as _;
-pub const ACL_GROUP: acl_tag_t = crate::internal::ACL_GROUP as _;
-pub const ACL_MASK: acl_tag_t = crate::internal::ACL_MASK as _;
-pub const ACL_OTHER: acl_tag_t = crate::internal::ACL_OTHER as _;
-
-pub const ACL_FIRST_ENTRY: int = crate::internal::ACL_FIRST_ENTRY as _;
-pub const ACL_NEXT_ENTRY: int = crate::internal::ACL_NEXT_ENTRY as _;
-
 pub const O_RDONLY: int = crate::internal::O_RDONLY as _;
 pub const O_WRONLY: int = crate::internal::O_WRONLY as _;
 pub const O_RDWR: int = crate::internal::O_RDWR as _;

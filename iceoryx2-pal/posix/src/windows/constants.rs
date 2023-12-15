@@ -20,21 +20,6 @@ pub const MAX_NUMBER_OF_THREADS: usize = 1024;
 pub const FD_SETSIZE: usize = windows_sys::Win32::Networking::WinSock::FD_SETSIZE as _;
 pub const NULL_TERMINATOR: char = 0;
 
-pub const ACL_READ: acl_perm_t = 1;
-pub const ACL_WRITE: acl_perm_t = 2;
-pub const ACL_EXECUTE: acl_perm_t = 4;
-
-pub const ACL_UNDEFINED_TAG: acl_tag_t = 0;
-pub const ACL_USER_OBJ: acl_tag_t = 1;
-pub const ACL_USER: acl_tag_t = 2;
-pub const ACL_GROUP_OBJ: acl_tag_t = 4;
-pub const ACL_GROUP: acl_tag_t = 8;
-pub const ACL_MASK: acl_tag_t = 16;
-pub const ACL_OTHER: acl_tag_t = 32;
-
-pub const ACL_FIRST_ENTRY: int = 0;
-pub const ACL_NEXT_ENTRY: int = 1;
-
 pub const O_RDONLY: int = 1;
 pub const O_WRONLY: int = 2;
 pub const O_RDWR: int = 4;

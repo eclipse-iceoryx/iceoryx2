@@ -21,21 +21,6 @@ pub const FD_SETSIZE: usize = crate::internal::FD_SETSIZE as _;
 pub const THREAD_NAME_LENGTH: usize = 16;
 pub const NULL_TERMINATOR: char = 0;
 
-pub const ACL_READ: acl_perm_t = 1;
-pub const ACL_WRITE: acl_perm_t = 2;
-pub const ACL_EXECUTE: acl_perm_t = 4;
-
-pub const ACL_UNDEFINED_TAG: acl_tag_t = 1;
-pub const ACL_USER_OBJ: acl_tag_t = 2;
-pub const ACL_USER: acl_tag_t = 4;
-pub const ACL_GROUP_OBJ: acl_tag_t = 8;
-pub const ACL_GROUP: acl_tag_t = 16;
-pub const ACL_MASK: acl_tag_t = 32;
-pub const ACL_OTHER: acl_tag_t = 64;
-
-pub const ACL_FIRST_ENTRY: int = 128;
-pub const ACL_NEXT_ENTRY: int = 256;
-
 pub const O_RDONLY: int = crate::internal::O_RDONLY as _;
 pub const O_WRONLY: int = crate::internal::O_WRONLY as _;
 pub const O_RDWR: int = crate::internal::O_RDWR as _;

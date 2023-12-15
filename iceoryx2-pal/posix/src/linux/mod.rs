@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[cfg(feature = "acl")]
 pub mod acl;
 pub mod constants;
 pub mod dirent;
@@ -35,6 +36,7 @@ pub mod time;
 pub mod types;
 pub mod unistd;
 
+#[cfg(feature = "acl")]
 pub use crate::linux::acl::*;
 pub use crate::linux::constants::*;
 pub use crate::linux::dirent::*;

@@ -46,6 +46,7 @@
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_bb_posix::file_descriptor::*;
 //! use iceoryx2_bb_posix::file::*;
+//! #[cfg(feature = "acl")]
 //! use iceoryx2_bb_posix::access_control_list::*;
 //! use iceoryx2_bb_posix::ownership::*;
 //! use iceoryx2_bb_posix::user::UserExt;
@@ -68,14 +69,18 @@
 //! file.set_permission(Permission::ALL);
 //!
 //! // set some new ACLs
-//! let mut acl = file.access_control_list().expect("failed to get acl");
-//! acl.add_user("testUser2".as_user().unwrap().uid(), AclPermission::Read)
-//!     .expect("failed to add user");
-//! file.set_access_control_list(&acl);
+//! #[cfg(feature = "acl")]
+//! {
+//!     let mut acl = file.access_control_list().expect("failed to get acl");
+//!     acl.add_user("testUser2".as_user().unwrap().uid(), AclPermission::Read)
+//!         .expect("failed to add user");
+//!     file.set_access_control_list(&acl);
+//! }
 //! ```
 
 use std::fmt::Debug;
 
+#[cfg(feature = "acl")]
 use crate::access_control_list::*;
 use crate::config::EINTR_REPETITIONS;
 use crate::file::*;
@@ -249,9 +254,6 @@ impl FileDescriptorManagement for FileDescriptor {}
 ///                         [`set_permission`](FileDescriptorManagement::set_permission())
 ///  * truncate size, [`truncate`](FileDescriptorManagement::truncate())
 ///  * accessing extended stats via [`Metadata`], [`metadata`](FileDescriptorManagement::metadata())
-///  * access control list handling,
-///         [`access_control_list`](FileDescriptorManagement::access_control_list())
-///         [`set_access_control_list`](FileDescriptorManagement::set_access_control_list())
 ///
 pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
     /// Returns the current user and group owner of the file descriptor
@@ -303,6 +305,7 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
     }
 
     /// Returns the current access control list
+    #[cfg(feature = "acl")]
     fn access_control_list(
         &self,
     ) -> Result<AccessControlList, AccessControlListCreationFromFdError> {
@@ -310,6 +313,7 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
     }
 
     /// Sets a new access control list
+    #[cfg(feature = "acl")]
     fn set_access_control_list(
         &self,
         acl: &AccessControlList,

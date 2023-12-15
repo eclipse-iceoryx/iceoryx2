@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::math::ToB64;
+#[cfg(feature = "acl")]
 use iceoryx2_bb_posix::access_control_list::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::*;
@@ -25,6 +26,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
+#[cfg(feature = "acl")]
 use iceoryx2_pal_posix::*;
 
 #[test]
@@ -142,6 +144,7 @@ mod file_descriptor_management {
         test(Permission::OWNER_ALL | Permission::GROUP_ALL | Permission::OTHERS_ALL);
     }
 
+    #[cfg(feature = "acl")]
     #[test]
     fn access_control_list_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(posix::POSIX_SUPPORT_ACL);
