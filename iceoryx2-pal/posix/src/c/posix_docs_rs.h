@@ -23,6 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef IOX2_DOCS_RS_SUPPORT
 ///////////////////////////////
 // stub libacl.h implementation
 ///////////////////////////////
@@ -67,3 +68,4 @@ acl_t acl_get_fd(int) { return 0; }
 int acl_set_fd(int, acl_t) { return 0; }
 char *acl_to_text(acl_t, ssize_t *) { return NULL; }
 acl_t acl_from_text(const char *) { return 0; }
+#endif

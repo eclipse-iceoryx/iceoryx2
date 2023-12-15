@@ -11,8 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Read, create, write or modify files based on a POSIX api. It provides also advanced features
-//! like [`Permission`] setting, use of [`crate::access_control_list::AccessControlList`] and to
-//! be created from a [`FileDescriptor`].
+//! like [`Permission`] setting and to be created from a [`FileDescriptor`].
 //!
 //! # Examples
 //! ```no_run

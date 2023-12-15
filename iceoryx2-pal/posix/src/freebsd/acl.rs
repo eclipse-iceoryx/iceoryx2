@@ -15,6 +15,28 @@
 
 use crate::posix::types::*;
 
+pub const ACL_READ: acl_perm_t = crate::internal::ACL_READ;
+pub const ACL_WRITE: acl_perm_t = crate::internal::ACL_WRITE;
+pub const ACL_EXECUTE: acl_perm_t = crate::internal::ACL_EXECUTE;
+
+pub const ACL_UNDEFINED_TAG: acl_tag_t = crate::internal::ACL_UNDEFINED_TAG as _;
+pub const ACL_USER_OBJ: acl_tag_t = crate::internal::ACL_USER_OBJ as _;
+pub const ACL_USER: acl_tag_t = crate::internal::ACL_USER as _;
+pub const ACL_GROUP_OBJ: acl_tag_t = crate::internal::ACL_GROUP_OBJ as _;
+pub const ACL_GROUP: acl_tag_t = crate::internal::ACL_GROUP as _;
+pub const ACL_MASK: acl_tag_t = crate::internal::ACL_MASK as _;
+pub const ACL_OTHER: acl_tag_t = crate::internal::ACL_OTHER as _;
+
+pub const ACL_FIRST_ENTRY: int = crate::internal::ACL_FIRST_ENTRY as _;
+pub const ACL_NEXT_ENTRY: int = crate::internal::ACL_NEXT_ENTRY as _;
+
+pub type acl_t = crate::internal::acl_t;
+pub type acl_permset_t = crate::internal::acl_permset_t;
+pub type acl_entry_t = crate::internal::acl_entry_t;
+pub type acl_type_t = crate::internal::acl_type_t;
+pub type acl_tag_t = crate::internal::acl_tag_t;
+pub type acl_perm_t = crate::internal::acl_perm_t;
+
 pub unsafe fn acl_get_perm(permset: acl_permset_t, perm: acl_perm_t) -> int {
     crate::internal::acl_get_perm_np(permset, perm)
 }
