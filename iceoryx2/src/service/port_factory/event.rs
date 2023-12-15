@@ -34,7 +34,7 @@
 //! # }
 //! ```
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use service::{zero_copy, process_local};
+use service::{process_local, zero_copy};
 
 use crate::service::{self, static_config};
 use crate::service::{dynamic_config, ServiceName};
@@ -136,11 +136,23 @@ impl<'config> fmt::Display for PortFactory<'config, zero_copy::Service<'config>>
         f.debug_struct("zero_copy::Service")
             .field("name", &String::from(self.name().deref()))
             .field("uuid", &self.uuid())
-            .field("max listeners", &self.static_config().max_supported_listeners())
-            .field("max notifiers", &self.static_config().max_supported_notifiers())
-            .field("active listeners", &self.dynamic_config().number_of_listeners())
-            .field("active notifiers", &self.dynamic_config().number_of_notifiers())
-        .finish()
+            .field(
+                "max listeners",
+                &self.static_config().max_supported_listeners(),
+            )
+            .field(
+                "max notifiers",
+                &self.static_config().max_supported_notifiers(),
+            )
+            .field(
+                "active listeners",
+                &self.dynamic_config().number_of_listeners(),
+            )
+            .field(
+                "active notifiers",
+                &self.dynamic_config().number_of_notifiers(),
+            )
+            .finish()
     }
 }
 
@@ -149,10 +161,22 @@ impl<'config> fmt::Display for PortFactory<'config, process_local::Service<'conf
         f.debug_struct("process_local::Service")
             .field("name", &String::from(self.name().deref()))
             .field("uuid", &self.uuid())
-            .field("max listeners", &self.static_config().max_supported_listeners())
-            .field("max notifiers", &self.static_config().max_supported_notifiers())
-            .field("active listeners", &self.dynamic_config().number_of_listeners())
-            .field("active notifiers", &self.dynamic_config().number_of_notifiers())
-        .finish()
+            .field(
+                "max listeners",
+                &self.static_config().max_supported_listeners(),
+            )
+            .field(
+                "max notifiers",
+                &self.static_config().max_supported_notifiers(),
+            )
+            .field(
+                "active listeners",
+                &self.dynamic_config().number_of_listeners(),
+            )
+            .field(
+                "active notifiers",
+                &self.dynamic_config().number_of_notifiers(),
+            )
+            .finish()
     }
 }
