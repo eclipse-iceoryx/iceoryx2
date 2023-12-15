@@ -25,7 +25,7 @@
 //! - Blackboard (planned)
 //!
 //! For a comprehensive list of all planned features, please refer to the
-//! [GitHub Roadmap](https://github.com/eclipse-iceoryx/iceoryx2/ROADMAP.md).
+//! [GitHub Roadmap](https://github.com/eclipse-iceoryx/iceoryx2/blob/main/ROADMAP.md).
 //!
 //! Services are uniquely identified by name and
 //! [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern). They can be instantiated with
