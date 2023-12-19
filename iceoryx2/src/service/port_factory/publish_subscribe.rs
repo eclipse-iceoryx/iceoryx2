@@ -150,49 +150,45 @@ impl<'config, Service: service::Details<'config>, MessageType: Debug>
     }
 }
 
-
-impl<'config, S, M> Display for PortFactory<'config, S, M> where S: Service + service::Details<'config>, M: Debug {
+impl<'config, S, M> Display for PortFactory<'config, S, M>
+where
+    S: Service + service::Details<'config>,
+    M: Debug,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         f.debug_struct(&format!("{}", core::any::type_name::<S>()))
-        .field("name", &String::from(self.name().deref()))
-        .field("uuid", &self.uuid())
-        .field("type name", &self.static_config().type_name())
-        .field(
-            "max publishers",
-            &self.static_config().max_supported_publishers()
-        )
-        .field(
-            "max subscribers",
-            &self.static_config().max_supported_subscribers()
-        )
-        .field(
-            "subscriber buffer size",
-            &self.static_config().subscriber_max_buffer_size()
-        )
-        .field(
-            "history size",
-            &self.static_config().history_size()
-        )
-        .field(
-            "subscriber max borrowed samples",
-            &self.static_config().subscriber_max_borrowed_samples()
-        )
-        .field(
-            "safe overflow",
-            &self.static_config().has_safe_overflow()
-        )
-        .field(
-            "number of active publishers",
-            &self.dynamic_config().number_of_publishers()
-        )
-        .field(
-            "number of active subscribers",
-            &self.dynamic_config().number_of_subscribers()
-        )
-        .finish()
+            .field("name", &String::from(self.name().deref()))
+            .field("uuid", &self.uuid())
+            .field("type name", &self.static_config().type_name())
+            .field(
+                "max publishers",
+                &self.static_config().max_supported_publishers(),
+            )
+            .field(
+                "max subscribers",
+                &self.static_config().max_supported_subscribers(),
+            )
+            .field(
+                "subscriber buffer size",
+                &self.static_config().subscriber_max_buffer_size(),
+            )
+            .field("history size", &self.static_config().history_size())
+            .field(
+                "subscriber max borrowed samples",
+                &self.static_config().subscriber_max_borrowed_samples(),
+            )
+            .field("safe overflow", &self.static_config().has_safe_overflow())
+            .field(
+                "number of active publishers",
+                &self.dynamic_config().number_of_publishers(),
+            )
+            .field(
+                "number of active subscribers",
+                &self.dynamic_config().number_of_subscribers(),
+            )
+            .finish()
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -202,7 +198,8 @@ mod tests {
         let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
         let pubsub = zero_copy::Service::new(&service_name)
             .publish_subscribe()
-            .open_or_create::<u64>().unwrap();
+            .open_or_create::<u64>()
+            .unwrap();
         println!("{}", pubsub);
         assert!(format!("{}", pubsub).contains("ServiceName"))
     }

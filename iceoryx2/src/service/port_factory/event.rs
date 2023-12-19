@@ -126,7 +126,10 @@ impl<'config, Service: service::Details<'config>> PortFactory<'config, Service> 
     }
 }
 
-impl<'config, S> fmt::Display for PortFactory<'config, S> where S: Service + service::Details<'config> {
+impl<'config, S> fmt::Display for PortFactory<'config, S>
+where
+    S: Service + service::Details<'config>,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(&format!("{}", core::any::type_name::<S>()))
             .field("name", &String::from(self.name().deref()))
@@ -159,7 +162,8 @@ mod tests {
         let event_name = ServiceName::new("MyEventName").unwrap();
         let event = zero_copy::Service::new(&event_name)
             .event()
-            .open_or_create().unwrap();
+            .open_or_create()
+            .unwrap();
         assert!(format!("{}", event).contains("zero_copy"))
     }
 }
