@@ -596,12 +596,12 @@ pub unsafe fn pthread_rwlock_timedrdlock(
 }
 
 pub unsafe fn pthread_cond_broadcast(cond: *mut pthread_cond_t) -> int {
-    (*cond).cv.notify(wake_all);
+    (*cond).cv.notify_all(wake_all);
     Errno::ESUCCES as _
 }
 
 pub unsafe fn pthread_cond_signal(cond: *mut pthread_cond_t) -> int {
-    (*cond).cv.notify(wake_one);
+    (*cond).cv.notify_one(wake_one);
     Errno::ESUCCES as _
 }
 
@@ -641,7 +641,7 @@ pub unsafe fn pthread_cond_timedwait(
         wake_one,
         |atomic, value| {
             timed_wait(atomic, value, *abstime);
-            true
+            false
         },
         |atomic, value| {
             timed_wait(atomic, value, *abstime);

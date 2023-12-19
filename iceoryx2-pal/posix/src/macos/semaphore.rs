@@ -30,7 +30,7 @@ pub unsafe fn sem_post(sem: *mut sem_t) -> int {
         return -1;
     }
 
-    (*sem).semaphore.post(wake_one);
+    (*sem).semaphore.post(wake_one, 1);
 
     Errno::set(Errno::ESUCCES);
     0

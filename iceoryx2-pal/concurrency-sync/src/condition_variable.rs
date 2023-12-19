@@ -13,15 +13,18 @@
 use core::sync::atomic::{AtomicU32, Ordering};
 
 pub use crate::mutex::Mutex;
+use crate::semaphore::Semaphore;
 
 pub struct ConditionVariable {
-    counter: AtomicU32,
+    number_of_waiters: AtomicU32,
+    semaphore: Semaphore,
 }
 
 impl Default for ConditionVariable {
     fn default() -> Self {
         Self {
-            counter: AtomicU32::new(0),
+            semaphore: Semaphore::new(0),
+            number_of_waiters: AtomicU32::new(0),
         }
     }
 }
@@ -31,9 +34,16 @@ impl ConditionVariable {
         Self::default()
     }
 
-    pub fn notify<WakeOneOrAll: Fn(&AtomicU32)>(&self, wake_one_or_all: WakeOneOrAll) {
-        self.counter.fetch_add(1, Ordering::Relaxed);
-        wake_one_or_all(&self.counter);
+    pub fn notify_one<WakeOne: Fn(&AtomicU32)>(&self, wake_one: WakeOne) {
+        self.semaphore.post(
+            wake_one,
+            1.min(self.number_of_waiters.load(Ordering::Relaxed)),
+        );
+    }
+
+    pub fn notify_all<WakeAll: Fn(&AtomicU32)>(&self, wake_all: WakeAll) {
+        self.semaphore
+            .post(wake_all, self.number_of_waiters.load(Ordering::Relaxed));
     }
 
     pub fn wait<
@@ -47,12 +57,14 @@ impl ConditionVariable {
         wait: Wait,
         mtx_wait: MtxWait,
     ) -> bool {
-        let counter_value = self.counter.load(Ordering::Relaxed);
         mtx.unlock(mtx_wake_one);
 
-        if !wait(&self.counter, &counter_value) {
+        self.number_of_waiters.fetch_add(1, Ordering::Relaxed);
+        if !self.semaphore.wait(wait) {
+            self.number_of_waiters.fetch_sub(1, Ordering::Relaxed);
             return false;
         }
+        self.number_of_waiters.fetch_sub(1, Ordering::Relaxed);
 
         // this maybe problematic when the wait has a timeout. it is possible that
         // the timeout is nearly doubled when wait is waken up at the end of the timeout

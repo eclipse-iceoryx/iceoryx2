@@ -198,46 +198,46 @@ fn condition_variable_trigger_all_signals_all_waiters() {
     });
 }
 
-// #[test]
-// fn condition_variable_trigger_one_signals_one_waiter() {
-//     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
-//     thread::scope(|s| {
-//         let counter = Arc::new(AtomicI32::new(0));
-//         let sut = Arc::new(
-//             ConditionVariableBuilder::new()
-//                 .create_condition_variable(500, |v| *v > 1000, &handle)
-//                 .unwrap(),
-//         );
-//
-//         let sut_thread1 = Arc::clone(&sut);
-//         let counter_thread1 = Arc::clone(&counter);
-//         let t1 = s.spawn(move || {
-//             sut_thread1.wait().unwrap();
-//             counter_thread1.fetch_add(1, Ordering::Relaxed);
-//         });
-//
-//         let sut_thread2 = Arc::clone(&sut);
-//         let counter_thread2 = Arc::clone(&counter);
-//         let t2 = s.spawn(move || {
-//             sut_thread2.wait().unwrap();
-//             counter_thread2.fetch_add(1, Ordering::Relaxed);
-//         });
-//
-//         thread::sleep(TIMEOUT);
-//         let counter_old_1 = counter.load(Ordering::Relaxed);
-//         sut.trigger_one();
-//         thread::sleep(TIMEOUT);
-//         let counter_old_2 = counter.load(Ordering::Relaxed);
-//         sut.trigger_one();
-//
-//         t1.join().unwrap();
-//         t2.join().unwrap();
-//
-//         assert_that!(counter_old_1, eq 0);
-//         assert_that!(counter_old_2, eq 1);
-//         assert_that!(counter.load(Ordering::Relaxed), eq 2);
-//     });
-// }
+#[test]
+fn condition_variable_trigger_one_signals_one_waiter() {
+    let handle = MutexHandle::<ConditionVariableData<i32>>::new();
+    thread::scope(|s| {
+        let counter = Arc::new(AtomicI32::new(0));
+        let sut = Arc::new(
+            ConditionVariableBuilder::new()
+                .create_condition_variable(500, |v| *v > 1000, &handle)
+                .unwrap(),
+        );
+
+        let sut_thread1 = Arc::clone(&sut);
+        let counter_thread1 = Arc::clone(&counter);
+        let t1 = s.spawn(move || {
+            sut_thread1.wait().unwrap();
+            counter_thread1.fetch_add(1, Ordering::Relaxed);
+        });
+
+        let sut_thread2 = Arc::clone(&sut);
+        let counter_thread2 = Arc::clone(&counter);
+        let t2 = s.spawn(move || {
+            sut_thread2.wait().unwrap();
+            counter_thread2.fetch_add(1, Ordering::Relaxed);
+        });
+
+        thread::sleep(TIMEOUT);
+        let counter_old_1 = counter.load(Ordering::Relaxed);
+        sut.trigger_one();
+        thread::sleep(TIMEOUT);
+        let counter_old_2 = counter.load(Ordering::Relaxed);
+        sut.trigger_one();
+
+        t1.join().unwrap();
+        t2.join().unwrap();
+
+        assert_that!(counter_old_1, eq 0);
+        assert_that!(counter_old_2, eq 1);
+        assert_that!(counter.load(Ordering::Relaxed), eq 2);
+    });
+}
 
 #[test]
 fn condition_variable_notify_all_signals_all_waiters() {
@@ -285,51 +285,51 @@ fn condition_variable_notify_all_signals_all_waiters() {
     });
 }
 
-// #[test]
-// fn condition_variable_notify_one_signals_one_waiter() {
-//     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
-//     thread::scope(|s| {
-//         let counter = Arc::new(AtomicI32::new(0));
-//         let sut = Arc::new(
-//             ConditionVariableBuilder::new()
-//                 .create_condition_variable(500, |v| *v > 1000, &handle)
-//                 .unwrap(),
-//         );
-//
-//         let sut_thread1 = Arc::clone(&sut);
-//         let counter_thread1 = Arc::clone(&counter);
-//         let t1 = s.spawn(move || {
-//             sut_thread1.wait_while().unwrap();
-//             counter_thread1.fetch_add(1, Ordering::Relaxed);
-//         });
-//
-//         let sut_thread2 = Arc::clone(&sut);
-//         let counter_thread2 = Arc::clone(&counter);
-//         let t2 = s.spawn(move || {
-//             sut_thread2.wait_while().unwrap();
-//             counter_thread2.fetch_add(1, Ordering::Relaxed);
-//         });
-//
-//         thread::sleep(TIMEOUT);
-//         let counter_old_1 = counter.load(Ordering::Relaxed);
-//         let mut guard = sut.notify_one().unwrap();
-//         *guard = 1750;
-//         drop(guard);
-//
-//         thread::sleep(TIMEOUT);
-//         let counter_old_2 = counter.load(Ordering::Relaxed);
-//         let mut guard = sut.notify_one().unwrap();
-//         *guard = 1500;
-//         drop(guard);
-//
-//         t1.join().unwrap();
-//         t2.join().unwrap();
-//
-//         assert_that!(counter_old_1, eq 0);
-//         assert_that!(counter_old_2, eq 1);
-//         assert_that!(counter.load(Ordering::Relaxed), eq 2);
-//     });
-// }
+#[test]
+fn condition_variable_notify_one_signals_one_waiter() {
+    let handle = MutexHandle::<ConditionVariableData<i32>>::new();
+    thread::scope(|s| {
+        let counter = Arc::new(AtomicI32::new(0));
+        let sut = Arc::new(
+            ConditionVariableBuilder::new()
+                .create_condition_variable(500, |v| *v > 1000, &handle)
+                .unwrap(),
+        );
+
+        let sut_thread1 = Arc::clone(&sut);
+        let counter_thread1 = Arc::clone(&counter);
+        let t1 = s.spawn(move || {
+            sut_thread1.wait_while().unwrap();
+            counter_thread1.fetch_add(1, Ordering::Relaxed);
+        });
+
+        let sut_thread2 = Arc::clone(&sut);
+        let counter_thread2 = Arc::clone(&counter);
+        let t2 = s.spawn(move || {
+            sut_thread2.wait_while().unwrap();
+            counter_thread2.fetch_add(1, Ordering::Relaxed);
+        });
+
+        thread::sleep(TIMEOUT);
+        let counter_old_1 = counter.load(Ordering::Relaxed);
+        let mut guard = sut.notify_one().unwrap();
+        *guard = 1750;
+        drop(guard);
+
+        thread::sleep(TIMEOUT);
+        let counter_old_2 = counter.load(Ordering::Relaxed);
+        let mut guard = sut.notify_one().unwrap();
+        *guard = 1500;
+        drop(guard);
+
+        t1.join().unwrap();
+        t2.join().unwrap();
+
+        assert_that!(counter_old_1, eq 0);
+        assert_that!(counter_old_2, eq 1);
+        assert_that!(counter.load(Ordering::Relaxed), eq 2);
+    });
+}
 
 #[test]
 fn condition_variable_modify_notify_all_signals_all_waiters() {
@@ -367,47 +367,47 @@ fn condition_variable_modify_notify_all_signals_all_waiters() {
     });
 }
 
-// #[test]
-// fn condition_variable_modify_notify_one_signals_one_waiter() {
-//     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
-//     thread::scope(|s| {
-//         let counter = Arc::new(AtomicI32::new(0));
-//         let sut = Arc::new(
-//             ConditionVariableBuilder::new()
-//                 .create_condition_variable(500, |v| *v > 1000, &handle)
-//                 .unwrap(),
-//         );
-//
-//         let sut_thread1 = Arc::clone(&sut);
-//         let counter_thread1 = Arc::clone(&counter);
-//         let t1 = s.spawn(move || {
-//             sut_thread1.timed_wait_while(TIMEOUT * 10).unwrap();
-//             counter_thread1.fetch_add(1, Ordering::Relaxed);
-//         });
-//
-//         let sut_thread2 = Arc::clone(&sut);
-//         let counter_thread2 = Arc::clone(&counter);
-//         let t2 = s.spawn(move || {
-//             sut_thread2.timed_wait_while(TIMEOUT * 10).unwrap();
-//             counter_thread2.fetch_add(1, Ordering::Relaxed);
-//         });
-//
-//         thread::sleep(TIMEOUT);
-//         let counter_old_1 = counter.load(Ordering::Relaxed);
-//         sut.modify_notify_one(|value| *value = 2213).unwrap();
-//
-//         thread::sleep(TIMEOUT);
-//         let counter_old_2 = counter.load(Ordering::Relaxed);
-//         sut.modify_notify_one(|value| *value = 2213).unwrap();
-//
-//         t1.join().unwrap();
-//         t2.join().unwrap();
-//
-//         assert_that!(counter_old_1, eq 0);
-//         assert_that!(counter_old_2, eq 1);
-//         assert_that!(counter.load(Ordering::Relaxed), eq 2);
-//     });
-// }
+#[test]
+fn condition_variable_modify_notify_one_signals_one_waiter() {
+    let handle = MutexHandle::<ConditionVariableData<i32>>::new();
+    thread::scope(|s| {
+        let counter = Arc::new(AtomicI32::new(0));
+        let sut = Arc::new(
+            ConditionVariableBuilder::new()
+                .create_condition_variable(500, |v| *v > 1000, &handle)
+                .unwrap(),
+        );
+
+        let sut_thread1 = Arc::clone(&sut);
+        let counter_thread1 = Arc::clone(&counter);
+        let t1 = s.spawn(move || {
+            sut_thread1.timed_wait_while(TIMEOUT * 10).unwrap();
+            counter_thread1.fetch_add(1, Ordering::Relaxed);
+        });
+
+        let sut_thread2 = Arc::clone(&sut);
+        let counter_thread2 = Arc::clone(&counter);
+        let t2 = s.spawn(move || {
+            sut_thread2.timed_wait_while(TIMEOUT * 10).unwrap();
+            counter_thread2.fetch_add(1, Ordering::Relaxed);
+        });
+
+        thread::sleep(TIMEOUT);
+        let counter_old_1 = counter.load(Ordering::Relaxed);
+        sut.modify_notify_one(|value| *value = 2213).unwrap();
+
+        thread::sleep(TIMEOUT);
+        let counter_old_2 = counter.load(Ordering::Relaxed);
+        sut.modify_notify_one(|value| *value = 2213).unwrap();
+
+        t1.join().unwrap();
+        t2.join().unwrap();
+
+        assert_that!(counter_old_1, eq 0);
+        assert_that!(counter_old_2, eq 1);
+        assert_that!(counter.load(Ordering::Relaxed), eq 2);
+    });
+}
 
 #[test]
 fn condition_variable_timed_wait_waits_at_least_given_amount_of_time() {

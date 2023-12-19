@@ -32,8 +32,8 @@ impl Semaphore {
         self.value.load(Ordering::Relaxed)
     }
 
-    pub fn post<WakeUp: Fn(&AtomicU32)>(&self, wakeup: WakeUp) {
-        self.value.fetch_add(1, Ordering::Acquire);
+    pub fn post<WakeUp: Fn(&AtomicU32)>(&self, wakeup: WakeUp, value: u32) {
+        self.value.fetch_add(value, Ordering::Acquire);
         wakeup(&self.value);
     }
 
