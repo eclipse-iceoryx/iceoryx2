@@ -94,7 +94,7 @@ fn condition_variable_notify_one_unblocks_one() {
         let counter_old = counter.load(Ordering::Relaxed);
 
         for i in 0..NUMBER_OF_THREADS {
-            sut.notify(|_| {
+            sut.notify_one(|_| {
                 triggered_thread.fetch_add(1, Ordering::Relaxed);
             });
 
@@ -142,7 +142,7 @@ fn condition_variable_notify_all_unblocks_all() {
         std::thread::sleep(TIMEOUT);
         let counter_old = counter.load(Ordering::Relaxed);
 
-        sut.notify(|_| {
+        sut.notify_all(|_| {
             triggered_thread.fetch_add(1, Ordering::Relaxed);
         });
 
@@ -192,12 +192,10 @@ fn condition_variable_mutex_is_locked_when_wait_returns() {
         std::thread::sleep(TIMEOUT);
         let counter_old = counter.load(Ordering::Relaxed);
 
-        for _ in 0..NUMBER_OF_THREADS {
-            sut.notify(|_| {
-                triggered_thread.fetch_add(1, Ordering::Relaxed);
-            });
-            std::thread::sleep(TIMEOUT);
-        }
+        sut.notify_all(|_| {
+            triggered_thread.fetch_add(1, Ordering::Relaxed);
+        });
+        std::thread::sleep(TIMEOUT);
 
         assert_that!(counter_old, eq 0);
     });

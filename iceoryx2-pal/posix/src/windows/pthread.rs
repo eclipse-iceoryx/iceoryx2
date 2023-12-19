@@ -693,14 +693,14 @@ pub unsafe fn pthread_rwlock_timedrdlock(
 }
 
 pub unsafe fn pthread_cond_broadcast(cond: *mut pthread_cond_t) -> int {
-    (*cond).cv.notify(|atomic| {
+    (*cond).cv.notify_all(|atomic| {
         WakeByAddressAll((atomic as *const AtomicU32).cast());
     });
     Errno::ESUCCES as _
 }
 
 pub unsafe fn pthread_cond_signal(cond: *mut pthread_cond_t) -> int {
-    (*cond).cv.notify(|atomic| {
+    (*cond).cv.notify_one(|atomic| {
         WakeByAddressSingle((atomic as *const AtomicU32).cast());
     });
     Errno::ESUCCES as _
@@ -767,7 +767,7 @@ pub unsafe fn pthread_cond_timedwait(
                 4,
                 timeout as _,
             ), ignore ERROR_TIMEOUT };
-            true
+            false
         },
         |atomic, value| {
             win32call! { WaitOnAddress(

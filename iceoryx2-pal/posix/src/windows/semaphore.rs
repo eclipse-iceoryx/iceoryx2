@@ -37,9 +37,12 @@ pub unsafe fn sem_post(sem: *mut sem_t) -> int {
         return -1;
     }
 
-    (*sem).semaphore.post(|atomic| {
-        WakeByAddressSingle((atomic as *const AtomicU32).cast());
-    });
+    (*sem).semaphore.post(
+        |atomic| {
+            WakeByAddressSingle((atomic as *const AtomicU32).cast());
+        },
+        1,
+    );
 
     Errno::set(Errno::ESUCCES);
     0

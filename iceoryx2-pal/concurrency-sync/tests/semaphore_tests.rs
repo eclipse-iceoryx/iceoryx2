@@ -30,9 +30,7 @@ fn semaphore_post_and_try_wait_works() {
     }
     assert_that!(!sut.try_wait(), eq true);
 
-    for _ in 0..initial_value {
-        sut.post(|_| {});
-    }
+    sut.post(|_| {}, initial_value);
 
     for _ in 0..initial_value {
         assert_that!(sut.try_wait(), eq true);
@@ -50,9 +48,7 @@ fn semaphore_post_and_wait_works() {
     }
     assert_that!(!sut.wait(|_, _| false), eq true);
 
-    for _ in 0..initial_value {
-        sut.post(|_| {});
-    }
+    sut.post(|_| {}, initial_value);
 
     for _ in 0..initial_value {
         assert_that!(sut.wait(|_, _| false), eq true);
@@ -74,7 +70,7 @@ fn semaphore_wait_blocks() {
 
         std::thread::sleep(TIMEOUT);
         let old_counter = counter.load(Ordering::Relaxed);
-        sut.post(|_| {});
+        sut.post(|_| {}, 1);
 
         assert_that!(old_counter, eq 0);
     });
