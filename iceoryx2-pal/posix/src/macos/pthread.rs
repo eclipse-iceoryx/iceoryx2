@@ -169,6 +169,35 @@ pub fn wait(atomic: &AtomicU32, expected: &u32) {
     unsafe { __libcpp_atomic_wait(ptr, monitor) };
 }
 
+pub fn timed_wait(atomic: &AtomicU32, expected: &u32, timeout: timespec) {
+    let sleep_time = timespec {
+        tv_sec: 0,
+        tv_nsec: 1000000,
+    };
+    let mut now = timespec::new();
+    loop {
+        if atomic.load(Ordering::Relaxed) != *expected {
+            return;
+        }
+
+        unsafe { clock_gettime(CLOCK_REALTIME, &mut now) };
+        if now.tv_sec > timeout.tv_sec
+            || (now.tv_sec == timeout.tv_sec && now.tv_nsec > timeout.tv_nsec)
+        {
+            return;
+        }
+
+        unsafe {
+            clock_nanosleep(
+                CLOCK_REALTIME,
+                0,
+                &sleep_time,
+                core::ptr::null_mut::<timespec>().cast(),
+            )
+        };
+    }
+}
+
 pub fn wake_one(atomic: &AtomicU32) {
     let ptr = (atomic as *const AtomicU32) as *const void;
     unsafe { __cxx_atomic_notify_one(ptr) };
@@ -611,11 +640,11 @@ pub unsafe fn pthread_cond_timedwait(
         &(*mutex).mtx,
         wake_one,
         |atomic, value| {
-            wait(atomic, value);
+            timed_wait(atomic, value, *abstime);
             true
         },
         |atomic, value| {
-            wait(atomic, value);
+            timed_wait(atomic, value, *abstime);
             false
         },
     );
