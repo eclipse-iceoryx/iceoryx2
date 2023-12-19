@@ -21,17 +21,7 @@
 //!     .publish_subscribe()
 //!     .open_or_create::<u64>()?;
 //!
-//! println!("name:                             {:?}", pubsub.name());
-//! println!("uuid:                             {:?}", pubsub.uuid());
-//! println!("type name:                        {:?}", pubsub.static_config().type_name());
-//! println!("max publishers:                   {:?}", pubsub.static_config().max_supported_publishers());
-//! println!("max subscribers:                  {:?}", pubsub.static_config().max_supported_subscribers());
-//! println!("subscriber buffer size:           {:?}", pubsub.static_config().subscriber_max_buffer_size());
-//! println!("history size:                     {:?}", pubsub.static_config().history_size());
-//! println!("subscriber max borrowed samples:  {:?}", pubsub.static_config().subscriber_max_borrowed_samples());
-//! println!("safe overflow:                    {:?}", pubsub.static_config().has_safe_overflow());
-//! println!("number of active publishers:      {:?}", pubsub.dynamic_config().number_of_publishers());
-//! println!("number of active subscribers:     {:?}", pubsub.dynamic_config().number_of_subscribers());
+//! println!("{}", pubsub);
 //!
 //! let publisher = pubsub.publisher().create()?;
 //! let subscriber = pubsub.subscriber().create()?;
@@ -40,9 +30,11 @@
 //! # }
 //! ```
 
-use std::{fmt::Debug, marker::PhantomData};
+use std::ops::Deref;
+use std::{fmt::Debug, fmt::Display, fmt::Formatter, fmt::Result, marker::PhantomData};
 
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use service::Service;
 
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config};
@@ -155,5 +147,63 @@ impl<'config, Service: service::Details<'config>, MessageType: Debug>
     /// ```
     pub fn publisher<'a>(&'a self) -> PortFactoryPublisher<'a, 'config, Service, MessageType> {
         PortFactoryPublisher::new(self)
+    }
+}
+
+
+impl<'config, S, M> Display for PortFactory<'config, S, M> where S: Service + service::Details<'config>, M: Debug {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        f.debug_struct(&format!("{}", core::any::type_name::<S>()))
+        .field("name", &String::from(self.name().deref()))
+        .field("uuid", &self.uuid())
+        .field("type name", &self.static_config().type_name())
+        .field(
+            "max publishers",
+            &self.static_config().max_supported_publishers()
+        )
+        .field(
+            "max subscribers",
+            &self.static_config().max_supported_subscribers()
+        )
+        .field(
+            "subscriber buffer size",
+            &self.static_config().subscriber_max_buffer_size()
+        )
+        .field(
+            "history size",
+            &self.static_config().history_size()
+        )
+        .field(
+            "subscriber max borrowed samples",
+            &self.static_config().subscriber_max_borrowed_samples()
+        )
+        .field(
+            "safe overflow",
+            &self.static_config().has_safe_overflow()
+        )
+        .field(
+            "number of active publishers",
+            &self.dynamic_config().number_of_publishers()
+        )
+        .field(
+            "number of active subscribers",
+            &self.dynamic_config().number_of_subscribers()
+        )
+        .finish()
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    #[test]
+    fn print_service() {
+        let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+        let pubsub = zero_copy::Service::new(&service_name)
+            .publish_subscribe()
+            .open_or_create::<u64>().unwrap();
+        println!("{}", pubsub);
+        assert!(format!("{}", pubsub).contains("ServiceName"))
     }
 }
