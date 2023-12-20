@@ -42,7 +42,7 @@ fn condition_variable_notify_one_unblocks_one() {
                     while triggered_thread.load(Ordering::Relaxed) < 1 {
                         spin_loop()
                     }
-                    true
+                    false
                 },
                 |_, _| true,
             );
@@ -61,7 +61,7 @@ fn condition_variable_notify_one_unblocks_one() {
                     while triggered_thread.load(Ordering::Relaxed) < 2 {
                         spin_loop()
                     }
-                    true
+                    false
                 },
                 |_, _| true,
             );
@@ -80,7 +80,7 @@ fn condition_variable_notify_one_unblocks_one() {
                     while triggered_thread.load(Ordering::Relaxed) < 3 {
                         spin_loop()
                     }
-                    true
+                    false
                 },
                 |_, _| true,
             );
@@ -109,6 +109,7 @@ fn condition_variable_notify_one_unblocks_one() {
 #[test]
 fn condition_variable_notify_all_unblocks_all() {
     const NUMBER_OF_THREADS: u32 = 5;
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
     let barrier = Barrier::new(NUMBER_OF_THREADS + 1);
     let sut = ConditionVariable::new();
     let mtx = Mutex::new();
@@ -128,7 +129,7 @@ fn condition_variable_notify_all_unblocks_all() {
                         while triggered_thread.load(Ordering::Relaxed) < 1 {
                             spin_loop()
                         }
-                        true
+                        false
                     },
                     |_, _| true,
                 );
@@ -158,6 +159,7 @@ fn condition_variable_notify_all_unblocks_all() {
 #[test]
 fn condition_variable_mutex_is_locked_when_wait_returns() {
     const NUMBER_OF_THREADS: u32 = 5;
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
     let barrier = Barrier::new(NUMBER_OF_THREADS + 1);
     let sut = ConditionVariable::new();
     let mtx = Mutex::new();
@@ -176,7 +178,7 @@ fn condition_variable_mutex_is_locked_when_wait_returns() {
                         while triggered_thread.load(Ordering::Relaxed) < 1 {
                             spin_loop()
                         }
-                        true
+                        false
                     },
                     |_, _| true,
                 );
