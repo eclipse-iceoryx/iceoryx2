@@ -141,6 +141,10 @@ pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
     let real_name = match real_name {
         Some(name) => name,
         None => {
+            if oflag & O_CREAT == 0 {
+                Errno::set(Errno::ENOENT);
+                return -1;
+            }
             let real_name = generate_real_shm_name();
             if !write_real_shm_name(name, &real_name) {
                 return -1;

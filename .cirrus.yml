@@ -283,4 +283,5 @@ macos_aarch64_stable_debug_task:
                  -p iceoryx2-bb-testing
                  -p iceoryx2-bb-threadsafe
                  -p iceoryx2-bb-trait-tests
+                 -p iceoryx2-cal
                  --lib --bins --tests --no-fail-fast
