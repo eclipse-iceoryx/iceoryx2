@@ -19,7 +19,7 @@ use crate::posix::*;
 use core::sync::atomic::{AtomicU32, Ordering};
 use iceoryx2_pal_concurrency_sync::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
-use iceoryx2_pal_concurrency_sync::rwlock::*;
+use iceoryx2_pal_concurrency_sync::{rwlock::*, WaitAction, WaitResult};
 use std::cell::UnsafeCell;
 
 #[derive(Clone, Copy)]
@@ -64,7 +64,7 @@ impl ThreadStates {
     }
 
     fn lock(&self) {
-        self.mtx.lock(|_, _| true);
+        self.mtx.lock(|_, _| WaitAction::Continue);
     }
 
     fn unlock(&self) {
@@ -437,11 +437,11 @@ pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
     match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.read_lock(|atomic, value| {
             wait(atomic, value);
-            true
+            WaitAction::Continue
         }),
         RwLockType::PreferWriter(ref l) => l.read_lock(|atomic, value| {
             wait(atomic, value);
-            true
+            WaitAction::Continue
         }),
         _ => {
             return Errno::EINVAL as _;
@@ -452,7 +452,7 @@ pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
 }
 
 pub unsafe fn pthread_rwlock_tryrdlock(lock: *mut pthread_rwlock_t) -> int {
-    let has_lock = match (*lock).lock {
+    let wait_result = match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.try_read_lock(),
         RwLockType::PreferWriter(ref l) => l.try_read_lock(),
         _ => {
@@ -460,7 +460,7 @@ pub unsafe fn pthread_rwlock_tryrdlock(lock: *mut pthread_rwlock_t) -> int {
         }
     };
 
-    if has_lock {
+    if wait_result == WaitResult::Success {
         Errno::ESUCCES as _
     } else {
         Errno::EBUSY as _
@@ -483,12 +483,12 @@ pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
     match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.write_lock(|atomic, value| {
             wait(atomic, value);
-            true
+            WaitAction::Continue
         }),
         RwLockType::PreferWriter(ref l) => l.write_lock(
             |atomic, value| {
                 wait(atomic, value);
-                true
+                WaitAction::Continue
             },
             wake_one,
             wake_all,
@@ -502,7 +502,7 @@ pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
 }
 
 pub unsafe fn pthread_rwlock_trywrlock(lock: *mut pthread_rwlock_t) -> int {
-    let has_lock = match (*lock).lock {
+    let wait_result = match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.try_write_lock(),
         RwLockType::PreferWriter(ref l) => l.try_write_lock(),
         _ => {
@@ -510,7 +510,7 @@ pub unsafe fn pthread_rwlock_trywrlock(lock: *mut pthread_rwlock_t) -> int {
         }
     };
 
-    if has_lock {
+    if wait_result == WaitResult::Success {
         Errno::ESUCCES as _
     } else {
         Errno::EBUSY as _
@@ -525,7 +525,7 @@ pub unsafe fn pthread_rwlock_timedwrlock(
     let mut wait_time = timespec::new();
 
     loop {
-        let has_lock = match (*lock).lock {
+        let wait_result = match (*lock).lock {
             RwLockType::PreferReader(ref l) => l.try_write_lock(),
             RwLockType::PreferWriter(ref l) => l.try_write_lock(),
             _ => {
@@ -533,7 +533,7 @@ pub unsafe fn pthread_rwlock_timedwrlock(
             }
         };
 
-        if has_lock {
+        if wait_result == WaitResult::Success {
             return Errno::ESUCCES as _;
         } else {
             clock_gettime(CLOCK_REALTIME, &mut current_time);
@@ -561,21 +561,21 @@ pub unsafe fn pthread_rwlock_timedrdlock(
     let mut wait_time = timespec::new();
 
     loop {
-        let has_lock = match (*lock).lock {
+        let wait_result = match (*lock).lock {
             RwLockType::PreferReader(ref l) => l.read_lock(|atomic, value| {
                 wait(atomic, value);
-                true
+                WaitAction::Continue
             }),
             RwLockType::PreferWriter(ref l) => l.read_lock(|atomic, value| {
                 wait(atomic, value);
-                true
+                WaitAction::Continue
             }),
             _ => {
                 return Errno::EINVAL as _;
             }
         };
 
-        if has_lock {
+        if wait_result == WaitResult::Success {
             return Errno::ESUCCES as _;
         } else {
             clock_gettime(CLOCK_REALTIME, &mut current_time);
@@ -620,11 +620,11 @@ pub unsafe fn pthread_cond_wait(cond: *mut pthread_cond_t, mutex: *mut pthread_m
         wake_one,
         |atomic, value| {
             wait(atomic, value);
-            true
+            WaitAction::Continue
         },
         |atomic, value| {
             wait(atomic, value);
-            false
+            WaitAction::Continue
         },
     );
 
@@ -636,20 +636,21 @@ pub unsafe fn pthread_cond_timedwait(
     mutex: *mut pthread_mutex_t,
     abstime: *const timespec,
 ) -> int {
-    (*cond).cv.wait(
+    match (*cond).cv.wait(
         &(*mutex).mtx,
         wake_one,
         |atomic, value| {
             timed_wait(atomic, value, *abstime);
-            false
+            WaitAction::Abort
         },
         |atomic, value| {
             timed_wait(atomic, value, *abstime);
-            false
+            WaitAction::Abort
         },
-    );
-
-    Errno::ESUCCES as _
+    ) {
+        WaitResult::Interrupted => Errno::ETIMEDOUT as _,
+        WaitResult::Success => Errno::ESUCCES as _,
+    }
 }
 
 pub unsafe fn pthread_condattr_init(attr: *mut pthread_condattr_t) -> int {
@@ -767,7 +768,7 @@ pub unsafe fn pthread_mutex_lock(mtx: *mut pthread_mutex_t) -> int {
 
     (*mtx).mtx.lock(|atomic, value| {
         wait(atomic, value);
-        true
+        WaitAction::Continue
     });
 
     if (*mtx).track_thread_id {
@@ -818,7 +819,7 @@ pub unsafe fn pthread_mutex_trylock(mtx: *mut pthread_mutex_t) -> int {
     };
 
     match (*mtx).mtx.try_lock() {
-        true => {
+        WaitResult::Success => {
             if (*mtx).track_thread_id {
                 (*mtx)
                     .current_owner
@@ -827,7 +828,7 @@ pub unsafe fn pthread_mutex_trylock(mtx: *mut pthread_mutex_t) -> int {
 
             Errno::ESUCCES as _
         }
-        false => Errno::EBUSY as _,
+        WaitResult::Interrupted => Errno::EBUSY as _,
     }
 }
 
