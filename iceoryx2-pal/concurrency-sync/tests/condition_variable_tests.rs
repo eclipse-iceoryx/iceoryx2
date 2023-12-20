@@ -17,7 +17,9 @@ use std::{
 };
 
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
-use iceoryx2_pal_concurrency_sync::{barrier::Barrier, condition_variable::*};
+use iceoryx2_pal_concurrency_sync::{
+    barrier::Barrier, condition_variable::*, WaitAction, WaitResult,
+};
 
 const TIMEOUT: Duration = Duration::from_millis(25);
 
@@ -75,7 +77,7 @@ fn condition_variable_notify_one_unblocks_one() {
         for _ in 0..NUMBER_OF_THREADS {
             s.spawn(|| {
                 barrier.wait(|_, _| {}, |_| {});
-                mtx.lock(|_, _| true);
+                mtx.lock(|_, _| WaitAction::Continue);
                 let id = thread_in_wait.get_id();
                 let wait_result = sut.wait(
                     &mtx,
@@ -85,13 +87,13 @@ fn condition_variable_notify_one_unblocks_one() {
                         while triggered_thread.load(Ordering::Relaxed) < 1 {
                             spin_loop()
                         }
-                        false
+                        WaitAction::Continue
                     },
-                    |_, _| true,
+                    |_, _| WaitAction::Continue,
                 );
                 counter.fetch_add(1, Ordering::Relaxed);
                 mtx.unlock(|_| {});
-                assert_that!(wait_result, eq true);
+                assert_that!(wait_result, eq WaitResult::Success);
             });
         }
 
@@ -129,7 +131,7 @@ fn condition_variable_notify_all_unblocks_all() {
         for _ in 0..NUMBER_OF_THREADS {
             threads.push(s.spawn(|| {
                 barrier.wait(|_, _| {}, |_| {});
-                mtx.lock(|_, _| true);
+                mtx.lock(|_, _| WaitAction::Continue);
                 let id = thread_in_wait.get_id();
                 let wait_result = sut.wait(
                     &mtx,
@@ -139,13 +141,13 @@ fn condition_variable_notify_all_unblocks_all() {
                         while triggered_thread.load(Ordering::Relaxed) < 1 {
                             spin_loop()
                         }
-                        false
+                        WaitAction::Continue
                     },
-                    |_, _| true,
+                    |_, _| WaitAction::Continue,
                 );
                 counter.fetch_add(1, Ordering::Relaxed);
                 mtx.unlock(|_| {});
-                assert_that!(wait_result, eq true);
+                assert_that!(wait_result, eq WaitResult::Success);
             }));
         }
 
@@ -183,7 +185,7 @@ fn condition_variable_mutex_is_locked_when_wait_returns() {
         for _ in 0..NUMBER_OF_THREADS {
             s.spawn(|| {
                 barrier.wait(|_, _| {}, |_| {});
-                mtx.lock(|_, _| true);
+                mtx.lock(|_, _| WaitAction::Continue);
                 let id = thread_in_wait.get_id();
                 let wait_result = sut.wait(
                     &mtx,
@@ -193,13 +195,13 @@ fn condition_variable_mutex_is_locked_when_wait_returns() {
                         while triggered_thread.load(Ordering::Relaxed) < 1 {
                             spin_loop()
                         }
-                        false
+                        WaitAction::Continue
                     },
-                    |_, _| true,
+                    |_, _| WaitAction::Continue,
                 );
                 counter.fetch_add(1, Ordering::Relaxed);
-                assert_that!(wait_result, eq true);
-                assert_that!(mtx.try_lock(), eq false);
+                assert_that!(wait_result, eq WaitResult::Success);
+                assert_that!(mtx.try_lock(), eq WaitResult::Interrupted);
                 // unlock thread since we own it
                 mtx.unlock(|_| {});
             });
@@ -224,7 +226,7 @@ fn condition_variable_mutex_is_locked_when_wait_returns() {
 fn condition_variable_wait_returns_false_when_functor_returns_false() {
     let sut = ConditionVariable::new();
     let mtx = Mutex::new();
-    mtx.lock(|_, _| true);
-    assert_that!(!sut.wait(&mtx, |_| {}, |_, _| false, |_, _| true), eq true);
+    mtx.lock(|_, _| WaitAction::Continue);
+    assert_that!(sut.wait(&mtx, |_| {}, |_, _| WaitAction::Abort, |_, _| WaitAction::Continue), eq WaitResult::Interrupted);
     mtx.unlock(|_| {});
 }

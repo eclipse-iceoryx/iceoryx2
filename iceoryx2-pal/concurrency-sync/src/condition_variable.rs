@@ -13,7 +13,7 @@
 use core::sync::atomic::{AtomicU32, Ordering};
 
 pub use crate::mutex::Mutex;
-use crate::semaphore::Semaphore;
+use crate::{semaphore::Semaphore, WaitAction, WaitResult};
 
 pub struct ConditionVariable {
     number_of_waiters: AtomicU32,
@@ -48,21 +48,21 @@ impl ConditionVariable {
 
     pub fn wait<
         WakeOne: Fn(&AtomicU32),
-        Wait: Fn(&AtomicU32, &u32) -> bool,
-        MtxWait: Fn(&AtomicU32, &u32) -> bool,
+        Wait: Fn(&AtomicU32, &u32) -> WaitAction,
+        MtxWait: Fn(&AtomicU32, &u32) -> WaitAction,
     >(
         &self,
         mtx: &Mutex,
         mtx_wake_one: WakeOne,
         wait: Wait,
         mtx_wait: MtxWait,
-    ) -> bool {
+    ) -> WaitResult {
         self.number_of_waiters.fetch_add(1, Ordering::Relaxed);
         mtx.unlock(mtx_wake_one);
 
-        if !self.semaphore.wait(wait) {
+        if self.semaphore.wait(wait) == WaitResult::Interrupted {
             self.number_of_waiters.fetch_sub(1, Ordering::Relaxed);
-            return false;
+            return WaitResult::Interrupted;
         }
         self.number_of_waiters.fetch_sub(1, Ordering::Relaxed);
 

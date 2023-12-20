@@ -15,7 +15,7 @@ use core::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use crate::SPIN_REPETITIONS;
+use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
 
 const WRITE_LOCKED: u32 = u32::MAX;
 const UNLOCKED: u32 = 0;
@@ -37,14 +37,15 @@ impl RwLockReaderPreference {
         Self::default()
     }
 
-    pub fn try_read_lock(&self) -> bool {
+    pub fn try_read_lock(&self) -> WaitResult {
         let reader_count = self.reader_count.load(Ordering::Relaxed);
 
         if reader_count == WRITE_LOCKED {
-            return false;
+            return WaitResult::Interrupted;
         }
 
-        self.reader_count
+        if self
+            .reader_count
             .compare_exchange(
                 reader_count,
                 reader_count + 1,
@@ -52,9 +53,14 @@ impl RwLockReaderPreference {
                 Ordering::Relaxed,
             )
             .is_ok()
+        {
+            WaitResult::Success
+        } else {
+            WaitResult::Interrupted
+        }
     }
 
-    pub fn read_lock<F: Fn(&AtomicU32, &u32) -> bool>(&self, wait: F) -> bool {
+    pub fn read_lock<F: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
         let mut reader_count = self.reader_count.load(Ordering::Relaxed);
         let mut retry_counter = 0;
 
@@ -66,13 +72,13 @@ impl RwLockReaderPreference {
                 }
 
                 if !keep_running {
-                    return false;
+                    return WaitResult::Interrupted;
                 }
 
                 if retry_counter < SPIN_REPETITIONS {
                     retry_counter += 1;
                     spin_loop();
-                } else if !wait(&self.reader_count, &reader_count) {
+                } else if wait(&self.reader_count, &reader_count) == WaitAction::Abort {
                     keep_running = false;
                 }
 
@@ -85,7 +91,7 @@ impl RwLockReaderPreference {
                 Ordering::Acquire,
                 Ordering::Relaxed,
             ) {
-                Ok(_) => return true,
+                Ok(_) => return WaitResult::Success,
                 Err(v) => {
                     reader_count = v;
                 }
@@ -103,13 +109,19 @@ impl RwLockReaderPreference {
         wake_one(&self.reader_count);
     }
 
-    pub fn try_write_lock(&self) -> bool {
-        self.reader_count
+    pub fn try_write_lock(&self) -> WaitResult {
+        if self
+            .reader_count
             .compare_exchange(UNLOCKED, WRITE_LOCKED, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
+        {
+            WaitResult::Success
+        } else {
+            WaitResult::Interrupted
+        }
     }
 
-    pub fn write_lock<F: Fn(&AtomicU32, &u32) -> bool>(&self, wait: F) -> bool {
+    pub fn write_lock<F: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
         let mut retry_counter = 0;
         let mut reader_count;
 
@@ -122,17 +134,17 @@ impl RwLockReaderPreference {
                 Ordering::Relaxed,
             ) {
                 Err(v) => reader_count = v,
-                Ok(_) => return true,
+                Ok(_) => return WaitResult::Success,
             };
 
             if !keep_running {
-                return false;
+                return WaitResult::Interrupted;
             }
 
             if retry_counter < SPIN_REPETITIONS {
                 retry_counter += 1;
                 spin_loop();
-            } else if !wait(&self.reader_count, &reader_count) {
+            } else if wait(&self.reader_count, &reader_count) == WaitAction::Abort {
                 keep_running = false;
             }
         }
@@ -158,18 +170,24 @@ impl RwLockWriterPreference {
         Self::default()
     }
 
-    pub fn try_read_lock(&self) -> bool {
+    pub fn try_read_lock(&self) -> WaitResult {
         let state = self.state.load(Ordering::Relaxed);
         if state % 2 == 1 {
-            return false;
+            return WaitResult::Interrupted;
         }
 
-        self.state
+        if self
+            .state
             .compare_exchange(state, state + 2, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
+        {
+            WaitResult::Success
+        } else {
+            WaitResult::Interrupted
+        }
     }
 
-    pub fn read_lock<F: Fn(&AtomicU32, &u32) -> bool>(&self, wait: F) -> bool {
+    pub fn read_lock<F: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: F) -> WaitResult {
         let mut state = self.state.load(Ordering::Relaxed);
 
         let mut retry_counter = 0;
@@ -177,13 +195,13 @@ impl RwLockWriterPreference {
         loop {
             if state % 2 == 1 {
                 if !keep_running {
-                    return false;
+                    return WaitResult::Interrupted;
                 }
 
                 if retry_counter < SPIN_REPETITIONS {
                     retry_counter += 1;
                     spin_loop();
-                } else if !wait(&self.state, &state) {
+                } else if wait(&self.state, &state) == WaitAction::Abort {
                     keep_running = false;
                 }
                 state = self.state.load(Ordering::Relaxed);
@@ -194,7 +212,7 @@ impl RwLockWriterPreference {
                     Ordering::Acquire,
                     Ordering::Relaxed,
                 ) {
-                    Ok(_) => return true,
+                    Ok(_) => return WaitResult::Success,
                     Err(v) => state = v,
                 }
             }
@@ -218,14 +236,20 @@ impl RwLockWriterPreference {
         }
     }
 
-    pub fn try_write_lock(&self) -> bool {
-        self.state
+    pub fn try_write_lock(&self) -> WaitResult {
+        if self
+            .state
             .compare_exchange(0, WRITE_LOCKED, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
+        {
+            WaitResult::Success
+        } else {
+            WaitResult::Interrupted
+        }
     }
 
     pub fn write_lock<
-        Wait: Fn(&AtomicU32, &u32) -> bool,
+        Wait: Fn(&AtomicU32, &u32) -> WaitAction,
         WakeOne: Fn(&AtomicU32),
         WakeAll: Fn(&AtomicU32),
     >(
@@ -233,7 +257,7 @@ impl RwLockWriterPreference {
         wait: Wait,
         wake_one: WakeOne,
         wake_all: WakeAll,
-    ) -> bool {
+    ) -> WaitResult {
         let mut state = self.state.load(Ordering::Relaxed);
 
         let mut keep_running = true;
@@ -246,7 +270,7 @@ impl RwLockWriterPreference {
                     Ordering::Acquire,
                     Ordering::Relaxed,
                 ) {
-                    Ok(_) => return true,
+                    Ok(_) => return WaitResult::Success,
                     Err(v) => state = v,
                 }
             }
@@ -264,12 +288,12 @@ impl RwLockWriterPreference {
                                 self.writer_wake_counter.fetch_add(1, Ordering::Relaxed);
                                 wake_one(&self.writer_wake_counter);
                                 wake_all(&self.state);
-                                return false;
+                                return WaitResult::Interrupted;
                             }
                             Err(v) => state = v,
                         }
                     } else {
-                        return false;
+                        return WaitResult::Interrupted;
                     }
                 }
             }
@@ -288,7 +312,7 @@ impl RwLockWriterPreference {
                 retry_counter += 1;
             } else {
                 let writer_wake_counter = self.writer_wake_counter.load(Ordering::Relaxed);
-                if !wait(&self.writer_wake_counter, &writer_wake_counter) {
+                if wait(&self.writer_wake_counter, &writer_wake_counter) == WaitAction::Abort {
                     keep_running = false;
                 }
             }

@@ -15,7 +15,7 @@ use core::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use crate::SPIN_REPETITIONS;
+use crate::{WaitAction, WaitResult, SPIN_REPETITIONS};
 
 pub struct Semaphore {
     value: AtomicU32,
@@ -37,7 +37,7 @@ impl Semaphore {
         wakeup(&self.value);
     }
 
-    pub fn wait<Wait: Fn(&AtomicU32, &u32) -> bool>(&self, wait: Wait) -> bool {
+    pub fn wait<Wait: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: Wait) -> WaitResult {
         let mut retry_counter = 0;
         let mut current_value = self.value.load(Ordering::Relaxed);
 
@@ -49,13 +49,13 @@ impl Semaphore {
                 }
 
                 if !keep_running {
-                    return false;
+                    return WaitResult::Interrupted;
                 }
 
                 if retry_counter < SPIN_REPETITIONS {
                     spin_loop();
                     retry_counter += 1;
-                } else if !wait(&self.value, &current_value) {
+                } else if wait(&self.value, &current_value) == WaitAction::Abort {
                     keep_running = false;
                 }
                 current_value = self.value.load(Ordering::Relaxed);
@@ -72,15 +72,15 @@ impl Semaphore {
             }
         }
 
-        true
+        WaitResult::Success
     }
 
-    pub fn try_wait(&self) -> bool {
+    pub fn try_wait(&self) -> WaitResult {
         let mut current_value = self.value.load(Ordering::Relaxed);
 
         loop {
             if current_value == 0 {
-                return false;
+                return WaitResult::Interrupted;
             }
 
             match self.value.compare_exchange_weak(
@@ -89,7 +89,7 @@ impl Semaphore {
                 Ordering::Release,
                 Ordering::Relaxed,
             ) {
-                Ok(_) => return true,
+                Ok(_) => return WaitResult::Success,
                 Err(v) => current_value = v,
             }
         }

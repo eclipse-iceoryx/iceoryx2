@@ -16,7 +16,7 @@ use std::{
 };
 
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_concurrency_sync::semaphore::*;
+use iceoryx2_pal_concurrency_sync::{semaphore::*, WaitAction, WaitResult};
 
 const TIMEOUT: Duration = Duration::from_millis(25);
 
@@ -26,16 +26,16 @@ fn semaphore_post_and_try_wait_works() {
     let sut = Semaphore::new(initial_value);
 
     for _ in 0..initial_value {
-        assert_that!(sut.try_wait(), eq true);
+        assert_that!(sut.try_wait(), eq WaitResult::Success);
     }
-    assert_that!(!sut.try_wait(), eq true);
+    assert_that!(sut.try_wait(), eq WaitResult::Interrupted);
 
     sut.post(|_| {}, initial_value);
 
     for _ in 0..initial_value {
-        assert_that!(sut.try_wait(), eq true);
+        assert_that!(sut.try_wait(), eq WaitResult::Success);
     }
-    assert_that!(!sut.try_wait(), eq true);
+    assert_that!(sut.try_wait(), eq WaitResult::Interrupted);
 }
 
 #[test]
@@ -44,16 +44,16 @@ fn semaphore_post_and_wait_works() {
     let sut = Semaphore::new(initial_value);
 
     for _ in 0..initial_value {
-        assert_that!(sut.wait(|_, _| false), eq true);
+        assert_that!(sut.wait(|_, _| WaitAction::Abort), eq WaitResult::Success);
     }
-    assert_that!(!sut.wait(|_, _| false), eq true);
+    assert_that!(sut.wait(|_, _| WaitAction::Abort), eq WaitResult::Interrupted);
 
     sut.post(|_| {}, initial_value);
 
     for _ in 0..initial_value {
-        assert_that!(sut.wait(|_, _| false), eq true);
+        assert_that!(sut.wait(|_, _| WaitAction::Abort), eq WaitResult::Success);
     }
-    assert_that!(!sut.wait(|_, _| false), eq true);
+    assert_that!(sut.wait(|_, _| WaitAction::Abort), eq WaitResult::Interrupted);
 }
 
 #[test]
@@ -64,7 +64,7 @@ fn semaphore_wait_blocks() {
 
     std::thread::scope(|s| {
         s.spawn(|| {
-            sut.wait(|_, _| true);
+            sut.wait(|_, _| WaitAction::Continue);
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
