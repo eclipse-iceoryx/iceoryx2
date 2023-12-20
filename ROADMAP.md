@@ -59,6 +59,7 @@
 * [ ] Zero-copy GPU communication with Cuda, NvSci, Vulkan
 * [ ] Zero-copy across hypervisor partitions
 * [ ] Zero-copy via QEMU ivshmem: <https://www.qemu.org/docs/master/system/devices/ivshmem.html>
+* [ ] dmabuf support, see: https://blaztinn.gitlab.io/post/dmabuf-texture-sharing/
 * [ ] Support dynamic sized types in a memory efficient manner
   * Buddy allocator for sender data-segment
   * Introduce runtime fixed-size types
@@ -128,3 +129,7 @@
   * simple use case: pub/sub + event to notify subscriber to notify sample send
   * would reduce error handling: connect to service with wrong messaging pattern
 * [ ] Implement Resizable SharedMemoryConcept that is able to extend the shared memory by adding additional posix shared memory objects
+
+## Integration Into Other Projects
+
+* [ ] Maybe Hyprland

@@ -18,7 +18,7 @@ use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
 fn generate_shm_name() -> FileName {
-    let mut file_name = FileName::new(b"shm_tests_").unwrap();
+    let mut file_name = FileName::new(b"shared_memory_tests_").unwrap();
     file_name
         .push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
         .unwrap();
