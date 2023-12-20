@@ -278,6 +278,9 @@ macos_aarch64_stable_debug_task:
                  -p iceoryx2-bb-lock-free
                  -p iceoryx2-bb-log
                  -p iceoryx2-bb-memory
+                 -p iceoryx2-bb-posix
                  -p iceoryx2-bb-system-types
                  -p iceoryx2-bb-testing
+                 -p iceoryx2-bb-threadsafe
+                 -p iceoryx2-bb-trait-tests
                  --lib --bins --tests --no-fail-fast
