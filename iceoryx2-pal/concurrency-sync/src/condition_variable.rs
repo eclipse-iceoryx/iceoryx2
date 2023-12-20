@@ -57,9 +57,9 @@ impl ConditionVariable {
         wait: Wait,
         mtx_wait: MtxWait,
     ) -> bool {
+        self.number_of_waiters.fetch_add(1, Ordering::Relaxed);
         mtx.unlock(mtx_wake_one);
 
-        self.number_of_waiters.fetch_add(1, Ordering::Relaxed);
         if !self.semaphore.wait(wait) {
             self.number_of_waiters.fetch_sub(1, Ordering::Relaxed);
             return false;
