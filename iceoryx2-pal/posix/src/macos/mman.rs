@@ -87,7 +87,12 @@ unsafe fn get_real_shm_name(name: *const char) -> Option<[u8; SHM_MAX_NAME_LEN]>
 
     let mut buffer = [0u8; SHM_MAX_NAME_LEN];
 
-    if read(shm_state_fd, buffer.as_mut_ptr().cast(), SHM_MAX_NAME_LEN) <= 0 {
+    if read(
+        shm_state_fd,
+        buffer.as_mut_ptr().cast(),
+        SHM_MAX_NAME_LEN - 1,
+    ) <= 0
+    {
         close(shm_state_fd);
         return None;
     }
