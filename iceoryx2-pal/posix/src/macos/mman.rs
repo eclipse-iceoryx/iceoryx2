@@ -163,10 +163,13 @@ pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
 
 pub unsafe fn shm_unlink(name: *const char) -> int {
     let real_name = get_real_shm_name(name);
-    remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast());
 
     if let Some(real_name) = real_name {
-        return crate::internal::shm_unlink(real_name.as_ptr().cast());
+        let ret_val = crate::internal::shm_unlink(real_name.as_ptr().cast());
+        if ret_val == 0 || (ret_val == -1 && Errno::get() == Errno::ENOENT) {
+            remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast());
+        }
+        return ret_val;
     }
 
     Errno::set(Errno::ENOENT);
