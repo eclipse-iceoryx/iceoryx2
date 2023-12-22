@@ -12,13 +12,14 @@
 
 use iceoryx2_bb_posix::condition_variable::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
-static TIMEOUT: Duration = Duration::from_millis(10);
+static TIMEOUT: Duration = Duration::from_millis(100);
 
 #[test]
 fn multi_condition_variable_construction_works() {
@@ -369,6 +370,7 @@ fn condition_variable_modify_notify_all_signals_all_waiters() {
 
 #[test]
 fn condition_variable_modify_notify_one_signals_one_waiter() {
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
     thread::scope(|s| {
         let counter = Arc::new(AtomicI32::new(0));
@@ -395,6 +397,8 @@ fn condition_variable_modify_notify_one_signals_one_waiter() {
         thread::sleep(TIMEOUT);
         let counter_old_1 = counter.load(Ordering::Relaxed);
         sut.modify_notify_one(|value| *value = 2213).unwrap();
+
+        while counter.load(Ordering::Relaxed) == 0 {}
 
         thread::sleep(TIMEOUT);
         let counter_old_2 = counter.load(Ordering::Relaxed);

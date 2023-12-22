@@ -49,13 +49,13 @@ impl<const NUMBER_OF_THREADS: usize> ThreadInWait<NUMBER_OF_THREADS> {
         loop {
             let mut wait_for_thread = false;
             for v in &self.thread_in_wait {
-                if v.load(Ordering::Relaxed) == false {
+                if !v.load(Ordering::Relaxed) {
                     wait_for_thread = true;
                     break;
                 }
             }
 
-            if wait_for_thread == false {
+            if !wait_for_thread {
                 break;
             }
         }
