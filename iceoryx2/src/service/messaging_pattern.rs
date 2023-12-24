@@ -44,6 +44,15 @@ pub enum MessagingPattern {
     Event(event::StaticConfig),
 }
 
+impl From<MessagingPattern> for u32 {
+    fn from(value: MessagingPattern) -> Self {
+        match value {
+            MessagingPattern::Event(_) => 0,
+            MessagingPattern::PublishSubscribe(_) => 1,
+        }
+    }
+}
+
 impl MessagingPattern {
     pub(crate) fn is_same_pattern(&self, rhs: &MessagingPattern) -> bool {
         match self {
