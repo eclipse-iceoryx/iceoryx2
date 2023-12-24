@@ -193,7 +193,7 @@ impl<Id: crate::event::TriggerId + 'static> Listener<Id> for Duplex<Id> {
 
     fn blocking_wait(&self) -> Result<Option<Id>, ListenerWaitError> {
         let msg = "Failed to blocking_wait";
-        match self.management.as_ref().borrow_cvar().wait_while() {
+        match self.management.as_ref().borrow_cvar().blocking_wait_while() {
             Err(v) => {
                 fail!(from self, with ListenerWaitError::InternalFailure,
                         "{} due to an internal failure in the underlying condition variable ({:?}).", msg, v);

@@ -260,7 +260,7 @@ The support levels can be adjusted when required.
 | Linux (x86_64)   | done         | tier 2                | tier 1               |
 | Linux (aarch64)  | done         | tier 2                | tier 1               |
 | Linux (32-bit)   | in-progress  | tier 3                | tier 1               |
-| Mac OS           | in-progress  | tier 3                | tier 2               |
+| Mac OS           | done         | tier 2                | tier 2               |
 | QNX              | planned      | -                     | tier 1               |
 | WatchOS          | planned      | -                     | tier 2               |
 | Windows          | done         | tier 2                | tier 2               |
