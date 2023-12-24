@@ -153,7 +153,7 @@ impl<'mutex, 'handle, T: Debug> From<MutexLockError<'mutex, 'handle, T>>
 /// use iceoryx2_bb_posix::mutex::*;
 ///
 ///
-/// // create a condition variable which allows multiple predicates in wait_while nad
+/// // create a condition variable which allows multiple predicates in blocking_wait_while nad
 /// // timed_wait_while
 /// let mtx_handle = MutexHandle::<i32>::new();
 /// let condvar = ConditionVariableBuilder::new()
@@ -237,7 +237,7 @@ impl ConditionVariableBuilder {
     /// modified and used for triggering.
     ///
     /// The condition variable can use
-    /// multiple conditions in [`MultiConditionVariable::wait_while()`] and
+    /// multiple conditions in [`MultiConditionVariable::blocking_wait_while()`] and
     /// [`MultiConditionVariable::timed_wait_while()`] but is only able to trigger all waiters.
     pub fn create_multi_condition_variable<T: Debug>(
         self,
@@ -252,7 +252,7 @@ impl ConditionVariableBuilder {
     ///
     /// The condition variable has one fixed
     /// condition which has to be provided on construction. The methods
-    /// [`ConditionVariable::wait_while()`] and
+    /// [`ConditionVariable::blocking_wait_while()`] and
     /// [`ConditionVariable::timed_wait_while()`] will wait on that preset condition until
     /// it is satisfied.
     /// The restriction to a preset fixed condition comes with the feature to signal single waiters
@@ -489,7 +489,7 @@ pub trait BasicConditionVariableInterface<T: Debug>:
 }
 
 /// Condition variable which allows to use multiple conditions in
-/// [`MultiConditionVariable::wait_while()`] and
+/// [`MultiConditionVariable::blocking_wait_while()`] and
 /// [`MultiConditionVariable::timed_wait_while()`] concurrently but with the draw
 /// back that only all waiters can be triggered and not one.
 /// The reason is when one waits on multiple
@@ -505,7 +505,7 @@ pub trait BasicConditionVariableInterface<T: Debug>:
 /// is written.
 /// The condition variable provides the following features:
 ///  * wait on the condition variable: [wait](BasicConditionVariableInterface::wait()), [timed_wait](BasicConditionVariableInterface::timed_wait())
-///  * wait until a defined condition occurs: [wait_while](MultiConditionVariable::wait_while()), [timed_wait_while](MultiConditionVariable::timed_wait_while())
+///  * wait until a defined condition occurs: [blocking_wait_while](MultiConditionVariable::blocking_wait_while()), [timed_wait_while](MultiConditionVariable::timed_wait_while())
 ///  * modify condition variable and then notify waiters:
 ///     [notify_all](MultiConditionVariable::notify_all()), [modify_notify_all](MultiConditionVariable::modify_notify_all())
 ///  * trigger waiters without changing condition variable: [trigger_all](BasicConditionVariableInterface::trigger_all())
@@ -530,7 +530,7 @@ pub trait BasicConditionVariableInterface<T: Debug>:
 /// thread::scope(|s| {
 ///     let t1 = s.spawn(|| {
 ///         // wait until value is 5000
-///         let guard = cv.wait_while(|t| *t == 5000).expect("failed to wait");
+///         let guard = cv.blocking_wait_while(|t| *t == 5000).expect("failed to wait");
 ///         println!("cv value changed to 5000");
 ///     });
 ///
@@ -589,12 +589,11 @@ impl<'mtx_handle, T: Debug> MultiConditionVariable<'mtx_handle, T> {
     /// [`MultiConditionVariable::modify_notify_all()`] or
     /// [`BasicConditionVariableInterface::trigger_all()`]
     /// and the provided predicate returns true.
-    pub fn wait_while<P: FnMut(&mut T) -> bool>(
+    pub fn blocking_wait_while<P: FnMut(&mut T) -> bool>(
         &self,
         mut predicate: P,
     ) -> Result<MutexGuard<'_, '_, T>, ConditionVariableWaitError<'_, '_, T>> {
-        let mut guard =
-            fail!(from self, when self.mutex.lock(), "Failed to lock mutex in wait_while.");
+        let mut guard = fail!(from self, when self.mutex.lock(), "Failed to lock mutex in blocking_wait_while.");
 
         while !(predicate)(&mut *guard) {
             self.condvar.pthread_wait(&self.mutex)?;
@@ -742,7 +741,7 @@ impl<T: Debug> Drop for ConditionVariableGuard<'_, '_, '_, T> {
 }
 
 /// Condition variable which requires a fixed predicate on creation which is then used in
-/// [`ConditionVariable::wait_while()`] and
+/// [`ConditionVariable::blocking_wait_while()`] and
 /// [`ConditionVariable::timed_wait_while()`] concurrently with the benefit of triggering
 /// single waiters.
 /// The reason is when one waits on multiple
@@ -758,7 +757,7 @@ impl<T: Debug> Drop for ConditionVariableGuard<'_, '_, '_, T> {
 /// is written.
 /// The condition variable provides the following features:
 ///  * wait on the condition variable: [wait](BasicConditionVariableInterface::wait()), [timed_wait](BasicConditionVariableInterface::timed_wait())
-///  * wait until a defined condition occurs: [wait_while](ConditionVariable::wait_while()), [timed_wait_while](ConditionVariable::timed_wait_while())
+///  * wait until a defined condition occurs: [blocking_wait_while](ConditionVariable::blocking_wait_while()), [timed_wait_while](ConditionVariable::timed_wait_while())
 ///  * modify condition variable and then notify waiters:
 ///     [notify_all](ConditionVariable::notify_all()), [modify_notify_all](ConditionVariable::modify_notify_all()),
 ///     [notify_one](ConditionVariable::notify_one()), [modify_notify_one](ConditionVariable::modify_notify_one())
@@ -786,7 +785,7 @@ impl<T: Debug> Drop for ConditionVariableGuard<'_, '_, '_, T> {
 /// thread::scope(|s| {
 ///     let t1 = s.spawn(|| {
 ///         // wait until value is 5000
-///         let guard = cv.wait_while().expect("failed to wait");
+///         let guard = cv.blocking_wait_while().expect("failed to wait");
 ///         println!("cv value is greater or equal 5000");
 ///     });
 ///
@@ -856,13 +855,14 @@ impl<'mtx_handle, T: Debug> ConditionVariable<'mtx_handle, T> {
     /// [`BasicConditionVariableInterface::trigger_all()`] or
     /// [`ConditionVariable::trigger_one()`]
     /// and the provided predicate returns true.
-    pub fn wait_while(
+    pub fn blocking_wait_while(
         &self,
     ) -> Result<
         MutexGuard<'_, '_, ConditionVariableData<T>>,
         ConditionVariableWaitError<'_, '_, ConditionVariableData<T>>,
     > {
-        let guard = fail!(from self, when self.mutex.lock(), "failed to lock mutex in wait_while");
+        let guard =
+            fail!(from self, when self.mutex.lock(), "failed to lock mutex in blocking_wait_while");
 
         while !self.call_underlying_predicate(&guard) {
             self.condvar.pthread_wait(&self.mutex)?;
