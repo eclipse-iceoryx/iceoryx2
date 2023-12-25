@@ -405,14 +405,16 @@ fn mutex_can_be_recovered_when_thread_died() {
         });
     });
 
-    let guard = sut.lock();
-    assert_that!(guard, is_err);
-    match guard.as_ref().err().as_ref().unwrap() {
-        MutexLockError::LockAcquiredButOwnerDied(_) => (),
-        _ => assert_that!(true, eq false),
+    loop {
+        let guard = sut.try_lock();
+
+        if guard.is_ok() {
+            assert_that!(guard.as_ref().unwrap(), is_none);
+        } else if let Err(MutexLockError::LockAcquiredButOwnerDied(_)) = guard {
+            sut.make_consistent();
+            break;
+        }
     }
-    sut.make_consistent();
-    drop(guard);
 
     let guard = sut.try_lock();
     assert_that!(guard, is_ok);
