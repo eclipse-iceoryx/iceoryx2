@@ -237,6 +237,31 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         Ok(new_self)
     }
 
+    /// Creates a new [`FixedSizeByteString`] from a byte slice. If the byte slice does not fit
+    /// into the [`FixedSizeByteString`] it will be truncated.
+    pub fn from_bytes_truncated(bytes: &[u8]) -> Self {
+        let mut new_self = Self::new();
+        new_self.len = std::cmp::min(bytes.len(), CAPACITY);
+        unsafe {
+            std::ptr::copy(
+                bytes.as_ptr(),
+                new_self.data.as_ptr() as *mut u8,
+                bytes.len(),
+            )
+        };
+
+        let zero = 0u8;
+        unsafe {
+            std::ptr::copy(
+                &zero,
+                new_self.data.as_ptr().add(new_self.len) as *mut u8,
+                1,
+            )
+        };
+
+        new_self
+    }
+
     /// Creates a new byte string from a given null-terminated string
     ///
     /// # Safety

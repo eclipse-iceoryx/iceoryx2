@@ -7,6 +7,17 @@
 * [ ] `#![no_std]` on `stable` on all tier 1 platforms
 * [ ] completely dynamic setup with dynamic shared memory
 
+## Shared Memory Container & Types
+
+* [ ] Make `iceoryx2_bb_container` public with announcement
+* [ ] Create and document dynamic size container concept for shared memory and apply it
+        to all existing containers: `ByteString`, `Vec`, `Queue`
+    * Open Question: How can these containers be cloned, copied?
+* [ ] Introduce additional containers: `HashMap`, `Tree`, `Set`, `List`
+* [ ] Introduce elementary types, look into: `simple-si-units` crate
+    * Add types like: memory size, percentage, strict percentage (0..100), data throughput, resolution
+        (further types found in informatics)
+
 ## Language Bindings
 
 * [ ] C
