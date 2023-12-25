@@ -64,6 +64,8 @@
 use std::{
     alloc::Layout,
     mem::MaybeUninit,
+    ops::Deref,
+    ops::DerefMut,
     sync::atomic::{AtomicBool, Ordering},
 };
 
@@ -135,6 +137,42 @@ impl<T> RelocatableContainer for Vec<T> {
         Self::const_memory_size(capacity)
     }
 }
+
+impl<T> Deref for Vec<T> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
+        unsafe { core::slice::from_raw_parts((*self.data_ptr.as_ptr()).as_ptr(), self.len) }
+    }
+}
+
+impl<T> DerefMut for Vec<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
+        unsafe {
+            core::slice::from_raw_parts_mut((*self.data_ptr.as_mut_ptr()).as_mut_ptr(), self.len)
+        }
+    }
+}
+
+impl<T: PartialEq> PartialEq for Vec<T> {
+    fn eq(&self, other: &Self) -> bool {
+        if other.len() != self.len() {
+            return false;
+        }
+
+        for i in 0..self.len() {
+            if other[i] != self[i] {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+impl<T: Eq> Eq for Vec<T> {}
 
 impl<T> Vec<T> {
     fn verify_init(&self, source: &str) {
@@ -212,6 +250,27 @@ impl<T> Vec<T> {
         self.len += 1;
     }
 
+    /// Append all elements from other via [`Clone`].
+    ///
+    /// # Safety
+    ///
+    ///  * Only use this method when [`Vec::init()`] was called before
+    ///
+    pub unsafe fn extend_from_slice(&mut self, other: &[T]) -> bool
+    where
+        T: Clone,
+    {
+        if self.capacity < self.len + other.len() {
+            return false;
+        }
+
+        for element in other {
+            self.push_unchecked(element.clone());
+        }
+
+        true
+    }
+
     /// Removes the last element of the vector and returns it to the user. If the vector is empty
     /// it returns [`None`].
     ///
@@ -249,62 +308,6 @@ impl<T> Vec<T> {
 
         value.assume_init()
     }
-
-    /// Returns a reference to the element at the specified index. If the index is out of bounds it
-    /// returns [`None`].
-    ///
-    /// # Safety
-    ///
-    ///  * Only use this method when [`Vec::init()`] was called before
-    ///
-    pub unsafe fn get(&self, index: usize) -> Option<&T> {
-        if self.len <= index {
-            None
-        } else {
-            self.verify_init(&format!("Vec<{}>::get()", std::any::type_name::<T>()));
-            Some(self.get_unchecked(index))
-        }
-    }
-
-    /// Returns a reference to the element at the specified index. The user has to ensure that the
-    /// index is present in the vector otherwise it leads to undefined behavior.
-    ///
-    /// # Safety
-    ///
-    ///  * Only use this method when [`Vec::init()`] was called before
-    ///  * The index must be not out of bounds
-    ///
-    pub unsafe fn get_unchecked(&self, index: usize) -> &T {
-        &*(*self.data_ptr.as_ptr().add(index)).as_ptr()
-    }
-
-    /// Returns a mutable reference to the element at the specified index. If the index is out of
-    /// bounds it returns [`None`].
-    ///
-    /// # Safety
-    ///
-    ///  * Only use this method when [`Vec::init()`] was called before
-    ///
-    pub unsafe fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        if self.len <= index {
-            None
-        } else {
-            self.verify_init(&format!("Vec<{}>::get_mut()", std::any::type_name::<T>()));
-            Some(self.get_unchecked_mut(index))
-        }
-    }
-
-    /// Returns a mutable reference to the element at the specified index. The user has to ensure
-    /// that the index is present in the vector otherwise it leads to undefined behavior.
-    ///
-    /// # Safety
-    ///
-    ///  * Only use this method when [`Vec::init()`] was called before
-    ///  * The index must be not out of bounds
-    ///
-    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> &mut T {
-        &mut *(*self.data_ptr.as_mut_ptr().add(index)).as_mut_ptr()
-    }
 }
 
 /// Relocatable vector with compile time fixed size capacity. In contrast to its counterpart the
@@ -327,6 +330,36 @@ impl<T, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
             },
             _data: unsafe { MaybeUninit::uninit().assume_init() },
         }
+    }
+}
+
+impl<T, const CAPACITY: usize> Deref for FixedSizeVec<T, CAPACITY> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        self.state.deref()
+    }
+}
+
+impl<T, const CAPACITY: usize> DerefMut for FixedSizeVec<T, CAPACITY> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.state.deref_mut()
+    }
+}
+
+impl<T: PartialEq, const CAPACITY: usize> PartialEq for FixedSizeVec<T, CAPACITY> {
+    fn eq(&self, other: &Self) -> bool {
+        self.state.eq(&other.state)
+    }
+}
+
+impl<T: Eq, const CAPACITY: usize> Eq for FixedSizeVec<T, CAPACITY> {}
+
+impl<T: Clone, const CAPACITY: usize> Clone for FixedSizeVec<T, CAPACITY> {
+    fn clone(&self) -> Self {
+        let mut new_self = Self::new();
+        new_self.extend_from_slice(self.deref());
+        new_self
     }
 }
 
@@ -373,6 +406,14 @@ impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
         unsafe { self.state.fill(value) }
     }
 
+    /// Append all elements from other via [`Clone`].
+    pub fn extend_from_slice(&mut self, other: &[T]) -> bool
+    where
+        T: Clone,
+    {
+        unsafe { self.state.extend_from_slice(other) }
+    }
+
     /// Removes the last element of the vector and returns it to the user. If the vector is empty
     /// it returns [`None`].
     pub fn pop(&mut self) -> Option<T> {
@@ -382,39 +423,5 @@ impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
     /// Removes all elements from the vector
     pub fn clear(&mut self) {
         unsafe { self.state.clear() }
-    }
-
-    /// Returns a reference to the element at the specified index. If the index is out of bounds it
-    /// returns [`None`].
-    pub fn get(&self, index: usize) -> Option<&T> {
-        unsafe { self.state.get(index) }
-    }
-
-    /// Returns a reference to the element at the specified index. The user has to ensure that the
-    /// index is present in the vector otherwise it leads to undefined behavior.
-    ///
-    /// # Safety
-    ///
-    ///  * The index must be not out of bounds
-    ///
-    pub unsafe fn get_unchecked(&self, index: usize) -> &T {
-        unsafe { self.state.get_unchecked(index) }
-    }
-
-    /// Returns a mutable reference to the element at the specified index. If the index is out of
-    /// bounds it returns [`None`].
-    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        unsafe { self.state.get_mut(index) }
-    }
-
-    /// Returns a mutable reference to the element at the specified index. The user has to ensure
-    /// that the index is present in the vector otherwise it leads to undefined behavior.
-    ///
-    /// # Safety
-    ///
-    ///  * The index must be not out of bounds
-    ///
-    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> &mut T {
-        unsafe { self.state.get_unchecked_mut(index) }
     }
 }
