@@ -18,7 +18,7 @@
 
 ### Workflow
 
- * add `cargo audit` for security vulnerability checking in dependencies [#49](https://github.com/eclipse-iceoryx/iceoryx2/issues/49)
+ * add `cargo audit` for security vulnerability checking in dependencies [#48](https://github.com/eclipse-iceoryx/iceoryx2/issues/48)
 
 ### New API features
 
