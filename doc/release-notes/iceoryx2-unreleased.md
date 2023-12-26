@@ -6,7 +6,7 @@
 
 ### Features
 
- * Add `Display` implementation for `PortFactory` [#29](https://github.com/eclipse-iceoryx/iceoryx2/issues/18)
+ * Add `Display` implementation for `PortFactory` [#18](https://github.com/eclipse-iceoryx/iceoryx2/issues/18)
 
 ### Bugfixes
 
