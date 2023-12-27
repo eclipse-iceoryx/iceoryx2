@@ -17,6 +17,8 @@
 * [ ] Introduce elementary types, look into: `simple-si-units` crate
     * Add types like: memory size, percentage, strict percentage (0..100), data throughput, resolution
         (further types found in informatics)
+* [ ] Add `derive` proc macro to ensure that only shm compatible types can be
+    transferred via zero-copy
 
 ## Language Bindings
 

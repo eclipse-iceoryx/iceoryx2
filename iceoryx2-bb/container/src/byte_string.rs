@@ -242,22 +242,13 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
     pub fn from_bytes_truncated(bytes: &[u8]) -> Self {
         let mut new_self = Self::new();
         new_self.len = std::cmp::min(bytes.len(), CAPACITY);
-        unsafe {
-            std::ptr::copy(
-                bytes.as_ptr(),
-                new_self.data.as_ptr() as *mut u8,
-                bytes.len(),
-            )
-        };
+        for (i, byte) in bytes.iter().enumerate().take(new_self.len) {
+            new_self.data[i].write(*byte);
+        }
 
-        let zero = 0u8;
-        unsafe {
-            std::ptr::copy(
-                &zero,
-                new_self.data.as_ptr().add(new_self.len) as *mut u8,
-                1,
-            )
-        };
+        if new_self.len < CAPACITY {
+            new_self.data[new_self.len].write(0);
+        }
 
         new_self
     }
