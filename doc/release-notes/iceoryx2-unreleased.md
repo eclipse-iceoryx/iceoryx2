@@ -7,6 +7,7 @@
 ### Features
 
  * MacOS Platform support [#51](https://github.com/eclipse-iceoryx/iceoryx2/issues/51)
+ * Services with the same name for different messaging patterns are supported [#16](https://github.com/eclipse-iceoryx/iceoryx2/issues/16)
 
 ### Bugfixes
 

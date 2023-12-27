@@ -33,6 +33,7 @@ pub struct ServiceName {
 }
 
 impl ServiceName {
+    /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
         if name.is_empty() {
             return Err(SemanticStringError::InvalidName);
@@ -45,7 +46,8 @@ impl ServiceName {
         })
     }
 
-    fn as_str(&self) -> &str {
+    /// Returns a str reference to the [`ServiceName`]
+    pub fn as_str(&self) -> &str {
         // SAFETY: `ServieName` was created from a `&str` and therefore this conversion is safe
         unsafe { std::str::from_utf8_unchecked(self.value.as_bytes()) }
     }
