@@ -43,9 +43,9 @@ pub struct Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            suffix: DEFAULT_SUFFIX,
-            prefix: DEFAULT_PREFIX,
-            path_hint: DEFAULT_PATH_HINT,
+            suffix: Connection::default_suffix(),
+            prefix: Connection::default_prefix(),
+            path_hint: Connection::default_path_hint(),
         }
     }
 }

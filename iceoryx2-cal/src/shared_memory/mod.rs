@@ -60,21 +60,10 @@ pub mod process_local;
 use std::fmt::Debug;
 
 use iceoryx2_bb_elementary::allocator::DeallocationError;
-use iceoryx2_bb_posix::config::TEMP_DIRECTORY;
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_system_types::path::Path;
-
-/// The default suffix of every shared memory
-pub const DEFAULT_SUFFIX: FileName = unsafe { FileName::new_unchecked(b".shm") };
-
-/// The default prefix of every shared memory
-pub const DEFAULT_PREFIX: FileName = unsafe { FileName::new_unchecked(b"iox2_") };
-
-/// The default path hint for every shared memory
-pub const DEFAULT_PATH_HINT: Path = TEMP_DIRECTORY;
 
 /// Failure returned by [`SharedMemoryBuilder::create()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -159,4 +148,9 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     /// Releases the ownership of the [`SharedMemory`] meaning when it goes out of scope the
     /// underlying resource will not be removed.
     fn release_ownership(&mut self);
+
+    /// The default suffix of every shared memory
+    fn default_suffix() -> FileName {
+        unsafe { FileName::new_unchecked(b".shm") }
+    }
 }

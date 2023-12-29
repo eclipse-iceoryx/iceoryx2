@@ -147,9 +147,9 @@ pub struct Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            suffix: DEFAULT_SUFFIX,
-            prefix: DEFAULT_PREFIX,
-            path_hint: DEFAULT_PATH_HINT,
+            suffix: Channel::<()>::default_suffix(),
+            prefix: Channel::<()>::default_prefix(),
+            path_hint: Channel::<()>::default_path_hint(),
         }
     }
 }
@@ -190,7 +190,7 @@ struct SharedConfiguration {
 }
 
 #[derive(Debug)]
-pub struct Creator<T> {
+pub struct Creator<T: Copy + Debug> {
     channel_name: FileName,
     enable_safe_overflow: bool,
     buffer_size: usize,
@@ -291,7 +291,7 @@ impl<T: Copy + Debug> CommunicationChannelCreator<T, Channel<T>> for Creator<T> 
 }
 
 #[derive(Debug)]
-pub struct Connector<T> {
+pub struct Connector<T: Copy + Debug> {
     channel_name: FileName,
     config: Configuration,
     _phantom_data: PhantomData<T>,

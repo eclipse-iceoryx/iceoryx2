@@ -497,8 +497,9 @@ mod zero_copy_connection {
     #[test]
     fn defaults_for_configuration_are_set_correctly<Sut: ZeroCopyConnection>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
-        assert_that!(*config.get_suffix(), eq DEFAULT_SUFFIX);
-        assert_that!(*config.get_path_hint(), eq DEFAULT_PATH_HINT);
+        assert_that!(*config.get_suffix(), eq Sut::default_suffix());
+        assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
+        assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
     #[instantiate_tests(<zero_copy_connection::posix_shared_memory::Connection>)]

@@ -69,24 +69,37 @@ static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashMap<FilePath, Arc<SharedMemoryEntry
         result.unwrap()
     });
 
-#[derive(Clone, Debug)]
-pub struct Configuration {
+#[derive(Debug)]
+pub struct Configuration<Allocator: ShmAllocator + Debug> {
     suffix: FileName,
     prefix: FileName,
     path: Path,
+    _phantom: PhantomData<Allocator>,
 }
 
-impl Default for Configuration {
+impl<Allocator: ShmAllocator + Debug> Default for Configuration<Allocator> {
     fn default() -> Self {
         Self {
-            path: DEFAULT_PATH_HINT,
-            suffix: DEFAULT_SUFFIX,
-            prefix: DEFAULT_PREFIX,
+            path: Memory::<Allocator>::default_path_hint(),
+            suffix: Memory::<Allocator>::default_suffix(),
+            prefix: Memory::<Allocator>::default_prefix(),
+            _phantom: PhantomData,
         }
     }
 }
 
-impl NamedConceptConfiguration for Configuration {
+impl<Allocator: ShmAllocator + Debug> Clone for Configuration<Allocator> {
+    fn clone(&self) -> Self {
+        Self {
+            suffix: self.suffix,
+            prefix: self.prefix,
+            path: self.path,
+            _phantom: self._phantom,
+        }
+    }
+}
+
+impl<Allocator: ShmAllocator + Debug> NamedConceptConfiguration for Configuration<Allocator> {
     fn prefix(mut self, value: FileName) -> Self {
         self.prefix = value;
         self
@@ -119,7 +132,7 @@ impl NamedConceptConfiguration for Configuration {
 pub struct Builder<Allocator: ShmAllocator + Debug> {
     name: FileName,
     size: usize,
-    config: Configuration,
+    config: Configuration<Allocator>,
     _phantom_allocator: PhantomData<Allocator>,
 }
 
@@ -135,7 +148,7 @@ impl<Allocator: ShmAllocator + Debug> NamedConceptBuilder<Memory<Allocator>>
         }
     }
 
-    fn config(mut self, config: &Configuration) -> Self {
+    fn config(mut self, config: &Configuration<Allocator>) -> Self {
         self.config = config.clone();
         self
     }
@@ -260,7 +273,7 @@ pub struct Memory<Allocator: ShmAllocator + Debug> {
     name: FileName,
     shm: Arc<SharedMemoryEntry>,
     has_ownership: bool,
-    config: Configuration,
+    config: Configuration<Allocator>,
     _phantom_data: PhantomData<Allocator>,
 }
 
@@ -288,7 +301,7 @@ impl<Allocator: ShmAllocator + Debug> NamedConcept for Memory<Allocator> {
 }
 
 impl<Allocator: ShmAllocator + Debug> NamedConceptMgmt for Memory<Allocator> {
-    type Configuration = Configuration;
+    type Configuration = Configuration<Allocator>;
 
     fn list_cfg(
         config: &Self::Configuration,

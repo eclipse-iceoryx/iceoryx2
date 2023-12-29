@@ -207,23 +207,12 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
     ///
     ///  * `bytes` len must be smaller or equal than [`FixedSizeByteString::capacity()`]
     ///
-    pub const unsafe fn new_unchecked(bytes: &[u8]) -> Self {
+    pub unsafe fn new_unchecked(bytes: &[u8]) -> Self {
         if CAPACITY < bytes.len() {
             panic!("Insufficient capacity to store bytes.");
         }
 
-        let mut new_self = Self::new();
-        new_self.len = bytes.len();
-        std::ptr::copy(
-            bytes.as_ptr(),
-            new_self.data.as_ptr() as *mut u8,
-            bytes.len(),
-        );
-
-        let zero = 0u8;
-        std::ptr::copy(&zero, new_self.data.as_ptr().add(bytes.len()) as *mut u8, 1);
-
-        new_self
+        Self::from_bytes_truncated(bytes)
     }
 
     /// Creates a new [`FixedSizeByteString`] from a byte slice

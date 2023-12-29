@@ -67,7 +67,7 @@ struct StorageDetails<T> {
     layout: Layout,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
@@ -77,9 +77,9 @@ pub struct Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            suffix: DEFAULT_SUFFIX,
-            prefix: DEFAULT_PREFIX,
-            path_hint: DEFAULT_PATH_HINT,
+            suffix: Storage::<()>::default_suffix(),
+            prefix: Storage::<()>::default_prefix(),
+            path_hint: Storage::<()>::default_path_hint(),
         }
     }
 }
@@ -273,7 +273,7 @@ impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
 }
 
 #[derive(Debug)]
-pub struct Builder<T> {
+pub struct Builder<T: Send + Sync + Debug> {
     name: FileName,
     supplementary_size: usize,
     has_ownership: bool,

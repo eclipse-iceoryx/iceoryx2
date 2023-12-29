@@ -22,23 +22,25 @@ use iceoryx2_bb_posix::{
 pub use iceoryx2_bb_system_types::file_name::FileName;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Configuration {
+pub struct Configuration<Id: TriggerId + Copy> {
     suffix: FileName,
     prefix: FileName,
     path: Path,
+    _phantom: PhantomData<Id>,
 }
 
-impl Default for Configuration {
+impl<Id: TriggerId + Copy> Default for Configuration<Id> {
     fn default() -> Self {
         Self {
-            path: DEFAULT_PATH_HINT,
-            suffix: DEFAULT_SUFFIX,
-            prefix: DEFAULT_PREFIX,
+            path: EventImpl::<Id>::default_path_hint(),
+            suffix: EventImpl::<Id>::default_suffix(),
+            prefix: EventImpl::<Id>::default_prefix(),
+            _phantom: PhantomData,
         }
     }
 }
 
-impl NamedConceptConfiguration for Configuration {
+impl<Id: TriggerId + Copy> NamedConceptConfiguration for Configuration<Id> {
     fn prefix(mut self, value: FileName) -> Self {
         self.prefix = value;
         self
@@ -67,19 +69,21 @@ impl NamedConceptConfiguration for Configuration {
     }
 }
 
-impl From<Configuration> for crate::communication_channel::unix_datagram::Configuration {
-    fn from(value: Configuration) -> Self {
+impl<Id: TriggerId + Copy> From<Configuration<Id>>
+    for crate::communication_channel::unix_datagram::Configuration
+{
+    fn from(value: Configuration<Id>) -> Self {
         Self::default().suffix(value.suffix).path_hint(value.path)
     }
 }
 
 #[derive(Debug)]
-pub struct Event<Id: crate::event::TriggerId> {
+pub struct EventImpl<Id: crate::event::TriggerId> {
     _data: PhantomData<Id>,
 }
 
-impl<Id: crate::event::TriggerId + Copy> NamedConceptMgmt for Event<Id> {
-    type Configuration = Configuration;
+impl<Id: crate::event::TriggerId + Copy> NamedConceptMgmt for EventImpl<Id> {
+    type Configuration = Configuration<Id>;
 
     fn does_exist_cfg(
         name: &FileName,
@@ -105,7 +109,7 @@ impl<Id: crate::event::TriggerId + Copy> NamedConceptMgmt for Event<Id> {
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> crate::event::Event<Id> for Event<Id> {
+impl<Id: crate::event::TriggerId + Copy> crate::event::Event<Id> for EventImpl<Id> {
     type Notifier = Notifier<Id>;
     type Listener = Listener<Id>;
     type NotifierBuilder = NotifierBuilder<Id>;
@@ -147,11 +151,13 @@ impl<Id: crate::event::TriggerId + Copy> crate::event::Notifier<Id> for Notifier
 #[derive(Debug)]
 pub struct NotifierBuilder<Id: crate::event::TriggerId> {
     name: FileName,
-    config: Configuration,
+    config: Configuration<Id>,
     _data: PhantomData<Id>,
 }
 
-impl<Id: crate::event::TriggerId + Copy> NamedConceptBuilder<Event<Id>> for NotifierBuilder<Id> {
+impl<Id: crate::event::TriggerId + Copy> NamedConceptBuilder<EventImpl<Id>>
+    for NotifierBuilder<Id>
+{
     fn new(name: &FileName) -> Self {
         Self {
             name: *name,
@@ -160,13 +166,13 @@ impl<Id: crate::event::TriggerId + Copy> NamedConceptBuilder<Event<Id>> for Noti
         }
     }
 
-    fn config(mut self, config: &Configuration) -> Self {
+    fn config(mut self, config: &Configuration<Id>) -> Self {
         self.config = *config;
         self
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> crate::event::NotifierBuilder<Id, Event<Id>>
+impl<Id: crate::event::TriggerId + Copy> crate::event::NotifierBuilder<Id, EventImpl<Id>>
     for NotifierBuilder<Id>
 {
     fn open(self) -> Result<Notifier<Id>, NotifierCreateError> {
@@ -275,11 +281,13 @@ impl<Id: crate::event::TriggerId + Copy> crate::event::Listener<Id> for Listener
 #[derive(Debug)]
 pub struct ListenerBuilder<Id: crate::event::TriggerId> {
     name: FileName,
-    config: Configuration,
+    config: Configuration<Id>,
     _data: PhantomData<Id>,
 }
 
-impl<Id: crate::event::TriggerId + Copy> NamedConceptBuilder<Event<Id>> for ListenerBuilder<Id> {
+impl<Id: crate::event::TriggerId + Copy> NamedConceptBuilder<EventImpl<Id>>
+    for ListenerBuilder<Id>
+{
     fn new(name: &FileName) -> Self {
         Self {
             name: *name,
@@ -288,13 +296,13 @@ impl<Id: crate::event::TriggerId + Copy> NamedConceptBuilder<Event<Id>> for List
         }
     }
 
-    fn config(mut self, config: &Configuration) -> Self {
+    fn config(mut self, config: &Configuration<Id>) -> Self {
         self.config = *config;
         self
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> crate::event::ListenerBuilder<Id, Event<Id>>
+impl<Id: crate::event::TriggerId + Copy> crate::event::ListenerBuilder<Id, EventImpl<Id>>
     for ListenerBuilder<Id>
 {
     fn create(self) -> Result<Listener<Id>, ListenerCreateError> {

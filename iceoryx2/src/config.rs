@@ -102,13 +102,11 @@ use crate::service::port_factory::publisher::UnableToDeliverStrategy;
 
 /// Path to the default config file
 #[cfg(target_os = "windows")]
-pub const DEFAULT_CONFIG_FILE: FilePath =
-    unsafe { FilePath::new_unchecked(b"config\\iceoryx2_win.toml") };
+pub const DEFAULT_CONFIG_FILE: &[u8] = b"config\\iceoryx2_win.toml";
 
 /// Path to the default config file
 #[cfg(not(target_os = "windows"))]
-pub const DEFAULT_CONFIG_FILE: FilePath =
-    unsafe { FilePath::new_unchecked(b"config/iceoryx2.toml") };
+pub const DEFAULT_CONFIG_FILE: &[u8] = b"config/iceoryx2.toml";
 
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`] or
 /// [`Config::setup_global_config_from_file()`]
@@ -331,7 +329,10 @@ impl Config {
     /// config was already populated.
     pub fn get_global_config() -> &'static Config {
         if !ICEORYX2_CONFIG.is_initialized()
-            && Config::setup_global_config_from_file(&DEFAULT_CONFIG_FILE).is_err()
+            && Config::setup_global_config_from_file(unsafe {
+                &FilePath::new_unchecked(DEFAULT_CONFIG_FILE)
+            })
+            .is_err()
         {
             warn!(from "Config::get_global_config()", "Unable to load default config file, populate config with default values.");
             ICEORYX2_CONFIG.set_value(Config::default());

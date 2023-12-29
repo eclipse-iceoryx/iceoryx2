@@ -72,7 +72,6 @@ pub mod unix_datagram;
 
 use std::fmt::Debug;
 
-use iceoryx2_bb_posix::config::TEMP_DIRECTORY;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 
@@ -80,15 +79,6 @@ use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 
 /// The buffer size which the receiver has at least by default
 pub const DEFAULT_RECEIVER_BUFFER_SIZE: usize = 8;
-
-/// The default suffix of every communication channel
-pub const DEFAULT_SUFFIX: FileName = unsafe { FileName::new_unchecked(b".com") };
-
-/// The default prefix of every communication channel
-pub const DEFAULT_PREFIX: FileName = unsafe { FileName::new_unchecked(b"iox2_") };
-
-/// The default path hint for every communication channel
-pub const DEFAULT_PATH_HINT: Path = TEMP_DIRECTORY;
 
 /// Describes failures when sending data
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -206,5 +196,10 @@ pub trait CommunicationChannel<T>: Sized + Debug + NamedConceptMgmt {
     /// Returns true if the buffer size of the channel can be configured
     fn has_configurable_buffer_size() -> bool {
         false
+    }
+
+    /// The default suffix of every communication channel
+    fn default_suffix() -> FileName {
+        unsafe { FileName::new_unchecked(b".com") }
     }
 }

@@ -53,7 +53,7 @@ trait GenericTestBuilder {
 
 impl GenericTestBuilder for File {
     fn sut() -> Self {
-        let name = FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name()).unwrap();
+        let name = FilePath::from_path_and_file(&test_directory(), &generate_name()).unwrap();
 
         let file_content = [170u8; 2048];
 

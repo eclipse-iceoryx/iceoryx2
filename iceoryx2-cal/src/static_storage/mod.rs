@@ -19,22 +19,11 @@ pub mod process_local;
 use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
-use iceoryx2_bb_posix::config::TEMP_DIRECTORY;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_system_types::path::Path;
 
 use crate::named_concept::{
     NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
 };
-
-/// The default suffix of every static storage
-pub const DEFAULT_SUFFIX: FileName = unsafe { FileName::new_unchecked(b".static_storage") };
-
-/// The default prefix of every static storage
-pub const DEFAULT_PREFIX: FileName = unsafe { FileName::new_unchecked(b"iox2_") };
-
-/// The default path hint for every static storage
-pub const DEFAULT_PATH_HINT: Path = TEMP_DIRECTORY;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum StaticStorageCreateError {
@@ -131,4 +120,9 @@ pub trait StaticStorage: Debug + Sized + NamedConceptMgmt + NamedConcept {
     /// Acquires the ownership of the static storage. If the object goes out of scope the
     /// underlying resources are removed.
     fn acquire_ownership(&mut self);
+
+    /// The default suffix of every static storage
+    fn default_suffix() -> FileName {
+        unsafe { FileName::new_unchecked(b".static_storage") }
+    }
 }

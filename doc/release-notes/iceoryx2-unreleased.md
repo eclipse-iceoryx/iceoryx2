@@ -11,6 +11,7 @@
 
 ### Bugfixes
 
+ * Fix undefined behavior in `FixedSizeByteString::new_unchecked` [#61](https://github.com/eclipse-iceoryx/iceoryx2/issues/61)
  * Fix suffix of static config [#66](https://github.com/eclipse-iceoryx/iceoryx2/issues/66)
 
 ### Refactoring
