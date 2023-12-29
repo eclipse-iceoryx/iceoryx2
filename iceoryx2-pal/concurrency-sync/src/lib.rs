@@ -19,3 +19,15 @@ pub mod condition_variable;
 pub mod mutex;
 pub mod rwlock;
 pub mod semaphore;
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum WaitAction {
+    Continue,
+    Abort,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum WaitResult {
+    Interrupted,
+    Success,
+}

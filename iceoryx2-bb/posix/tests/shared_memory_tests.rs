@@ -18,7 +18,7 @@ use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 
 fn generate_shm_name() -> FileName {
-    let mut file_name = FileName::new(b"shm_tests_").unwrap();
+    let mut file_name = FileName::new(b"shared_memory_tests_").unwrap();
     file_name
         .push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
         .unwrap();
@@ -92,7 +92,7 @@ fn shared_memory_create_and_modify_open_works() {
 #[test]
 fn shared_memory_opening_with_non_fitting_size_fails() {
     let shm_name = generate_shm_name();
-    let _sut_create = SharedMemoryBuilder::new(&shm_name)
+    let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
         .permission(Permission::OWNER_ALL)
@@ -102,14 +102,14 @@ fn shared_memory_opening_with_non_fitting_size_fails() {
 
     let sut_open1 = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::OpenOrCreate)
-        .size(8192)
+        .size(sut_create.size() + 1)
         .permission(Permission::OWNER_ALL)
         .zero_memory(true)
         .create();
 
     let sut_open2 = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::OpenOrCreate)
-        .size(16384)
+        .size(sut_create.size() * 2)
         .permission(Permission::OWNER_ALL)
         .zero_memory(true)
         .create();

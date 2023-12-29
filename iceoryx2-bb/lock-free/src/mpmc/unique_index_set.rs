@@ -19,15 +19,16 @@
 //! ## Runtime fixed size UniqueIndexSet
 //!
 //! ```
-//! use iceoryx2_bb_memory::heap_allocator::*;
+//! use iceoryx2_bb_elementary::bump_allocator::*;
 //! use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 //! use iceoryx2_bb_elementary::relocatable_container::*;
 //!
 //! const CAPACITY: usize = 128;
-//! let heap_allocator = HeapAllocator::new();
+//! let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
+//! let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 //!
 //! let index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
-//! unsafe { index_set.init(&heap_allocator) }.expect("failed to allocate enough memory");
+//! unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
 //!
 //! let new_index = match unsafe { index_set.acquire() } {
 //!     None => panic!("Out of indices"),
@@ -147,15 +148,16 @@ impl Drop for UniqueIndex<'_> {
 ///
 /// ## With a custom allocator
 /// ```
-/// use iceoryx2_bb_memory::heap_allocator::*;
+/// use iceoryx2_bb_elementary::bump_allocator::*;
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 /// use iceoryx2_bb_elementary::relocatable_container::*;
 ///
 /// const CAPACITY: usize = 128;
-/// let heap_allocator = HeapAllocator::new();
+/// let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
+/// let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 ///
 /// let index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
-/// unsafe { index_set.init(&heap_allocator) }.expect("failed to allocate enough memory");
+/// unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
 ///
 /// let new_index = match unsafe { index_set.acquire() } {
 ///     None => panic!("Out of indices"),

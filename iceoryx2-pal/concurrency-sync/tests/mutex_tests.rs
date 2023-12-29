@@ -16,7 +16,7 @@ use std::{
 };
 
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_concurrency_sync::mutex::*;
+use iceoryx2_pal_concurrency_sync::{mutex::*, WaitAction, WaitResult};
 
 const TIMEOUT: Duration = Duration::from_millis(25);
 
@@ -29,7 +29,7 @@ fn mutex_lock_blocks() {
         sut.try_lock();
 
         let t1 = s.spawn(|| {
-            sut.lock(|_, _| true);
+            sut.lock(|_, _| WaitAction::Continue);
             counter.fetch_add(1, Ordering::Relaxed);
             sut.unlock(|_| {});
         });
@@ -57,15 +57,15 @@ fn mutex_lock_with_timeout_blocks() {
                 let start = Instant::now();
                 while atomic.load(Ordering::Relaxed) == *value {
                     if start.elapsed() > TIMEOUT * 2 {
-                        return false;
+                        return WaitAction::Abort;
                     }
                 }
 
-                true
+                WaitAction::Continue
             });
             counter.fetch_add(1, Ordering::Relaxed);
             sut.unlock(|_| {});
-            assert_that!(lock_result, eq true);
+            assert_that!(lock_result, eq WaitResult::Success);
         });
 
         std::thread::sleep(TIMEOUT);
@@ -84,14 +84,14 @@ fn mutex_lock_with_timeout_and_fails_after_timeout() {
 
     sut.try_lock();
 
-    assert_that!(!sut.lock(|atomic, value| {
+    assert_that!(sut.lock(|atomic, value| {
         let start = Instant::now();
         while atomic.load(Ordering::Relaxed) == *value {
             if start.elapsed() > TIMEOUT {
-                return false;
+                return WaitAction::Abort;
             }
         }
 
-        true
-    }), eq true);
+        WaitAction::Continue
+    }), eq WaitResult::Interrupted);
 }

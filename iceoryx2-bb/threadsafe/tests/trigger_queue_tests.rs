@@ -17,9 +17,10 @@ use std::time::Duration;
 use iceoryx2_bb_posix::clock::{nanosleep, Time};
 use iceoryx2_bb_posix::mutex::MutexHandle;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_threadsafe::trigger_queue::*;
 
-const TIMEOUT: Duration = Duration::from_millis(25);
+const TIMEOUT: Duration = Duration::from_millis(100);
 const SUT_CAPACITY: usize = 128;
 type Sut<'a> = TriggerQueue<'a, usize, SUT_CAPACITY>;
 
@@ -153,6 +154,7 @@ fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
 
@@ -170,10 +172,11 @@ fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
         nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         sut.blocking_pop();
-        nanosleep(TIMEOUT).unwrap();
 
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
+
+        // if the thread is not unblocked the counter stays zero until the watchdog intervenes
+        while counter.load(Ordering::Relaxed) == 0 {}
     });
 }
 
@@ -182,6 +185,7 @@ fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
 
@@ -196,10 +200,11 @@ fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
         nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         sut.blocking_push(0);
-        nanosleep(TIMEOUT).unwrap();
 
         assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
+
+        // if the thread is not unblocked the counter stays zero until the watchdog intervenes
+        while counter.load(Ordering::Relaxed) == 0 {}
     });
 }
 

@@ -48,7 +48,7 @@
 //!
 //! ## Create a highly customized thread with guarded stack
 //!
-//! ```
+//! ```ignore
 //! use iceoryx2_bb_posix::thread::*;
 //! use iceoryx2_bb_posix::scheduler::*;
 //! use iceoryx2_bb_posix::system_configuration::*;

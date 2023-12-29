@@ -1,7 +1,6 @@
 [![Benchmarks](https://img.shields.io/badge/Benchmarks-gray)](benchmarks/README.md)
-[![Best Practices](https://img.shields.io/badge/Best_Practices-gray)](BEST_PRACTICES.md)
 [![Changelog](https://img.shields.io/badge/Changelog-gray)](CHANGELOG.md)
-[![Contributing](https://img.shields.io/badge/Contributing-gray)](CONTRIBUTING.md)
+[![Crates.io](https://img.shields.io/crates/v/iceoryx2?color=blue)](https://crates.io/crates/iceoryx2)
 [![Examples](https://img.shields.io/badge/Examples-gray)](examples/)
 [![FAQ](https://img.shields.io/badge/FAQ-gray)](FAQ.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -261,7 +260,7 @@ The support levels can be adjusted when required.
 | Linux (x86_64)   | done         | tier 2                | tier 1               |
 | Linux (aarch64)  | done         | tier 2                | tier 1               |
 | Linux (32-bit)   | in-progress  | tier 3                | tier 1               |
-| Mac OS           | in-progress  | tier 3                | tier 2               |
+| Mac OS           | done         | tier 2                | tier 2               |
 | QNX              | planned      | -                     | tier 1               |
 | WatchOS          | planned      | -                     | tier 2               |
 | Windows          | done         | tier 2                | tier 2               |

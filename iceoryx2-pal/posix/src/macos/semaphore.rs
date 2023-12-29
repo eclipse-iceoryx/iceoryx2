@@ -15,6 +15,7 @@
 #![allow(unused_variables)]
 
 use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
+use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 
 use crate::posix::pthread::{wait, wake_one};
 use crate::posix::Errno;
@@ -30,16 +31,16 @@ pub unsafe fn sem_post(sem: *mut sem_t) -> int {
         return -1;
     }
 
-    (*sem).semaphore.post(wake_one);
+    (*sem).semaphore.post(wake_one, 1);
 
     Errno::set(Errno::ESUCCES);
     0
 }
 
 pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
-    (*sem).semaphore.wait(|atomic, value| -> bool {
+    (*sem).semaphore.wait(|atomic, value| -> WaitAction {
         wait(atomic, value);
-        true
+        WaitAction::Continue
     });
 
     Errno::set(Errno::ESUCCES);
@@ -48,11 +49,11 @@ pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
 
 pub unsafe fn sem_trywait(sem: *mut sem_t) -> int {
     match (*sem).semaphore.try_wait() {
-        true => {
+        WaitResult::Success => {
             Errno::set(Errno::ESUCCES);
             0
         }
-        false => {
+        WaitResult::Interrupted => {
             Errno::set(Errno::EAGAIN);
             -1
         }

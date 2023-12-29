@@ -11,10 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_container::vec::*;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_memory::{bump_allocator::BumpAllocator, memory::Memory};
 use iceoryx2_bb_testing::assert_that;
-use pin_init::init_stack;
 
 const SUT_CAPACITY: usize = 128;
 type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
@@ -70,15 +69,10 @@ fn fixed_size_vec_push_pop_works() {
 
 #[test]
 fn vec_push_pop_works_with_uninitialized_memory() {
-    init_stack!(
-        memory =
-            Memory::<{ Vec::<usize>::const_memory_size(129_usize) }, BumpAllocator>::new_filled(
-                0xff,
-            )
-    );
-    let memory = memory.unwrap();
+    let mut memory = [0u8; 1024];
+    let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
     let mut sut = unsafe { Vec::<usize>::new_uninit(SUT_CAPACITY) };
-    unsafe { assert_that!(sut.init(memory.allocator()), is_ok) };
+    unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
     for i in 0..sut.capacity() {
         let element = i * 2 + 3;
@@ -90,8 +84,8 @@ fn vec_push_pop_works_with_uninitialized_memory() {
     assert_that!(sut.is_full(), eq true);
 
     for i in 0..sut.capacity() {
-        assert_that!(unsafe { *sut.get(i).unwrap() }, eq i * 2 + 3);
-        assert_that!(unsafe { *sut.get_mut(i).unwrap() }, eq i * 2 + 3);
+        assert_that!(*sut.get(i).unwrap(), eq i * 2 + 3);
+        assert_that!(*sut.get_mut(i).unwrap(), eq i * 2 + 3);
         assert_that!(unsafe { *sut.get_unchecked(i) }, eq i * 2 + 3);
         assert_that!(unsafe { *sut.get_unchecked_mut(i) }, eq i * 2 + 3);
     }
@@ -156,4 +150,50 @@ fn fixed_size_vec_valid_after_move() {
         let result = sut2.pop();
         assert_that!(result, eq Some((sut2.capacity() - i - 1) * 2 + 3));
     }
+}
+
+#[test]
+fn fixed_size_vec_eq_works() {
+    let create_vec = |n| {
+        let mut sut = Sut::new();
+        for i in 0..n {
+            sut.push(4 * i + 3);
+        }
+        sut
+    };
+
+    let vec1 = create_vec(SUT_CAPACITY - 2);
+    let vec2 = create_vec(SUT_CAPACITY - 1);
+    let vec3 = create_vec(SUT_CAPACITY);
+
+    assert_that!(Sut::new() == Sut::new(), eq true);
+
+    assert_that!(vec1 == vec1, eq true);
+    assert_that!(vec1 == vec2, eq false);
+    assert_that!(vec1 == vec3, eq false);
+    assert_that!(vec1 == Sut::new(), eq false);
+
+    assert_that!(vec2 == vec1, eq false);
+    assert_that!(vec2 == vec2, eq true);
+    assert_that!(vec2 == vec3, eq false);
+    assert_that!(vec2 == Sut::new(), eq false);
+
+    assert_that!(vec3 == vec1, eq false);
+    assert_that!(vec3 == vec2, eq false);
+    assert_that!(vec3 == vec3, eq true);
+    assert_that!(vec3 == Sut::new(), eq false);
+}
+
+#[test]
+fn fixed_size_vec_clone_works() {
+    let mut sut = Sut::new();
+    let sut1 = sut.clone();
+    for i in 0..SUT_CAPACITY {
+        sut.push(8 * i + 6);
+    }
+
+    let sut2 = sut.clone();
+
+    assert_that!(Sut::new() == sut1, eq true);
+    assert_that!(sut == sut2, eq true);
 }

@@ -15,6 +15,28 @@
 
 use crate::posix::types::*;
 
+pub const ACL_READ: acl_perm_t = 1;
+pub const ACL_WRITE: acl_perm_t = 2;
+pub const ACL_EXECUTE: acl_perm_t = 4;
+
+pub const ACL_UNDEFINED_TAG: acl_tag_t = 1;
+pub const ACL_USER_OBJ: acl_tag_t = 2;
+pub const ACL_USER: acl_tag_t = 4;
+pub const ACL_GROUP_OBJ: acl_tag_t = 8;
+pub const ACL_GROUP: acl_tag_t = 16;
+pub const ACL_MASK: acl_tag_t = 32;
+pub const ACL_OTHER: acl_tag_t = 64;
+
+pub const ACL_FIRST_ENTRY: int = 128;
+pub const ACL_NEXT_ENTRY: int = 256;
+
+pub type acl_t = usize;
+pub type acl_permset_t = usize;
+pub type acl_entry_t = usize;
+pub type acl_type_t = usize;
+pub type acl_tag_t = usize;
+pub type acl_perm_t = u32;
+
 pub unsafe fn acl_get_perm(_permset: acl_permset_t, _perm: acl_perm_t) -> int {
     -1
 }

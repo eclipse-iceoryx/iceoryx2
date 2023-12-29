@@ -266,7 +266,12 @@ pub enum MutexThreadTerminationBehavior {
     /// mutex owning
     /// thread/process dies the mutex is put into an inconsistent state which can be recovered with
     /// [`Mutex::make_consistent()`]. The inconsistent state is detected by the next instance which
-    /// calls [`Mutex::lock()`], [`Mutex::try_lock()`] or [`Mutex::timed_lock()`].
+    /// calls [`Mutex::try_lock()`] or [`Mutex::timed_lock()`].
+    ///
+    /// **Important:** If the owner dies after another thread has already locked the [`Mutex`] it
+    /// may become impossible to recover the [`Mutex`]. Therefore, this feature should be used
+    /// only in combination with either [`Mutex::try_lock`] or [`Mutex::timed_lock()`] and
+    /// never with [`Mutex::lock()`].
     ///
     /// This is also known as robust mutex.
     ReleaseWhenLocked = posix::PTHREAD_MUTEX_ROBUST,

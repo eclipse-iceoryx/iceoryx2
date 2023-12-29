@@ -25,7 +25,7 @@
 //! - Blackboard (planned)
 //!
 //! For a comprehensive list of all planned features, please refer to the
-//! [GitHub Roadmap](https://github.com/iceoryx2/iceoryx2/ROADMAP.md).
+//! [GitHub Roadmap](https://github.com/eclipse-iceoryx/iceoryx2/blob/main/ROADMAP.md).
 //!
 //! Services are uniquely identified by name and
 //! [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern). They can be instantiated with
@@ -48,7 +48,7 @@
 //! With this factory, endpoints for the service can be created, enabling seamless communication.
 //!
 //! For more detailed examples, explore the
-//! [GitHub example folder](https://github.com/iceoryx2/iceoryx2/tree/main/examples).
+//! [GitHub example folder](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples).
 //!
 //! ## Publish-Subscribe
 //!
@@ -269,7 +269,7 @@
 //! file suffixes through a custom configuration file.
 //!
 //! For in-depth details and examples, please visit the
-//! [GitHub config folder](https://github.com/iceoryx2/iceoryx2/tree/main/config).
+//! [GitHub config folder](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/config).
 
 #[cfg(doctest)]
 mod compiletests;

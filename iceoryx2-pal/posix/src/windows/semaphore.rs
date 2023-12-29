@@ -19,6 +19,7 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
+use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 use windows_sys::Win32::System::Threading::WaitOnAddress;
 use windows_sys::Win32::System::Threading::WakeByAddressSingle;
 use windows_sys::Win32::System::Threading::INFINITE;
@@ -37,16 +38,19 @@ pub unsafe fn sem_post(sem: *mut sem_t) -> int {
         return -1;
     }
 
-    (*sem).semaphore.post(|atomic| {
-        WakeByAddressSingle((atomic as *const AtomicU32).cast());
-    });
+    (*sem).semaphore.post(
+        |atomic| {
+            WakeByAddressSingle((atomic as *const AtomicU32).cast());
+        },
+        1,
+    );
 
     Errno::set(Errno::ESUCCES);
     0
 }
 
 pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
-    (*sem).semaphore.wait(|atomic, value| -> bool {
+    (*sem).semaphore.wait(|atomic, value| -> WaitAction {
         WaitOnAddress(
             (atomic as *const AtomicU32).cast(),
             (value as *const u32).cast(),
@@ -54,7 +58,7 @@ pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
             INFINITE,
         );
 
-        true
+        WaitAction::Continue
     });
 
     Errno::set(Errno::ESUCCES);
@@ -63,11 +67,11 @@ pub unsafe fn sem_wait(sem: *mut sem_t) -> int {
 
 pub unsafe fn sem_trywait(sem: *mut sem_t) -> int {
     match (*sem).semaphore.try_wait() {
-        true => {
+        WaitResult::Success => {
             Errno::set(Errno::ESUCCES);
             0
         }
-        false => {
+        WaitResult::Interrupted => {
             Errno::set(Errno::EAGAIN);
             -1
         }
@@ -79,7 +83,7 @@ pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> in
     let milli_seconds = (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
         - now.as_millis() as i64;
 
-    match (*sem).semaphore.wait(|atomic, value| -> bool {
+    match (*sem).semaphore.wait(|atomic, value| -> WaitAction {
         WaitOnAddress(
             (atomic as *const AtomicU32).cast(),
             (value as *const u32).cast(),
@@ -87,13 +91,13 @@ pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> in
             milli_seconds as _,
         );
 
-        false
+        WaitAction::Abort
     }) {
-        true => {
+        WaitResult::Success => {
             Errno::set(Errno::ESUCCES);
             0
         }
-        false => {
+        WaitResult::Interrupted => {
             Errno::set(Errno::ETIMEDOUT);
             -1
         }

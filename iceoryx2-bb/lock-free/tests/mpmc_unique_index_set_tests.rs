@@ -10,13 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
-use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_bb_memory::memory::Memory;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_testing::assert_that;
-use pin_init::init_stack;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Barrier, Mutex};
 use std::thread;
@@ -101,13 +99,10 @@ fn mpmc_unique_index_set_borrowed_indices_works() {
 
 #[test]
 fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory() {
-    init_stack!(
-        memory =
-            Memory::<{ UniqueIndexSet::const_memory_size(128) }, BumpAllocator>::new_filled(0xff,)
-    );
-    let memory = memory.unwrap();
+    let mut memory = [0u8; UniqueIndexSet::const_memory_size(128)];
+    let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
     let sut = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
-    unsafe { assert_that!(sut.init(memory.allocator()), is_ok) };
+    unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
     let mut ids = vec![];
 

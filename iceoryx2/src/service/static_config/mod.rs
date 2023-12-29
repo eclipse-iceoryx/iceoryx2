@@ -37,15 +37,26 @@ pub struct StaticConfig {
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
+fn create_uuid<Hasher: Hash>(
+    service_name: &ServiceName,
+    messaging_pattern: &MessagingPattern,
+) -> Hasher {
+    let pattern_and_service = (<MessagingPattern as Into<u32>>::into(messaging_pattern.clone()))
+        .to_string()
+        + service_name.as_str();
+    Hasher::new(pattern_and_service.as_bytes())
+}
+
 impl StaticConfig {
     pub(crate) fn new_event<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
     ) -> Self {
+        let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
-            uuid: Hasher::new(service_name.as_bytes()).as_hex_string(),
+            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern).as_hex_string(),
             service_name: *service_name,
-            messaging_pattern: MessagingPattern::Event(event::StaticConfig::new(config)),
+            messaging_pattern,
         }
     }
 
@@ -53,12 +64,12 @@ impl StaticConfig {
         service_name: &ServiceName,
         config: &config::Config,
     ) -> Self {
+        let messaging_pattern =
+            MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
         Self {
-            uuid: Hasher::new(service_name.as_bytes()).as_hex_string(),
+            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern).as_hex_string(),
             service_name: *service_name,
-            messaging_pattern: MessagingPattern::PublishSubscribe(
-                publish_subscribe::StaticConfig::new(config),
-            ),
+            messaging_pattern,
         }
     }
 

@@ -15,6 +15,8 @@ use core::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
+use crate::{WaitAction, WaitResult};
+
 pub struct Mutex {
     // we use an AtomicU32 since it should be supported on nearly every platform
     state: AtomicU32,
@@ -33,24 +35,24 @@ impl Mutex {
         }
     }
 
-    pub fn lock<Wait: Fn(&AtomicU32, &u32) -> bool>(&self, wait: Wait) -> bool {
-        if self.uncontested_lock(crate::SPIN_REPETITIONS) {
-            return true;
+    pub fn lock<Wait: Fn(&AtomicU32, &u32) -> WaitAction>(&self, wait: Wait) -> WaitResult {
+        if self.uncontested_lock(crate::SPIN_REPETITIONS) == WaitResult::Success {
+            return WaitResult::Success;
         }
 
         loop {
-            let keep_running = wait(&self.state, &1);
+            let action = wait(&self.state, &1);
 
             if self
                 .state
                 .compare_exchange(0, 1, Ordering::Acquire, Ordering::Relaxed)
                 .is_ok()
             {
-                return true;
+                return WaitResult::Success;
             }
 
-            if !keep_running {
-                return false;
+            if action == WaitAction::Abort {
+                return WaitResult::Interrupted;
             }
         }
     }
@@ -60,15 +62,21 @@ impl Mutex {
         wake_one(&self.state);
     }
 
-    pub fn try_lock(&self) -> bool {
-        self.state
+    pub fn try_lock(&self) -> WaitResult {
+        if self
+            .state
             .compare_exchange(0, 1, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
+        {
+            WaitResult::Success
+        } else {
+            WaitResult::Interrupted
+        }
     }
 
-    fn uncontested_lock(&self, retry_limit: u64) -> bool {
-        if self.try_lock() {
-            return true;
+    fn uncontested_lock(&self, retry_limit: u64) -> WaitResult {
+        if self.try_lock() == WaitResult::Success {
+            return WaitResult::Success;
         }
 
         let mut retry_counter = 0;
@@ -81,10 +89,10 @@ impl Mutex {
             retry_counter += 1;
 
             if retry_limit == retry_counter {
-                return false;
+                return WaitResult::Interrupted;
             }
         }
 
-        true
+        WaitResult::Success
     }
 }

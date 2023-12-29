@@ -17,18 +17,44 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    #[cfg(target_os = "linux")]
-    println!("cargo:rustc-link-lib=acl");
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     println!("cargo:rustc-link-lib=pthread");
 
-    println!("cargo:rerun-if-changed=src/c/posix.h");
+    if std::env::var("DOCS_RS").is_ok() {
+        println!("cargo:rerun-if-changed=src/c/posix_docs_rs.h");
+    } else {
+        #[cfg(all(target_os = "linux", feature = "acl"))]
+        println!("cargo:rustc-link-lib=acl");
+        println!("cargo:rerun-if-changed=src/c/posix.h");
+    }
 
-    let bindings = bindgen::Builder::default()
-        .header("src/c/posix.h")
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .generate()
-        .expect("Unable to generate bindings");
+    let bindings = if std::env::var("DOCS_RS").is_ok() {
+        bindgen::Builder::default()
+            .header("src/c/posix.h")
+            .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+            .clang_arg("-D IOX2_DOCS_RS_SUPPORT")
+            .generate()
+            .expect("Unable to generate bindings")
+    } else {
+        #[cfg(not(feature = "acl"))]
+        {
+            bindgen::Builder::default()
+                .header("src/c/posix.h")
+                .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+                .generate()
+                .expect("Unable to generate bindings")
+        }
+
+        #[cfg(feature = "acl")]
+        {
+            bindgen::Builder::default()
+                .header("src/c/posix.h")
+                .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+                .clang_arg("-D IOX2_ACL_SUPPORT")
+                .generate()
+                .expect("Unable to generate bindings")
+        }
+    };
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings

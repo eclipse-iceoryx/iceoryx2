@@ -44,14 +44,12 @@ unsafe impl Send for TestType {}
 
 #[generic_tests::define]
 mod mpmc_container {
+    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::mpmc::container::*;
     use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
-    use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_memory::memory::Memory;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_testing::assert_that;
-    use pin_init::init_stack;
     use std::collections::HashMap;
     use std::collections::HashSet;
     use std::fmt::Debug;
@@ -117,15 +115,10 @@ mod mpmc_container {
     >() {
         // TestType is the largest test type so it is safe to acquire this memory for every test
         // case - hack required since `T` cannot be used in const operations
-        init_stack!(
-            memory = Memory::<
-                { Container::<crate::TestType>::const_memory_size(129_usize) },
-                BumpAllocator,
-            >::new_filled(0xff,)
-        );
-        let memory = memory.unwrap();
+        let mut memory = [0u8; Container::<crate::TestType>::const_memory_size(129_usize)];
+        let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
         let sut = unsafe { Container::<T>::new_uninit(CAPACITY) };
-        unsafe { assert_that!(sut.init(memory.allocator()), is_ok) };
+        unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
         let mut stored_indices = vec![];
         for i in 0..CAPACITY - 1 {

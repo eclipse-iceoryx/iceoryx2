@@ -63,16 +63,6 @@ pub type ushort = u16;
 pub type ulong = u64;
 pub type void = core::ffi::c_void;
 
-pub type acl_t = u64;
-pub type acl_permset_t = u64;
-pub type acl_entry_t = u64;
-
-pub struct acl_type_t {}
-impl Struct for acl_type_t {}
-
-pub type acl_tag_t = u64;
-pub type acl_perm_t = u32;
-
 #[derive(Clone, Copy)]
 pub struct sigset_t {}
 impl Struct for sigset_t {}
