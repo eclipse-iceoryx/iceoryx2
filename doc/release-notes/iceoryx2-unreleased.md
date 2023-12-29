@@ -23,7 +23,7 @@
 
 ### New API features
 
- * Example [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Add `FixedSizeByteString::from_bytes_truncated` [#56](https://github.com/eclipse-iceoryx/iceoryx2/issues/56)
 
 ### API Breaking Changes
 
