@@ -31,6 +31,8 @@
 //! [`Listener`](crate::port::listener::Listener)s.
 //!
 //! **Note:** This does **not** send or receive POSIX signals nor is it based on them.
+use std::fmt::Display;
+
 use crate::service::static_config::event;
 use crate::service::static_config::publish_subscribe;
 use serde::{Deserialize, Serialize};
@@ -42,6 +44,15 @@ use serde::{Deserialize, Serialize};
 pub enum MessagingPattern {
     PublishSubscribe(publish_subscribe::StaticConfig),
     Event(event::StaticConfig),
+}
+
+impl Display for MessagingPattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MessagingPattern::Event(_) => write!(f, "Event"),
+            MessagingPattern::PublishSubscribe(_) => write!(f, "PublishSubscribe"),
+        }
+    }
 }
 
 impl From<MessagingPattern> for u32 {

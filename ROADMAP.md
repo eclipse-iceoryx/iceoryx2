@@ -91,7 +91,7 @@
 * [ ] Android
 * [x] Linux
 * [x] Windows
-* [ ] Mac Os
+* [x] Mac Os
 * [ ] iOS
 * [ ] WatchOS
 * [x] FreeBSD

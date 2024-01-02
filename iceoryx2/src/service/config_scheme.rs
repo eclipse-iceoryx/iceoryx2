@@ -73,7 +73,7 @@ pub(crate) fn static_config_storage_config<'config, Service: crate::service::Det
     generate_default_config::<<Service::StaticStorage as NamedConceptMgmt>::Configuration>(
         "static_config_storage_config",
         &global_config.global.prefix,
-        &global_config.global.service.dynamic_config_storage_suffix,
+        &global_config.global.service.static_config_storage_suffix,
         &path_hint,
     )
 }
