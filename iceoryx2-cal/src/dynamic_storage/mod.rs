@@ -57,23 +57,12 @@
 use std::fmt::Debug;
 
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_bb_posix::config::TEMP_DIRECTORY;
 use iceoryx2_bb_system_types::file_name::FileName;
-use iceoryx2_bb_system_types::path::Path;
 
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 
 pub mod posix_shared_memory;
 pub mod process_local;
-
-/// The default suffix of every dynamic storage
-pub const DEFAULT_SUFFIX: FileName = unsafe { FileName::new_unchecked(b".dyn") };
-
-/// The default prefix of every dynamic storage
-pub const DEFAULT_PREFIX: FileName = unsafe { FileName::new_unchecked(b"iox2_") };
-
-/// The default path hint for every dynamic storage
-pub const DEFAULT_PATH_HINT: Path = TEMP_DIRECTORY;
 
 /// Describes failures when creating a new [`DynamicStorage`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -155,4 +144,9 @@ pub trait DynamicStorage<T: Send + Sync>: Sized + Debug + NamedConceptMgmt + Nam
     /// can be accessed by multiple processes concurrently therefore it must be constant or
     /// thread-safe.
     fn get(&self) -> &T;
+
+    /// The default suffix of every dynamic storage
+    fn default_suffix() -> FileName {
+        unsafe { FileName::new_unchecked(b".dyn") }
+    }
 }

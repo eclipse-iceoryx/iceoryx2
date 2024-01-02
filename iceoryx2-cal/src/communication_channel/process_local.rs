@@ -69,9 +69,9 @@ pub struct Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            suffix: DEFAULT_SUFFIX,
-            prefix: DEFAULT_PREFIX,
-            path_hint: DEFAULT_PATH_HINT,
+            suffix: Channel::default_suffix(),
+            prefix: Channel::default_prefix(),
+            path_hint: Channel::default_path_hint(),
         }
     }
 }

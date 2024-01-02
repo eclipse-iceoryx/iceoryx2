@@ -17,7 +17,6 @@ use std::fmt::Debug;
 
 pub use crate::shared_memory::PointerOffset;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-use iceoryx2_bb_posix::config::TEMP_DIRECTORY;
 pub use iceoryx2_bb_system_types::file_name::FileName;
 pub use iceoryx2_bb_system_types::path::Path;
 
@@ -94,15 +93,6 @@ pub const DEFAULT_BUFFER_SIZE: usize = 4;
 pub const DEFAULT_ENABLE_SAFE_OVERFLOW: bool = false;
 pub const DEFAULT_MAX_BORROWED_SAMPLES: usize = 4;
 
-/// The default suffix of every zero copy connection
-pub const DEFAULT_SUFFIX: FileName = unsafe { FileName::new_unchecked(b".rx") };
-
-/// The default prefix of every zero copy connection
-pub const DEFAULT_PREFIX: FileName = unsafe { FileName::new_unchecked(b"iox2_") };
-
-/// The default path hint for every zero copy connection
-pub const DEFAULT_PATH_HINT: Path = TEMP_DIRECTORY;
-
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;
     fn enable_safe_overflow(self, value: bool) -> Self;
@@ -146,5 +136,10 @@ pub trait ZeroCopyConnection: Sized + NamedConceptMgmt {
     /// Returns true if the buffer size of the connection can be configured
     fn has_configurable_buffer_size() -> bool {
         false
+    }
+
+    /// The default suffix of every zero copy connection
+    fn default_suffix() -> FileName {
+        unsafe { FileName::new_unchecked(b".rx") }
     }
 }

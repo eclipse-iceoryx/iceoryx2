@@ -16,7 +16,6 @@ pub mod unix_datagram_socket;
 use std::{fmt::Debug, time::Duration};
 
 pub use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-use iceoryx2_bb_posix::config::TEMP_DIRECTORY;
 pub use iceoryx2_bb_system_types::file_name::FileName;
 pub use iceoryx2_bb_system_types::path::Path;
 
@@ -78,15 +77,6 @@ impl std::fmt::Display for ListenerCreateError {
 
 impl std::error::Error for ListenerCreateError {}
 
-/// The default suffix of every event
-pub const DEFAULT_SUFFIX: FileName = unsafe { FileName::new_unchecked(b".event") };
-
-/// The default prefix of every event
-pub const DEFAULT_PREFIX: FileName = unsafe { FileName::new_unchecked(b"iox2_") };
-
-/// The default path hint for every event
-pub const DEFAULT_PATH_HINT: Path = TEMP_DIRECTORY;
-
 pub trait TriggerId: Debug + Copy {}
 
 impl TriggerId for u64 {}
@@ -117,4 +107,9 @@ pub trait Event<Id: TriggerId>: Sized + NamedConceptMgmt + Debug {
     type NotifierBuilder: NotifierBuilder<Id, Self>;
     type Listener: Listener<Id>;
     type ListenerBuilder: ListenerBuilder<Id, Self>;
+
+    /// The default suffix of every event
+    fn default_suffix() -> FileName {
+        unsafe { FileName::new_unchecked(b".event") }
+    }
 }

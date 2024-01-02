@@ -295,7 +295,7 @@ macro_rules! semantic_string {
         }
 
         impl $string_name {
-            pub const unsafe fn new_unchecked(bytes: &[u8]) -> Self {
+            pub unsafe fn new_unchecked(bytes: &[u8]) -> Self {
                 Self {
                     value: iceoryx2_bb_container::byte_string::FixedSizeByteString::new_unchecked(bytes),
                 }

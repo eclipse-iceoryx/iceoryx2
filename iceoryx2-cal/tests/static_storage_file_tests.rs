@@ -40,7 +40,7 @@ fn static_storage_file_custom_path_and_suffix_works() {
     let content = "some storage content".to_string();
     let config = Configuration::default()
         .suffix(unsafe { FileName::new_unchecked(b".blubbme") })
-        .path_hint(TEST_DIRECTORY);
+        .path_hint(test_directory());
 
     let storage_guard = Builder::new(&storage_name)
         .config(&config)
@@ -66,7 +66,7 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
     let storage_name = generate_name();
     let content = "some more funky content".to_string();
     let non_existing_path =
-        FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name()).unwrap();
+        FilePath::from_path_and_file(&test_directory(), &generate_name()).unwrap();
 
     Directory::remove(&non_existing_path.into()).ok();
     let config = Configuration::default()
@@ -97,9 +97,12 @@ fn static_storage_file_custom_path_and_suffix_list_storage_works() {
     let config = Configuration::default()
         .suffix(unsafe { FileName::new_unchecked(b".blubbme") })
         .path_hint(
-            FilePath::from_path_and_file(&TEST_DIRECTORY, &FileName::new(b"non_existing").unwrap())
-                .unwrap()
-                .into(),
+            FilePath::from_path_and_file(
+                &test_directory(),
+                &FileName::new(b"non_existing").unwrap(),
+            )
+            .unwrap()
+            .into(),
         );
 
     let content = "some storage content".to_string();
@@ -117,7 +120,8 @@ fn static_storage_file_custom_path_and_suffix_list_storage_works() {
 
     let mut some_files = vec![];
     for _i in 0..NUMBER_OF_STORAGES {
-        let storage_name = FilePath::from_path_and_file(&TEST_DIRECTORY, &generate_name()).unwrap();
+        let storage_name =
+            FilePath::from_path_and_file(&test_directory(), &generate_name()).unwrap();
         FileBuilder::new(&storage_name)
             .creation_mode(CreationMode::PurgeAndCreate)
             .create()

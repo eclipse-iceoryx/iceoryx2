@@ -32,30 +32,46 @@ use crate::static_storage::file::{
 
 const IS_INITIALIZED_STATE_VALUE: u64 = 0xbeefaffedeadbeef;
 
-#[derive(Clone, Debug)]
-pub struct Configuration {
+#[derive(Debug)]
+pub struct Configuration<Allocator: ShmAllocator + Debug> {
     pub is_memory_locked: bool,
     pub permission: Permission,
     pub zero_memory: bool,
     path: Path,
     suffix: FileName,
     prefix: FileName,
+    _phantom: PhantomData<Allocator>,
 }
 
-impl Default for Configuration {
+impl<Allocator: ShmAllocator + Debug> Default for Configuration<Allocator> {
     fn default() -> Self {
         Self {
             is_memory_locked: false,
             permission: Permission::OWNER_ALL,
             zero_memory: true,
-            path: DEFAULT_PATH_HINT,
-            suffix: DEFAULT_SUFFIX,
-            prefix: DEFAULT_PREFIX,
+            path: Memory::<Allocator>::default_path_hint(),
+            suffix: Memory::<Allocator>::default_suffix(),
+            prefix: Memory::<Allocator>::default_prefix(),
+            _phantom: PhantomData,
         }
     }
 }
 
-impl NamedConceptConfiguration for Configuration {
+impl<Allocator: ShmAllocator + Debug> Clone for Configuration<Allocator> {
+    fn clone(&self) -> Self {
+        Self {
+            is_memory_locked: self.is_memory_locked,
+            permission: self.permission,
+            zero_memory: self.zero_memory,
+            path: self.path,
+            suffix: self.suffix,
+            prefix: self.prefix,
+            _phantom: self._phantom,
+        }
+    }
+}
+
+impl<Allocator: ShmAllocator + Debug> NamedConceptConfiguration for Configuration<Allocator> {
     fn prefix(mut self, value: FileName) -> Self {
         self.prefix = value;
         self
@@ -88,7 +104,7 @@ impl NamedConceptConfiguration for Configuration {
 pub struct Builder<Allocator: ShmAllocator + Debug> {
     name: FileName,
     size: usize,
-    config: Configuration,
+    config: Configuration<Allocator>,
     _phantom_allocator: PhantomData<Allocator>,
 }
 
@@ -116,7 +132,7 @@ impl<Allocator: ShmAllocator + Debug> NamedConceptBuilder<Memory<Allocator>>
         }
     }
 
-    fn config(mut self, config: &Configuration) -> Self {
+    fn config(mut self, config: &Configuration<Allocator>) -> Self {
         self.config = config.clone();
         self
     }
@@ -305,7 +321,7 @@ impl<Allocator: ShmAllocator + Debug> NamedConcept for Memory<Allocator> {
 }
 
 impl<Allocator: ShmAllocator + Debug> NamedConceptMgmt for Memory<Allocator> {
-    type Configuration = Configuration;
+    type Configuration = Configuration<Allocator>;
 
     fn does_exist_cfg(
         name: &FileName,

@@ -178,4 +178,14 @@ pub trait NamedConceptMgmt {
 
     /// Returns a list of all available concepts with a custom configuration.
     fn list_cfg(cfg: &Self::Configuration) -> Result<Vec<FileName>, NamedConceptListError>;
+
+    /// The default prefix of every zero copy connection
+    fn default_prefix() -> FileName {
+        unsafe { FileName::new_unchecked(b"iox2_") }
+    }
+
+    /// The default path hint for every zero copy connection
+    fn default_path_hint() -> Path {
+        iceoryx2_bb_posix::config::temp_directory()
+    }
 }

@@ -43,7 +43,7 @@ fn generate_socket_name() -> FilePath {
     )
     .unwrap();
 
-    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
+    FilePath::from_path_and_file(&test_directory(), &file).unwrap()
 }
 
 fn generate_file_name() -> FilePath {
@@ -57,7 +57,7 @@ fn generate_file_name() -> FilePath {
     )
     .unwrap();
 
-    FilePath::from_path_and_file(&TEST_DIRECTORY, &file).unwrap()
+    FilePath::from_path_and_file(&test_directory(), &file).unwrap()
 }
 
 struct TestFixture {
