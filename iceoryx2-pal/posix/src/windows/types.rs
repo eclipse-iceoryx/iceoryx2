@@ -34,7 +34,7 @@ pub struct DIR {}
 
 pub type blkcnt_t = u64;
 pub type blksize_t = u64;
-pub type char = core::ffi::c_char;
+pub type c_char = core::ffi::c_char;
 pub type clockid_t = i32;
 pub type dev_t = u64;
 pub type gid_t = u32;

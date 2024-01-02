@@ -91,7 +91,7 @@ pub mod posix {
         }
     }
 
-    pub(crate) unsafe fn c_string_length(value: *const crate::posix::char) -> usize {
+    pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usize {
         for i in 0..isize::MAX {
             if *value.offset(i) == crate::posix::NULL_TERMINATOR {
                 return i as usize;
@@ -107,7 +107,7 @@ pub(crate) mod win_internal {
     #![allow(dead_code)]
     use std::os::windows::prelude::OsStrExt;
 
-    pub(crate) unsafe fn print_char(value: *const crate::posix::char) {
+    pub(crate) unsafe fn print_char(value: *const crate::posix::c_char) {
         let len = crate::posix::c_string_length(value);
 
         let text =
@@ -125,7 +125,7 @@ pub(crate) mod win_internal {
         0
     }
 
-    pub(crate) unsafe fn c_string_to_wide_string(value: *const crate::posix::char) -> Vec<u16> {
+    pub(crate) unsafe fn c_string_to_wide_string(value: *const crate::posix::c_char) -> Vec<u16> {
         let value_str = core::str::from_utf8_unchecked(core::slice::from_raw_parts(
             value as *const u8,
             crate::posix::c_string_length(value),

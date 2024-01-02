@@ -15,7 +15,7 @@
 
 use crate::posix::types::*;
 
-pub unsafe fn sem_create(name: *const char, oflag: int, mode: mode_t, value: uint) -> *mut sem_t {
+pub unsafe fn sem_create(name: *const c_char, oflag: int, mode: mode_t, value: uint) -> *mut sem_t {
     crate::internal::sem_open(name, oflag, mode, value)
 }
 
@@ -35,11 +35,11 @@ pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> in
     crate::internal::sem_timedwait(sem, abs_timeout)
 }
 
-pub unsafe fn sem_unlink(name: *const char) -> int {
+pub unsafe fn sem_unlink(name: *const c_char) -> int {
     crate::internal::sem_unlink(name)
 }
 
-pub unsafe fn sem_open(name: *const char, oflag: int) -> *mut sem_t {
+pub unsafe fn sem_open(name: *const c_char, oflag: int) -> *mut sem_t {
     crate::internal::sem_open(name, oflag)
 }
 

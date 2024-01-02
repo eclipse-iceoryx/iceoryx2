@@ -79,7 +79,7 @@ impl Limit {
         match self {
             Limit::MaxPathLength | Limit::MaxFileNameLength => {
                 let result =
-                    unsafe { posix::pathconf("/".as_ptr() as *const posix::char, -(*self as i32)) };
+                    unsafe { posix::pathconf("/".as_ptr() as *const posix::c_char, -(*self as i32)) };
                 result.clamp(0, posix::long::MAX) as u64
             }
             Limit::MaxUnixDomainSocketNameLength => {

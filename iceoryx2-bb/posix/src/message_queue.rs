@@ -557,7 +557,7 @@ pub trait MessageQueueSenderInterface<T>: internal::MessageQueueInterface + Debu
         if unsafe {
             posix::mq_send(
                 self.get().mqdes,
-                (value as *const T) as *const posix::char,
+                (value as *const T) as *const posix::c_char,
                 std::mem::size_of::<T>(),
                 prio,
             )
@@ -615,7 +615,7 @@ pub trait MessageQueueSenderInterface<T>: internal::MessageQueueInterface + Debu
                 if unsafe {
                     posix::mq_timedsend(
                         self.get().mqdes,
-                        (value as *const T) as *const posix::char,
+                        (value as *const T) as *const posix::c_char,
                         std::mem::size_of::<T>(),
                         prio,
                         &timeout.as_timespec(),
@@ -696,7 +696,7 @@ pub trait MessageQueueReceiverInterface<T>: internal::MessageQueueInterface + De
         let received_bytes = unsafe {
             posix::mq_receive(
                 self.get().mqdes,
-                data.as_mut_ptr() as *mut posix::char,
+                data.as_mut_ptr() as *mut posix::c_char,
                 std::mem::size_of::<T>(),
                 &mut priority,
             )
@@ -749,7 +749,7 @@ pub trait MessageQueueReceiverInterface<T>: internal::MessageQueueInterface + De
                 let received_bytes = unsafe {
                     posix::mq_timedreceive(
                         self.get().mqdes,
-                        data.as_mut_ptr() as *mut posix::char,
+                        data.as_mut_ptr() as *mut posix::c_char,
                         std::mem::size_of::<T>(),
                         &mut priority,
                         &timeout.as_timespec(),

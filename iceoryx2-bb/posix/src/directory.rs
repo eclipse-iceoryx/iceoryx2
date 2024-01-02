@@ -388,11 +388,11 @@ impl Directory {
             let mut contents: Vec<DirectoryEntry> = vec![];
             for i in 0..number_of_directory_entries {
                 let raw_name = unsafe {
-                    (*(*namelist.offset(i as isize))).d_name.as_ptr() as *mut posix::char
+                    (*(*namelist.offset(i as isize))).d_name.as_ptr() as *mut posix::c_char
                 };
                 let raw_name_length = unsafe { strlen(raw_name) };
 
-                const DOT: posix::char = b'.' as _;
+                const DOT: posix::c_char = b'.' as _;
                 // dot is skipped
                 if raw_name_length == 1 && unsafe { *raw_name == DOT } {
                     continue;
