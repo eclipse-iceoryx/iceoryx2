@@ -107,12 +107,12 @@ fn udp_socket_when_socket_goes_out_of_scope_address_is_free_again() {
 fn udp_socket_server_has_correct_address() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(65111))
+        .port(Port::new(55223))
         .listen()
         .unwrap();
 
     assert_that!(sut_server.address(), eq ipv4_address::LOCALHOST);
-    assert_that!(sut_server.port(), eq Port::new(65111));
+    assert_that!(sut_server.port(), eq Port::new(55223));
 }
 
 #[test]
