@@ -58,7 +58,12 @@ pub unsafe fn mq_timedreceive(
     crate::internal::mq_timedreceive(mqdes, msg_ptr, msg_len, msg_prio, abs_timeout)
 }
 
-pub unsafe fn mq_send(mqdes: mqd_t, msg_ptr: *const c_char, msg_len: size_t, msg_prio: uint) -> int {
+pub unsafe fn mq_send(
+    mqdes: mqd_t,
+    msg_ptr: *const c_char,
+    msg_len: size_t,
+    msg_prio: uint,
+) -> int {
     crate::internal::mq_send(mqdes, msg_ptr, msg_len, msg_prio)
 }
 
