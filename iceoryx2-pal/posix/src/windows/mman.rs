@@ -113,7 +113,7 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     result
 }
 
-pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
+pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
     let name = remove_leading_path_separator(name);
     let handle: HANDLE = 0;
     let shm_handle;
@@ -288,7 +288,7 @@ pub(crate) unsafe fn shm_get_size(fd_handle: HANDLE) -> u64 {
     read_buffer
 }
 
-pub unsafe fn shm_unlink(name: *const char) -> int {
+pub unsafe fn shm_unlink(name: *const c_char) -> int {
     let name = remove_leading_path_separator(name);
 
     if win32call! { DeleteFileA(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr()),

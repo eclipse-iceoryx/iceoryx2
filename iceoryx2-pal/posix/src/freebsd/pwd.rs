@@ -15,9 +15,9 @@
 use crate::posix::types::*;
 
 pub unsafe fn getpwnam_r(
-    name: *const char,
+    name: *const c_char,
     pwd: *mut passwd,
-    buf: *mut char,
+    buf: *mut c_char,
     buflen: size_t,
     result: *mut *mut passwd,
 ) -> int {
@@ -27,7 +27,7 @@ pub unsafe fn getpwnam_r(
 pub unsafe fn getpwuid_r(
     uid: uid_t,
     pwd: *mut passwd,
-    buf: *mut char,
+    buf: *mut c_char,
     buflen: size_t,
     result: *mut *mut passwd,
 ) -> int {
@@ -35,9 +35,9 @@ pub unsafe fn getpwuid_r(
 }
 
 pub unsafe fn getgrnam_r(
-    name: *const char,
+    name: *const c_char,
     grp: *mut group,
-    buf: *mut char,
+    buf: *mut c_char,
     buflen: size_t,
     result: *mut *mut group,
 ) -> int {
@@ -47,7 +47,7 @@ pub unsafe fn getgrnam_r(
 pub unsafe fn getgrgid_r(
     gid: gid_t,
     grp: *mut group,
-    buf: *mut char,
+    buf: *mut c_char,
     buflen: size_t,
     result: *mut *mut group,
 ) -> int {

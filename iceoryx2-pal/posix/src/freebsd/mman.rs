@@ -33,11 +33,11 @@ pub unsafe fn munlockall() -> int {
     crate::internal::munlockall()
 }
 
-pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
+pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
     crate::internal::shm_open(name, oflag, mode)
 }
 
-pub unsafe fn shm_unlink(name: *const char) -> int {
+pub unsafe fn shm_unlink(name: *const c_char) -> int {
     crate::internal::shm_unlink(name)
 }
 

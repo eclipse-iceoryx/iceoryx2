@@ -325,7 +325,7 @@ pub unsafe fn pthread_self() -> pthread_t {
     crate::internal::pthread_self()
 }
 
-pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const char) -> int {
+pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
     let state = ThreadStates::get_instance().get_mut(thread);
     for i in 0..THREAD_NAME_LENGTH {
         state.name[i] = *name.add(i) as _;
@@ -338,7 +338,7 @@ pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const char) -> int {
     crate::internal::pthread_setname_np(name)
 }
 
-pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut char, len: size_t) -> int {
+pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int {
     if len < 15 {
         return Errno::ERANGE as _;
     }

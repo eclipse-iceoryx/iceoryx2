@@ -136,7 +136,7 @@ unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
     buffer
 }
 
-pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
+pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
     let real_name = get_real_shm_name(name);
     if oflag & O_EXCL != 0 && real_name.is_some() {
         Errno::set(Errno::EEXIST);
@@ -161,7 +161,7 @@ pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
     crate::internal::shm_open(real_name.as_ptr().cast(), oflag, mode as uint)
 }
 
-pub unsafe fn shm_unlink(name: *const char) -> int {
+pub unsafe fn shm_unlink(name: *const c_char) -> int {
     let real_name = get_real_shm_name(name);
 
     if let Some(real_name) = real_name {

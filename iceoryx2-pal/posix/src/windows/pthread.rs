@@ -365,14 +365,14 @@ pub unsafe fn pthread_self() -> pthread_t {
     thread
 }
 
-pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const char) -> int {
+pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
     let wide_name = c_string_to_wide_string(name);
     win32call! { SetThreadDescription(thread.handle, wide_name.as_ptr()) };
 
     Errno::ESUCCES as int
 }
 
-pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut char, len: size_t) -> int {
+pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int {
     let mut wide_name: *mut u16 = core::ptr::null_mut();
 
     win32call! { GetThreadDescription(thread.handle, &mut wide_name) };

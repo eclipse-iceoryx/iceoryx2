@@ -21,7 +21,7 @@ use crate::posix::pthread::{wait, wake_one};
 use crate::posix::Errno;
 use crate::posix::*;
 
-pub unsafe fn sem_create(name: *const char, oflag: int, mode: mode_t, value: uint) -> *mut sem_t {
+pub unsafe fn sem_create(name: *const c_char, oflag: int, mode: mode_t, value: uint) -> *mut sem_t {
     SEM_FAILED
 }
 
@@ -86,11 +86,11 @@ pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> in
     }
 }
 
-pub unsafe fn sem_unlink(name: *const char) -> int {
+pub unsafe fn sem_unlink(name: *const c_char) -> int {
     -1
 }
 
-pub unsafe fn sem_open(name: *const char, oflag: int) -> *mut sem_t {
+pub unsafe fn sem_open(name: *const c_char, oflag: int) -> *mut sem_t {
     SEM_FAILED
 }
 

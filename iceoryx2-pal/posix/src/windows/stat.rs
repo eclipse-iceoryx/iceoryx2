@@ -25,7 +25,7 @@ use crate::win32call;
 
 use super::win32_handle_translator::HandleTranslator;
 
-pub unsafe fn stat(path: *const char, buf: *mut stat_t) -> int {
+pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
     if HandleTranslator::get_instance().contains_uds(path) {
         (*buf).st_mode = S_IFSOCK | S_IRUSR | S_IWUSR | S_IXUSR;
         return 0;
