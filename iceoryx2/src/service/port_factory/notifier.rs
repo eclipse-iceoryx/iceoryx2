@@ -30,10 +30,7 @@
 //! ```
 use std::fmt::Debug;
 
-use crate::port::{
-    event_id::EventId,
-    notifier_port::{NotifierCreateError, NotifierPort},
-};
+use crate::port::{event_id::EventId, notifier::NotifierCreateError, notifier_port::NotifierPort};
 use iceoryx2_bb_log::fail;
 
 use crate::service;

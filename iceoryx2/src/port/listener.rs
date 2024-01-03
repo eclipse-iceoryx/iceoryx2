@@ -62,6 +62,7 @@ impl std::fmt::Display for ListenerCreateError {
 
 impl std::error::Error for ListenerCreateError {}
 
+/// The interface of the receiving endpoint of an event based communication.
 pub trait Listener {
     /// Returns the cached [`EventId`]s. Whenever [`Listener::try_wait()`],
     /// [`Listener::timed_wait()`] or [`Listener::blocking_wait()`] is called the cache is reset
