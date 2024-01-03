@@ -38,7 +38,7 @@ use crate::{port::subscriber_port::SubscriberPort, raw_sample::RawSample, servic
 /// It stores the payload and is acquired by the [`Subscriber`] whenever it receives new data from a
 /// [`crate::port::publisher::Publisher`] via [`Subscriber::receive()`].
 #[derive(Debug)]
-pub struct Sample<
+pub struct SampleImpl<
     'a,
     'subscriber,
     'config,
@@ -52,7 +52,7 @@ pub struct Sample<
 }
 
 impl<'config, Service: service::Details<'config>, Header: Debug, MessageType: Debug> Deref
-    for Sample<'_, '_, 'config, Service, Header, MessageType>
+    for SampleImpl<'_, '_, 'config, Service, Header, MessageType>
 {
     type Target = MessageType;
     fn deref(&self) -> &Self::Target {
@@ -67,7 +67,7 @@ impl<
         Service: service::Details<'config>,
         Header: Debug,
         MessageType: Debug,
-    > Drop for Sample<'a, 'subscriber, 'config, Service, Header, MessageType>
+    > Drop for SampleImpl<'a, 'subscriber, 'config, Service, Header, MessageType>
 {
     fn drop(&mut self) {
         self.subscriber.release_sample(self.channel_id, self.ptr);
@@ -81,7 +81,7 @@ impl<
         Service: service::Details<'config>,
         Header: Debug,
         MessageType: Debug,
-    > Sample<'a, 'subscriber, 'config, Service, Header, MessageType>
+    > SampleImpl<'a, 'subscriber, 'config, Service, Header, MessageType>
 {
     /// Returns a reference to the payload of the sample
     pub fn payload(&self) -> &MessageType {

@@ -288,10 +288,10 @@ pub mod port;
 pub(crate) mod raw_sample;
 
 /// The payload that is received by a [`crate::port::subscriber::Subscriber`].
-pub mod sample;
+pub mod sample_impl;
 
 /// The payload that is sent by a [`crate::port::publisher::Publisher`].
-pub mod sample_mut;
+pub mod sample_mut_impl;
 
 /// The foundation of communication the service with its
 /// [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern)
