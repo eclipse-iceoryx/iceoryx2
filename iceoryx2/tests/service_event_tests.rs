@@ -13,12 +13,8 @@
 #[generic_tests::define]
 mod service_event {
     use iceoryx2::config::Config;
-    use iceoryx2::port::event_id::EventId;
-    use iceoryx2::service::{
-        builder::event::{EventCreateError, EventOpenError},
-        service_name::ServiceName,
-        Service,
-    };
+    use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 

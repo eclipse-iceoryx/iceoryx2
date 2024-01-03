@@ -29,7 +29,7 @@ use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
 
-use crate::port::listener_port::{ListenerCreateError, ListenerPort};
+use crate::port::{listener::ListenerCreateError, listener_port::ListenerPort};
 use crate::service;
 
 use super::event::PortFactory;

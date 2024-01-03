@@ -12,8 +12,7 @@
 
 #[generic_tests::define]
 mod service {
-    use iceoryx2::port::event_id::EventId;
-    use iceoryx2::service::{service_name::ServiceName, Service};
+    use iceoryx2::prelude::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 
