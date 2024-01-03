@@ -14,7 +14,7 @@
 mod publisher {
     use std::time::{Duration, Instant};
 
-    use iceoryx2::port::publisher::LoanError;
+    use iceoryx2::port::publisher_port::LoanError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::{service_name::ServiceName, Service};
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};

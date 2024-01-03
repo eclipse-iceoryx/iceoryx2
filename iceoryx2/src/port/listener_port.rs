@@ -60,7 +60,7 @@ impl std::error::Error for ListenerCreateError {}
 
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]
-pub struct Listener<'a, 'config: 'a, Service: service::Details<'config>> {
+pub struct ListenerPort<'a, 'config: 'a, Service: service::Details<'config>> {
     _dynamic_config_guard: Option<UniqueIndex<'a>>,
     listener: <Service::Event as iceoryx2_cal::event::Event<EventId>>::Listener,
     cache: Vec<EventId>,
@@ -68,7 +68,7 @@ pub struct Listener<'a, 'config: 'a, Service: service::Details<'config>> {
     _phantom_b: PhantomData<&'config ()>,
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>> Listener<'a, 'config, Service> {
+impl<'a, 'config: 'a, Service: service::Details<'config>> ListenerPort<'a, 'config, Service> {
     pub(crate) fn new(service: &'a Service) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";

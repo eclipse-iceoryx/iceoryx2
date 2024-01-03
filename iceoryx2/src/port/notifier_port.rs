@@ -135,7 +135,7 @@ impl<'config, Service: service::Details<'config>> ListenerConnections<'config, S
 
 /// Represents the sending endpoint of an event based communication.
 #[derive(Debug)]
-pub struct Notifier<'a, 'config: 'a, Service: service::Details<'config>> {
+pub struct NotifierPort<'a, 'config: 'a, Service: service::Details<'config>> {
     listener_connections: ListenerConnections<'config, Service>,
     listener_list_state: UnsafeCell<ContainerState<'a, UniqueListenerId>>,
     default_event_id: EventId,
@@ -144,7 +144,7 @@ pub struct Notifier<'a, 'config: 'a, Service: service::Details<'config>> {
     _phantom_b: PhantomData<&'config ()>,
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>> Notifier<'a, 'config, Service> {
+impl<'a, 'config: 'a, Service: service::Details<'config>> NotifierPort<'a, 'config, Service> {
     pub(crate) fn new(
         service: &'a Service,
         default_event_id: EventId,

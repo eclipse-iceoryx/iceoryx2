@@ -32,7 +32,7 @@ use std::fmt::Debug;
 
 use crate::port::{
     event_id::EventId,
-    notifier::{Notifier, NotifierCreateError},
+    notifier_port::{NotifierCreateError, NotifierPort},
 };
 use iceoryx2_bb_log::fail;
 
@@ -66,9 +66,9 @@ impl<'factory, 'config, Service: service::Details<'config>>
     }
 
     /// Creates a new [`Notifier`] port or returns a [`NotifierCreateError`] on failure.
-    pub fn create(&self) -> Result<Notifier<'factory, 'config, Service>, NotifierCreateError> {
+    pub fn create(&self) -> Result<NotifierPort<'factory, 'config, Service>, NotifierCreateError> {
         Ok(
-            fail!(from self, when Notifier::new(&self.factory.service, self.default_event_id),
+            fail!(from self, when NotifierPort::new(&self.factory.service, self.default_event_id),
                     "Failed to create new Notifier port."),
         )
     }
