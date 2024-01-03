@@ -1,5 +1,11 @@
 # Roadmap
 
+# Q1.2024
+
+* [ ] C binding
+* [ ] Pipeline (optional Request/Response)
+* [ ] derive macro for SHM transferable types
+
 ## Moonshots
 
 * [ ] high performance d-bus alternative (thanks to true zero-copy)
