@@ -69,7 +69,7 @@ use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
 use crate::service::static_config::publish_subscribe;
-use crate::{config, sample_mut::SampleMut};
+use crate::{config, sample_mut_impl::SampleMutImpl};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::enum_gen;
@@ -482,7 +482,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     /// the data is returned, otherwise a [`ZeroCopyCreationError`] describing the failure.
     pub fn send<'publisher>(
         &'publisher self,
-        sample: SampleMut<'a, 'publisher, 'config, Service, Header, MessageType>,
+        sample: SampleMutImpl<'a, 'publisher, 'config, Service, Header, MessageType>,
     ) -> Result<usize, ZeroCopyCreationError> {
         Ok(
             fail!(from self, when self.send_impl(sample.offset_to_chunk().value()),
@@ -534,7 +534,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     pub fn loan_uninit<'publisher>(
         &'publisher self,
     ) -> Result<
-        SampleMut<'a, 'publisher, 'config, Service, Header, MaybeUninit<MessageType>>,
+        SampleMutImpl<'a, 'publisher, 'config, Service, Header, MaybeUninit<MessageType>>,
         LoanError,
     > {
         self.retrieve_returned_samples();
@@ -572,7 +572,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
                     )
                 };
 
-                Ok(SampleMut::new(self, sample, chunk.offset))
+                Ok(SampleMutImpl::new(self, sample, chunk.offset))
             }
             Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
                 fail!(from self, with LoanError::OutOfMemory,
@@ -622,7 +622,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default +
     /// ```
     pub fn loan<'publisher>(
         &'publisher self,
-    ) -> Result<SampleMut<'a, 'publisher, 'config, Service, Header, MessageType>, LoanError> {
+    ) -> Result<SampleMutImpl<'a, 'publisher, 'config, Service, Header, MessageType>, LoanError>
+    {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
     }
 }

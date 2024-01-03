@@ -50,7 +50,7 @@ use std::{fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 /// The generic parameter `M` is either a `MessageType` or a [`core::mem::MaybeUninit<MessageType>`], depending
 /// which API is used to obtain the sample.
 #[derive(Debug)]
-pub struct SampleMut<
+pub struct SampleMutImpl<
     'a,
     'publisher,
     'config,
@@ -64,7 +64,7 @@ pub struct SampleMut<
 }
 
 impl<'config, Service: service::Details<'config>, Header: Debug, M: Debug> Drop
-    for SampleMut<'_, '_, 'config, Service, Header, M>
+    for SampleMutImpl<'_, '_, 'config, Service, Header, M>
 {
     fn drop(&mut self) {
         self.publisher.release_sample(self.offset_to_chunk);
@@ -79,7 +79,7 @@ impl<
         Service: service::Details<'config>,
         Header: Debug,
         MessageType: Debug,
-    > SampleMut<'a, 'publisher, 'config, Service, Header, MaybeUninit<MessageType>>
+    > SampleMutImpl<'a, 'publisher, 'config, Service, Header, MaybeUninit<MessageType>>
 {
     pub(crate) fn new(
         publisher: &'publisher PublisherPort<'a, 'config, Service, MessageType>,
@@ -124,7 +124,7 @@ impl<
     pub fn write_payload(
         mut self,
         value: MessageType,
-    ) -> SampleMut<'a, 'publisher, 'config, Service, Header, MessageType> {
+    ) -> SampleMutImpl<'a, 'publisher, 'config, Service, Header, MessageType> {
         self.payload_mut().write(value);
         // SAFETY: this is safe since the payload was initialized on the line above
         unsafe { self.assume_init() }
@@ -161,7 +161,7 @@ impl<
     /// ```
     pub unsafe fn assume_init(
         self,
-    ) -> SampleMut<'a, 'publisher, 'config, Service, Header, MessageType> {
+    ) -> SampleMutImpl<'a, 'publisher, 'config, Service, Header, MessageType> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
     }
@@ -174,7 +174,7 @@ impl<
         Service: service::Details<'config>,
         Header: Debug,
         M: Debug, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
-    > SampleMut<'a, 'publisher, 'config, Service, Header, M>
+    > SampleMutImpl<'a, 'publisher, 'config, Service, Header, M>
 {
     pub(crate) fn offset_to_chunk(&self) -> PointerOffset {
         self.offset_to_chunk
