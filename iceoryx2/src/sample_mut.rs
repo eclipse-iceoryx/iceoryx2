@@ -45,6 +45,15 @@
 
 use crate::service::header::publish_subscribe::Header;
 
+pub(crate) mod internal {
+    use iceoryx2_cal::zero_copy_connection::PointerOffset;
+
+    pub trait SampleMgmt {
+        fn originates_from(&self, publisher_address: usize) -> bool;
+        fn offset_to_chunk(&self) -> PointerOffset;
+    }
+}
+
 /// Acquired by a [`Publisher`] via [`Publisher::loan()`]. It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
@@ -53,7 +62,7 @@ use crate::service::header::publish_subscribe::Header;
 ///
 /// Does not implement [`Send`] since it releases unsent samples in the [`Publisher`] and the
 /// [`Publisher`] is not thread-safe!
-pub trait SampleMut<MessageType> {
+pub trait SampleMut<MessageType>: internal::SampleMgmt {
     /// Returns a reference to the header of the sample.
     fn header(&self) -> &Header;
 

@@ -37,7 +37,7 @@
 use crate::{
     port::publisher_impl::PublisherImpl,
     raw_sample::RawSampleMut,
-    sample_mut::{SampleMut, UninitializedSampleMut},
+    sample_mut::{internal::SampleMgmt, SampleMut, UninitializedSampleMut},
     service::{self, header::publish_subscribe::Header},
 };
 use iceoryx2_cal::shared_memory::*;
@@ -91,6 +91,19 @@ impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: D
     }
 }
 
+impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: Debug> SampleMgmt
+    for SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>
+{
+    fn originates_from(&self, publisher_address: usize) -> bool {
+        publisher_address
+            == (self.publisher as *const PublisherImpl<'a, 'config, Service, MessageType>) as usize
+    }
+
+    fn offset_to_chunk(&self) -> PointerOffset {
+        self.offset_to_chunk
+    }
+}
+
 impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: Debug>
     UninitializedSampleMut<MessageType>
     for SampleMutImpl<'a, 'publisher, 'config, Service, MaybeUninit<MessageType>>
@@ -109,19 +122,6 @@ impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: D
     unsafe fn assume_init(self) -> SampleMutImpl<'a, 'publisher, 'config, Service, MessageType> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
-    }
-}
-
-impl<
-        'a,
-        'publisher,
-        'config,
-        Service: service::Details<'config>,
-        M: Debug, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
-    > SampleMutImpl<'a, 'publisher, 'config, Service, M>
-{
-    pub(crate) fn offset_to_chunk(&self) -> PointerOffset {
-        self.offset_to_chunk
     }
 }
 

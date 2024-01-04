@@ -100,8 +100,10 @@ impl Logger {
     }
 
     fn add_spacing(spacing: usize) {
-        for _ in 0..spacing {
-            std::print!(" ");
+        if std::io::stdout().is_terminal() {
+            for _ in 0..spacing {
+                std::print!(" ");
+            }
         }
     }
 
@@ -109,14 +111,6 @@ impl Logger {
         let term_len = Self::get_terminal_size().cols as usize - spacing - separator.len();
         let mut msg_len = output.len();
         let mut msg_pos = 0;
-
-        let finish_log_output = || {
-            if std::io::stdout().is_terminal() {
-                std::print!("\x1b[0m");
-            } else {
-                std::print!("\n");
-            }
-        };
 
         Self::add_spacing(first_spacing);
         loop {
@@ -134,7 +128,9 @@ impl Logger {
                 msg_len -= term_len;
             }
 
-            finish_log_output();
+            if std::io::stdout().is_terminal() {
+                std::println!("\x1b[0m");
+            }
             Self::add_spacing(spacing);
         }
 

@@ -63,7 +63,7 @@ use crate::message::Message;
 use crate::port::details::subscriber_connections::*;
 use crate::port::{DegrationAction, DegrationCallback};
 use crate::raw_sample::RawSampleMut;
-use crate::sample_mut::{SampleMut, UninitializedSampleMut};
+use crate::sample_mut::{internal::SampleMgmt, SampleMut, UninitializedSampleMut};
 use crate::service;
 use crate::service::config_scheme::data_segment_config;
 use crate::service::header::publish_subscribe::Header;
@@ -351,18 +351,6 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             "Unable to create the data segment."))
     }
 
-    fn send_impl<'publisher>(
-        &self,
-        sample: SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>,
-    ) -> Result<usize, PublisherSendError> {
-        if !core::ptr::eq(sample.publisher, self) {
-            fail!(from self, with PublisherSendError::SampleDoesNotBelongToPublisher,
-                "Unable to send sample since it belongs to a different publisher.");
-        }
-
-        Ok(self.send_unchecked_impl(sample.offset_to_chunk().value())?)
-    }
-
     fn send_unchecked_impl(&self, address_to_chunk: usize) -> Result<usize, ZeroCopyCreationError> {
         fail!(from self, when self.update_connections(),
             "Unable to send sample since the connections could not be updated.");
@@ -515,8 +503,12 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         &'publisher self,
         sample: SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>,
     ) -> Result<usize, PublisherSendError> {
-        Ok(fail!(from self, when self.send_impl(sample),
-            "Unable to send sample since the underlying send failed."))
+        if !sample.originates_from((self as *const Self) as usize) {
+            fail!(from self, with PublisherSendError::SampleDoesNotBelongToPublisher,
+                "Unable to send sample since it belongs to a different publisher.");
+        }
+
+        Ok(self.send_unchecked_impl(sample.offset_to_chunk().value())?)
     }
 
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
