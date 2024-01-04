@@ -29,7 +29,7 @@ use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
 
-use crate::port::{listener::ListenerCreateError, listener_port::ListenerPort};
+use crate::port::{listener::ListenerCreateError, listener_impl::ListenerImpl};
 use crate::service;
 
 use super::event::PortFactory;
@@ -46,9 +46,9 @@ impl<'factory, 'config, Service: service::Details<'config>>
     PortFactoryListener<'factory, 'config, Service>
 {
     /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
-    pub fn create(&self) -> Result<ListenerPort<'factory, 'config, Service>, ListenerCreateError> {
+    pub fn create(&self) -> Result<ListenerImpl<'factory, 'config, Service>, ListenerCreateError> {
         Ok(
-            fail!(from self, when ListenerPort::new(&self.factory.service),
+            fail!(from self, when ListenerImpl::new(&self.factory.service),
                     "Failed to create new Listener port."),
         )
     }

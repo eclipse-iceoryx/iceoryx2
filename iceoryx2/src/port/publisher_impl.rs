@@ -136,7 +136,7 @@ impl std::error::Error for SendCopyError {}
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct PublisherPort<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> {
+pub struct PublisherImpl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> {
     port_id: UniquePublisherId,
     pub(crate) sample_reference_counter: Vec<AtomicU64>,
     pub(crate) data_segment: Service::SharedMemory,
@@ -153,7 +153,7 @@ pub struct PublisherPort<'a, 'config: 'a, Service: service::Details<'config>, Me
 }
 
 impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
-    PublisherPort<'a, 'config, Service, MessageType>
+    PublisherImpl<'a, 'config, Service, MessageType>
 {
     pub(crate) fn new(
         service: &'a Service,
@@ -591,7 +591,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
 }
 
 impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default + Debug>
-    PublisherPort<'a, 'config, Service, MessageType>
+    PublisherImpl<'a, 'config, Service, MessageType>
 {
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]

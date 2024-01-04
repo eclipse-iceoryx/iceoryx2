@@ -36,7 +36,7 @@ use iceoryx2_bb_log::fail;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 use crate::{
-    port::publisher_port::{PublisherCreateError, PublisherPort},
+    port::publisher_impl::{PublisherCreateError, PublisherImpl},
     service,
 };
 
@@ -157,9 +157,9 @@ impl<'factory, 'config, Service: service::Details<'config>, MessageType: Debug>
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     pub fn create(
         self,
-    ) -> Result<PublisherPort<'factory, 'config, Service, MessageType>, PublisherCreateError> {
+    ) -> Result<PublisherImpl<'factory, 'config, Service, MessageType>, PublisherCreateError> {
         Ok(
-            fail!(from self, when PublisherPort::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), &self.config),
+            fail!(from self, when PublisherImpl::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), &self.config),
                 "Failed to create new Publisher port."),
         )
     }

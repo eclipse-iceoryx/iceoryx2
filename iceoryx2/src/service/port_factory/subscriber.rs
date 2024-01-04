@@ -34,7 +34,7 @@ use std::fmt::Debug;
 use iceoryx2_bb_log::fail;
 
 use crate::{
-    port::subscriber_port::{SubscriberCreateError, SubscriberPort},
+    port::subscriber_impl::{SubscriberCreateError, SubscriberImpl},
     service,
 };
 
@@ -59,10 +59,10 @@ impl<'factory, 'config, Service: service::Details<'config>, MessageType: Debug>
     /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
     pub fn create(
         &self,
-    ) -> Result<SubscriberPort<'factory, 'config, Service, MessageType>, SubscriberCreateError>
+    ) -> Result<SubscriberImpl<'factory, 'config, Service, MessageType>, SubscriberCreateError>
     {
         Ok(
-            fail!(from self, when SubscriberPort::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe()),
+            fail!(from self, when SubscriberImpl::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe()),
                 "Failed to create new Subscriber port."),
         )
     }

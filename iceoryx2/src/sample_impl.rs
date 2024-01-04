@@ -33,7 +33,7 @@
 
 use std::{fmt::Debug, ops::Deref};
 
-use crate::{port::subscriber_port::SubscriberPort, raw_sample::RawSample, service};
+use crate::{port::subscriber_impl::SubscriberImpl, raw_sample::RawSample, service};
 
 /// It stores the payload and is acquired by the [`Subscriber`] whenever it receives new data from a
 /// [`crate::port::publisher::Publisher`] via [`Subscriber::receive()`].
@@ -46,7 +46,7 @@ pub struct SampleImpl<
     Header: Debug,
     MessageType: Debug,
 > {
-    pub(crate) subscriber: &'subscriber SubscriberPort<'a, 'config, Service, MessageType>,
+    pub(crate) subscriber: &'subscriber SubscriberImpl<'a, 'config, Service, MessageType>,
     pub(crate) ptr: RawSample<Header, MessageType>,
     pub(crate) channel_id: usize,
 }

@@ -45,7 +45,7 @@ use super::listener::{Listener, ListenerCreateError};
 
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]
-pub struct ListenerPort<'a, 'config: 'a, Service: service::Details<'config>> {
+pub struct ListenerImpl<'a, 'config: 'a, Service: service::Details<'config>> {
     _dynamic_config_guard: Option<UniqueIndex<'a>>,
     listener: <Service::Event as iceoryx2_cal::event::Event<EventId>>::Listener,
     cache: Vec<EventId>,
@@ -53,7 +53,7 @@ pub struct ListenerPort<'a, 'config: 'a, Service: service::Details<'config>> {
     _phantom_b: PhantomData<&'config ()>,
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>> ListenerPort<'a, 'config, Service> {
+impl<'a, 'config: 'a, Service: service::Details<'config>> ListenerImpl<'a, 'config, Service> {
     pub(crate) fn new(service: &'a Service) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
@@ -109,7 +109,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>> ListenerPort<'a, 'conf
 }
 
 impl<'a, 'config: 'a, Service: service::Details<'config>> Listener
-    for ListenerPort<'a, 'config, Service>
+    for ListenerImpl<'a, 'config, Service>
 {
     fn cache(&self) -> &[EventId] {
         &self.cache

@@ -84,7 +84,7 @@ impl std::error::Error for SubscriberCreateError {}
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
-pub struct SubscriberPort<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> {
+pub struct SubscriberImpl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> {
     dynamic_config_guard: Option<UniqueIndex<'a>>,
     publisher_connections: PublisherConnections<'config, Service>,
     service: &'a Service,
@@ -95,7 +95,7 @@ pub struct SubscriberPort<'a, 'config: 'a, Service: service::Details<'config>, M
 }
 
 impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
-    SubscriberPort<'a, 'config, Service, MessageType>
+    SubscriberImpl<'a, 'config, Service, MessageType>
 {
     pub(crate) fn new(
         service: &'a Service,
