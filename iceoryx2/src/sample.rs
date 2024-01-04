@@ -44,7 +44,6 @@ pub trait Sample<MessageType> {
     /// Returns a reference to the payload of the sample
     fn payload(&self) -> &MessageType;
 
-    /// Returns a reference to the header of the sample. In publish subscribe communication the
-    /// default header is [`crate::service::header::publish_subscribe::Header`].
+    /// Returns a reference to the header of the sample.
     fn header(&self) -> &Header;
 }

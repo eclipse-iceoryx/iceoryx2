@@ -482,7 +482,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     /// the data is returned, otherwise a [`ZeroCopyCreationError`] describing the failure.
     pub fn send<'publisher>(
         &'publisher self,
-        sample: SampleMutImpl<'a, 'publisher, 'config, Service, Header, MessageType>,
+        sample: SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>,
     ) -> Result<usize, ZeroCopyCreationError> {
         Ok(
             fail!(from self, when self.send_impl(sample.offset_to_chunk().value()),
@@ -533,10 +533,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     /// ```
     pub fn loan_uninit<'publisher>(
         &'publisher self,
-    ) -> Result<
-        SampleMutImpl<'a, 'publisher, 'config, Service, Header, MaybeUninit<MessageType>>,
-        LoanError,
-    > {
+    ) -> Result<SampleMutImpl<'a, 'publisher, 'config, Service, MaybeUninit<MessageType>>, LoanError>
+    {
         self.retrieve_returned_samples();
         let msg = "Unable to loan Sample";
 
@@ -622,8 +620,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default +
     /// ```
     pub fn loan<'publisher>(
         &'publisher self,
-    ) -> Result<SampleMutImpl<'a, 'publisher, 'config, Service, Header, MessageType>, LoanError>
-    {
+    ) -> Result<SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>, LoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
     }
 }
