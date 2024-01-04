@@ -241,6 +241,27 @@ macro_rules! enum_gen {
 
     { $(#[$documentation:meta])*
       $enum_name:ident
+      entry:
+        $($entry:ident$(($bla:ident))?),*
+      mapping:
+        $($equivalent:ident to $value_name:ident),*}
+    => {
+        $(#[$documentation])*
+        #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+        pub enum $enum_name {
+            $($entry$(($bla))?),*,
+            $($value_name($equivalent)),*
+        }
+
+        $(impl From<$equivalent> for $enum_name {
+            fn from(v: $equivalent) -> Self {
+                $enum_name::$value_name(v)
+            }
+        })*
+    };
+
+    { $(#[$documentation:meta])*
+      $enum_name:ident
       generalization:
         $($destination:ident <= $($source:ident);*),*}
     => {
