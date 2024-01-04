@@ -63,6 +63,7 @@ use crate::message::Message;
 use crate::port::details::subscriber_connections::*;
 use crate::port::{DegrationAction, DegrationCallback};
 use crate::raw_sample::RawSampleMut;
+use crate::sample_mut::{SampleMut, UninitializedSampleMut};
 use crate::service;
 use crate::service::config_scheme::data_segment_config;
 use crate::service::header::publish_subscribe::Header;
@@ -104,35 +105,53 @@ impl std::error::Error for PublisherCreateError {}
 /// Defines a failure that can occur in [`Publisher::loan()`] and [`Publisher::loan_uninit()`] or is part of [`SendCopyError`]
 /// emitted in [`Publisher::send_copy()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
-pub enum LoanError {
+pub enum PublisherLoanError {
     OutOfMemory,
     ExceedsMaxLoanedChunks,
     InternalFailure,
 }
 
-impl std::fmt::Display for LoanError {
+impl std::fmt::Display for PublisherLoanError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
 
-impl std::error::Error for LoanError {}
+impl std::error::Error for PublisherLoanError {}
 
 enum_gen! {
-    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send_copy()`].
-    SendCopyError
+    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send()`].
+    PublisherSendError
+  entry:
+    SampleDoesNotBelongToPublisher
   mapping:
-    LoanError to LoanError,
+    PublisherLoanError to LoanError,
     ZeroCopyCreationError to ConnectionError
 }
 
-impl std::fmt::Display for SendCopyError {
+impl std::fmt::Display for PublisherSendError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
 
-impl std::error::Error for SendCopyError {}
+impl std::error::Error for PublisherSendError {}
+
+enum_gen! {
+    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send_copy()`].
+    PublisherSendCopyError
+  mapping:
+    PublisherLoanError to LoanError,
+    ZeroCopyCreationError to ConnectionError
+}
+
+impl std::fmt::Display for PublisherSendCopyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+    }
+}
+
+impl std::error::Error for PublisherSendCopyError {}
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
@@ -332,7 +351,19 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             "Unable to create the data segment."))
     }
 
-    fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ZeroCopyCreationError> {
+    fn send_impl<'publisher>(
+        &self,
+        sample: SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>,
+    ) -> Result<usize, PublisherSendError> {
+        if !core::ptr::eq(sample.publisher, self) {
+            fail!(from self, with PublisherSendError::SampleDoesNotBelongToPublisher,
+                "Unable to send sample since it belongs to a different publisher.");
+        }
+
+        Ok(self.send_unchecked_impl(sample.offset_to_chunk().value())?)
+    }
+
+    fn send_unchecked_impl(&self, address_to_chunk: usize) -> Result<usize, ZeroCopyCreationError> {
         fail!(from self, when self.update_connections(),
             "Unable to send sample since the connections could not be updated.");
 
@@ -483,24 +514,22 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     pub fn send<'publisher>(
         &'publisher self,
         sample: SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>,
-    ) -> Result<usize, ZeroCopyCreationError> {
-        Ok(
-            fail!(from self, when self.send_impl(sample.offset_to_chunk().value()),
-            "Unable to send sample since the underlying send failed."),
-        )
+    ) -> Result<usize, PublisherSendError> {
+        Ok(fail!(from self, when self.send_impl(sample),
+            "Unable to send sample since the underlying send failed."))
     }
 
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`SendCopyError`] describing the failure.
-    pub fn send_copy(&self, value: MessageType) -> Result<usize, SendCopyError> {
+    pub fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendCopyError> {
         let msg = "Unable to send copy of message";
         let mut sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
 
         sample.payload_mut().write(value);
         Ok(
-            fail!(from self, when self.send_impl(sample.offset_to_chunk().value()),
+            fail!(from self, when self.send_unchecked_impl(sample.offset_to_chunk().value()),
             "{} since the underlying send operation failed.", msg),
         )
     }
@@ -533,13 +562,15 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     /// ```
     pub fn loan_uninit<'publisher>(
         &'publisher self,
-    ) -> Result<SampleMutImpl<'a, 'publisher, 'config, Service, MaybeUninit<MessageType>>, LoanError>
-    {
+    ) -> Result<
+        SampleMutImpl<'a, 'publisher, 'config, Service, MaybeUninit<MessageType>>,
+        PublisherLoanError,
+    > {
         self.retrieve_returned_samples();
         let msg = "Unable to loan Sample";
 
         if self.loan_counter.load(Ordering::Relaxed) >= self.config.max_loaned_samples {
-            fail!(from self, with LoanError::ExceedsMaxLoanedChunks,
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
                 "{} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
                 msg, self.loan_counter.load(Ordering::Relaxed), self.config.max_loaned_samples);
         }
@@ -573,7 +604,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
                 Ok(SampleMutImpl::new(self, sample, chunk.offset))
             }
             Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
-                fail!(from self, with LoanError::OutOfMemory,
+                fail!(from self, with PublisherLoanError::OutOfMemory,
                     "{} since the underlying shared memory is out of memory.", msg);
             }
             Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
@@ -581,7 +612,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
                 fatal_panic!(from self, "{} since the system seems to be corrupted.", msg);
             }
             Err(v) => {
-                fail!(from self, with LoanError::InternalFailure,
+                fail!(from self, with PublisherLoanError::InternalFailure,
                     "{} since an internal failure occurred ({:?}).", msg, v);
             }
         }
@@ -620,7 +651,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default +
     /// ```
     pub fn loan<'publisher>(
         &'publisher self,
-    ) -> Result<SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>, LoanError> {
+    ) -> Result<SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>, PublisherLoanError>
+    {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
     }
 }

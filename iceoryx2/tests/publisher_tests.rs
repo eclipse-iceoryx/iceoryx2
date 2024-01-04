@@ -14,7 +14,8 @@
 mod publisher {
     use std::time::{Duration, Instant};
 
-    use iceoryx2::port::publisher_impl::LoanError;
+    use iceoryx2::port::publisher_impl::PublisherLoanError;
+    use iceoryx2::sample_mut::UninitializedSampleMut;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::{service_name::ServiceName, Service};
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
@@ -108,7 +109,7 @@ mod publisher {
 
         let sample3 = sut.loan_uninit();
         assert_that!(sample3, is_err);
-        assert_that!(sample3.err().unwrap(), eq LoanError::ExceedsMaxLoanedChunks);
+        assert_that!(sample3.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
 
         Ok(())
     }
@@ -130,7 +131,7 @@ mod publisher {
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();
         assert_that!(sample4, is_err);
-        assert_that!(sample4.err().unwrap(), eq LoanError::ExceedsMaxLoanedChunks);
+        assert_that!(sample4.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
 
         Ok(())
     }
@@ -152,7 +153,7 @@ mod publisher {
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();
         assert_that!(sample4, is_err);
-        assert_that!(sample4.err().unwrap(), eq LoanError::ExceedsMaxLoanedChunks);
+        assert_that!(sample4.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
 
         Ok(())
     }

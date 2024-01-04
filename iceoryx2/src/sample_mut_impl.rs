@@ -37,6 +37,7 @@
 use crate::{
     port::publisher_impl::PublisherImpl,
     raw_sample::RawSampleMut,
+    sample_mut::{SampleMut, UninitializedSampleMut},
     service::{self, header::publish_subscribe::Header},
 };
 use iceoryx2_cal::shared_memory::*;
@@ -55,7 +56,7 @@ use std::{fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 /// which API is used to obtain the sample.
 #[derive(Debug)]
 pub struct SampleMutImpl<'a, 'publisher, 'config, Service: service::Details<'config>, M: Debug> {
-    publisher: &'publisher PublisherImpl<'a, 'config, Service, M>,
+    pub(crate) publisher: &'publisher PublisherImpl<'a, 'config, Service, M>,
     ptr: RawSampleMut<Header, M>,
     offset_to_chunk: PointerOffset,
 }
@@ -88,31 +89,15 @@ impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: D
             offset_to_chunk,
         }
     }
+}
 
-    /// Writes the payload to the sample and labels the sample as initialized
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
-    /// #
-    /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
-    /// #
-    /// # let publisher = service.publisher().create()?;
-    ///
-    /// let sample = publisher.loan_uninit()?;
-    /// let sample = sample.write_payload(1234);
-    ///
-    /// publisher.send(sample)?;
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn write_payload(
+impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: Debug>
+    UninitializedSampleMut<MessageType>
+    for SampleMutImpl<'a, 'publisher, 'config, Service, MaybeUninit<MessageType>>
+{
+    type InitializedSample = SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>;
+
+    fn write_payload(
         mut self,
         value: MessageType,
     ) -> SampleMutImpl<'a, 'publisher, 'config, Service, MessageType> {
@@ -121,38 +106,7 @@ impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: D
         unsafe { self.assume_init() }
     }
 
-    /// Extracts the value of the [`core::mem::MaybeUninit<MessageType>`] container and labels the sample as initialized
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that [`core::mem::MaybeUninit<MessageType>`] really is initialized. Calling this when
-    /// the content is not fully initialized causes immediate undefined behavior.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
-    /// #
-    /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
-    /// #
-    /// # let publisher = service.publisher().create()?;
-    ///
-    /// let mut sample = publisher.loan_uninit()?;
-    /// sample.payload_mut().write(1234);
-    /// let sample = unsafe { sample.assume_init() };
-    ///
-    /// publisher.send(sample)?;
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub unsafe fn assume_init(
-        self,
-    ) -> SampleMutImpl<'a, 'publisher, 'config, Service, MessageType> {
+    unsafe fn assume_init(self) -> SampleMutImpl<'a, 'publisher, 'config, Service, MessageType> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
     }
@@ -169,29 +123,25 @@ impl<
     pub(crate) fn offset_to_chunk(&self) -> PointerOffset {
         self.offset_to_chunk
     }
+}
 
-    /// Returns a reference to the header of the sample.
-    pub fn header(&self) -> &Header {
+impl<
+        'a,
+        'publisher,
+        'config,
+        Service: service::Details<'config>,
+        M: Debug, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
+    > SampleMut<M> for SampleMutImpl<'a, 'publisher, 'config, Service, M>
+{
+    fn header(&self) -> &Header {
         self.ptr.as_header_ref()
     }
 
-    /// Returns a reference to the payload of the sample.
-    ///
-    /// # Notes
-    ///
-    /// The generic parameter `M` is either a `MessageType` or a [`core::mem::MaybeUninit<MessageType>`], depending
-    /// which API is used to obtain the sample. Obtaining a reference is safe for either type.
-    pub fn payload(&self) -> &M {
+    fn payload(&self) -> &M {
         self.ptr.as_data_ref()
     }
 
-    /// Returns a mutable reference to the payload of the sample.
-    ///
-    /// # Notes
-    ///
-    /// The generic parameter `M` is either a `MessageType` or a [`core::mem::MaybeUninit<MessageType>`], depending
-    /// which API is used to obtain the sample. Obtaining a mut reference is safe for either type.
-    pub fn payload_mut(&mut self) -> &mut M {
+    fn payload_mut(&mut self) -> &mut M {
         self.ptr.as_data_mut()
     }
 }
