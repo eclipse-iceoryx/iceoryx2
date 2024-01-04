@@ -34,7 +34,7 @@
 //! # }
 //! ```
 
-use crate::{port::publisher_port::PublisherPort, raw_sample::RawSampleMut, service};
+use crate::{port::publisher_impl::PublisherImpl, raw_sample::RawSampleMut, service};
 use iceoryx2_cal::shared_memory::*;
 use std::{fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 
@@ -58,7 +58,7 @@ pub struct SampleMutImpl<
     Header: Debug,
     M: Debug,
 > {
-    publisher: &'publisher PublisherPort<'a, 'config, Service, M>,
+    publisher: &'publisher PublisherImpl<'a, 'config, Service, M>,
     ptr: RawSampleMut<Header, M>,
     offset_to_chunk: PointerOffset,
 }
@@ -82,7 +82,7 @@ impl<
     > SampleMutImpl<'a, 'publisher, 'config, Service, Header, MaybeUninit<MessageType>>
 {
     pub(crate) fn new(
-        publisher: &'publisher PublisherPort<'a, 'config, Service, MessageType>,
+        publisher: &'publisher PublisherImpl<'a, 'config, Service, MessageType>,
         ptr: RawSampleMut<Header, MaybeUninit<MessageType>>,
         offset_to_chunk: PointerOffset,
     ) -> Self {

@@ -21,21 +21,21 @@ pub mod event_id;
 /// The interface of the receiving endpoint for event based communication
 pub mod listener;
 /// Receiving endpoint (port) for event based communication
-pub mod listener_port;
+pub mod listener_impl;
 /// The interface of the sending endpoint for event based communication
 pub mod notifier;
 /// Sending endpoint (port) for event based communication
-pub mod notifier_port;
+pub mod notifier_impl;
 /// Defines port specific unique ids. Used to identify source/destination while communicating.
 pub mod port_identifiers;
 /// The interface of the sending endpoint for publish-subscribe based communication
 pub mod publisher;
 /// Sending endpoint (port) for publish-subscribe based communication
-pub mod publisher_port;
+pub mod publisher_impl;
 /// The interface of the receiving endpoint for publish-subscribe based communication
 pub mod subscriber;
 /// Receiving endpoint (port) for publish-subscribe based communication
-pub mod subscriber_port;
+pub mod subscriber_impl;
 
 use crate::port::port_identifiers::*;
 use crate::service;
