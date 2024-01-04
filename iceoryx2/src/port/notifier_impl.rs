@@ -34,6 +34,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also [`crate::port::notifier::Notifier`]
 
 use crate::{
     port::port_identifiers::UniqueNotifierId,

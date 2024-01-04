@@ -39,6 +39,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also [`crate::port::listener_impl::ListenerImpl`]
 
 use std::time::Duration;
 

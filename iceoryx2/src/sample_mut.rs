@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -9,9 +9,3 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-
-pub use crate::iox2::Iox2;
-pub use crate::iox2::Iox2Event;
-pub use crate::port::{event_id::EventId, listener::Listener, notifier::Notifier};
-pub use crate::sample::Sample;
-pub use crate::service::{process_local, service_name::ServiceName, zero_copy, Details, Service};

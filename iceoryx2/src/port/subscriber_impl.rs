@@ -222,10 +222,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         &'subscriber self,
         channel_id: usize,
         connection: &mut Connection<'config, Service>,
-    ) -> Result<
-        Option<SampleImpl<'a, 'subscriber, 'config, Service, Header, MessageType>>,
-        ReceiveError,
-    > {
+    ) -> Result<Option<SampleImpl<'a, 'subscriber, 'config, Service, MessageType>>, ReceiveError>
+    {
         let msg = "Unable to receive another sample";
         match connection.receiver.receive() {
             Ok(data) => match data {
@@ -276,10 +274,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
     pub fn receive<'subscriber>(
         &'subscriber self,
-    ) -> Result<
-        Option<SampleImpl<'a, 'subscriber, 'config, Service, Header, MessageType>>,
-        ReceiveError,
-    > {
+    ) -> Result<Option<SampleImpl<'a, 'subscriber, 'config, Service, MessageType>>, ReceiveError>
+    {
         if let Err(e) = self.update_connections() {
             fail!(from self,
                 with ReceiveError::ConnectionFailure(e),

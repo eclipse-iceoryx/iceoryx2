@@ -29,6 +29,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also [`crate::port::listener::Listener`]
 
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
 use iceoryx2_bb_log::fail;
