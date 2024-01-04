@@ -110,6 +110,14 @@ impl Logger {
         let mut msg_len = output.len();
         let mut msg_pos = 0;
 
+        let finish_log_output = || {
+            if std::io::stdout().is_terminal() {
+                std::print!("\x1b[0m");
+            } else {
+                std::print!("\n");
+            }
+        };
+
         Self::add_spacing(first_spacing);
         loop {
             std::print!("{}", color);
@@ -125,14 +133,15 @@ impl Logger {
                 msg_pos += term_len;
                 msg_len -= term_len;
             }
-            if std::io::stdout().is_terminal() {
-                std::println!("\x1b[0m");
-            }
+
+            finish_log_output();
             Self::add_spacing(spacing);
         }
 
         if std::io::stdout().is_terminal() {
-            println!("\x1b[0m");
+            std::println!("\x1b[0m");
+        } else {
+            std::println!(" ");
         }
     }
 
