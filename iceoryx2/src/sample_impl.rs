@@ -30,10 +30,15 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also [`crate::sample::Sample`].
 
 use std::{fmt::Debug, ops::Deref};
 
-use crate::{port::subscriber_impl::SubscriberImpl, raw_sample::RawSample, service};
+use crate::service::header::publish_subscribe::Header;
+use crate::{
+    port::subscriber_impl::SubscriberImpl, raw_sample::RawSample, sample::Sample, service,
+};
 
 /// It stores the payload and is acquired by the [`Subscriber`] whenever it receives new data from a
 /// [`crate::port::publisher::Publisher`] via [`Subscriber::receive()`].
@@ -43,7 +48,6 @@ pub struct SampleImpl<
     'subscriber,
     'config,
     Service: service::Details<'config>,
-    Header: Debug,
     MessageType: Debug,
 > {
     pub(crate) subscriber: &'subscriber SubscriberImpl<'a, 'config, Service, MessageType>,
@@ -51,8 +55,8 @@ pub struct SampleImpl<
     pub(crate) channel_id: usize,
 }
 
-impl<'config, Service: service::Details<'config>, Header: Debug, MessageType: Debug> Deref
-    for SampleImpl<'_, '_, 'config, Service, Header, MessageType>
+impl<'config, Service: service::Details<'config>, MessageType: Debug> Deref
+    for SampleImpl<'_, '_, 'config, Service, MessageType>
 {
     type Target = MessageType;
     fn deref(&self) -> &Self::Target {
@@ -60,37 +64,22 @@ impl<'config, Service: service::Details<'config>, Header: Debug, MessageType: De
     }
 }
 
-impl<
-        'a,
-        'subscriber,
-        'config,
-        Service: service::Details<'config>,
-        Header: Debug,
-        MessageType: Debug,
-    > Drop for SampleImpl<'a, 'subscriber, 'config, Service, Header, MessageType>
+impl<'a, 'subscriber, 'config, Service: service::Details<'config>, MessageType: Debug> Drop
+    for SampleImpl<'a, 'subscriber, 'config, Service, MessageType>
 {
     fn drop(&mut self) {
         self.subscriber.release_sample(self.channel_id, self.ptr);
     }
 }
 
-impl<
-        'a,
-        'subscriber,
-        'config,
-        Service: service::Details<'config>,
-        Header: Debug,
-        MessageType: Debug,
-    > SampleImpl<'a, 'subscriber, 'config, Service, Header, MessageType>
+impl<'a, 'subscriber, 'config, Service: service::Details<'config>, MessageType: Debug>
+    Sample<MessageType> for SampleImpl<'a, 'subscriber, 'config, Service, MessageType>
 {
-    /// Returns a reference to the payload of the sample
-    pub fn payload(&self) -> &MessageType {
+    fn payload(&self) -> &MessageType {
         self.ptr.as_data_ref()
     }
 
-    /// Returns a reference to the header of the sample. In publish subscribe communication the
-    /// default header is [`crate::service::header::publish_subscribe::Header`].
-    pub fn header(&self) -> &Header {
+    fn header(&self) -> &Header {
         self.ptr.as_header_ref()
     }
 }

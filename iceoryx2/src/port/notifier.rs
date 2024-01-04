@@ -37,6 +37,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also [`crate::port::notifier_impl::NotifierImpl`]
 
 use super::event_id::EventId;
 
