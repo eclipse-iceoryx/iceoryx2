@@ -499,10 +499,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     ///
     /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data is returned, otherwise a [`ZeroCopyCreationError`] describing the failure.
-    pub fn send<'publisher>(
-        &'publisher self,
-        sample: SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>,
-    ) -> Result<usize, PublisherSendError> {
+    pub fn send(&self, sample: impl SampleMut<MessageType>) -> Result<usize, PublisherSendError> {
         if !sample.originates_from((self as *const Self) as usize) {
             fail!(from self, with PublisherSendError::SampleDoesNotBelongToPublisher,
                 "Unable to send sample since it belongs to a different publisher.");
