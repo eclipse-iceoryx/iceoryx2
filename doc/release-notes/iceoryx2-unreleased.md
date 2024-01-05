@@ -14,15 +14,13 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Fix `clock_nanosleep` on macOS [#80](https://github.com/eclipse-iceoryx/iceoryx2/issues/80)
- * Fix broken `sighandler_t` translation [#81](https://github.com/eclipse-iceoryx/iceoryx2/issues/81)
- * Fix undefined behavior in `spsc::{queue|index_queue}` [#87](https://github.com/eclipse-iceoryx/iceoryx2/issues/87)
+ * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
 
 ### Refactoring
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Use only one config file for every platform [#15](https://github.com/eclipse-iceoryx/iceoryx2/issues/15)
+ * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
 
 ### Workflow
 
@@ -34,16 +32,42 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Add `FixedSizeByteString::from_bytes_truncated` [#56](https://github.com/eclipse-iceoryx/iceoryx2/issues/56)
+ * Add `Deref`, `DerefMut`, `Clone`, `Eq`, `PartialEq` and `extend_from_slice` to (FixedSize)Vec [#58](https://github.com/eclipse-iceoryx/iceoryx2/issues/58)
+ * `MessagingPattern` implements `Display` [#64](https://github.com/eclipse-iceoryx/iceoryx2/issues/64)
+ * Introduce traits for all ports (`Listener`, `Notifier`, `Publisher`, `PublisherLoan`, `Subscriber`)
+   and for samples (`SampleMut`, `Sample`) [#69](https://github.com/eclipse-iceoryx/iceoryx2/issues/69)
 
 ### API Breaking Changes
 
-1. Example
+1. Use `SampleMut::send()` instead of `Publisher::send()`
 
     ```rust
     // old
-    let fuu = hello().is_it_me_you_re_looking_for()
+    let publisher = service.publisher().create()?;
+    let sample = publisher.loan()?;
+    // set sample value
+    publisher.send(sample)?;
 
     // new
-    let fuu = hypnotoad().all_glory_to_the_hypnotoad()
+    let publisher = service.publisher().create()?;
+    let sample = publisher.loan()?;
+    // set sample value
+    sample.send()?;
     ```
+
+2. Port types renamed, `Impl` suffix was added to all ports
+
+    ```rust
+    // old
+    let publisher: Publisher<'_, '_, zero_copy::Service, u64> = service.publisher().create()?;
+
+    // new
+    let publisher: PublisherImpl<'_, '_, zero_copy::Service, u64> = service.publisher().create()?;
+
+    // same applies also to:
+    // * `Subscriber` -> `SubscriberImpl`
+    // * `Listener` -> `ListenerImpl`
+    // * `Notifier` -> `NotifierImpl`
+    ```
+
