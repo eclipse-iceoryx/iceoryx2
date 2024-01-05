@@ -28,7 +28,7 @@
 //!
 //! println!("timestamp: {:?}, publisher port id: {:?}",
 //!     sample.header().time_stamp(), sample.header().publisher_id());
-//! publisher.send(sample)?;
+//! sample.send()?;
 //!
 //! # Ok(())
 //! # }
@@ -87,10 +87,6 @@ impl<'publisher, MessageType: Debug> SampleMutImpl<'publisher, MaybeUninit<Messa
 }
 
 impl<'publisher, MessageType: Debug> SampleMgmt for SampleMutImpl<'publisher, MessageType> {
-    fn originates_from(&self, publisher_address: usize) -> bool {
-        publisher_address == self.publisher.publisher_address()
-    }
-
     fn offset_to_chunk(&self) -> PointerOffset {
         self.offset_to_chunk
     }
@@ -128,5 +124,9 @@ impl<
 
     fn payload_mut(&mut self) -> &mut M {
         self.ptr.as_data_mut()
+    }
+
+    fn send(self) -> Result<usize, iceoryx2_cal::zero_copy_connection::ZeroCopyCreationError> {
+        self.publisher.send_impl(self.offset_to_chunk.value())
     }
 }
