@@ -33,6 +33,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also, [`SampleMut`].
 
 use crate::{
     port::publisher::internal::PublisherMgmt,

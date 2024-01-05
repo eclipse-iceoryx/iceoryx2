@@ -52,6 +52,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also, [`Publisher`]
 
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
@@ -61,10 +63,12 @@ use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
 use super::publisher::internal::PublisherMgmt;
 use super::publisher::{
-    PublisherCreateError, PublisherLoanError, PublisherSendCopyError, PublisherSendError,
+    PublisherCreateError, PublisherLoan, PublisherLoanError, PublisherSendCopyError,
+    PublisherSendError,
 };
 use crate::message::Message;
 use crate::port::details::subscriber_connections::*;
+use crate::port::publisher::Publisher;
 use crate::port::{DegrationAction, DegrationCallback};
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut::{internal::SampleMgmt, SampleMut, UninitializedSampleMut};
@@ -394,39 +398,6 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         }
     }
 
-    /// Sets the [`DegrationCallback`] of the [`Publisher`]. Whenever a connection to a
-    /// [`crate::port::subscriber::Subscriber`] is corrupted or a seems to be dead, this callback
-    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
-    pub fn set_degration_callback<
-        F: Fn(
-                service::static_config::StaticConfig,
-                UniquePublisherId,
-                UniqueSubscriberId,
-            ) -> DegrationAction
-            + 'a,
-    >(
-        &mut self,
-        callback: Option<F>,
-    ) {
-        match callback {
-            Some(c) => self.degration_callback = Some(DegrationCallback::new(c)),
-            None => self.degration_callback = None,
-        }
-    }
-
-    /// Explicitly updates all connections to the [`crate::port::subscriber::Subscriber`]s. This is
-    /// required to be called whenever a new [`crate::port::subscriber::Subscriber`] connected to
-    /// the service. It is done implicitly whenever [`Publisher::send()`] or [`Publisher::send_copy()`]
-    /// is called.
-    pub fn update_connections(&self) -> Result<(), ZeroCopyCreationError> {
-        if unsafe { (*self.subscriber_list_state.get()).update() } {
-            fail!(from self, when self.populate_subscriber_channels(),
-                "Connections were updated only partially since at least one connection to a Subscriber port failed.");
-        }
-
-        Ok(())
-    }
-
     /// Send a previously loaned [`Publisher::loan_uninit()`] [`SampleMut`] to all connected
     /// [`crate::port::subscriber::Subscriber`]s of the service.
     ///
@@ -444,10 +415,48 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         Ok(self.send_unchecked_impl(sample.offset_to_chunk().value())?)
     }
 
-    /// Copies the input `value` into a [`SampleMut`] and delivers it.
-    /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
-    /// the data, otherwise a [`SendCopyError`] describing the failure.
-    pub fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendCopyError> {
+    /// Sets the [`DegrationCallback`] of the [`Publisher`]. Whenever a connection to a
+    /// [`crate::port::subscriber::Subscriber`] is corrupted or a seems to be dead, this callback
+    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
+    pub fn set_degration_callback<
+        'publisher,
+        F: Fn(
+                service::static_config::StaticConfig,
+                UniquePublisherId,
+                UniqueSubscriberId,
+            ) -> DegrationAction
+            + 'a,
+    >(
+        &mut self,
+        callback: Option<F>,
+    ) {
+        match callback {
+            Some(c) => self.degration_callback = Some(DegrationCallback::new(c)),
+            None => self.degration_callback = None,
+        }
+    }
+}
+
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Publisher<MessageType>
+    for PublisherImpl<'a, 'config, Service, MessageType>
+{
+    fn update_connections(&self) -> Result<(), ZeroCopyCreationError> {
+        if unsafe { (*self.subscriber_list_state.get()).update() } {
+            fail!(from self, when self.populate_subscriber_channels(),
+                "Connections were updated only partially since at least one connection to a Subscriber port failed.");
+        }
+
+        Ok(())
+    }
+
+    fn send<'publisher>(
+        &'publisher self,
+        sample: SampleMutImpl<'publisher, MessageType>,
+    ) -> Result<usize, PublisherSendError> {
+        self.send(sample)
+    }
+
+    fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendCopyError> {
         let msg = "Unable to send copy of message";
         let mut sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
@@ -459,33 +468,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         )
     }
 
-    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
-    /// The user has to initialize the payload before it can be sent.
-    ///
-    /// On failure it returns [`LoanError`] describing the failure.
-    ///
-    /// Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
-    /// #
-    /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
-    /// #
-    /// # let publisher = service.publisher().create()?;
-    ///
-    /// let sample = publisher.loan_uninit()?;
-    /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<MessageType>`
-    ///
-    /// publisher.send(sample)?;
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn loan_uninit<'publisher>(
+    fn loan_uninit<'publisher>(
         &'publisher self,
     ) -> Result<SampleMutImpl<'publisher, MaybeUninit<MessageType>>, PublisherLoanError> {
         self.retrieve_returned_samples();
@@ -556,36 +539,9 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Pu
 }
 
 impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default + Debug>
-    PublisherImpl<'a, 'config, Service, MessageType>
+    PublisherLoan<MessageType> for PublisherImpl<'a, 'config, Service, MessageType>
 {
-    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
-    /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
-    /// can be used to loan a [`core::mem::MaybeUninit<MessageType>`].
-    ///
-    /// On failure it returns [`LoanError`] describing the failure.
-    ///
-    /// Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
-    /// #
-    /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
-    /// #
-    /// # let publisher = service.publisher().create()?;
-    ///
-    /// let mut sample = publisher.loan()?;
-    /// *sample.payload_mut() = 42;
-    ///
-    /// publisher.send(sample)?;
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn loan<'publisher>(
+    fn loan<'publisher>(
         &'publisher self,
     ) -> Result<SampleMutImpl<'publisher, MessageType>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))

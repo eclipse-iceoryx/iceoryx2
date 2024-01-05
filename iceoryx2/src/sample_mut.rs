@@ -37,6 +37,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also, [`crate::sample_mut_impl::SampleMutImpl`].
 
 use crate::service::header::publish_subscribe::Header;
 
@@ -52,11 +54,6 @@ pub(crate) mod internal {
 /// Acquired by a [`Publisher`] via [`Publisher::loan()`]. It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
-///
-/// # Notes
-///
-/// Does not implement [`Send`] since it releases unsent samples in the [`Publisher`] and the
-/// [`Publisher`] is not thread-safe!
 pub trait SampleMut<MessageType>: internal::SampleMgmt {
     /// Returns a reference to the header of the sample.
     fn header(&self) -> &Header;
