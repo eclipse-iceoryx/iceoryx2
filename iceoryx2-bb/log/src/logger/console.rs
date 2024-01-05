@@ -12,8 +12,10 @@
 
 //! The default [`Logger`] implementation.
 
-use is_terminal::IsTerminal;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    io::IsTerminal,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use termsize::Size;
 
