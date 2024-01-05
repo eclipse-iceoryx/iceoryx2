@@ -45,7 +45,7 @@ mod publisher {
 
         let sample = sut.loan()?;
 
-        assert_that!(sut.send(sample), is_ok);
+        assert_that!(sample.send(), is_ok);
 
         Ok(())
     }
@@ -61,7 +61,7 @@ mod publisher {
 
         let sample = sut.loan_uninit()?.write_payload(42);
 
-        assert_that!(sut.send(sample), is_ok);
+        assert_that!(sample.send(), is_ok);
 
         Ok(())
     }
@@ -82,7 +82,7 @@ mod publisher {
         let subscriber = service.subscriber().create()?;
 
         assert_that!(sut.send_copy(4), is_ok);
-        assert_that!(sut.send(sample3), is_ok);
+        assert_that!(sample3.send(), is_ok);
         drop(sample2);
         drop(sample1);
 
@@ -127,7 +127,7 @@ mod publisher {
         let _sample1 = sut.loan_uninit()?;
         let sample2 = sut.loan_uninit()?.write_payload(2);
 
-        assert_that!(sut.send(sample2), is_ok);
+        assert_that!(sample2.send(), is_ok);
 
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();

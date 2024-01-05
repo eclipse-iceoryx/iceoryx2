@@ -84,8 +84,6 @@ impl std::error::Error for PublisherLoanError {}
 enum_gen! {
     /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send()`].
     PublisherSendError
-  entry:
-    SampleDoesNotBelongToPublisher
   mapping:
     PublisherLoanError to LoanError,
     ZeroCopyCreationError to ConnectionError
@@ -99,30 +97,14 @@ impl std::fmt::Display for PublisherSendError {
 
 impl std::error::Error for PublisherSendError {}
 
-enum_gen! {
-    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send_copy()`].
-    PublisherSendCopyError
-  mapping:
-    PublisherLoanError to LoanError,
-    ZeroCopyCreationError to ConnectionError
-}
-
-impl std::fmt::Display for PublisherSendCopyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for PublisherSendCopyError {}
-
 pub(crate) mod internal {
     use std::fmt::Debug;
 
-    use iceoryx2_cal::zero_copy_connection::PointerOffset;
+    use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyCreationError};
 
     pub(crate) trait PublisherMgmt: Debug {
         fn return_loaned_sample(&self, distance_to_chunk: PointerOffset);
-        fn publisher_address(&self) -> usize;
+        fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ZeroCopyCreationError>;
     }
 }
 
@@ -134,23 +116,28 @@ pub trait Publisher<MessageType: Debug> {
     /// is called.
     fn update_connections(&self) -> Result<(), ZeroCopyCreationError>;
 
-    /// Send a previously loaned [`Publisher::loan_uninit()`] [`SampleMut`] to all connected
-    /// [`crate::port::subscriber::Subscriber`]s of the service.
-    ///
-    /// The payload of the [`SampleMut`] must be initialized before it can be sent. Have a look
-    /// at [`SampleMut::write_payload()`] and [`SampleMut::assume_init()`] for more details.
-    ///
-    /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
-    /// the data is returned, otherwise a [`ZeroCopyCreationError`] describing the failure.
-    fn send<'publisher>(
-        &'publisher self,
-        sample: SampleMutImpl<'publisher, MessageType>,
-    ) -> Result<usize, PublisherSendError>;
-
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`SendCopyError`] describing the failure.
-    fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendCopyError>;
+    ///
+    /// Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .open_or_create::<u64>()?;
+    /// #
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// publisher.send_copy(1234)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
@@ -173,7 +160,7 @@ pub trait Publisher<MessageType: Debug> {
     /// let sample = publisher.loan_uninit()?;
     /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<MessageType>`
     ///
-    /// publisher.send(sample)?;
+    /// sample.send()?;
     ///
     /// # Ok(())
     /// # }
@@ -208,7 +195,7 @@ pub trait PublisherLoan<MessageType: Debug + Default>: Publisher<MessageType> {
     /// let mut sample = publisher.loan()?;
     /// *sample.payload_mut() = 42;
     ///
-    /// publisher.send(sample)?;
+    /// sample.send()?;
     ///
     /// # Ok(())
     /// # }

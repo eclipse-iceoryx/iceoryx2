@@ -32,7 +32,7 @@
 //! let sample = publisher.loan_uninit()?;
 //! let sample = write_sample_data(sample);
 //!
-//! publisher.send(sample)?;
+//! sample.send()?;
 //!
 //! # Ok(())
 //! # }
@@ -40,13 +40,14 @@
 //!
 //! See also, [`crate::sample_mut_impl::SampleMutImpl`].
 
+use iceoryx2_cal::zero_copy_connection::ZeroCopyCreationError;
+
 use crate::service::header::publish_subscribe::Header;
 
 pub(crate) mod internal {
     use iceoryx2_cal::zero_copy_connection::PointerOffset;
 
     pub trait SampleMgmt {
-        fn originates_from(&self, publisher_address: usize) -> bool;
         fn offset_to_chunk(&self) -> PointerOffset;
     }
 }
@@ -73,6 +74,8 @@ pub trait SampleMut<MessageType>: internal::SampleMgmt {
     /// The generic parameter `MessageType` can be packed into [`core::mem::MaybeUninit<MessageType>`], depending
     /// which API is used to obtain the sample. Obtaining a reference is safe for either type.
     fn payload_mut(&mut self) -> &mut MessageType;
+
+    fn send(self) -> Result<usize, ZeroCopyCreationError>;
 }
 
 /// Acquired by a [`Publisher`] via [`Publisher::loan_uninit()`]. It stores the payload that will be sent
@@ -101,7 +104,7 @@ pub trait UninitializedSampleMut<MessageType> {
     /// let sample = publisher.loan_uninit()?;
     /// let sample = sample.write_payload(1234);
     ///
-    /// publisher.send(sample)?;
+    /// sample.send()?;
     ///
     /// # Ok(())
     /// # }
@@ -132,7 +135,7 @@ pub trait UninitializedSampleMut<MessageType> {
     /// sample.payload_mut().write(1234);
     /// let sample = unsafe { sample.assume_init() };
     ///
-    /// publisher.send(sample)?;
+    /// sample.send()?;
     ///
     /// # Ok(())
     /// # }
