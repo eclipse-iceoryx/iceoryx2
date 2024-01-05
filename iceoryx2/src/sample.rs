@@ -38,8 +38,9 @@
 
 use crate::service::header::publish_subscribe::Header;
 
-/// It stores the payload and is acquired by the [`Subscriber`] whenever it receives new data from a
-/// [`crate::port::publisher::Publisher`] via [`Subscriber::receive()`].
+/// It stores the payload and is acquired by the [`crate::port::subscriber::Subscriber`] whenever
+/// it receives new data from a [`crate::port::publisher::Publisher`] via
+/// [`crate::port::subscriber::Subscriber::receive()`].
 pub trait Sample<MessageType> {
     /// Returns a reference to the payload of the sample
     fn payload(&self) -> &MessageType;

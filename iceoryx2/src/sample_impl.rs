@@ -39,8 +39,9 @@ use crate::port::subscriber::internal::SubscriberMgmt;
 use crate::service::header::publish_subscribe::Header;
 use crate::{raw_sample::RawSample, sample::Sample};
 
-/// It stores the payload and is acquired by the [`Subscriber`] whenever it receives new data from a
-/// [`crate::port::publisher::Publisher`] via [`Subscriber::receive()`].
+/// It stores the payload and is acquired by the [`crate::port::subscriber::Subscriber`] whenever
+/// it receives new data from a [`crate::port::publisher::Publisher`] via
+/// [`crate::port::subscriber::Subscriber::receive()`].
 #[derive(Debug)]
 pub struct SampleImpl<'subscriber, MessageType: Debug> {
     pub(crate) subscriber: &'subscriber dyn SubscriberMgmt,

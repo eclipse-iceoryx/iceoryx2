@@ -34,7 +34,7 @@ use crate::service;
 
 use super::event::PortFactory;
 
-/// Factory to create a new [`Listener`] port/endpoint for
+/// Factory to create a new [`ListenerImpl`] port/endpoint for
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) based
 /// communication.
 #[derive(Debug)]
@@ -45,7 +45,7 @@ pub struct PortFactoryListener<'factory, 'config, Service: service::Details<'con
 impl<'factory, 'config, Service: service::Details<'config>>
     PortFactoryListener<'factory, 'config, Service>
 {
-    /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
+    /// Creates the [`ListenerImpl`] port or returns a [`ListenerCreateError`] on failure.
     pub fn create(&self) -> Result<ListenerImpl<'factory, 'config, Service>, ListenerCreateError> {
         Ok(
             fail!(from self, when ListenerImpl::new(&self.factory.service),

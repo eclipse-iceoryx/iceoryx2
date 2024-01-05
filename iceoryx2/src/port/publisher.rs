@@ -64,8 +64,8 @@ impl std::fmt::Display for PublisherCreateError {
 
 impl std::error::Error for PublisherCreateError {}
 
-/// Defines a failure that can occur in [`Publisher::loan()`] and [`Publisher::loan_uninit()`] or is part of [`SendCopyError`]
-/// emitted in [`Publisher::send_copy()`].
+/// Defines a failure that can occur in [`PublisherLoan::loan()`] and [`Publisher::loan_uninit()`]
+/// or is part of [`PublisherSendError`] emitted in [`Publisher::send_copy()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum PublisherLoanError {
     OutOfMemory,
@@ -112,7 +112,7 @@ pub(crate) mod internal {
 pub trait Publisher<MessageType: Debug> {
     /// Explicitly updates all connections to the [`crate::port::subscriber::Subscriber`]s. This is
     /// required to be called whenever a new [`crate::port::subscriber::Subscriber`] connected to
-    /// the service. It is done implicitly whenever [`Publisher::send()`] or [`Publisher::send_copy()`]
+    /// the service. It is done implicitly whenever [`crate::sample_mut::SampleMut::send()`] or [`Publisher::send_copy()`]
     /// is called.
     /// When a [`crate::port::subscriber::Subscriber`] is connected that requires a history this
     /// call will deliver it.
@@ -143,9 +143,9 @@ pub trait Publisher<MessageType: Debug> {
     /// ```
     fn update_connections(&self) -> Result<(), ZeroCopyCreationError>;
 
-    /// Copies the input `value` into a [`SampleMut`] and delivers it.
+    /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
-    /// the data, otherwise a [`SendCopyError`] describing the failure.
+    /// the data, otherwise a [`PublisherSendError`] describing the failure.
     ///
     /// # Example
     ///
@@ -166,10 +166,10 @@ pub trait Publisher<MessageType: Debug> {
     /// ```
     fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendError>;
 
-    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
-    /// On failure it returns [`LoanError`] describing the failure.
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
     ///
     /// # Example
     ///
@@ -192,19 +192,17 @@ pub trait Publisher<MessageType: Debug> {
     /// # Ok(())
     /// # }
     /// ```
-    fn loan_uninit<'publisher>(
-        &'publisher self,
-    ) -> Result<SampleMutImpl<'publisher, MaybeUninit<MessageType>>, PublisherLoanError>;
+    fn loan_uninit(&self) -> Result<SampleMutImpl<MaybeUninit<MessageType>>, PublisherLoanError>;
 }
 
 /// Interface of the sending endpoint of a publish-subscriber based communication that
 /// provides a `PublisherLoan::loan()` to create default initialized samples.
 pub trait PublisherLoan<MessageType: Debug + Default>: Publisher<MessageType> {
-    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
     /// can be used to loan a [`core::mem::MaybeUninit<MessageType>`].
     ///
-    /// On failure it returns [`LoanError`] describing the failure.
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
     ///
     /// # Example
     ///
@@ -227,7 +225,5 @@ pub trait PublisherLoan<MessageType: Debug + Default>: Publisher<MessageType> {
     /// # Ok(())
     /// # }
     /// ```
-    fn loan<'publisher>(
-        &'publisher self,
-    ) -> Result<SampleMutImpl<'publisher, MessageType>, PublisherLoanError>;
+    fn loan(&self) -> Result<SampleMutImpl<MessageType>, PublisherLoanError>;
 }

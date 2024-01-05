@@ -38,8 +38,9 @@ use serde::{de::Visitor, Deserialize, Serialize};
 use super::publish_subscribe::PortFactory;
 use crate::{port::publisher::PublisherCreateError, port::publisher_impl::PublisherImpl, service};
 
-/// Defines the strategy the [`Publisher`] shall pursue in [`Publisher::send()`] or
-/// [`Publisher::send_copy()`] when the buffer of a
+/// Defines the strategy the [`PublisherImpl`] shall pursue in
+/// [`crate::sample_mut::SampleMut::send()`] or
+/// [`crate::port::publisher::Publisher::send_copy()`] when the buffer of a
 /// [`crate::port::subscriber::Subscriber`] is full and the service does not overflow.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum UnableToDeliverStrategy {
@@ -98,7 +99,7 @@ pub(crate) struct LocalPublisherConfig {
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
 }
 
-/// Factory to create a new [`Publisher`] port/endpoint for
+/// Factory to create a new [`PublisherImpl`] port/endpoint for
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
@@ -137,8 +138,9 @@ impl<'factory, 'config, Service: service::Details<'config>, MessageType: Debug>
         }
     }
 
-    /// Defines how many [`crate::sample_mut::SampleMut`] the [`Publisher`] can loan with
-    /// [`Publisher::loan()`] or [`Publisher::loan_uninit()`] in parallel.
+    /// Defines how many [`crate::sample_mut::SampleMut`] the [`PublisherImpl`] can loan with
+    /// [`crate::port::publisher::PublisherLoan::loan()`] or
+    /// [`crate::port::publisher::Publisher::loan_uninit()`] in parallel.
     pub fn max_loaned_samples(mut self, value: usize) -> Self {
         self.config.max_loaned_samples = value;
         self
@@ -150,7 +152,7 @@ impl<'factory, 'config, Service: service::Details<'config>, MessageType: Debug>
         self
     }
 
-    /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
+    /// Creates a new [`PublisherImpl`] or returns a [`PublisherCreateError`] on failure.
     pub fn create(
         self,
     ) -> Result<PublisherImpl<'factory, 'config, Service, MessageType>, PublisherCreateError> {

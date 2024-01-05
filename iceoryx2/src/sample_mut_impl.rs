@@ -34,7 +34,7 @@
 //! # }
 //! ```
 //!
-//! See also, [`SampleMut`].
+//! See also, [`crate::sample_mut::SampleMut`].
 
 use crate::{
     port::publisher::internal::PublisherMgmt,
@@ -45,14 +45,16 @@ use crate::{
 use iceoryx2_cal::shared_memory::*;
 use std::{fmt::Debug, mem::MaybeUninit};
 
-/// Acquired by a [`Publisher`] via [`Publisher::loan()`] or [`Publisher::loan_uninit()`]. It stores the payload that will be sent
+/// Acquired by a [`crate::port::publisher::Publisher`] via
+/// [`crate::port::publisher::PublisherLoan::loan()`] or
+/// [`crate::port::publisher::Publisher::loan_uninit()`]. It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
 ///
 /// # Notes
 ///
-/// Does not implement [`Send`] since it releases unsent samples in the [`Publisher`] and the
-/// [`Publisher`] is not thread-safe!
+/// Does not implement [`Send`] since it releases unsent samples in the [`crate::port::publisher::Publisher`] and the
+/// [`crate::port::publisher::Publisher`] is not thread-safe!
 ///
 /// The generic parameter `M` is either a `MessageType` or a [`core::mem::MaybeUninit<MessageType>`], depending
 /// which API is used to obtain the sample.
