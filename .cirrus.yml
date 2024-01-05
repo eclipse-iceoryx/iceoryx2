@@ -271,15 +271,4 @@ macos_aarch64_stable_debug_task:
     - rustup component add clippy rustfmt
   set_toolchain_script: rustup default stable
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
-  <<: *IOX2_COMMON_BUILD_DEBUG
-  test_script:
-    - cargo test -p iceoryx2-pal-concurrency-sync
-                 -p iceoryx2-pal-posix
-                 -p iceoryx2-bb-container
-                 -p iceoryx2-bb-elementary
-                 -p iceoryx2-bb-lock-free
-                 -p iceoryx2-bb-log
-                 -p iceoryx2-bb-memory
-                 -p iceoryx2-bb-system-types
-                 -p iceoryx2-bb-testing
-                 --lib --bins --tests --no-fail-fast
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG

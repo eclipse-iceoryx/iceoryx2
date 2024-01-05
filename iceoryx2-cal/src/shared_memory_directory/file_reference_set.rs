@@ -27,7 +27,7 @@ pub(crate) struct FileReferenceSetId(usize);
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
 struct Entry {
-    name: FileName,
+    name: Option<FileName>,
     offset: usize,
     len: usize,
 }
@@ -35,7 +35,7 @@ struct Entry {
 impl Entry {
     const fn default() -> Self {
         Self {
-            name: unsafe { FileName::new_unchecked(b"empty") },
+            name: None,
             offset: 0,
             len: 0,
         }
@@ -94,7 +94,7 @@ impl FileReferenceSet {
 
         unsafe {
             self.entries[id].get().write(Entry {
-                name: *name,
+                name: Some(*name),
                 offset,
                 len,
             })
@@ -115,7 +115,7 @@ impl FileReferenceSet {
             }
 
             if self.counter[i].increment_ref_counter_when_exist() {
-                if unsafe { &*self.entries[i].get() }.name == *name
+                if unsafe { &*self.entries[i].get() }.name == Some(*name)
                     && !self.decision_counter[i].does_value_win(current_decision_count)
                 {
                     if self.counter[i].is_initialized() {
@@ -194,7 +194,7 @@ impl FileReferenceSet {
     }
 
     pub(crate) fn get_name(&self, id: FileReferenceSetId) -> FileName {
-        unsafe { &*self.entries[id.0].get() }.name
+        unsafe { &*self.entries[id.0].get() }.name.unwrap()
     }
 
     pub(crate) fn get_payload(&self, id: FileReferenceSetId, base_address: usize) -> &[u8] {
@@ -223,7 +223,7 @@ impl FileReferenceSet {
     fn find_entry(&self, name: &FileName) -> Option<FileReferenceSetId> {
         for id in 0..self.ids.capacity() as usize {
             if self.counter[id].increment_ref_counter_when_initialized() {
-                if unsafe { *self.entries[id].get() }.name == *name {
+                if unsafe { *self.entries[id].get() }.name == Some(*name) {
                     return Some(FileReferenceSetId(id));
                 }
 

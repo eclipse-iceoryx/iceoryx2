@@ -1,20 +1,22 @@
 # iceoryx2 v?.?.?
 
-## [vx.x.x](https://github.com/larry-robotics/iceoryx2/tree/vx.x.x) (xxxx-xx-xx) <!--NOLINT remove this when tag is set-->
+## [vx.x.x](https://github.com/eclipse-iceoryx/iceoryx2/tree/vx.x.x) (xxxx-xx-xx) <!--NOLINT remove this when tag is set-->
 
-[Full Changelog](https://github.com/larry-robotics/iceoryx2/compare/vx.x.x...vx.x.x) <!--NOLINT remove this when tag is set-->
+[Full Changelog](https://github.com/eclipse-iceoryx/iceoryx2/compare/vx.x.x...vx.x.x) <!--NOLINT remove this when tag is set-->
 
 ### Features
 
- * Example [#1](https://github.com/larry-robotics/iceoryx2/issues/1)
+ * MacOS Platform support [#51](https://github.com/eclipse-iceoryx/iceoryx2/issues/51)
+ * Services with the same name for different messaging patterns are supported [#16](https://github.com/eclipse-iceoryx/iceoryx2/issues/16)
 
 ### Bugfixes
 
- * Example [#1](https://github.com/larry-robotics/iceoryx2/issues/1)
+ * Fix undefined behavior in `FixedSizeByteString::new_unchecked` [#61](https://github.com/eclipse-iceoryx/iceoryx2/issues/61)
+ * Fix suffix of static config [#66](https://github.com/eclipse-iceoryx/iceoryx2/issues/66)
 
 ### Refactoring
 
- * Example [#1](https://github.com/larry-robotics/iceoryx2/issues/1)
+ * Example [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
 
 ### Workflow
 
@@ -22,7 +24,9 @@
 
 ### New API features
 
- * Example [#1](https://github.com/larry-robotics/iceoryx2/issues/1)
+ * Add `FixedSizeByteString::from_bytes_truncated` [#56](https://github.com/eclipse-iceoryx/iceoryx2/issues/56)
+ * Add `Deref`, `DerefMut`, `Clone`, `Eq`, `PartialEq` and `extend_from_slice` to (FixedSize)Vec [#58](https://github.com/eclipse-iceoryx/iceoryx2/issues/58)
+ * `MessagingPattern` implements `Display` [#64](https://github.com/eclipse-iceoryx/iceoryx2/issues/64)
 
 ### API Breaking Changes
 

@@ -25,6 +25,7 @@ use std::{
 
 use iceoryx2_pal_concurrency_sync::rwlock::*;
 use iceoryx2_pal_concurrency_sync::{barrier::Barrier, mutex::Mutex};
+use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 use windows_sys::Win32::{
     Foundation::{CloseHandle, ERROR_TIMEOUT, STILL_ACTIVE, WAIT_FAILED},
     System::{
@@ -92,7 +93,7 @@ impl ThreadStates {
                     INFINITE,
                 ) };
             }
-            true
+            WaitAction::Continue
         });
     }
 
@@ -492,7 +493,7 @@ pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
                 4,
                 INFINITE,
             )};
-            true
+            WaitAction::Continue
         }),
         RwLockType::PreferWriter(ref l) => l.read_lock(|atomic, value| {
             win32call! {WaitOnAddress(
@@ -501,7 +502,7 @@ pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
                 4,
                 INFINITE,
             )};
-            true
+            WaitAction::Continue
         }),
         _ => {
             return Errno::EINVAL as _;
@@ -512,7 +513,7 @@ pub unsafe fn pthread_rwlock_rdlock(lock: *mut pthread_rwlock_t) -> int {
 }
 
 pub unsafe fn pthread_rwlock_tryrdlock(lock: *mut pthread_rwlock_t) -> int {
-    let has_lock = match (*lock).lock {
+    let wait_result = match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.try_read_lock(),
         RwLockType::PreferWriter(ref l) => l.try_read_lock(),
         _ => {
@@ -520,7 +521,7 @@ pub unsafe fn pthread_rwlock_tryrdlock(lock: *mut pthread_rwlock_t) -> int {
         }
     };
 
-    if has_lock {
+    if wait_result == WaitResult::Success {
         Errno::ESUCCES as _
     } else {
         Errno::EBUSY as _
@@ -557,7 +558,7 @@ pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
                 4,
                 INFINITE,
             )};
-            true
+            WaitAction::Continue
         }),
         RwLockType::PreferWriter(ref l) => l.write_lock(
             |atomic, value| {
@@ -567,7 +568,7 @@ pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
                     4,
                     INFINITE,
                 )};
-                true
+                WaitAction::Continue
             },
             |atomic| {
                 win32call! { WakeByAddressSingle((atomic as *const AtomicU32).cast()) };
@@ -585,7 +586,7 @@ pub unsafe fn pthread_rwlock_wrlock(lock: *mut pthread_rwlock_t) -> int {
 }
 
 pub unsafe fn pthread_rwlock_trywrlock(lock: *mut pthread_rwlock_t) -> int {
-    let has_lock = match (*lock).lock {
+    let wait_result = match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.try_write_lock(),
         RwLockType::PreferWriter(ref l) => l.try_write_lock(),
         _ => {
@@ -593,7 +594,7 @@ pub unsafe fn pthread_rwlock_trywrlock(lock: *mut pthread_rwlock_t) -> int {
         }
     };
 
-    if has_lock {
+    if wait_result == WaitResult::Success {
         Errno::ESUCCES as _
     } else {
         Errno::EBUSY as _
@@ -611,7 +612,7 @@ pub unsafe fn pthread_rwlock_timedwrlock(
             - now.as_millis() as i64,
     );
 
-    let has_lock = match (*lock).lock {
+    let wait_result = match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.write_lock(|atomic, value| {
             win32call! { WaitOnAddress(
                 (atomic as *const AtomicU32).cast(),
@@ -619,7 +620,7 @@ pub unsafe fn pthread_rwlock_timedwrlock(
                 4,
                 timeout as _,
             ), ignore ERROR_TIMEOUT };
-            true
+            WaitAction::Continue
         }),
         RwLockType::PreferWriter(ref l) => l.write_lock(
             |atomic, value| {
@@ -629,7 +630,7 @@ pub unsafe fn pthread_rwlock_timedwrlock(
                     4,
                     timeout as _,
                 ), ignore ERROR_TIMEOUT};
-                true
+                WaitAction::Continue
             },
             |atomic| {
                 WakeByAddressSingle((atomic as *const AtomicU32).cast());
@@ -643,7 +644,7 @@ pub unsafe fn pthread_rwlock_timedwrlock(
         }
     };
 
-    if has_lock {
+    if wait_result == WaitResult::Success {
         Errno::ESUCCES as _
     } else {
         Errno::ETIMEDOUT as _
@@ -661,7 +662,7 @@ pub unsafe fn pthread_rwlock_timedrdlock(
             - now.as_millis() as i64,
     );
 
-    let has_lock = match (*lock).lock {
+    let wait_result = match (*lock).lock {
         RwLockType::PreferReader(ref l) => l.read_lock(|atomic, value| {
             win32call! { WaitOnAddress(
                 (atomic as *const AtomicU32).cast(),
@@ -669,7 +670,7 @@ pub unsafe fn pthread_rwlock_timedrdlock(
                 4,
                 timeout as _,
             ), ignore ERROR_TIMEOUT };
-            true
+            WaitAction::Continue
         }),
         RwLockType::PreferWriter(ref l) => l.read_lock(|atomic, value| {
             win32call! {WaitOnAddress(
@@ -678,14 +679,14 @@ pub unsafe fn pthread_rwlock_timedrdlock(
                 4,
                 timeout as _,
             ), ignore ERROR_TIMEOUT};
-            true
+            WaitAction::Continue
         }),
         _ => {
             return Errno::EINVAL as _;
         }
     };
 
-    if has_lock {
+    if wait_result == WaitResult::Success {
         Errno::ESUCCES as _
     } else {
         Errno::ETIMEDOUT as _
@@ -693,14 +694,14 @@ pub unsafe fn pthread_rwlock_timedrdlock(
 }
 
 pub unsafe fn pthread_cond_broadcast(cond: *mut pthread_cond_t) -> int {
-    (*cond).cv.notify(|atomic| {
+    (*cond).cv.notify_all(|atomic| {
         WakeByAddressAll((atomic as *const AtomicU32).cast());
     });
     Errno::ESUCCES as _
 }
 
 pub unsafe fn pthread_cond_signal(cond: *mut pthread_cond_t) -> int {
-    (*cond).cv.notify(|atomic| {
+    (*cond).cv.notify_one(|atomic| {
         WakeByAddressSingle((atomic as *const AtomicU32).cast());
     });
     Errno::ESUCCES as _
@@ -728,7 +729,7 @@ pub unsafe fn pthread_cond_wait(cond: *mut pthread_cond_t, mutex: *mut pthread_m
                 4,
                 INFINITE,
             )};
-            true
+            WaitAction::Continue
         },
         |atomic, value| {
             win32call! {WaitOnAddress(
@@ -737,7 +738,7 @@ pub unsafe fn pthread_cond_wait(cond: *mut pthread_cond_t, mutex: *mut pthread_m
                 4,
                 INFINITE,
             )};
-            false
+            WaitAction::Continue
         },
     );
 
@@ -755,7 +756,7 @@ pub unsafe fn pthread_cond_timedwait(
         (*abstime).tv_sec * 1000 + (*abstime).tv_nsec as i64 / 1000000 - now.as_millis() as i64,
     );
 
-    (*cond).cv.wait(
+    match (*cond).cv.wait(
         &(*mutex).mtx,
         |atomic| {
             win32call! { WakeByAddressSingle((atomic as *const AtomicU32).cast()) };
@@ -767,7 +768,7 @@ pub unsafe fn pthread_cond_timedwait(
                 4,
                 timeout as _,
             ), ignore ERROR_TIMEOUT };
-            true
+            WaitAction::Abort
         },
         |atomic, value| {
             win32call! { WaitOnAddress(
@@ -776,11 +777,12 @@ pub unsafe fn pthread_cond_timedwait(
                 4,
                 timeout as _,
             ), ignore ERROR_TIMEOUT };
-            false
+            WaitAction::Abort
         },
-    );
-
-    Errno::ESUCCES as _
+    ) {
+        WaitResult::Success => Errno::ESUCCES as _,
+        WaitResult::Interrupted => Errno::ETIMEDOUT as _,
+    }
 }
 
 pub unsafe fn pthread_condattr_init(attr: *mut pthread_condattr_t) -> int {
@@ -898,7 +900,7 @@ pub unsafe fn pthread_mutex_lock(mtx: *mut pthread_mutex_t) -> int {
             4,
             INFINITE,
         ) };
-        true
+        WaitAction::Continue
     });
 
     if (*mtx).track_thread_id {
@@ -937,9 +939,9 @@ pub unsafe fn pthread_mutex_timedlock(
             4,
             timeout as _,
         ), ignore ERROR_TIMEOUT };
-        false
+        WaitAction::Abort
     }) {
-        true => {
+        WaitResult::Success => {
             if (*mtx).track_thread_id {
                 (*mtx)
                     .current_owner
@@ -948,7 +950,7 @@ pub unsafe fn pthread_mutex_timedlock(
 
             Errno::ESUCCES as _
         }
-        false => Errno::ETIMEDOUT as _,
+        WaitResult::Interrupted => Errno::ETIMEDOUT as _,
     }
 }
 
@@ -960,7 +962,7 @@ pub unsafe fn pthread_mutex_trylock(mtx: *mut pthread_mutex_t) -> int {
     };
 
     match (*mtx).mtx.try_lock() {
-        true => {
+        WaitResult::Success => {
             if (*mtx).track_thread_id {
                 (*mtx)
                     .current_owner
@@ -969,7 +971,7 @@ pub unsafe fn pthread_mutex_trylock(mtx: *mut pthread_mutex_t) -> int {
 
             Errno::ESUCCES as _
         }
-        false => Errno::EBUSY as _,
+        WaitResult::Interrupted => Errno::EBUSY as _,
     }
 }
 

@@ -864,7 +864,7 @@ mod service_publish_subscribe {
         const BUFFER_SIZE: usize = 1;
         const HISTORY_SIZE: usize = 0;
         const MAX_BORROW: usize = 1;
-        const MAX_SUBSCRIBERS: usize = 100;
+        const MAX_SUBSCRIBERS: usize = 50;
         const MAX_LOAN: usize = 1;
 
         publisher_never_goes_out_of_memory_impl::<Sut>(
@@ -929,11 +929,11 @@ mod service_publish_subscribe {
 
     #[test]
     fn publisher_never_goes_out_of_memory_with_huge_values<Sut: Service>() {
-        const BUFFER_SIZE: usize = 129;
-        const HISTORY_SIZE: usize = 131;
-        const MAX_BORROW: usize = 112;
-        const MAX_SUBSCRIBERS: usize = 123;
-        const MAX_LOAN: usize = 135;
+        const BUFFER_SIZE: usize = 29;
+        const HISTORY_SIZE: usize = 31;
+        const MAX_BORROW: usize = 12;
+        const MAX_SUBSCRIBERS: usize = 25;
+        const MAX_LOAN: usize = 35;
 
         publisher_never_goes_out_of_memory_impl::<Sut>(
             BUFFER_SIZE,

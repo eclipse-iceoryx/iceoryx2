@@ -384,13 +384,14 @@ mod event {
     #[test]
     fn defaults_for_configuration_are_set_correctly<Sut: Event<u64>>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
-        assert_that!(*config.get_suffix(), eq DEFAULT_SUFFIX);
-        assert_that!(*config.get_path_hint(), eq DEFAULT_PATH_HINT);
+        assert_that!(*config.get_suffix(), eq Sut::default_suffix());
+        assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
+        assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
-    #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::Event<u64>>)]
+    #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl<u64>>)]
     mod unix_datagram {}
 
-    #[instantiate_tests(<iceoryx2_cal::event::process_local::Event<u64>>)]
+    #[instantiate_tests(<iceoryx2_cal::event::process_local::EventImpl<u64>>)]
     mod process_local {}
 }

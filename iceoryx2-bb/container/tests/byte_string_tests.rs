@@ -48,18 +48,39 @@ fn fixed_size_byte_string_from_bytes_works() {
 }
 
 #[test]
-fn fixed_size_byte_string_from_byte_slice_works() {
-    let mut sut = Sut::from(b"hello world!");
+fn fixed_size_byte_string_from_bytes_truncated_works() {
+    let sut = Sut::from_bytes(b"bonjour world");
+    assert_that!(sut, is_ok);
+    let mut sut = sut.unwrap();
 
     assert_that!(sut, is_not_empty);
     assert_that!(sut.is_full(), eq false);
-    assert_that!(sut, len 12);
-    assert_that!(sut, eq b"hello world!");
-    assert_that!(sut, ne b"hello world! woo");
-    assert_that!(sut.as_bytes(), eq b"hello world!");
-    assert_that!(sut.as_mut_bytes(), eq b"hello world!");
-    assert_that!(sut.as_bytes_with_nul(), eq b"hello world!\0");
-    assert_that!(sut.pop(), eq Some(b'!'));
+    assert_that!(sut, len 13);
+    assert_that!(sut, eq b"bonjour world");
+    assert_that!(sut, ne b"bonjour world! woo");
+    assert_that!(sut.as_bytes(), eq b"bonjour world");
+    assert_that!(sut.as_mut_bytes(), eq b"bonjour world");
+    assert_that!(sut.as_bytes_with_nul(), eq b"bonjour world\0");
+    assert_that!(sut.pop(), eq Some(b'd'));
+}
+
+#[test]
+fn fixed_size_byte_string_from_byte_slice_works() {
+    let sut = FixedSizeByteString::<5>::from_bytes_truncated(b"hell");
+
+    assert_that!(sut, is_not_empty);
+    assert_that!(sut.is_full(), eq false);
+    assert_that!(sut, len 4);
+    assert_that!(sut, eq b"hell");
+    assert_that!(sut.as_bytes_with_nul(), eq b"hell\0");
+
+    let sut = FixedSizeByteString::<5>::from_bytes_truncated(b"hello world");
+
+    assert_that!(sut, is_not_empty);
+    assert_that!(sut.is_full(), eq true);
+    assert_that!(sut, len 5);
+    assert_that!(sut, eq b"hello");
+    assert_that!(sut.as_bytes_with_nul(), eq b"hello\0");
 }
 
 #[test]

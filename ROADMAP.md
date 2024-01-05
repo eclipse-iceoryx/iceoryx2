@@ -7,6 +7,19 @@
 * [ ] `#![no_std]` on `stable` on all tier 1 platforms
 * [ ] completely dynamic setup with dynamic shared memory
 
+## Shared Memory Container & Types
+
+* [ ] Make `iceoryx2_bb_container` public with announcement
+* [ ] Create and document dynamic size container concept for shared memory and apply it
+        to all existing containers: `ByteString`, `Vec`, `Queue`
+    * Open Question: How can these containers be cloned, copied?
+* [ ] Introduce additional containers: `HashMap`, `Tree`, `Set`, `List`
+* [ ] Introduce elementary types, look into: `simple-si-units` crate
+    * Add types like: memory size, percentage, strict percentage (0..100), data throughput, resolution
+        (further types found in informatics)
+* [ ] Add `derive` proc macro to ensure that only shm compatible types can be
+    transferred via zero-copy
+
 ## Language Bindings
 
 * [ ] C
@@ -59,6 +72,7 @@
 * [ ] Zero-copy GPU communication with Cuda, NvSci, Vulkan
 * [ ] Zero-copy across hypervisor partitions
 * [ ] Zero-copy via QEMU ivshmem: <https://www.qemu.org/docs/master/system/devices/ivshmem.html>
+* [ ] dmabuf support, see: https://blaztinn.gitlab.io/post/dmabuf-texture-sharing/
 * [ ] Support dynamic sized types in a memory efficient manner
   * Buddy allocator for sender data-segment
   * Introduce runtime fixed-size types
@@ -77,7 +91,7 @@
 * [ ] Android
 * [x] Linux
 * [x] Windows
-* [ ] Mac Os
+* [x] Mac Os
 * [ ] iOS
 * [ ] WatchOS
 * [x] FreeBSD
@@ -128,3 +142,7 @@
   * simple use case: pub/sub + event to notify subscriber to notify sample send
   * would reduce error handling: connect to service with wrong messaging pattern
 * [ ] Implement Resizable SharedMemoryConcept that is able to extend the shared memory by adding additional posix shared memory objects
+
+## Integration Into Other Projects
+
+* [ ] Maybe Hyprland

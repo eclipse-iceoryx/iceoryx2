@@ -207,23 +207,12 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
     ///
     ///  * `bytes` len must be smaller or equal than [`FixedSizeByteString::capacity()`]
     ///
-    pub const unsafe fn new_unchecked(bytes: &[u8]) -> Self {
+    pub unsafe fn new_unchecked(bytes: &[u8]) -> Self {
         if CAPACITY < bytes.len() {
             panic!("Insufficient capacity to store bytes.");
         }
 
-        let mut new_self = Self::new();
-        new_self.len = bytes.len();
-        std::ptr::copy(
-            bytes.as_ptr(),
-            new_self.data.as_ptr() as *mut u8,
-            bytes.len(),
-        );
-
-        let zero = 0u8;
-        std::ptr::copy(&zero, new_self.data.as_ptr().add(bytes.len()) as *mut u8, 1);
-
-        new_self
+        Self::from_bytes_truncated(bytes)
     }
 
     /// Creates a new [`FixedSizeByteString`] from a byte slice
@@ -235,6 +224,22 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
                 as_escaped_string(bytes), CAPACITY);
 
         Ok(new_self)
+    }
+
+    /// Creates a new [`FixedSizeByteString`] from a byte slice. If the byte slice does not fit
+    /// into the [`FixedSizeByteString`] it will be truncated.
+    pub fn from_bytes_truncated(bytes: &[u8]) -> Self {
+        let mut new_self = Self::new();
+        new_self.len = std::cmp::min(bytes.len(), CAPACITY);
+        for (i, byte) in bytes.iter().enumerate().take(new_self.len) {
+            new_self.data[i].write(*byte);
+        }
+
+        if new_self.len < CAPACITY {
+            new_self.data[new_self.len].write(0);
+        }
+
+        new_self
     }
 
     /// Creates a new byte string from a given null-terminated string

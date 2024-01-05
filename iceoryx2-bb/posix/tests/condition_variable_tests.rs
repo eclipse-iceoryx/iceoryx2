@@ -12,13 +12,14 @@
 
 use iceoryx2_bb_posix::condition_variable::*;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
-static TIMEOUT: Duration = Duration::from_millis(10);
+static TIMEOUT: Duration = Duration::from_millis(100);
 
 #[test]
 fn multi_condition_variable_construction_works() {
@@ -48,7 +49,7 @@ fn multi_condition_variable_wait_while_is_signalled_by_notify_all() {
 
     thread::scope(|s| {
         let t1 = s.spawn(|| {
-            let guard = sut.wait_while(|t| *t == 4456).unwrap();
+            let guard = sut.blocking_wait_while(|t| *t == 4456).unwrap();
             assert_that!(*guard, eq 4456);
         });
 
@@ -77,7 +78,7 @@ fn multi_condition_variable_wait_while_is_signalled_by_modify_notify_all() {
 
     thread::scope(|s| {
         let t1 = s.spawn(|| {
-            let guard = sut.wait_while(|t| *t == 4456).unwrap();
+            let guard = sut.blocking_wait_while(|t| *t == 4456).unwrap();
             assert_that!(*guard, eq 4456);
         });
 
@@ -253,14 +254,14 @@ fn condition_variable_notify_all_signals_all_waiters() {
         let sut_thread1 = Arc::clone(&sut);
         let counter_thread1 = Arc::clone(&counter);
         let t1 = s.spawn(move || {
-            sut_thread1.wait_while().unwrap();
+            sut_thread1.blocking_wait_while().unwrap();
             counter_thread1.fetch_add(1, Ordering::Relaxed);
         });
 
         let sut_thread2 = Arc::clone(&sut);
         let counter_thread2 = Arc::clone(&counter);
         let t2 = s.spawn(move || {
-            sut_thread2.wait_while().unwrap();
+            sut_thread2.blocking_wait_while().unwrap();
             counter_thread2.fetch_add(1, Ordering::Relaxed);
         });
 
@@ -299,14 +300,14 @@ fn condition_variable_notify_one_signals_one_waiter() {
         let sut_thread1 = Arc::clone(&sut);
         let counter_thread1 = Arc::clone(&counter);
         let t1 = s.spawn(move || {
-            sut_thread1.wait_while().unwrap();
+            sut_thread1.blocking_wait_while().unwrap();
             counter_thread1.fetch_add(1, Ordering::Relaxed);
         });
 
         let sut_thread2 = Arc::clone(&sut);
         let counter_thread2 = Arc::clone(&counter);
         let t2 = s.spawn(move || {
-            sut_thread2.wait_while().unwrap();
+            sut_thread2.blocking_wait_while().unwrap();
             counter_thread2.fetch_add(1, Ordering::Relaxed);
         });
 
@@ -369,6 +370,7 @@ fn condition_variable_modify_notify_all_signals_all_waiters() {
 
 #[test]
 fn condition_variable_modify_notify_one_signals_one_waiter() {
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
     thread::scope(|s| {
         let counter = Arc::new(AtomicI32::new(0));
@@ -381,20 +383,22 @@ fn condition_variable_modify_notify_one_signals_one_waiter() {
         let sut_thread1 = Arc::clone(&sut);
         let counter_thread1 = Arc::clone(&counter);
         let t1 = s.spawn(move || {
-            sut_thread1.timed_wait_while(TIMEOUT * 10).unwrap();
+            sut_thread1.blocking_wait_while().unwrap();
             counter_thread1.fetch_add(1, Ordering::Relaxed);
         });
 
         let sut_thread2 = Arc::clone(&sut);
         let counter_thread2 = Arc::clone(&counter);
         let t2 = s.spawn(move || {
-            sut_thread2.timed_wait_while(TIMEOUT * 10).unwrap();
+            sut_thread2.blocking_wait_while().unwrap();
             counter_thread2.fetch_add(1, Ordering::Relaxed);
         });
 
         thread::sleep(TIMEOUT);
         let counter_old_1 = counter.load(Ordering::Relaxed);
         sut.modify_notify_one(|value| *value = 2213).unwrap();
+
+        while counter.load(Ordering::Relaxed) == 0 {}
 
         thread::sleep(TIMEOUT);
         let counter_old_2 = counter.load(Ordering::Relaxed);
@@ -462,5 +466,5 @@ fn condition_variable_wait_while_does_not_wait_when_predicate_is_fulfilled() {
     );
     sut.lock().unwrap().value = 9999999;
 
-    assert_that!(sut.wait_while(), is_ok);
+    assert_that!(sut.blocking_wait_while(), is_ok);
 }

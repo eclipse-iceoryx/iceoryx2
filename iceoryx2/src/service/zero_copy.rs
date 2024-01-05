@@ -58,7 +58,7 @@ impl<'config> crate::service::Details<'config> for Service<'config> {
     type ServiceNameHasher = hash::sha1::Sha1;
     type SharedMemory = shared_memory::posix::Memory<PoolAllocator>;
     type Connection = zero_copy_connection::posix_shared_memory::Connection;
-    type Event = event::unix_datagram_socket::Event<EventId>;
+    type Event = event::unix_datagram_socket::EventImpl<EventId>;
 
     fn from_state(state: ServiceState<'config, Self::StaticStorage, Self::DynamicStorage>) -> Self {
         Self { state }

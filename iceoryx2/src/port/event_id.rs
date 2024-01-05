@@ -46,12 +46,12 @@ pub struct EventId(u64);
 
 impl EventId {
     /// Creates a new [`EventId`] from a given integer value.
-    pub fn new(value: u64) -> Self {
+    pub const fn new(value: u64) -> Self {
         EventId(value)
     }
 
     /// Returns the underlying integer value of the [`EventId`].
-    pub fn as_u64(&self) -> u64 {
+    pub const fn as_u64(&self) -> u64 {
         self.0
     }
 }

@@ -59,7 +59,7 @@ const IS_INITIALIZED_STATE_VALUE: u64 = 0xbeefaffedeadbeef;
 
 /// The builder of [`Storage`].
 #[derive(Debug)]
-pub struct Builder<T: Debug> {
+pub struct Builder<T: Send + Sync + Debug> {
     storage_name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
@@ -67,7 +67,7 @@ pub struct Builder<T: Debug> {
     _phantom_data: PhantomData<T>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
@@ -83,9 +83,9 @@ struct Data<T: Send + Sync + Debug> {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            path: DEFAULT_PATH_HINT,
-            suffix: DEFAULT_SUFFIX,
-            prefix: DEFAULT_PREFIX,
+            path: Storage::<()>::default_path_hint(),
+            suffix: Storage::<()>::default_suffix(),
+            prefix: Storage::<()>::default_prefix(),
         }
     }
 }

@@ -15,6 +15,7 @@
 #![allow(unused_variables)]
 
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
+use iceoryx2_pal_concurrency_sync::WaitAction;
 use windows_sys::Win32::{
     Foundation::{FALSE, TRUE},
     System::{
@@ -54,14 +55,14 @@ impl SigAction {
     }
 
     fn get(&self) -> sigaction_t {
-        self.mtx.lock(|_, _| true);
+        self.mtx.lock(|_, _| WaitAction::Continue);
         let ret_val = unsafe { *self.action.get() };
         self.mtx.unlock(|_| {});
         ret_val
     }
 
     fn set(&self, value: sigaction_t) -> sigaction_t {
-        self.mtx.lock(|_, _| true);
+        self.mtx.lock(|_, _| WaitAction::Continue);
         let ret_val = unsafe { *self.action.get() };
         unsafe { *self.action.get() = value };
         self.mtx.unlock(|_| {});

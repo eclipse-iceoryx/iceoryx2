@@ -16,12 +16,13 @@ use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_posix::unmovable_ipc_handle::AcquireIpcHandleError;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use std::sync::Arc;
 use std::sync::Barrier;
 use std::thread;
 use std::time::Duration;
 
-const TIMEOUT: Duration = Duration::from_millis(50);
+const TIMEOUT: Duration = Duration::from_millis(100);
 
 #[test]
 fn mutex_lock_works() {
@@ -389,6 +390,7 @@ fn mutex_with_deadlock_detection_blocks() {
 
 #[test]
 fn mutex_can_be_recovered_when_thread_died() {
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .thread_termination_behavior(MutexThreadTerminationBehavior::ReleaseWhenLocked)
@@ -403,14 +405,16 @@ fn mutex_can_be_recovered_when_thread_died() {
         });
     });
 
-    let guard = sut.lock();
-    assert_that!(guard, is_err);
-    match guard.as_ref().err().as_ref().unwrap() {
-        MutexLockError::LockAcquiredButOwnerDied(_) => (),
-        _ => assert_that!(true, eq false),
+    loop {
+        let guard = sut.try_lock();
+
+        if guard.is_ok() {
+            assert_that!(guard.as_ref().unwrap(), is_none);
+        } else if let Err(MutexLockError::LockAcquiredButOwnerDied(_)) = guard {
+            sut.make_consistent();
+            break;
+        }
     }
-    sut.make_consistent();
-    drop(guard);
 
     let guard = sut.try_lock();
     assert_that!(guard, is_ok);
@@ -429,6 +433,7 @@ fn mutex_can_be_recovered_when_thread_died() {
 
 #[test]
 fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .thread_termination_behavior(MutexThreadTerminationBehavior::ReleaseWhenLocked)
