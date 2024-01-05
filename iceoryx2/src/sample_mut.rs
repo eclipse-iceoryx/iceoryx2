@@ -12,6 +12,8 @@
 
 //! # Example
 //!
+//! ## Sample Write Function
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::sample_mut_impl::SampleMutImpl;
@@ -37,7 +39,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
 //! See also, [`crate::sample_mut_impl::SampleMutImpl`].
 
 use iceoryx2_cal::zero_copy_connection::ZeroCopyCreationError;
@@ -57,6 +58,26 @@ pub(crate) mod internal {
 /// it will release the loaned memory when going out of scope.
 pub trait SampleMut<MessageType>: internal::SampleMgmt {
     /// Returns a reference to the header of the sample.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .open_or_create::<u64>()?;
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// let sample = publisher.loan()?;
+    /// println!("Sample Publisher Origin {:?}", sample.header().publisher_id());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     fn header(&self) -> &Header;
 
     /// Returns a reference to the payload of the sample.
@@ -65,6 +86,26 @@ pub trait SampleMut<MessageType>: internal::SampleMgmt {
     ///
     /// The generic parameter `MessageType` can be packed into [`core::mem::MaybeUninit<MessageType>`], depending
     /// which API is used to obtain the sample. Obtaining a reference is safe for either type.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .open_or_create::<u64>()?;
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// let sample = publisher.loan()?;
+    /// println!("Sample current payload {}", sample.payload());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     fn payload(&self) -> &MessageType;
 
     /// Returns a mutable reference to the payload of the sample.
@@ -73,8 +114,36 @@ pub trait SampleMut<MessageType>: internal::SampleMgmt {
     ///
     /// The generic parameter `MessageType` can be packed into [`core::mem::MaybeUninit<MessageType>`], depending
     /// which API is used to obtain the sample. Obtaining a reference is safe for either type.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .open_or_create::<u64>()?;
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// let mut sample = publisher.loan()?;
+    /// *sample.payload_mut() = 4567;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     fn payload_mut(&mut self) -> &mut MessageType;
 
+    /// Send a previously loaned [`PublisherLoan::loan_uninit()`] or [`Publisher::loan()`] [`SampleMut`] to all connected
+    /// [`crate::port::subscriber::Subscriber`]s of the service.
+    ///
+    /// The payload of the [`SampleMut`] must be initialized before it can be sent. Have a look
+    /// at [`SampleMut::write_payload()`] and [`SampleMut::assume_init()`] for more details.
+    ///
+    /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
+    /// the data is returned, otherwise a [`ZeroCopyCreationError`] describing the failure.
     fn send(self) -> Result<usize, ZeroCopyCreationError>;
 }
 

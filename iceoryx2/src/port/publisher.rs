@@ -22,7 +22,7 @@
 //!     .publish_subscribe()
 //!     .open_or_create::<u64>()?;
 //!
-//! let pubsub_local = zero_copy::Service::new(&service_name)
+//! let pubsub_local = process_local::Service::new(&service_name)
 //!     .publish_subscribe()
 //!     .open_or_create::<u64>()?;
 //!
@@ -114,13 +114,40 @@ pub trait Publisher<MessageType: Debug> {
     /// required to be called whenever a new [`crate::port::subscriber::Subscriber`] connected to
     /// the service. It is done implicitly whenever [`Publisher::send()`] or [`Publisher::send_copy()`]
     /// is called.
+    /// When a [`crate::port::subscriber::Subscriber`] is connected that requires a history this
+    /// call will deliver it.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .open_or_create::<u64>()?;
+    /// #
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// publisher.send_copy(1234)?;
+    ///
+    /// let subscriber = service.subscriber().create()?;
+    ///
+    /// // updates all connections and delivers history to new participants
+    /// publisher.update_connections();
+    ///
+    /// println!("history received {:?}", subscriber.receive()?.unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     fn update_connections(&self) -> Result<(), ZeroCopyCreationError>;
 
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`SendCopyError`] describing the failure.
     ///
-    /// Example
+    /// # Example
     ///
     /// ```
     /// use iceoryx2::prelude::*;
@@ -144,7 +171,7 @@ pub trait Publisher<MessageType: Debug> {
     ///
     /// On failure it returns [`LoanError`] describing the failure.
     ///
-    /// Example
+    /// # Example
     ///
     /// ```
     /// use iceoryx2::prelude::*;
@@ -179,7 +206,7 @@ pub trait PublisherLoan<MessageType: Debug + Default>: Publisher<MessageType> {
     ///
     /// On failure it returns [`LoanError`] describing the failure.
     ///
-    /// Example
+    /// # Example
     ///
     /// ```
     /// use iceoryx2::prelude::*;
