@@ -18,16 +18,24 @@ pub(crate) mod details;
 
 /// Defines the event id used to identify the source of an event.
 pub mod event_id;
-/// Receiving endpoint (port) for event based communication
+/// The interface of the receiving endpoint for event based communication
 pub mod listener;
-/// Sending endpoint (port) for event based communication
+/// Receiving endpoint (port) for event based communication
+pub mod listener_impl;
+/// The interface of the sending endpoint for event based communication
 pub mod notifier;
+/// Sending endpoint (port) for event based communication
+pub mod notifier_impl;
 /// Defines port specific unique ids. Used to identify source/destination while communicating.
 pub mod port_identifiers;
-/// Sending endpoint (port) for publish-subscribe based communication
+/// The interface of the sending endpoint for publish-subscribe based communication
 pub mod publisher;
-/// Receiving endpoint (port) for publish-subscribe based communication
+/// Sending endpoint (port) for publish-subscribe based communication
+pub mod publisher_impl;
+/// The interface of the receiving endpoint for publish-subscribe based communication
 pub mod subscriber;
+/// Receiving endpoint (port) for publish-subscribe based communication
+pub mod subscriber_impl;
 
 use crate::port::port_identifiers::*;
 use crate::service;
@@ -38,8 +46,8 @@ use crate::service;
 ///
 /// Can be set with:
 ///
-/// * [`publisher::Publisher::set_degration_callback()`]
-/// * [`subscriber::Subscriber::set_degration_callback()`]
+/// * [`publisher_impl::PublisherImpl::set_degration_callback()`]
+/// * [`subscriber_impl::SubscriberImpl::set_degration_callback()`]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegrationAction {
     /// Ignore the degration completely

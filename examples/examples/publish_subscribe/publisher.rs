@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             funky: counter as f64 * 812.12,
         });
 
-        publisher.send(sample)?;
+        sample.send()?;
 
         println!("Send sample {} ...", counter);
     }
