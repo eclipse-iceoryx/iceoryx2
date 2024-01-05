@@ -14,7 +14,7 @@ pub use crate::iox2::Iox2;
 pub use crate::iox2::Iox2Event;
 pub use crate::port::{
     event_id::EventId, listener::Listener, notifier::Notifier, publisher::Publisher,
-    publisher::PublisherLoan,
+    publisher::PublisherLoan, subscriber::Subscriber,
 };
 pub use crate::sample::Sample;
 pub use crate::sample_mut::{SampleMut, UninitializedSampleMut};
