@@ -35,13 +35,13 @@
 //! ```
 
 use crate::{
-    port::publisher_impl::PublisherImpl,
+    port::publisher::internal::PublisherMgmt,
     raw_sample::RawSampleMut,
     sample_mut::{internal::SampleMgmt, SampleMut, UninitializedSampleMut},
-    service::{self, header::publish_subscribe::Header},
+    service::header::publish_subscribe::Header,
 };
 use iceoryx2_cal::shared_memory::*;
-use std::{fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
+use std::{fmt::Debug, mem::MaybeUninit};
 
 /// Acquired by a [`Publisher`] via [`Publisher::loan()`] or [`Publisher::loan_uninit()`]. It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
@@ -55,31 +55,24 @@ use std::{fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 /// The generic parameter `M` is either a `MessageType` or a [`core::mem::MaybeUninit<MessageType>`], depending
 /// which API is used to obtain the sample.
 #[derive(Debug)]
-pub struct SampleMutImpl<'a, 'publisher, 'config, Service: service::Details<'config>, M: Debug> {
-    pub(crate) publisher: &'publisher PublisherImpl<'a, 'config, Service, M>,
+pub struct SampleMutImpl<'publisher, M: Debug> {
+    pub(crate) publisher: &'publisher dyn PublisherMgmt,
     ptr: RawSampleMut<Header, M>,
     offset_to_chunk: PointerOffset,
 }
 
-impl<'config, Service: service::Details<'config>, M: Debug> Drop
-    for SampleMutImpl<'_, '_, 'config, Service, M>
-{
+impl<M: Debug> Drop for SampleMutImpl<'_, M> {
     fn drop(&mut self) {
-        self.publisher.release_sample(self.offset_to_chunk);
-        self.publisher.loan_counter.fetch_sub(1, Ordering::Relaxed);
+        self.publisher.return_loaned_sample(self.offset_to_chunk);
     }
 }
 
-impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: Debug>
-    SampleMutImpl<'a, 'publisher, 'config, Service, MaybeUninit<MessageType>>
-{
+impl<'publisher, MessageType: Debug> SampleMutImpl<'publisher, MaybeUninit<MessageType>> {
     pub(crate) fn new(
-        publisher: &'publisher PublisherImpl<'a, 'config, Service, MessageType>,
+        publisher: &'publisher dyn PublisherMgmt,
         ptr: RawSampleMut<Header, MaybeUninit<MessageType>>,
         offset_to_chunk: PointerOffset,
     ) -> Self {
-        publisher.loan_counter.fetch_add(1, Ordering::Relaxed);
-
         // SAFETY: the transmute is not nice but safe since MaybeUninit is #[repr(transparent)} to the inner type
         let publisher = unsafe { std::mem::transmute(publisher) };
 
@@ -91,12 +84,9 @@ impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: D
     }
 }
 
-impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: Debug> SampleMgmt
-    for SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>
-{
+impl<'publisher, MessageType: Debug> SampleMgmt for SampleMutImpl<'publisher, MessageType> {
     fn originates_from(&self, publisher_address: usize) -> bool {
-        publisher_address
-            == (self.publisher as *const PublisherImpl<'a, 'config, Service, MessageType>) as usize
+        publisher_address == self.publisher.publisher_address()
     }
 
     fn offset_to_chunk(&self) -> PointerOffset {
@@ -104,34 +94,27 @@ impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: D
     }
 }
 
-impl<'a, 'publisher, 'config, Service: service::Details<'config>, MessageType: Debug>
-    UninitializedSampleMut<MessageType>
-    for SampleMutImpl<'a, 'publisher, 'config, Service, MaybeUninit<MessageType>>
+impl<'publisher, MessageType: Debug> UninitializedSampleMut<MessageType>
+    for SampleMutImpl<'publisher, MaybeUninit<MessageType>>
 {
-    type InitializedSample = SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>;
+    type InitializedSample = SampleMutImpl<'publisher, MessageType>;
 
-    fn write_payload(
-        mut self,
-        value: MessageType,
-    ) -> SampleMutImpl<'a, 'publisher, 'config, Service, MessageType> {
+    fn write_payload(mut self, value: MessageType) -> SampleMutImpl<'publisher, MessageType> {
         self.payload_mut().write(value);
         // SAFETY: this is safe since the payload was initialized on the line above
         unsafe { self.assume_init() }
     }
 
-    unsafe fn assume_init(self) -> SampleMutImpl<'a, 'publisher, 'config, Service, MessageType> {
+    unsafe fn assume_init(self) -> SampleMutImpl<'publisher, MessageType> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
     }
 }
 
 impl<
-        'a,
         'publisher,
-        'config,
-        Service: service::Details<'config>,
         M: Debug, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
-    > SampleMut<M> for SampleMutImpl<'a, 'publisher, 'config, Service, M>
+    > SampleMut<M> for SampleMutImpl<'publisher, M>
 {
     fn header(&self) -> &Header {
         self.ptr.as_header_ref()

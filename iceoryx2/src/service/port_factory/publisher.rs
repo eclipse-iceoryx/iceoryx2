@@ -35,12 +35,8 @@ use std::fmt::Debug;
 use iceoryx2_bb_log::fail;
 use serde::{de::Visitor, Deserialize, Serialize};
 
-use crate::{
-    port::publisher_impl::{PublisherCreateError, PublisherImpl},
-    service,
-};
-
 use super::publish_subscribe::PortFactory;
+use crate::{port::publisher::PublisherCreateError, port::publisher_impl::PublisherImpl, service};
 
 /// Defines the strategy the [`Publisher`] shall pursue in [`Publisher::send()`] or
 /// [`Publisher::send_copy()`] when the buffer of a
