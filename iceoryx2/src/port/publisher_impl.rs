@@ -59,6 +59,10 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
+use super::publisher::internal::PublisherMgmt;
+use super::publisher::{
+    PublisherCreateError, PublisherLoanError, PublisherSendCopyError, PublisherSendError,
+};
 use crate::message::Message;
 use crate::port::details::subscriber_connections::*;
 use crate::port::{DegrationAction, DegrationCallback};
@@ -73,7 +77,6 @@ use crate::service::static_config::publish_subscribe;
 use crate::{config, sample_mut_impl::SampleMutImpl};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
@@ -85,73 +88,6 @@ use iceoryx2_cal::shm_allocator::{self, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
-
-/// Defines a failure that can occur when a [`Publisher`] is created with
-/// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum PublisherCreateError {
-    ExceedsMaxSupportedPublishers,
-    UnableToCreateDataSegment,
-}
-
-impl std::fmt::Display for PublisherCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for PublisherCreateError {}
-
-/// Defines a failure that can occur in [`Publisher::loan()`] and [`Publisher::loan_uninit()`] or is part of [`SendCopyError`]
-/// emitted in [`Publisher::send_copy()`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
-pub enum PublisherLoanError {
-    OutOfMemory,
-    ExceedsMaxLoanedChunks,
-    InternalFailure,
-}
-
-impl std::fmt::Display for PublisherLoanError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for PublisherLoanError {}
-
-enum_gen! {
-    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send()`].
-    PublisherSendError
-  entry:
-    SampleDoesNotBelongToPublisher
-  mapping:
-    PublisherLoanError to LoanError,
-    ZeroCopyCreationError to ConnectionError
-}
-
-impl std::fmt::Display for PublisherSendError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for PublisherSendError {}
-
-enum_gen! {
-    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send_copy()`].
-    PublisherSendCopyError
-  mapping:
-    PublisherLoanError to LoanError,
-    ZeroCopyCreationError to ConnectionError
-}
-
-impl std::fmt::Display for PublisherSendCopyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for PublisherSendCopyError {}
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
@@ -166,7 +102,7 @@ pub struct PublisherImpl<'a, 'config: 'a, Service: service::Details<'config>, Me
     history: Option<UnsafeCell<Queue<usize>>>,
     service: &'a Service,
     degration_callback: Option<DegrationCallback<'a>>,
-    pub(crate) loan_counter: AtomicUsize,
+    loan_counter: AtomicUsize,
     _dynamic_config_guard: UniqueIndex<'a>,
     _phantom_message_type: PhantomData<MessageType>,
 }
@@ -411,7 +347,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         number_of_recipients
     }
 
-    pub(crate) fn release_sample(&self, distance_to_chunk: PointerOffset) {
+    fn release_sample(&self, distance_to_chunk: PointerOffset) {
         if self.sample_reference_counter[Self::sample_index(distance_to_chunk.value())]
             .fetch_sub(1, Ordering::Relaxed)
             == 1
@@ -551,10 +487,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     /// ```
     pub fn loan_uninit<'publisher>(
         &'publisher self,
-    ) -> Result<
-        SampleMutImpl<'a, 'publisher, 'config, Service, MaybeUninit<MessageType>>,
-        PublisherLoanError,
-    > {
+    ) -> Result<SampleMutImpl<'publisher, MaybeUninit<MessageType>>, PublisherLoanError> {
         self.retrieve_returned_samples();
         let msg = "Unable to loan Sample";
 
@@ -590,6 +523,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
                     )
                 };
 
+                self.loan_counter.fetch_add(1, Ordering::Relaxed);
                 Ok(SampleMutImpl::new(self, sample, chunk.offset))
             }
             Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
@@ -605,6 +539,19 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
                     "{} since an internal failure occurred ({:?}).", msg, v);
             }
         }
+    }
+}
+
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> PublisherMgmt
+    for PublisherImpl<'a, 'config, Service, MessageType>
+{
+    fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
+        self.release_sample(distance_to_chunk);
+        self.loan_counter.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    fn publisher_address(&self) -> usize {
+        self as *const Self as usize
     }
 }
 
@@ -640,8 +587,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default +
     /// ```
     pub fn loan<'publisher>(
         &'publisher self,
-    ) -> Result<SampleMutImpl<'a, 'publisher, 'config, Service, MessageType>, PublisherLoanError>
-    {
+    ) -> Result<SampleMutImpl<'publisher, MessageType>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
     }
 }
