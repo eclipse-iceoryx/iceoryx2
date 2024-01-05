@@ -26,6 +26,8 @@ RUN echo "#### Installing dependencies" \
        rustfmt \
   && echo "#### Installing cargo-nextest" \
   && cargo install cargo-nextest --locked \
+  && echo "#### Installing cargo-audit" \
+  && cargo install cargo-audit --locked \
   && echo "#### Creating users and groups required for tests" \
   && useradd testuser1 \
   && useradd testuser2 \

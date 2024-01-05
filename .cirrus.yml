@@ -97,6 +97,8 @@ only_if: $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH ==
 preflight_check_task:
   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
   set_toolchain_script: rustup default stable
+  fingerprint_script: 
+    - cargo audit
   # TODO iox2-#8: add more preflight-checks here
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
   <<: *IOX2_COMMON_BUILD_DEBUG # only build without tests to not slow down other tasks due to failures in flaky tests

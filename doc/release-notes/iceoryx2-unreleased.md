@@ -20,7 +20,7 @@
 
 ### Workflow
 
- * Example [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * add `cargo audit` for security vulnerability checking in dependencies [#48](https://github.com/eclipse-iceoryx/iceoryx2/issues/48)
 
 ### New API features
 
