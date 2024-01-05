@@ -34,8 +34,7 @@ use std::fmt::Debug;
 use iceoryx2_bb_log::fail;
 
 use crate::{
-    port::subscriber_impl::{SubscriberCreateError, SubscriberImpl},
-    service,
+    port::subscriber::SubscriberCreateError, port::subscriber_impl::SubscriberImpl, service,
 };
 
 use super::publish_subscribe::PortFactory;
