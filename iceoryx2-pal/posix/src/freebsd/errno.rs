@@ -230,6 +230,6 @@ mod internal {
     #[cfg_attr(target_os = "freebsd", link(name = "c"))]
     extern "C" {
         pub(super) fn __error() -> *mut int;
-        pub(super) fn strerror_r(errnum: int, buf: *mut char, buflen: size_t) -> int;
+        pub(super) fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int;
     }
 }

@@ -138,6 +138,6 @@ pub unsafe fn sysctl(
     crate::internal::sysctl(name, namelen, oldp, oldlenp, newp, newlen)
 }
 
-pub unsafe fn sysctlnametomib(name: *mut char, mibp: *mut int, sizep: *mut size_t) -> int {
+pub unsafe fn sysctlnametomib(name: *mut c_char, mibp: *mut int, sizep: *mut size_t) -> int {
     crate::internal::sysctlnametomib(name, mibp, sizep)
 }

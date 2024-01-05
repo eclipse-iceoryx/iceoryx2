@@ -42,7 +42,7 @@ pub unsafe fn munlockall() -> int {
     crate::internal::munlockall()
 }
 
-unsafe fn remove_leading_path_separator(value: *const char) -> *const char {
+unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
     if *value as u8 == PATH_SEPARATOR {
         value.add(1)
     } else {
@@ -50,7 +50,7 @@ unsafe fn remove_leading_path_separator(value: *const char) -> *const char {
     }
 }
 
-unsafe fn shm_file_path(name: *const char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
+unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
     let name = remove_leading_path_separator(name);
 
     let mut state_file_path = [0u8; MAX_PATH_LENGTH];
@@ -78,7 +78,7 @@ unsafe fn shm_file_path(name: *const char, suffix: &[u8]) -> [u8; MAX_PATH_LENGT
     state_file_path
 }
 
-unsafe fn get_real_shm_name(name: *const char) -> Option<[u8; SHM_MAX_NAME_LEN]> {
+unsafe fn get_real_shm_name(name: *const c_char) -> Option<[u8; SHM_MAX_NAME_LEN]> {
     let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
     let shm_state_fd = open_with_mode(shm_file_path.as_ptr().cast(), O_RDONLY, 0);
     if shm_state_fd == -1 {
@@ -101,7 +101,7 @@ unsafe fn get_real_shm_name(name: *const char) -> Option<[u8; SHM_MAX_NAME_LEN]>
     Some(buffer)
 }
 
-unsafe fn write_real_shm_name(name: *const char, buffer: &[u8]) -> bool {
+unsafe fn write_real_shm_name(name: *const c_char, buffer: &[u8]) -> bool {
     let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
     let shm_state_fd = open_with_mode(
         shm_file_path.as_ptr().cast(),

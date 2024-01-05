@@ -62,7 +62,7 @@ unsafe fn number_of_directory_entries(path: &[u8]) -> usize {
     number_of_entries
 }
 
-pub(crate) unsafe fn to_dir_search_string(path: *const char) -> [u8; MAX_PATH_LENGTH] {
+pub(crate) unsafe fn to_dir_search_string(path: *const c_char) -> [u8; MAX_PATH_LENGTH] {
     let mut buffer = [0u8; MAX_PATH_LENGTH];
 
     for i in 0..MAX_PATH_LENGTH {

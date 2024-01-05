@@ -40,6 +40,6 @@ mod internal {
 
     #[cfg_attr(target_os = "freebsd", link(name = "c"))]
     extern "C" {
-        pub(super) fn scandir_ext(path: *const char, namelist: *mut *mut *mut dirent) -> int;
+        pub(super) fn scandir_ext(path: *const c_char, namelist: *mut *mut *mut dirent) -> int;
     }
 }

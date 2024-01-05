@@ -23,7 +23,7 @@ use crate::win32call;
 
 use super::win32_handle_translator::HandleTranslator;
 
-pub unsafe fn remove(pathname: *const char) -> int {
+pub unsafe fn remove(pathname: *const c_char) -> int {
     if win32call! { DeleteFileA(pathname as *const u8), ignore ERROR_FILE_NOT_FOUND, ERROR_ACCESS_DENIED }
         == 0
     {
