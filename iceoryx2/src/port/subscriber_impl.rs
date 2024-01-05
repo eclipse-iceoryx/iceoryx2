@@ -51,7 +51,7 @@ use crate::{
 use super::details::publisher_connections::{Connection, ConnectionFailure, PublisherConnections};
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
 use super::subscriber::internal::SubscriberMgmt;
-use super::subscriber::{SubscriberCreateError, SubscriberReceiveError};
+use super::subscriber::{Subscriber, SubscriberCreateError, SubscriberReceiveError};
 use super::DegrationCallback;
 
 /// The receiving endpoint of a publish-subscribe communication.
@@ -217,10 +217,12 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             None => self.degration_callback = None,
         }
     }
+}
 
-    /// Receives a [`Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
-    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive<'subscriber>(
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
+    Subscriber<MessageType> for SubscriberImpl<'a, 'config, Service, MessageType>
+{
+    fn receive<'subscriber>(
         &'subscriber self,
     ) -> Result<Option<SampleImpl<'subscriber, MessageType>>, SubscriberReceiveError> {
         if let Err(e) = self.update_connections() {
@@ -243,11 +245,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         Ok(None)
     }
 
-    /// Explicitly updates all connections to the [`crate::port::publisher::Publisher`]s. This is
-    /// required to be called whenever a new [`crate::port::publisher::Publisher`] connected to
-    /// the service. It is done implicitly whenever [`Subscriber::receive()`]
-    /// is called.
-    pub fn update_connections(&self) -> Result<(), ConnectionFailure> {
+    fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe { (*self.publisher_list_state.get()).update() } {
             fail!(from self, when self.populate_publisher_channels(),
                 "Connections were updated only partially since at least one connection to a publisher failed.");
