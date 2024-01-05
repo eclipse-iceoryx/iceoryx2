@@ -53,7 +53,8 @@ pub(crate) mod internal {
     }
 }
 
-/// Acquired by a [`Publisher`] via [`Publisher::loan()`]. It stores the payload that will be sent
+/// Acquired by a [`crate::port::publisher::Publisher`] via
+/// [`crate::port::publisher::PublisherLoan::loan()`]. It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
 pub trait SampleMut<MessageType>: internal::SampleMgmt {
@@ -136,18 +137,21 @@ pub trait SampleMut<MessageType>: internal::SampleMgmt {
     /// ```
     fn payload_mut(&mut self) -> &mut MessageType;
 
-    /// Send a previously loaned [`PublisherLoan::loan_uninit()`] or [`Publisher::loan()`] [`SampleMut`] to all connected
+    /// Send a previously loaned [`crate::port::publisher::Publisher::loan_uninit()`] or
+    /// [`crate::port::publisher::PublisherLoan::loan()`] [`SampleMut`] to all connected
     /// [`crate::port::subscriber::Subscriber`]s of the service.
     ///
     /// The payload of the [`SampleMut`] must be initialized before it can be sent. Have a look
-    /// at [`SampleMut::write_payload()`] and [`SampleMut::assume_init()`] for more details.
+    /// at [`UninitializedSampleMut::write_payload()`] and [`UninitializedSampleMut::assume_init()`]
+    /// for more details.
     ///
     /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data is returned, otherwise a [`ZeroCopyCreationError`] describing the failure.
     fn send(self) -> Result<usize, ZeroCopyCreationError>;
 }
 
-/// Acquired by a [`Publisher`] via [`Publisher::loan_uninit()`]. It stores the payload that will be sent
+/// Acquired by a [`crate::port::publisher::Publisher`] via
+/// [`crate::port::publisher::Publisher::loan_uninit()`]. It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
 ///

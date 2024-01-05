@@ -222,9 +222,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
 impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     Subscriber<MessageType> for SubscriberImpl<'a, 'config, Service, MessageType>
 {
-    fn receive<'subscriber>(
-        &'subscriber self,
-    ) -> Result<Option<SampleImpl<'subscriber, MessageType>>, SubscriberReceiveError> {
+    fn receive(&self) -> Result<Option<SampleImpl<MessageType>>, SubscriberReceiveError> {
         if let Err(e) = self.update_connections() {
             fail!(from self,
                 with SubscriberReceiveError::ConnectionFailure(e),

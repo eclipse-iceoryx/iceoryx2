@@ -53,7 +53,7 @@
 //! # }
 //! ```
 //!
-//! See also, [`Publisher`]
+//! See also, [`crate::port::publisher::Publisher`]
 
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
@@ -435,9 +435,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Pu
         )
     }
 
-    fn loan_uninit<'publisher>(
-        &'publisher self,
-    ) -> Result<SampleMutImpl<'publisher, MaybeUninit<MessageType>>, PublisherLoanError> {
+    fn loan_uninit(&self) -> Result<SampleMutImpl<MaybeUninit<MessageType>>, PublisherLoanError> {
         self.retrieve_returned_samples();
         let msg = "Unable to loan Sample";
 
@@ -512,9 +510,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Pu
 impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default + Debug>
     PublisherLoan<MessageType> for PublisherImpl<'a, 'config, Service, MessageType>
 {
-    fn loan<'publisher>(
-        &'publisher self,
-    ) -> Result<SampleMutImpl<'publisher, MessageType>, PublisherLoanError> {
+    fn loan(&self) -> Result<SampleMutImpl<MessageType>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
     }
 }

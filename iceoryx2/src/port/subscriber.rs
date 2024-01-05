@@ -85,11 +85,9 @@ pub(crate) mod internal {
 
 /// The interface of the receiving endpoint of a publish-subscribe communication.
 pub trait Subscriber<MessageType: Debug> {
-    /// Receives a [`Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
+    /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    fn receive<'subscriber>(
-        &'subscriber self,
-    ) -> Result<Option<SampleImpl<'subscriber, MessageType>>, SubscriberReceiveError>;
+    fn receive(&self) -> Result<Option<SampleImpl<MessageType>>, SubscriberReceiveError>;
 
     /// Explicitly updates all connections to the [`crate::port::publisher::Publisher`]s. This is
     /// required to be called whenever a new [`crate::port::publisher::Publisher`] connected to

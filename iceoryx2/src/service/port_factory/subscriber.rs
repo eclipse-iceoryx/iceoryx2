@@ -39,7 +39,7 @@ use crate::{
 
 use super::publish_subscribe::PortFactory;
 
-/// Factory to create a new [`Subscriber`] port/endpoint for
+/// Factory to create a new [`SubscriberImpl`] port/endpoint for
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
@@ -55,7 +55,7 @@ pub struct PortFactorySubscriber<
 impl<'factory, 'config, Service: service::Details<'config>, MessageType: Debug>
     PortFactorySubscriber<'factory, 'config, Service, MessageType>
 {
-    /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
+    /// Creates a new [`SubscriberImpl`] or returns a [`SubscriberCreateError`] on failure.
     pub fn create(
         &self,
     ) -> Result<SubscriberImpl<'factory, 'config, Service, MessageType>, SubscriberCreateError>
