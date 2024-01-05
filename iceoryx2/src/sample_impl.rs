@@ -35,46 +35,34 @@
 
 use std::{fmt::Debug, ops::Deref};
 
+use crate::port::subscriber::internal::SubscriberMgmt;
 use crate::service::header::publish_subscribe::Header;
-use crate::{
-    port::subscriber_impl::SubscriberImpl, raw_sample::RawSample, sample::Sample, service,
-};
+use crate::{raw_sample::RawSample, sample::Sample};
 
 /// It stores the payload and is acquired by the [`Subscriber`] whenever it receives new data from a
 /// [`crate::port::publisher::Publisher`] via [`Subscriber::receive()`].
 #[derive(Debug)]
-pub struct SampleImpl<
-    'a,
-    'subscriber,
-    'config,
-    Service: service::Details<'config>,
-    MessageType: Debug,
-> {
-    pub(crate) subscriber: &'subscriber SubscriberImpl<'a, 'config, Service, MessageType>,
+pub struct SampleImpl<'subscriber, MessageType: Debug> {
+    pub(crate) subscriber: &'subscriber dyn SubscriberMgmt,
     pub(crate) ptr: RawSample<Header, MessageType>,
     pub(crate) channel_id: usize,
 }
 
-impl<'config, Service: service::Details<'config>, MessageType: Debug> Deref
-    for SampleImpl<'_, '_, 'config, Service, MessageType>
-{
+impl<MessageType: Debug> Deref for SampleImpl<'_, MessageType> {
     type Target = MessageType;
     fn deref(&self) -> &Self::Target {
         self.ptr.as_data_ref()
     }
 }
 
-impl<'a, 'subscriber, 'config, Service: service::Details<'config>, MessageType: Debug> Drop
-    for SampleImpl<'a, 'subscriber, 'config, Service, MessageType>
-{
+impl<MessageType: Debug> Drop for SampleImpl<'_, MessageType> {
     fn drop(&mut self) {
-        self.subscriber.release_sample(self.channel_id, self.ptr);
+        self.subscriber
+            .release_sample(self.channel_id, self.ptr.as_ptr() as usize);
     }
 }
 
-impl<'a, 'subscriber, 'config, Service: service::Details<'config>, MessageType: Debug>
-    Sample<MessageType> for SampleImpl<'a, 'subscriber, 'config, Service, MessageType>
-{
+impl<'subscriber, MessageType: Debug> Sample<MessageType> for SampleImpl<'subscriber, MessageType> {
     fn payload(&self) -> &MessageType {
         self.ptr.as_data_ref()
     }
