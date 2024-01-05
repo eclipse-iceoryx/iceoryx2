@@ -15,11 +15,12 @@ mod service_publish_subscribe {
     use iceoryx2::config::Config;
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::port::subscriber_impl::SubscriberCreateError;
+    use iceoryx2::prelude::*;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::StaticConfig;
-    use iceoryx2::service::{service_name::ServiceName, Details, Service};
+    use iceoryx2::service::{Details, Service};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 

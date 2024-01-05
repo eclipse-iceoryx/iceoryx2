@@ -10,8 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::{process_local, zero_copy};
-use iceoryx2::service::{service_name::ServiceName, Service};
+use iceoryx2::prelude::*;
 use iceoryx2_bb_log::set_log_level;
 use iceoryx2_bb_posix::barrier::BarrierHandle;
 use iceoryx2_bb_posix::{barrier::BarrierBuilder, clock::Time};
