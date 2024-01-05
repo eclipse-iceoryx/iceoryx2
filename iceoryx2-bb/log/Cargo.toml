@@ -17,6 +17,7 @@ logger_log = ["dep:log"]
 logger_tracing = ["dep:tracing"]
 
 [dependencies]
+is-terminal = { workspace = true }
 termsize = { workspace = true }
 log = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }

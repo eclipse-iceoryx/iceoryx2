@@ -32,7 +32,7 @@ keywords = ["zero-copy", "ipc", "shared-memory", "publish-subscribe", "request-r
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/eclipse-iceoryx/iceoryx2"
-rust-version = "1.72.1"
+rust-version = "1.65"
 version = "0.1.1"
 
 [workspace.dependencies]
@@ -66,6 +66,7 @@ log = { version = "0.4.20" }
 once_cell = { version = "1.16.0" }
 ouroboros = { version = "0.17.2" }
 pin-init = { version = "0.2.0" }
+is-terminal = { version = "0.4.10" }
 serde = { version = "1.0.139", features = ["derive"] }
 sha1_smol = { version = "1.0.0" }
 termsize = { version = "0.1" }
