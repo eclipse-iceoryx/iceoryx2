@@ -235,18 +235,14 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
                             unmatched NamedConceptListError::InternalError,
                             "{} due to a failure while reading the storage directory (\"{}\") contents.", msg, config.path);
 
-        let mut result = vec![];
-        for entry in &entries {
-            let metadata = entry.metadata();
-            if metadata.file_type() == FileType::File && metadata.permission() == FINAL_PERMISSIONS
-            {
-                if let Some(entry_name) = config.extract_name_from_file(entry.name()) {
-                    result.push(entry_name);
-                }
-            }
-        }
-
-        Ok(result)
+        Ok(entries
+            .iter()
+            .filter(|entry| {
+                let metadata = entry.metadata();
+                metadata.file_type() == FileType::File && metadata.permission() == FINAL_PERMISSIONS
+            })
+            .filter_map(|entry| config.extract_name_from_file(entry.name()))
+            .collect())
     }
 
     fn does_exist_cfg(
