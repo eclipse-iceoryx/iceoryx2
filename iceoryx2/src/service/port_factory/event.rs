@@ -21,12 +21,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! println!("name:                         {:?}", event.name());
-//! println!("uuid:                         {:?}", event.uuid());
-//! println!("max listeners:                {:?}", event.static_config().max_supported_listeners());
-//! println!("max notifiers:                {:?}", event.static_config().max_supported_notifiers());
-//! println!("number of active listeners:   {:?}", event.dynamic_config().number_of_listeners());
-//! println!("number of active notifiers:   {:?}", event.dynamic_config().number_of_notifiers());
+//! println!("{}", event);
 //!
 //! let listener = event.listener().create()?;
 //! let notifier = event.notifier().create()?;
@@ -34,10 +29,13 @@
 //! # }
 //! ```
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use service::Service;
 
 use crate::service::{self, static_config};
 use crate::service::{dynamic_config, ServiceName};
+use std::fmt;
 use std::marker::PhantomData;
+use std::ops::Deref;
 
 use super::listener::PortFactoryListener;
 use super::notifier::PortFactoryNotifier;
@@ -125,5 +123,47 @@ impl<'config, Service: service::Details<'config>> PortFactory<'config, Service> 
     /// ```
     pub fn listener<'a>(&'a self) -> PortFactoryListener<'a, 'config, Service> {
         PortFactoryListener { factory: self }
+    }
+}
+
+impl<'config, S> fmt::Display for PortFactory<'config, S>
+where
+    S: Service + service::Details<'config>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(&format!("{}", core::any::type_name::<S>()))
+            .field("name", &String::from(self.name().deref()))
+            .field("uuid", &self.uuid())
+            .field(
+                "max listeners",
+                &self.static_config().max_supported_listeners(),
+            )
+            .field(
+                "max notifiers",
+                &self.static_config().max_supported_notifiers(),
+            )
+            .field(
+                "active listeners",
+                &self.dynamic_config().number_of_listeners(),
+            )
+            .field(
+                "active notifiers",
+                &self.dynamic_config().number_of_notifiers(),
+            )
+            .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    #[test]
+    fn print_service() {
+        let event_name = ServiceName::new("MyEventName").unwrap();
+        let event = zero_copy::Service::new(&event_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+        assert!(format!("{}", event).contains("zero_copy"))
     }
 }
