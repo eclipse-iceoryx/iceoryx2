@@ -84,6 +84,20 @@ iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND
   <<: *IOX2_COMMON_BUILD_RELEASE
   test_script: cargo test --release --tests --workspace --no-fail-fast
 
+iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP
+  setup_script:
+    - uname -a
+    - pkg install -y git llvm
+    - pw useradd testuser1
+    - pw useradd testuser2
+    - pw groupadd testgroup1
+    - pw groupadd testgroup2
+    - kldload mqueuefs
+    - mkdir -p /mnt/mqueue/
+    - mount -t mqueuefs null /mnt/mqueue/
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
+    - rustup component add clippy rustfmt
+ 
 #
 # Filter to run the CI only on the main branch or for pull request to the main branch
 #
@@ -263,18 +277,7 @@ freebsd_x64_stable_debug_task:
   env:
     PATH: /root/.cargo/bin:$PATH
     HOME: /root  # must be set manually to '/root' or 'rustup' will throw an error
-  setup_script:
-    - uname -a
-    - pkg install -y git llvm
-    - pw useradd testuser1
-    - pw useradd testuser2
-    - pw groupadd testgroup1
-    - pw groupadd testgroup2
-    - kldload mqueuefs
-    - mkdir -p /mnt/mqueue/
-    - mount -t mqueuefs null /mnt/mqueue/
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
-    - rustup component add clippy rustfmt
+  <<: *IOX2_FREEBSD_SETUP
   set_toolchain_script: rustup default stable
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG

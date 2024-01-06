@@ -18,7 +18,7 @@
 ### Refactoring
 
  * Rename char in platform to c_char [#54](https://github.com/eclipse-iceoryx/iceoryx2/issues/54)
- * Set reasonable rust min version to 1.65 and verify it with additional CI targets [#72](https://github.com/eclipse-iceoryx/iceoryx2/issues/72)
+ * Set reasonable rust min version to 1.70 and verify it with additional CI targets [#72](https://github.com/eclipse-iceoryx/iceoryx2/issues/72)
 
 ### Workflow
 

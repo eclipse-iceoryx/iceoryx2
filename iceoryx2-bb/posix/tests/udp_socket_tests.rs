@@ -102,14 +102,11 @@ fn udp_socket_when_socket_goes_out_of_scope_address_is_free_again() {
 
 #[test]
 fn udp_socket_server_has_correct_address() {
-    let port;
-    {
-        let sut_server_1 = UdpServerBuilder::new()
-            .address(ipv4_address::LOCALHOST)
-            .listen()
-            .unwrap();
-        port = sut_server_1.port();
-    }
+    let port = UdpServerBuilder::new()
+        .address(ipv4_address::LOCALHOST)
+        .listen()
+        .unwrap()
+        .port();
 
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
