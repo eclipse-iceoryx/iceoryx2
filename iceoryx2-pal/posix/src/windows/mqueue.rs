@@ -17,11 +17,11 @@
 use crate::posix::constants::*;
 use crate::posix::types::*;
 
-pub unsafe fn mq_open4(name: *const char, flags: int, mode: mode_t, attr: *mut mq_attr) -> mqd_t {
+pub unsafe fn mq_open4(name: *const c_char, flags: int, mode: mode_t, attr: *mut mq_attr) -> mqd_t {
     MQ_INVALID
 }
 
-pub unsafe fn mq_open2(name: *const char, flags: int) -> mqd_t {
+pub unsafe fn mq_open2(name: *const c_char, flags: int) -> mqd_t {
     MQ_INVALID
 }
 
@@ -29,7 +29,7 @@ pub unsafe fn mq_close(mqdes: mqd_t) -> int {
     -1
 }
 
-pub unsafe fn mq_unlink(name: *const char) -> int {
+pub unsafe fn mq_unlink(name: *const c_char) -> int {
     -1
 }
 
@@ -43,7 +43,7 @@ pub unsafe fn mq_setattr(mqdes: mqd_t, newattr: *const mq_attr, oldattr: *mut mq
 
 pub unsafe fn mq_receive(
     mqdes: mqd_t,
-    msg_ptr: *mut char,
+    msg_ptr: *mut c_char,
     msg_len: size_t,
     msg_prio: *mut uint,
 ) -> ssize_t {
@@ -52,7 +52,7 @@ pub unsafe fn mq_receive(
 
 pub unsafe fn mq_timedreceive(
     mqdes: mqd_t,
-    msg_ptr: *mut char,
+    msg_ptr: *mut c_char,
     msg_len: size_t,
     msg_prio: *mut uint,
     abs_timeout: *const timespec,
@@ -60,13 +60,18 @@ pub unsafe fn mq_timedreceive(
     -1
 }
 
-pub unsafe fn mq_send(mqdes: mqd_t, msg_ptr: *const char, msg_len: size_t, msg_prio: uint) -> int {
+pub unsafe fn mq_send(
+    mqdes: mqd_t,
+    msg_ptr: *const c_char,
+    msg_len: size_t,
+    msg_prio: uint,
+) -> int {
     -1
 }
 
 pub unsafe fn mq_timedsend(
     mqdes: mqd_t,
-    msg_ptr: *const char,
+    msg_ptr: *const c_char,
     msg_len: size_t,
     msg_prio: uint,
     abs_timeout: *const timespec,

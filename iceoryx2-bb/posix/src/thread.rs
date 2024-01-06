@@ -643,7 +643,7 @@ impl ThreadProperties for ThreadHandle {
             return Ok(unsafe { self.name.get().as_ref().unwrap() });
         }
 
-        let mut name: [posix::char; MAX_THREAD_NAME_LENGTH] = [0; MAX_THREAD_NAME_LENGTH];
+        let mut name: [posix::c_char; MAX_THREAD_NAME_LENGTH] = [0; MAX_THREAD_NAME_LENGTH];
 
         let msg = "Unable to acquire thread name";
         match unsafe {

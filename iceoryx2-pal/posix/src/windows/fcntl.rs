@@ -52,7 +52,7 @@ use super::{
 use crate::posix;
 use crate::win32call;
 
-pub unsafe fn open_with_mode(pathname: *const char, flags: int, mode: mode_t) -> int {
+pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
     let access_mode = if flags & posix::O_RDONLY != 0 {
         GENERIC_READ
     } else if flags & posix::O_WRONLY != 0 {
@@ -97,7 +97,7 @@ pub unsafe fn open_with_mode(pathname: *const char, flags: int, mode: mode_t) ->
     }))
 }
 
-pub unsafe fn open(pathname: *const char, flags: int) -> int {
+pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
     open_with_mode(pathname, flags, 0)
 }
 

@@ -15,15 +15,15 @@
 
 use crate::posix::types::*;
 
-pub unsafe fn scandir(path: *const char, namelist: *mut *mut *mut dirent) -> int {
+pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> int {
     internal::scandir_ext(path, namelist)
 }
 
-pub unsafe fn mkdir(pathname: *const char, mode: mode_t) -> int {
+pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
     crate::internal::mkdir(pathname, mode)
 }
 
-pub unsafe fn opendir(dirname: *const char) -> *mut DIR {
+pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
     crate::internal::opendir(dirname)
 }
 
@@ -44,6 +44,6 @@ mod internal {
 
     #[cfg_attr(target_os = "linux", link(name = "c"))]
     extern "C" {
-        pub(super) fn scandir_ext(path: *const char, namelist: *mut *mut *mut dirent) -> int;
+        pub(super) fn scandir_ext(path: *const c_char, namelist: *mut *mut *mut dirent) -> int;
     }
 }

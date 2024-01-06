@@ -188,7 +188,7 @@ impl User {
         self.password.as_str()
     }
 
-    fn extract_entry(&self, field: *mut posix::char, name: &str) -> Result<String, UserError> {
+    fn extract_entry(&self, field: *mut posix::c_char, name: &str) -> Result<String, UserError> {
         Ok(
             fail!(from self, when unsafe { CStr::from_ptr(field) }.to_str(),
                 with UserError::InvalidUTF8SymbolsInEntry,
@@ -200,7 +200,7 @@ impl User {
     fn populate_entries_from(&mut self, source: Source) -> Result<(), UserError> {
         let mut passwd = posix::passwd::new();
         let mut passwd_ptr: *mut posix::passwd = &mut passwd;
-        let mut buffer: [posix::char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
+        let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
 
         let msg;
         let errno_value = match source {

@@ -101,10 +101,10 @@ pub unsafe fn acl_set_fd(fd: int, acl: acl_t) -> int {
     crate::internal::acl_set_fd(fd, acl)
 }
 
-pub unsafe fn acl_to_text(acl: acl_t, len_p: *mut ssize_t) -> *const char {
+pub unsafe fn acl_to_text(acl: acl_t, len_p: *mut ssize_t) -> *const c_char {
     crate::internal::acl_to_text(acl, len_p)
 }
 
-pub unsafe fn acl_from_text(buf_p: *const char) -> acl_t {
+pub unsafe fn acl_from_text(buf_p: *const c_char) -> acl_t {
     crate::internal::acl_from_text(buf_p)
 }

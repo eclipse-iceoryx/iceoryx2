@@ -16,7 +16,7 @@
 
 ### Refactoring
 
- * Example [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Rename char in platform to c_char [#54](https://github.com/eclipse-iceoryx/iceoryx2/issues/54)
 
 ### Workflow
 

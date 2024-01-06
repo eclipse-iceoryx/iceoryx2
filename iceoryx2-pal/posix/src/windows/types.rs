@@ -34,7 +34,7 @@ pub struct DIR {}
 
 pub type blkcnt_t = u64;
 pub type blksize_t = u64;
-pub type char = core::ffi::c_char;
+pub type c_char = core::ffi::c_char;
 pub type clockid_t = i32;
 pub type dev_t = u64;
 pub type gid_t = u32;
@@ -280,7 +280,7 @@ pub struct dirent {
     pub d_off: off_t,
     pub d_reclen: ushort,
     pub d_type: uchar,
-    pub d_name: [char; MAX_PATH_LENGTH],
+    pub d_name: [c_char; MAX_PATH_LENGTH],
 }
 impl Struct for dirent {}
 
@@ -324,26 +324,26 @@ impl Struct for sockaddr {}
 #[repr(C)]
 pub struct sockaddr_un {
     pub sun_family: sa_family_t,
-    pub sun_path: [char; SUN_PATH_LEN],
+    pub sun_path: [c_char; SUN_PATH_LEN],
 }
 impl Struct for sockaddr_un {}
 
 pub struct passwd {
-    pub pw_name: *mut char,
+    pub pw_name: *mut c_char,
     pub pw_uid: uid_t,
     pub pw_gid: gid_t,
-    pub pw_dir: *mut char,
-    pub pw_shell: *mut char,
-    pub pw_gecos: *mut char,
-    pub pw_passwd: *mut char,
+    pub pw_dir: *mut c_char,
+    pub pw_shell: *mut c_char,
+    pub pw_gecos: *mut c_char,
+    pub pw_passwd: *mut c_char,
 }
 impl Struct for passwd {}
 
 pub struct group {
-    pub gr_name: *mut char,
+    pub gr_name: *mut c_char,
     pub gr_gid: gid_t,
-    pub gr_mem: *mut *mut char,
-    pub gr_passwd: *mut char,
+    pub gr_mem: *mut *mut c_char,
+    pub gr_passwd: *mut c_char,
 }
 impl Struct for group {}
 

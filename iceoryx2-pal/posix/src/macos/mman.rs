@@ -42,7 +42,7 @@ pub unsafe fn munlockall() -> int {
     crate::internal::munlockall()
 }
 
-unsafe fn remove_leading_path_separator(value: *const char) -> *const char {
+unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
     if *value as u8 == PATH_SEPARATOR {
         value.add(1)
     } else {
@@ -50,7 +50,7 @@ unsafe fn remove_leading_path_separator(value: *const char) -> *const char {
     }
 }
 
-unsafe fn shm_file_path(name: *const char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
+unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
     let name = remove_leading_path_separator(name);
 
     let mut state_file_path = [0u8; MAX_PATH_LENGTH];
@@ -78,7 +78,7 @@ unsafe fn shm_file_path(name: *const char, suffix: &[u8]) -> [u8; MAX_PATH_LENGT
     state_file_path
 }
 
-unsafe fn get_real_shm_name(name: *const char) -> Option<[u8; SHM_MAX_NAME_LEN]> {
+unsafe fn get_real_shm_name(name: *const c_char) -> Option<[u8; SHM_MAX_NAME_LEN]> {
     let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
     let shm_state_fd = open_with_mode(shm_file_path.as_ptr().cast(), O_RDONLY, 0);
     if shm_state_fd == -1 {
@@ -101,7 +101,7 @@ unsafe fn get_real_shm_name(name: *const char) -> Option<[u8; SHM_MAX_NAME_LEN]>
     Some(buffer)
 }
 
-unsafe fn write_real_shm_name(name: *const char, buffer: &[u8]) -> bool {
+unsafe fn write_real_shm_name(name: *const c_char, buffer: &[u8]) -> bool {
     let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
     let shm_state_fd = open_with_mode(
         shm_file_path.as_ptr().cast(),
@@ -136,7 +136,7 @@ unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
     buffer
 }
 
-pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
+pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
     let real_name = get_real_shm_name(name);
     if oflag & O_EXCL != 0 && real_name.is_some() {
         Errno::set(Errno::EEXIST);
@@ -161,7 +161,7 @@ pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
     crate::internal::shm_open(real_name.as_ptr().cast(), oflag, mode as uint)
 }
 
-pub unsafe fn shm_unlink(name: *const char) -> int {
+pub unsafe fn shm_unlink(name: *const c_char) -> int {
     let real_name = get_real_shm_name(name);
 
     if let Some(real_name) = real_name {

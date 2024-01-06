@@ -16,7 +16,7 @@
 use crate::posix::types::*;
 use crate::posix::Struct;
 
-pub unsafe fn open_with_mode(pathname: *const char, flags: int, mode: mode_t) -> int {
+pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
     crate::internal::open(pathname, flags, mode as core::ffi::c_uint)
 }
 
@@ -47,6 +47,6 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
     crate::internal::fchmod(fd, mode)
 }
 
-pub unsafe fn open(pathname: *const char, flags: int) -> int {
+pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
     crate::internal::open(pathname, flags)
 }

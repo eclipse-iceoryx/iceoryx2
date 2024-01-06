@@ -62,7 +62,7 @@ unsafe fn number_of_directory_entries(path: &[u8]) -> usize {
     number_of_entries
 }
 
-pub(crate) unsafe fn to_dir_search_string(path: *const char) -> [u8; MAX_PATH_LENGTH] {
+pub(crate) unsafe fn to_dir_search_string(path: *const c_char) -> [u8; MAX_PATH_LENGTH] {
     let mut buffer = [0u8; MAX_PATH_LENGTH];
 
     for i in 0..MAX_PATH_LENGTH {
@@ -78,7 +78,7 @@ pub(crate) unsafe fn to_dir_search_string(path: *const char) -> [u8; MAX_PATH_LE
     buffer
 }
 
-pub unsafe fn scandir(path: *const char, namelist: *mut *mut *mut dirent) -> int {
+pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> int {
     let uds_files = HandleTranslator::get_instance().list_all_uds(path);
     let path = to_dir_search_string(path);
     let number_of_entries = number_of_directory_entries(&path) + uds_files.len();
@@ -127,7 +127,7 @@ pub unsafe fn scandir(path: *const char, namelist: *mut *mut *mut dirent) -> int
     number_of_entries as int
 }
 
-pub unsafe fn mkdir(pathname: *const char, mode: mode_t) -> int {
+pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
     if win32call! { CreateDirectoryA(pathname as *const u8, core::ptr::null::<SECURITY_ATTRIBUTES>()),
     ignore ERROR_ALREADY_EXISTS, ERROR_PATH_NOT_FOUND}
         == 0
@@ -137,7 +137,7 @@ pub unsafe fn mkdir(pathname: *const char, mode: mode_t) -> int {
     0
 }
 
-pub unsafe fn opendir(dirname: *const char) -> *mut DIR {
+pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
     static COUNT: AtomicU64 = AtomicU64::new(1);
     let id = COUNT.fetch_add(1, Ordering::Relaxed);
 

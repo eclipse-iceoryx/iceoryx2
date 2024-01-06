@@ -19,7 +19,7 @@ pub unsafe fn sysconf(name: int) -> long {
     crate::internal::sysconf(name)
 }
 
-pub unsafe fn pathconf(path: *const char, name: int) -> long {
+pub unsafe fn pathconf(path: *const c_char, name: int) -> long {
     crate::internal::pathconf(path, name)
 }
 
@@ -47,11 +47,11 @@ pub unsafe fn write(fd: int, buf: *const void, count: size_t) -> ssize_t {
     crate::internal::write(fd, buf, count)
 }
 
-pub unsafe fn access(pathname: *const char, mode: int) -> int {
+pub unsafe fn access(pathname: *const c_char, mode: int) -> int {
     crate::internal::access(pathname, mode)
 }
 
-pub unsafe fn unlink(pathname: *const char) -> int {
+pub unsafe fn unlink(pathname: *const c_char) -> int {
     crate::internal::unlink(pathname)
 }
 
@@ -67,7 +67,7 @@ pub unsafe fn getgid() -> gid_t {
     crate::internal::getgid()
 }
 
-pub unsafe fn rmdir(pathname: *const char) -> int {
+pub unsafe fn rmdir(pathname: *const c_char) -> int {
     crate::internal::rmdir(pathname)
 }
 

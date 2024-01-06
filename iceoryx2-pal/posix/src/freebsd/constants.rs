@@ -17,7 +17,7 @@ use crate::posix::types::*;
 
 pub const CPU_SETSIZE: usize = crate::internal::CPU_SETSIZE as _;
 pub const FD_SETSIZE: usize = crate::internal::FD_SETSIZE as _;
-pub const NULL_TERMINATOR: char = 0;
+pub const NULL_TERMINATOR: c_char = 0;
 
 pub const O_RDONLY: int = crate::internal::O_RDONLY as _;
 pub const O_WRONLY: int = crate::internal::O_WRONLY as _;

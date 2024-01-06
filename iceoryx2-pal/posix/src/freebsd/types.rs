@@ -32,7 +32,7 @@ pub type DIR = crate::internal::DIR;
 
 pub type blkcnt_t = crate::internal::blkcnt_t;
 pub type blksize_t = crate::internal::blksize_t;
-pub type char = core::ffi::c_char;
+pub type c_char = core::ffi::c_char;
 pub type clockid_t = crate::internal::clockid_t;
 pub type dev_t = crate::internal::dev_t;
 pub type gid_t = crate::internal::gid_t;

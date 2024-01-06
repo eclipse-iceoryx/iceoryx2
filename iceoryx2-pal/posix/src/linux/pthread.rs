@@ -118,11 +118,11 @@ pub unsafe fn pthread_self() -> pthread_t {
     crate::internal::pthread_self()
 }
 
-pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const char) -> int {
+pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
     internal::pthread_setname_np(thread, name)
 }
 
-pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut char, len: size_t) -> int {
+pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int {
     internal::pthread_getname_np(thread, name, len)
 }
 
@@ -346,8 +346,8 @@ mod internal {
             cpuset: *const cpu_set_t,
         ) -> int;
 
-        pub(super) fn pthread_setname_np(thread: pthread_t, name: *const char) -> int;
-        pub(super) fn pthread_getname_np(thread: pthread_t, name: *mut char, len: size_t) -> int;
+        pub(super) fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int;
+        pub(super) fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size_t) -> int;
         pub(super) fn pthread_kill(thread: pthread_t, sig: int) -> int;
         pub(super) fn pthread_setaffinity_np(
             thread: pthread_t,

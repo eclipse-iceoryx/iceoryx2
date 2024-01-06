@@ -55,7 +55,7 @@ pub unsafe fn munlockall() -> int {
     -1
 }
 
-unsafe fn remove_leading_path_separator(value: *const char) -> *const char {
+unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
     if *value as u8 == PATH_SEPARATOR {
         value.offset(1)
     } else {
@@ -113,8 +113,8 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     result
 }
 
-pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
-    let name = remove_leading_path_separator(name);
+pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
+    let name = remove_leading_path_separator(name.cast());
     let handle: HANDLE = 0;
     let shm_handle;
     let mut shm_state_handle;
@@ -191,7 +191,7 @@ pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
     }))
 }
 
-unsafe fn shm_file_path(name: *const char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
+unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
     let name = remove_leading_path_separator(name);
 
     let mut state_file_path = [0u8; MAX_PATH_LENGTH];
@@ -219,7 +219,7 @@ unsafe fn shm_file_path(name: *const char, suffix: &[u8]) -> [u8; MAX_PATH_LENGT
     state_file_path
 }
 
-unsafe fn create_state_handle(name: *const char) -> HANDLE {
+unsafe fn create_state_handle(name: *const c_char) -> HANDLE {
     let name = remove_leading_path_separator(name);
 
     win32call! {CreateFileA(
@@ -233,7 +233,7 @@ unsafe fn create_state_handle(name: *const char) -> HANDLE {
     )}
 }
 
-unsafe fn open_state_handle(name: *const char) -> HANDLE {
+unsafe fn open_state_handle(name: *const c_char) -> HANDLE {
     let name = remove_leading_path_separator(name);
 
     win32call! {CreateFileA(
@@ -288,7 +288,7 @@ pub(crate) unsafe fn shm_get_size(fd_handle: HANDLE) -> u64 {
     read_buffer
 }
 
-pub unsafe fn shm_unlink(name: *const char) -> int {
+pub unsafe fn shm_unlink(name: *const c_char) -> int {
     let name = remove_leading_path_separator(name);
 
     if win32call! { DeleteFileA(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr()),

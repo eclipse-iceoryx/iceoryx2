@@ -184,7 +184,7 @@ impl Group {
         self.members.clone()
     }
 
-    fn extract_entry(&self, field: *mut posix::char, name: &str) -> Result<String, GroupError> {
+    fn extract_entry(&self, field: *mut posix::c_char, name: &str) -> Result<String, GroupError> {
         Ok(
             fail!(from self, when unsafe { CStr::from_ptr(field) }.to_str(),
                 with GroupError::InvalidGroupName,
@@ -196,7 +196,7 @@ impl Group {
     fn populate_entries(&mut self, source: Source) -> Result<(), GroupError> {
         let mut group = posix::group::new();
         let mut group_ptr: *mut posix::group = &mut group;
-        let mut buffer: [posix::char; GROUP_BUFFER_SIZE] = [0; GROUP_BUFFER_SIZE];
+        let mut buffer: [posix::c_char; GROUP_BUFFER_SIZE] = [0; GROUP_BUFFER_SIZE];
 
         let msg;
         let errno_value = match source {

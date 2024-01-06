@@ -105,10 +105,10 @@ pub unsafe fn acl_set_fd(fd: int, acl: acl_t) -> int {
     -1
 }
 
-pub unsafe fn acl_to_text(acl: acl_t, len_p: *mut ssize_t) -> *const char {
-    core::ptr::null::<char>()
+pub unsafe fn acl_to_text(acl: acl_t, len_p: *mut ssize_t) -> *const c_char {
+    core::ptr::null::<c_char>()
 }
 
-pub unsafe fn acl_from_text(buf_p: *const char) -> acl_t {
+pub unsafe fn acl_from_text(buf_p: *const c_char) -> acl_t {
     acl_t::MAX
 }

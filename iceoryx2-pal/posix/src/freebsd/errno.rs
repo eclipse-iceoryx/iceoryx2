@@ -49,7 +49,7 @@ macro_rules! ErrnoEnumGenerator {
         impl Display for Errno {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 const BUFFER_SIZE: usize = 1024;
-                let mut buffer: [char; BUFFER_SIZE] = [0; BUFFER_SIZE];
+                let mut buffer: [c_char; BUFFER_SIZE] = [0; BUFFER_SIZE];
                 unsafe { strerror_r(*self as i32, buffer.as_mut_ptr(), BUFFER_SIZE) };
                 let s = match unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_str() {
                     Ok(v) => v.to_string(),
@@ -216,11 +216,11 @@ impl Errno {
     }
 }
 
-pub unsafe fn strerror_r(errnum: int, buf: *mut char, buflen: size_t) -> int {
+pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
     internal::strerror_r(errnum, buf, buflen)
 }
 
-pub unsafe fn strerror(errnum: int) -> *const char {
+pub unsafe fn strerror(errnum: int) -> *const c_char {
     crate::internal::strerror(errnum)
 }
 
@@ -230,6 +230,6 @@ mod internal {
     #[cfg_attr(target_os = "freebsd", link(name = "c"))]
     extern "C" {
         pub(super) fn __error() -> *mut int;
-        pub(super) fn strerror_r(errnum: int, buf: *mut char, buflen: size_t) -> int;
+        pub(super) fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int;
     }
 }

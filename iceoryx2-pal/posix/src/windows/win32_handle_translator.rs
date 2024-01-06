@@ -271,7 +271,7 @@ impl HandleTranslator {
         self.unlock();
     }
 
-    pub(crate) fn contains_uds(&self, name: *const char) -> bool {
+    pub(crate) fn contains_uds(&self, name: *const c_char) -> bool {
         let mut result = false;
         let name_slice = unsafe { core::slice::from_raw_parts(name.cast(), c_string_length(name)) };
 
@@ -283,7 +283,7 @@ impl HandleTranslator {
         result
     }
 
-    pub(crate) fn remove_uds(&self, name: *const char) -> bool {
+    pub(crate) fn remove_uds(&self, name: *const c_char) -> bool {
         let mut result = false;
         let name_slice = unsafe { core::slice::from_raw_parts(name.cast(), c_string_length(name)) };
 
@@ -295,7 +295,7 @@ impl HandleTranslator {
         result
     }
 
-    pub(crate) fn list_all_uds(&self, path: *const char) -> Vec<[u8; MAX_UDS_NAME_LEN]> {
+    pub(crate) fn list_all_uds(&self, path: *const c_char) -> Vec<[u8; MAX_UDS_NAME_LEN]> {
         let mut result = vec![];
         let path_slice = unsafe { core::slice::from_raw_parts(path.cast(), c_string_length(path)) };
 

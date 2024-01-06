@@ -33,11 +33,11 @@ pub unsafe fn munlockall() -> int {
     crate::internal::munlockall()
 }
 
-pub unsafe fn shm_open(name: *const char, oflag: int, mode: mode_t) -> int {
+pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
     crate::internal::shm_open(name, oflag, mode)
 }
 
-pub unsafe fn shm_unlink(name: *const char) -> int {
+pub unsafe fn shm_unlink(name: *const c_char) -> int {
     crate::internal::shm_unlink(name)
 }
 
@@ -138,6 +138,6 @@ pub unsafe fn sysctl(
     crate::internal::sysctl(name, namelen, oldp, oldlenp, newp, newlen)
 }
 
-pub unsafe fn sysctlnametomib(name: *mut char, mibp: *mut int, sizep: *mut size_t) -> int {
+pub unsafe fn sysctlnametomib(name: *mut c_char, mibp: *mut int, sizep: *mut size_t) -> int {
     crate::internal::sysctlnametomib(name, mibp, sizep)
 }

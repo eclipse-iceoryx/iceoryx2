@@ -77,7 +77,7 @@ pub unsafe fn sysconf(name: int) -> long {
     }
 }
 
-pub unsafe fn pathconf(path: *const char, name: int) -> long {
+pub unsafe fn pathconf(path: *const c_char, name: int) -> long {
     match name {
         _PC_PATH_MAX => MAX_PATH_LENGTH as long,
         _ => {
@@ -199,7 +199,7 @@ pub unsafe fn write(fd: int, buf: *const void, count: size_t) -> ssize_t {
     }
 }
 
-pub unsafe fn access(pathname: *const char, mode: int) -> int {
+pub unsafe fn access(pathname: *const c_char, mode: int) -> int {
     let attributes =
         win32call! {GetFileAttributesA(pathname as *const u8), ignore ERROR_FILE_NOT_FOUND};
 
@@ -223,7 +223,7 @@ pub unsafe fn access(pathname: *const char, mode: int) -> int {
     }
 }
 
-pub unsafe fn unlink(pathname: *const char) -> int {
+pub unsafe fn unlink(pathname: *const c_char) -> int {
     -1
 }
 
@@ -262,7 +262,7 @@ pub unsafe fn getgid() -> gid_t {
     gid_t::MAX
 }
 
-pub unsafe fn rmdir(pathname: *const char) -> int {
+pub unsafe fn rmdir(pathname: *const c_char) -> int {
     if win32call! {RemoveDirectoryA(pathname as*const u8), ignore ERROR_FILE_NOT_FOUND} == 0 {
         return -1;
     }
