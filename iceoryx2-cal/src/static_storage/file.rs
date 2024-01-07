@@ -46,6 +46,7 @@
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
+use iceoryx2_bb_log::debug;
 use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_bb_posix::{
     directory::*, file::*, file_descriptor::FileDescriptorManagement, file_type::FileType,
@@ -213,10 +214,20 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
     fn list_cfg(config: &Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
         let msg = "Unable to list all storages";
         let origin = "static_storage::File::list_cfg()";
-        let directory = fail!(from origin, when Directory::new(&config.path),
-            map DirectoryOpenError::InsufficientPermissions => NamedConceptListError::InsufficientPermissions,
-            unmatched NamedConceptListError::InternalError,
-            "{} due to a failure while reading the storage directory (\"{}\").", msg, config.path);
+        let directory = match Directory::new(&config.path) {
+            Ok(directory) => directory,
+            Err(DirectoryOpenError::InsufficientPermissions) => {
+                debug!(from origin, "{} due to insufficient permissions to read the storage directory.", msg);
+                return Err(NamedConceptListError::InsufficientPermissions);
+            }
+            Err(DirectoryOpenError::DoesNotExist) => {
+                return Ok(vec![]);
+            }
+            Err(v) => {
+                debug!(from origin, "{} due to failure ({:?}) while reading the storage directory (\"{}\").", msg, v, config.path);
+                return Err(NamedConceptListError::InternalError);
+            }
+        };
 
         let entries = fail!(from origin,
                             when directory.contents(),
@@ -224,18 +235,14 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
                             unmatched NamedConceptListError::InternalError,
                             "{} due to a failure while reading the storage directory (\"{}\") contents.", msg, config.path);
 
-        let mut result = vec![];
-        for entry in &entries {
-            let metadata = entry.metadata();
-            if metadata.file_type() == FileType::File && metadata.permission() == FINAL_PERMISSIONS
-            {
-                if let Some(entry_name) = config.extract_name_from_file(entry.name()) {
-                    result.push(entry_name);
-                }
-            }
-        }
-
-        Ok(result)
+        Ok(entries
+            .iter()
+            .filter(|entry| {
+                let metadata = entry.metadata();
+                metadata.file_type() == FileType::File && metadata.permission() == FINAL_PERMISSIONS
+            })
+            .filter_map(|entry| config.extract_name_from_file(entry.name()))
+            .collect())
     }
 
     fn does_exist_cfg(
