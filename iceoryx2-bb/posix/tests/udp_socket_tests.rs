@@ -19,10 +19,7 @@ use iceoryx2_bb_posix::{
     barrier::{BarrierBuilder, BarrierHandle},
     udp_socket::*,
 };
-use iceoryx2_bb_system_types::{
-    ipv4_address::{self, Ipv4Address},
-    port::Port,
-};
+use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_testing::assert_that;
 
 const TIMEOUT: Duration = Duration::from_millis(25);
@@ -71,15 +68,14 @@ fn udp_socket_send_receive_works() {
 
 #[test]
 fn udp_socket_server_with_same_address_and_port_fails() {
-    let _sut_server_1 = UdpServerBuilder::new()
+    let sut_server_1 = UdpServerBuilder::new()
         .address(Ipv4Address::new(127, 0, 0, 1))
-        .port(Port::new(55555))
         .listen()
         .unwrap();
 
     let sut_server_2 = UdpServerBuilder::new()
         .address(Ipv4Address::new(127, 0, 0, 1))
-        .port(Port::new(55555))
+        .port(sut_server_1.port())
         .listen();
 
     assert_that!(sut_server_2.err().unwrap(), eq UdpServerCreateError::AddressAlreadyInUse);
@@ -87,17 +83,18 @@ fn udp_socket_server_with_same_address_and_port_fails() {
 
 #[test]
 fn udp_socket_when_socket_goes_out_of_scope_address_is_free_again() {
+    let port;
     {
-        let _sut_server_1 = UdpServerBuilder::new()
+        let sut_server_1 = UdpServerBuilder::new()
             .address(ipv4_address::LOCALHOST)
-            .port(Port::new(55555))
             .listen()
             .unwrap();
+        port = sut_server_1.port();
     }
 
     let sut_server_2 = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55555))
+        .port(port)
         .listen();
 
     assert_that!(sut_server_2, is_ok);
@@ -105,42 +102,46 @@ fn udp_socket_when_socket_goes_out_of_scope_address_is_free_again() {
 
 #[test]
 fn udp_socket_server_has_correct_address() {
+    let port = UdpServerBuilder::new()
+        .address(ipv4_address::LOCALHOST)
+        .listen()
+        .unwrap()
+        .port();
+
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55223))
+        .port(port)
         .listen()
         .unwrap();
 
     assert_that!(sut_server.address(), eq ipv4_address::LOCALHOST);
-    assert_that!(sut_server.port(), eq Port::new(55223));
+    assert_that!(sut_server.port(), eq port);
 }
 
 #[test]
 fn udp_socket_client_returns_address_of_server() {
-    let _sut_server = UdpServerBuilder::new()
+    let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
-    assert_that!(sut_client.address(), eq ipv4_address::LOCALHOST);
-    assert_that!(sut_client.port(), eq Port::new(55222));
+    assert_that!(sut_client.address(), eq sut_server.address());
+    assert_that!(sut_client.port(), eq sut_server.port());
 }
 
 #[test]
 fn udp_socket_client_can_send_data_to_server() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
     let send_buffer = [12u8, 24u8, 36u8];
@@ -154,12 +155,11 @@ fn udp_socket_client_can_send_data_to_server() {
 fn udp_socket_server_can_send_data_to_client() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
     let send_buffer = [12u8, 24u8, 36u8];
@@ -179,14 +179,13 @@ fn udp_socket_server_can_send_data_to_client() {
 
 #[test]
 fn udp_socket_client_try_receive_does_not_block() {
-    let _sut_server = UdpServerBuilder::new()
+    let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
     let mut recv_buffer = [0u8; 8];
@@ -197,7 +196,6 @@ fn udp_socket_client_try_receive_does_not_block() {
 fn udp_socket_server_try_receive_from_does_not_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
@@ -210,14 +208,13 @@ fn udp_socket_server_try_receive_from_does_not_block() {
 
 #[test]
 fn udp_socket_client_timed_receive_does_block_for_at_least_timeout() {
-    let _sut_server = UdpServerBuilder::new()
+    let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
     let mut recv_buffer = [0u8; 8];
@@ -230,7 +227,6 @@ fn udp_socket_client_timed_receive_does_block_for_at_least_timeout() {
 fn udp_socket_server_timed_receive_from_does_block_for_at_least_timeout() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
@@ -249,12 +245,11 @@ fn udp_socket_server_timed_receive_from_does_block_for_at_least_timeout() {
 fn udp_socket_client_blocking_receive_does_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
     let send_buffer = [12u8, 24u8, 36u8];
@@ -296,12 +291,11 @@ fn udp_socket_client_blocking_receive_does_block() {
 fn udp_socket_server_blocking_receive_from_does_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
     let barrier_handle = BarrierHandle::new();
@@ -334,12 +328,11 @@ fn udp_socket_server_blocking_receive_from_does_block() {
 fn udp_socket_client_timed_receive_does_blocks() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
     let send_buffer = [12u8, 24u8, 36u8];
@@ -381,12 +374,11 @@ fn udp_socket_client_timed_receive_does_blocks() {
 fn udp_socket_server_timed_receive_from_does_block() {
     let sut_server = UdpServerBuilder::new()
         .address(ipv4_address::LOCALHOST)
-        .port(Port::new(55222))
         .listen()
         .unwrap();
 
     let sut_client = UdpClientBuilder::new(ipv4_address::LOCALHOST)
-        .connect_to(Port::new(55222))
+        .connect_to(sut_server.port())
         .unwrap();
 
     let barrier_handle = BarrierHandle::new();

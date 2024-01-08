@@ -554,12 +554,17 @@ pub trait BasicConditionVariableInterface<T: Debug>:
 ///     // apply clojure, set value to 4008 and then trigger waiters
 ///     cv.modify_notify_all(|value| { *value = 4008 }).expect("failed to notify");
 ///
-///     // acquire guard to the underlying value without triggering the condition variable
-///     let mut guard = cv.lock().expect("failed to acquire value");
-///     // read the underlying value
-///     println!("current value is {}", *guard);
-///     // set the underlying value to 5000
-///     *guard = 5000;
+///     {
+///         // acquire guard to the underlying value without triggering the condition variable
+///         let mut guard = cv.lock().expect("failed to acquire value");
+///         // read the underlying value
+///         println!("current value is {}", *guard);
+///         // set the underlying value to 5000
+///         *guard = 5000;
+///     }
+///
+///     // trigger condition variable manually
+///     cv.trigger_all();
 /// });
 ///
 /// ```
