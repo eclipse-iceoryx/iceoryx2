@@ -21,6 +21,8 @@ Assume that the new version number is `X.Y.Z`.
 
  8. Change `workspace.package.version` in `$GIT_ROOT$/Cargo.toml` to the new
     version number `X.Y.Z`.
+    * **IMPORTANT** change version to `X.Y.Z` for all `iceoryx2-**` packages under
+      `[workspace.dependencies]`
  9. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
     all crates on `crates.io` and `docs.rs`.
  10. Verify that the release looks fine on `docs.rs`
