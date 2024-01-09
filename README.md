@@ -3,6 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/iceoryx2?color=blue)](https://crates.io/crates/iceoryx2)
 [![Examples](https://img.shields.io/badge/Examples-gray)](examples/)
 [![FAQ](https://img.shields.io/badge/FAQ-gray)](FAQ.md)
+[![Gitter](https://badges.gitter.im/eclipse-iceoryx/iceoryx.svg)](https://gitter.im/eclipse/iceoryx)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Roadmap](https://img.shields.io/badge/Roadmap-gray)](ROADMAP.md)
 
