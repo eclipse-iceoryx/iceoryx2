@@ -41,13 +41,10 @@ pub unsafe fn clock_nanosleep(
     }
 
     let wait_time = if (now.tv_sec > (*rqtp).tv_sec)
-        || (now.tv_sec == (*rqtp).tv_sec && now.tv_nsec > (*rqtp).tv_nsec)
+        || (now.tv_sec == (*rqtp).tv_sec && now.tv_nsec >= (*rqtp).tv_nsec)
     {
-        timespec {
-            tv_sec: 0,
-            tv_nsec: 0,
-        }
-    } else if now.tv_nsec < (*rqtp).tv_nsec {
+        return 0;
+    } else if now.tv_nsec <= (*rqtp).tv_nsec {
         timespec {
             tv_sec: (*rqtp).tv_sec - now.tv_sec,
             tv_nsec: (*rqtp).tv_nsec - now.tv_nsec,

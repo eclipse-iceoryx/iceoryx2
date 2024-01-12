@@ -6,21 +6,31 @@
 
 ### Features
 
+ <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
+
  * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
 
 ### Bugfixes
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
+
+ * Fix `clock_nanosleep` on macOS [#80](https://github.com/eclipse-iceoryx/iceoryx2/issues/80)
 
 ### Refactoring
+
+ <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
 
 ### Workflow
 
+ <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
+
  * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
 
 ### New API features
+
+ <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
 
