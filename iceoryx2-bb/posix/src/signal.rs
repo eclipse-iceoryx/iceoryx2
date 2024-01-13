@@ -506,7 +506,6 @@ impl SignalHandler {
                 0
             },
             sa_mask: details.state.sa_mask,
-            sa_restorer: details.state.sa_restorer,
         };
         let mut previous_action = posix::sigaction_t::new();
 

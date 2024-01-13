@@ -48,7 +48,6 @@ impl SigAction {
                 sa_handler: 0,
                 sa_mask: sigset_t {},
                 sa_flags: 0,
-                sa_restorer: None,
             }),
             mtx: Mutex::new(),
         }

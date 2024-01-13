@@ -113,7 +113,6 @@ pub struct sigaction_t {
     pub sa_handler: sighandler_t,
     pub sa_mask: sigset_t,
     pub sa_flags: int,
-    pub sa_restorer: Option<extern "C" fn()>,
 }
 impl Struct for sigaction_t {
     fn new() -> Self {
@@ -121,7 +120,6 @@ impl Struct for sigaction_t {
             sa_handler: 0,
             sa_mask: sigset_t::new(),
             sa_flags: 0,
-            sa_restorer: None,
         }
     }
 }
