@@ -45,10 +45,9 @@ impl SigAction {
     const fn new() -> Self {
         Self {
             action: UnsafeCell::new(sigaction_t {
-                sa_handler: 0,
-                sa_mask: sigset_t {},
-                sa_flags: 0,
-                sa_restorer: None,
+                iox2_sa_handler: 0,
+                iox2_sa_mask: sigset_t {},
+                iox2_sa_flags: 0,
             }),
             mtx: Mutex::new(),
         }
@@ -77,7 +76,7 @@ static SIG_ACTION: SigAction = SigAction::new();
 
 unsafe extern "system" fn ctrl_handler(value: u32) -> i32 {
     let action =
-        core::mem::transmute::<sighandler_t, extern "C" fn(int)>(SIG_ACTION.get().sa_handler);
+        core::mem::transmute::<sighandler_t, extern "C" fn(int)>(SIG_ACTION.get().iox2_sa_handler);
 
     let sigval = win32_event_to_signal(value);
 
@@ -107,7 +106,7 @@ pub unsafe fn sigaction(sig: int, act: *const sigaction_t, oact: *mut sigaction_
     (*oact) = SIG_ACTION.set(*act);
 
     if sig == SIGTERM {
-        if (*act).sa_handler == 0 {
+        if (*act).iox2_sa_handler == 0 {
             SetConsoleCtrlHandler(None, FALSE);
         } else {
             SetConsoleCtrlHandler(Some(ctrl_handler), TRUE);

@@ -224,19 +224,17 @@ impl Struct for sched_param {}
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct sigaction_t {
-    pub sa_handler: sighandler_t,
-    pub sa_mask: sigset_t,
-    pub sa_flags: int,
-    pub sa_restorer: Option<extern "C" fn()>,
+    pub iox2_sa_handler: sighandler_t,
+    pub iox2_sa_mask: sigset_t,
+    pub iox2_sa_flags: int,
 }
 
 impl Struct for sigaction_t {
     fn new() -> Self {
         Self {
-            sa_handler: 0,
-            sa_mask: sigset_t::new(),
-            sa_flags: 0,
-            sa_restorer: None,
+            iox2_sa_handler: 0,
+            iox2_sa_mask: sigset_t::new(),
+            iox2_sa_flags: 0,
         }
     }
 }

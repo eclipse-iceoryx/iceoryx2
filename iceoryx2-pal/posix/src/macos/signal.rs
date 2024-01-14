@@ -15,13 +15,21 @@
 use crate::posix::types::*;
 
 pub unsafe fn sigaction(sig: int, act: *const sigaction_t, oact: *mut sigaction_t) -> int {
-    crate::internal::sigaction(
-        sig,
-        act as *const crate::internal::sigaction,
-        oact as *mut crate::internal::sigaction,
-    )
+    internal::iox2_sigaction_func(sig, act, oact)
 }
 
 pub unsafe fn kill(pid: pid_t, sig: int) -> int {
     crate::internal::kill(pid, sig)
+}
+
+mod internal {
+    use super::*;
+
+    extern "C" {
+        pub(super) fn iox2_sigaction_func(
+            sig: int,
+            act: *const sigaction_t,
+            oact: *mut sigaction_t,
+        ) -> int;
+    }
 }

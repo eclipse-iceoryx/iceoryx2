@@ -20,13 +20,9 @@ fn main() {
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     println!("cargo:rustc-link-lib=pthread");
 
-    if std::env::var("DOCS_RS").is_ok() {
-        println!("cargo:rerun-if-changed=src/c/posix_docs_rs.h");
-    } else {
-        #[cfg(all(target_os = "linux", feature = "acl"))]
-        println!("cargo:rustc-link-lib=acl");
-        println!("cargo:rerun-if-changed=src/c/posix.h");
-    }
+    #[cfg(all(target_os = "linux", feature = "acl"))]
+    println!("cargo:rustc-link-lib=acl");
+    println!("cargo:rerun-if-changed=src/c/posix.h");
 
     let bindings = if std::env::var("DOCS_RS").is_ok() {
         bindgen::Builder::default()
@@ -61,10 +57,17 @@ fn main() {
         .write_to_file(out_path.join("posix_generated.rs"))
         .expect("Couldn't write bindings!");
 
+    println!("cargo:rerun-if-changed=src/c/sigaction.c");
+    cc::Build::new()
+        .file("src/c/sigaction.c")
+        .compile("libsigaction.a");
+
+    println!("cargo:rerun-if-changed=src/c/scandir.c");
     cc::Build::new()
         .file("src/c/scandir.c")
         .compile("libscandir.a");
 
+    println!("cargo:rerun-if-changed=src/c/socket_macros.c");
     cc::Build::new()
         .file("src/c/socket_macros.c")
         .compile("libsocket_macros.a");

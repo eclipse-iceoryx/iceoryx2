@@ -15,6 +15,7 @@
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * Fix `clock_nanosleep` on macOS [#80](https://github.com/eclipse-iceoryx/iceoryx2/issues/80)
+ * Fix broken `sighandler_t` translation [#81](https://github.com/eclipse-iceoryx/iceoryx2/issues/81)
 
 ### Refactoring
 
