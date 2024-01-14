@@ -1,3 +1,15 @@
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 #ifdef __FreeBSD__
 #include <mqueue.h>
 #if defined(IOX2_ACL_SUPPORT) && !defined(IOX2_DOCS_RS_SUPPORT)
@@ -88,4 +100,12 @@ acl_t acl_get_fd(int) { return 0; }
 int acl_set_fd(int, acl_t) { return 0; }
 char *acl_to_text(acl_t, ssize_t *) { return NULL; }
 acl_t acl_from_text(const char *) { return 0; }
+#endif
+
+#ifndef _WIN64
+struct iox2_sigaction {
+    size_t iox2_sa_handler;
+    sigset_t iox2_sa_mask;
+    int iox2_sa_flags;
+};
 #endif

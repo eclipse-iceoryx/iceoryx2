@@ -108,21 +108,8 @@ impl Struct for rlimit {}
 pub type sched_param = crate::internal::sched_param;
 impl Struct for sched_param {}
 
-#[repr(C)]
-pub struct sigaction_t {
-    pub sa_handler: sighandler_t,
-    pub sa_mask: sigset_t,
-    pub sa_flags: int,
-}
-impl Struct for sigaction_t {
-    fn new() -> Self {
-        Self {
-            sa_handler: 0,
-            sa_mask: sigset_t::new(),
-            sa_flags: 0,
-        }
-    }
-}
+pub type sigaction_t = crate::internal::iox2_sigaction;
+impl Struct for sigaction_t {}
 
 #[repr(C)]
 pub struct stat_t {
