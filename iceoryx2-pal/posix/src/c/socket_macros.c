@@ -11,10 +11,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #ifdef _WIN64
-#include <MSWSock.h>
+// clang-format off
+// the include order is important, since some headers are defining macros that
+// are used in the next header
 #include <WinSock2.h>
 #include <Windows.h>
+#include <MSWSock.h>
 #include <io.h>
+// clang-format on
 #else
 #include <sys/select.h>
 #include <sys/socket.h>

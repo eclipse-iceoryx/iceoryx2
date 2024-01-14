@@ -37,9 +37,9 @@ int iox2_sigaction_func(int sig, const struct iox2_sigaction *restrict act,
     int ret_val = sigaction(sig, tr_act_ptr, tr_oact_ptr);
 
     if (ret_val == 0 && oact != NULL) {
-        oact->iox2_sa_flags = tr_act.sa_flags;
-        oact->iox2_sa_mask = tr_act.sa_mask;
-        oact->iox2_sa_handler = (size_t)tr_act.sa_handler;
+        oact->iox2_sa_flags = tr_oact.sa_flags;
+        oact->iox2_sa_mask = tr_oact.sa_mask;
+        oact->iox2_sa_handler = (size_t)tr_oact.sa_handler;
     }
 
     return ret_val;
