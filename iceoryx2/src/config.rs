@@ -96,16 +96,11 @@ use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use iceoryx2_bb_log::{fail, trace, warn};
+use iceoryx2_bb_log::{fail, fatal_panic, trace, warn};
 
 use crate::service::port_factory::publisher::UnableToDeliverStrategy;
 
 /// Path to the default config file
-#[cfg(target_os = "windows")]
-pub const DEFAULT_CONFIG_FILE: &[u8] = b"config\\iceoryx2_win.toml";
-
-/// Path to the default config file
-#[cfg(not(target_os = "windows"))]
 pub const DEFAULT_CONFIG_FILE: &[u8] = b"config/iceoryx2.toml";
 
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`] or
@@ -148,8 +143,8 @@ pub struct Service {
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct Global {
-    /// The path under which all other directories or files will be created
-    pub root_path: String,
+    root_path_unix: String,
+    root_path_windows: String,
     /// Prefix used for all files created during runtime
     pub prefix: String,
     /// [`crate::service::Service`] settings
@@ -157,13 +152,30 @@ pub struct Global {
 }
 
 impl Global {
+    /// The absolute path to the service directory where all static service infos are stored
     pub fn get_absolute_service_dir(&self) -> Path {
-        let mut path = Path::new(self.root_path.as_bytes()).unwrap();
+        let mut path = self.root_path();
         path.add_path_entry(
             &FixedSizeByteString::from_bytes(self.service.directory.as_bytes()).unwrap(),
         )
         .unwrap();
         path
+    }
+
+    /// The path under which all other directories or files will be created
+    pub fn root_path(&self) -> Path {
+        #[cfg(target_os = "windows")]
+        {
+            fatal_panic!(from "Global::root_path_windows",
+                when Path::new(self.root_path_windows.as_bytes()),
+                "Unable to initialize config since the internal root_path_windows \"{}\" is not a valid directory.", self.root_path_windows)
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            fatal_panic!(from "Global::root_path_unix",
+                when Path::new(self.root_path_unix.as_bytes()),
+                "Unable to initialize config since the internal root_path_unix \"{}\" is not a valid directory.", self.root_path_unix)
+        }
     }
 }
 
@@ -238,11 +250,9 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             global: Global {
-                #[cfg(not(target_os = "windows"))]
-                root_path: "/tmp/iceoryx2/".to_string(),
+                root_path_unix: "/tmp/iceoryx2/".to_string(),
                 prefix: "iox2_".to_string(),
-                #[cfg(target_os = "windows")]
-                root_path: "C:\\Windows\\Temp\\iceoryx2\\".to_string(),
+                root_path_windows: "C:\\Windows\\Temp\\iceoryx2\\".to_string(),
                 service: Service {
                     directory: "services".to_string(),
                     publisher_data_segment_suffix: ".publisher_data".to_string(),

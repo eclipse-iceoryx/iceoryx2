@@ -18,7 +18,7 @@ Adjusting `global` settings ensures a non-interfering setup.
 
 ### Global
 
- * `global.root_path` - [string]: Defines the path for all Iceoryx2 files and directories.
+ * `global.root_path_{unix|windows}` - [string]: Defines the path for all Iceoryx2 files and directories.
  * `global.prefix` - [string]: Prefix that is used for every file Iceoryx2 creates.
  * `global.service.directory` - [string]: Specifies the path for service-related files under `global.root_path`.
  * `global.service.publisher_data_segment_suffix` - [string]: Suffix added to the publisher's data segment.
