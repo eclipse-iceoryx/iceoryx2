@@ -16,6 +16,7 @@
 
  * Fix `clock_nanosleep` on macOS [#80](https://github.com/eclipse-iceoryx/iceoryx2/issues/80)
  * Fix broken `sighandler_t` translation [#81](https://github.com/eclipse-iceoryx/iceoryx2/issues/81)
+ * Fix undefined behavior in `spsc::{queue|index_queue}` [#87](https://github.com/eclipse-iceoryx/iceoryx2/issues/87)
 
 ### Refactoring
 
