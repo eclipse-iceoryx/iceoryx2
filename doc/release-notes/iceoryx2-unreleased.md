@@ -21,7 +21,7 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Use only one config file for every platform [#15](https://github.com/eclipse-iceoryx/iceoryx2/issues/15)
 
 ### Workflow
 
