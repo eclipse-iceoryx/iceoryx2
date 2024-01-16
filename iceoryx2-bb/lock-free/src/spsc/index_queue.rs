@@ -318,7 +318,7 @@ pub mod details {
             let value = unsafe { *self.at(read_position) };
             // prevent that `out` and `read_position` statements are reordered according to
             // the AS-IF rule.
-            core::sync::atomic::fence(Ordering::SeqCst);
+            core::sync::atomic::fence(Ordering::AcqRel);
             self.read_position
                 .store(read_position + 1, Ordering::Relaxed);
 
