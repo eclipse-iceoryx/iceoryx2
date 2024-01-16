@@ -66,7 +66,7 @@ use crate::{
 use enum_iterator::{all, Sequence};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::posix::{Errno, Struct};
 use iceoryx2_pal_posix::*;
 use lazy_static::lazy_static;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -184,6 +184,7 @@ tiny_fn! {
     pub struct SignalCallback = Fn(signal: FetchableSignal);
 }
 
+#[derive(Debug)]
 struct SignalDetail {
     signal: FetchableSignal,
     state: posix::sigaction_t,
@@ -509,10 +510,13 @@ impl SignalHandler {
         };
         let mut previous_action = posix::sigaction_t::new();
 
-        if unsafe { posix::sigaction(details.signal as i32, &adjusted_state, &mut previous_action) }
-            != 0
-        {
-            fatal_panic!(from self, "This should never happen! Unable to register raw signal since sigaction was called with invalid parameters.");
+        let sigaction_return = unsafe {
+            posix::sigaction(details.signal as i32, &adjusted_state, &mut previous_action)
+        };
+
+        if sigaction_return != 0 {
+            fatal_panic!(from self, "This should never happen! posix::sigaction returned {}. Unable to register raw signal since sigaction was called with invalid parameters: {:?} which lead to error: {:?}.",
+                                     sigaction_return, details, Errno::get());
         }
 
         previous_action

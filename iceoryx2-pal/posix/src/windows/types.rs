@@ -63,7 +63,7 @@ pub type ushort = u16;
 pub type ulong = u64;
 pub type void = core::ffi::c_void;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct sigset_t {}
 impl Struct for sigset_t {}
 
@@ -221,7 +221,7 @@ pub struct sched_param {
 }
 impl Struct for sched_param {}
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct sigaction_t {
     pub iox2_sa_handler: sighandler_t,
