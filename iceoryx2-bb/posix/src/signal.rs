@@ -128,7 +128,9 @@ define_signals! {
     Alarm = posix::SIGALRM,
     Bus = posix::SIGBUS,
     Child = posix::SIGCHLD,
-    Continue = posix::SIGCONT,
+    //TODO: https://github.com/eclipse-iceoryx/iceoryx2/issues/81
+    //  comment in Continue again when the bindgen bug is fixed
+    //Continue = posix::SIGCONT,
     FloatingPointError = posix::SIGFPE,
     Hangup = posix::SIGHUP,
     IllegalInstruction = posix::SIGILL,
