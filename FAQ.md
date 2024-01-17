@@ -1,5 +1,25 @@
 # Frequently Asked Questions
 
+## Application does not remove services/ports on shutdown or several application restarts lead to port count exceeded
+
+The structs of iceoryx2 need to be able to cleanup all resources when they
+go out of scope. This is not the case when the application is:
+
+ * killed with the sigkill signal (`kill -9`)
+ * the `SIGTERM` signal is not explicitly handled
+
+iceoryx2 already provides a mechanism that registers a signal handler that
+handles termination requests gracefully, see
+[publish subscribe example](examples/examples/publish_subscribe) and
+
+```rust
+while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+  // user code
+}
+```
+
+But you can also use a crate like [ctrlc](https://docs.rs/ctrlc/latest/ctrlc/).
+
 ## How to use `log` or `tracing` as default log backend
 
  * **log**, add the feature flag `logger_log` to the dependency in `Cargo.toml`
