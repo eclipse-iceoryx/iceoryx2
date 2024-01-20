@@ -219,6 +219,7 @@ impl ProcessWatcher {
             file: None,
             path: *path,
         };
+        // TODO: failing is alright here, it is legal to monitor a non existing process
         new_self.open_file()?;
         Ok(new_self)
     }
@@ -276,27 +277,21 @@ impl ProcessWatcher {
 
         match current_state.l_type as _ {
             posix::F_WRLCK => Ok(ProcessState::Alive),
-            _ => match file.permission() {
-                Ok(FINAL_PERMISSION) => {
-                    self.file = None;
-
-                    match File::does_exist(&self.path) {
-                        Ok(true) => Ok(ProcessState::Dead),
-                        Ok(false) => Ok(ProcessState::DoesNotExist),
-                        Err(v) => {
-                            fail!(from self, with ProcessWatcherStateError::UnknownError(0),
-                                "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
-                        }
+            _ => match File::does_exist(&self.path) {
+                Ok(true) => match file.permission() {
+                    Ok(INIT_PERMISSION) => Ok(ProcessState::InInitialization),
+                    Err(_) | Ok(_) => {
+                        self.file = None;
+                        Ok(ProcessState::Dead)
                     }
-                }
-                Ok(INIT_PERMISSION) => Ok(ProcessState::InInitialization),
-                Ok(v) => {
-                    fail!(from self, with ProcessWatcherStateError::CorruptedState,
-                                "{} since the underlying state file state is corrupted due to invalid permissions ({:?}).", msg, v);
+                },
+                Ok(false) => {
+                    self.file = None;
+                    Ok(ProcessState::DoesNotExist)
                 }
                 Err(v) => {
                     fail!(from self, with ProcessWatcherStateError::UnknownError(0),
-                                "{} since an unknown failure occurred while acquiring the permissions of the state file ({:?}).", msg, v);
+                            "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
                 }
             },
         }
@@ -315,6 +310,7 @@ impl ProcessWatcher {
                 fail!(from origin, with ProcessWatcherCreateError::IsDirectory,
                     "{} since the path is a directory.", msg);
             }
+            // TODO: can also mean the lock state is being initialized
             Err(FileOpenError::InsufficientPermissions) => {
                 fail!(from origin, with ProcessWatcherCreateError::InsufficientPermissions,
                     "{} due to insufficient permissions.", msg);
