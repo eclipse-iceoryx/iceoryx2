@@ -302,7 +302,12 @@ pub mod details {
         ///  * It has to be ensured that the memory is initialized with
         ///    [`SafelyOverflowingIndexQueue::init()`].
         pub unsafe fn push(&self, value: usize) -> Option<usize> {
-            let write_position = self.write_position.load(Ordering::Relaxed);
+            ////////////////
+            // SYNC POINT R
+            ////////////////
+            // required when push in overflow case is called non-concurrently from a different
+            // thread
+            let write_position = self.write_position.load(Ordering::Acquire);
             let read_position = self.read_position.load(Ordering::Relaxed);
             let is_full = write_position == read_position + self.capacity;
 

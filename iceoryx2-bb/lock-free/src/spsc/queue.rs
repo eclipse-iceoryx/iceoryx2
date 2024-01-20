@@ -215,8 +215,11 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
                         .as_ptr()
                 };
 
+                // prevent that `out` and `read_position` statements are reordered according to
+                // the AS-IF rule.
+                core::sync::atomic::fence(Ordering::AcqRel);
                 self.read_position
-                    .store(current_read_pos + 1, Ordering::Release);
+                    .store(current_read_pos + 1, Ordering::Relaxed);
 
                 Some(out)
             }
