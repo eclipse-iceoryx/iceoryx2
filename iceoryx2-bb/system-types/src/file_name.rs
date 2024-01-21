@@ -27,6 +27,9 @@
 //! assert!(invalid_name.is_err());
 //! ```
 
+pub use iceoryx2_bb_container::semantic_string::SemanticString;
+
+use core::hash::{Hash, Hasher};
 use iceoryx2_bb_container::semantic_string;
 use iceoryx2_pal_configuration::FILENAME_LENGTH;
 
@@ -59,7 +62,7 @@ semantic_string! {
     }
     false
   },
-  comparision: |lhs: &[u8], rhs: &[u8]| {
-      *lhs == *rhs
+  normalize: |this: &FileName| {
+      *this
   }
 }

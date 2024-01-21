@@ -16,7 +16,7 @@ pub mod unix_datagram_socket;
 use std::{fmt::Debug, time::Duration};
 
 pub use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-pub use iceoryx2_bb_system_types::file_name::FileName;
+pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

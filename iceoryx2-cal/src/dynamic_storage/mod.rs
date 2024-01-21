@@ -57,7 +57,7 @@
 use std::fmt::Debug;
 
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_name::*;
 
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 

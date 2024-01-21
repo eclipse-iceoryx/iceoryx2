@@ -63,7 +63,7 @@ use iceoryx2_bb_elementary::allocator::DeallocationError;
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_name::*;
 
 /// Failure returned by [`SharedMemoryBuilder::create()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

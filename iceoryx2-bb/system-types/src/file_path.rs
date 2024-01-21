@@ -31,6 +31,7 @@ pub use iceoryx2_bb_container::semantic_string::SemanticString;
 
 use crate::file_name::FileName;
 use crate::path::Path;
+use core::hash::{Hash, Hasher};
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
@@ -86,8 +87,8 @@ semantic_string! {
 
     false
   },
-  comparision: |lhs: &[u8], rhs: &[u8]| {
-      *lhs == *rhs
+  normalize: |this: &FilePath| {
+      *this
   }
 }
 

@@ -65,18 +65,25 @@ semantic_string! {
 
     false
   },
-  comparision: |lhs: &[u8], rhs: &[u8]| {
-      let lhs_normalized = Path::new_normalized(lhs);
-      if lhs_normalized.is_err() {
-          return false;
+  normalize: |this: &Path| {
+      let mut raw_path = [0u8; PATH_LENGTH];
+
+      let mut previous_char_is_path_separator = false;
+      let mut n = 0;
+      for i in 0..this.value.len() {
+          if i + 1 == this.value.len() && this.value[i] == PATH_SEPARATOR {
+              break;
+          }
+
+          if !(previous_char_is_path_separator && this.value[i] == PATH_SEPARATOR) {
+              raw_path[n] = this.value[i];
+              n += 1;
+          }
+
+          previous_char_is_path_separator = this.value[i] == PATH_SEPARATOR
       }
 
-      let rhs_normalized = Path::new_normalized(rhs);
-      if rhs_normalized.is_err() {
-          return false;
-      }
-
-      *lhs_normalized.unwrap() == *rhs_normalized.unwrap()
+      Path::new(&raw_path[0..n]).expect("A normalized path from a path shall be always valid.")
   }
 }
 

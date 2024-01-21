@@ -166,7 +166,7 @@ pub struct ProcessGuard {
 
 impl Drop for ProcessGuard {
     fn drop(&mut self) {
-        let path = self.path().clone();
+        let path = *self.path();
         match self.file.take() {
             Some(f) => match f.remove_self() {
                 Ok(true) => {
@@ -327,7 +327,7 @@ impl ProcessGuard {
         match file.set_permission(FINAL_PERMISSION) {
             Ok(_) => {
                 trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
-                return Ok(Self { file: Some(file) });
+                Ok(Self { file: Some(file) })
             }
             Err(v) => {
                 match file.remove_self() {
@@ -360,8 +360,8 @@ impl ProcessGuard {
     /// Returns the [`FilePath`] under which the underlying file is stored.
     pub fn path(&self) -> &FilePath {
         match self.file.as_ref() {
-            Some(ref f) => match f.path() {
-                Some(ref path) => path,
+            Some(f) => match f.path() {
+                Some(path) => path,
                 None => {
                     fatal_panic!(from self, "This should never happen! Unable to acquire path from underlying file.")
                 }

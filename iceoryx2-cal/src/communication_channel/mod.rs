@@ -72,7 +72,7 @@ pub mod unix_datagram;
 
 use std::fmt::Debug;
 
-use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::path::Path;
 
 use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};

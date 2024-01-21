@@ -25,6 +25,10 @@
 //! assert!(invalid_user.is_err());
 //! ```
 //!
+
+pub use iceoryx2_bb_container::semantic_string::SemanticString;
+
+use core::hash::{Hash, Hasher};
 use iceoryx2_bb_container::semantic_string;
 
 const USER_NAME_LENGTH: usize = 31;
@@ -50,7 +54,7 @@ semantic_string! {
 
     false
   },
-  comparision: |lhs: &[u8], rhs: &[u8]| {
-      *lhs == *rhs
+  normalize: |this: &UserName| {
+      *this
   }
 }
