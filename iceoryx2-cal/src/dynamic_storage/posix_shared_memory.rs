@@ -154,9 +154,7 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
     ) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic_storage::PosixSharedMemory";
 
-        let full_name = unsafe {
-            FileName::new_unchecked(self.config.path_for(&self.storage_name).file_name())
-        };
+        let full_name = self.config.path_for(&self.storage_name).file_name();
         let shm = match SharedMemoryBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
             // posix shared memory is always aligned to the greatest possible value (PAGE_SIZE)
@@ -223,9 +221,7 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
     fn try_open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open ";
 
-        let full_name = unsafe {
-            FileName::new_unchecked(self.config.path_for(&self.storage_name).file_name())
-        };
+        let full_name = self.config.path_for(&self.storage_name).file_name();
         let shm = match SharedMemoryBuilder::new(&full_name).open_existing(AccessMode::ReadWrite) {
             Ok(v) => v,
             Err(SharedMemoryCreationError::DoesNotExist) => {
@@ -284,7 +280,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-        let full_name = unsafe { FileName::new_unchecked(cfg.path_for(name).file_name()) };
+        let full_name = cfg.path_for(name).file_name();
 
         Ok(iceoryx2_bb_posix::shared_memory::SharedMemory::does_exist(
             &full_name,
@@ -310,7 +306,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        let full_name = unsafe { FileName::new_unchecked(cfg.path_for(name).file_name()) };
+        let full_name = cfg.path_for(name).file_name();
         let msg = "Unable to remove dynamic_storage::posix_shared_memory";
         let origin = "dynamic_storage::posix_shared_memory::Storage::remove_cfg()";
 

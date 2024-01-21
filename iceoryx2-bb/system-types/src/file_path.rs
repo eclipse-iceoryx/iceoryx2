@@ -127,19 +127,29 @@ impl FilePath {
     }
 
     /// Returns the last file part ([`FileName`]) of the path.
-    pub fn file_name(&self) -> &[u8] {
-        match self.rfind(PATH_SEPARATOR) {
-            None => self.as_bytes(),
-            Some(pos) => self.as_bytes().get(pos + 1..self.len()).unwrap(),
+    pub fn file_name(&self) -> FileName {
+        // SAFETY
+        // * the file path ensures that is a valid path to a file, therefore the last part
+        //   must be a valid FileName
+        unsafe {
+            FileName::new_unchecked(match self.rfind(PATH_SEPARATOR) {
+                None => self.as_bytes(),
+                Some(pos) => self.as_bytes().get(pos + 1..self.len()).unwrap(),
+            })
         }
     }
 
     /// Returns the [`Path`] part of the [`FilePath`].
-    pub fn path(&self) -> &[u8] {
-        match self.rfind(PATH_SEPARATOR) {
-            None => unsafe { std::slice::from_raw_parts(self.as_ptr(), 0) },
-            Some(0) => self.as_bytes().get(0..1).unwrap(),
-            Some(pos) => self.as_bytes().get(0..pos).unwrap(),
+    pub fn path(&self) -> Path {
+        // SAFETY
+        // * the file path ensures that is a valid path to a file, therefore the first part
+        //   must be a valid path
+        unsafe {
+            Path::new_unchecked(match self.rfind(PATH_SEPARATOR) {
+                None => core::slice::from_raw_parts(self.as_ptr(), 0),
+                Some(0) => self.as_bytes().get(0..1).unwrap(),
+                Some(pos) => self.as_bytes().get(0..pos).unwrap(),
+            })
         }
     }
 }

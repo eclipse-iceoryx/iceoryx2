@@ -289,7 +289,7 @@ macro_rules! semantic_string {
      invalid_content: $invalid_content:expr, invalid_characters: $invalid_characters:expr,
      comparision: $comparision:expr} => {
         $(#[$documentation])*
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[derive(Debug, Clone, Copy, Eq, Hash)]
         pub struct $string_name {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
         }
@@ -313,6 +313,12 @@ macro_rules! semantic_string {
         impl std::fmt::Display for $string_name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 std::write!(f, "{}", self.value)
+            }
+        }
+
+        impl PartialEq<$string_name> for $string_name {
+            fn eq(&self, other: &$string_name) -> bool {
+                $comparision(self.value.as_bytes(), other.value.as_bytes())
             }
         }
 

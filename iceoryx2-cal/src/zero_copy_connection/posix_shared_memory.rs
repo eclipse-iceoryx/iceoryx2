@@ -201,8 +201,7 @@ impl Builder {
         );
 
         let msg = "Failed to acquire underlying shared memory";
-        let full_name =
-            unsafe { FileName::new_unchecked(self.config.path_for(&self.name).file_name()) };
+        let full_name = self.config.path_for(&self.name).file_name();
         let shm = fail!(from self, when SharedMemoryBuilder::new(&full_name)
                                                 .creation_mode(CreationMode::OpenOrCreate)
                                                 .size(shm_size)
@@ -564,9 +563,7 @@ impl NamedConceptMgmt for Connection {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-        Ok(SharedMemory::does_exist(unsafe {
-            &FileName::new_unchecked(cfg.path_for(name).file_name())
-        }))
+        Ok(SharedMemory::does_exist(&cfg.path_for(name).file_name()))
     }
 
     fn list_cfg(
@@ -588,7 +585,7 @@ impl NamedConceptMgmt for Connection {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        let full_name = unsafe { FileName::new_unchecked(cfg.path_for(name).file_name()) };
+        let full_name = cfg.path_for(name).file_name();
         let msg = "Unable to remove zero_copy_connection::posix_shared_memory";
         let origin = "zero_copy_connection::posix_shared_memory::Connection::remove_cfg()";
 
