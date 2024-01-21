@@ -56,7 +56,7 @@ pub fn process_state_guard_removes_file_when_dropped() {
 pub fn process_state_guard_cannot_use_already_existing_file() {
     let path = generate_file_path();
 
-    FileBuilder::new(&path)
+    let file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
@@ -64,4 +64,20 @@ pub fn process_state_guard_cannot_use_already_existing_file() {
     let guard = ProcessGuard::new(&path);
     assert_that!(guard.is_err(), eq true);
     assert_that!(guard.err().unwrap(), eq ProcessGuardCreateError::AlreadyExists);
+
+    file.remove_self().unwrap();
+}
+
+#[test]
+pub fn process_state_guard_can_remove_already_existing_file() {
+    let path = generate_file_path();
+
+    FileBuilder::new(&path)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let guard = ProcessGuard::remove(&path);
+    assert_that!(guard.is_ok(), eq true);
+    assert_that!(guard.ok().unwrap(), eq true);
 }

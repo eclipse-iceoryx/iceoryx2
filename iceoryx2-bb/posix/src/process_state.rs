@@ -17,7 +17,7 @@ use iceoryx2_pal_posix::posix::{self, Errno, Struct};
 
 use crate::{
     access_mode::AccessMode,
-    directory::Directory,
+    directory::{Directory, DirectoryAccessError, DirectoryCreateError},
     file::{File, FileBuilder, FileCreationError, FileOpenError, FileRemoveError},
     file_descriptor::{FileDescriptorBased, FileDescriptorManagement},
     file_lock::LockType,
@@ -37,9 +37,10 @@ pub enum ProcessState {
 pub enum ProcessGuardCreateError {
     InsufficientPermissions,
     IsDirectory,
+    InvalidDirectory,
     AlreadyExists,
     NoSpaceLeft,
-    FileSystemReadOnly,
+    ReadOnlyFilesystem,
     Interrupt,
     UnknownError(i32),
 }
@@ -91,7 +92,6 @@ impl Drop for ProcessGuard {
 
 const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
 const FINAL_PERMISSION: Permission = Permission::OWNER_ALL;
-
 impl ProcessGuard {
     pub fn new(path: &FilePath) -> Result<Self, ProcessGuardCreateError> {
         let origin = "ProcessGuard::new()";
@@ -99,6 +99,54 @@ impl ProcessGuard {
             "Unable to create new ProcessGuard with the file \"{}\"",
             path
         );
+
+        let default_directory_permissions = Permission::OWNER_ALL
+            | Permission::GROUP_READ
+            | Permission::GROUP_EXEC
+            | Permission::OTHERS_READ
+            | Permission::OTHERS_EXEC;
+
+        let dir_path = path.path();
+        match Directory::does_exist(&dir_path) {
+            Ok(true) => (),
+            Ok(false) => match Directory::create(&dir_path, default_directory_permissions) {
+                Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+                Err(DirectoryCreateError::InsufficientPermissions) => {
+                    fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
+                    "{} since the directory {} could not be created due to insufficient permissions.",
+                    msg, dir_path);
+                }
+                Err(DirectoryCreateError::ReadOnlyFilesystem) => {
+                    fail!(from origin, with ProcessGuardCreateError::ReadOnlyFilesystem,
+                    "{} since the directory {} could not be created since it is located on an read-only file system.",
+                    msg, dir_path);
+                }
+                Err(DirectoryCreateError::NoSpaceLeft) => {
+                    fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
+                    "{} since the directory {} could not be created since there is no space left.",
+                    msg, dir_path);
+                }
+                Err(v) => {
+                    fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
+                    "{} since the directory {} could not be created due to an unknown failure ({:?}).",
+                    msg, dir_path, v);
+                }
+            },
+            Err(DirectoryAccessError::InsufficientPermissions) => {
+                fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
+                    "{} since the directory {} could not be accessed due to insufficient permissions.",
+                    msg, dir_path);
+            }
+            Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
+                fail!(from origin, with ProcessGuardCreateError::InvalidDirectory,
+                    "{} since the directory {} is actually not a valid directory.", msg, dir_path);
+            }
+            Err(v) => {
+                fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
+                    "{} since an unknown failure occurred ({:?}) while checking if directory {} exists.",
+                    msg, v, dir_path);
+            }
+        }
 
         let mut file = match FileBuilder::new(path)
             .creation_mode(CreationMode::CreateExclusive)
@@ -123,7 +171,7 @@ impl ProcessGuard {
                     "{} since there is no space left on the device.", msg);
             }
             Err(FileCreationError::FilesytemIsReadOnly) => {
-                fail!(from origin, with ProcessGuardCreateError::FileSystemReadOnly,
+                fail!(from origin, with ProcessGuardCreateError::ReadOnlyFilesystem,
                     "{} since the file system is read only.", msg);
             }
             Err(v) => {
