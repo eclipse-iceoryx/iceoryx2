@@ -315,7 +315,7 @@ macro_rules! semantic_string {
      invalid_content: $invalid_content:expr, invalid_characters: $invalid_characters:expr,
      normalize: $normalize:expr} => {
         $(#[$documentation])*
-        #[derive(Debug, Clone, Copy, Eq, Hash)]
+        #[derive(Debug, Clone, Copy, Eq)]
         pub struct $string_name {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
         }
