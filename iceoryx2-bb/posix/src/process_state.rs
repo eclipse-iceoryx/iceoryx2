@@ -269,7 +269,7 @@ impl ProcessWatcher {
             file: None,
             path: *path,
         };
-        // TODO: failing is alright here, it is legal to monitor a non existing process
+
         new_self.open_file()?;
         Ok(new_self)
     }
@@ -302,14 +302,14 @@ impl ProcessWatcher {
     }
 
     fn read_state_from_file(&mut self) -> Result<ProcessState, ProcessWatcherStateError> {
-        let file = self
-            .file
-            .as_ref()
-            .expect("Always ensured that it contains a file.");
+        let file = match self.file {
+            Some(ref f) => f,
+            None => return Ok(ProcessState::InInitialization),
+        };
 
         let msg = "Unable to acquire ProcessState from file";
         let mut current_state = posix::flock::new();
-        current_state.l_type = posix::F_WRLCK as _;
+        current_state.l_type = LockType::Write as _;
 
         if unsafe {
             posix::fcntl(
@@ -360,10 +360,16 @@ impl ProcessWatcher {
                 fail!(from origin, with ProcessWatcherCreateError::IsDirectory,
                     "{} since the path is a directory.", msg);
             }
-            // TODO: can also mean the lock state is being initialized
             Err(FileOpenError::InsufficientPermissions) => {
-                fail!(from origin, with ProcessWatcherCreateError::InsufficientPermissions,
+                if FileBuilder::new(&self.path)
+                    .open_existing(AccessMode::Write)
+                    .is_ok()
+                {
+                    None
+                } else {
+                    fail!(from origin, with ProcessWatcherCreateError::InsufficientPermissions,
                     "{} due to insufficient permissions.", msg);
+                }
             }
             Err(FileOpenError::Interrupt) => {
                 fail!(from origin, with ProcessWatcherCreateError::Interrupt,
