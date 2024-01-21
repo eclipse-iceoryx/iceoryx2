@@ -17,6 +17,7 @@ use iceoryx2_pal_posix::posix::{self, Errno, Struct};
 
 use crate::{
     access_mode::AccessMode,
+    directory::Directory,
     file::{File, FileBuilder, FileCreationError, FileOpenError, FileRemoveError},
     file_descriptor::{FileDescriptorBased, FileDescriptorManagement},
     file_lock::LockType,
@@ -98,6 +99,7 @@ impl ProcessGuard {
             "Unable to create new ProcessGuard with the file \"{}\"",
             path
         );
+
         let mut file = match FileBuilder::new(path)
             .creation_mode(CreationMode::CreateExclusive)
             .permission(INIT_PERMISSION)
