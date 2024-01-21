@@ -88,8 +88,8 @@ pub fn process_state_guard_can_remove_already_existing_file() {
 // from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
 // blocks despite it should be non-blocking.
 #[test]
-#[ignore]
-pub fn process_state_watcher_detects_state_from_existing_process() {
+#[cfg(any(not(target_os = "linux")))]
+pub fn process_state_watcher_detects_alive_state_from_existing_process() {
     let path = generate_file_path();
 
     let guard = ProcessGuard::new(&path).unwrap();

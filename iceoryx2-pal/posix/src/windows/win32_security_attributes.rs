@@ -43,6 +43,7 @@ use crate::posix::{types::*, S_IRUSR, S_IWUSR, S_IXUSR};
 //     GR = Generic Read
 //     GW = Generic Write
 //     GX = Generic Execute
+//     SD = Delete permission
 // object_guid:
 //     empty
 // inherit_object_guid:
@@ -64,7 +65,7 @@ use crate::posix::{types::*, S_IRUSR, S_IWUSR, S_IXUSR};
 const SID_LENGTH: usize = 255;
 const GENERIC_PERM_ALL: &[u8] = b"GA";
 const GENERIC_PERM_READ: &[u8] = b"GR";
-const GENERIC_PERM_WRITE: &[u8] = b"GW";
+const GENERIC_PERM_WRITE: &[u8] = b"GWSD";
 const GENERIC_PERM_EXECUTE: &[u8] = b"GX";
 const FILE_PERM_ALL: &[u8] = b"FA";
 const FILE_PERM_READ: &[u8] = b"FR";
