@@ -10,9 +10,77 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Process monitoring via holding a file lock of a specific file. If the process crashes the
+//! lock will be released by the operating system and another process can detect the crash. If the
+//! process shutdowns correctly the file is removed and another process detects the clean shutdown.
+//!
+//! # Example
+//!
+//! ## Monitored Process
+//!
+//! ```
+//! use iceoryx2_bb_posix::process_state::*;
+//!
+//! let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+//!
+//! // remove potentially uncleaned process state file that can remain when this process crashed
+//! // before
+//! //
+//! // # Safety
+//! //  * This process owns the state file, therefore it is safe to remove it.
+//! unsafe { ProcessGuard::remove(&process_state_path).expect("") };
+//!
+//! // start monitoring from this point on
+//! let guard = ProcessGuard::new(&process_state_path).expect("");
+//!
+//! // normal application code
+//!
+//! // stop monitoring
+//! drop(guard);
+//! ```
+//!
+//! ## Watchdog (Process That Monitors The State Of Other Processes)
+//!
+//! ```
+//! use iceoryx2_bb_posix::process_state::*;
+//!
+//! let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+//!
+//! let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
+//!
+//! match monitor.state().expect("") {
+//!     // Process is alive and well
+//!     ProcessState::Alive => (),
+//!
+//!     // The process state file is created, this should state should persist only a very small
+//!     // fraction of time
+//!     ProcessState::InInitialization => (),
+//!
+//!     // Process died, we have to inform other interested parties and maybe cleanup some
+//!     // resources
+//!     ProcessState::Dead => {
+//!         // monitored process crashed, perform cleanup
+//!
+//!         // after cleanup is complete, we remove the process state file to signal that
+//!         // everything is clean again
+//!         //
+//!         // # Safety
+//!         //   * We ensured that the process is dead and therefore we can remove the old state.
+//!         //     If you use a executor or something like systemd the task shall be done by the
+//!         //     process itself.
+//!         unsafe { ProcessGuard::remove(&process_state_path).expect("") };
+//!     },
+//!
+//!     // The monitored process does not exist, maybe it did not yet start or already performed
+//!     // a clean shutdown.
+//!     ProcessState::DoesNotExist => (),
+//! }
+//! ```
+
+pub use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{debug, error, fail, fatal_panic, trace, warn};
-use iceoryx2_bb_system_types::file_path::FilePath;
+pub use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_posix::posix::{self, Errno, Struct};
 
 use crate::{
@@ -25,6 +93,7 @@ use crate::{
     unix_datagram_socket::CreationMode,
 };
 
+/// Defines the current state of a process.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ProcessState {
     Alive,
@@ -33,6 +102,7 @@ pub enum ProcessState {
     InInitialization,
 }
 
+/// Defines all errors that can occur when a new [`ProcessGuard`] is created.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ProcessGuardCreateError {
     InsufficientPermissions,
@@ -45,24 +115,50 @@ pub enum ProcessGuardCreateError {
     UnknownError(i32),
 }
 
+/// Defines all errors that can occur when a new [`ProcessMonitor`] is created.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum ProcessWatcherCreateError {
+pub enum ProcessMonitorCreateError {
     InsufficientPermissions,
     Interrupt,
     IsDirectory,
     UnknownError,
 }
 
-enum_gen! {ProcessWatcherStateError
+enum_gen! {
+/// Defines all errors that can occur in [`ProcessMonitor::state()`].
+    ProcessMonitorStateError
   entry:
     CorruptedState,
     Interrupt,
     UnknownError(i32)
 
   mapping:
-    ProcessWatcherCreateError
+    ProcessMonitorCreateError
 }
 
+/// A guard for a process that makes the process monitorable by a [`ProcessMonitor`] as long as it
+/// is in scope. When it goes out of scope the process is no longer monitorable.
+///
+/// ```
+/// use iceoryx2_bb_posix::process_state::*;
+///
+/// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+///
+/// // remove potentially uncleaned process state file that can remain when this process crashed
+/// // before
+/// //
+/// // # Safety
+/// //  * This process owns the state file, therefore it is safe to remove it.
+/// unsafe { ProcessGuard::remove(&process_state_path).expect("") };
+///
+/// // start monitoring from this point on
+/// let guard = ProcessGuard::new(&process_state_path).expect("");
+///
+/// // normal application code
+///
+/// // stop monitoring
+/// drop(guard);
+/// ```
 #[derive(Debug)]
 pub struct ProcessGuard {
     file: Option<File>,
@@ -93,6 +189,19 @@ impl Drop for ProcessGuard {
 const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
 const FINAL_PERMISSION: Permission = Permission::OWNER_ALL;
 impl ProcessGuard {
+    /// Creates a new [`ProcessGuard`]. As soon as it is created successfully another process can
+    /// monitor the state of the process. One cannot create multiple [`ProcessGuard`]s that use the
+    /// same `path`. But one can create multiple [`ProcessGuard`]s that are using different
+    /// `path`s.
+    ///
+    /// ```
+    /// use iceoryx2_bb_posix::process_state::*;
+    ///
+    /// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+    ///
+    /// // start monitoring from this point on
+    /// let guard = ProcessGuard::new(&process_state_path).expect("");
+    /// ```
     pub fn new(path: &FilePath) -> Result<Self, ProcessGuardCreateError> {
         let origin = "ProcessGuard::new()";
         let msg = format!(
@@ -235,13 +344,20 @@ impl ProcessGuard {
         }
     }
 
-    pub fn remove(path: &FilePath) -> Result<bool, FileRemoveError> {
+    /// Removes a stale process state from a crashed process.
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure via the [`ProcessMonitor`] or other logic that the process is no longer running
+    ///    otherwise you make the process unmonitorable.
+    pub unsafe fn remove(path: &FilePath) -> Result<bool, FileRemoveError> {
         Ok(
             fail!(from "ProcessGuard::remove()", when File::remove(path),
-            "Unable to remove ProcessStateGuard file."),
+            "Unable to remove ProcessGuard file."),
         )
     }
 
+    /// Returns the [`FilePath`] under which the underlying file is stored.
     pub fn path(&self) -> &FilePath {
         match self.file.as_ref() {
             Some(ref f) => match f.path() {
@@ -257,14 +373,66 @@ impl ProcessGuard {
     }
 }
 
+/// Monitor processes that have created a [`ProcessGuard`]. If the process dies, shutdowns or is
+/// alive the monitor will detect it.
+///
+/// # Example
+///
+/// ```
+/// use iceoryx2_bb_posix::process_state::*;
+///
+/// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+///
+/// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
+///
+/// match monitor.state().expect("") {
+///     // Process is alive and well
+///     ProcessState::Alive => (),
+///
+///     // The process state file is created, this should state should persist only a very small
+///     // fraction of time
+///     ProcessState::InInitialization => (),
+///
+///     // Process died, we have to inform other interested parties and maybe cleanup some
+///     // resources
+///     ProcessState::Dead => {
+///         // monitored process crashed, perform cleanup
+///
+///         // after cleanup is complete, we remove the process state file to signal that
+///         // everything is clean again
+///         //
+///         // # Safety
+///         //   * We ensured that the process is dead and therefore we can remove the old state.
+///         //     If you use a executor or something like systemd the task shall be done by the
+///         //     process itself.
+///         unsafe { ProcessGuard::remove(&process_state_path).expect("") };
+///     },
+///
+///     // The monitored process does not exist, maybe it did not yet start or already performed
+///     // a clean shutdown.
+///     ProcessState::DoesNotExist => (),
+/// }
+/// ```
 #[derive(Debug)]
-pub struct ProcessWatcher {
+pub struct ProcessMonitor {
     file: Option<File>,
     path: FilePath,
 }
 
-impl ProcessWatcher {
-    pub fn new(path: &FilePath) -> Result<Self, ProcessWatcherCreateError> {
+impl ProcessMonitor {
+    /// Creates a new [`ProcessMonitor`] that can obtain the state of the process that will be
+    /// monitored.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2_bb_posix::process_state::*;
+    ///
+    /// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+    ///
+    /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
+    /// ```
+    pub fn new(path: &FilePath) -> Result<Self, ProcessMonitorCreateError> {
         let mut new_self = Self {
             file: None,
             path: *path,
@@ -274,15 +442,40 @@ impl ProcessWatcher {
         Ok(new_self)
     }
 
+    /// Returns the path of the underlying file of the [`ProcessGuard`].
     pub fn path(&self) -> &FilePath {
         &self.path
     }
 
-    pub fn reset(&mut self) {
-        self.file = None;
-    }
-
-    pub fn state(&mut self) -> Result<ProcessState, ProcessWatcherStateError> {
+    /// Returns the current state of the process that is monitored.
+    ///
+    /// # Exampel
+    ///
+    /// ```
+    /// use iceoryx2_bb_posix::process_state::*;
+    ///
+    /// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+    ///
+    /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
+    ///
+    /// match monitor.state().expect("") {
+    ///     // Process is alive and well
+    ///     ProcessState::Alive => (),
+    ///
+    ///     // The process state file is created, this should state should persist only a very small
+    ///     // fraction of time
+    ///     ProcessState::InInitialization => (),
+    ///
+    ///     // Process died, we have to inform other interested parties and maybe cleanup some
+    ///     // resources
+    ///     ProcessState::Dead => (),
+    ///
+    ///     // The monitored process does not exist, maybe it did not yet start or already performed
+    ///     // a clean shutdown.
+    ///     ProcessState::DoesNotExist => (),
+    /// }
+    /// ```
+    pub fn state(&mut self) -> Result<ProcessState, ProcessMonitorStateError> {
         let msg = "Unable to acquire ProcessState";
         match self.file {
             Some(_) => self.read_state_from_file(),
@@ -294,14 +487,14 @@ impl ProcessWatcher {
                 }
                 Ok(false) => Ok(ProcessState::DoesNotExist),
                 Err(v) => {
-                    fail!(from self, with ProcessWatcherStateError::UnknownError(0),
+                    fail!(from self, with ProcessMonitorStateError::UnknownError(0),
                         "{} since an unknown failure occurred while checking if the file exists ({:?}).", msg, v);
                 }
             },
         }
     }
 
-    fn read_state_from_file(&mut self) -> Result<ProcessState, ProcessWatcherStateError> {
+    fn read_state_from_file(&mut self) -> Result<ProcessState, ProcessMonitorStateError> {
         let file = match self.file {
             Some(ref f) => f,
             None => return Ok(ProcessState::InInitialization),
@@ -319,7 +512,7 @@ impl ProcessWatcher {
             )
         } == -1
         {
-            handle_errno!(ProcessWatcherStateError, from self,
+            handle_errno!(ProcessMonitorStateError, from self,
                 Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             )
@@ -340,24 +533,24 @@ impl ProcessWatcher {
                     Ok(ProcessState::DoesNotExist)
                 }
                 Err(v) => {
-                    fail!(from self, with ProcessWatcherStateError::UnknownError(0),
+                    fail!(from self, with ProcessMonitorStateError::UnknownError(0),
                             "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
                 }
             },
         }
     }
 
-    fn open_file(&mut self) -> Result<(), ProcessWatcherCreateError> {
-        let origin = "ProcessWatcher::new()";
+    fn open_file(&mut self) -> Result<(), ProcessMonitorCreateError> {
+        let origin = "ProcessMonitor::new()";
         let msg = format!(
-            "Unable to open ProcessWatcher with the file \"{}\"",
+            "Unable to open ProcessMonitor with the file \"{}\"",
             self.path
         );
         self.file = match FileBuilder::new(&self.path).open_existing(AccessMode::Read) {
             Ok(f) => Some(f),
             Err(FileOpenError::FileDoesNotExist) => None,
             Err(FileOpenError::IsDirectory) => {
-                fail!(from origin, with ProcessWatcherCreateError::IsDirectory,
+                fail!(from origin, with ProcessMonitorCreateError::IsDirectory,
                     "{} since the path is a directory.", msg);
             }
             Err(FileOpenError::InsufficientPermissions) => {
@@ -367,16 +560,16 @@ impl ProcessWatcher {
                 {
                     None
                 } else {
-                    fail!(from origin, with ProcessWatcherCreateError::InsufficientPermissions,
+                    fail!(from origin, with ProcessMonitorCreateError::InsufficientPermissions,
                     "{} due to insufficient permissions.", msg);
                 }
             }
             Err(FileOpenError::Interrupt) => {
-                fail!(from origin, with ProcessWatcherCreateError::Interrupt,
+                fail!(from origin, with ProcessMonitorCreateError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
             }
             Err(v) => {
-                fail!(from origin, with ProcessWatcherCreateError::UnknownError,
+                fail!(from origin, with ProcessMonitorCreateError::UnknownError,
                     "{} since an unknown failure occurred ({:?}).", msg, v);
             }
         };

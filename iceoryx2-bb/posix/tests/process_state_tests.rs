@@ -78,22 +78,22 @@ pub fn process_state_guard_can_remove_already_existing_file() {
         .create()
         .unwrap();
 
-    let guard = ProcessGuard::remove(&path);
+    let guard = unsafe { ProcessGuard::remove(&path) };
     assert_that!(guard.is_ok(), eq true);
     assert_that!(guard.ok().unwrap(), eq true);
 }
 
-// the lock detection does work on some OS (linux) only in the inter process context.
+// the lock detection does work on some OS only in the inter process context.
 // In the process local context the lock is not detected when the fcntl GETLK call is originating
 // from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
 // blocks despite it should be non-blocking.
 #[test]
-#[cfg(any(not(target_os = "linux")))]
+#[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
 pub fn process_state_watcher_detects_alive_state_from_existing_process() {
     let path = generate_file_path();
 
     let guard = ProcessGuard::new(&path).unwrap();
-    let mut watcher = ProcessWatcher::new(&path).unwrap();
+    let mut watcher = ProcessMonitor::new(&path).unwrap();
 
     assert_that!(watcher.state().unwrap(), eq ProcessState::Alive);
     drop(guard);
@@ -108,7 +108,7 @@ pub fn process_state_watcher_detects_dead_state() {
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    let mut watcher = ProcessWatcher::new(&path).unwrap();
+    let mut watcher = ProcessMonitor::new(&path).unwrap();
 
     assert_that!(watcher.state().unwrap(), eq ProcessState::Dead);
     file.remove_self().unwrap();
@@ -119,7 +119,7 @@ pub fn process_state_watcher_detects_dead_state() {
 pub fn process_state_watcher_detects_non_existing_state() {
     let path = generate_file_path();
 
-    let mut watcher = ProcessWatcher::new(&path).unwrap();
+    let mut watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
@@ -127,7 +127,7 @@ pub fn process_state_watcher_detects_non_existing_state() {
 pub fn process_state_watcher_transitions_work_starting_from_non_existing_process() {
     let path = generate_file_path();
 
-    let mut watcher = ProcessWatcher::new(&path).unwrap();
+    let mut watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
     let file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -147,7 +147,7 @@ pub fn process_state_watcher_transitions_work_starting_from_existing_process() {
         .create()
         .unwrap();
 
-    let mut watcher = ProcessWatcher::new(&path).unwrap();
+    let mut watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::Dead);
     file.remove_self().unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
@@ -171,7 +171,7 @@ pub fn process_state_watcher_detects_initialized_state() {
         .create()
         .unwrap();
 
-    let mut watcher = ProcessWatcher::new(&path).unwrap();
+    let mut watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::InInitialization);
     file.remove_self().unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
