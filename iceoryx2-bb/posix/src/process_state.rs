@@ -21,7 +21,7 @@
 //! ```
 //! use iceoryx2_bb_posix::process_state::*;
 //!
-//! let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+//! let process_state_path = FilePath::new(b"process_state_file").unwrap();
 //!
 //! // remove potentially uncleaned process state file that can remain when this process crashed
 //! // before
@@ -44,7 +44,7 @@
 //! ```
 //! use iceoryx2_bb_posix::process_state::*;
 //!
-//! let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+//! let process_state_path = FilePath::new(b"process_state_file").unwrap();
 //!
 //! let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
 //!
@@ -142,7 +142,7 @@ enum_gen! {
 /// ```
 /// use iceoryx2_bb_posix::process_state::*;
 ///
-/// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+/// let process_state_path = FilePath::new(b"process_state_file").unwrap();
 ///
 /// // remove potentially uncleaned process state file that can remain when this process crashed
 /// // before
@@ -197,7 +197,7 @@ impl ProcessGuard {
     /// ```
     /// use iceoryx2_bb_posix::process_state::*;
     ///
-    /// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+    /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
     ///
     /// // start monitoring from this point on
     /// let guard = ProcessGuard::new(&process_state_path).expect("");
@@ -216,44 +216,46 @@ impl ProcessGuard {
             | Permission::OTHERS_EXEC;
 
         let dir_path = path.path();
-        match Directory::does_exist(&dir_path) {
-            Ok(true) => (),
-            Ok(false) => match Directory::create(&dir_path, default_directory_permissions) {
-                Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
-                Err(DirectoryCreateError::InsufficientPermissions) => {
-                    fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
+        if !dir_path.is_empty() {
+            match Directory::does_exist(&dir_path) {
+                Ok(true) => (),
+                Ok(false) => match Directory::create(&dir_path, default_directory_permissions) {
+                    Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+                    Err(DirectoryCreateError::InsufficientPermissions) => {
+                        fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
                     "{} since the directory {} could not be created due to insufficient permissions.",
                     msg, dir_path);
-                }
-                Err(DirectoryCreateError::ReadOnlyFilesystem) => {
-                    fail!(from origin, with ProcessGuardCreateError::ReadOnlyFilesystem,
+                    }
+                    Err(DirectoryCreateError::ReadOnlyFilesystem) => {
+                        fail!(from origin, with ProcessGuardCreateError::ReadOnlyFilesystem,
                     "{} since the directory {} could not be created since it is located on an read-only file system.",
                     msg, dir_path);
-                }
-                Err(DirectoryCreateError::NoSpaceLeft) => {
-                    fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
+                    }
+                    Err(DirectoryCreateError::NoSpaceLeft) => {
+                        fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
                     "{} since the directory {} could not be created since there is no space left.",
                     msg, dir_path);
-                }
-                Err(v) => {
-                    fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
+                    }
+                    Err(v) => {
+                        fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
                     "{} since the directory {} could not be created due to an unknown failure ({:?}).",
                     msg, dir_path, v);
-                }
-            },
-            Err(DirectoryAccessError::InsufficientPermissions) => {
-                fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
+                    }
+                },
+                Err(DirectoryAccessError::InsufficientPermissions) => {
+                    fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
                     "{} since the directory {} could not be accessed due to insufficient permissions.",
                     msg, dir_path);
-            }
-            Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
-                fail!(from origin, with ProcessGuardCreateError::InvalidDirectory,
+                }
+                Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
+                    fail!(from origin, with ProcessGuardCreateError::InvalidDirectory,
                     "{} since the directory {} is actually not a valid directory.", msg, dir_path);
-            }
-            Err(v) => {
-                fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
+                }
+                Err(v) => {
+                    fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
                     "{} since an unknown failure occurred ({:?}) while checking if directory {} exists.",
                     msg, v, dir_path);
+                }
             }
         }
 
@@ -381,7 +383,7 @@ impl ProcessGuard {
 /// ```
 /// use iceoryx2_bb_posix::process_state::*;
 ///
-/// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+/// let process_state_path = FilePath::new(b"process_state_file").unwrap();
 ///
 /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
 ///
@@ -428,7 +430,7 @@ impl ProcessMonitor {
     /// ```
     /// use iceoryx2_bb_posix::process_state::*;
     ///
-    /// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+    /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
     ///
     /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
     /// ```
@@ -449,12 +451,12 @@ impl ProcessMonitor {
 
     /// Returns the current state of the process that is monitored.
     ///
-    /// # Exampel
+    /// # Example
     ///
     /// ```
     /// use iceoryx2_bb_posix::process_state::*;
     ///
-    /// let process_state_path = FilePath::new(b"/tmp/process_state_file").unwrap();
+    /// let process_state_path = FilePath::new(b"process_state_file").unwrap();
     ///
     /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
     ///

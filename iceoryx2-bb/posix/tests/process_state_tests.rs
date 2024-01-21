@@ -13,6 +13,7 @@
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::{File, FileBuilder};
+use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::Permission;
 use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
@@ -165,7 +166,7 @@ pub fn process_state_watcher_transitions_work_starting_from_existing_process() {
 pub fn process_state_watcher_detects_initialized_state() {
     let path = generate_file_path();
 
-    let file = FileBuilder::new(&path)
+    let mut file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .permission(Permission::OWNER_WRITE)
         .create()
@@ -173,6 +174,7 @@ pub fn process_state_watcher_detects_initialized_state() {
 
     let mut watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::InInitialization);
+    file.set_permission(Permission::OWNER_ALL).unwrap();
     file.remove_self().unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
 }
