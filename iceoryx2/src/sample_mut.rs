@@ -16,9 +16,8 @@
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! use iceoryx2::sample_mut_impl::SampleMutImpl;
 //!
-//! fn write_sample_data<UninitSample: UninitializedSampleMut<u64>>(mut sample: UninitSample) -> impl SampleMut<u64> {
+//! fn write_sample_data<S: UninitializedSampleMut<u64>>(mut sample: S) -> impl SampleMut<u64> {
 //!     sample.write_payload(123456)
 //! }
 //!
