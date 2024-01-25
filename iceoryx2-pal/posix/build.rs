@@ -29,6 +29,7 @@ fn main() {
             .header("src/c/posix.h")
             .parse_callbacks(Box::new(bindgen::CargoCallbacks))
             .clang_arg("-D IOX2_DOCS_RS_SUPPORT")
+            .use_core()
             .generate()
             .expect("Unable to generate bindings")
     } else {
@@ -37,6 +38,7 @@ fn main() {
             bindgen::Builder::default()
                 .header("src/c/posix.h")
                 .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+                .use_core()
                 .generate()
                 .expect("Unable to generate bindings")
         }
