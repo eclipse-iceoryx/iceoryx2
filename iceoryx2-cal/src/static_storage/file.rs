@@ -46,7 +46,6 @@
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
-use iceoryx2_bb_log::debug;
 use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_bb_posix::{
     directory::*, file::*, file_descriptor::FileDescriptorManagement, file_type::FileType,
@@ -217,15 +216,15 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
         let directory = match Directory::new(&config.path) {
             Ok(directory) => directory,
             Err(DirectoryOpenError::InsufficientPermissions) => {
-                debug!(from origin, "{} due to insufficient permissions to read the storage directory.", msg);
-                return Err(NamedConceptListError::InsufficientPermissions);
+                fail!(from origin, with NamedConceptListError::InsufficientPermissions,
+                    "{} due to insufficient permissions to read the storage directory.", msg);
             }
             Err(DirectoryOpenError::DoesNotExist) => {
                 return Ok(vec![]);
             }
             Err(v) => {
-                debug!(from origin, "{} due to failure ({:?}) while reading the storage directory (\"{}\").", msg, v, config.path);
-                return Err(NamedConceptListError::InternalError);
+                fail!(from origin, with NamedConceptListError::InternalError,
+                    "{} due to failure ({:?}) while reading the storage directory (\"{}\").", msg, v, config.path);
             }
         };
 

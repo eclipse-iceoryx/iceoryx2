@@ -14,6 +14,7 @@ pub mod communication_channel;
 pub mod dynamic_storage;
 pub mod event;
 pub mod hash;
+pub mod monitoring;
 pub mod named_concept;
 pub mod reactor;
 pub mod serialize;
