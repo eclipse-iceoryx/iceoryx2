@@ -38,7 +38,7 @@
 
 use crate::{
     payload_mut::{internal::PayloadMgmt, PayloadMut, UninitializedPayloadMut},
-    port::publish::internal::PublishMgmt,
+    port::{publish::internal::PublishMgmt, update_connections::ConnectionFailure},
     raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
@@ -128,7 +128,7 @@ impl<
         self.ptr.as_data_mut()
     }
 
-    fn send(self) -> Result<usize, iceoryx2_cal::zero_copy_connection::ZeroCopyCreationError> {
+    fn send(self) -> Result<usize, ConnectionFailure> {
         self.publisher.send_impl(self.offset_to_chunk.value())
     }
 }

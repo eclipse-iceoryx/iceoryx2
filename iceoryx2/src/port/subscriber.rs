@@ -48,10 +48,11 @@ use crate::{
     service::header::publish_subscribe::Header,
 };
 
-use super::details::publisher_connections::{Connection, ConnectionFailure, PublisherConnections};
+use super::details::publisher_connections::{Connection, PublisherConnections};
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
 use super::subscribe::internal::SubscribeMgmt;
 use super::subscribe::{Subscribe, SubscriberCreateError, SubscriberReceiveError};
+use super::update_connections::ConnectionFailure;
 use super::DegrationCallback;
 
 /// The receiving endpoint of a publish-subscribe communication.

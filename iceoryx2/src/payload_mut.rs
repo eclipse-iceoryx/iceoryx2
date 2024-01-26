@@ -40,9 +40,9 @@
 //! ```
 //! See also, [`crate::sample_mut_impl::SampleMutImpl`].
 
-use iceoryx2_cal::zero_copy_connection::ZeroCopyCreationError;
-
-use crate::service::header::publish_subscribe::Header;
+use crate::{
+    port::update_connections::ConnectionFailure, service::header::publish_subscribe::Header,
+};
 
 pub(crate) mod internal {
     use iceoryx2_cal::zero_copy_connection::PointerOffset;
@@ -145,8 +145,8 @@ pub trait PayloadMut<MessageType>: internal::PayloadMgmt {
     /// for more details.
     ///
     /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
-    /// the data is returned, otherwise a [`ZeroCopyCreationError`] describing the failure.
-    fn send(self) -> Result<usize, ZeroCopyCreationError>;
+    /// the data is returned, otherwise a [`ConnectionFailure`] describing the failure.
+    fn send(self) -> Result<usize, ConnectionFailure>;
 }
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via

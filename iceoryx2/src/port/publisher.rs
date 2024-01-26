@@ -62,11 +62,14 @@ use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
 use super::publish::internal::PublishMgmt;
-use super::publish::{PublishLoan, PublisherCreateError, PublisherLoanError, PublisherSendError};
+use super::publish::{
+    DefaultLoan, Publish, PublisherCreateError, PublisherLoanError, PublisherSendError, SendCopy,
+    UninitLoan,
+};
 use crate::message::Message;
 use crate::payload_mut::{internal::PayloadMgmt, PayloadMut, UninitializedPayloadMut};
 use crate::port::details::subscriber_connections::*;
-use crate::port::publish::Publish;
+use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::{DegrationAction, DegrationCallback};
 use crate::raw_sample::RawSampleMut;
 use crate::service;
@@ -408,11 +411,15 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         }
     }
 }
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug + Default>
+    Publish<MessageType> for Publisher<'a, 'config, Service, MessageType>
+{
+}
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Publish<MessageType>
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> UpdateConnections
     for Publisher<'a, 'config, Service, MessageType>
 {
-    fn update_connections(&self) -> Result<(), ZeroCopyCreationError> {
+    fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe { (*self.subscriber_list_state.get()).update() } {
             fail!(from self, when self.populate_subscriber_channels(),
                 "Connections were updated only partially since at least one connection to a Subscriber port failed.");
@@ -420,7 +427,11 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Pu
 
         Ok(())
     }
+}
 
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> SendCopy<MessageType>
+    for Publisher<'a, 'config, Service, MessageType>
+{
     fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send copy of message";
         let mut sample = fail!(from self, when self.loan_uninit(),
@@ -432,7 +443,11 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Pu
             "{} since the underlying send operation failed.", msg),
         )
     }
+}
 
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
+    UninitLoan<MessageType> for Publisher<'a, 'config, Service, MessageType>
+{
     fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<MessageType>>, PublisherLoanError> {
         self.retrieve_returned_samples();
         let msg = "Unable to loan Sample";
@@ -496,7 +511,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Pu
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 
-    fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ZeroCopyCreationError> {
+    fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
             "Unable to send sample since the connections could not be updated.");
 
@@ -506,7 +521,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Pu
 }
 
 impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default + Debug>
-    PublishLoan<MessageType> for Publisher<'a, 'config, Service, MessageType>
+    DefaultLoan<MessageType> for Publisher<'a, 'config, Service, MessageType>
 {
     fn loan(&self) -> Result<SampleMut<MessageType>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))

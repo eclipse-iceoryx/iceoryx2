@@ -36,6 +36,9 @@ pub mod publisher;
 pub mod subscribe;
 /// Receiving endpoint (port) for publish-subscribe based communication
 pub mod subscriber;
+/// Interface to perform cyclic updates to the ports. Required to deliver history to new
+/// participants or to perform other management tasks.
+pub mod update_connections;
 
 use crate::port::port_identifiers::*;
 use crate::service;

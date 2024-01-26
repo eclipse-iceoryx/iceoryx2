@@ -43,7 +43,7 @@ use std::fmt::Debug;
 
 use crate::sample::Sample;
 
-use super::details::publisher_connections::ConnectionFailure;
+use crate::port::update_connections::ConnectionFailure;
 
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

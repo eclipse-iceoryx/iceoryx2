@@ -25,29 +25,13 @@ use crate::{
     },
 };
 
-use iceoryx2_bb_elementary::enum_gen;
+use crate::port::update_connections::ConnectionFailure;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::{
-    shared_memory::SharedMemory,
-    shared_memory::{SharedMemoryBuilder, SharedMemoryOpenError},
-    shm_allocator::pool_allocator::PoolAllocator,
-    zero_copy_connection::*,
+    shared_memory::SharedMemory, shared_memory::SharedMemoryBuilder,
+    shm_allocator::pool_allocator::PoolAllocator, zero_copy_connection::*,
 };
-
-enum_gen! { ConnectionFailure
-  mapping:
-    ZeroCopyCreationError to FailedToEstablishConnection,
-    SharedMemoryOpenError to UnableToMapPublishersDataSegment
-}
-
-impl std::fmt::Display for ConnectionFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for ConnectionFailure {}
 
 #[derive(Debug)]
 pub(crate) struct Connection<'config, Service: service::Details<'config>> {

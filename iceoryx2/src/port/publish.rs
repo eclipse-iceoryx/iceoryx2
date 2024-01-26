@@ -41,12 +41,14 @@
 //!
 //! See also, [`crate::port::publisher::Publisher`].
 
+use crate::port::update_connections::UpdateConnections;
 use std::{fmt::Debug, mem::MaybeUninit};
 
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_cal::zero_copy_connection::ZeroCopyCreationError;
 
 use crate::sample_mut::SampleMut;
+
+use super::update_connections::ConnectionFailure;
 
 /// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
@@ -86,7 +88,7 @@ enum_gen! {
     PublisherSendError
   mapping:
     PublisherLoanError to LoanError,
-    ZeroCopyCreationError to ConnectionError
+    ConnectionFailure to ConnectionError
 }
 
 impl std::fmt::Display for PublisherSendError {
@@ -100,49 +102,24 @@ impl std::error::Error for PublisherSendError {}
 pub(crate) mod internal {
     use std::fmt::Debug;
 
-    use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyCreationError};
+    use iceoryx2_cal::zero_copy_connection::PointerOffset;
+
+    use crate::port::update_connections::ConnectionFailure;
 
     pub(crate) trait PublishMgmt: Debug {
         fn return_loaned_sample(&self, distance_to_chunk: PointerOffset);
-        fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ZeroCopyCreationError>;
+        fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ConnectionFailure>;
     }
 }
 
 /// Interface of the sending endpoint of a publish-subscriber based communication.
-pub trait Publish<MessageType: Debug> {
-    /// Explicitly updates all connections to the [`crate::port::subscriber::Subscriber`]s. This is
-    /// required to be called whenever a new [`crate::port::subscriber::Subscriber`] connected to
-    /// the service. It is done implicitly whenever [`crate::sample_mut::SampleMut::send()`] or [`Publisher::send_copy()`]
-    /// is called.
-    /// When a [`crate::port::subscriber::Subscriber`] is connected that requires a history this
-    /// call will deliver it.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
-    /// #
-    /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
-    /// #
-    /// # let publisher = service.publisher().create()?;
-    ///
-    /// publisher.send_copy(1234)?;
-    ///
-    /// let subscriber = service.subscriber().create()?;
-    ///
-    /// // updates all connections and delivers history to new participants
-    /// publisher.update_connections();
-    ///
-    /// println!("history received {:?}", subscriber.receive()?.unwrap());
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn update_connections(&self) -> Result<(), ZeroCopyCreationError>;
+pub trait Publish<MessageType: Debug + Default>:
+    DefaultLoan<MessageType> + UninitLoan<MessageType> + UpdateConnections + SendCopy<MessageType>
+{
+}
 
+/// Copies the payload into the shared memory and sends it.
+pub trait SendCopy<MessageType: Debug> {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
@@ -165,7 +142,10 @@ pub trait Publish<MessageType: Debug> {
     /// # }
     /// ```
     fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendError>;
+}
 
+/// Allows loaning of uninitialized shared memory that can be used for storing the payload of the message.
+pub trait UninitLoan<MessageType: Debug> {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
@@ -195,9 +175,8 @@ pub trait Publish<MessageType: Debug> {
     fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<MessageType>>, PublisherLoanError>;
 }
 
-/// Interface of the sending endpoint of a publish-subscriber based communication that
-/// provides a `PublishLoan::loan()` to create default initialized samples.
-pub trait PublishLoan<MessageType: Debug + Default>: Publish<MessageType> {
+/// Allows loaning shared memory that can be used for storing the payload of the message.
+pub trait DefaultLoan<MessageType: Debug + Default> {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
     /// can be used to loan a [`core::mem::MaybeUninit<MessageType>`].
