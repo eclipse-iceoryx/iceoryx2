@@ -21,7 +21,7 @@
 //! #   .open_or_create::<u64>()?;
 //! # let subscriber = service.subscriber().create()?;
 //!
-//! let mut received_samples: Vec<Box<dyn Sample<u64>>> = vec![];
+//! let mut received_samples: Vec<Box<dyn Payload<u64>>> = vec![];
 //!
 //! while let Some(sample) = subscriber.receive()? {
 //!     println!("received: {:?}", *sample);
@@ -34,13 +34,13 @@
 //! # }
 //! ```
 //!
-//! See also [`crate::sample_impl::SampleImpl`].
+//! See also [`crate::sample::Sample`].
 
 use crate::service::header::publish_subscribe::Header;
 
 /// It stores the payload and is acquired by the [`crate::port::subscriber::Subscriber`] whenever
 /// it receives new data from a [`crate::port::publisher::Publisher`] via
-/// [`crate::port::subscriber::Subscriber::receive()`].
+/// [`crate::port::subscribe::Subscribe::receive()`].
 pub trait Payload<MessageType> {
     /// Returns a reference to the payload of the sample
     fn payload(&self) -> &MessageType;

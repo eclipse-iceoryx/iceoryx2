@@ -26,7 +26,7 @@
 //!     .publish_subscribe()
 //!     .open_or_create::<u64>()?;
 //!
-//! let mut publishers: Vec<Box<dyn Publisher<u64>>> = vec![];
+//! let mut publishers: Vec<Box<dyn Publish<u64>>> = vec![];
 //!
 //! publishers.push(Box::new(pubsub_ipc.publisher().create()?));
 //! publishers.push(Box::new(pubsub_local.publisher().create()?));
@@ -50,7 +50,7 @@ use crate::sample_mut::SampleMut;
 
 use super::update_connections::ConnectionFailure;
 
-/// Defines a failure that can occur when a [`Publisher`] is created with
+/// Defines a failure that can occur when a [`Publish`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum PublisherCreateError {
@@ -66,8 +66,8 @@ impl std::fmt::Display for PublisherCreateError {
 
 impl std::error::Error for PublisherCreateError {}
 
-/// Defines a failure that can occur in [`PublisherLoan::loan()`] and [`Publisher::loan_uninit()`]
-/// or is part of [`PublisherSendError`] emitted in [`Publisher::send_copy()`].
+/// Defines a failure that can occur in [`DefaultLoan::loan()`] and [`UninitLoan::loan_uninit()`]
+/// or is part of [`PublisherSendError`] emitted in [`SendCopy::send_copy()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum PublisherLoanError {
     OutOfMemory,
@@ -146,7 +146,7 @@ pub trait SendCopy<MessageType: Debug> {
 
 /// Allows loaning of uninitialized shared memory that can be used for storing the payload of the message.
 pub trait UninitLoan<MessageType: Debug> {
-    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publish`]er.
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
@@ -177,8 +177,8 @@ pub trait UninitLoan<MessageType: Debug> {
 
 /// Allows loaning shared memory that can be used for storing the payload of the message.
 pub trait DefaultLoan<MessageType: Debug + Default> {
-    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
-    /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publish`]
+    /// and initialize it with the default value. This can be a performance hit and [`UninitLoan::loan_uninit`]
     /// can be used to loan a [`core::mem::MaybeUninit<MessageType>`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.

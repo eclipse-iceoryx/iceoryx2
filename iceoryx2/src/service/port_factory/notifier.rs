@@ -57,7 +57,7 @@ impl<'factory, 'config, Service: service::Details<'config>>
     }
 
     /// Sets a default [`EventId`] for the [`Notifier`] that is used in
-    /// [`crate::port::notifier::Notifier::notify()`]
+    /// [`crate::port::notify::Notify::notify()`]
     pub fn default_event_id(mut self, value: EventId) -> Self {
         self.default_event_id = value;
         self

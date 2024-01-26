@@ -25,7 +25,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! let mut notifiers: Vec<Box<dyn Notifier>> = vec![];
+//! let mut notifiers: Vec<Box<dyn Notify>> = vec![];
 //!
 //! notifiers.push(Box::new(event_ipc.notifier().default_event_id(EventId::new(123)).create()?));
 //! notifiers.push(Box::new(event_local.notifier().default_event_id(EventId::new(456)).create()?));
@@ -38,11 +38,11 @@
 //! # }
 //! ```
 //!
-//! See also [`crate::port::notifier_impl::NotifierImpl`]
+//! See also [`crate::port::notifier::Notifier`]
 
 use super::event_id::EventId;
 
-/// Failures that can occur when a new [`Notifier`] is created with the
+/// Failures that can occur when a new [`Notify`]er is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum NotifierCreateError {
@@ -57,7 +57,7 @@ impl std::fmt::Display for NotifierCreateError {
 
 impl std::error::Error for NotifierCreateError {}
 
-/// Defines the failures that can occur while a [`Notifier::notify()`] call.
+/// Defines the failures that can occur while a [`Notify::notify()`] call.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum NotifierConnectionUpdateFailure {
     OnlyPartialUpdate,

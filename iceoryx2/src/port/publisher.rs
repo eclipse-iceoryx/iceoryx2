@@ -67,7 +67,7 @@ use super::publish::{
     UninitLoan,
 };
 use crate::message::Message;
-use crate::payload_mut::{internal::PayloadMgmt, PayloadMut, UninitializedPayloadMut};
+use crate::payload_mut::{internal::PayloadMgmt, PayloadMut, UninitPayloadMut};
 use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::{DegrationAction, DegrationCallback};

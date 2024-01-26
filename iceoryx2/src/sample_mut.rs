@@ -37,7 +37,7 @@
 //! See also, [`crate::sample_mut::SampleMut`].
 
 use crate::{
-    payload_mut::{internal::PayloadMgmt, PayloadMut, UninitializedPayloadMut},
+    payload_mut::{internal::PayloadMgmt, PayloadMut, UninitPayloadMut},
     port::{publish::internal::PublishMgmt, update_connections::ConnectionFailure},
     raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
@@ -46,8 +46,8 @@ use iceoryx2_cal::shared_memory::*;
 use std::{fmt::Debug, mem::MaybeUninit};
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
-/// [`crate::port::publisher::PublisherLoan::loan()`] or
-/// [`crate::port::publisher::Publisher::loan_uninit()`]. It stores the payload that will be sent
+/// [`crate::port::publish::DefaultLoan::loan()`] or
+/// [`crate::port::publish::UninitLoan::loan_uninit()`]. It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
 ///
@@ -94,7 +94,7 @@ impl<'publisher, MessageType: Debug> PayloadMgmt for SampleMut<'publisher, Messa
     }
 }
 
-impl<'publisher, MessageType: Debug> UninitializedPayloadMut<MessageType>
+impl<'publisher, MessageType: Debug> UninitPayloadMut<MessageType>
     for SampleMut<'publisher, MaybeUninit<MessageType>>
 {
     type InitializedSample = SampleMut<'publisher, MessageType>;

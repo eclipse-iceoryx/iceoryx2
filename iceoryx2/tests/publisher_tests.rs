@@ -14,7 +14,7 @@
 mod publisher {
     use std::time::{Duration, Instant};
 
-    use iceoryx2::payload_mut::UninitializedPayloadMut;
+    use iceoryx2::payload_mut::UninitPayloadMut;
     use iceoryx2::port::publish::PublisherLoanError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;

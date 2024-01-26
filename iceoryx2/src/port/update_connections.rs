@@ -33,8 +33,8 @@ impl std::error::Error for ConnectionFailure {}
 pub trait UpdateConnections {
     /// Explicitly updates all connections to the [`crate::port::subscriber::Subscriber`]s. This is
     /// required to be called whenever a new [`crate::port::subscriber::Subscriber`] connected to
-    /// the service. It is done implicitly whenever [`crate::sample_mut::SampleMut::send()`] or [`Publisher::send_copy()`]
-    /// is called.
+    /// the service. It is done implicitly whenever [`crate::payload_mut::PayloadMut::send()`] or
+    /// [`crate::port::publish::SendCopy::send_copy()`] is called.
     /// When a [`crate::port::subscriber::Subscriber`] is connected that requires a history this
     /// call will deliver it.
     ///
@@ -42,6 +42,8 @@ pub trait UpdateConnections {
     ///
     /// ```
     /// use iceoryx2::prelude::*;
+    /// use iceoryx2::port::update_connections::UpdateConnections;
+    ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #

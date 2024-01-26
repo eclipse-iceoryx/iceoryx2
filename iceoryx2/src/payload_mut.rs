@@ -17,7 +17,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! fn write_sample_data<S: UninitializedSampleMut<u64>>(mut sample: S) -> impl SampleMut<u64> {
+//! fn write_sample_data<S: UninitPayloadMut<u64>>(mut sample: S) -> impl PayloadMut<u64> {
 //!     sample.write_payload(123456)
 //! }
 //!
@@ -38,7 +38,7 @@
 //! # Ok(())
 //! # }
 //! ```
-//! See also, [`crate::sample_mut_impl::SampleMutImpl`].
+//! See also, [`crate::sample_mut::SampleMut`].
 
 use crate::{
     port::update_connections::ConnectionFailure, service::header::publish_subscribe::Header,
@@ -53,8 +53,8 @@ pub(crate) mod internal {
 }
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
-/// [`crate::port::publisher::PublisherLoan::loan()`]. It stores the payload that will be sent
-/// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
+/// [`crate::port::publish::DefaultLoan::loan()`]. It stores the payload that will be sent
+/// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`PayloadMut`] is not sent
 /// it will release the loaned memory when going out of scope.
 pub trait PayloadMut<MessageType>: internal::PayloadMgmt {
     /// Returns a reference to the header of the sample.
@@ -136,12 +136,12 @@ pub trait PayloadMut<MessageType>: internal::PayloadMgmt {
     /// ```
     fn payload_mut(&mut self) -> &mut MessageType;
 
-    /// Send a previously loaned [`crate::port::publisher::Publisher::loan_uninit()`] or
-    /// [`crate::port::publisher::PublisherLoan::loan()`] [`SampleMut`] to all connected
+    /// Send a previously loaned [`crate::port::publish::UninitLoan::loan_uninit()`] or
+    /// [`crate::port::publish::DefaultLoan::loan()`] [`PayloadMut`] to all connected
     /// [`crate::port::subscriber::Subscriber`]s of the service.
     ///
-    /// The payload of the [`SampleMut`] must be initialized before it can be sent. Have a look
-    /// at [`UninitializedSampleMut::write_payload()`] and [`UninitializedSampleMut::assume_init()`]
+    /// The payload of the [`PayloadMut`] must be initialized before it can be sent. Have a look
+    /// at [`UninitPayloadMut::write_payload()`] and [`UninitPayloadMut::assume_init()`]
     /// for more details.
     ///
     /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
@@ -150,12 +150,12 @@ pub trait PayloadMut<MessageType>: internal::PayloadMgmt {
 }
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
-/// [`crate::port::publisher::Publisher::loan_uninit()`]. It stores the payload that will be sent
-/// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
+/// [`crate::port::publish::UninitLoan::loan_uninit()`]. It stores the payload that will be sent
+/// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`PayloadMut`] is not sent
 /// it will release the loaned memory when going out of scope.
 ///
 /// The generic parameter `MessageType` is packed into [`core::mem::MaybeUninit<MessageType>`]
-pub trait UninitializedPayloadMut<MessageType> {
+pub trait UninitPayloadMut<MessageType> {
     type InitializedSample: PayloadMut<MessageType>;
 
     /// Writes the payload to the sample and labels the sample as initialized

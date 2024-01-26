@@ -41,7 +41,7 @@ use crate::{payload::Payload, raw_sample::RawSample};
 
 /// It stores the payload and is acquired by the [`crate::port::subscriber::Subscriber`] whenever
 /// it receives new data from a [`crate::port::publisher::Publisher`] via
-/// [`crate::port::subscriber::Subscriber::receive()`].
+/// [`crate::port::subscribe::Subscribe::receive()`].
 #[derive(Debug)]
 pub struct Sample<'subscriber, MessageType: Debug> {
     pub(crate) subscriber: &'subscriber dyn SubscribeMgmt,

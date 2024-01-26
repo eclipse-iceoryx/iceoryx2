@@ -25,7 +25,7 @@
 //!     .publish_subscribe()
 //!     .open_or_create::<u64>()?;
 //!
-//! let mut subscribers: Vec<Box<dyn Subscriber<u64>>> = vec![];
+//! let mut subscribers: Vec<Box<dyn Subscribe<u64>>> = vec![];
 //! subscribers.push(Box::new( pubsub_ipc.subscriber().create()?));
 //! subscribers.push(Box::new( pubsub_local.subscriber().create()?));
 //!
@@ -45,7 +45,7 @@ use crate::sample::Sample;
 
 use crate::port::update_connections::ConnectionFailure;
 
-/// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
+/// Defines the failure that can occur when receiving data with [`Subscribe::receive()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SubscriberReceiveError {
     ExceedsMaxBorrowedSamples,
@@ -60,7 +60,7 @@ impl std::fmt::Display for SubscriberReceiveError {
 
 impl std::error::Error for SubscriberReceiveError {}
 
-/// Describes the failures when a new [`Subscriber`] is created via the
+/// Describes the failures when a new [`Subscribe`] is created via the
 /// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SubscriberCreateError {
@@ -91,7 +91,7 @@ pub trait Subscribe<MessageType: Debug> {
 
     /// Explicitly updates all connections to the [`crate::port::publisher::Publisher`]s. This is
     /// required to be called whenever a new [`crate::port::publisher::Publisher`] connected to
-    /// the service. It is done implicitly whenever [`Subscriber::receive()`]
+    /// the service. It is done implicitly whenever [`Subscribe::receive()`]
     /// is called.
     fn update_connections(&self) -> Result<(), ConnectionFailure>;
 }

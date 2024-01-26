@@ -49,8 +49,8 @@ use crate::service;
 ///
 /// Can be set with:
 ///
-/// * [`publisher_impl::PublisherImpl::set_degration_callback()`]
-/// * [`subscriber_impl::SubscriberImpl::set_degration_callback()`]
+/// * [`publisher::Publisher::set_degration_callback()`]
+/// * [`subscriber::Subscriber::set_degration_callback()`]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegrationAction {
     /// Ignore the degration completely

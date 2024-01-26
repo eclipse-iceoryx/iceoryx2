@@ -25,7 +25,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! let mut listeners: Vec<Box<dyn Listener>> = vec![];
+//! let mut listeners: Vec<Box<dyn Listen>> = vec![];
 //!
 //! listeners.push(Box::new(event_ipc.listener().create()?));
 //! listeners.push(Box::new(event_local.listener().create()?));
@@ -40,7 +40,7 @@
 //! # }
 //! ```
 //!
-//! See also [`crate::port::listener_impl::ListenerImpl`]
+//! See also [`crate::port::listener::Listener`]
 
 use std::time::Duration;
 
@@ -48,7 +48,7 @@ use iceoryx2_cal::event::ListenerWaitError;
 
 use super::event_id::EventId;
 
-/// Defines the failures that can occur when a [`Listener`] is created with the
+/// Defines the failures that can occur when a [`Listen`]er is created with the
 /// [`crate::service::port_factory::listener::PortFactoryListener`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ListenerCreateError {
@@ -66,8 +66,8 @@ impl std::error::Error for ListenerCreateError {}
 
 /// The interface of the receiving endpoint of an event based communication.
 pub trait Listen {
-    /// Returns the cached [`EventId`]s. Whenever [`Listener::try_wait()`],
-    /// [`Listener::timed_wait()`] or [`Listener::blocking_wait()`] is called the cache is reset
+    /// Returns the cached [`EventId`]s. Whenever [`Listen::try_wait()`],
+    /// [`Listen::timed_wait()`] or [`Listen::blocking_wait()`] is called the cache is reset
     /// and filled with the events that where signaled since the last call. This cache can be
     /// accessed until a new wait call resets and fills it again.
     fn cache(&self) -> &[EventId];
