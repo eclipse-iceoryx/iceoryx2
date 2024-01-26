@@ -33,18 +33,18 @@
 //! // the message type must implement the [`core::default::Default`] trait in order to be able to use this API
 //! let mut sample = publisher.loan()?;
 //! *sample.payload_mut() = 1337;
-//! publisher.send(sample)?;
+//! sample.send()?;
 //!
 //! // loan some uninitialized memory and send it
 //! let sample = publisher.loan_uninit()?;
 //! let sample = sample.write_payload(1337);
-//! publisher.send(sample)?;
+//! sample.send()?;
 //!
 //! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<MessageType>`])
 //! let mut sample = publisher.loan_uninit()?;
 //! sample.payload_mut().write(1337);
 //! let sample = unsafe { sample.assume_init() };
-//! publisher.send(sample)?;
+//! sample.send()?;
 //!
 //! // send a copy of the value
 //! publisher.send_copy(313)?;
@@ -52,6 +52,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also, [`crate::port::publisher::Publisher`]
 
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
@@ -59,8 +61,15 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
+use super::publish::internal::PublishMgmt;
+use super::publish::{
+    DefaultLoan, Publish, PublisherCreateError, PublisherLoanError, PublisherSendError, SendCopy,
+    UninitLoan,
+};
 use crate::message::Message;
+use crate::payload_mut::{internal::PayloadMgmt, PayloadMut, UninitPayloadMut};
 use crate::port::details::subscriber_connections::*;
+use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::{DegrationAction, DegrationCallback};
 use crate::raw_sample::RawSampleMut;
 use crate::service;
@@ -72,7 +81,6 @@ use crate::service::static_config::publish_subscribe;
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
@@ -84,55 +92,6 @@ use iceoryx2_cal::shm_allocator::{self, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
-
-/// Defines a failure that can occur when a [`Publisher`] is created with
-/// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum PublisherCreateError {
-    ExceedsMaxSupportedPublishers,
-    UnableToCreateDataSegment,
-}
-
-impl std::fmt::Display for PublisherCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for PublisherCreateError {}
-
-/// Defines a failure that can occur in [`Publisher::loan()`] and [`Publisher::loan_uninit()`] or is part of [`SendCopyError`]
-/// emitted in [`Publisher::send_copy()`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
-pub enum LoanError {
-    OutOfMemory,
-    ExceedsMaxLoanedChunks,
-    InternalFailure,
-}
-
-impl std::fmt::Display for LoanError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for LoanError {}
-
-enum_gen! {
-    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send_copy()`].
-    SendCopyError
-  mapping:
-    LoanError to LoanError,
-    ZeroCopyCreationError to ConnectionError
-}
-
-impl std::fmt::Display for SendCopyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for SendCopyError {}
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
@@ -147,7 +106,7 @@ pub struct Publisher<'a, 'config: 'a, Service: service::Details<'config>, Messag
     history: Option<UnsafeCell<Queue<usize>>>,
     service: &'a Service,
     degration_callback: Option<DegrationCallback<'a>>,
-    pub(crate) loan_counter: AtomicUsize,
+    loan_counter: AtomicUsize,
     _dynamic_config_guard: UniqueIndex<'a>,
     _phantom_message_type: PhantomData<MessageType>,
 }
@@ -332,14 +291,6 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             "Unable to create the data segment."))
     }
 
-    fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ZeroCopyCreationError> {
-        fail!(from self, when self.update_connections(),
-            "Unable to send sample since the connections could not be updated.");
-
-        self.add_to_history(address_to_chunk);
-        Ok(self.deliver_sample(address_to_chunk))
-    }
-
     fn add_to_history(&self, address_to_chunk: usize) {
         match &self.history {
             None => (),
@@ -392,7 +343,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         number_of_recipients
     }
 
-    pub(crate) fn release_sample(&self, distance_to_chunk: PointerOffset) {
+    fn release_sample(&self, distance_to_chunk: PointerOffset) {
         if self.sample_reference_counter[Self::sample_index(distance_to_chunk.value())]
             .fetch_sub(1, Ordering::Relaxed)
             == 1
@@ -443,6 +394,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     /// [`crate::port::subscriber::Subscriber`] is corrupted or a seems to be dead, this callback
     /// is called and depending on the returned [`DegrationAction`] measures will be taken.
     pub fn set_degration_callback<
+        'publisher,
         F: Fn(
                 service::static_config::StaticConfig,
                 UniquePublisherId,
@@ -458,12 +410,16 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             None => self.degration_callback = None,
         }
     }
+}
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug + Default>
+    Publish<MessageType> for Publisher<'a, 'config, Service, MessageType>
+{
+}
 
-    /// Explicitly updates all connections to the [`crate::port::subscriber::Subscriber`]s. This is
-    /// required to be called whenever a new [`crate::port::subscriber::Subscriber`] connected to
-    /// the service. It is done implicitly whenever [`Publisher::send()`] or [`Publisher::send_copy()`]
-    /// is called.
-    pub fn update_connections(&self) -> Result<(), ZeroCopyCreationError> {
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> UpdateConnections
+    for Publisher<'a, 'config, Service, MessageType>
+{
+    fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe { (*self.subscriber_list_state.get()).update() } {
             fail!(from self, when self.populate_subscriber_channels(),
                 "Connections were updated only partially since at least one connection to a Subscriber port failed.");
@@ -471,29 +427,12 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
 
         Ok(())
     }
+}
 
-    /// Send a previously loaned [`Publisher::loan_uninit()`] [`SampleMut`] to all connected
-    /// [`crate::port::subscriber::Subscriber`]s of the service.
-    ///
-    /// The payload of the [`SampleMut`] must be initialized before it can be sent. Have a look
-    /// at [`SampleMut::write_payload()`] and [`SampleMut::assume_init()`] for more details.
-    ///
-    /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
-    /// the data is returned, otherwise a [`ZeroCopyCreationError`] describing the failure.
-    pub fn send<'publisher>(
-        &'publisher self,
-        sample: SampleMut<'a, 'publisher, 'config, Service, Header, MessageType>,
-    ) -> Result<usize, ZeroCopyCreationError> {
-        Ok(
-            fail!(from self, when self.send_impl(sample.offset_to_chunk().value()),
-            "Unable to send sample since the underlying send failed."),
-        )
-    }
-
-    /// Copies the input `value` into a [`SampleMut`] and delivers it.
-    /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
-    /// the data, otherwise a [`SendCopyError`] describing the failure.
-    pub fn send_copy(&self, value: MessageType) -> Result<usize, SendCopyError> {
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> SendCopy<MessageType>
+    for Publisher<'a, 'config, Service, MessageType>
+{
+    fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send copy of message";
         let mut sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
@@ -504,44 +443,17 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             "{} since the underlying send operation failed.", msg),
         )
     }
+}
 
-    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
-    /// The user has to initialize the payload before it can be sent.
-    ///
-    /// On failure it returns [`LoanError`] describing the failure.
-    ///
-    /// Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
-    /// #
-    /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
-    /// #
-    /// # let publisher = service.publisher().create()?;
-    ///
-    /// let sample = publisher.loan_uninit()?;
-    /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<MessageType>`
-    ///
-    /// publisher.send(sample)?;
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn loan_uninit<'publisher>(
-        &'publisher self,
-    ) -> Result<
-        SampleMut<'a, 'publisher, 'config, Service, Header, MaybeUninit<MessageType>>,
-        LoanError,
-    > {
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
+    UninitLoan<MessageType> for Publisher<'a, 'config, Service, MessageType>
+{
+    fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<MessageType>>, PublisherLoanError> {
         self.retrieve_returned_samples();
         let msg = "Unable to loan Sample";
 
         if self.loan_counter.load(Ordering::Relaxed) >= self.config.max_loaned_samples {
-            fail!(from self, with LoanError::ExceedsMaxLoanedChunks,
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
                 "{} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
                 msg, self.loan_counter.load(Ordering::Relaxed), self.config.max_loaned_samples);
         }
@@ -572,10 +484,11 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
                     )
                 };
 
+                self.loan_counter.fetch_add(1, Ordering::Relaxed);
                 Ok(SampleMut::new(self, sample, chunk.offset))
             }
             Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
-                fail!(from self, with LoanError::OutOfMemory,
+                fail!(from self, with PublisherLoanError::OutOfMemory,
                     "{} since the underlying shared memory is out of memory.", msg);
             }
             Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
@@ -583,46 +496,34 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
                 fatal_panic!(from self, "{} since the system seems to be corrupted.", msg);
             }
             Err(v) => {
-                fail!(from self, with LoanError::InternalFailure,
+                fail!(from self, with PublisherLoanError::InternalFailure,
                     "{} since an internal failure occurred ({:?}).", msg, v);
             }
         }
     }
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default + Debug>
-    Publisher<'a, 'config, Service, MessageType>
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> PublishMgmt
+    for Publisher<'a, 'config, Service, MessageType>
 {
-    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
-    /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
-    /// can be used to loan a [`core::mem::MaybeUninit<MessageType>`].
-    ///
-    /// On failure it returns [`LoanError`] describing the failure.
-    ///
-    /// Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
-    /// #
-    /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
-    /// #
-    /// # let publisher = service.publisher().create()?;
-    ///
-    /// let mut sample = publisher.loan()?;
-    /// *sample.payload_mut() = 42;
-    ///
-    /// publisher.send(sample)?;
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn loan<'publisher>(
-        &'publisher self,
-    ) -> Result<SampleMut<'a, 'publisher, 'config, Service, Header, MessageType>, LoanError> {
+    fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
+        self.release_sample(distance_to_chunk);
+        self.loan_counter.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ConnectionFailure> {
+        fail!(from self, when self.update_connections(),
+            "Unable to send sample since the connections could not be updated.");
+
+        self.add_to_history(address_to_chunk);
+        Ok(self.deliver_sample(address_to_chunk))
+    }
+}
+
+impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default + Debug>
+    DefaultLoan<MessageType> for Publisher<'a, 'config, Service, MessageType>
+{
+    fn loan(&self) -> Result<SampleMut<MessageType>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
     }
 }

@@ -12,5 +12,10 @@
 
 pub use crate::iox2::Iox2;
 pub use crate::iox2::Iox2Event;
-pub use crate::port::event_id::EventId;
+pub use crate::payload::Payload;
+pub use crate::payload_mut::{PayloadMut, UninitPayloadMut};
+pub use crate::port::{
+    event_id::EventId, listen::Listen, notify::Notify, publish::DefaultLoan, publish::Publish,
+    publish::SendCopy, publish::UninitLoan, subscribe::Subscribe,
+};
 pub use crate::service::{process_local, service_name::ServiceName, zero_copy, Details, Service};

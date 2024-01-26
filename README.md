@@ -115,7 +115,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         let sample = publisher.loan_uninit()?;
         let sample = sample.write_payload(1234);
-        publisher.send(sample)?;
+        sample.send()?;
     }
 
     Ok(())

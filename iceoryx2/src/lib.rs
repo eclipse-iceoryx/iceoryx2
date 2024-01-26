@@ -101,7 +101,7 @@
 //! while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
 //!     let sample = publisher.loan_uninit()?;
 //!     let sample = sample.write_payload(1234);
-//!     publisher.send(sample)?;
+//!     sample.send()?;
 //! }
 //!
 //! # Ok(())
@@ -287,8 +287,14 @@ pub mod port;
 
 pub(crate) mod raw_sample;
 
+/// The interface for the payload that is received by a [`crate::port::subscriber::Subscriber`].
+pub mod payload;
+
 /// The payload that is received by a [`crate::port::subscriber::Subscriber`].
 pub mod sample;
+
+/// The interface for the payload that is sent by a [`crate::port::publisher::Publisher`].
+pub mod payload_mut;
 
 /// The payload that is sent by a [`crate::port::publisher::Publisher`].
 pub mod sample_mut;

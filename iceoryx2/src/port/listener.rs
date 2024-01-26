@@ -29,6 +29,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See also [`crate::port::listener::Listener`]
 
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
 use iceoryx2_bb_log::fail;
@@ -41,22 +43,7 @@ use crate::{port::port_identifiers::UniqueListenerId, service};
 use std::{marker::PhantomData, time::Duration};
 
 use super::event_id::EventId;
-
-/// Defines the failures that can occur when a [`Listener`] is created with the
-/// [`crate::service::port_factory::listener::PortFactoryListener`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum ListenerCreateError {
-    ExceedsMaxSupportedListeners,
-    ResourceCreationFailed,
-}
-
-impl std::fmt::Display for ListenerCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
-    }
-}
-
-impl std::error::Error for ListenerCreateError {}
+use super::listen::{Listen, ListenerCreateError};
 
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]
@@ -121,30 +108,23 @@ impl<'a, 'config: 'a, Service: service::Details<'config>> Listener<'a, 'config, 
 
         Ok(())
     }
+}
 
-    /// Returns the cached [`EventId`]s. Whenever [`Listener::try_wait()`],
-    /// [`Listener::timed_wait()`] or [`Listener::blocking_wait()`] is called the cache is reset
-    /// and filled with the events that where signaled since the last call. This cache can be
-    /// accessed until a new wait call resets and fills it again.
-    pub fn cache(&self) -> &[EventId] {
+impl<'a, 'config: 'a, Service: service::Details<'config>> Listen
+    for Listener<'a, 'config, Service>
+{
+    fn cache(&self) -> &[EventId] {
         &self.cache
     }
 
-    /// Non-blocking wait for new [`EventId`]s. If no [`EventId`]s were notified the returned slice
-    /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn try_wait(&mut self) -> Result<&[EventId], ListenerWaitError> {
+    fn try_wait(&mut self) -> Result<&[EventId], ListenerWaitError> {
         self.cache.clear();
         self.fill_cache()?;
 
         Ok(self.cache())
     }
 
-    /// Blocking wait for new [`EventId`]s until either an [`EventId`] was received or the timeout
-    /// has passed. If no [`EventId`]s were notified the returned slice
-    /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn timed_wait(&mut self, timeout: Duration) -> Result<&[EventId], ListenerWaitError> {
+    fn timed_wait(&mut self, timeout: Duration) -> Result<&[EventId], ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         self.cache.clear();
 
@@ -159,11 +139,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>> Listener<'a, 'config, 
         Ok(self.cache())
     }
 
-    /// Blocking wait for new [`EventId`]s until either an [`EventId`].
-    /// Sporadic wakeups can occur and if no [`EventId`]s were notified the returned slice
-    /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn blocking_wait(&mut self) -> Result<&[EventId], ListenerWaitError> {
+    fn blocking_wait(&mut self) -> Result<&[EventId], ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         self.cache.clear();
 

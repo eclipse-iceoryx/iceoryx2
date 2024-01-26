@@ -100,8 +100,10 @@ impl Logger {
     }
 
     fn add_spacing(spacing: usize) {
-        for _ in 0..spacing {
-            std::print!(" ");
+        if std::io::stdout().is_terminal() {
+            for _ in 0..spacing {
+                std::print!(" ");
+            }
         }
     }
 
@@ -125,6 +127,7 @@ impl Logger {
                 msg_pos += term_len;
                 msg_len -= term_len;
             }
+
             if std::io::stdout().is_terminal() {
                 std::println!("\x1b[0m");
             }
@@ -132,7 +135,9 @@ impl Logger {
         }
 
         if std::io::stdout().is_terminal() {
-            println!("\x1b[0m");
+            std::println!("\x1b[0m");
+        } else {
+            std::println!(" ");
         }
     }
 

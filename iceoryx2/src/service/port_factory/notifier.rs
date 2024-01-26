@@ -30,10 +30,7 @@
 //! ```
 use std::fmt::Debug;
 
-use crate::port::{
-    event_id::EventId,
-    notifier::{Notifier, NotifierCreateError},
-};
+use crate::port::{event_id::EventId, notifier::Notifier, notify::NotifierCreateError};
 use iceoryx2_bb_log::fail;
 
 use crate::service;
@@ -59,7 +56,8 @@ impl<'factory, 'config, Service: service::Details<'config>>
         }
     }
 
-    /// Sets a default [`EventId`] for the [`Notifier`] that is used in [`Notifier::notify()`]
+    /// Sets a default [`EventId`] for the [`Notifier`] that is used in
+    /// [`crate::port::notify::Notify::notify()`]
     pub fn default_event_id(mut self, value: EventId) -> Self {
         self.default_event_id = value;
         self

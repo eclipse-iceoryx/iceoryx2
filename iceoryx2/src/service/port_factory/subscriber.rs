@@ -33,10 +33,7 @@ use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
 
-use crate::{
-    port::subscriber::{Subscriber, SubscriberCreateError},
-    service,
-};
+use crate::{port::subscribe::SubscriberCreateError, port::subscriber::Subscriber, service};
 
 use super::publish_subscribe::PortFactory;
 
