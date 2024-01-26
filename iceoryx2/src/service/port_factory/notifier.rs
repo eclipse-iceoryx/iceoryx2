@@ -30,14 +30,14 @@
 //! ```
 use std::fmt::Debug;
 
-use crate::port::{event_id::EventId, notifier::NotifierCreateError, notifier_impl::NotifierImpl};
+use crate::port::{event_id::EventId, notifier::Notifier, notify::NotifierCreateError};
 use iceoryx2_bb_log::fail;
 
 use crate::service;
 
 use super::event::PortFactory;
 
-/// Factory to create a new [`NotifierImpl`] port/endpoint for
+/// Factory to create a new [`Notifier`] port/endpoint for
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) based
 /// communication.
 #[derive(Debug)]
@@ -56,17 +56,17 @@ impl<'factory, 'config, Service: service::Details<'config>>
         }
     }
 
-    /// Sets a default [`EventId`] for the [`NotifierImpl`] that is used in
+    /// Sets a default [`EventId`] for the [`Notifier`] that is used in
     /// [`crate::port::notifier::Notifier::notify()`]
     pub fn default_event_id(mut self, value: EventId) -> Self {
         self.default_event_id = value;
         self
     }
 
-    /// Creates a new [`NotifierImpl`] port or returns a [`NotifierCreateError`] on failure.
-    pub fn create(&self) -> Result<NotifierImpl<'factory, 'config, Service>, NotifierCreateError> {
+    /// Creates a new [`Notifier`] port or returns a [`NotifierCreateError`] on failure.
+    pub fn create(&self) -> Result<Notifier<'factory, 'config, Service>, NotifierCreateError> {
         Ok(
-            fail!(from self, when NotifierImpl::new(&self.factory.service, self.default_event_id),
+            fail!(from self, when Notifier::new(&self.factory.service, self.default_event_id),
                     "Failed to create new Notifier port."),
         )
     }

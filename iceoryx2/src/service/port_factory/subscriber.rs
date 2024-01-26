@@ -33,13 +33,11 @@ use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
 
-use crate::{
-    port::subscriber::SubscriberCreateError, port::subscriber_impl::SubscriberImpl, service,
-};
+use crate::{port::subscribe::SubscriberCreateError, port::subscriber::Subscriber, service};
 
 use super::publish_subscribe::PortFactory;
 
-/// Factory to create a new [`SubscriberImpl`] port/endpoint for
+/// Factory to create a new [`Subscriber`] port/endpoint for
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
@@ -55,13 +53,12 @@ pub struct PortFactorySubscriber<
 impl<'factory, 'config, Service: service::Details<'config>, MessageType: Debug>
     PortFactorySubscriber<'factory, 'config, Service, MessageType>
 {
-    /// Creates a new [`SubscriberImpl`] or returns a [`SubscriberCreateError`] on failure.
+    /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
     pub fn create(
         &self,
-    ) -> Result<SubscriberImpl<'factory, 'config, Service, MessageType>, SubscriberCreateError>
-    {
+    ) -> Result<Subscriber<'factory, 'config, Service, MessageType>, SubscriberCreateError> {
         Ok(
-            fail!(from self, when SubscriberImpl::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe()),
+            fail!(from self, when Subscriber::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe()),
                 "Failed to create new Subscriber port."),
         )
     }
