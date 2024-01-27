@@ -9,6 +9,7 @@
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * Introduce `iceoryx2-bb-posix::process_state` for process monitoring [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
+ * Introduce concept `iceoryx2-cal::monitoring` [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
 
 ### Bugfixes
 

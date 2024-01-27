@@ -83,6 +83,99 @@ mod monitoring {
         assert_that!(sut_monitor.state().unwrap(), eq State::DoesNotExist);
     }
 
+    #[test]
+    fn list_monitoring_token_works<Sut: Monitoring>() {
+        let mut sut_names = vec![];
+        const LIMIT: usize = 10;
+
+        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        for i in 0..LIMIT {
+            sut_names.push(generate_name());
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(false));
+            std::mem::forget(Sut::Builder::new(&sut_names[i]).create());
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
+
+            let list = <Sut as NamedConceptMgmt>::list().unwrap();
+            assert_that!(list, len i + 1);
+            let does_exist_in_list = |value| {
+                for e in &list {
+                    if e == value {
+                        return true;
+                    }
+                }
+                false
+            };
+
+            for name in &sut_names {
+                assert_that!(does_exist_in_list(name), eq true);
+            }
+        }
+
+        for i in 0..LIMIT {
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(false));
+        }
+
+        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+    }
+
+    #[test]
+    fn custom_suffix_keeps_monitoring_token_separated<Sut: Monitoring>() {
+        let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
+            .suffix(unsafe { FileName::new_unchecked(b".suffix_1") });
+        let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
+            .suffix(unsafe { FileName::new_unchecked(b".suffix_2") });
+
+        let sut_name = generate_name();
+
+        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(false));
+        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(false));
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
+
+        let sut_1 = Sut::Builder::new(&sut_name)
+            .config(&config_1)
+            .create()
+            .unwrap();
+
+        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
+        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(false));
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
+
+        let sut_2 = Sut::Builder::new(&sut_name)
+            .config(&config_2)
+            .create()
+            .unwrap();
+
+        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
+        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_2), eq Ok(true));
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 1);
+
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap()[0], eq sut_name);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap()[0], eq sut_name);
+
+        assert_that!(*sut_1.name(), eq sut_name);
+        assert_that!(*sut_2.name(), eq sut_name);
+
+        std::mem::forget(sut_1);
+        std::mem::forget(sut_2);
+
+        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(true));
+        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(false));
+        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(true));
+        assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_2)}, eq Ok(false));
+    }
+
+    #[test]
+    fn defaults_for_configuration_are_set_correctly<Sut: Monitoring>() {
+        let config = <Sut as NamedConceptMgmt>::Configuration::default();
+        assert_that!(*config.get_suffix(), eq Sut::default_suffix());
+        assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
+        assert_that!(*config.get_prefix(), eq Sut::default_prefix());
+    }
+
     #[instantiate_tests(<iceoryx2_cal::monitoring::file_lock::FileLockMonitoring>)]
     mod file_lock {}
 }

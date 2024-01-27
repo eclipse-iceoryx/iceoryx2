@@ -49,7 +49,7 @@ impl NamedConceptMgmt for FileLockMonitoring {
             "Unable to list all FileLockMonitoring instances in \"{}\"",
             path
         );
-        let directory = match Directory::new(&path) {
+        let directory = match Directory::new(path) {
             Ok(directory) => directory,
             Err(DirectoryOpenError::InsufficientPermissions) => {
                 fail!(from origin, with NamedConceptListError::InsufficientPermissions,

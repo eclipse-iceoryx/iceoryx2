@@ -10,16 +10,53 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_system_types::file_name::FileName;
+//! Allows one process to monitor the state of another process. Can detect if the process is
+//! [`State::Alive`], [`State::Dead`] or the existance with [`State::DoesNotExist`]. To activate
+//! monitoring the process that shall be monitored must instantiate a [`MonitoringToken`]. As long
+//! as the [`MonitoringToken`] is in scope the [`MonitoringMonitor`] will detect the process as
+//! [`State::Alive`]. When the process crashes it will be detected as [`State::Dead`]. If the
+//! process does not yet have instantiated a [`MonitoringMonitor`] the process is identified as
+//! [`State::DoesNotExist`].
+//!
+//! # Example
+//!
+//! ```
+//! use iceoryx2_cal::monitoring::*;
+//!
+//! fn monitored_process<M: Monitoring>() {
+//!     let token =
+//!     M::Builder::new(&FileName::new(b"unique_process_identifier").unwrap()).
+//!                         create().unwrap();
+//!
+//!     // keep the token in scope and do what a process shall do
+//!
+//!     // process can no longer be monitored
+//!     drop(token);
+//! }
+//!
+//! fn watching_process<M: Monitoring>() {
+//!     let monitor = M::Builder::new(&FileName::new(b"unique_process_identifier").unwrap()).
+//!                         monitor().unwrap();
+//!
+//!     match monitor.state().unwrap() {
+//!         State::Alive => println!("process is alive"),
+//!         State::Dead => println!("process is dead"),
+//!         State::DoesNotExist => println!("process does not exist"),
+//!     }
+//! }
+//! ```
 
-use crate::{
+pub use iceoryx2_bb_container::semantic_string::SemanticString;
+pub use iceoryx2_bb_system_types::file_name::FileName;
+
+pub use crate::{
     named_concept::NamedConcept, named_concept::NamedConceptBuilder,
     named_concept::NamedConceptMgmt,
 };
 
 pub mod file_lock;
 
+/// Represents the state of a monitored process.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
     Alive,
@@ -27,6 +64,8 @@ pub enum State {
     DoesNotExist,
 }
 
+/// Represents the possible errors that can occur when a new [`MonitoringToken`] is created with
+/// [`MonitoringBuilder::create()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringCreateTokenError {
     InsufficientPermissions,
@@ -34,6 +73,8 @@ pub enum MonitoringCreateTokenError {
     InternalError,
 }
 
+/// Represents the possible errors that can occur when a new [`MonitoringMonitor`] is created with
+/// [`MonitoringBuilder::monitor()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringCreateMonitorError {
     InsufficientPermissions,
@@ -41,28 +82,44 @@ pub enum MonitoringCreateMonitorError {
     InternalError,
 }
 
+/// Represents the possible errors that can occur when the [`State`] is acquired via
+/// [`MonitoringMonitor::state()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringStateError {
     Interrupt,
     InternalError,
 }
 
+/// The token enables a process to be monitored by another process.
 pub trait MonitoringToken: NamedConcept {}
 
+/// The monitor allows to monitor another process that has instantiated a [`MonitoringToken`]
 pub trait MonitoringMonitor: NamedConcept {
+    /// Returns the current [`State`] of the monitored process. On failure it returns
+    /// [`MonitoringStateError`].
     fn state(&self) -> Result<State, MonitoringStateError>;
 }
 
+/// Creates either a [`MonitoringToken`] or instantiates a [`MonitoringMonitor`] that can monitor
+/// the state of a token.
 pub trait MonitoringBuilder<T: Monitoring>: NamedConceptBuilder<T> {
+    /// Creates a new [`MonitoringToken`] on success or returns a [`MonitoringCreateTokenError`]
+    /// on failure.
     fn create(self) -> Result<T::Token, MonitoringCreateTokenError>;
+
+    /// Instantiates a [`MonitoringMonitor`] to monitor a [`MonitoringToken`]
     fn monitor(self) -> Result<T::Monitor, MonitoringCreateMonitorError>;
 }
 
+/// Concept that allows to monitor a process from within another process. The process must hereby
+/// instantiate a [`MonitoringToken`] with [`MonitoringBuilder`] so that it can be monitored with
+/// the [`MonitoringMonitor`].
 pub trait Monitoring: NamedConceptMgmt + Sized {
     type Token: MonitoringToken;
     type Monitor: MonitoringMonitor;
     type Builder: MonitoringBuilder<Self>;
 
+    /// Returns the default suffix that shall be used for every [`MonitoringToken`].
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".monitor") }
     }
