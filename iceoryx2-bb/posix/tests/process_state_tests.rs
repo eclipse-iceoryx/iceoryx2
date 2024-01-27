@@ -94,7 +94,7 @@ pub fn process_state_watcher_detects_alive_state_from_existing_process() {
     let path = generate_file_path();
 
     let guard = ProcessGuard::new(&path).unwrap();
-    let mut watcher = ProcessMonitor::new(&path).unwrap();
+    let watcher = ProcessMonitor::new(&path).unwrap();
 
     assert_that!(watcher.state().unwrap(), eq ProcessState::Alive);
     drop(guard);
@@ -109,7 +109,7 @@ pub fn process_state_watcher_detects_dead_state() {
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    let mut watcher = ProcessMonitor::new(&path).unwrap();
+    let watcher = ProcessMonitor::new(&path).unwrap();
 
     assert_that!(watcher.state().unwrap(), eq ProcessState::Dead);
     file.remove_self().unwrap();
@@ -120,7 +120,7 @@ pub fn process_state_watcher_detects_dead_state() {
 pub fn process_state_watcher_detects_non_existing_state() {
     let path = generate_file_path();
 
-    let mut watcher = ProcessMonitor::new(&path).unwrap();
+    let watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
 }
 
@@ -128,7 +128,7 @@ pub fn process_state_watcher_detects_non_existing_state() {
 pub fn process_state_watcher_transitions_work_starting_from_non_existing_process() {
     let path = generate_file_path();
 
-    let mut watcher = ProcessMonitor::new(&path).unwrap();
+    let watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
     let file = FileBuilder::new(&path)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -148,7 +148,7 @@ pub fn process_state_watcher_transitions_work_starting_from_existing_process() {
         .create()
         .unwrap();
 
-    let mut watcher = ProcessMonitor::new(&path).unwrap();
+    let watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::Dead);
     file.remove_self().unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
@@ -172,7 +172,7 @@ pub fn process_state_watcher_detects_initialized_state() {
         .create()
         .unwrap();
 
-    let mut watcher = ProcessMonitor::new(&path).unwrap();
+    let watcher = ProcessMonitor::new(&path).unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::InInitialization);
     file.set_permission(Permission::OWNER_ALL).unwrap();
     file.remove_self().unwrap();

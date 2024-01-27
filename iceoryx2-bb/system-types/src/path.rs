@@ -29,6 +29,7 @@
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 
+use core::hash::{Hash, Hasher};
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 

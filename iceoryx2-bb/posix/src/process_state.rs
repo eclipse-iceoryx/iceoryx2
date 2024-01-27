@@ -77,6 +77,8 @@
 //! }
 //! ```
 
+use std::fmt::Debug;
+
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{debug, error, fail, fatal_panic, trace, warn};
@@ -415,10 +417,20 @@ impl ProcessGuard {
 ///     ProcessState::DoesNotExist => (),
 /// }
 /// ```
-#[derive(Debug)]
 pub struct ProcessMonitor {
-    file: Option<File>,
+    file: core::cell::Cell<Option<File>>,
     path: FilePath,
+}
+
+impl Debug for ProcessMonitor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ProcessMonitor {{ file = {:?}, path = {:?}}}",
+            unsafe { &*self.file.as_ptr() },
+            self.path
+        )
+    }
 }
 
 impl ProcessMonitor {
@@ -435,8 +447,8 @@ impl ProcessMonitor {
     /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
     /// ```
     pub fn new(path: &FilePath) -> Result<Self, ProcessMonitorCreateError> {
-        let mut new_self = Self {
-            file: None,
+        let new_self = Self {
+            file: core::cell::Cell::new(None),
             path: *path,
         };
 
@@ -477,9 +489,9 @@ impl ProcessMonitor {
     ///     ProcessState::DoesNotExist => (),
     /// }
     /// ```
-    pub fn state(&mut self) -> Result<ProcessState, ProcessMonitorStateError> {
+    pub fn state(&self) -> Result<ProcessState, ProcessMonitorStateError> {
         let msg = "Unable to acquire ProcessState";
-        match self.file {
+        match unsafe { &*self.file.as_ptr() } {
             Some(_) => self.read_state_from_file(),
             None => match File::does_exist(&self.path) {
                 Ok(true) => {
@@ -496,8 +508,8 @@ impl ProcessMonitor {
         }
     }
 
-    fn read_state_from_file(&mut self) -> Result<ProcessState, ProcessMonitorStateError> {
-        let file = match self.file {
+    fn read_state_from_file(&self) -> Result<ProcessState, ProcessMonitorStateError> {
+        let file = match unsafe { &*self.file.as_ptr() } {
             Some(ref f) => f,
             None => return Ok(ProcessState::InInitialization),
         };
@@ -526,12 +538,12 @@ impl ProcessMonitor {
                 Ok(true) => match file.permission() {
                     Ok(INIT_PERMISSION) => Ok(ProcessState::InInitialization),
                     Err(_) | Ok(_) => {
-                        self.file = None;
+                        self.file.set(None);
                         Ok(ProcessState::Dead)
                     }
                 },
                 Ok(false) => {
-                    self.file = None;
+                    self.file.set(None);
                     Ok(ProcessState::DoesNotExist)
                 }
                 Err(v) => {
@@ -542,39 +554,41 @@ impl ProcessMonitor {
         }
     }
 
-    fn open_file(&mut self) -> Result<(), ProcessMonitorCreateError> {
+    fn open_file(&self) -> Result<(), ProcessMonitorCreateError> {
         let origin = "ProcessMonitor::new()";
         let msg = format!(
             "Unable to open ProcessMonitor with the file \"{}\"",
             self.path
         );
-        self.file = match FileBuilder::new(&self.path).open_existing(AccessMode::Read) {
-            Ok(f) => Some(f),
-            Err(FileOpenError::FileDoesNotExist) => None,
-            Err(FileOpenError::IsDirectory) => {
-                fail!(from origin, with ProcessMonitorCreateError::IsDirectory,
+        self.file.set(
+            match FileBuilder::new(&self.path).open_existing(AccessMode::Read) {
+                Ok(f) => Some(f),
+                Err(FileOpenError::FileDoesNotExist) => None,
+                Err(FileOpenError::IsDirectory) => {
+                    fail!(from origin, with ProcessMonitorCreateError::IsDirectory,
                     "{} since the path is a directory.", msg);
-            }
-            Err(FileOpenError::InsufficientPermissions) => {
-                if FileBuilder::new(&self.path)
-                    .open_existing(AccessMode::Write)
-                    .is_ok()
-                {
-                    None
-                } else {
-                    fail!(from origin, with ProcessMonitorCreateError::InsufficientPermissions,
-                    "{} due to insufficient permissions.", msg);
                 }
-            }
-            Err(FileOpenError::Interrupt) => {
-                fail!(from origin, with ProcessMonitorCreateError::Interrupt,
+                Err(FileOpenError::InsufficientPermissions) => {
+                    if FileBuilder::new(&self.path)
+                        .open_existing(AccessMode::Write)
+                        .is_ok()
+                    {
+                        None
+                    } else {
+                        fail!(from origin, with ProcessMonitorCreateError::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
+                    }
+                }
+                Err(FileOpenError::Interrupt) => {
+                    fail!(from origin, with ProcessMonitorCreateError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
-            }
-            Err(v) => {
-                fail!(from origin, with ProcessMonitorCreateError::UnknownError,
+                }
+                Err(v) => {
+                    fail!(from origin, with ProcessMonitorCreateError::UnknownError,
                     "{} since an unknown failure occurred ({:?}).", msg, v);
-            }
-        };
+                }
+            },
+        );
 
         Ok(())
     }
