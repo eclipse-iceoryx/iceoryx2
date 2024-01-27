@@ -20,24 +20,28 @@ use crate::{
 
 pub mod file_lock;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
     Alive,
     Dead,
     DoesNotExist,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringCreateTokenError {
     InsufficientPermissions,
     AlreadyExists,
     InternalError,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringCreateMonitorError {
     InsufficientPermissions,
     Interrupt,
     InternalError,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringStateError {
     Interrupt,
     InternalError,
