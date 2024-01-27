@@ -150,7 +150,7 @@ impl NamedConcept for Monitor {
 }
 
 impl MonitoringMonitor for Monitor {
-    fn state(&mut self) -> Result<super::State, MonitoringStateError> {
+    fn state(&self) -> Result<super::State, MonitoringStateError> {
         let msg = "Unable to acquire monitor state";
 
         match self.monitor.state() {

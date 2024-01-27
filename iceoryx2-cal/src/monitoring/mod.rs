@@ -50,7 +50,7 @@ pub enum MonitoringStateError {
 pub trait MonitoringToken: NamedConcept {}
 
 pub trait MonitoringMonitor: NamedConcept {
-    fn state(&mut self) -> Result<State, MonitoringStateError>;
+    fn state(&self) -> Result<State, MonitoringStateError>;
 }
 
 pub trait MonitoringBuilder<T: Monitoring>: NamedConceptBuilder<T> {
