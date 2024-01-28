@@ -12,8 +12,6 @@
 
 #[generic_tests::define]
 mod service_event {
-    use std::rc::Rc;
-
     use iceoryx2::config::Config;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
@@ -140,7 +138,6 @@ mod service_event {
         let mut custom_config = Config::default();
         custom_config.defaults.event.max_notifiers = 9;
         custom_config.defaults.event.max_listeners = 10;
-        let custom_config = Rc::new(custom_config);
 
         let sut = Sut::new(&service_name)
             .event_with_custom_config(&custom_config)

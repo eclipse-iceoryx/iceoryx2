@@ -110,9 +110,7 @@ impl<S: Service> Builder<S> {
     /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
     pub fn publish_subscribe(self) -> publish_subscribe::Builder<S> {
-        self.publish_subscribe_with_custom_config(&Rc::new(
-            config::Config::get_global_config().clone(),
-        ))
+        self.publish_subscribe_with_custom_config(config::Config::get_global_config())
     }
 
     /// Create a new builder to create a
@@ -120,14 +118,11 @@ impl<S: Service> Builder<S> {
     /// with a custom [`config::Config`]
     pub fn publish_subscribe_with_custom_config(
         self,
-        config: &Rc<config::Config>,
+        config: &config::Config,
     ) -> publish_subscribe::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
-                &self.name,
-                config.as_ref(),
-            ),
-            Rc::clone(config),
+            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(&self.name, config),
+            Rc::new(config.clone()),
         )
         .publish_subscribe()
     }
@@ -135,16 +130,16 @@ impl<S: Service> Builder<S> {
     /// Create a new builder to create a
     /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
     pub fn event(self) -> event::Builder<S> {
-        self.event_with_custom_config(&Rc::new(config::Config::get_global_config().clone()))
+        self.event_with_custom_config(config::Config::get_global_config())
     }
 
     /// Create a new builder to create a
     /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
     /// with a custom [`config::Config`]
-    pub fn event_with_custom_config(self, config: &Rc<config::Config>) -> event::Builder<S> {
+    pub fn event_with_custom_config(self, config: &config::Config) -> event::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config.as_ref()),
-            Rc::clone(config),
+            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config),
+            Rc::new(config.clone()),
         )
         .event()
     }

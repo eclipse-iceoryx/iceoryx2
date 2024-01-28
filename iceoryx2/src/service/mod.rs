@@ -162,8 +162,8 @@ use self::builder::Builder;
 use self::dynamic_config::DecrementReferenceCounterResult;
 use self::service_name::ServiceName;
 
-/// Failure that can be reported by [`Details::does_exist()`] or
-/// [`Details::does_exist_with_custom_config()`].
+/// Failure that can be reported by [`Service::does_exist()`] or
+/// [`Service::does_exist_with_custom_config()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceDoesExistError {
     InsufficientPermissions,
@@ -178,8 +178,8 @@ impl std::fmt::Display for ServiceDoesExistError {
 
 impl std::error::Error for ServiceDoesExistError {}
 
-/// Failure that can be reported by [`Details::list()`] or
-/// [`Details::list_with_custom_config()`].
+/// Failure that can be reported by [`Service::list()`] or
+/// [`Service::list_with_custom_config()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceListError {
     InsufficientPermissions,

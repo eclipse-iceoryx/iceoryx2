@@ -12,8 +12,6 @@
 
 #[generic_tests::define]
 mod service_publish_subscribe {
-    use std::rc::Rc;
-
     use iceoryx2::config::Config;
     use iceoryx2::port::publish::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::port::subscribe::SubscriberCreateError;
@@ -350,7 +348,7 @@ mod service_publish_subscribe {
             .subscriber_max_buffer_size = 13;
 
         let sut = Sut::new(&service_name)
-            .publish_subscribe_with_custom_config(&Rc::new(custom_config))
+            .publish_subscribe_with_custom_config(&custom_config)
             .create::<u64>()
             .unwrap();
 
