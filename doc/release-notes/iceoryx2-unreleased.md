@@ -20,7 +20,8 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Replace `iceoryx2::service::Service` with `iceoryx2::service::Details` [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
+ * Remove `'config` lifetime from all structs  [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
 
 ### Workflow
 
@@ -56,3 +57,58 @@
     sample.send()?;
     ```
 
+2. All port `Publisher`, `Subscriber`, `Listener` and `Notifier` no longer have a generic
+    `'config` lifetime parameter.
+
+    ```rust
+    // old
+    let publisher: Publisher<'service, 'config, iceoryx2::service::zero_copy::Service::Type<'config>, MessageType> = ..;
+    let subscriber: Subscriber<'service, 'config, iceoryx2::service::zero_copy::Service::Type<'config>, MessageType> = ..;
+    let notifier: Notifier<'service, 'config, iceoryx2::service::zero_copy::Service::Type<'config>> = ..;
+    let listener: Listener<'service, 'config, iceoryx2::service::zero_copy::Service::Type<'config>> = ..;
+
+    // new
+    let publisher: Publisher<'service, iceoryx2::service::zero_copy::Service, MessageType> = ..;
+    let subscriber: Subscriber<'service, iceoryx2::service::zero_copy::Service, MessageType> = ..;
+    let notifier: Notifier<'service, iceoryx2::service::zero_copy::Service> = ..;
+    let listener: Listener<'service, iceoryx2::service::zero_copy::Service> = ..;
+    ```
+
+3. `iceoryx2::service::Details` no longer has a generic `'config` lifetime parameter.
+   `iceoryx2::service::Details` replaced `iceoryx2::service::Service`. All custom services need
+   to implement `iceoryx2::service::Service`.
+
+    ```rust
+    // old
+    pub struct MyCustomServiceType<'config> {
+        state: ServiceState<'config, static_storage::whatever::Storage, dynamic_storage::whatever::Storage<WhateverConfig>>
+    }
+
+    impl<'config> crate::service::Service for MyCustomServiceType<'config> {
+        // ...
+    }
+
+    impl<'config> crate::service::Details for MyCustomServiceType<'config> {
+        // ...
+    }
+
+    // new
+    pub struct MyCustomServiceType {
+        state: ServiceState<static_storage::whatever::Storage, dynamic_storage::whatever::Storage<WhateverConfig>>
+    }
+
+    impl crate::service::Service for MyCustomServiceType {
+        // ...
+    }
+    ```
+
+4. Writing functions with generic service parameter no longer require `Service + Details<'config>`.
+   Now it suffices to just use `Service`
+
+    ```rust
+    // old
+    fn my_generic_service_function<'config, ServiceType: iceoryx2::service::Service + iceoryx2::service::Details<'config>>();
+
+    // new
+    fn my_generic_service_function<ServiceType: iceoryx2::service::Service>();
+    ```

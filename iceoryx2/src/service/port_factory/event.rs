@@ -97,7 +97,7 @@ impl<Service: service::Service> PortFactory<Service> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn notifier<'a>(&'a self) -> PortFactoryNotifier<'a, Service> {
+    pub fn notifier(&self) -> PortFactoryNotifier<Service> {
         PortFactoryNotifier::new(self)
     }
 
@@ -118,7 +118,7 @@ impl<Service: service::Service> PortFactory<Service> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn listener<'a>(&'a self) -> PortFactoryListener<'a, Service> {
+    pub fn listener(&self) -> PortFactoryListener<Service> {
         PortFactoryListener { factory: self }
     }
 }

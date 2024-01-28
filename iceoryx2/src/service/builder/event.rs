@@ -257,14 +257,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                             with EventCreateError::Corrupted,
                             "{} since the configuration could not be written to the static storage.", msg);
 
-                return Ok(event::PortFactory::new(ServiceType::from_state(
+                Ok(event::PortFactory::new(ServiceType::from_state(
                     service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.global_config,
                         dynamic_config,
                         unlocked_static_details,
                     ),
-                )));
+                )))
             }
             Ok(Some(_)) | Err(ServiceState::IncompatibleMessagingPattern) => {
                 fail!(from self, with EventCreateError::AlreadyExists,

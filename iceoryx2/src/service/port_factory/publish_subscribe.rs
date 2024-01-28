@@ -122,9 +122,7 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// # Ok(())
     /// # }
     /// ```
-    pub fn subscriber<'factory>(
-        &'factory self,
-    ) -> PortFactorySubscriber<'factory, Service, MessageType> {
+    pub fn subscriber(&self) -> PortFactorySubscriber<Service, MessageType> {
         PortFactorySubscriber { factory: self }
     }
 
@@ -151,9 +149,7 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// # Ok(())
     /// # }
     /// ```
-    pub fn publisher<'factory>(
-        &'factory self,
-    ) -> PortFactoryPublisher<'factory, Service, MessageType> {
+    pub fn publisher(&self) -> PortFactoryPublisher<Service, MessageType> {
         PortFactoryPublisher::new(self)
     }
 }
