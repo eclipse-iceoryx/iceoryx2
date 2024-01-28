@@ -13,6 +13,9 @@ use clap::Parser;
 pub struct Cli {
     #[arg(short, long, help = "List all installed commands")]
     pub list: bool,
+
+    #[arg(short, long, help = "Run development commands")]
+    pub dev: bool,
 }
 
 fn help_template() -> &'static str {

@@ -7,43 +7,64 @@ pub fn list() {
     println!("Installed Commands:");
     let installed_commands = find();
     for command in installed_commands {
-        println!("  {}", command.bold());
+        println!(
+            "  {}",
+            format!(
+                "{}{}",
+                command.name.bold(),
+                if command.is_development { " (dev)" } else { "" }
+            )
+        );
     }
 }
 
-fn find() -> Vec<String> {
-    let mut commands = find_command_binaries_in_development_dirs();
-    if commands.is_empty() {
-        commands = find_command_binaries_in_system_path();
-    }
-    commands
+#[derive(Clone, Debug)]
+struct CommandInfo {
+    name: String,
+    path: PathBuf,
+    is_development: bool,
 }
 
-fn find_command_binaries_in_development_dirs() -> Vec<String> {
+fn find() -> Vec<CommandInfo> {
+    let development_commands = find_command_binaries_in_development_dirs();
+    let installed_commands = find_command_binaries_in_system_path();
+
+    let mut all_commands = development_commands;
+    all_commands.extend(installed_commands.iter().cloned());
+    all_commands
+}
+
+fn find_command_binaries_in_development_dirs() -> Vec<CommandInfo> {
     let mut commands = Vec::new();
     let current_exe = match env::current_exe() {
         Ok(exe) => exe,
         Err(_) => return commands,
     };
-    let target_dir_name = if cfg!(debug_assertions) {
+    let build_type = if cfg!(debug_assertions) {
         "debug"
     } else {
         "release"
     };
-    let target_dir = current_exe
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join(target_dir_name);
 
-    if let Ok(entries) = fs::read_dir(&target_dir) {
+    // Get the location of the binary directory for the build
+    let binary_dir = current_exe
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join(build_type);
+
+    if let Ok(entries) = fs::read_dir(&binary_dir) {
         for entry in entries.filter_map(Result::ok) {
             let path = entry.path();
             if is_valid_command_binary(&path) {
                 if let Some(command_name) = path.file_name().and_then(|n| n.to_str()) {
                     let stripped = command_name.strip_prefix("iox2-").unwrap_or(command_name);
-                    commands.push(stripped.to_string());
+                    commands.push(CommandInfo {
+                        name: stripped.to_string(),
+                        path,
+                        is_development: true,
+                    });
                 }
             }
         }
@@ -52,7 +73,7 @@ fn find_command_binaries_in_development_dirs() -> Vec<String> {
     commands
 }
 
-fn find_command_binaries_in_system_path() -> Vec<String> {
+fn find_command_binaries_in_system_path() -> Vec<CommandInfo> {
     let mut commands = Vec::new();
     if let Ok(path_var) = env::var("PATH") {
         for path in env::split_paths(&path_var) {
@@ -61,7 +82,11 @@ fn find_command_binaries_in_system_path() -> Vec<String> {
                     let path = entry.path();
                     if is_valid_command_binary(&path) {
                         if let Some(command_name) = path.file_name().and_then(|n| n.to_str()) {
-                            commands.push(command_name.to_string());
+                            commands.push(CommandInfo {
+                                name: command_name.to_string(),
+                                path,
+                                is_development: false,
+                            });
                         }
                     }
                 }
