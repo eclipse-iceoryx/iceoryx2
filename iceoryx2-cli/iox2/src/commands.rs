@@ -2,6 +2,23 @@ use colored::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
+use thiserror::Error;
+
+#[derive(Clone, Debug)]
+struct CommandInfo {
+    name: String,
+    path: PathBuf,
+    is_development: bool,
+}
+
+#[derive(Error, Debug)]
+pub enum ExecutionError {
+    #[error("Command not found: {0}")]
+    NotFound(String),
+    #[error("Execution failed: {0}")]
+    Failed(String),
+}
 
 pub fn list() {
     println!("Installed Commands:");
@@ -11,18 +28,11 @@ pub fn list() {
             "  {}",
             format!(
                 "{}{}",
+                if command.is_development { "(dev) " } else { "" },
                 command.name.bold(),
-                if command.is_development { " (dev)" } else { "" }
             )
         );
     }
-}
-
-#[derive(Clone, Debug)]
-struct CommandInfo {
-    name: String,
-    path: PathBuf,
-    is_development: bool,
 }
 
 fn find() -> Vec<CommandInfo> {
@@ -106,4 +116,45 @@ fn is_valid_command_binary(path: &PathBuf) -> bool {
             .unwrap()
             .starts_with("iox2-")
         && path.extension().is_none() // Exclude files with extensions (e.g. '.d')
+}
+
+pub fn execute_external_command(
+    command_name: &str,
+    args: &[String],
+    dev_flag_present: bool,
+) -> Result<(), ExecutionError> {
+    let available_commands = find();
+    if let Some(command_info) = available_commands.into_iter().find(|c| {
+        &c.name == command_name
+            && if dev_flag_present {
+                c.is_development == true
+            } else {
+                if c.is_development {
+                    println!(
+                        "Development version of {} found but --dev flag is not set.",
+                        command_name
+                    )
+                }
+                false
+            }
+    }) {
+        execute(&command_info, Some(args))
+    } else {
+        Err(ExecutionError::NotFound(command_name.to_string()))
+    }
+}
+
+fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<(), ExecutionError> {
+    let mut command = Command::new(&command_info.path);
+    command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+    if let Some(arguments) = args {
+        command.args(arguments);
+    }
+    match command.status() {
+        Ok(_) => Ok(()),
+        Err(e) => Err(ExecutionError::Failed(format!(
+            "Failed to execute command: {}",
+            e
+        ))),
+    }
 }

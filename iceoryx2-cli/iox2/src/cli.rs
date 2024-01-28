@@ -16,6 +16,9 @@ pub struct Cli {
 
     #[arg(short, long, help = "Run development commands")]
     pub dev: bool,
+
+    #[arg(hide = true, required = false)]
+    pub external_command: Vec<String>,
 }
 
 fn help_template() -> &'static str {
