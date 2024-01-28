@@ -469,6 +469,7 @@ impl ZeroCopyReceiver for Receiver {
     }
 }
 
+#[derive(Debug)]
 pub struct Connection {}
 
 impl NamedConceptMgmt for Connection {

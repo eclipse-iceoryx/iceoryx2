@@ -38,15 +38,13 @@ use super::event::PortFactory;
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactoryListener<'factory, 'config, Service: service::Details<'config>> {
-    pub(crate) factory: &'factory PortFactory<'config, Service>,
+pub struct PortFactoryListener<'factory, Service: service::Service> {
+    pub(crate) factory: &'factory PortFactory<Service>,
 }
 
-impl<'factory, 'config, Service: service::Details<'config>>
-    PortFactoryListener<'factory, 'config, Service>
-{
+impl<'factory, Service: service::Service> PortFactoryListener<'factory, Service> {
     /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
-    pub fn create(&self) -> Result<Listener<'factory, 'config, Service>, ListenerCreateError> {
+    pub fn create(&self) -> Result<Listener<'factory, Service>, ListenerCreateError> {
         Ok(fail!(from self, when Listener::new(&self.factory.service),
                     "Failed to create new Listener port."))
     }

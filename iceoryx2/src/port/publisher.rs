@@ -95,13 +95,13 @@ use iceoryx2_cal::zero_copy_connection::{
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct Publisher<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> {
+pub struct Publisher<'a, Service: service::Service, MessageType: Debug> {
     port_id: UniquePublisherId,
     pub(crate) sample_reference_counter: Vec<AtomicU64>,
     pub(crate) data_segment: Service::SharedMemory,
     config: LocalPublisherConfig,
 
-    subscriber_connections: SubscriberConnections<'config, Service>,
+    subscriber_connections: SubscriberConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<'a, UniqueSubscriberId>>,
     history: Option<UnsafeCell<Queue<usize>>>,
     service: &'a Service,
@@ -111,9 +111,7 @@ pub struct Publisher<'a, 'config: 'a, Service: service::Details<'config>, Messag
     _phantom_message_type: PhantomData<MessageType>,
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
-    Publisher<'a, 'config, Service, MessageType>
-{
+impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, MessageType> {
     pub(crate) fn new(
         service: &'a Service,
         static_config: &publish_subscribe::StaticConfig,
@@ -135,7 +133,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             .messaging_pattern
             .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
-        let data_segment = fail!(from origin, when Self::create_data_segment(port_id, service.state().global_config, number_of_samples),
+        let data_segment = fail!(from origin, when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
@@ -160,7 +158,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             port_id,
             subscriber_connections: SubscriberConnections::new(
                 subscriber_list.capacity(),
-                service.state().global_config,
+                &service.state().global_config,
                 port_id,
                 static_config,
             ),
@@ -244,7 +242,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         Ok(())
     }
 
-    fn deliver_history(&self, connection: &Connection<'config, Service>) {
+    fn deliver_history(&self, connection: &Connection<Service>) {
         match &self.history {
             None => (),
             Some(history) => {
@@ -272,7 +270,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
 
     fn create_data_segment(
         port_id: UniquePublisherId,
-        global_config: &'config config::Config,
+        global_config: &config::Config,
         number_of_samples: usize,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
         let allocator_config = shm_allocator::pool_allocator::Config {
@@ -308,8 +306,12 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
 
     fn deliver_sample(&self, address_to_chunk: usize) -> usize {
         let deliver_call = match self.config.unable_to_deliver_strategy {
-            UnableToDeliverStrategy::Block => <<Service as service::Details<'config>>::Connection as ZeroCopyConnection>::Sender::blocking_send,
-            UnableToDeliverStrategy::DiscardSample => <<Service as service::Details<'config>>::Connection as ZeroCopyConnection>::Sender::try_send,
+            UnableToDeliverStrategy::Block => {
+                <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
+            }
+            UnableToDeliverStrategy::DiscardSample => {
+                <Service::Connection as ZeroCopyConnection>::Sender::try_send
+            }
         };
 
         let mut number_of_recipients = 0;
@@ -411,13 +413,13 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
         }
     }
 }
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug + Default>
-    Publish<MessageType> for Publisher<'a, 'config, Service, MessageType>
+impl<'a, Service: service::Service, MessageType: Debug + Default> Publish<MessageType>
+    for Publisher<'a, Service, MessageType>
 {
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> UpdateConnections
-    for Publisher<'a, 'config, Service, MessageType>
+impl<'a, Service: service::Service, MessageType: Debug> UpdateConnections
+    for Publisher<'a, Service, MessageType>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe { (*self.subscriber_list_state.get()).update() } {
@@ -429,8 +431,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Up
     }
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> SendCopy<MessageType>
-    for Publisher<'a, 'config, Service, MessageType>
+impl<'a, Service: service::Service, MessageType: Debug> SendCopy<MessageType>
+    for Publisher<'a, Service, MessageType>
 {
     fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send copy of message";
@@ -445,8 +447,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Se
     }
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
-    UninitLoan<MessageType> for Publisher<'a, 'config, Service, MessageType>
+impl<'a, Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
+    for Publisher<'a, Service, MessageType>
 {
     fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<MessageType>>, PublisherLoanError> {
         self.retrieve_returned_samples();
@@ -503,8 +505,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     }
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> PublishMgmt
-    for Publisher<'a, 'config, Service, MessageType>
+impl<'a, Service: service::Service, MessageType: Debug> PublishMgmt
+    for Publisher<'a, Service, MessageType>
 {
     fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
         self.release_sample(distance_to_chunk);
@@ -520,8 +522,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Pu
     }
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Default + Debug>
-    DefaultLoan<MessageType> for Publisher<'a, 'config, Service, MessageType>
+impl<'a, Service: service::Service, MessageType: Default + Debug> DefaultLoan<MessageType>
+    for Publisher<'a, Service, MessageType>
 {
     fn loan(&self) -> Result<SampleMut<MessageType>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))

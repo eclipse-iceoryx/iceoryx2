@@ -54,13 +54,13 @@ use super::{
 };
 
 #[derive(Debug, Default)]
-struct ListenerConnections<'config, Service: service::Details<'config>> {
+struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections:
         Vec<UnsafeCell<Option<<Service::Event as iceoryx2_cal::event::Event<EventId>>::Notifier>>>,
 }
 
-impl<'config, Service: service::Details<'config>> ListenerConnections<'config, Service> {
+impl<Service: service::Service> ListenerConnections<Service> {
     fn new(size: usize) -> Self {
         let mut new_self = Self {
             connections: vec![],
@@ -112,16 +112,15 @@ impl<'config, Service: service::Details<'config>> ListenerConnections<'config, S
 
 /// Represents the sending endpoint of an event based communication.
 #[derive(Debug)]
-pub struct Notifier<'a, 'config: 'a, Service: service::Details<'config>> {
-    listener_connections: ListenerConnections<'config, Service>,
+pub struct Notifier<'a, Service: service::Service> {
+    listener_connections: ListenerConnections<Service>,
     listener_list_state: UnsafeCell<ContainerState<'a, UniqueListenerId>>,
     default_event_id: EventId,
     _dynamic_config_guard: Option<UniqueIndex<'a>>,
     _phantom_a: PhantomData<&'a Service>,
-    _phantom_b: PhantomData<&'config ()>,
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>> Notifier<'a, 'config, Service> {
+impl<'a, Service: service::Service> Notifier<'a, Service> {
     pub(crate) fn new(
         service: &'a Service,
         default_event_id: EventId,
@@ -138,7 +137,6 @@ impl<'a, 'config: 'a, Service: service::Details<'config>> Notifier<'a, 'config, 
             listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
             _dynamic_config_guard: None,
             _phantom_a: PhantomData,
-            _phantom_b: PhantomData,
         };
 
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
@@ -204,9 +202,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>> Notifier<'a, 'config, 
     }
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>> Notify
-    for Notifier<'a, 'config, Service>
-{
+impl<'a, Service: service::Service> Notify for Notifier<'a, Service> {
     fn notify(&self) -> Result<usize, NotifierConnectionUpdateFailure> {
         self.notify_with_custom_event_id(self.default_event_id)
     }

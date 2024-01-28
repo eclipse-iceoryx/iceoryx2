@@ -39,19 +39,14 @@ use super::ServiceState;
 
 /// Defines a process local or single address space communication setup.
 #[derive(Debug)]
-pub struct Service<'config> {
+pub struct Service {
     state: ServiceState<
-        'config,
         static_storage::process_local::Storage,
         dynamic_storage::process_local::Storage<DynamicConfig>,
     >,
 }
 
-impl<'config> crate::service::Service for Service<'config> {
-    type Type<'b> = Service<'b>;
-}
-
-impl<'config> crate::service::Details<'config> for Service<'config> {
+impl crate::service::Service for Service {
     type StaticStorage = static_storage::process_local::Storage;
     type ConfigSerializer = serialize::toml::Toml;
     type DynamicStorage = dynamic_storage::process_local::Storage<DynamicConfig>;
@@ -60,17 +55,15 @@ impl<'config> crate::service::Details<'config> for Service<'config> {
     type Connection = zero_copy_connection::process_local::Connection;
     type Event = event::process_local::EventImpl<EventId>;
 
-    fn from_state(state: ServiceState<'config, Self::StaticStorage, Self::DynamicStorage>) -> Self {
+    fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self {
         Self { state }
     }
 
-    fn state(&self) -> &ServiceState<'config, Self::StaticStorage, Self::DynamicStorage> {
+    fn state(&self) -> &ServiceState<Self::StaticStorage, Self::DynamicStorage> {
         &self.state
     }
 
-    fn state_mut(
-        &mut self,
-    ) -> &mut ServiceState<'config, Self::StaticStorage, Self::DynamicStorage> {
+    fn state_mut(&mut self) -> &mut ServiceState<Self::StaticStorage, Self::DynamicStorage> {
         &mut self.state
     }
 }

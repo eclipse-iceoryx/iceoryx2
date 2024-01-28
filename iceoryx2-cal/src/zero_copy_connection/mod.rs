@@ -123,7 +123,7 @@ pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept {
     fn release(&self, ptr: PointerOffset) -> Result<(), ZeroCopyReleaseError>;
 }
 
-pub trait ZeroCopyConnection: Sized + NamedConceptMgmt {
+pub trait ZeroCopyConnection: Debug + Sized + NamedConceptMgmt {
     type Sender: ZeroCopySender;
     type Receiver: ZeroCopyReceiver;
     type Builder: ZeroCopyConnectionBuilder<Self>;

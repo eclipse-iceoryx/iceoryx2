@@ -39,19 +39,14 @@ use super::ServiceState;
 
 /// Defines a zero copy inter-process communication setup based on posix mechanisms.
 #[derive(Debug)]
-pub struct Service<'config> {
+pub struct Service {
     state: ServiceState<
-        'config,
         static_storage::file::Storage,
         dynamic_storage::posix_shared_memory::Storage<DynamicConfig>,
     >,
 }
 
-impl<'config> crate::service::Service for Service<'config> {
-    type Type<'b> = Service<'b>;
-}
-
-impl<'config> crate::service::Details<'config> for Service<'config> {
+impl crate::service::Service for Service {
     type StaticStorage = static_storage::file::Storage;
     type ConfigSerializer = serialize::toml::Toml;
     type DynamicStorage = dynamic_storage::posix_shared_memory::Storage<DynamicConfig>;
@@ -60,17 +55,15 @@ impl<'config> crate::service::Details<'config> for Service<'config> {
     type Connection = zero_copy_connection::posix_shared_memory::Connection;
     type Event = event::unix_datagram_socket::EventImpl<EventId>;
 
-    fn from_state(state: ServiceState<'config, Self::StaticStorage, Self::DynamicStorage>) -> Self {
+    fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self {
         Self { state }
     }
 
-    fn state(&self) -> &ServiceState<'config, Self::StaticStorage, Self::DynamicStorage> {
+    fn state(&self) -> &ServiceState<Self::StaticStorage, Self::DynamicStorage> {
         &self.state
     }
 
-    fn state_mut(
-        &mut self,
-    ) -> &mut ServiceState<'config, Self::StaticStorage, Self::DynamicStorage> {
+    fn state_mut(&mut self) -> &mut ServiceState<Self::StaticStorage, Self::DynamicStorage> {
         &mut self.state
     }
 }

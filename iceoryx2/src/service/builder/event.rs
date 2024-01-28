@@ -88,14 +88,14 @@ impl std::error::Error for EventOpenOrCreateError {}
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Builder<'config, ServiceType: service::Details<'config>> {
-    base: builder::BuilderWithServiceType<'config, ServiceType>,
+pub struct Builder<ServiceType: service::Service> {
+    base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_notifiers: bool,
     verify_max_listeners: bool,
 }
 
-impl<'config, ServiceType: service::Details<'config>> Builder<'config, ServiceType> {
-    pub(crate) fn new(base: builder::BuilderWithServiceType<'config, ServiceType>) -> Self {
+impl<ServiceType: service::Service> Builder<ServiceType> {
+    pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
             verify_max_notifiers: false,
@@ -103,7 +103,7 @@ impl<'config, ServiceType: service::Details<'config>> Builder<'config, ServiceTy
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Event(
-            static_config::event::StaticConfig::new(new_self.base.global_config),
+            static_config::event::StaticConfig::new(new_self.base.global_config.as_ref()),
         );
 
         new_self
@@ -138,9 +138,7 @@ impl<'config, ServiceType: service::Details<'config>> Builder<'config, ServiceTy
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    pub fn open_or_create(
-        self,
-    ) -> Result<event::PortFactory<'config, ServiceType>, EventOpenOrCreateError> {
+    pub fn open_or_create(self) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
         let msg = "Unable to open or create event service";
 
         match self.base.is_service_available() {
@@ -163,7 +161,7 @@ impl<'config, ServiceType: service::Details<'config>> Builder<'config, ServiceTy
     }
 
     /// Opens an existing [`Service`].
-    pub fn open(mut self) -> Result<event::PortFactory<'config, ServiceType>, EventOpenError> {
+    pub fn open(mut self) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         let msg = "Unable to open event service";
 
         let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
@@ -223,7 +221,7 @@ impl<'config, ServiceType: service::Details<'config>> Builder<'config, ServiceTy
     }
 
     /// Creates a new [`Service`].
-    pub fn create(mut self) -> Result<event::PortFactory<'config, ServiceType>, EventCreateError> {
+    pub fn create(mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
         self.adjust_properties_to_meaningful_values();
 
         let msg = "Unable to create event service";

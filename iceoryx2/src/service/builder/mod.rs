@@ -38,6 +38,7 @@ use iceoryx2_cal::named_concept::NamedConceptMgmt;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use super::config_scheme::dynamic_config_storage_config;
 use super::config_scheme::static_config_storage_config;
@@ -108,10 +109,10 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
-    pub fn publish_subscribe<'config>(
-        self,
-    ) -> publish_subscribe::Builder<'config, S::Type<'config>> {
-        self.publish_subscribe_with_custom_config(config::Config::get_global_config())
+    pub fn publish_subscribe(self) -> publish_subscribe::Builder<S> {
+        self.publish_subscribe_with_custom_config(&Rc::new(
+            config::Config::get_global_config().clone(),
+        ))
     }
 
     /// Create a new builder to create a
@@ -119,35 +120,31 @@ impl<S: Service> Builder<S> {
     /// with a custom [`config::Config`]
     pub fn publish_subscribe_with_custom_config(
         self,
-        config: &config::Config,
-    ) -> publish_subscribe::Builder<'_, S::Type<'_>> {
+        config: &Rc<config::Config>,
+    ) -> publish_subscribe::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_publish_subscribe::<
-                <<S as service::Service>::Type<'_> as service::Details<'_>>::ServiceNameHasher,
-            >(&self.name, config),
-            config,
+            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
+                &self.name,
+                config.as_ref(),
+            ),
+            Rc::clone(config),
         )
         .publish_subscribe()
     }
 
     /// Create a new builder to create a
     /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
-    pub fn event<'config>(self) -> event::Builder<'config, S::Type<'config>> {
-        self.event_with_custom_config(config::Config::get_global_config())
+    pub fn event(self) -> event::Builder<S> {
+        self.event_with_custom_config(&Rc::new(config::Config::get_global_config().clone()))
     }
 
     /// Create a new builder to create a
     /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
     /// with a custom [`config::Config`]
-    pub fn event_with_custom_config(
-        self,
-        config: &config::Config,
-    ) -> event::Builder<'_, S::Type<'_>> {
+    pub fn event_with_custom_config(self, config: &Rc<config::Config>) -> event::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_event::<
-                <<S as service::Service>::Type<'_> as service::Details<'_>>::ServiceNameHasher,
-            >(&self.name, config),
-            config,
+            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config.as_ref()),
+            Rc::clone(config),
         )
         .event()
     }
@@ -155,28 +152,26 @@ impl<S: Service> Builder<S> {
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct BuilderWithServiceType<'config, ServiceType: service::Details<'config>> {
+pub struct BuilderWithServiceType<ServiceType: service::Service> {
     service_config: StaticConfig,
-    global_config: &'config config::Config,
+    global_config: Rc<config::Config>,
     _phantom_data: PhantomData<ServiceType>,
-    _phantom_lifetime_b: PhantomData<&'config ()>,
 }
 
-impl<'config, ServiceType: service::Details<'config>> BuilderWithServiceType<'config, ServiceType> {
-    fn new(service_config: StaticConfig, global_config: &'config config::Config) -> Self {
+impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
+    fn new(service_config: StaticConfig, global_config: Rc<config::Config>) -> Self {
         Self {
             service_config,
             global_config,
             _phantom_data: PhantomData,
-            _phantom_lifetime_b: PhantomData,
         }
     }
 
-    fn publish_subscribe(self) -> publish_subscribe::Builder<'config, ServiceType> {
+    fn publish_subscribe(self) -> publish_subscribe::Builder<ServiceType> {
         publish_subscribe::Builder::new(self)
     }
 
-    fn event(self) -> event::Builder<'config, ServiceType> {
+    fn event(self) -> event::Builder<ServiceType> {
         event::Builder::new(self)
     }
 
@@ -184,7 +179,8 @@ impl<'config, ServiceType: service::Details<'config>> BuilderWithServiceType<'co
         &self,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         let msg = "Unable to check if the service is available";
-        let static_storage_config = static_config_storage_config::<ServiceType>(self.global_config);
+        let static_storage_config =
+            static_config_storage_config::<ServiceType>(self.global_config.as_ref());
         let file_name_uuid = fatal_panic!(from self,
                         when FileName::new(self.service_config.uuid().as_bytes()),
                         "This should never happen! The uuid should be always a valid file name.");
@@ -200,7 +196,7 @@ impl<'config, ServiceType: service::Details<'config>> BuilderWithServiceType<'co
             }
             Ok(true) => {
                 let storage = if let Ok(v) = <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
-                                       <ServiceType as service::Details>::StaticStorage>>
+                                       ServiceType::StaticStorage>>
                                        ::new(&file_name_uuid)
                                         .has_ownership(false)
                                         .config(&static_storage_config)
@@ -255,7 +251,7 @@ impl<'config, ServiceType: service::Details<'config>> BuilderWithServiceType<'co
         >>::Builder as NamedConceptBuilder<
             ServiceType::DynamicStorage,
         >>::new(&dynamic_config_storage_name(&self.service_config))
-            .config(&dynamic_config_storage_config::<ServiceType>(self.global_config))
+            .config(&dynamic_config_storage_config::<ServiceType>(self.global_config.as_ref()))
             .supplementary_size(additional_size)
             .has_ownership(false)
             .create_and_initialize(DynamicConfig::new_uninit(messaging_pattern),
@@ -281,7 +277,7 @@ impl<'config, ServiceType: service::Details<'config>> BuilderWithServiceType<'co
                 >>::Builder as NamedConceptBuilder<
                     ServiceType::DynamicStorage,
                 >>::new(&dynamic_config_storage_name(&self.service_config))
-                    .config(&dynamic_config_storage_config::<ServiceType>(self.global_config))
+                    .config(&dynamic_config_storage_config::<ServiceType>(self.global_config.as_ref()))
                 .has_ownership(false)
                 .open(),
             "{} since the dynamic storage could not be opened.", msg);
@@ -295,16 +291,14 @@ impl<'config, ServiceType: service::Details<'config>> BuilderWithServiceType<'co
 
     fn create_static_config_storage(
         &self,
-    ) -> Result<
-        <<ServiceType as service::Details<'config>>::StaticStorage as StaticStorage>::Locked,
-        StaticStorageCreateError,
-    > {
+    ) -> Result<<ServiceType::StaticStorage as StaticStorage>::Locked, StaticStorageCreateError>
+    {
         Ok(
             fail!(from self, when <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
-                        <ServiceType as service::Details>::StaticStorage,
+                        ServiceType::StaticStorage,
                     >>::new(&static_config_storage_name(self.service_config.uuid()))
                     .config(&static_config_storage_config::<ServiceType>(
-                        self.global_config,
+                        self.global_config.as_ref(),
                     ))
                     .has_ownership(false)
                     .create_locked(),
