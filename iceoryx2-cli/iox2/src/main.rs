@@ -4,7 +4,10 @@ use human_panic::setup_panic;
 #[cfg(debug_assertions)]
 extern crate better_panic;
 
+mod cli;
 mod commands;
+
+use clap::Parser;
 
 fn main() {
     #[cfg(not(debug_assertions))]
@@ -20,10 +23,9 @@ fn main() {
             .install();
     }
 
-    let commands = commands::find();
+    let cli = cli::Cli::parse();
 
-    println!("Available commands:");
-    for command in commands {
-        println!("- {}", command);
+    if cli.list {
+        commands::list();
     }
 }

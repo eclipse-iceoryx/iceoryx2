@@ -1,8 +1,17 @@
+use colored::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn find() -> Vec<String> {
+pub fn list() {
+    println!("Installed Commands:");
+    let installed_commands = find();
+    for command in installed_commands {
+        println!("  {}", command.bold());
+    }
+}
+
+fn find() -> Vec<String> {
     let mut commands = find_command_binaries_in_development_dirs();
     if commands.is_empty() {
         commands = find_command_binaries_in_system_path();
