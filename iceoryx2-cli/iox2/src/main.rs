@@ -27,5 +27,20 @@ fn main() {
 
     if cli.list {
         commands::list();
+    } else if !cli.external_command.is_empty() {
+        let command_name = &cli.external_command[0];
+        let command_args = &cli.external_command[1..];
+        match commands::execute_external_command(command_name, command_args, cli.dev) {
+            Ok(()) => {
+                // Command executed successfully, nothing to do
+            }
+            Err(commands::ExecutionError::NotFound(_)) => {
+                // Command not found, print help
+                println!("Command not found. See all installed commands with --list.");
+            }
+            Err(commands::ExecutionError::Failed(_)) => {
+                println!("Command found but execution failed ...");
+            }
+        }
     }
 }
