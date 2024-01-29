@@ -55,29 +55,25 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 /// [`crate::port::publisher::Publisher`]
 /// or [`crate::port::subscriber::Subscriber`] ports.
 #[derive(Debug)]
-pub struct PortFactory<'config, Service: service::Details<'config>, MessageType: Debug> {
+pub struct PortFactory<Service: service::Service, MessageType: Debug> {
     pub(crate) service: Service,
     _phantom_message_type: PhantomData<MessageType>,
-    _phantom_lifetime_b: PhantomData<&'config ()>,
 }
 
-unsafe impl<'config, Service: service::Details<'config>, MessageType: Debug> Send
-    for PortFactory<'config, Service, MessageType>
+unsafe impl<Service: service::Service, MessageType: Debug> Send
+    for PortFactory<Service, MessageType>
 {
 }
-unsafe impl<'config, Service: service::Details<'config>, MessageType: Debug> Sync
-    for PortFactory<'config, Service, MessageType>
+unsafe impl<Service: service::Service, MessageType: Debug> Sync
+    for PortFactory<Service, MessageType>
 {
 }
 
-impl<'config, Service: service::Details<'config>, MessageType: Debug>
-    PortFactory<'config, Service, MessageType>
-{
+impl<Service: service::Service, MessageType: Debug> PortFactory<Service, MessageType> {
     pub(crate) fn new(service: Service) -> Self {
         Self {
             service,
             _phantom_message_type: PhantomData,
-            _phantom_lifetime_b: PhantomData,
         }
     }
 
@@ -126,7 +122,7 @@ impl<'config, Service: service::Details<'config>, MessageType: Debug>
     /// # Ok(())
     /// # }
     /// ```
-    pub fn subscriber<'a>(&'a self) -> PortFactorySubscriber<'a, 'config, Service, MessageType> {
+    pub fn subscriber(&self) -> PortFactorySubscriber<Service, MessageType> {
         PortFactorySubscriber { factory: self }
     }
 
@@ -153,7 +149,7 @@ impl<'config, Service: service::Details<'config>, MessageType: Debug>
     /// # Ok(())
     /// # }
     /// ```
-    pub fn publisher<'a>(&'a self) -> PortFactoryPublisher<'a, 'config, Service, MessageType> {
+    pub fn publisher(&self) -> PortFactoryPublisher<Service, MessageType> {
         PortFactoryPublisher::new(self)
     }
 }

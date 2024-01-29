@@ -21,7 +21,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::StaticConfig;
-    use iceoryx2::service::{Details, Service};
+    use iceoryx2::service::Service;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 
@@ -1051,7 +1051,7 @@ mod service_publish_subscribe {
     }
 
     #[test]
-    fn does_exist_works_single<Sut: Service + Details<'static>>() {
+    fn does_exist_works_single<Sut: Service>() {
         let service_name = generate_name();
         assert_that!(Sut::does_exist(&service_name).unwrap(), eq false);
 
@@ -1069,7 +1069,7 @@ mod service_publish_subscribe {
     }
 
     #[test]
-    fn does_exist_works_many<Sut: Service + Details<'static>>() {
+    fn does_exist_works_many<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 8;
 
         let mut services = vec![];
@@ -1110,7 +1110,7 @@ mod service_publish_subscribe {
     }
 
     #[test]
-    fn list_works<Sut: Service + Details<'static>>() {
+    fn list_works<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 8;
 
         let mut services = vec![];

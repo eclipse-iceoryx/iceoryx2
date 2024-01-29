@@ -20,7 +20,8 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Replace `iceoryx2::service::Service` with `iceoryx2::service::Details` [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
+ * Remove `'config` lifetime from all structs  [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
 
 ### Workflow
 
@@ -35,8 +36,8 @@
  * Add `FixedSizeByteString::from_bytes_truncated` [#56](https://github.com/eclipse-iceoryx/iceoryx2/issues/56)
  * Add `Deref`, `DerefMut`, `Clone`, `Eq`, `PartialEq` and `extend_from_slice` to (FixedSize)Vec [#58](https://github.com/eclipse-iceoryx/iceoryx2/issues/58)
  * `MessagingPattern` implements `Display` [#64](https://github.com/eclipse-iceoryx/iceoryx2/issues/64)
- * Introduce traits for all ports (`Listener`, `Notifier`, `Publisher`, `PublisherLoan`, `Subscriber`)
-   and for samples (`SampleMut`, `Sample`) [#69](https://github.com/eclipse-iceoryx/iceoryx2/issues/69)
+ * Introduce traits for all ports (`Listen`, `Notify`, `Publish`, `DefaultLoan`, `UninitLoan`, `Subscribe`)
+   and for samples (`PayloadMut`, `Payload`) [#69](https://github.com/eclipse-iceoryx/iceoryx2/issues/69)
 
 ### API Breaking Changes
 
@@ -56,18 +57,58 @@
     sample.send()?;
     ```
 
-2. Port types renamed, `Impl` suffix was added to all ports
+2. All port `Publisher`, `Subscriber`, `Listener` and `Notifier` no longer have a generic
+    `'config` lifetime parameter.
 
     ```rust
     // old
-    let publisher: Publisher<'_, '_, zero_copy::Service, u64> = service.publisher().create()?;
+    let publisher: Publisher<'service, 'config, iceoryx2::service::zero_copy::Service::Type<'config>, MessageType> = ..;
+    let subscriber: Subscriber<'service, 'config, iceoryx2::service::zero_copy::Service::Type<'config>, MessageType> = ..;
+    let notifier: Notifier<'service, 'config, iceoryx2::service::zero_copy::Service::Type<'config>> = ..;
+    let listener: Listener<'service, 'config, iceoryx2::service::zero_copy::Service::Type<'config>> = ..;
 
     // new
-    let publisher: PublisherImpl<'_, '_, zero_copy::Service, u64> = service.publisher().create()?;
-
-    // same applies also to:
-    // * `Subscriber` -> `SubscriberImpl`
-    // * `Listener` -> `ListenerImpl`
-    // * `Notifier` -> `NotifierImpl`
+    let publisher: Publisher<'service, iceoryx2::service::zero_copy::Service, MessageType> = ..;
+    let subscriber: Subscriber<'service, iceoryx2::service::zero_copy::Service, MessageType> = ..;
+    let notifier: Notifier<'service, iceoryx2::service::zero_copy::Service> = ..;
+    let listener: Listener<'service, iceoryx2::service::zero_copy::Service> = ..;
     ```
 
+3. `iceoryx2::service::Details` no longer has a generic `'config` lifetime parameter.
+   `iceoryx2::service::Details` replaced `iceoryx2::service::Service`. All custom services need
+   to implement `iceoryx2::service::Service`.
+
+    ```rust
+    // old
+    pub struct MyCustomServiceType<'config> {
+        state: ServiceState<'config, static_storage::whatever::Storage, dynamic_storage::whatever::Storage<WhateverConfig>>
+    }
+
+    impl<'config> crate::service::Service for MyCustomServiceType<'config> {
+        // ...
+    }
+
+    impl<'config> crate::service::Details for MyCustomServiceType<'config> {
+        // ...
+    }
+
+    // new
+    pub struct MyCustomServiceType {
+        state: ServiceState<static_storage::whatever::Storage, dynamic_storage::whatever::Storage<WhateverConfig>>
+    }
+
+    impl crate::service::Service for MyCustomServiceType {
+        // ...
+    }
+    ```
+
+4. Writing functions with generic service parameter no longer require `Service + Details<'config>`.
+   Now it suffices to just use `Service`
+
+    ```rust
+    // old
+    fn my_generic_service_function<'config, ServiceType: iceoryx2::service::Service + iceoryx2::service::Details<'config>>();
+
+    // new
+    fn my_generic_service_function<ServiceType: iceoryx2::service::Service>();
+    ```

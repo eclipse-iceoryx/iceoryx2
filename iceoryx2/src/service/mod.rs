@@ -139,6 +139,7 @@ pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 
 use std::fmt::Debug;
+use std::rc::Rc;
 
 use crate::config;
 use crate::port::event_id::EventId;
@@ -161,8 +162,8 @@ use self::builder::Builder;
 use self::dynamic_config::DecrementReferenceCounterResult;
 use self::service_name::ServiceName;
 
-/// Failure that can be reported by [`Details::does_exist()`] or
-/// [`Details::does_exist_with_custom_config()`].
+/// Failure that can be reported by [`Service::does_exist()`] or
+/// [`Service::does_exist_with_custom_config()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceDoesExistError {
     InsufficientPermissions,
@@ -177,8 +178,8 @@ impl std::fmt::Display for ServiceDoesExistError {
 
 impl std::error::Error for ServiceDoesExistError {}
 
-/// Failure that can be reported by [`Details::list()`] or
-/// [`Details::list_with_custom_config()`].
+/// Failure that can be reported by [`Service::list()`] or
+/// [`Service::list_with_custom_config()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceListError {
     InsufficientPermissions,
@@ -195,19 +196,17 @@ impl std::error::Error for ServiceListError {}
 
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
-pub struct ServiceState<'config, Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> {
+pub struct ServiceState<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> {
     pub(crate) static_config: StaticConfig,
-    pub(crate) global_config: &'config config::Config,
+    pub(crate) global_config: Rc<config::Config>,
     pub(crate) dynamic_storage: Dynamic,
     pub(crate) static_storage: Static,
 }
 
-impl<'config, Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>>
-    ServiceState<'config, Static, Dynamic>
-{
+impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> ServiceState<Static, Dynamic> {
     pub(crate) fn new(
         static_config: StaticConfig,
-        global_config: &'config config::Config,
+        global_config: Rc<config::Config>,
         dynamic_storage: Dynamic,
         static_storage: Static,
     ) -> Self {
@@ -222,8 +221,8 @@ impl<'config, Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>>
     }
 }
 
-impl<'config, Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> Drop
-    for ServiceState<'config, Static, Dynamic>
+impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> Drop
+    for ServiceState<Static, Dynamic>
 {
     fn drop(&mut self) {
         match self.dynamic_storage.get().decrement_reference_counter() {
@@ -240,18 +239,14 @@ impl<'config, Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> Dro
 }
 
 /// Represents a service. Used to create or open new services with the [`Builder`].
-pub trait Service: Sized {
-    type Type<'a>: Details<'a>;
-
+/// Contains the building blocks a [`Service`] requires to create the underlying resources and
+/// establish communication.
+pub trait Service: Debug + Sized {
     /// Creates a new [`Builder`] for a given service name
     fn new(name: &ServiceName) -> Builder<Self> {
         Builder::new(name)
     }
-}
 
-/// Contains the building blocks a [`Service`] requires to create the underlying resources and
-/// establish communication.
-pub trait Details<'config>: Debug + Sized {
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;
@@ -276,15 +271,13 @@ pub trait Details<'config>: Debug + Sized {
     type Event: Event<EventId>;
 
     #[doc(hidden)]
-    fn from_state(state: ServiceState<'config, Self::StaticStorage, Self::DynamicStorage>) -> Self;
+    fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self;
 
     #[doc(hidden)]
-    fn state(&self) -> &ServiceState<'config, Self::StaticStorage, Self::DynamicStorage>;
+    fn state(&self) -> &ServiceState<Self::StaticStorage, Self::DynamicStorage>;
 
     #[doc(hidden)]
-    fn state_mut(
-        &mut self,
-    ) -> &mut ServiceState<'config, Self::StaticStorage, Self::DynamicStorage>;
+    fn state_mut(&mut self) -> &mut ServiceState<Self::StaticStorage, Self::DynamicStorage>;
 
     /// Checks if a service with the name exists.
     ///
@@ -320,7 +313,7 @@ pub trait Details<'config>: Debug + Sized {
     /// ```
     fn does_exist_with_custom_config(
         service_name: &ServiceName,
-        config: &'config config::Config,
+        config: &config::Config,
     ) -> Result<bool, ServiceDoesExistError> {
         let msg = format!("Unable to verify if \"{}\" exists", service_name);
         let origin = "Service::does_exist_from_config()";
@@ -419,7 +412,7 @@ pub trait Details<'config>: Debug + Sized {
     /// # }
     /// ```
     fn list_with_custom_config(
-        config: &'config config::Config,
+        config: &config::Config,
     ) -> Result<Vec<StaticConfig>, ServiceListError> {
         let msg = "Unable to list all services";
         let origin = "Service::list_from_config()";

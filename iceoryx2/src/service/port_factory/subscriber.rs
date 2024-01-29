@@ -41,22 +41,17 @@ use super::publish_subscribe::PortFactory;
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactorySubscriber<
-    'factory,
-    'config,
-    Service: service::Details<'config>,
-    MessageType: Debug,
-> {
-    pub(crate) factory: &'factory PortFactory<'config, Service, MessageType>,
+pub struct PortFactorySubscriber<'factory, Service: service::Service, MessageType: Debug> {
+    pub(crate) factory: &'factory PortFactory<Service, MessageType>,
 }
 
-impl<'factory, 'config, Service: service::Details<'config>, MessageType: Debug>
-    PortFactorySubscriber<'factory, 'config, Service, MessageType>
+impl<'factory, Service: service::Service, MessageType: Debug>
+    PortFactorySubscriber<'factory, Service, MessageType>
 {
     /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
     pub fn create(
         &self,
-    ) -> Result<Subscriber<'factory, 'config, Service, MessageType>, SubscriberCreateError> {
+    ) -> Result<Subscriber<'factory, Service, MessageType>, SubscriberCreateError> {
         Ok(
             fail!(from self, when Subscriber::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe()),
                 "Failed to create new Subscriber port."),

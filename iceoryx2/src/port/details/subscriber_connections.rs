@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::cell::UnsafeCell;
+use std::rc::Rc;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
@@ -27,19 +28,18 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub(crate) struct Connection<'config, Service: service::Details<'config>> {
-    pub(crate) sender:
-        <<Service as service::Details<'config>>::Connection as ZeroCopyConnection>::Sender,
+pub(crate) struct Connection<Service: service::Service> {
+    pub(crate) sender: <Service::Connection as ZeroCopyConnection>::Sender,
 }
 
-impl<'config, Service: service::Details<'config>> Connection<'config, Service> {
+impl<Service: service::Service> Connection<Service> {
     fn new(
-        this: &SubscriberConnections<'config, Service>,
+        this: &SubscriberConnections<Service>,
         subscriber_id: UniqueSubscriberId,
     ) -> Result<Self, ZeroCopyCreationError> {
-        let sender = fail!(from this, when <<Service as service::Details<'config>>::Connection as ZeroCopyConnection>::
+        let sender = fail!(from this, when <Service::Connection as ZeroCopyConnection>::
                         Builder::new( &connection_name(this.port_id, subscriber_id))
-                                .config(&connection_config::<Service>(this.config))
+                                .config(&connection_config::<Service>(this.config.as_ref()))
                                 .buffer_size(this.static_config.subscriber_max_buffer_size)
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
@@ -52,35 +52,35 @@ impl<'config, Service: service::Details<'config>> Connection<'config, Service> {
 }
 
 #[derive(Debug)]
-pub(crate) struct SubscriberConnections<'config, Service: service::Details<'config>> {
-    connections: Vec<UnsafeCell<Option<Connection<'config, Service>>>>,
+pub(crate) struct SubscriberConnections<Service: service::Service> {
+    connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     port_id: UniquePublisherId,
-    config: &'config config::Config,
+    config: Rc<config::Config>,
     static_config: StaticConfig,
 }
 
-impl<'config, Service: service::Details<'config>> SubscriberConnections<'config, Service> {
+impl<Service: service::Service> SubscriberConnections<Service> {
     pub(crate) fn new(
         capacity: usize,
-        config: &'config config::Config,
+        config: &Rc<config::Config>,
         port_id: UniquePublisherId,
         static_config: &StaticConfig,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
-            config,
+            config: Rc::clone(config),
             port_id,
             static_config: static_config.clone(),
         }
     }
 
-    pub(crate) fn get(&self, index: usize) -> &Option<Connection<'config, Service>> {
+    pub(crate) fn get(&self, index: usize) -> &Option<Connection<Service>> {
         unsafe { &(*self.connections[index].get()) }
     }
 
     // only used internally as convinience function
     #[allow(clippy::mut_from_ref)]
-    fn get_mut(&self, index: usize) -> &mut Option<Connection<'config, Service>> {
+    fn get_mut(&self, index: usize) -> &mut Option<Connection<Service>> {
         #[deny(clippy::mut_from_ref)]
         unsafe {
             &mut (*self.connections[index].get())

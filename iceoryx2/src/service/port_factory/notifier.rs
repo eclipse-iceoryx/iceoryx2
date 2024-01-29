@@ -41,15 +41,13 @@ use super::event::PortFactory;
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactoryNotifier<'factory, 'config, Service: service::Details<'config>> {
-    pub(crate) factory: &'factory PortFactory<'config, Service>,
+pub struct PortFactoryNotifier<'factory, Service: service::Service> {
+    pub(crate) factory: &'factory PortFactory<Service>,
     default_event_id: EventId,
 }
 
-impl<'factory, 'config, Service: service::Details<'config>>
-    PortFactoryNotifier<'factory, 'config, Service>
-{
-    pub(crate) fn new(factory: &'factory PortFactory<'config, Service>) -> Self {
+impl<'factory, Service: service::Service> PortFactoryNotifier<'factory, Service> {
+    pub(crate) fn new(factory: &'factory PortFactory<Service>) -> Self {
         Self {
             factory,
             default_event_id: EventId::default(),
@@ -64,7 +62,7 @@ impl<'factory, 'config, Service: service::Details<'config>>
     }
 
     /// Creates a new [`Notifier`] port or returns a [`NotifierCreateError`] on failure.
-    pub fn create(&self) -> Result<Notifier<'factory, 'config, Service>, NotifierCreateError> {
+    pub fn create(&self) -> Result<Notifier<'factory, Service>, NotifierCreateError> {
         Ok(
             fail!(from self, when Notifier::new(&self.factory.service, self.default_event_id),
                     "Failed to create new Notifier port."),

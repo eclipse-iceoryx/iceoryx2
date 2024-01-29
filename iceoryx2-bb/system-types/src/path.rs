@@ -27,6 +27,8 @@
 //! assert!(invalid_name.is_err());
 //! ```
 
+pub use iceoryx2_bb_container::semantic_string::SemanticString;
+
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 
@@ -34,7 +36,7 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_pal_configuration::{FILENAME_LENGTH, PATH_SEPARATOR, ROOT};
 
 use crate::file_path::FilePath;
-use iceoryx2_bb_container::semantic_string::*;
+use iceoryx2_bb_container::semantic_string::SemanticStringError;
 
 const PATH_LENGTH: usize = iceoryx2_pal_configuration::PATH_LENGTH;
 

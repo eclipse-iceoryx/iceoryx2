@@ -57,9 +57,9 @@ use super::DegrationCallback;
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
-pub struct Subscriber<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> {
+pub struct Subscriber<'a, Service: service::Service, MessageType: Debug> {
     dynamic_config_guard: Option<UniqueIndex<'a>>,
-    publisher_connections: PublisherConnections<'config, Service>,
+    publisher_connections: PublisherConnections<Service>,
     service: &'a Service,
     degration_callback: Option<DegrationCallback<'a>>,
 
@@ -67,9 +67,7 @@ pub struct Subscriber<'a, 'config: 'a, Service: service::Details<'config>, Messa
     _phantom_message_type: PhantomData<MessageType>,
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
-    Subscriber<'a, 'config, Service, MessageType>
-{
+impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, MessageType> {
     pub(crate) fn new(
         service: &'a Service,
         static_config: &StaticConfig,
@@ -89,7 +87,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
             publisher_connections: PublisherConnections::new(
                 publisher_list.capacity(),
                 port_id,
-                service.state().global_config,
+                &service.state().global_config,
                 static_config,
             ),
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
@@ -171,7 +169,7 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     fn receive_from_connection<'subscriber>(
         &'subscriber self,
         channel_id: usize,
-        connection: &mut Connection<'config, Service>,
+        connection: &mut Connection<Service>,
     ) -> Result<Option<Sample<'subscriber, MessageType>>, SubscriberReceiveError> {
         let msg = "Unable to receive another sample";
         match connection.receiver.receive() {
@@ -220,8 +218,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug>
     }
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Subscribe<MessageType>
-    for Subscriber<'a, 'config, Service, MessageType>
+impl<'a, Service: service::Service, MessageType: Debug> Subscribe<MessageType>
+    for Subscriber<'a, Service, MessageType>
 {
     fn receive(&self) -> Result<Option<Sample<MessageType>>, SubscriberReceiveError> {
         if let Err(e) = self.update_connections() {
@@ -254,8 +252,8 @@ impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> Su
     }
 }
 
-impl<'a, 'config: 'a, Service: service::Details<'config>, MessageType: Debug> SubscribeMgmt
-    for Subscriber<'a, 'config, Service, MessageType>
+impl<'a, Service: service::Service, MessageType: Debug> SubscribeMgmt
+    for Subscriber<'a, Service, MessageType>
 {
     fn release_sample(&self, channel_id: usize, sample: usize) {
         match self.publisher_connections.get(channel_id) {

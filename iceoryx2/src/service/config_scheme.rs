@@ -45,7 +45,7 @@ fn generate_default_config<T: NamedConceptConfiguration>(
         .path_hint(*path_hint)
 }
 
-pub(crate) fn dynamic_config_storage_config<'config, Service: crate::service::Details<'config>>(
+pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
     global_config: &config::Config,
 ) -> <Service::DynamicStorage as NamedConceptMgmt>::Configuration {
     generate_default_config::<<Service::DynamicStorage as NamedConceptMgmt>::Configuration>(
@@ -56,7 +56,7 @@ pub(crate) fn dynamic_config_storage_config<'config, Service: crate::service::De
     )
 }
 
-pub(crate) fn static_config_storage_config<'config, Service: crate::service::Details<'config>>(
+pub(crate) fn static_config_storage_config<Service: crate::service::Service>(
     global_config: &config::Config,
 ) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
     let origin = "static_config_storage_config";
@@ -79,7 +79,7 @@ pub(crate) fn static_config_storage_config<'config, Service: crate::service::Det
     )
 }
 
-pub(crate) fn connection_config<'config, Service: crate::service::Details<'config>>(
+pub(crate) fn connection_config<Service: crate::service::Service>(
     global_config: &config::Config,
 ) -> <Service::Connection as NamedConceptMgmt>::Configuration {
     generate_default_config::<<Service::Connection as NamedConceptMgmt>::Configuration>(
@@ -90,7 +90,7 @@ pub(crate) fn connection_config<'config, Service: crate::service::Details<'confi
     )
 }
 
-pub(crate) fn data_segment_config<'config, Service: crate::service::Details<'config>>(
+pub(crate) fn data_segment_config<Service: crate::service::Service>(
     global_config: &config::Config,
 ) -> <Service::SharedMemory as NamedConceptMgmt>::Configuration {
     generate_default_config::<<Service::SharedMemory as NamedConceptMgmt>::Configuration>(

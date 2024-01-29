@@ -37,7 +37,6 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::service::{self, static_config};
 use crate::service::{dynamic_config, ServiceName};
-use std::marker::PhantomData;
 
 use super::listener::PortFactoryListener;
 use super::notifier::PortFactoryNotifier;
@@ -47,20 +46,16 @@ use super::notifier::PortFactoryNotifier;
 /// acquire dynamic and static service informations and create [`crate::port::notifier::Notifier`]
 /// or [`crate::port::listener::Listener`] ports.
 #[derive(Debug)]
-pub struct PortFactory<'config, Service: service::Details<'config>> {
+pub struct PortFactory<Service: service::Service> {
     pub(crate) service: Service,
-    _phantom_lifetime_b: PhantomData<&'config ()>,
 }
 
-unsafe impl<'config, Service: service::Details<'config>> Send for PortFactory<'config, Service> {}
-unsafe impl<'config, Service: service::Details<'config>> Sync for PortFactory<'config, Service> {}
+unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
+unsafe impl<Service: service::Service> Sync for PortFactory<Service> {}
 
-impl<'config, Service: service::Details<'config>> PortFactory<'config, Service> {
+impl<Service: service::Service> PortFactory<Service> {
     pub(crate) fn new(service: Service) -> Self {
-        Self {
-            service,
-            _phantom_lifetime_b: PhantomData,
-        }
+        Self { service }
     }
 
     /// Returns the [`ServiceName`] of the [`crate::service::Service`]
@@ -102,7 +97,7 @@ impl<'config, Service: service::Details<'config>> PortFactory<'config, Service> 
     /// # Ok(())
     /// # }
     /// ```
-    pub fn notifier<'a>(&'a self) -> PortFactoryNotifier<'a, 'config, Service> {
+    pub fn notifier(&self) -> PortFactoryNotifier<Service> {
         PortFactoryNotifier::new(self)
     }
 
@@ -123,7 +118,7 @@ impl<'config, Service: service::Details<'config>> PortFactory<'config, Service> 
     /// # Ok(())
     /// # }
     /// ```
-    pub fn listener<'a>(&'a self) -> PortFactoryListener<'a, 'config, Service> {
+    pub fn listener(&self) -> PortFactoryListener<Service> {
         PortFactoryListener { factory: self }
     }
 }

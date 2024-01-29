@@ -18,4 +18,4 @@ pub use crate::port::{
     event_id::EventId, listen::Listen, notify::Notify, publish::DefaultLoan, publish::Publish,
     publish::SendCopy, publish::UninitLoan, subscribe::Subscribe,
 };
-pub use crate::service::{process_local, service_name::ServiceName, zero_copy, Details, Service};
+pub use crate::service::{process_local, service_name::ServiceName, zero_copy, Service};
