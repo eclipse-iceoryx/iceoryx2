@@ -72,6 +72,24 @@ mod windows {
             .unwrap();
         assert_that!(sut, eq b"fuu\\blaaaha\\blub.ma");
     }
+
+    #[test]
+    fn path_is_absolute_works() {
+        let sut = Path::new(b"D:\\bla").unwrap();
+        assert_that!(sut.is_absolute(), eq true);
+
+        let sut = Path::new(b"k:\\fuu\\bar").unwrap();
+        assert_that!(sut.is_absolute(), eq true);
+
+        let sut = Path::new(b"0:\\a\\b").unwrap();
+        assert_that!(sut.is_absolute(), eq false);
+
+        let sut = Path::new(b"").unwrap();
+        assert_that!(sut.is_absolute(), eq false);
+
+        let sut = Path::new(b"what/ever/").unwrap();
+        assert_that!(sut.is_absolute(), eq false);
+    }
 }
 
 #[cfg(not(target_os = "windows"))]

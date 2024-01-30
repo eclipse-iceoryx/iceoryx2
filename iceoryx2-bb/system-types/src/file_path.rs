@@ -130,13 +130,8 @@ impl FilePath {
 
     /// Returns the [`Path`] part of the [`FilePath`].
     pub fn path(&self) -> Path {
-        let path = match self
-            .as_bytes()
-            .rsplitn(2, |c| *c == PATH_SEPARATOR)
-            .skip(1)
-            .next()
-        {
-            Some(p) if p.len() > 0 => p,
+        let path = match self.as_bytes().rsplitn(2, |c| *c == PATH_SEPARATOR).nth(1) {
+            Some(p) if !p.is_empty() => p,
             Some(_) => &[PATH_SEPARATOR],
             None => &[],
         };

@@ -111,11 +111,25 @@ impl Path {
     }
 
     pub fn is_absolute(&self) -> bool {
-        if self.as_bytes().is_empty() {
-            return false;
-        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            if self.as_bytes().is_empty() {
+                return false;
+            }
 
-        self.as_bytes()[0] == PATH_SEPARATOR
+            self.as_bytes()[0] == PATH_SEPARATOR
+        }
+        #[cfg(target_os = "windows")]
+        {
+            if self.len() < 3 {
+                return false;
+            }
+
+            let has_drive_letter = (b'a' <= self.as_bytes()[0] && self.as_bytes()[0] <= b'z')
+                || (b'A' <= self.as_bytes()[0] && self.as_bytes()[0] <= b'Z');
+
+            has_drive_letter && self.as_bytes()[1] == b':' && (self.as_bytes()[2] == PATH_SEPARATOR)
+        }
     }
 
     pub fn new_root_path() -> Path {
@@ -133,7 +147,7 @@ impl Path {
     pub fn entries(&self) -> Vec<FixedSizeByteString<FILENAME_LENGTH>> {
         self.as_bytes()
             .split(|c| *c == PATH_SEPARATOR)
-            .filter(|entry| entry.len() > 0)
+            .filter(|entry| !entry.is_empty())
             .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
             .collect()
     }
