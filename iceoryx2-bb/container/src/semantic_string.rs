@@ -86,7 +86,8 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///
     /// # Safety
     ///
-    ///   * The user must ensure that the bytes contain only valid characters.
+    ///   * The slice must contain only valid characters.
+    ///   * The slice must have a length that is less or equal CAPACITY
     ///
     unsafe fn new_unchecked(bytes: &[u8]) -> Self;
 
@@ -169,6 +170,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///
     ///   * The user must ensure that the bytes contain only valid characters.
     ///   * The user must ensure that the result, after the bytes were added, is valid.
+    ///   * The slice must have a length that is less or equal CAPACITY
     ///
     unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]);
 

@@ -127,50 +127,15 @@ impl Path {
     }
 
     pub fn new_normalized(value: &[u8]) -> Result<Path, SemanticStringError> {
-        let mut raw_path = [0u8; PATH_LENGTH];
-
-        let mut previous_char_is_path_separator = false;
-        let mut n = 0;
-        for i in 0..value.len() {
-            if i + 1 == value.len() && value[i] == PATH_SEPARATOR {
-                break;
-            }
-
-            if !(previous_char_is_path_separator && value[i] == PATH_SEPARATOR) {
-                raw_path[n] = value[i];
-                n += 1;
-            }
-
-            previous_char_is_path_separator = value[i] == PATH_SEPARATOR
-        }
-
-        Path::new(&raw_path[0..n])
+        Ok(Path::new(value)?.normalize())
     }
 
     pub fn entries(&self) -> Vec<FixedSizeByteString<FILENAME_LENGTH>> {
-        let mut entry_vec = vec![];
-        let mut start_pos = 0;
-        let raw_path = self.as_bytes();
-        for i in 0..raw_path.len() {
-            if raw_path[i] == PATH_SEPARATOR {
-                if i - start_pos == 0 {
-                    start_pos = i + 1;
-                    continue;
-                }
-
-                entry_vec
-                    .push(unsafe { FixedSizeByteString::new_unchecked(&raw_path[start_pos..i]) });
-                start_pos = i + 1;
-            }
-        }
-
-        if start_pos < raw_path.len() {
-            entry_vec.push(unsafe {
-                FixedSizeByteString::new_unchecked(&raw_path[start_pos..raw_path.len()])
-            });
-        }
-
-        entry_vec
+        self.as_bytes()
+            .split(|c| *c == PATH_SEPARATOR)
+            .filter(|entry| entry.len() > 0)
+            .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
+            .collect()
     }
 }
 
