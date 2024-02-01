@@ -145,11 +145,33 @@ impl Path {
     }
 
     pub fn entries(&self) -> Vec<FixedSizeByteString<FILENAME_LENGTH>> {
-        self.as_bytes()
-            .split(|c| *c == PATH_SEPARATOR)
-            .filter(|entry| !entry.is_empty())
-            .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
-            .collect()
+        #[cfg(not(target_os = "windows"))]
+        {
+            self.as_bytes()
+                .split(|c| *c == PATH_SEPARATOR)
+                .filter(|entry| !entry.is_empty())
+                .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
+                .collect()
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            if self.is_absolute() {
+                self.as_bytes()
+                    .split(|c| *c == PATH_SEPARATOR)
+                    // skip drive letter like C:\ since the path is absolute
+                    .skip(1)
+                    .filter(|entry| !entry.is_empty())
+                    .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
+                    .collect()
+            } else {
+                self.as_bytes()
+                    .split(|c| *c == PATH_SEPARATOR)
+                    .filter(|entry| !entry.is_empty())
+                    .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
+                    .collect()
+            }
+        }
     }
 }
 
