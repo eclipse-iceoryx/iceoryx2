@@ -265,6 +265,7 @@ pub struct FileBuilder {
     file_path: FilePath,
     access_mode: AccessMode,
     permission: Permission,
+    has_ownership: bool,
     owner: Option<u32>,
     group: Option<u32>,
     truncate_size: Option<usize>,
@@ -278,11 +279,19 @@ impl FileBuilder {
             file_path: *file_path,
             access_mode: AccessMode::Read,
             permission: Permission::OWNER_ALL,
+            has_ownership: false,
             owner: None,
             group: None,
             truncate_size: None,
             creation_mode: None,
         }
+    }
+
+    /// Defines if the created or opened file is owned by the [`File`] object. If it is owned, the
+    /// [`File`] object will remove the underlying file when it goes out of scope.
+    pub fn has_ownership(mut self, value: bool) -> Self {
+        self.has_ownership = value;
+        self
     }
 
     /// Returns a [`FileCreationBuilder`] object to define further settings exclusively
@@ -415,6 +424,25 @@ impl FileCreationBuilder {
 pub struct File {
     path: Option<FilePath>,
     file_descriptor: FileDescriptor,
+    has_ownership: bool,
+}
+
+impl Drop for File {
+    fn drop(&mut self) {
+        if self.has_ownership {
+            match self.path {
+                None => {
+                    warn!(from self, "Files created from file descriptors cannot remove themselves.")
+                }
+                Some(p) => match File::remove(&p) {
+                    Ok(false) | Err(_) => {
+                        warn!(from self, "Failed to remove owned file");
+                    }
+                    Ok(true) => (),
+                },
+            };
+        }
+    }
 }
 
 impl File {
@@ -462,6 +490,7 @@ impl File {
             return Ok(File {
                 path: Some(config.file_path),
                 file_descriptor: v,
+                has_ownership: config.has_ownership,
             });
         }
 
@@ -494,6 +523,7 @@ impl File {
             return Ok(File {
                 path: Some(config.file_path),
                 file_descriptor: v,
+                has_ownership: config.has_ownership,
             });
         }
 
@@ -513,6 +543,18 @@ impl File {
         );
     }
 
+    /// Takes the ownership to the underlying file, meaning when [`File`] goes out of scope file
+    /// in the file system will be removed.
+    pub fn acquire_ownership(&mut self) {
+        self.has_ownership = true;
+    }
+
+    /// Releases the ownership to the underlying file, meaning when [`File`] goes out of scope, it
+    /// does not remove the file from the file system.
+    pub fn release_ownership(&mut self) {
+        self.has_ownership = false;
+    }
+
     /// Takes ownership of a [`FileDescriptor`]. When [`File`] goes out of scope the file
     /// descriptor is closed.
     pub fn from_file_descriptor(file_descriptor: FileDescriptor) -> Self {
@@ -520,6 +562,7 @@ impl File {
         Self {
             path: None,
             file_descriptor,
+            has_ownership: false,
         }
     }
 

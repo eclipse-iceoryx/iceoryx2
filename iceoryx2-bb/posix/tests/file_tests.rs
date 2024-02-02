@@ -250,3 +250,120 @@ fn file_remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
     assert_that!(!File::remove(&test.file)?, eq true);
     Ok(())
 }
+
+#[test]
+fn file_newly_created_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
+    let file_name = generate_file_name();
+
+    let file = FileBuilder::new(&file_name)
+        .has_ownership(true)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .create()
+        .unwrap();
+
+    assert_that!(File::does_exist(&file_name)?, eq true);
+    drop(file);
+    assert_that!(File::does_exist(&file_name)?, eq false);
+
+    Ok(())
+}
+
+#[test]
+fn file_newly_created_file_has_not_ownership_by_default() -> Result<(), FileError> {
+    let file_name = generate_file_name();
+
+    let file = FileBuilder::new(&file_name)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .create()
+        .unwrap();
+
+    assert_that!(File::does_exist(&file_name)?, eq true);
+    drop(file);
+    assert_that!(File::does_exist(&file_name)?, eq true);
+
+    File::remove(&file_name).unwrap();
+
+    Ok(())
+}
+
+#[test]
+fn file_opened_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
+    let file_name = generate_file_name();
+
+    FileBuilder::new(&file_name)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .create()
+        .unwrap();
+
+    let file = FileBuilder::new(&file_name)
+        .has_ownership(true)
+        .open_existing(AccessMode::ReadWrite)
+        .unwrap();
+
+    assert_that!(File::does_exist(&file_name)?, eq true);
+    drop(file);
+    assert_that!(File::does_exist(&file_name)?, eq false);
+
+    Ok(())
+}
+
+#[test]
+fn file_opened_file_has_not_ownership_by_default() -> Result<(), FileError> {
+    let file_name = generate_file_name();
+
+    FileBuilder::new(&file_name)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .create()
+        .unwrap();
+
+    let file = FileBuilder::new(&file_name)
+        .open_existing(AccessMode::ReadWrite)
+        .unwrap();
+
+    assert_that!(File::does_exist(&file_name)?, eq true);
+    drop(file);
+    assert_that!(File::does_exist(&file_name)?, eq true);
+
+    File::remove(&file_name).unwrap();
+
+    Ok(())
+}
+
+#[test]
+fn file_acquire_ownership_works() -> Result<(), FileError> {
+    let file_name = generate_file_name();
+
+    let mut file = FileBuilder::new(&file_name)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .create()
+        .unwrap();
+
+    file.acquire_ownership();
+
+    assert_that!(File::does_exist(&file_name)?, eq true);
+    drop(file);
+    assert_that!(File::does_exist(&file_name)?, eq false);
+
+    Ok(())
+}
+
+#[test]
+fn file_release_ownership_works() -> Result<(), FileError> {
+    let file_name = generate_file_name();
+
+    let mut file = FileBuilder::new(&file_name)
+        .has_ownership(true)
+        .creation_mode(CreationMode::OpenOrCreate)
+        .create()
+        .unwrap();
+
+    file.release_ownership();
+
+    assert_that!(File::does_exist(&file_name)?, eq true);
+    drop(file);
+    assert_that!(File::does_exist(&file_name)?, eq true);
+
+    File::remove(&file_name).unwrap();
+
+    Ok(())
+}

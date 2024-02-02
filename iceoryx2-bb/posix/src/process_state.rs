@@ -81,7 +81,7 @@ use std::fmt::Debug;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::{debug, error, fail, fatal_panic, trace, warn};
+use iceoryx2_bb_log::{fail, fatal_panic, trace};
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_posix::posix::{self, Errno, Struct};
 
@@ -102,6 +102,7 @@ pub enum ProcessState {
     Dead,
     DoesNotExist,
     Starting,
+    CleaningUp,
 }
 
 /// Defines all errors that can occur when a new [`ProcessGuard`] is created.
@@ -115,6 +116,7 @@ pub enum ProcessGuardCreateError {
     ReadOnlyFilesystem,
     ContractViolation,
     Interrupt,
+    InvalidCleanerPathName,
     UnknownError(i32),
 }
 
@@ -143,6 +145,7 @@ pub enum ProcessMonitorCreateError {
     InsufficientPermissions,
     Interrupt,
     IsDirectory,
+    InvalidCleanerPathName,
     UnknownError,
 }
 
@@ -183,31 +186,14 @@ enum_gen! {
 /// ```
 #[derive(Debug)]
 pub struct ProcessGuard {
-    file: Option<File>,
-}
-
-impl Drop for ProcessGuard {
-    fn drop(&mut self) {
-        let origin = format!("{:?}", self);
-        let path = *self.path();
-        if let Some(file) = self.file.take() {
-            match file.remove_self() {
-                Ok(true) => {
-                    trace!(from origin, "remove process state \"{}\" for monitoring", path);
-                }
-                Ok(false) => {
-                    warn!(from origin, "Someone else already removed the owned ProcessGuard file.")
-                }
-                Err(v) => {
-                    error!(from origin, "Unable to remove the owned ProcessGuard file ({:?}). This can cause a process to be identified as dead despite it shut down correctly.", v);
-                }
-            }
-        }
-    }
+    file: File,
+    _cleaner_file: File,
 }
 
 const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
 const FINAL_PERMISSION: Permission = Permission::OWNER_ALL;
+const CLEANER_SUFFIX: &[u8] = b"_cleanup";
+
 impl ProcessGuard {
     /// Creates a new [`ProcessGuard`]. As soon as it is created successfully another process can
     /// monitor the state of the process. One cannot create multiple [`ProcessGuard`]s that use the
@@ -229,6 +215,61 @@ impl ProcessGuard {
             path
         );
 
+        let mut cleaner_path = path.clone();
+        if let Err(e) = cleaner_path.push_bytes(CLEANER_SUFFIX) {
+            fail!(from origin, with ProcessGuardCreateError::InvalidCleanerPathName,
+                "{} since the corresponding cleaner path name would be invalid ({:?}).", msg, e);
+        }
+
+        fail!(from origin, when Self::create_directory(path),
+            "{} since the directory \"{}\" of the process guard could not be created", msg, path);
+
+        let _cleaner_file = fail!(from origin, when Self::create_file(&cleaner_path, FINAL_PERMISSION),
+                                    "{} since the cleaner file \"{}\" could not be created.", msg, cleaner_path);
+        let mut file = fail!(from origin, when Self::create_file(path, INIT_PERMISSION),
+                                "{} since the state file \"{}\" could not be created.", msg, path);
+
+        match Self::lock_state_file(&file) {
+            Ok(()) => (),
+            Err(lock_error) => match lock_error {
+                ProcessGuardLockError::Interrupt => {
+                    fail!(from origin, with ProcessGuardCreateError::Interrupt,
+                            "{} since an interrupt signal was received while locking the file.", msg);
+                }
+                ProcessGuardLockError::OwnedByAnotherProcess => {
+                    fail!(from origin, with ProcessGuardCreateError::ContractViolation,
+                            "{} since the another process holds the lock of a process state that is in initialization.", msg);
+                }
+                ProcessGuardLockError::UnknownError(v) => {
+                    fail!(from origin, with ProcessGuardCreateError::UnknownError(v),
+                            "{} since an unknown failure occurred while locking the file ({:?}).", msg, v);
+                }
+            },
+        };
+
+        match file.set_permission(FINAL_PERMISSION) {
+            Ok(_) => {
+                trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
+                Ok(Self {
+                    file,
+                    _cleaner_file,
+                })
+            }
+            Err(v) => {
+                fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
+                    "{} since the final permissions could not be applied due to an internal failure ({:?}).", msg, v);
+            }
+        }
+    }
+
+    fn create_directory(path: &FilePath) -> Result<(), ProcessGuardCreateError> {
+        let origin = "ProcessGuard::create_directory()";
+        let msg = format!(
+            "Unable to create directory \"{}\" for new ProcessGuard state with the file \"{}\"",
+            path.path(),
+            path
+        );
+
         let default_directory_permissions = Permission::OWNER_ALL
             | Permission::GROUP_READ
             | Permission::GROUP_EXEC
@@ -236,55 +277,67 @@ impl ProcessGuard {
             | Permission::OTHERS_EXEC;
 
         let dir_path = path.path();
-        if !dir_path.is_empty() {
-            match Directory::does_exist(&dir_path) {
-                Ok(true) => (),
-                Ok(false) => match Directory::create(&dir_path, default_directory_permissions) {
-                    Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
-                    Err(DirectoryCreateError::InsufficientPermissions) => {
-                        fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
-                    "{} since the directory {} could not be created due to insufficient permissions.",
-                    msg, dir_path);
-                    }
-                    Err(DirectoryCreateError::ReadOnlyFilesystem) => {
-                        fail!(from origin, with ProcessGuardCreateError::ReadOnlyFilesystem,
-                    "{} since the directory {} could not be created since it is located on an read-only file system.",
-                    msg, dir_path);
-                    }
-                    Err(DirectoryCreateError::NoSpaceLeft) => {
-                        fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
-                    "{} since the directory {} could not be created since there is no space left.",
-                    msg, dir_path);
-                    }
-                    Err(v) => {
-                        fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
-                    "{} since the directory {} could not be created due to an unknown failure ({:?}).",
-                    msg, dir_path, v);
-                    }
-                },
-                Err(DirectoryAccessError::InsufficientPermissions) => {
-                    fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
-                    "{} since the directory {} could not be accessed due to insufficient permissions.",
-                    msg, dir_path);
-                }
-                Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
-                    fail!(from origin, with ProcessGuardCreateError::InvalidDirectory,
-                    "{} since the directory {} is actually not a valid directory.", msg, dir_path);
-                }
-                Err(v) => {
-                    fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
-                    "{} since an unknown failure occurred ({:?}) while checking if directory {} exists.",
-                    msg, v, dir_path);
-                }
-            }
+
+        if dir_path.is_empty() {
+            return Ok(());
         }
 
-        let mut file = match FileBuilder::new(path)
+        match Directory::does_exist(&dir_path) {
+            Ok(true) => Ok(()),
+            Ok(false) => match Directory::create(&dir_path, default_directory_permissions) {
+                Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => Ok(()),
+                Err(DirectoryCreateError::InsufficientPermissions) => {
+                    fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
+                    "{} since the directory {} could not be created due to insufficient permissions.",
+                    msg, dir_path);
+                }
+                Err(DirectoryCreateError::ReadOnlyFilesystem) => {
+                    fail!(from origin, with ProcessGuardCreateError::ReadOnlyFilesystem,
+                    "{} since the directory {} could not be created since it is located on an read-only file system.",
+                    msg, dir_path);
+                }
+                Err(DirectoryCreateError::NoSpaceLeft) => {
+                    fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
+                    "{} since the directory {} could not be created since there is no space left.",
+                    msg, dir_path);
+                }
+                Err(v) => {
+                    fail!(from origin, with ProcessGuardCreateError::NoSpaceLeft,
+                    "{} since the directory {} could not be created due to an unknown failure ({:?}).",
+                    msg, dir_path, v);
+                }
+            },
+            Err(DirectoryAccessError::InsufficientPermissions) => {
+                fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
+                    "{} since the directory {} could not be accessed due to insufficient permissions.",
+                    msg, dir_path);
+            }
+            Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
+                fail!(from origin, with ProcessGuardCreateError::InvalidDirectory,
+                    "{} since the directory {} is actually not a valid directory.", msg, dir_path);
+            }
+            Err(v) => {
+                fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
+                    "{} since an unknown failure occurred ({:?}) while checking if directory {} exists.",
+                    msg, v, dir_path);
+            }
+        }
+    }
+
+    fn create_file(
+        path: &FilePath,
+        permission: Permission,
+    ) -> Result<File, ProcessGuardCreateError> {
+        let origin = "ProcessGuard::file()";
+        let msg = format!("Unable to create new ProcessGuard state file \"{}\"", path);
+
+        match FileBuilder::new(path)
+            .has_ownership(true)
             .creation_mode(CreationMode::CreateExclusive)
-            .permission(INIT_PERMISSION)
+            .permission(permission)
             .create()
         {
-            Ok(f) => f,
+            Ok(f) => Ok(f),
             Err(FileCreationError::InsufficientPermissions) => {
                 fail!(from origin, with ProcessGuardCreateError::InsufficientPermissions,
                     "{} due to insufficient permissions.", msg);
@@ -308,54 +361,6 @@ impl ProcessGuard {
             Err(v) => {
                 fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
                     "{} due to an internal failure ({:?}).", msg, v);
-            }
-        };
-
-        match Self::lock_state_file(&file) {
-            Ok(()) => (),
-            Err(lock_error) => {
-                match file.remove_self() {
-                    Ok(_) => (),
-                    Err(v) => {
-                        debug!(from origin,
-                            "{} since the file could not be locked and the state file could not be removed again ({:?}).",
-                            msg, v);
-                    }
-                }
-
-                match lock_error {
-                    ProcessGuardLockError::Interrupt => {
-                        fail!(from origin, with ProcessGuardCreateError::Interrupt,
-                            "{} since an interrupt signal was received while locking the file.", msg);
-                    }
-                    ProcessGuardLockError::OwnedByAnotherProcess => {
-                        fail!(from origin, with ProcessGuardCreateError::ContractViolation,
-                            "{} since the another process holds the lock of a process state that is in initialization.", msg);
-                    }
-                    ProcessGuardLockError::UnknownError(v) => {
-                        fail!(from origin, with ProcessGuardCreateError::UnknownError(v),
-                            "{} since an unknown failure occurred while locking the file ({:?}).", msg, v);
-                    }
-                }
-            }
-        };
-
-        match file.set_permission(FINAL_PERMISSION) {
-            Ok(_) => {
-                trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
-                Ok(Self { file: Some(file) })
-            }
-            Err(v) => {
-                match file.remove_self() {
-                    Ok(_) => (),
-                    Err(v2) => {
-                        debug!(from origin,
-                            "{} since the final permissions could not be applied ({:?}) and the state file could not be removed again ({:?}).",
-                            msg, v, v2);
-                    }
-                }
-                fail!(from origin, with ProcessGuardCreateError::UnknownError(0),
-                    "{} since the final permissions could not be applied due to an internal failure ({:?}).", msg, v);
             }
         }
     }
@@ -435,15 +440,10 @@ impl ProcessGuard {
 
     /// Returns the [`FilePath`] under which the underlying file is stored.
     pub fn path(&self) -> &FilePath {
-        match self.file.as_ref() {
-            Some(f) => match f.path() {
-                Some(path) => path,
-                None => {
-                    fatal_panic!(from self, "This should never happen! Unable to acquire path from underlying file.")
-                }
-            },
+        match self.file.path() {
+            Some(path) => path,
             None => {
-                fatal_panic!(from self, "This should never happen! The underlying file is an empty optional.")
+                fatal_panic!(from self, "This should never happen! Unable to acquire path from underlying file.")
             }
         }
     }
@@ -492,6 +492,7 @@ impl ProcessGuard {
 pub struct ProcessMonitor {
     file: core::cell::Cell<Option<File>>,
     path: FilePath,
+    cleaner_path: FilePath,
 }
 
 impl Debug for ProcessMonitor {
@@ -519,12 +520,21 @@ impl ProcessMonitor {
     /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
     /// ```
     pub fn new(path: &FilePath) -> Result<Self, ProcessMonitorCreateError> {
+        let msg = format!("Unable to open process monitor \"{}\"", path);
+        let origin = "ProcessMonitor::new()";
+        let mut cleaner_path = path.clone();
+        if let Err(e) = cleaner_path.push_bytes(CLEANER_SUFFIX) {
+            fail!(from origin, with ProcessMonitorCreateError::InvalidCleanerPathName,
+                "{} since the corresponding cleaner path name would be invalid ({:?}).", msg, e);
+        }
+
         let new_self = Self {
             file: core::cell::Cell::new(None),
             path: *path,
+            cleaner_path,
         };
 
-        new_self.open_file()?;
+        new_self.file.set(new_self.open_file(&new_self.path)?);
         Ok(new_self)
     }
 
@@ -567,8 +577,7 @@ impl ProcessMonitor {
             Some(_) => self.read_state_from_file(),
             None => match File::does_exist(&self.path) {
                 Ok(true) => {
-                    fail!(from self, when self.open_file(),
-                        "{} since the state file could not be opened.", msg);
+                    self.file.set(self.open_file(&self.path)?);
                     self.read_state_from_file()
                 }
                 Ok(false) => Ok(ProcessState::DoesNotExist),
@@ -580,13 +589,8 @@ impl ProcessMonitor {
         }
     }
 
-    fn read_state_from_file(&self) -> Result<ProcessState, ProcessMonitorStateError> {
-        let file = match unsafe { &*self.file.as_ptr() } {
-            Some(ref f) => f,
-            None => return Ok(ProcessState::Starting),
-        };
-
-        let msg = "Unable to acquire ProcessState from file";
+    fn get_lock_state(&self, file: &File) -> Result<i64, ProcessMonitorStateError> {
+        let msg = format!("Unable to acquire lock on file {:?}", file);
         let mut current_state = posix::flock::new();
         current_state.l_type = LockType::Write as _;
 
@@ -604,14 +608,42 @@ impl ProcessMonitor {
             )
         }
 
-        match current_state.l_type as _ {
+        Ok(current_state.l_type as _)
+    }
+
+    fn read_state_from_file(&self) -> Result<ProcessState, ProcessMonitorStateError> {
+        let file = match unsafe { &*self.file.as_ptr() } {
+            Some(ref f) => f,
+            None => return Ok(ProcessState::Starting),
+        };
+
+        let msg = format!("Unable to read state from file {:?}", file);
+        let lock_state = fail!(from self, when self.get_lock_state(file),
+                            "{} since the lock state of the state file could not be acquired.", msg);
+
+        match lock_state as _ {
             posix::F_WRLCK => Ok(ProcessState::Alive),
             _ => match File::does_exist(&self.path) {
                 Ok(true) => match file.permission() {
                     Ok(INIT_PERMISSION) => Ok(ProcessState::Starting),
                     Err(_) | Ok(_) => {
                         self.file.set(None);
-                        Ok(ProcessState::Dead)
+                        match self.open_file(&self.cleaner_path)? {
+                            Some(f) => {
+                                let lock_state = fail!(from self, when self.get_lock_state(&f),
+                                                "{} since the lock state of the cleaner file could not be acquired.", msg);
+                                if lock_state == posix::F_WRLCK as _ {
+                                    return Ok(ProcessState::CleaningUp);
+                                }
+
+                                Ok(ProcessState::Dead)
+                            }
+                            None => {
+                                fail!(from self, with ProcessMonitorStateError::CorruptedState,
+                                    "{} since the corresponding cleaner file \"{}\" does not exist. This indicates a corrupted state.",
+                                    msg, self.cleaner_path);
+                            }
+                        }
                     }
                 },
                 Ok(false) => {
@@ -626,42 +658,38 @@ impl ProcessMonitor {
         }
     }
 
-    fn open_file(&self) -> Result<(), ProcessMonitorCreateError> {
+    fn open_file(&self, path: &FilePath) -> Result<Option<File>, ProcessMonitorCreateError> {
         let origin = "ProcessMonitor::new()";
-        let msg = format!(
-            "Unable to open ProcessMonitor with the file \"{}\"",
-            self.path
-        );
-        self.file.set(
-            match FileBuilder::new(&self.path).open_existing(AccessMode::Read) {
-                Ok(f) => Some(f),
-                Err(FileOpenError::FileDoesNotExist) => None,
-                Err(FileOpenError::IsDirectory) => {
-                    fail!(from origin, with ProcessMonitorCreateError::IsDirectory,
-                    "{} since the path is a directory.", msg);
-                }
-                Err(FileOpenError::InsufficientPermissions) => {
-                    if FileBuilder::new(&self.path)
-                        .open_existing(AccessMode::Write)
-                        .is_ok()
-                    {
-                        None
-                    } else {
-                        fail!(from origin, with ProcessMonitorCreateError::InsufficientPermissions,
-                    "{} due to insufficient permissions.", msg);
-                    }
-                }
-                Err(FileOpenError::Interrupt) => {
-                    fail!(from origin, with ProcessMonitorCreateError::Interrupt,
-                    "{} since an interrupt signal was received.", msg);
-                }
-                Err(v) => {
-                    fail!(from origin, with ProcessMonitorCreateError::UnknownError,
-                    "{} since an unknown failure occurred ({:?}).", msg, v);
-                }
-            },
-        );
+        let msg = format!("Unable to open ProcessMonitor state file \"{}\"", path);
 
-        Ok(())
+        match FileBuilder::new(&path).open_existing(AccessMode::Read) {
+            Ok(f) => Ok(Some(f)),
+            Err(FileOpenError::FileDoesNotExist) => Ok(None),
+            Err(FileOpenError::IsDirectory) => {
+                fail!(from origin, with ProcessMonitorCreateError::IsDirectory,
+                    "{} since the path is a directory.", msg);
+            }
+            Err(FileOpenError::InsufficientPermissions) => {
+                if FileBuilder::new(&path)
+                    .open_existing(AccessMode::Write)
+                    .is_ok()
+                {
+                    Ok(None)
+                } else {
+                    fail!(from origin, with ProcessMonitorCreateError::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
+                }
+            }
+            Err(FileOpenError::Interrupt) => {
+                fail!(from origin, with ProcessMonitorCreateError::Interrupt,
+                    "{} since an interrupt signal was received.", msg);
+            }
+            Err(v) => {
+                fail!(from origin, with ProcessMonitorCreateError::UnknownError,
+                    "{} since an unknown failure occurred ({:?}).", msg, v);
+            }
+        }
     }
 }
+
+pub struct ProcessCleaner {}
