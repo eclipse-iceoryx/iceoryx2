@@ -145,33 +145,19 @@ impl Path {
     }
 
     pub fn entries(&self) -> Vec<FixedSizeByteString<FILENAME_LENGTH>> {
-        #[cfg(not(target_os = "windows"))]
-        {
-            self.as_bytes()
-                .split(|c| *c == PATH_SEPARATOR)
-                .filter(|entry| !entry.is_empty())
-                .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
-                .collect()
-        }
+        let skip_size = if cfg!(target_os = "windows") && self.is_absolute() {
+            // skip drive letter like C:\ since the path is absolute
+            1
+        } else {
+            0
+        };
 
-        #[cfg(target_os = "windows")]
-        {
-            if self.is_absolute() {
-                self.as_bytes()
-                    .split(|c| *c == PATH_SEPARATOR)
-                    // skip drive letter like C:\ since the path is absolute
-                    .skip(1)
-                    .filter(|entry| !entry.is_empty())
-                    .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
-                    .collect()
-            } else {
-                self.as_bytes()
-                    .split(|c| *c == PATH_SEPARATOR)
-                    .filter(|entry| !entry.is_empty())
-                    .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
-                    .collect()
-            }
-        }
+        self.as_bytes()
+            .split(|c| *c == PATH_SEPARATOR)
+            .skip(skip_size)
+            .filter(|entry| !entry.is_empty())
+            .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
+            .collect()
     }
 }
 

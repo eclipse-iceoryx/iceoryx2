@@ -84,23 +84,6 @@ pub fn process_state_guard_can_remove_already_existing_file() {
     assert_that!(guard.ok().unwrap(), eq true);
 }
 
-// the lock detection does work on some OS only in the inter process context.
-// In the process local context the lock is not detected when the fcntl GETLK call is originating
-// from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
-// blocks despite it should be non-blocking.
-#[test]
-#[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
-pub fn process_state_watcher_detects_alive_state_from_existing_process() {
-    let path = generate_file_path();
-
-    let guard = ProcessGuard::new(&path).unwrap();
-    let watcher = ProcessMonitor::new(&path).unwrap();
-
-    assert_that!(watcher.state().unwrap(), eq ProcessState::Alive);
-    drop(guard);
-    assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
-}
-
 #[test]
 pub fn process_state_watcher_detects_dead_state() {
     let path = generate_file_path();
@@ -173,8 +156,43 @@ pub fn process_state_watcher_detects_initialized_state() {
         .unwrap();
 
     let watcher = ProcessMonitor::new(&path).unwrap();
-    assert_that!(watcher.state().unwrap(), eq ProcessState::InInitialization);
+    assert_that!(watcher.state().unwrap(), eq ProcessState::Starting);
     file.set_permission(Permission::OWNER_ALL).unwrap();
     file.remove_self().unwrap();
     assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
 }
+
+// START: OS with IPC only lock detection
+//
+// the lock detection does work on some OS only in the inter process context.
+// In the process local context the lock is not detected when the fcntl GETLK call is originating
+// from the same thread os the fcntl SETLK call. If it is called from a different thread GETLK
+// blocks despite it should be non-blocking.
+#[test]
+#[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
+pub fn process_state_watcher_detects_alive_state_from_existing_process() {
+    let path = generate_file_path();
+
+    let guard = ProcessGuard::new(&path).unwrap();
+    let watcher = ProcessMonitor::new(&path).unwrap();
+
+    assert_that!(watcher.state().unwrap(), eq ProcessState::Alive);
+    drop(guard);
+    assert_that!(watcher.state().unwrap(), eq ProcessState::DoesNotExist);
+}
+
+#[test]
+#[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
+pub fn process_state_guard_cannot_be_removed_when_locked() {
+    let path = generate_file_path();
+
+    let _guard = ProcessGuard::new(&path).unwrap();
+    let result = unsafe { ProcessGuard::remove(&path) };
+
+    assert_that!(result, is_err);
+    assert_that!(
+        result.err().unwrap(), eq
+        ProcessGuardRemoveError::OwnedByAnotherProcess
+    );
+}
+// END: OS with IPC only lock detection

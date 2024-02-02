@@ -23,11 +23,11 @@
 //!
 //! let process_state_path = FilePath::new(b"process_state_file").unwrap();
 //!
-//! // remove potentially uncleaned process state file that can remain when this process crashed
-//! // before
+//! // remove leftovers from a previous abnormal process termination
 //! //
 //! // # Safety
-//! //  * This process owns the state file, therefore it is safe to remove it.
+//! //  * This process owns the state file, therefore it is safe to remove a leftover from a
+//! //    previous run.
 //! unsafe { ProcessGuard::remove(&process_state_path).expect("") };
 //!
 //! // start monitoring from this point on
@@ -52,14 +52,14 @@
 //!     // Process is alive and well
 //!     ProcessState::Alive => (),
 //!
-//!     // The process state file is created, this should state should persist only a very small
+//!     // The process state file is created, this state should persist only a very small
 //!     // fraction of time
 //!     ProcessState::InInitialization => (),
 //!
 //!     // Process died, we have to inform other interested parties and maybe cleanup some
 //!     // resources
 //!     ProcessState::Dead => {
-//!         // monitored process crashed, perform cleanup
+//!         // monitored process terminated abnormally, perform cleanup
 //!
 //!         // after cleanup is complete, we remove the process state file to signal that
 //!         // everything is clean again
@@ -101,7 +101,7 @@ pub enum ProcessState {
     Alive,
     Dead,
     DoesNotExist,
-    InInitialization,
+    Starting,
 }
 
 /// Defines all errors that can occur when a new [`ProcessGuard`] is created.
@@ -113,8 +113,28 @@ pub enum ProcessGuardCreateError {
     AlreadyExists,
     NoSpaceLeft,
     ReadOnlyFilesystem,
+    ContractViolation,
     Interrupt,
     UnknownError(i32),
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+enum ProcessGuardLockError {
+    OwnedByAnotherProcess,
+    Interrupt,
+    UnknownError(i32),
+}
+
+enum_gen! {
+/// Defines all errors that can occur when a stale [`ProcessGuard`] is removed.
+    ProcessGuardRemoveError
+  entry:
+    InsufficientPermissions,
+    Interrupt,
+    OwnedByAnotherProcess,
+    UnknownError(i32)
+  mapping:
+    FileRemoveError
 }
 
 /// Defines all errors that can occur when a new [`ProcessMonitor`] is created.
@@ -168,21 +188,19 @@ pub struct ProcessGuard {
 
 impl Drop for ProcessGuard {
     fn drop(&mut self) {
+        let origin = format!("{:?}", self);
         let path = *self.path();
-        match self.file.take() {
-            Some(f) => match f.remove_self() {
+        if let Some(file) = self.file.take() {
+            match file.remove_self() {
                 Ok(true) => {
-                    trace!(from "ProcessGuard::drop()", "remove process state \"{}\" for monitoring", path);
+                    trace!(from origin, "remove process state \"{}\" for monitoring", path);
                 }
                 Ok(false) => {
-                    warn!(from self, "Someone else already removed the owned ProcessGuard file.")
+                    warn!(from origin, "Someone else already removed the owned ProcessGuard file.")
                 }
                 Err(v) => {
-                    error!(from self, "Unable to remove the owned ProcessGuard file ({:?}). This can cause a process to be identified as dead despite it shut down correctly.", v);
+                    error!(from origin, "Unable to remove the owned ProcessGuard file ({:?}). This can cause a process to be identified as dead despite it shut down correctly.", v);
                 }
-            },
-            None => {
-                fatal_panic!(from self, "This should never happen! The ProcessGuard contains an empty file!");
             }
         }
     }
@@ -293,40 +311,34 @@ impl ProcessGuard {
             }
         };
 
-        let mut new_lock_state = posix::flock::new();
-        new_lock_state.l_type = LockType::Write as _;
-        new_lock_state.l_whence = posix::SEEK_SET as _;
-
-        if unsafe {
-            posix::fcntl(
-                file.file_descriptor().native_handle(),
-                posix::F_SETLK,
-                &mut new_lock_state,
-            )
-        } == -1
-        {
-            let errno = Errno::get();
-
-            match file.remove_self() {
-                Ok(_) => (),
-                Err(v) => {
-                    debug!(from origin,
+        match Self::lock_state_file(&file) {
+            Ok(()) => (),
+            Err(lock_error) => {
+                match file.remove_self() {
+                    Ok(_) => (),
+                    Err(v) => {
+                        debug!(from origin,
                             "{} since the file could not be locked and the state file could not be removed again ({:?}).",
                             msg, v);
+                    }
                 }
-            }
 
-            match errno {
-                Errno::EINTR => {
-                    fail!(from origin, with ProcessGuardCreateError::Interrupt,
-                    "{} since an interrupt signal was received while locking the file.", msg);
-                }
-                v => {
-                    fail!(from origin, with ProcessGuardCreateError::UnknownError(v as _),
-                    "{} since an unknown failure occurred while locking the file ({:?}).", msg, v);
+                match lock_error {
+                    ProcessGuardLockError::Interrupt => {
+                        fail!(from origin, with ProcessGuardCreateError::Interrupt,
+                            "{} since an interrupt signal was received while locking the file.", msg);
+                    }
+                    ProcessGuardLockError::OwnedByAnotherProcess => {
+                        fail!(from origin, with ProcessGuardCreateError::ContractViolation,
+                            "{} since the another process holds the lock of a process state that is in initialization.", msg);
+                    }
+                    ProcessGuardLockError::UnknownError(v) => {
+                        fail!(from origin, with ProcessGuardCreateError::UnknownError(v),
+                            "{} since an unknown failure occurred while locking the file ({:?}).", msg, v);
+                    }
                 }
             }
-        }
+        };
 
         match file.set_permission(FINAL_PERMISSION) {
             Ok(_) => {
@@ -348,16 +360,76 @@ impl ProcessGuard {
         }
     }
 
+    fn lock_state_file(file: &File) -> Result<(), ProcessGuardLockError> {
+        let msg = format!("Unable to lock process state file {:?}", file);
+        let mut new_lock_state = posix::flock::new();
+        new_lock_state.l_type = LockType::Write as _;
+        new_lock_state.l_whence = posix::SEEK_SET as _;
+
+        if unsafe {
+            posix::fcntl(
+                file.file_descriptor().native_handle(),
+                posix::F_SETLK,
+                &mut new_lock_state,
+            )
+        } != -1
+        {
+            return Ok(());
+        }
+
+        handle_errno!(ProcessGuardLockError, from "ProcessState::lock_state_file()",
+            Errno::EACCES => (OwnedByAnotherProcess, "{} since the lock is owned by another process.", msg),
+            Errno::EAGAIN => (OwnedByAnotherProcess, "{} since the lock is owned by another process.", msg),
+            Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
+            v => (UnknownError(v as i32), "{} due to an unknown failure.", msg)
+        );
+    }
+
     /// Removes a stale process state from a crashed process.
     ///
     /// # Safety
     ///
     ///  * Ensure via the [`ProcessMonitor`] or other logic that the process is no longer running
     ///    otherwise you make the process unmonitorable.
-    pub unsafe fn remove(path: &FilePath) -> Result<bool, FileRemoveError> {
+    pub unsafe fn remove(path: &FilePath) -> Result<bool, ProcessGuardRemoveError> {
+        let msg = format!("Unable to remove ProcessGuard file {:?}", path);
+        let origin = "ProcessGuard::remove()";
+        let file = match FileBuilder::new(path).open_existing(AccessMode::Write) {
+            Ok(f) => f,
+            Err(FileOpenError::FileDoesNotExist) => return Ok(false),
+            Err(FileOpenError::InsufficientPermissions) => {
+                fail!(from origin, with ProcessGuardRemoveError::InsufficientPermissions,
+                    "{} due to insufficient permissions while opening the file for locking.", msg);
+            }
+            Err(FileOpenError::Interrupt) => {
+                fail!(from origin, with ProcessGuardRemoveError::InsufficientPermissions,
+                    "{} since an interrupt signal was received while opening the file for locking.", msg);
+            }
+            Err(v) => {
+                fail!(from origin, with ProcessGuardRemoveError::UnknownError(0),
+                    "{} due to an internal failure ({:?}).", msg, v);
+            }
+        };
+
+        match Self::lock_state_file(&file) {
+            Ok(()) => (),
+            Err(ProcessGuardLockError::OwnedByAnotherProcess) => {
+                fail!(from origin, with ProcessGuardRemoveError::OwnedByAnotherProcess,
+                    "{} since the file lock is owned by another process.", msg);
+            }
+            Err(ProcessGuardLockError::Interrupt) => {
+                fail!(from origin, with ProcessGuardRemoveError::InsufficientPermissions,
+                    "{} since an interrupt signal was received while locking the file.", msg);
+            }
+            Err(ProcessGuardLockError::UnknownError(v)) => {
+                fail!(from origin, with ProcessGuardRemoveError::UnknownError(v),
+                    "{} due to an unknown failure while locking the file ({}).", msg, v);
+            }
+        };
+
         Ok(
-            fail!(from "ProcessGuard::remove()", when File::remove(path),
-            "Unable to remove ProcessGuard file."),
+            fail!(from "ProcessGuard::remove()", when file.remove_self(),
+                "{}.", msg),
         )
     }
 
@@ -511,7 +583,7 @@ impl ProcessMonitor {
     fn read_state_from_file(&self) -> Result<ProcessState, ProcessMonitorStateError> {
         let file = match unsafe { &*self.file.as_ptr() } {
             Some(ref f) => f,
-            None => return Ok(ProcessState::InInitialization),
+            None => return Ok(ProcessState::Starting),
         };
 
         let msg = "Unable to acquire ProcessState from file";
@@ -536,7 +608,7 @@ impl ProcessMonitor {
             posix::F_WRLCK => Ok(ProcessState::Alive),
             _ => match File::does_exist(&self.path) {
                 Ok(true) => match file.permission() {
-                    Ok(INIT_PERMISSION) => Ok(ProcessState::InInitialization),
+                    Ok(INIT_PERMISSION) => Ok(ProcessState::Starting),
                     Err(_) | Ok(_) => {
                         self.file.set(None);
                         Ok(ProcessState::Dead)
