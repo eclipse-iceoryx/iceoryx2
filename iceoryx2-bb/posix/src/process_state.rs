@@ -54,23 +54,27 @@
 //!
 //!     // The process state file is created, this state should persist only a very small
 //!     // fraction of time
-//!     ProcessState::InInitialization => (),
+//!     ProcessState::Starting => (),
 //!
 //!     // Process died, we have to inform other interested parties and maybe cleanup some
 //!     // resources
 //!     ProcessState::Dead => {
 //!         // monitored process terminated abnormally, perform cleanup
 //!
-//!         // after cleanup is complete, we remove the process state file to signal that
-//!         // everything is clean again
-//!         //
-//!         // # Safety
-//!         //   * We ensured that the process is dead and therefore we can remove the old state.
-//!         //     If you use a executor or something like systemd the task shall be done by the
-//!         //     process itself.
-//!         unsafe { ProcessGuard::remove(&process_state_path).expect("") };
+//!         match ProcessCleaner::new(&process_state_path) {
+//!             Ok(guard) => {
+//!                 // we own the old resources of the abnormally terminated process
+//!                 // this is the place where we remove them
+//!             }
+//!             Err(ProcessCleanerCreateError::OwnedByAnotherProcess) => {
+//!                 // Some other process is cleaning up all resources
+//!             }
+//!             Err(e) => {
+//!                 // custom error handling
+//!             },
+//!         };
 //!     },
-//!
+//!     ProcessState::CleaningUp => (),
 //!     // The monitored process does not exist, maybe it did not yet start or already performed
 //!     // a clean shutdown.
 //!     ProcessState::DoesNotExist => (),
@@ -80,6 +84,7 @@
 use std::fmt::Debug;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, fatal_panic, trace};
 pub use iceoryx2_bb_system_types::file_path::FilePath;
@@ -134,6 +139,7 @@ enum_gen! {
     InsufficientPermissions,
     Interrupt,
     OwnedByAnotherProcess,
+    InvalidCleanerPathName,
     UnknownError(i32)
   mapping:
     FileRemoveError
@@ -159,6 +165,20 @@ enum_gen! {
 
   mapping:
     ProcessMonitorCreateError
+}
+
+/// Defines all errors that can occur when a new [`ProcessCleaner`] is created.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum ProcessCleanerCreateError {
+    ProcessIsStillAlive,
+    OwnedByAnotherProcess,
+    Interrupt,
+    FailedToAcquireLockState,
+    UnableToOpenStateFile,
+    UnableToOpenCleanerFile,
+    InvalidCleanerPathName,
+    DoesNotExist,
+    UnknownError,
 }
 
 /// A guard for a process that makes the process monitorable by a [`ProcessMonitor`] as long as it
@@ -194,6 +214,12 @@ const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
 const FINAL_PERMISSION: Permission = Permission::OWNER_ALL;
 const CLEANER_SUFFIX: &[u8] = b"_cleanup";
 
+fn generate_cleaner_path(path: &FilePath) -> Result<FilePath, SemanticStringError> {
+    let mut cleaner_path = *path;
+    cleaner_path.push_bytes(CLEANER_SUFFIX)?;
+    Ok(cleaner_path)
+}
+
 impl ProcessGuard {
     /// Creates a new [`ProcessGuard`]. As soon as it is created successfully another process can
     /// monitor the state of the process. One cannot create multiple [`ProcessGuard`]s that use the
@@ -215,11 +241,13 @@ impl ProcessGuard {
             path
         );
 
-        let mut cleaner_path = path.clone();
-        if let Err(e) = cleaner_path.push_bytes(CLEANER_SUFFIX) {
-            fail!(from origin, with ProcessGuardCreateError::InvalidCleanerPathName,
+        let cleaner_path = match generate_cleaner_path(path) {
+            Ok(f) => f,
+            Err(e) => {
+                fail!(from origin, with ProcessGuardCreateError::InvalidCleanerPathName,
                 "{} since the corresponding cleaner path name would be invalid ({:?}).", msg, e);
-        }
+            }
+        };
 
         fail!(from origin, when Self::create_directory(path),
             "{} since the directory \"{}\" of the process guard could not be created", msg, path);
@@ -396,44 +424,26 @@ impl ProcessGuard {
     ///
     ///  * Ensure via the [`ProcessMonitor`] or other logic that the process is no longer running
     ///    otherwise you make the process unmonitorable.
+    ///  * Ensure that no [`ProcessCleaner`] is active. Otherwise, multiple sources may remove the
+    ///    same constructs.
     pub unsafe fn remove(path: &FilePath) -> Result<bool, ProcessGuardRemoveError> {
-        let msg = format!("Unable to remove ProcessGuard file {:?}", path);
-        let origin = "ProcessGuard::remove()";
-        let file = match FileBuilder::new(path).open_existing(AccessMode::Write) {
+        let msg = format!(
+            "Unable to remove remainings of the ProcessState \"{}\"",
+            path
+        );
+        let origin = "ProcessMonitor::remove()";
+        let cleaner_path = match generate_cleaner_path(path) {
             Ok(f) => f,
-            Err(FileOpenError::FileDoesNotExist) => return Ok(false),
-            Err(FileOpenError::InsufficientPermissions) => {
-                fail!(from origin, with ProcessGuardRemoveError::InsufficientPermissions,
-                    "{} due to insufficient permissions while opening the file for locking.", msg);
-            }
-            Err(FileOpenError::Interrupt) => {
-                fail!(from origin, with ProcessGuardRemoveError::InsufficientPermissions,
-                    "{} since an interrupt signal was received while opening the file for locking.", msg);
-            }
-            Err(v) => {
-                fail!(from origin, with ProcessGuardRemoveError::UnknownError(0),
-                    "{} due to an internal failure ({:?}).", msg, v);
-            }
-        };
-
-        match Self::lock_state_file(&file) {
-            Ok(()) => (),
-            Err(ProcessGuardLockError::OwnedByAnotherProcess) => {
-                fail!(from origin, with ProcessGuardRemoveError::OwnedByAnotherProcess,
-                    "{} since the file lock is owned by another process.", msg);
-            }
-            Err(ProcessGuardLockError::Interrupt) => {
-                fail!(from origin, with ProcessGuardRemoveError::InsufficientPermissions,
-                    "{} since an interrupt signal was received while locking the file.", msg);
-            }
-            Err(ProcessGuardLockError::UnknownError(v)) => {
-                fail!(from origin, with ProcessGuardRemoveError::UnknownError(v),
-                    "{} due to an unknown failure while locking the file ({}).", msg, v);
+            Err(e) => {
+                fail!(from origin, with ProcessGuardRemoveError::InvalidCleanerPathName,
+                "{} since the corresponding cleaner path name would be invalid ({:?}).", msg, e);
             }
         };
 
         Ok(
-            fail!(from "ProcessGuard::remove()", when file.remove_self(),
+            fail!(from "ProcessGuard::remove()", when File::remove(path),
+                "{}.", msg)
+                && fail!(from "ProcessGuard::remove()", when File::remove(&cleaner_path),
                 "{}.", msg),
         )
     }
@@ -467,22 +477,29 @@ impl ProcessGuard {
 ///
 ///     // The process state file is created, this should state should persist only a very small
 ///     // fraction of time
-///     ProcessState::InInitialization => (),
+///     ProcessState::Starting => (),
 ///
 ///     // Process died, we have to inform other interested parties and maybe cleanup some
 ///     // resources
 ///     ProcessState::Dead => {
 ///         // monitored process crashed, perform cleanup
 ///
-///         // after cleanup is complete, we remove the process state file to signal that
-///         // everything is clean again
-///         //
-///         // # Safety
-///         //   * We ensured that the process is dead and therefore we can remove the old state.
-///         //     If you use a executor or something like systemd the task shall be done by the
-///         //     process itself.
-///         unsafe { ProcessGuard::remove(&process_state_path).expect("") };
+///         match ProcessCleaner::new(&process_state_path) {
+///             Ok(guard) => {
+///                 // we own the old resources of the abnormally terminated process
+///                 // this is the place where we remove them
+///             }
+///             Err(ProcessCleanerCreateError::OwnedByAnotherProcess) => {
+///                 // Some other process is cleaning up all resources
+///             }
+///             Err(e) => {
+///                 // custom error handling
+///             },
+///         };
 ///     },
+///
+///     // Process dies and another process is performing the cleanup currently
+///     ProcessState::CleaningUp => (),
 ///
 ///     // The monitored process does not exist, maybe it did not yet start or already performed
 ///     // a clean shutdown.
@@ -522,11 +539,13 @@ impl ProcessMonitor {
     pub fn new(path: &FilePath) -> Result<Self, ProcessMonitorCreateError> {
         let msg = format!("Unable to open process monitor \"{}\"", path);
         let origin = "ProcessMonitor::new()";
-        let mut cleaner_path = path.clone();
-        if let Err(e) = cleaner_path.push_bytes(CLEANER_SUFFIX) {
-            fail!(from origin, with ProcessMonitorCreateError::InvalidCleanerPathName,
+        let cleaner_path = match generate_cleaner_path(path) {
+            Ok(f) => f,
+            Err(e) => {
+                fail!(from origin, with ProcessMonitorCreateError::InvalidCleanerPathName,
                 "{} since the corresponding cleaner path name would be invalid ({:?}).", msg, e);
-        }
+            }
+        };
 
         let new_self = Self {
             file: core::cell::Cell::new(None),
@@ -534,7 +553,7 @@ impl ProcessMonitor {
             cleaner_path,
         };
 
-        new_self.file.set(new_self.open_file(&new_self.path)?);
+        new_self.file.set(Self::open_file(&new_self.path)?);
         Ok(new_self)
     }
 
@@ -560,7 +579,7 @@ impl ProcessMonitor {
     ///
     ///     // The process state file is created, this should state should persist only a very small
     ///     // fraction of time
-    ///     ProcessState::InInitialization => (),
+    ///     ProcessState::Starting => (),
     ///
     ///     // Process died, we have to inform other interested parties and maybe cleanup some
     ///     // resources
@@ -569,6 +588,10 @@ impl ProcessMonitor {
     ///     // The monitored process does not exist, maybe it did not yet start or already performed
     ///     // a clean shutdown.
     ///     ProcessState::DoesNotExist => (),
+    ///
+    ///     // The monitored process crashed and another process acquired the [`ProcessCleaner`]
+    ///     // to remove its remaining resources
+    ///     ProcessState::CleaningUp => (),
     /// }
     /// ```
     pub fn state(&self) -> Result<ProcessState, ProcessMonitorStateError> {
@@ -577,7 +600,7 @@ impl ProcessMonitor {
             Some(_) => self.read_state_from_file(),
             None => match File::does_exist(&self.path) {
                 Ok(true) => {
-                    self.file.set(self.open_file(&self.path)?);
+                    self.file.set(Self::open_file(&self.path)?);
                     self.read_state_from_file()
                 }
                 Ok(false) => Ok(ProcessState::DoesNotExist),
@@ -589,7 +612,7 @@ impl ProcessMonitor {
         }
     }
 
-    fn get_lock_state(&self, file: &File) -> Result<i64, ProcessMonitorStateError> {
+    fn get_lock_state(file: &File) -> Result<i64, ProcessMonitorStateError> {
         let msg = format!("Unable to acquire lock on file {:?}", file);
         let mut current_state = posix::flock::new();
         current_state.l_type = LockType::Write as _;
@@ -602,7 +625,7 @@ impl ProcessMonitor {
             )
         } == -1
         {
-            handle_errno!(ProcessMonitorStateError, from self,
+            handle_errno!(ProcessMonitorStateError, from "ProcessMonitor::get_lock_state()",
                 Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             )
@@ -618,7 +641,7 @@ impl ProcessMonitor {
         };
 
         let msg = format!("Unable to read state from file {:?}", file);
-        let lock_state = fail!(from self, when self.get_lock_state(file),
+        let lock_state = fail!(from self, when Self::get_lock_state(file),
                             "{} since the lock state of the state file could not be acquired.", msg);
 
         match lock_state as _ {
@@ -628,9 +651,9 @@ impl ProcessMonitor {
                     Ok(INIT_PERMISSION) => Ok(ProcessState::Starting),
                     Err(_) | Ok(_) => {
                         self.file.set(None);
-                        match self.open_file(&self.cleaner_path)? {
+                        match Self::open_file(&self.cleaner_path)? {
                             Some(f) => {
-                                let lock_state = fail!(from self, when self.get_lock_state(&f),
+                                let lock_state = fail!(from self, when Self::get_lock_state(&f),
                                                 "{} since the lock state of the cleaner file could not be acquired.", msg);
                                 if lock_state == posix::F_WRLCK as _ {
                                     return Ok(ProcessState::CleaningUp);
@@ -658,11 +681,11 @@ impl ProcessMonitor {
         }
     }
 
-    fn open_file(&self, path: &FilePath) -> Result<Option<File>, ProcessMonitorCreateError> {
+    fn open_file(path: &FilePath) -> Result<Option<File>, ProcessMonitorCreateError> {
         let origin = "ProcessMonitor::new()";
         let msg = format!("Unable to open ProcessMonitor state file \"{}\"", path);
 
-        match FileBuilder::new(&path).open_existing(AccessMode::Read) {
+        match FileBuilder::new(path).open_existing(AccessMode::Read) {
             Ok(f) => Ok(Some(f)),
             Err(FileOpenError::FileDoesNotExist) => Ok(None),
             Err(FileOpenError::IsDirectory) => {
@@ -670,7 +693,7 @@ impl ProcessMonitor {
                     "{} since the path is a directory.", msg);
             }
             Err(FileOpenError::InsufficientPermissions) => {
-                if FileBuilder::new(&path)
+                if FileBuilder::new(path)
                     .open_existing(AccessMode::Write)
                     .is_ok()
                 {
@@ -692,4 +715,94 @@ impl ProcessMonitor {
     }
 }
 
-pub struct ProcessCleaner {}
+/// A guard for the remains of an abnormal terminated process. The instance that owns the
+/// [`ProcessCleaner`] is allowed to cleanup all resources - no one else is. When it goes out of
+/// scope it will remove all state files that were created with [`ProcessGuard`].
+/// When the process that owns the [`ProcessCleaner`] terminates abnormally as well, the
+/// [`ProcessCleaner`] guard can be acquired by another process again.
+///
+/// ```no_run
+/// use iceoryx2_bb_posix::process_state::*;
+///
+/// let process_state_path = FilePath::new(b"process_state_file").unwrap();
+///
+/// match ProcessCleaner::new(&process_state_path) {
+///     Ok(guard) => {/* cleanup all process resources */},
+///     Err(_) => (),
+/// }
+/// ```
+pub struct ProcessCleaner {
+    _file: File,
+    _cleaner_file: File,
+}
+
+impl ProcessCleaner {
+    /// Creates a new [`ProcessCleaner`]. Succeeds when the process that creates the state files
+    /// with the [`ProcessGuard`] died an no other process has acquired the resources for cleanup
+    /// with [`ProcessCleaner::new()`].
+    pub fn new(path: &FilePath) -> Result<Self, ProcessCleanerCreateError> {
+        let msg = format!("Unable to instantiate ProcessCleaner \"{}\"", path);
+        let origin = "ProcessCleaner::new()";
+        let cleaner_path = match generate_cleaner_path(path) {
+            Ok(f) => f,
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::InvalidCleanerPathName,
+                "{} since the corresponding cleaner path name would be invalid ({:?}).", msg, e);
+            }
+        };
+
+        let mut cleaner_file = match fail!(from origin, when ProcessMonitor::open_file(&cleaner_path),
+            with ProcessCleanerCreateError::UnableToOpenCleanerFile,
+            "{} since the cleaner file could not be opened.", msg)
+        {
+            Some(f) => f,
+            None => {
+                fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
+                "{} since the process cleaner file does not exist.", msg);
+            }
+        };
+
+        let mut file = match fail!(from origin, when ProcessMonitor::open_file(path),
+            with ProcessCleanerCreateError::UnableToOpenStateFile,
+            "{} since the state file could not be opened.", msg)
+        {
+            Some(f) => f,
+            None => {
+                fail!(from origin, with ProcessCleanerCreateError::DoesNotExist,
+                "{} since the process state file does not exist.", msg);
+            }
+        };
+
+        let lock_state = fail!(from origin, when ProcessMonitor::get_lock_state(&file),
+            with ProcessCleanerCreateError::FailedToAcquireLockState,
+            "{} since the lock state could not be acquired.", msg);
+
+        if lock_state == posix::F_WRLCK as _ {
+            fail!(from origin, with ProcessCleanerCreateError::ProcessIsStillAlive,
+                "{} since the corresponding process is still alive.", msg);
+        }
+
+        match ProcessGuard::lock_state_file(&cleaner_file) {
+            Ok(()) => {
+                file.acquire_ownership();
+                cleaner_file.acquire_ownership();
+                Ok(Self {
+                    _file: file,
+                    _cleaner_file: cleaner_file,
+                })
+            }
+            Err(ProcessGuardLockError::OwnedByAnotherProcess) => {
+                fail!(from origin, with ProcessCleanerCreateError::OwnedByAnotherProcess,
+                    "{} since another process already has instantiated a ProcessCleaner.", msg);
+            }
+            Err(ProcessGuardLockError::Interrupt) => {
+                fail!(from origin, with ProcessCleanerCreateError::Interrupt,
+                    "{} since an interrupt signal was received.", msg);
+            }
+            Err(e) => {
+                fail!(from origin, with ProcessCleanerCreateError::Interrupt,
+                    "{} due to an unknown failure ({:?}).", msg, e);
+            }
+        }
+    }
+}
