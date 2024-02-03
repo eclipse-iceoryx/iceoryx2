@@ -199,7 +199,7 @@ impl std::error::Error for ServiceListError {}
 pub struct ServiceState<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> {
     pub(crate) static_config: StaticConfig,
     pub(crate) global_config: Rc<config::Config>,
-    pub(crate) dynamic_storage: Dynamic,
+    pub(crate) dynamic_storage: Rc<Dynamic>,
     pub(crate) static_storage: Static,
 }
 
@@ -207,7 +207,7 @@ impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> ServiceState
     pub(crate) fn new(
         static_config: StaticConfig,
         global_config: Rc<config::Config>,
-        dynamic_storage: Dynamic,
+        dynamic_storage: Rc<Dynamic>,
         static_storage: Static,
     ) -> Self {
         let new_self = Self {
