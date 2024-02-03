@@ -800,7 +800,7 @@ impl ProcessCleaner {
                     "{} since an interrupt signal was received.", msg);
             }
             Err(e) => {
-                fail!(from origin, with ProcessCleanerCreateError::Interrupt,
+                fail!(from origin, with ProcessCleanerCreateError::UnknownError,
                     "{} due to an unknown failure ({:?}).", msg, e);
             }
         }

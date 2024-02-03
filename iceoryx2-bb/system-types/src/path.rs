@@ -67,24 +67,36 @@ semantic_string! {
     false
   },
   normalize: |this: &Path| {
-      let mut raw_path = [0u8; PATH_LENGTH];
+        let mut raw_path = [0u8; PATH_LENGTH];
+        let value = this.as_bytes();
+        let mut n = if let Some(&PATH_SEPARATOR) = value.first() {
+            raw_path[0] = PATH_SEPARATOR;
+            1
+        } else {
+            0
+        };
 
-      let mut previous_char_is_path_separator = false;
-      let mut n = 0;
-      for i in 0..this.value.len() {
-          if i + 1 == this.value.len() && this.value[i] == PATH_SEPARATOR {
-              break;
-          }
+        let mut path_separator_size = 0;
 
-          if !(previous_char_is_path_separator && this.value[i] == PATH_SEPARATOR) {
-              raw_path[n] = this.value[i];
-              n += 1;
-          }
+        for entry in value
+            .split(|c| *c == PATH_SEPARATOR)
+            .filter(|entry| !entry.is_empty())
+            .filter(|entry| !(entry.len() == 1 && entry[0] == b'.'))
+        {
+            let new_n = n + path_separator_size + entry.len();
+            if path_separator_size > 0 {
+                raw_path[n] = PATH_SEPARATOR;
+                n += 1;
+            } else {
+                path_separator_size = 1;
+            }
+            raw_path[n..new_n].copy_from_slice(entry);
+            n = new_n;
+        }
 
-          previous_char_is_path_separator = this.value[i] == PATH_SEPARATOR
-      }
-
-      Path::new(&raw_path[0..n]).expect("A normalized path from a path shall be always valid.")
+        // SAFETY
+        // * raw_path contains a valid path since the input `this` is a valid path
+        unsafe { Path::new_unchecked(&raw_path[0..n]) }
   }
 }
 

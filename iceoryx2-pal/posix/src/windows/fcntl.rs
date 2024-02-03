@@ -287,7 +287,6 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
             if win32call! {LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped)}
                 == FALSE
             {
-                Errno::set(Errno::EINVAL);
                 return -1;
             }
 

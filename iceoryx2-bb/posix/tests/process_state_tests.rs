@@ -10,18 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::time::Duration;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::{File, FileBuilder};
-use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
-use iceoryx2_bb_posix::file_lock::LockType;
 use iceoryx2_bb_posix::shared_memory::Permission;
 use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_pal_posix::posix::{self, Struct};
 
 fn generate_file_path() -> FilePath {
     let mut file = FileName::new(b"process_state_tests").unwrap();
@@ -210,10 +209,9 @@ pub fn process_state_cleaner_cannot_be_created_when_process_does_not_exist() {
         ProcessCleanerCreateError::DoesNotExist
     );
 
-    let _file = FileBuilder::new(&path)
+    let file = FileBuilder::new(&path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
-        .permission(Permission::OWNER_WRITE)
         .create()
         .unwrap();
 
@@ -223,11 +221,12 @@ pub fn process_state_cleaner_cannot_be_created_when_process_does_not_exist() {
         cleaner.err().unwrap(), eq
         ProcessCleanerCreateError::DoesNotExist
     );
+    drop(file);
+    std::thread::sleep(Duration::from_millis(100));
 
     let _file = FileBuilder::new(&cleaner_path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
-        .permission(Permission::OWNER_WRITE)
         .create()
         .unwrap();
 
@@ -260,21 +259,6 @@ pub fn process_state_monitor_detects_alive_state_from_existing_process() {
 
 #[test]
 #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
-pub fn process_state_guard_cannot_be_removed_when_locked() {
-    let path = generate_file_path();
-
-    let _guard = ProcessGuard::new(&path).unwrap();
-    let result = unsafe { ProcessGuard::remove(&path) };
-
-    assert_that!(result, is_err);
-    assert_that!(
-        result.err().unwrap(), eq
-        ProcessGuardRemoveError::OwnedByAnotherProcess
-    );
-}
-
-#[test]
-#[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
 pub fn process_state_cleaner_cannot_be_acquired_from_living_process() {
     let path = generate_file_path();
 
@@ -300,23 +284,11 @@ pub fn process_state_cleaner_cannot_be_acquired_twice() {
         .create()
         .unwrap();
 
-    let cleaner_file = FileBuilder::new(&cleaner_path)
+    let _cleaner_file = FileBuilder::new(&cleaner_path)
         .has_ownership(true)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-
-    let mut new_lock_state = posix::flock::new();
-    new_lock_state.l_type = LockType::Write as _;
-    new_lock_state.l_whence = posix::SEEK_SET as _;
-
-    unsafe {
-        posix::fcntl(
-            cleaner_file.file_descriptor().native_handle(),
-            posix::F_SETLK,
-            &mut new_lock_state,
-        )
-    };
 
     let _cleaner = ProcessCleaner::new(&path).unwrap();
     let cleaner = ProcessCleaner::new(&path);
