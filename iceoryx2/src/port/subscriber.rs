@@ -34,6 +34,7 @@
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
@@ -60,10 +61,11 @@ use super::DegrationCallback;
 pub struct Subscriber<'a, Service: service::Service, MessageType: Debug> {
     dynamic_config_guard: Option<UniqueIndex<'a>>,
     publisher_connections: PublisherConnections<Service>,
+    dynamic_storage: Rc<Service::DynamicStorage>,
     service: &'a Service,
     degration_callback: Option<DegrationCallback<'a>>,
 
-    publisher_list_state: UnsafeCell<ContainerState<'a, UniquePublisherId>>,
+    publisher_list_state: UnsafeCell<ContainerState<UniquePublisherId>>,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
@@ -83,6 +85,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
             .publish_subscribe()
             .publishers;
 
+        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
         let mut new_self = Self {
             publisher_connections: PublisherConnections::new(
                 publisher_list.capacity(),
@@ -90,6 +93,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
                 &service.state().global_config,
                 static_config,
             ),
+            dynamic_storage,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_config_guard: None,
             service,
@@ -243,7 +247,13 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscribe<MessageType>
     }
 
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        if unsafe { (*self.publisher_list_state.get()).update() } {
+        if unsafe {
+            self.dynamic_storage
+                .get()
+                .publish_subscribe()
+                .publishers
+                .update_state(&mut *self.publisher_list_state.get())
+        } {
             fail!(from self, when self.populate_publisher_channels(),
                 "Connections were updated only partially since at least one connection to a publisher failed.");
         }

@@ -57,6 +57,7 @@
 
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
@@ -100,9 +101,10 @@ pub struct Publisher<'a, Service: service::Service, MessageType: Debug> {
     pub(crate) sample_reference_counter: Vec<AtomicU64>,
     pub(crate) data_segment: Service::SharedMemory,
     config: LocalPublisherConfig,
+    dynamic_storage: Rc<Service::DynamicStorage>,
 
     subscriber_connections: SubscriberConnections<Service>,
-    subscriber_list_state: UnsafeCell<ContainerState<'a, UniqueSubscriberId>>,
+    subscriber_list_state: UnsafeCell<ContainerState<UniqueSubscriberId>>,
     history: Option<UnsafeCell<Queue<usize>>>,
     service: &'a Service,
     degration_callback: Option<DegrationCallback<'a>>,
@@ -127,6 +129,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
             .publish_subscribe()
             .subscribers;
 
+        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
         let number_of_samples = service
             .state()
             .static_config
@@ -162,6 +165,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
                 port_id,
                 static_config,
             ),
+            dynamic_storage,
             data_segment,
             config: *config,
             sample_reference_counter: {
@@ -422,7 +426,13 @@ impl<'a, Service: service::Service, MessageType: Debug> UpdateConnections
     for Publisher<'a, Service, MessageType>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        if unsafe { (*self.subscriber_list_state.get()).update() } {
+        if unsafe {
+            self.dynamic_storage
+                .get()
+                .publish_subscribe()
+                .subscribers
+                .update_state(&mut *self.subscriber_list_state.get())
+        } {
             fail!(from self, when self.populate_subscriber_channels(),
                 "Connections were updated only partially since at least one connection to a Subscriber port failed.");
         }

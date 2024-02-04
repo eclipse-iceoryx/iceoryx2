@@ -41,11 +41,11 @@ use crate::{
     port::port_identifiers::UniqueNotifierId,
     service::{self, naming_scheme::event_concept_name},
 };
-use iceoryx2_bb_lock_free::mpmc::{container::ContainerState, unique_index_set::UniqueIndex};
+use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
-use std::{cell::UnsafeCell, marker::PhantomData};
+use std::{cell::UnsafeCell, rc::Rc};
 
 use super::{
     event_id::EventId,
@@ -112,17 +112,26 @@ impl<Service: service::Service> ListenerConnections<Service> {
 
 /// Represents the sending endpoint of an event based communication.
 #[derive(Debug)]
-pub struct Notifier<'a, Service: service::Service> {
+pub struct Notifier<Service: service::Service> {
     listener_connections: ListenerConnections<Service>,
-    listener_list_state: UnsafeCell<ContainerState<'a, UniqueListenerId>>,
+    listener_list_state: UnsafeCell<ContainerState<UniqueListenerId>>,
     default_event_id: EventId,
-    _dynamic_config_guard: Option<UniqueIndex<'a>>,
-    _phantom_a: PhantomData<&'a Service>,
+    dynamic_storage: Rc<Service::DynamicStorage>,
+    dynamic_notifier_handle: u32,
 }
 
-impl<'a, Service: service::Service> Notifier<'a, Service> {
+impl<Service: service::Service> Drop for Notifier<Service> {
+    fn drop(&mut self) {
+        self.dynamic_storage
+            .get()
+            .event()
+            .release_notifier_id(self.dynamic_notifier_handle)
+    }
+}
+
+impl<Service: service::Service> Notifier<Service> {
     pub(crate) fn new(
-        service: &'a Service,
+        service: &Service,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
@@ -130,25 +139,10 @@ impl<'a, Service: service::Service> Notifier<'a, Service> {
         let port_id = UniqueNotifierId::new();
 
         let listener_list = &service.state().dynamic_storage.get().event().listeners;
+        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
 
-        let mut new_self = Self {
-            listener_connections: ListenerConnections::new(listener_list.capacity()),
-            default_event_id,
-            listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
-            _dynamic_config_guard: None,
-            _phantom_a: PhantomData,
-        };
-
-        // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
-        // creation of all required resources
-        let _dynamic_config_guard = match service
-            .state()
-            .dynamic_storage
-            .get()
-            .event()
-            .add_notifier_id(port_id)
-        {
-            Some(unique_index) => unique_index,
+        let dynamic_notifier_handle = match dynamic_storage.get().event().add_notifier_id(port_id) {
+            Some(handle) => handle,
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
                             "{} since it would exceed the maximum supported amount of notifiers of {}.",
@@ -156,7 +150,13 @@ impl<'a, Service: service::Service> Notifier<'a, Service> {
             }
         };
 
-        new_self._dynamic_config_guard = Some(_dynamic_config_guard);
+        let new_self = Self {
+            listener_connections: ListenerConnections::new(listener_list.capacity()),
+            default_event_id,
+            listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
+            dynamic_storage,
+            dynamic_notifier_handle,
+        };
 
         if let Err(e) = new_self.populate_listener_channels() {
             warn!(from new_self, "The new Notifier port is unable to connect to every Listener port, caused by {:?}.", e);
@@ -166,7 +166,13 @@ impl<'a, Service: service::Service> Notifier<'a, Service> {
     }
 
     fn update_connections(&self) -> Result<(), NotifierConnectionUpdateFailure> {
-        if unsafe { (*self.listener_list_state.get()).update() } {
+        if unsafe {
+            self.dynamic_storage
+                .get()
+                .event()
+                .listeners
+                .update_state(&mut *self.listener_list_state.get())
+        } {
             fail!(from self, when self.populate_listener_channels(),
                 with NotifierConnectionUpdateFailure::OnlyPartialUpdate,
                 "Connections were updated only partially since at least one connection to a Listener port failed.");
@@ -202,7 +208,7 @@ impl<'a, Service: service::Service> Notifier<'a, Service> {
     }
 }
 
-impl<'a, Service: service::Service> Notify for Notifier<'a, Service> {
+impl<Service: service::Service> Notify for Notifier<Service> {
     fn notify(&self) -> Result<usize, NotifierConnectionUpdateFailure> {
         self.notify_with_custom_event_id(self.default_event_id)
     }

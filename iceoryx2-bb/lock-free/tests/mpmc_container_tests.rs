@@ -187,7 +187,7 @@ mod mpmc_container {
         state.for_each(|_, _| counter += 1);
         assert_that!(counter, eq 0);
 
-        state.update();
+        unsafe { sut.update_state(&mut state) };
         state.for_each(|_, _| counter += 1);
         assert_that!(counter, eq 0);
     }
@@ -209,7 +209,7 @@ mod mpmc_container {
         let mut contained_values1 = vec![];
         state.for_each(|_: u32, value: &T| contained_values1.push((*value).into()));
 
-        assert_that!(state.update(), eq false);
+        assert_that!(unsafe { sut.update_state(&mut state) }, eq false);
         let mut contained_values2 = vec![];
         state.for_each(|_: u32, value: &T| contained_values2.push((*value).into()));
 
@@ -235,7 +235,7 @@ mod mpmc_container {
         let mut state = sut.get_state();
         stored_indices.clear();
 
-        assert_that!(state.update(), eq true);
+        assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
         state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
 
@@ -266,7 +266,7 @@ mod mpmc_container {
             stored_indices.push(index.unwrap());
         }
 
-        assert_that!(state.update(), eq true);
+        assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
         state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
 
@@ -291,7 +291,7 @@ mod mpmc_container {
             stored_values.push((index.as_ref().unwrap().value(), v));
             stored_indices.push(index.unwrap());
 
-            state.update();
+            unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
             state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
 
@@ -305,7 +305,7 @@ mod mpmc_container {
             stored_indices.pop();
             stored_values.pop();
 
-            state.update();
+            unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
             state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
 
@@ -383,7 +383,7 @@ mod mpmc_container {
                     while finished_threads_counter.load(Ordering::Relaxed)
                         != number_of_threads_per_op as u64
                     {
-                        if state.update() {
+                        if unsafe { sut.update_state(&mut state) } {
                             state.for_each(|index: u32, value: &T| {
                                 extracted_content[thread_number]
                                     .lock()

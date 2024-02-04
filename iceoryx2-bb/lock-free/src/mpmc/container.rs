@@ -41,14 +41,17 @@
 //!
 //! stored_indices.clear();
 //!
-//! unsafe { state.update() };
-//! state.for_each(|index: u32, value: &u32| println!("index: {}, value: {}", index, value));
+//! if unsafe { container.update_state(&mut state) } {
+//!     println!("container state has changed");
+//!     state.for_each(|index: u32, value: &u32| println!("index: {}, value: {}", index, value));
+//! }
 //! ```
 
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary::unique_id::UniqueId;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, math::align_to};
 use iceoryx2_bb_log::{fail, fatal_panic};
 
@@ -64,14 +67,23 @@ use std::{
 /// Contains a state of the [`Container`]. Can be created with [`Container::get_state()`] and
 /// updated when the [`Container`] has changed with [`ContainerState::update()`].
 #[derive(Debug)]
-pub struct ContainerState<'a, T: Copy + Debug> {
-    container: &'a Container<T>,
+pub struct ContainerState<T: Copy + Debug> {
+    container_id: u64,
     current_index_set_head: u64,
     data: Vec<MaybeUninit<(u32, T)>>,
     active_index: Vec<bool>,
 }
 
-impl<'a, T: Copy + Debug> ContainerState<'a, T> {
+impl<T: Copy + Debug> ContainerState<T> {
+    fn new(container_id: u64, capacity: usize) -> Self {
+        Self {
+            container_id,
+            current_index_set_head: 0,
+            data: vec![MaybeUninit::uninit(); capacity],
+            active_index: vec![false; capacity],
+        }
+    }
+
     /// Iterates over all elements and calls the callback for each of them, providing the
     /// index of the element and a reference to the underlying value.
     /// **Note:** The index of a value never changes as long as it is stored inside the container.
@@ -92,26 +104,6 @@ impl<'a, T: Copy + Debug> ContainerState<'a, T> {
             }
         }
     }
-
-    /// Syncs the state with the current state of the underlying [`Container`]. If the state has
-    /// changed it returns true, otherwise false.
-    ///
-    /// ```
-    /// use iceoryx2_bb_lock_free::mpmc::container::*;
-    ///
-    /// let container = FixedSizeContainer::<u128, 128>::new();
-    ///
-    /// let mut state = container.get_state();
-    ///
-    /// if unsafe { state.update() } {
-    ///     println!("container has changed");
-    /// } else {
-    ///     println!("no container changes");
-    /// }
-    /// ```
-    pub fn update(&mut self) -> bool {
-        self.container.update_state(self)
-    }
 }
 
 /// A **threadsafe** and **lock-free** runtime fixed size container. The compile time fixed size
@@ -121,10 +113,14 @@ impl<'a, T: Copy + Debug> ContainerState<'a, T> {
 #[repr(C)]
 #[derive(Debug)]
 pub struct Container<T: Copy + Debug> {
+    // must be first member, otherwise the offset calculations fail
     active_index_ptr: RelocatablePointer<AtomicBool>,
     data_ptr: RelocatablePointer<UnsafeCell<MaybeUninit<T>>>,
     capacity: usize,
     is_memory_initialized: AtomicBool,
+    container_id: UniqueId,
+    // must be the last member, since it is a relocatable container as well and then the offset
+    // calculations would again fail
     index_set: UniqueIndexSet,
 }
 
@@ -136,6 +132,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
         let distance_to_active_index =
             (std::mem::size_of::<Self>() + UniqueIndexSet::memory_size(capacity)) as isize;
         Self {
+            container_id: UniqueId::new(),
             active_index_ptr: RelocatablePointer::new(distance_to_active_index),
             data_ptr: RelocatablePointer::new(align_to::<MaybeUninit<T>>(
                 distance_to_active_index as usize + capacity * std::mem::size_of::<AtomicBool>(),
@@ -197,6 +194,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             - std::mem::size_of::<RelocatablePointer<AtomicBool>>() as isize;
 
         Self {
+            container_id: UniqueId::new(),
             active_index_ptr: RelocatablePointer::new(distance_to_active_index),
             data_ptr: RelocatablePointer::new(distance_to_container_data),
             capacity,
@@ -295,6 +293,38 @@ impl<T: Copy + Debug> Container<T> {
         }
     }
 
+    /// Adds a new element to the [`Container`]. If there is no more space available it returns
+    /// [`None`], otherwise [`Some`] containing the the index value to the underlying element.
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
+    ///     before calling this method
+    ///  * Use [`Container::remove_raw()`] to release the acquired index again. Otherwise, the
+    ///     element will leak.
+    ///
+    pub unsafe fn add_raw(&self, value: T) -> Option<u32> {
+        self.verify_memory_initialization("add_raw");
+
+        match self.index_set.acquire_raw_index() {
+            Some(index) => {
+                unsafe {
+                    *(*self.data_ptr.as_ptr().offset(index as isize)).get() =
+                        MaybeUninit::new(value)
+                };
+
+                //////////////////////////////////////
+                // SYNC POINT with reading data values
+                //////////////////////////////////////
+                unsafe { &*self.active_index_ptr.as_ptr().offset(index as isize) }
+                    .store(true, Ordering::Release);
+
+                Some(index)
+            }
+            None => None,
+        }
+    }
+
     /// Useful in IPC context when an application holding the UniqueIndex has died.
     ///
     /// # Safety
@@ -325,17 +355,27 @@ impl<T: Copy + Debug> Container<T> {
     pub unsafe fn get_state(&self) -> ContainerState<T> {
         self.verify_memory_initialization("get_state");
 
-        let mut state = ContainerState {
-            container: self,
-            current_index_set_head: 0,
-            data: vec![MaybeUninit::uninit(); self.capacity],
-            active_index: vec![false; self.capacity],
-        };
+        let mut state = ContainerState::new(self.container_id.value(), self.capacity);
         self.update_state(&mut state);
         state
     }
 
-    fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
+    /// Syncs the [`ContainerState`] with the current state of the [`Container`]. If the state has
+    /// changed it returns true, otherwise false.
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
+    ///     before calling this method
+    ///  * Ensure that the input argument `previous_state` was acquired by the same [`Container`]
+    ///     with [`Container::get_state()`].
+    ///
+    pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
+        if previous_state.container_id != self.container_id.value() {
+            fatal_panic!(from self,
+                "The ContainerState used as previous_state was not created by this Container instance.");
+        }
+
         let mut current_index_set_head = self.index_set.head.load(Ordering::Relaxed);
 
         if previous_state.current_index_set_head == current_index_set_head {
@@ -452,6 +492,34 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
         unsafe { self.state.add(value) }
     }
 
+    /// Adds a new element to the [`FixedSizeContainer`]. If there is no more space available it returns
+    /// [`None`], otherwise [`Some`] containing the the index value to the underlying element.
+    ///
+    /// ```
+    /// use iceoryx2_bb_lock_free::mpmc::container::*;
+    ///
+    /// const CAPACITY: usize = 139;
+    /// let container = FixedSizeContainer::<u128, CAPACITY>::new();
+    ///
+    /// match unsafe { container.add_raw(1234567) } {
+    ///     Some(index) => {
+    ///         println!("added at index {}", index);
+    ///         unsafe { container.remove_raw_index(index) };
+    ///     },
+    ///     None => println!("container is full"),
+    /// };
+    ///
+    /// ```
+    ///
+    /// # Safety
+    ///
+    ///  * Use [`FixedSizeContainer::remove_raw()`] to release the acquired index again. Otherwise,
+    ///     the element will leak.
+    ///
+    pub unsafe fn add_raw(&self, value: T) -> Option<u32> {
+        self.state.add_raw(value)
+    }
+
     /// Useful in IPC context when an application holding the UniqueIndex has died.
     ///
     /// # Safety
@@ -466,5 +534,31 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// this state can be out of date as soon as it is returned from this function.
     pub fn get_state(&self) -> ContainerState<T> {
         unsafe { self.state.get_state() }
+    }
+
+    /// Syncs the [`ContainerState`] with the current state of the [`FixedSizeContainer`].
+    /// If the state has changed it returns true, otherwise false.
+    ///
+    /// ```
+    /// use iceoryx2_bb_lock_free::mpmc::container::*;
+    ///
+    /// let container = FixedSizeContainer::<u128, 128>::new();
+    ///
+    /// let mut state = container.get_state();
+    ///
+    /// if unsafe { container.update_state(&mut state) } {
+    ///     println!("container has changed");
+    /// } else {
+    ///     println!("no container changes");
+    /// }
+    /// ```
+    ///
+    /// # Safety
+    ///
+    ///  * Ensure that the input argument `previous_state` was acquired by the same [`Container`]
+    ///     with [`Container::get_state()`].
+    ///
+    pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
+        unsafe { self.state.update_state(previous_state) }
     }
 }

@@ -83,7 +83,11 @@ impl DynamicConfig {
         unsafe { self.listeners.add(id) }
     }
 
-    pub(crate) fn add_notifier_id(&self, id: UniqueNotifierId) -> Option<UniqueIndex> {
-        unsafe { self.notifiers.add(id) }
+    pub(crate) fn add_notifier_id(&self, id: UniqueNotifierId) -> Option<u32> {
+        unsafe { self.notifiers.add_raw(id) }
+    }
+
+    pub(crate) fn release_notifier_id(&self, id: u32) {
+        unsafe { self.notifiers.remove_raw_index(id) }
     }
 }
