@@ -83,7 +83,11 @@ impl DynamicConfig {
         unsafe { self.subscribers.add(id) }
     }
 
-    pub(crate) fn add_publisher_id(&self, id: UniquePublisherId) -> Option<UniqueIndex> {
-        unsafe { self.publishers.add(id) }
+    pub(crate) fn add_publisher_id(&self, id: UniquePublisherId) -> Option<u32> {
+        unsafe { self.publishers.add_raw(id) }
+    }
+
+    pub(crate) fn release_publisher_id(&self, id: u32) {
+        unsafe { self.publishers.remove_raw_index(id) }
     }
 }

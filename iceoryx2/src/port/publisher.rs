@@ -83,7 +83,6 @@ use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
-use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
@@ -109,8 +108,19 @@ pub struct Publisher<'a, Service: service::Service, MessageType: Debug> {
     service: &'a Service,
     degration_callback: Option<DegrationCallback<'a>>,
     loan_counter: AtomicUsize,
-    _dynamic_config_guard: UniqueIndex<'a>,
+    dynamic_publisher_handle: u32,
     _phantom_message_type: PhantomData<MessageType>,
+}
+
+impl<'a, Service: service::Service, MessageType: Debug> Drop
+    for Publisher<'a, Service, MessageType>
+{
+    fn drop(&mut self) {
+        self.dynamic_storage
+            .get()
+            .publish_subscribe()
+            .release_publisher_id(self.dynamic_publisher_handle)
+    }
 }
 
 impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, MessageType> {
@@ -142,7 +152,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
 
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources
-        let _dynamic_config_guard = match service
+        let dynamic_publisher_handle = match service
             .state()
             .dynamic_storage
             .get()
@@ -183,7 +193,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
             service,
             degration_callback: None,
             loan_counter: AtomicUsize::new(0),
-            _dynamic_config_guard,
+            dynamic_publisher_handle,
             _phantom_message_type: PhantomData,
         };
 
