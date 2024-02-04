@@ -37,7 +37,6 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
-use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
@@ -59,7 +58,7 @@ use super::DegrationCallback;
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
 pub struct Subscriber<'a, Service: service::Service, MessageType: Debug> {
-    dynamic_config_guard: Option<UniqueIndex<'a>>,
+    dynamic_subscriber_handle: u32,
     publisher_connections: PublisherConnections<Service>,
     dynamic_storage: Rc<Service::DynamicStorage>,
     service: &'a Service,
@@ -67,6 +66,17 @@ pub struct Subscriber<'a, Service: service::Service, MessageType: Debug> {
 
     publisher_list_state: UnsafeCell<ContainerState<UniquePublisherId>>,
     _phantom_message_type: PhantomData<MessageType>,
+}
+
+impl<'a, Service: service::Service, MessageType: Debug> Drop
+    for Subscriber<'a, Service, MessageType>
+{
+    fn drop(&mut self) {
+        self.dynamic_storage
+            .get()
+            .publish_subscribe()
+            .release_subscriber_id(self.dynamic_subscriber_handle)
+    }
 }
 
 impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, MessageType> {
@@ -86,7 +96,24 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
             .publishers;
 
         let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
-        let mut new_self = Self {
+        // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
+        // the creation of all required channels
+        let dynamic_subscriber_handle = match service
+            .state()
+            .dynamic_storage
+            .get()
+            .publish_subscribe()
+            .add_subscriber_id(port_id)
+        {
+            Some(unique_index) => unique_index,
+            None => {
+                fail!(from origin, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
+                                "{} since it would exceed the maximum supported amount of subscribers of {}.",
+                                msg, service.state().static_config.publish_subscribe().max_subscribers);
+            }
+        };
+
+        let new_self = Self {
             publisher_connections: PublisherConnections::new(
                 publisher_list.capacity(),
                 port_id,
@@ -95,7 +122,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
             ),
             dynamic_storage,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
-            dynamic_config_guard: None,
+            dynamic_subscriber_handle,
             service,
             degration_callback: None,
             _phantom_message_type: PhantomData,
@@ -104,25 +131,6 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
         if let Err(e) = new_self.populate_publisher_channels() {
             warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
         }
-
-        // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
-        // the creation of all required channels
-        new_self.dynamic_config_guard = Some(
-            match service
-                .state()
-                .dynamic_storage
-                .get()
-                .publish_subscribe()
-                .add_subscriber_id(port_id)
-            {
-                Some(unique_index) => unique_index,
-                None => {
-                    fail!(from origin, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
-                                "{} since it would exceed the maximum supported amount of subscribers of {}.",
-                                msg, service.state().static_config.publish_subscribe().max_subscribers);
-                }
-            },
-        );
 
         Ok(new_self)
     }

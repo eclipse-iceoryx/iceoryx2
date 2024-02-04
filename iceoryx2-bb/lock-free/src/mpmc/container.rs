@@ -20,7 +20,7 @@
 //!
 //! To iterate/acquire all container elements
 //! a [`ContainerState`] has to be created with [`Container::get_state()`] and can be updated with
-//! [`ContainerState::update()`].
+//! [`Container::update_state()`].
 //!
 //! # Example
 //!
@@ -65,7 +65,7 @@ use std::{
 };
 
 /// Contains a state of the [`Container`]. Can be created with [`Container::get_state()`] and
-/// updated when the [`Container`] has changed with [`ContainerState::update()`].
+/// updated when the [`Container`] has changed with [`Container::update_state()`].
 #[derive(Debug)]
 pub struct ContainerState<T: Copy + Debug> {
     container_id: u64,
@@ -300,7 +300,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
     ///     before calling this method
-    ///  * Use [`Container::remove_raw()`] to release the acquired index again. Otherwise, the
+    ///  * Use [`Container::remove_raw_index()`] to release the acquired index again. Otherwise, the
     ///     element will leak.
     ///
     pub unsafe fn add_raw(&self, value: T) -> Option<u32> {
@@ -513,7 +513,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     /// # Safety
     ///
-    ///  * Use [`FixedSizeContainer::remove_raw()`] to release the acquired index again. Otherwise,
+    ///  * Use [`FixedSizeContainer::remove_raw_index()`] to release the acquired index again. Otherwise,
     ///     the element will leak.
     ///
     pub unsafe fn add_raw(&self, value: T) -> Option<u32> {
