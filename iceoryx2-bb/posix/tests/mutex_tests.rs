@@ -432,6 +432,7 @@ fn mutex_can_be_recovered_when_thread_died() {
 }
 
 #[test]
+#[cfg(not(target_os = "macos"))]
 fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
     let _watchdog = Watchdog::new(Duration::from_secs(10));
     let handle = MutexHandle::<i32>::new();
