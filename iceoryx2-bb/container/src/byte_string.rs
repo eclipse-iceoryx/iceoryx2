@@ -30,6 +30,7 @@
 //! ```
 
 use std::{
+    cmp::Ordering,
     fmt::{Debug, Display},
     hash::Hash,
     mem::MaybeUninit,
@@ -72,6 +73,28 @@ pub struct FixedSizeByteString<const CAPACITY: usize> {
 
 unsafe impl<const CAPACITY: usize> Send for FixedSizeByteString<CAPACITY> {}
 unsafe impl<const CAPACITY: usize> Sync for FixedSizeByteString<CAPACITY> {}
+
+impl<const CAPACITY: usize, const CAPACITY_OTHER: usize>
+    PartialOrd<FixedSizeByteString<CAPACITY_OTHER>> for FixedSizeByteString<CAPACITY>
+{
+    fn partial_cmp(&self, other: &FixedSizeByteString<CAPACITY_OTHER>) -> Option<Ordering> {
+        for i in 0..std::cmp::min(self.len, other.len) {
+            match unsafe { *self.data[i].as_ptr() }.cmp(unsafe { &*other.data[i].as_ptr() }) {
+                Ordering::Less => return Some(Ordering::Less),
+                Ordering::Greater => return Some(Ordering::Greater),
+                _ => (),
+            }
+        }
+
+        Some(self.len.cmp(&other.len))
+    }
+}
+
+impl<const CAPACITY: usize> Ord for FixedSizeByteString<CAPACITY> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
 
 impl<const CAPACITY: usize> Hash for FixedSizeByteString<CAPACITY> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {

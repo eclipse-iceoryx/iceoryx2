@@ -27,7 +27,7 @@ use serde::{de::Visitor, Deserialize, Serialize};
 
 const SERVICE_NAME_LENGTH: usize = 255;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ServiceName {
     value: iceoryx2_bb_container::byte_string::FixedSizeByteString<SERVICE_NAME_LENGTH>,
 }

@@ -343,3 +343,14 @@ fn fixed_size_byte_string_strip_suffix_works() {
     assert_that!(sut_clone.strip_suffix(b"msla"), eq false);
     assert_that!(sut_clone, eq sut);
 }
+
+#[test]
+fn fixed_size_byte_ordering_works() {
+    unsafe {
+        assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla")), eq std::cmp::Ordering::Equal );
+        assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuvbla")), eq std::cmp::Ordering::Less );
+        assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubaa")), eq std::cmp::Ordering::Greater );
+        assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla123")), eq std::cmp::Ordering::Less );
+        assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuu")), eq std::cmp::Ordering::Greater );
+    }
+}
