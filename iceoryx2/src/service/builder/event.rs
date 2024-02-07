@@ -138,12 +138,19 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    pub fn open_or_create(self) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
+    pub fn open_or_create(
+        mut self,
+    ) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
         let msg = "Unable to open or create event service";
 
         match self.base.is_service_available() {
             Ok(Some(_)) => Ok(self.open()?),
-            Ok(None) => Ok(self.create()?),
+            Ok(None) => match self.create_impl() {
+                Ok(factory) => Ok(factory),
+                Err(EventCreateError::AlreadyExists)
+                | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
+                Err(e) => Err(e.into()),
+            },
             Err(ServiceState::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
             Err(ServiceState::Corrupted) => {
                 fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::EventInCorruptedState),
@@ -220,17 +227,29 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    /// Creates a new [`Service`].
-    pub fn create(mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
+    fn create_impl(&mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
         self.adjust_properties_to_meaningful_values();
 
         let msg = "Unable to create event service";
 
         match self.base.is_service_available() {
             Ok(None) => {
-                let static_config = fail!(from self, when self.base.create_static_config_storage(),
-                    with EventCreateError::UnableToCreateStaticServiceInformation,
-                    "{} since the static service information could not be created.", msg);
+                let static_config = match self.base.create_static_config_storage() {
+                    Ok(c) => c,
+                    Err(StaticStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with EventCreateError::AlreadyExists,
+                           "{} since the service already exists.", msg);
+                    }
+                    Err(StaticStorageCreateError::Creation) => {
+                        fail!(from self, with EventCreateError::IsBeingCreatedByAnotherInstance,
+                            "{} since the service is being created by another instance.", msg);
+                    }
+                    Err(e) => {
+                        fail!(from self, with EventCreateError::UnableToCreateStaticServiceInformation,
+                            "{} since the static service information could not be created ({:?}).", msg, e);
+                    }
+                };
+
                 let event_config = self.base.service_config.event();
 
                 let dynamic_config_setting = DynamicConfigSettings {
@@ -260,7 +279,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 Ok(event::PortFactory::new(ServiceType::from_state(
                     service::ServiceState::new(
                         self.base.service_config.clone(),
-                        self.base.global_config,
+                        self.base.global_config.clone(),
                         dynamic_config,
                         unlocked_static_details,
                     ),
@@ -283,6 +302,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     "{} since the service is being created by another instance.", msg);
             }
         }
+    }
+
+    /// Creates a new [`Service`].
+    pub fn create(mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
+        self.create_impl()
     }
 
     fn adjust_properties_to_meaningful_values(&mut self) {

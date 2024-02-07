@@ -14,7 +14,7 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Fix `open_or_create` race [#108](https://github.com/eclipse-iceoryx/iceoryx2/issues/108)
 
 ### Refactoring
 

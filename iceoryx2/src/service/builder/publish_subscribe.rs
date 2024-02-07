@@ -238,7 +238,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
         match self.is_service_available(msg) {
             Ok(Some(_)) => Ok(self.open::<MessageType>()?),
-            Ok(None) => Ok(self.create::<MessageType>()?),
+            Ok(None) => match self.create_impl::<MessageType>() {
+                Ok(factory) => Ok(factory),
+                Err(PublishSubscribeCreateError::AlreadyExists)
+                | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
+                    Ok(self.open::<MessageType>()?)
+                }
+                Err(e) => Err(e.into()),
+            },
             Err(ServiceAvailabilityState::ServiceState(
                 ServiceState::IsBeingCreatedByAnotherInstance,
             )) => Ok(self.open::<MessageType>()?),
@@ -335,9 +342,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    /// Creates a new [`Service`].
-    pub fn create<MessageType: Debug>(
-        mut self,
+    fn create_impl<MessageType: Debug>(
+        &mut self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeCreateError>
     {
         self.adjust_properties_to_meaningful_values();
@@ -356,9 +362,21 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         match self.is_service_available(msg) {
             Ok(None) => {
                 // create static config
-                let static_config = fail!(from self, when self.base.create_static_config_storage(),
-                    with PublishSubscribeCreateError::UnableToCreateStaticServiceInformation,
-                    "{} since the static service information could not be created.", msg);
+                let static_config = match self.base.create_static_config_storage() {
+                    Ok(c) => c,
+                    Err(StaticStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with PublishSubscribeCreateError::AlreadyExists,
+                           "{} since the service already exists.", msg);
+                    }
+                    Err(StaticStorageCreateError::Creation) => {
+                        fail!(from self, with PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
+                            "{} since the service is being created by another instance.", msg);
+                    }
+                    Err(e) => {
+                        fail!(from self, with PublishSubscribeCreateError::UnableToCreateStaticServiceInformation,
+                            "{} since the static service information could not be created ({:?}).", msg, e);
+                    }
+                };
 
                 let pubsub_config = self.base.service_config.publish_subscribe();
 
@@ -394,7 +412,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 Ok(publish_subscribe::PortFactory::new(
                     ServiceType::from_state(service::ServiceState::new(
                         self.base.service_config.clone(),
-                        self.base.global_config,
+                        self.base.global_config.clone(),
                         dynamic_config,
                         unlocked_static_details,
                     )),
@@ -423,6 +441,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     "{} since the service is being created by another instance.", msg);
             }
         }
+    }
+
+    /// Creates a new [`Service`].
+    pub fn create<MessageType: Debug>(
+        mut self,
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeCreateError>
+    {
+        self.create_impl::<MessageType>()
     }
 
     fn adjust_properties_to_meaningful_values(&mut self) {
