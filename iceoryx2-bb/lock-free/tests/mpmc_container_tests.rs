@@ -53,7 +53,6 @@ mod mpmc_container {
     use std::collections::HashMap;
     use std::collections::HashSet;
     use std::fmt::Debug;
-    use std::mem::MaybeUninit;
     use std::sync::atomic::AtomicU64;
     use std::sync::atomic::Ordering;
     use std::sync::{Barrier, Mutex};
@@ -143,28 +142,22 @@ mod mpmc_container {
     }
 
     #[test]
-    fn mpmc_container_add_and_unsafe_remove_elements_works<
+    fn mpmc_container_add_and_unsafe_remove_with_handle_works<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        let mut stored_indices: Vec<MaybeUninit<UniqueIndex>> = vec![];
+        let mut stored_handles: Vec<ContainerHandle> = vec![];
 
         for i in 0..CAPACITY - 1 {
-            let index = sut.add((i * 3 + 1).into());
-            assert_that!(index, is_some);
-            stored_indices.push(MaybeUninit::new(index.unwrap()));
+            let handle = unsafe { sut.add_with_handle((i * 3 + 1).into()) };
+            assert_that!(handle, is_some);
+            stored_handles.push(handle.unwrap());
 
-            let index = sut.add((i * 7 + 5).into());
-            assert_that!(index, is_some);
-            stored_indices.push(MaybeUninit::new(index.unwrap()));
+            let handle = unsafe { sut.add_with_handle((i * 7 + 5).into()) };
+            assert_that!(handle, is_some);
+            stored_handles.push(handle.unwrap());
 
-            unsafe {
-                sut.remove_raw_index(
-                    stored_indices[stored_indices.len() - 2]
-                        .assume_init_ref()
-                        .value(),
-                )
-            };
+            unsafe { sut.remove_with_handle(stored_handles[stored_handles.len() - 2].clone()) };
         }
 
         let state = sut.get_state();

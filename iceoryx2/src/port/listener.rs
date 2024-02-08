@@ -32,6 +32,7 @@
 //!
 //! See also [`crate::port::listener::Listener`]
 
+use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError};
@@ -48,7 +49,7 @@ use super::listen::{Listen, ListenerCreateError};
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]
 pub struct Listener<Service: service::Service> {
-    dynamic_listener_handle: u32,
+    dynamic_listener_handle: ContainerHandle,
     listener: <Service::Event as iceoryx2_cal::event::Event<EventId>>::Listener,
     cache: Vec<EventId>,
     dynamic_storage: Rc<Service::DynamicStorage>,
@@ -59,7 +60,7 @@ impl<Service: service::Service> Drop for Listener<Service> {
         self.dynamic_storage
             .get()
             .event()
-            .release_listener_id(self.dynamic_listener_handle)
+            .release_listener_handle(self.dynamic_listener_handle)
     }
 }
 

@@ -41,7 +41,7 @@ use crate::{
     port::port_identifiers::UniqueNotifierId,
     service::{self, naming_scheme::event_concept_name},
 };
-use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
@@ -117,7 +117,7 @@ pub struct Notifier<Service: service::Service> {
     listener_list_state: UnsafeCell<ContainerState<UniqueListenerId>>,
     default_event_id: EventId,
     dynamic_storage: Rc<Service::DynamicStorage>,
-    dynamic_notifier_handle: u32,
+    dynamic_notifier_handle: ContainerHandle,
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {
@@ -125,7 +125,7 @@ impl<Service: service::Service> Drop for Notifier<Service> {
         self.dynamic_storage
             .get()
             .event()
-            .release_notifier_id(self.dynamic_notifier_handle)
+            .release_notifier_handle(self.dynamic_notifier_handle)
     }
 }
 

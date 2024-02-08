@@ -79,19 +79,19 @@ impl DynamicConfig {
         self.subscribers.len()
     }
 
-    pub(crate) fn add_subscriber_id(&self, id: UniqueSubscriberId) -> Option<u32> {
-        unsafe { self.subscribers.add_raw(id) }
+    pub(crate) fn add_subscriber_id(&self, id: UniqueSubscriberId) -> Option<ContainerHandle> {
+        unsafe { self.subscribers.add_with_handle(id) }
     }
 
-    pub(crate) fn release_subscriber_id(&self, id: u32) {
-        unsafe { self.subscribers.remove_raw_index(id) }
+    pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
+        unsafe { self.subscribers.remove_with_handle(handle) }
     }
 
-    pub(crate) fn add_publisher_id(&self, id: UniquePublisherId) -> Option<u32> {
-        unsafe { self.publishers.add_raw(id) }
+    pub(crate) fn add_publisher_id(&self, id: UniquePublisherId) -> Option<ContainerHandle> {
+        unsafe { self.publishers.add_with_handle(id) }
     }
 
-    pub(crate) fn release_publisher_id(&self, id: u32) {
-        unsafe { self.publishers.remove_raw_index(id) }
+    pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
+        unsafe { self.publishers.remove_with_handle(handle) }
     }
 }

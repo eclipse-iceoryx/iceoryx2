@@ -36,7 +36,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
@@ -58,7 +58,7 @@ use super::DegrationCallback;
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
 pub struct Subscriber<'a, Service: service::Service, MessageType: Debug> {
-    dynamic_subscriber_handle: u32,
+    dynamic_subscriber_handle: ContainerHandle,
     publisher_connections: PublisherConnections<Service>,
     dynamic_storage: Rc<Service::DynamicStorage>,
     service: &'a Service,
@@ -75,7 +75,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Drop
         self.dynamic_storage
             .get()
             .publish_subscribe()
-            .release_subscriber_id(self.dynamic_subscriber_handle)
+            .release_subscriber_handle(self.dynamic_subscriber_handle)
     }
 }
 

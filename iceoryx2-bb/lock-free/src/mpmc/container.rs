@@ -64,6 +64,11 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
+/// A handle that corresponds to an element inside the [`Container`]. Will be acquired when using
+/// [`Container::add_with_handle()`] and can be released with [`Container::remove_with_handle()`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ContainerHandle(u32);
+
 /// Contains a state of the [`Container`]. Can be created with [`Container::get_state()`] and
 /// updated when the [`Container`] has changed with [`Container::update_state()`].
 #[derive(Debug)]
@@ -300,11 +305,11 @@ impl<T: Copy + Debug> Container<T> {
     ///
     ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
     ///     before calling this method
-    ///  * Use [`Container::remove_raw_index()`] to release the acquired index again. Otherwise, the
+    ///  * Use [`Container::remove_with_handle()`] to release the acquired index again. Otherwise, the
     ///     element will leak.
     ///
-    pub unsafe fn add_raw(&self, value: T) -> Option<u32> {
-        self.verify_memory_initialization("add_raw");
+    pub unsafe fn add_with_handle(&self, value: T) -> Option<ContainerHandle> {
+        self.verify_memory_initialization("add_with_handle");
 
         match self.index_set.acquire_raw_index() {
             Some(index) => {
@@ -319,7 +324,7 @@ impl<T: Copy + Debug> Container<T> {
                 unsafe { &*self.active_index_ptr.as_ptr().offset(index as isize) }
                     .store(true, Ordering::Release);
 
-                Some(index)
+                Some(ContainerHandle(index))
             }
             None => None,
         }
@@ -337,11 +342,11 @@ impl<T: Copy + Debug> Container<T> {
     /// **Important:** If the UniqueIndex still exists it causes double frees or freeing an index
     /// which was allocated afterwards
     ///
-    pub unsafe fn remove_raw_index(&self, index: u32) {
-        self.verify_memory_initialization("remove_raw_index");
-        unsafe { &*self.active_index_ptr.as_ptr().offset(index as isize) }
+    pub unsafe fn remove_with_handle(&self, handle: ContainerHandle) {
+        self.verify_memory_initialization("remove_with_handle");
+        unsafe { &*self.active_index_ptr.as_ptr().offset(handle.0 as isize) }
             .store(false, Ordering::Relaxed);
-        self.index_set.release_raw_index(index);
+        self.index_set.release_raw_index(handle.0);
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that
@@ -368,7 +373,7 @@ impl<T: Copy + Debug> Container<T> {
     ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
     ///     before calling this method
     ///  * Ensure that the input argument `previous_state` was acquired by the same [`Container`]
-    ///     with [`Container::get_state()`].
+    ///     with [`Container::get_state()`], otherwise the method will panic.
     ///
     pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
         if previous_state.container_id != self.container_id.value() {
@@ -431,7 +436,7 @@ impl<T: Copy + Debug> Container<T> {
 #[repr(C)]
 #[derive(Debug)]
 pub struct FixedSizeContainer<T: Copy + Debug, const CAPACITY: usize> {
-    state: Container<T>,
+    container: Container<T>,
 
     // DO NOT CHANGE MEMBER ORDER UniqueIndexSet variable data
     next_free_index: [UnsafeCell<u32>; CAPACITY],
@@ -445,7 +450,7 @@ pub struct FixedSizeContainer<T: Copy + Debug, const CAPACITY: usize> {
 impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, CAPACITY> {
     fn default() -> Self {
         Self {
-            state: unsafe {
+            container: unsafe {
                 Container::new(
                     CAPACITY,
                     align_to::<u32>(std::mem::size_of::<Container<T>>()) as isize,
@@ -470,7 +475,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
 
     /// Returns the capacity of the container
     pub fn capacity(&self) -> usize {
-        self.state.capacity()
+        self.container.capacity()
     }
 
     /// Adds a new element to the [`FixedSizeContainer`]. If there is no more space available it returns
@@ -489,7 +494,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// };
     /// ```
     pub fn add(&self, value: T) -> Option<UniqueIndex<'_>> {
-        unsafe { self.state.add(value) }
+        unsafe { self.container.add(value) }
     }
 
     /// Adds a new element to the [`FixedSizeContainer`]. If there is no more space available it returns
@@ -501,10 +506,10 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// const CAPACITY: usize = 139;
     /// let container = FixedSizeContainer::<u128, CAPACITY>::new();
     ///
-    /// match unsafe { container.add_raw(1234567) } {
+    /// match unsafe { container.add_with_handle(1234567) } {
     ///     Some(index) => {
-    ///         println!("added at index {}", index);
-    ///         unsafe { container.remove_raw_index(index) };
+    ///         println!("added at index {:?}", index);
+    ///         unsafe { container.remove_with_handle(index) };
     ///     },
     ///     None => println!("container is full"),
     /// };
@@ -513,11 +518,11 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     /// # Safety
     ///
-    ///  * Use [`FixedSizeContainer::remove_raw_index()`] to release the acquired index again. Otherwise,
+    ///  * Use [`FixedSizeContainer::remove_with_handle()`] to release the acquired index again. Otherwise,
     ///     the element will leak.
     ///
-    pub unsafe fn add_raw(&self, value: T) -> Option<u32> {
-        self.state.add_raw(value)
+    pub unsafe fn add_with_handle(&self, value: T) -> Option<ContainerHandle> {
+        self.container.add_with_handle(value)
     }
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.
@@ -526,14 +531,14 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     ///  * If the UniqueIndex still exists it causes double frees or freeing an index
     ///    which was allocated afterwards
-    pub unsafe fn remove_raw_index(&self, index: u32) {
-        self.state.remove_raw_index(index)
+    pub unsafe fn remove_with_handle(&self, handle: ContainerHandle) {
+        self.container.remove_with_handle(handle)
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that
     /// this state can be out of date as soon as it is returned from this function.
     pub fn get_state(&self) -> ContainerState<T> {
-        unsafe { self.state.get_state() }
+        unsafe { self.container.get_state() }
     }
 
     /// Syncs the [`ContainerState`] with the current state of the [`FixedSizeContainer`].
@@ -559,6 +564,6 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///     with [`Container::get_state()`].
     ///
     pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
-        unsafe { self.state.update_state(previous_state) }
+        unsafe { self.container.update_state(previous_state) }
     }
 }

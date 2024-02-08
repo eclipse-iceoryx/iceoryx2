@@ -79,19 +79,19 @@ impl DynamicConfig {
         self.notifiers.len()
     }
 
-    pub(crate) fn add_listener_id(&self, id: UniqueListenerId) -> Option<u32> {
-        unsafe { self.listeners.add_raw(id) }
+    pub(crate) fn add_listener_id(&self, id: UniqueListenerId) -> Option<ContainerHandle> {
+        unsafe { self.listeners.add_with_handle(id) }
     }
 
-    pub(crate) fn release_listener_id(&self, id: u32) {
-        unsafe { self.listeners.remove_raw_index(id) }
+    pub(crate) fn release_listener_handle(&self, handle: ContainerHandle) {
+        unsafe { self.listeners.remove_with_handle(handle) }
     }
 
-    pub(crate) fn add_notifier_id(&self, id: UniqueNotifierId) -> Option<u32> {
-        unsafe { self.notifiers.add_raw(id) }
+    pub(crate) fn add_notifier_id(&self, id: UniqueNotifierId) -> Option<ContainerHandle> {
+        unsafe { self.notifiers.add_with_handle(id) }
     }
 
-    pub(crate) fn release_notifier_id(&self, id: u32) {
-        unsafe { self.notifiers.remove_raw_index(id) }
+    pub(crate) fn release_notifier_handle(&self, handle: ContainerHandle) {
+        unsafe { self.notifiers.remove_with_handle(handle) }
     }
 }

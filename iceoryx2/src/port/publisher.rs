@@ -82,7 +82,7 @@ use crate::service::static_config::publish_subscribe;
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
@@ -108,7 +108,7 @@ pub struct Publisher<'a, Service: service::Service, MessageType: Debug> {
     service: &'a Service,
     degration_callback: Option<DegrationCallback<'a>>,
     loan_counter: AtomicUsize,
-    dynamic_publisher_handle: u32,
+    dynamic_publisher_handle: ContainerHandle,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
@@ -119,7 +119,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Drop
         self.dynamic_storage
             .get()
             .publish_subscribe()
-            .release_publisher_id(self.dynamic_publisher_handle)
+            .release_publisher_handle(self.dynamic_publisher_handle)
     }
 }
 
