@@ -38,6 +38,7 @@
  * `MessagingPattern` implements `Display` [#64](https://github.com/eclipse-iceoryx/iceoryx2/issues/64)
  * Introduce traits for all ports (`Listen`, `Notify`, `Publish`, `DefaultLoan`, `UninitLoan`, `Subscribe`)
    and for samples (`PayloadMut`, `Payload`) [#69](https://github.com/eclipse-iceoryx/iceoryx2/issues/69)
+ * Implement `Ord` and `PartialOrd` for `FixedSizeByteString` and `ServiceName` [#110](https://github.com/eclipse-iceoryx/iceoryx2/issues/110)
 
 ### API Breaking Changes
 
