@@ -543,14 +543,14 @@ impl File {
         );
     }
 
-    /// Takes the ownership to the underlying file, meaning when [`File`] goes out of scope file
-    /// in the file system will be removed.
+    /// Takes the ownership to the underlying file, meaning when [`File`] goes out of scope the
+    /// file is removed from the file system.
     pub fn acquire_ownership(&mut self) {
         self.has_ownership = true;
     }
 
-    /// Releases the ownership to the underlying file, meaning when [`File`] goes out of scope, it
-    /// does not remove the file from the file system.
+    /// Releases the ownership to the underlying file, meaning when [`File`] goes out of scope, the
+    /// file will not be removed from the file system.
     pub fn release_ownership(&mut self) {
         self.has_ownership = false;
     }

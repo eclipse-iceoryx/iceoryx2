@@ -76,19 +76,19 @@ semantic_string! {
             0
         };
 
-        let mut path_separator_size = 0;
+        let mut next_path_separator_size = 0;
 
         for entry in value
             .split(|c| *c == PATH_SEPARATOR)
             .filter(|entry| !entry.is_empty())
             .filter(|entry| !(entry.len() == 1 && entry[0] == b'.'))
         {
-            let new_n = n + path_separator_size + entry.len();
-            if path_separator_size > 0 {
+            let new_n = n + next_path_separator_size + entry.len();
+            if next_path_separator_size > 0 {
                 raw_path[n] = PATH_SEPARATOR;
                 n += 1;
             } else {
-                path_separator_size = 1;
+                next_path_separator_size = 1;
             }
             raw_path[n..new_n].copy_from_slice(entry);
             n = new_n;
