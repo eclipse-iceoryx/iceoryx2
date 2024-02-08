@@ -67,7 +67,10 @@ use std::{
 /// A handle that corresponds to an element inside the [`Container`]. Will be acquired when using
 /// [`Container::add_with_handle()`] and can be released with [`Container::remove_with_handle()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ContainerHandle(u32);
+pub struct ContainerHandle {
+    index: u32,
+    container_id: u64,
+}
 
 /// Contains a state of the [`Container`]. Can be created with [`Container::get_state()`] and
 /// updated when the [`Container`] has changed with [`Container::update_state()`].
@@ -324,7 +327,10 @@ impl<T: Copy + Debug> Container<T> {
                 unsafe { &*self.active_index_ptr.as_ptr().offset(index as isize) }
                     .store(true, Ordering::Release);
 
-                Some(ContainerHandle(index))
+                Some(ContainerHandle {
+                    index,
+                    container_id: self.container_id.value(),
+                })
             }
             None => None,
         }
@@ -338,15 +344,22 @@ impl<T: Copy + Debug> Container<T> {
     ///     before calling this method
     ///  * Ensure that no one else possesses the [`UniqueIndex`] and the index was unrecoverable
     ///     lost
+    ///  * Ensure that the `handle` was acquired by the same [`Container`]
+    ///     with [`Container::add_with_handle()`], otherwise the method will panic.
     ///
     /// **Important:** If the UniqueIndex still exists it causes double frees or freeing an index
     /// which was allocated afterwards
     ///
     pub unsafe fn remove_with_handle(&self, handle: ContainerHandle) {
         self.verify_memory_initialization("remove_with_handle");
-        unsafe { &*self.active_index_ptr.as_ptr().offset(handle.0 as isize) }
+        if handle.container_id != self.container_id.value() {
+            fatal_panic!(from self,
+                "The ContainerHandle used as handle was not created by this Container instance.");
+        }
+
+        unsafe { &*self.active_index_ptr.as_ptr().offset(handle.index as isize) }
             .store(false, Ordering::Relaxed);
-        self.index_set.release_raw_index(handle.0);
+        self.index_set.release_raw_index(handle.index);
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that
