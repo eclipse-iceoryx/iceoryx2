@@ -173,7 +173,6 @@ pub enum ProcessGuardCreateError {
     UnknownError(i32),
 }
 
-/// Defines all errors that can occur when a new [`ProcessMonitor`] is created.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 enum ProcessGuardLockError {
     OwnedByAnotherProcess,

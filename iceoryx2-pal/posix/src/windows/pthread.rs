@@ -756,6 +756,7 @@ pub unsafe fn pthread_cond_timedwait(
         (*abstime).tv_sec * 1000 + (*abstime).tv_nsec as i64 / 1000000 - now.as_millis() as i64,
     );
 
+    #[allow(clippy::blocks_in_conditions)]
     match (*cond).cv.wait(
         &(*mutex).mtx,
         |atomic| {
@@ -932,6 +933,7 @@ pub unsafe fn pthread_mutex_timedlock(
             - now.as_millis() as i64,
     );
 
+    #[allow(clippy::blocks_in_conditions)]
     match (*mtx).mtx.lock(|atomic, value| {
         win32call! { WaitOnAddress(
             (atomic as *const AtomicU32).cast(),

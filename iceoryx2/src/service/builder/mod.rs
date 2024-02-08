@@ -28,6 +28,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
@@ -236,6 +237,11 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         }
     }
 
+    fn config_init_call(config: &mut DynamicConfig, allocator: &mut BumpAllocator) -> bool {
+        unsafe { config.init(allocator) };
+        true
+    }
+
     fn create_dynamic_config_storage(
         &self,
         messaging_pattern: super::dynamic_config::MessagingPattern,
@@ -249,12 +255,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             .config(&dynamic_config_storage_config::<ServiceType>(self.global_config.as_ref()))
             .supplementary_size(additional_size)
             .has_ownership(false)
-            .create_and_initialize(DynamicConfig::new_uninit(messaging_pattern),
-                |config, allocator| {
-                    unsafe { config.init(allocator) };
-                    true
-                }
-                ) {
+            .create_and_initialize(DynamicConfig::new_uninit(messaging_pattern), Self::config_init_call ) {
                 Ok(dynamic_storage) => Ok(dynamic_storage),
                 Err(e) => {
                     fail!(from self, with e, "Failed to create dynamic storage for service.");

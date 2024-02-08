@@ -59,7 +59,6 @@
     // set sample value
     sample.send()?;
     ```
-<<<<<<< HEAD
 
 2. All port `Publisher`, `Subscriber`, `Listener` and `Notifier` no longer have a generic
     `'config` lifetime parameter.
@@ -116,5 +115,3 @@
     // new
     fn my_generic_service_function<ServiceType: iceoryx2::service::Service>();
     ```
-=======
->>>>>>> 5c3362d ([#96] Document ProcessState)

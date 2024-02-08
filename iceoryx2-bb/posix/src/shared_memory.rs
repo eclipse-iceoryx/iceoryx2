@@ -338,9 +338,10 @@ impl SharedMemoryCreationBuilder {
 
         if self.config.zero_memory {
             if POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING {
-                match SignalHandler::call_and_fetch(|| unsafe {
+                let memset_call = || unsafe {
                     posix::memset(shm.base_address as *mut posix::void, 0, self.config.size);
-                }) {
+                };
+                match SignalHandler::call_and_fetch(memset_call) {
                     None => (),
                     Some(v) => {
                         fail!(from self.config, with SharedMemoryCreationError::InsufficientMemory,

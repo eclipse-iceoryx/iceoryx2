@@ -83,6 +83,11 @@
   * Buddy allocator for sender data-segment
   * Introduce runtime fixed-size types
 
+## Expert/Advanced Features
+
+* [ ] Filtering/Routing of messages in pub-sub
+* [ ] Handle approach to resend samples that could not be delivered caused by a full queue in pub-sub
+
 ## Robustness
 
 * [ ] Add ability to recover samples when subscriber died
