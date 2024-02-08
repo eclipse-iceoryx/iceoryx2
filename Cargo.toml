@@ -72,7 +72,8 @@ termsize = { version = "0.1" }
 tiny-fn = { version = "0.1.5" }
 toml = { version = "0.5.9" }
 tracing = { version = "0.1.40" }
-windows-sys = { version = "0.48.0", features = ["Win32_Security", "Win32_Security_Authorization", "Win32_System_Memory", "Win32_System_Threading", "Win32_Foundation", "Win32_System_WindowsProgramming", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Diagnostics_Debug", "Win32_System_SystemInformation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Console", "Win32_Networking_WinSock"] }
+windows-sys = { version = "0.48.0", features = ["Win32_Security", "Win32_Security_Authorization", "Win32_System_Memory", "Win32_System_Threading", "Win32_Foundation", "Win32_System_WindowsProgramming", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Diagnostics_Debug", "Win32_System_SystemInformation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Console", "Win32_Networking_WinSock",
+"Win32_System_SystemServices"] }
 
 [profile.release]
 strip = true

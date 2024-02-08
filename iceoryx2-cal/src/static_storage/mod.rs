@@ -19,7 +19,7 @@ pub mod process_local;
 use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
-use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_name::*;
 
 use crate::named_concept::{
     NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,

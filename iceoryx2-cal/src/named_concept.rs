@@ -86,7 +86,7 @@ pub trait NamedConceptConfiguration: Default + Clone + Debug {
             return None;
         }
 
-        self.extract_name_from_file(unsafe { &FileName::new_unchecked(value.file_name()) })
+        self.extract_name_from_file(&value.file_name())
     }
 
     /// Extracts the name from a file name under a given configuration.

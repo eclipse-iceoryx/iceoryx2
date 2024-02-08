@@ -43,6 +43,7 @@ use crate::posix::{types::*, S_IRUSR, S_IWUSR, S_IXUSR};
 //     GR = Generic Read
 //     GW = Generic Write
 //     GX = Generic Execute
+//     SD = Delete permission
 // object_guid:
 //     empty
 // inherit_object_guid:

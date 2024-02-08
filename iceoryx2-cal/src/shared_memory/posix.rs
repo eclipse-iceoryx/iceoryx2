@@ -159,9 +159,7 @@ impl<Allocator: ShmAllocator + Debug>
 
         let allocator_mgmt_size = self.allocator_size(allocator_config);
 
-        let shm = match iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder::new(unsafe {
-            &FileName::new_unchecked(self.config.path_for(&self.name).file_name())
-        })
+        let shm = match iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder::new(&self.config.path_for(&self.name).file_name())
         .is_memory_locked(self.config.is_memory_locked)
         .creation_mode(CreationMode::CreateExclusive)
         .size(self.size + allocator_mgmt_size)
@@ -237,9 +235,7 @@ impl<Allocator: ShmAllocator + Debug>
     fn open(self) -> Result<Memory<Allocator>, SharedMemoryOpenError> {
         let msg = "Unable to open shared memory";
 
-        let shm = match iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder::new(unsafe {
-            &FileName::new_unchecked(self.config.path_for(&self.name).file_name())
-        })
+        let shm = match iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder::new(&self.config.path_for(&self.name).file_name())
         .is_memory_locked(self.config.is_memory_locked)
         .open_existing(AccessMode::ReadWrite)
         {
@@ -327,7 +323,7 @@ impl<Allocator: ShmAllocator + Debug> NamedConceptMgmt for Memory<Allocator> {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-        let full_name = unsafe { FileName::new_unchecked(cfg.path_for(name).file_name()) };
+        let full_name = cfg.path_for(name).file_name();
 
         Ok(iceoryx2_bb_posix::shared_memory::SharedMemory::does_exist(
             &full_name,
@@ -353,7 +349,7 @@ impl<Allocator: ShmAllocator + Debug> NamedConceptMgmt for Memory<Allocator> {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        let full_name = unsafe { FileName::new_unchecked(cfg.path_for(name).file_name()) };
+        let full_name = cfg.path_for(name).file_name();
         let msg = "Unable to remove shared_memory::posix";
         let origin = "shared_memory::Posix::remove_cfg()";
 

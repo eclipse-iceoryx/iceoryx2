@@ -82,6 +82,15 @@ pub trait SemanticString<const CAPACITY: usize>:
         Ok(new_self)
     }
 
+    /// Creates a new name but does not verify that it does not contain invalid characters.
+    ///
+    /// # Safety
+    ///
+    ///   * The slice must contain only valid characters.
+    ///   * The slice must have a length that is less or equal CAPACITY
+    ///
+    unsafe fn new_unchecked(bytes: &[u8]) -> Self;
+
     /// Creates a new name from a given ptr. The user has to ensure that it is null-terminated.
     ///
     /// # Safety
@@ -153,6 +162,23 @@ pub trait SemanticString<const CAPACITY: usize>:
 
         Ok(())
     }
+
+    /// Adds bytes to the string without checking if they only contain valid characters or
+    /// would result in a valid result.
+    ///
+    /// # Safety
+    ///
+    ///   * The user must ensure that the bytes contain only valid characters.
+    ///   * The user must ensure that the result, after the bytes were added, is valid.
+    ///   * The slice must have a length that is less or equal CAPACITY
+    ///
+    unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]);
+
+    /// Normalizes the string. This function is used as basis for [`core::hash::Hash`] and
+    /// [`PartialEq`]. Normalizing a [`SemanticString`] means to bring it to some format so that it
+    /// contains still the same semantic content but in an uniform way so that strings, with the
+    /// same semantic content but different representation compare as equal.
+    fn normalize(&self) -> Self;
 
     /// Removes the last character. If the string is empty it returns [`None`].
     /// If the removal would create an illegal name it fails.
@@ -287,26 +313,32 @@ macro_rules! semantic_string {
     {$(#[$documentation:meta])*
      name: $string_name:ident, capacity: $capacity:expr,
      invalid_content: $invalid_content:expr, invalid_characters: $invalid_characters:expr,
-     comparision: $comparision:expr} => {
+     normalize: $normalize:expr} => {
         $(#[$documentation])*
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[derive(Debug, Clone, Copy, Eq)]
         pub struct $string_name {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
         }
 
-        impl $string_name {
-            pub unsafe fn new_unchecked(bytes: &[u8]) -> Self {
+        impl iceoryx2_bb_container::semantic_string::SemanticString<$capacity> for $string_name {
+            fn normalize(&self) -> Self {
+                $normalize(self)
+            }
+
+            unsafe fn new_unchecked(bytes: &[u8]) -> Self {
                 Self {
                     value: iceoryx2_bb_container::byte_string::FixedSizeByteString::new_unchecked(bytes),
                 }
             }
 
+            unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
+                self.value.insert_bytes_unchecked(idx, bytes);
+            }
+        }
+
+        impl $string_name {
             pub const fn max_len() -> usize {
                 $capacity
-            }
-
-            pub unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
-                self.value.insert_bytes_unchecked(idx, bytes);
             }
         }
 
@@ -316,27 +348,59 @@ macro_rules! semantic_string {
             }
         }
 
+        impl Hash for $string_name {
+            fn hash<H: Hasher>(&self, state: &mut H) {
+                self.normalize().as_bytes().hash(state)
+            }
+        }
+
+        impl PartialEq<$string_name> for $string_name {
+            fn eq(&self, other: &$string_name) -> bool {
+                *self.normalize().as_bytes() == *other.normalize().as_bytes()
+            }
+        }
+
         impl PartialEq<&[u8]> for $string_name {
             fn eq(&self, other: &&[u8]) -> bool {
-                $comparision(self.value.as_bytes(), *other)
+                let other = match $string_name::new(other) {
+                    Ok(other) => other,
+                    Err(_) => return false,
+                };
+
+                *self == other
             }
         }
 
         impl PartialEq<&[u8]> for &$string_name {
             fn eq(&self, other: &&[u8]) -> bool {
-                $comparision(self.value.as_bytes(), *other)
+                let other = match $string_name::new(other) {
+                    Ok(other) => other,
+                    Err(_) => return false,
+                };
+
+                **self == other
             }
         }
 
         impl<const CAPACITY: usize> PartialEq<[u8; CAPACITY]> for $string_name {
             fn eq(&self, other: &[u8; CAPACITY]) -> bool {
-                $comparision(self.value.as_bytes(), other)
+                let other = match $string_name::new(other) {
+                    Ok(other) => other,
+                    Err(_) => return false,
+                };
+
+                *self == other
             }
         }
 
         impl<const CAPACITY: usize> PartialEq<&[u8; CAPACITY]> for $string_name {
             fn eq(&self, other: &&[u8; CAPACITY]) -> bool {
-                $comparision(self.value.as_bytes(), *other)
+                let other = match $string_name::new(*other) {
+                    Ok(other) => other,
+                    Err(_) => return false,
+                };
+
+                *self == other
             }
         }
 
@@ -372,6 +436,5 @@ macro_rules! semantic_string {
             }
         }
 
-        impl iceoryx2_bb_container::semantic_string::SemanticString<$capacity> for $string_name {}
     };
 }

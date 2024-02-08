@@ -17,7 +17,7 @@ use std::fmt::Debug;
 
 pub use crate::shared_memory::PointerOffset;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
-pub use iceoryx2_bb_system_types::file_name::FileName;
+pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

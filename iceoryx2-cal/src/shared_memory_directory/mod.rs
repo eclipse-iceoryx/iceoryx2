@@ -20,7 +20,7 @@ use crate::shm_allocator::bump_allocator::BumpAllocator;
 use crate::{named_concept::*, shared_memory::*, shm_allocator::ShmAllocator};
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_name::*;
 use std::{alloc::Layout, fmt::Debug, marker::PhantomData};
 
 use crate::shared_memory_directory::file::{File, FileCreator};

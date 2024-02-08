@@ -59,6 +59,7 @@ pub mod mutex;
 pub mod ownership;
 pub mod permission;
 pub mod process;
+pub mod process_state;
 pub mod read_write_mutex;
 pub mod scheduler;
 pub mod semaphore;

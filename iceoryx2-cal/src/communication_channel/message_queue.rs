@@ -47,7 +47,7 @@ impl<T: Copy + Debug> NamedConceptMgmt for Channel<T> {
             name
         );
         let origin = "communication_channel::message_queue::Channel::does_exist_cfg";
-        let full_name = unsafe { FileName::new_unchecked(cfg.path_for(name).file_name()) };
+        let full_name = cfg.path_for(name).file_name();
 
         let does_mq_exist = match does_message_queue_exist::<T>(&full_name) {
             Ok(true) => true,
@@ -93,7 +93,7 @@ impl<T: Copy + Debug> NamedConceptMgmt for Channel<T> {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        let full_name = unsafe { FileName::new_unchecked(cfg.path_for(name).file_name()) };
+        let full_name = cfg.path_for(name).file_name();
         let msg = "Unable to remove communication_channel::message_queue";
         let origin = "communication_channel::message_queue::Channel::remove_cfg()";
 
@@ -228,9 +228,7 @@ impl<T: Copy + Debug> CommunicationChannelCreator<T, Channel<T>> for Creator<T> 
 
     fn create_receiver(self) -> Result<Receiver<T>, CommunicationChannelCreateError> {
         let msg = "Unable to create receiver";
-        let full_name = unsafe {
-            FileName::new_unchecked(self.config.path_for(&self.channel_name).file_name())
-        };
+        let full_name = self.config.path_for(&self.channel_name).file_name();
 
         // create the message queue channel first to avoid races when open is called and the receiver
         // is created at the same time. The uds is called as second in create_receiver and
@@ -328,9 +326,7 @@ impl<T: Copy + Debug> CommunicationChannelConnector<T, Channel<T>> for Connector
 
     fn try_open_sender(self) -> Result<Sender<T>, CommunicationChannelOpenError> {
         let msg = "Unable to create sender";
-        let full_name = unsafe {
-            FileName::new_unchecked(self.config.path_for(&self.channel_name).file_name())
-        };
+        let full_name = self.config.path_for(&self.channel_name).file_name();
 
         let _shared_memory = match SharedMemoryBuilder::new(&full_name)
             .open_existing(AccessMode::Read)

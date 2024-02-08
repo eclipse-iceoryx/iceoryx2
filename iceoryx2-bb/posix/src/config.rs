@@ -18,6 +18,7 @@ use std::time::Duration;
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path, user_name::UserName};
 
 use crate::{scheduler::Scheduler, system_configuration::*};
+use iceoryx2_bb_container::semantic_string::SemanticString;
 
 pub enum ClockMode {
     Performance,

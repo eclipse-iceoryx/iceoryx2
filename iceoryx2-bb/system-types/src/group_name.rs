@@ -25,6 +25,9 @@
 //! assert!(invalid_group.is_err());
 //! ```
 
+pub use iceoryx2_bb_container::semantic_string::SemanticString;
+
+use core::hash::{Hash, Hasher};
 use iceoryx2_bb_container::semantic_string;
 
 const GROUP_NAME_LENGTH: usize = 31;
@@ -48,7 +51,7 @@ semantic_string! {
 
     false
   },
-  comparision: |lhs: &[u8], rhs: &[u8]| {
-      *lhs == *rhs
+  normalize: |this: &GroupName| {
+      *this
   }
 }

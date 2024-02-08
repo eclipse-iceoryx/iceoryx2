@@ -31,6 +31,7 @@ pub use iceoryx2_bb_container::semantic_string::SemanticString;
 
 use crate::file_name::FileName;
 use crate::path::Path;
+use core::hash::{Hash, Hasher};
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
@@ -86,8 +87,8 @@ semantic_string! {
 
     false
   },
-  comparision: |lhs: &[u8], rhs: &[u8]| {
-      *lhs == *rhs
+  normalize: |this: &FilePath| {
+      *this
   }
 }
 
@@ -114,33 +115,30 @@ impl FilePath {
         Ok(new_self)
     }
 
-    fn rfind(&self, byte: u8) -> Option<usize> {
-        let bytes = self.as_bytes();
-        for i in 0..self.len() {
-            let pos = self.len() - 1 - i;
-            if bytes[pos] == byte {
-                return Some(pos);
-            }
-        }
-
-        None
-    }
-
     /// Returns the last file part ([`FileName`]) of the path.
-    pub fn file_name(&self) -> &[u8] {
-        match self.rfind(PATH_SEPARATOR) {
-            None => self.as_bytes(),
-            Some(pos) => self.as_bytes().get(pos + 1..self.len()).unwrap(),
-        }
+    pub fn file_name(&self) -> FileName {
+        let file_name = self
+            .as_bytes()
+            .rsplitn(2, |c| *c == PATH_SEPARATOR)
+            .next()
+            .unwrap();
+        // SAFETY
+        // * the file path ensures that is a valid path to a file, therefore the last part
+        //   must be a valid FileName
+        unsafe { FileName::new_unchecked(file_name) }
     }
 
     /// Returns the [`Path`] part of the [`FilePath`].
-    pub fn path(&self) -> &[u8] {
-        match self.rfind(PATH_SEPARATOR) {
-            None => unsafe { std::slice::from_raw_parts(self.as_ptr(), 0) },
-            Some(0) => self.as_bytes().get(0..1).unwrap(),
-            Some(pos) => self.as_bytes().get(0..pos).unwrap(),
-        }
+    pub fn path(&self) -> Path {
+        let path = match self.as_bytes().rsplitn(2, |c| *c == PATH_SEPARATOR).nth(1) {
+            Some(p) if !p.is_empty() => p,
+            Some(_) => &[PATH_SEPARATOR],
+            None => &[],
+        };
+        // SAFETY
+        // * the file path ensures that is a valid path to a file, therefore the first part
+        //   must be a valid path
+        unsafe { Path::new_unchecked(path) }
     }
 }
 

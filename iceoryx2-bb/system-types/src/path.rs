@@ -29,6 +29,7 @@
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 
+use core::hash::{Hash, Hasher};
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 
@@ -65,18 +66,37 @@ semantic_string! {
 
     false
   },
-  comparision: |lhs: &[u8], rhs: &[u8]| {
-      let lhs_normalized = Path::new_normalized(lhs);
-      if lhs_normalized.is_err() {
-          return false;
-      }
+  normalize: |this: &Path| {
+        let mut raw_path = [0u8; PATH_LENGTH];
+        let value = this.as_bytes();
+        let mut n = if let Some(&PATH_SEPARATOR) = value.first() {
+            raw_path[0] = PATH_SEPARATOR;
+            1
+        } else {
+            0
+        };
 
-      let rhs_normalized = Path::new_normalized(rhs);
-      if rhs_normalized.is_err() {
-          return false;
-      }
+        let mut next_path_separator_size = 0;
 
-      *lhs_normalized.unwrap() == *rhs_normalized.unwrap()
+        for entry in value
+            .split(|c| *c == PATH_SEPARATOR)
+            .filter(|entry| !entry.is_empty())
+            .filter(|entry| !(entry.len() == 1 && entry[0] == b'.'))
+        {
+            let new_n = n + next_path_separator_size + entry.len();
+            if next_path_separator_size > 0 {
+                raw_path[n] = PATH_SEPARATOR;
+                n += 1;
+            } else {
+                next_path_separator_size = 1;
+            }
+            raw_path[n..new_n].copy_from_slice(entry);
+            n = new_n;
+        }
+
+        // SAFETY
+        // * raw_path contains a valid path since the input `this` is a valid path
+        unsafe { Path::new_unchecked(&raw_path[0..n]) }
   }
 }
 
@@ -103,11 +123,25 @@ impl Path {
     }
 
     pub fn is_absolute(&self) -> bool {
-        if self.as_bytes().is_empty() {
-            return false;
-        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            if self.as_bytes().is_empty() {
+                return false;
+            }
 
-        self.as_bytes()[0] == PATH_SEPARATOR
+            self.as_bytes()[0] == PATH_SEPARATOR
+        }
+        #[cfg(target_os = "windows")]
+        {
+            if self.len() < 3 {
+                return false;
+            }
+
+            let has_drive_letter = (b'a' <= self.as_bytes()[0] && self.as_bytes()[0] <= b'z')
+                || (b'A' <= self.as_bytes()[0] && self.as_bytes()[0] <= b'Z');
+
+            has_drive_letter && self.as_bytes()[1] == b':' && (self.as_bytes()[2] == PATH_SEPARATOR)
+        }
     }
 
     pub fn new_root_path() -> Path {
@@ -119,50 +153,23 @@ impl Path {
     }
 
     pub fn new_normalized(value: &[u8]) -> Result<Path, SemanticStringError> {
-        let mut raw_path = [0u8; PATH_LENGTH];
-
-        let mut previous_char_is_path_separator = false;
-        let mut n = 0;
-        for i in 0..value.len() {
-            if i + 1 == value.len() && value[i] == PATH_SEPARATOR {
-                break;
-            }
-
-            if !(previous_char_is_path_separator && value[i] == PATH_SEPARATOR) {
-                raw_path[n] = value[i];
-                n += 1;
-            }
-
-            previous_char_is_path_separator = value[i] == PATH_SEPARATOR
-        }
-
-        Path::new(&raw_path[0..n])
+        Ok(Path::new(value)?.normalize())
     }
 
     pub fn entries(&self) -> Vec<FixedSizeByteString<FILENAME_LENGTH>> {
-        let mut entry_vec = vec![];
-        let mut start_pos = 0;
-        let raw_path = self.as_bytes();
-        for i in 0..raw_path.len() {
-            if raw_path[i] == PATH_SEPARATOR {
-                if i - start_pos == 0 {
-                    start_pos = i + 1;
-                    continue;
-                }
+        let skip_size = if cfg!(target_os = "windows") && self.is_absolute() {
+            // skip drive letter like C:\ since the path is absolute
+            1
+        } else {
+            0
+        };
 
-                entry_vec
-                    .push(unsafe { FixedSizeByteString::new_unchecked(&raw_path[start_pos..i]) });
-                start_pos = i + 1;
-            }
-        }
-
-        if start_pos < raw_path.len() {
-            entry_vec.push(unsafe {
-                FixedSizeByteString::new_unchecked(&raw_path[start_pos..raw_path.len()])
-            });
-        }
-
-        entry_vec
+        self.as_bytes()
+            .split(|c| *c == PATH_SEPARATOR)
+            .skip(skip_size)
+            .filter(|entry| !entry.is_empty())
+            .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
+            .collect()
     }
 }
 

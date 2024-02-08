@@ -30,7 +30,7 @@ use windows_sys::Win32::{
         FILE_SHARE_WRITE, INVALID_FILE_SIZE, LOCKFILE_EXCLUSIVE_LOCK, LOCKFILE_FAIL_IMMEDIATELY,
         OPEN_ALWAYS, OPEN_EXISTING,
     },
-    System::IO::OVERLAPPED,
+    System::{SystemServices::MAXWORD, IO::OVERLAPPED},
 };
 
 use crate::{
@@ -146,10 +146,7 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
             };
 
             match acquire_mode_from_path(&file_path) {
-                None => {
-                    Errno::set(Errno::EOVERFLOW);
-                    -1
-                }
+                None => -1,
                 Some(mode) => {
                     file_stat.st_mode |= mode;
                     buf.write(file_stat);
@@ -219,6 +216,8 @@ pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
     }
 }
 
+impl Struct for OVERLAPPED {}
+
 pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::Handle(handle)) => {
@@ -228,7 +227,24 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
             }
 
             if cmd == F_GETLK {
-                (*arg).l_type = handle.lock_state as i16;
+                if handle.lock_state != posix::F_UNLCK {
+                    (*arg).l_type = handle.lock_state as i16;
+                    return 0;
+                }
+
+                let mut overlapped = OVERLAPPED::new();
+                let flags = LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY;
+                let lock_result =
+                    LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped);
+
+                if lock_result != FALSE {
+                    let mut overlapped = OVERLAPPED::new();
+                    UnlockFileEx(handle.handle, 0, MAXWORD, MAXWORD, &mut overlapped);
+                    (*arg).l_type = posix::F_UNLCK as _;
+                } else {
+                    (*arg).l_type = posix::F_WRLCK as _;
+                }
+
                 return 0;
             }
 
@@ -241,13 +257,14 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
             let handle_mut = HandleTranslator::get_instance().get_mut(fd);
 
             if lock_type == F_UNLCK {
+                let mut overlapped = OVERLAPPED::new();
                 handle_mut.lock_state = F_UNLCK;
                 if win32call! {UnlockFileEx(
                     handle.handle,
                     0,
-                    0xffffffff,
-                    0xffffffff,
-                    core::ptr::null_mut::<OVERLAPPED>(),
+                    MAXWORD,
+                    MAXWORD,
+                    &mut overlapped,
                 )} == 0
                 {
                     Errno::set(Errno::EINVAL);
@@ -265,11 +282,11 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
                 flags |= LOCKFILE_FAIL_IMMEDIATELY;
             }
 
-            // TODO: seems to cause "Invalid access to memory location panic"
-            if win32call! {LockFileEx(handle.handle, flags, 0, 0xffffffff, 0xffffffff, core::ptr::null_mut::<OVERLAPPED>())}
+            let mut overlapped = OVERLAPPED::new();
+
+            if win32call! {LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped)}
                 == FALSE
             {
-                Errno::set(Errno::EINVAL);
                 return -1;
             }
 
