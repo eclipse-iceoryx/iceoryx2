@@ -26,7 +26,7 @@
 //! fn monitored_process<M: Monitoring>() {
 //!     let token =
 //!     M::Builder::new(&FileName::new(b"unique_process_identifier").unwrap()).
-//!                         create().unwrap();
+//!                         token().unwrap();
 //!
 //!     // keep the token in scope and do what a process shall do
 //!
@@ -44,6 +44,29 @@
 //!         State::DoesNotExist => println!("process does not exist"),
 //!     }
 //! }
+//!
+//! fn cleaning_process<M: Monitoring>() {
+//!     let cleaner = match M::Builder::new(&FileName::new(b"unique_process_identifier")
+//!                         .unwrap()).cleaner() {
+//!         Ok(cleaner) => cleaner,
+//!         Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance) => {
+//!             // someone is already cleaning up for us - perfect :)
+//!             return;
+//!         }
+//!         Err(MonitoringCreateCleanerError::InstanceStillAlive) => {
+//!             // whoopsie, the monitored instance is not dead
+//!             return;
+//!         }
+//!         Err(e) => {
+//!             // usual error handling
+//!             return;
+//!         }
+//!     };
+//!
+//!     // cleanup all stale resources of the dead process
+//!     drop(cleaner);
+//! }
+
 //! ```
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -65,11 +88,22 @@ pub enum State {
 }
 
 /// Represents the possible errors that can occur when a new [`MonitoringToken`] is created with
-/// [`MonitoringBuilder::create()`].
+/// [`MonitoringBuilder::token()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitoringCreateTokenError {
     InsufficientPermissions,
     AlreadyExists,
+    InternalError,
+}
+
+/// Represents the possible errors that can occur when a new [`MonitoringCleaner`] is created with
+/// [`MonitoringBuilder::cleaner()`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MonitoringCreateCleanerError {
+    Interrupt,
+    InstanceStillAlive,
+    AlreadyOwnedByAnotherInstance,
+    DoesNotExist,
     InternalError,
 }
 
@@ -93,6 +127,10 @@ pub enum MonitoringStateError {
 /// The token enables a process to be monitored by another process.
 pub trait MonitoringToken: NamedConcept {}
 
+/// The cleaner owns the remains of a dead process and is the only one that is allowed to clean up
+/// those resources.
+pub trait MonitoringCleaner: NamedConcept {}
+
 /// The monitor allows to monitor another process that has instantiated a [`MonitoringToken`]
 pub trait MonitoringMonitor: NamedConcept {
     /// Returns the current [`State`] of the monitored process. On failure it returns
@@ -105,10 +143,14 @@ pub trait MonitoringMonitor: NamedConcept {
 pub trait MonitoringBuilder<T: Monitoring>: NamedConceptBuilder<T> {
     /// Creates a new [`MonitoringToken`] on success or returns a [`MonitoringCreateTokenError`]
     /// on failure.
-    fn create(self) -> Result<T::Token, MonitoringCreateTokenError>;
+    fn token(self) -> Result<T::Token, MonitoringCreateTokenError>;
 
     /// Instantiates a [`MonitoringMonitor`] to monitor a [`MonitoringToken`]
     fn monitor(self) -> Result<T::Monitor, MonitoringCreateMonitorError>;
+
+    /// Instantiates a [`MonitoringCleaner`]. If it could be instantiated successfully the owner is
+    /// allowed to remove all stale resources from the former dead process.
+    fn cleaner(self) -> Result<T::Cleaner, MonitoringCreateCleanerError>;
 }
 
 /// Concept that allows to monitor a process from within another process. The process must hereby
@@ -117,6 +159,7 @@ pub trait MonitoringBuilder<T: Monitoring>: NamedConceptBuilder<T> {
 pub trait Monitoring: NamedConceptMgmt + Sized {
     type Token: MonitoringToken;
     type Monitor: MonitoringMonitor;
+    type Cleaner: MonitoringCleaner;
     type Builder: MonitoringBuilder<Self>;
 
     /// Returns the default suffix that shall be used for every [`MonitoringToken`].

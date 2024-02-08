@@ -16,14 +16,14 @@ use iceoryx2_bb_posix::{
     file::{File, FileRemoveError},
     file_type::FileType,
     process_state::{
-        ProcessGuard, ProcessGuardCreateError, ProcessMonitor, ProcessMonitorCreateError,
-        ProcessMonitorStateError, ProcessState,
+        ProcessCleaner, ProcessCleanerCreateError, ProcessGuard, ProcessGuardCreateError,
+        ProcessMonitor, ProcessMonitorCreateError, ProcessMonitorStateError, ProcessState,
     },
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 
 use crate::{
-    monitoring::{MonitoringCreateMonitorError, State},
+    monitoring::{MonitoringCreateCleanerError, MonitoringCreateMonitorError, State},
     named_concept::{
         NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptDoesExistError,
         NamedConceptListError, NamedConceptMgmt, NamedConceptRemoveError,
@@ -31,8 +31,8 @@ use crate::{
 };
 
 use super::{
-    Monitoring, MonitoringBuilder, MonitoringCreateTokenError, MonitoringMonitor,
-    MonitoringStateError, MonitoringToken,
+    Monitoring, MonitoringBuilder, MonitoringCleaner, MonitoringCreateTokenError,
+    MonitoringMonitor, MonitoringStateError, MonitoringToken,
 };
 
 pub struct FileLockMonitoring {}
@@ -124,6 +124,19 @@ impl NamedConceptMgmt for FileLockMonitoring {
     }
 }
 
+pub struct Cleaner {
+    _cleaner: ProcessCleaner,
+    name: FileName,
+}
+
+impl NamedConcept for Cleaner {
+    fn name(&self) -> &FileName {
+        &self.name
+    }
+}
+
+impl MonitoringCleaner for Cleaner {}
+
 pub struct Token {
     _guard: ProcessGuard,
     name: FileName,
@@ -156,9 +169,9 @@ impl MonitoringMonitor for Monitor {
         match self.monitor.state() {
             Ok(ProcessState::Alive) => Ok(State::Alive),
             Ok(ProcessState::Dead) => Ok(State::Dead),
-            Ok(ProcessState::DoesNotExist) | Ok(ProcessState::InInitialization) => {
-                Ok(State::DoesNotExist)
-            }
+            Ok(ProcessState::DoesNotExist)
+            | Ok(ProcessState::CleaningUp)
+            | Ok(ProcessState::Starting) => Ok(State::DoesNotExist),
             Err(ProcessMonitorStateError::Interrupt) => {
                 fail!(from self, with MonitoringStateError::Interrupt,
                     "{} since an interrupt signal was received.", msg);
@@ -192,7 +205,7 @@ impl NamedConceptBuilder<FileLockMonitoring> for Builder {
 }
 
 impl MonitoringBuilder<FileLockMonitoring> for Builder {
-    fn create(
+    fn token(
         self,
     ) -> Result<<FileLockMonitoring as super::Monitoring>::Token, super::MonitoringCreateTokenError>
     {
@@ -245,12 +258,47 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
             }
         }
     }
+
+    fn cleaner(
+        self,
+    ) -> Result<<FileLockMonitoring as Monitoring>::Cleaner, super::MonitoringCreateCleanerError>
+    {
+        let msg = "Unable to acquire cleaner";
+        let process_state_path = self.config.path_for(&self.name);
+        match ProcessCleaner::new(&process_state_path) {
+            Ok(cleaner) => Ok(Cleaner {
+                _cleaner: cleaner,
+                name: self.name,
+            }),
+            Err(ProcessCleanerCreateError::Interrupt) => {
+                fail!(from self, with MonitoringCreateCleanerError::Interrupt,
+                    "{} since an interrupt signal was received.", msg);
+            }
+            Err(ProcessCleanerCreateError::ProcessIsStillAlive) => {
+                fail!(from self, with MonitoringCreateCleanerError::InstanceStillAlive,
+                    "{} since the instance is still alive.", msg);
+            }
+            Err(ProcessCleanerCreateError::OwnedByAnotherProcess) => {
+                fail!(from self, with MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance,
+                    "{} since another instance already acquired the cleaner.", msg);
+            }
+            Err(ProcessCleanerCreateError::DoesNotExist) => {
+                fail!(from self, with MonitoringCreateCleanerError::DoesNotExist,
+                    "{} since it does not exist.", msg);
+            }
+            Err(e) => {
+                fail!(from self, with MonitoringCreateCleanerError::InternalError,
+                    "{} due to an internal failure ({:?}).", msg, e);
+            }
+        }
+    }
 }
 
 impl crate::monitoring::Monitoring for FileLockMonitoring {
     type Token = Token;
     type Monitor = Monitor;
     type Builder = Builder;
+    type Cleaner = Cleaner;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

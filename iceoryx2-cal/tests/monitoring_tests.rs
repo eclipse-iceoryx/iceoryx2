@@ -35,7 +35,7 @@ mod monitoring {
     fn create_works<Sut: Monitoring>() {
         let name = generate_name();
 
-        let sut_token = Sut::Builder::new(&name).create();
+        let sut_token = Sut::Builder::new(&name).token();
         assert_that!(sut_token, is_ok);
         assert_that!(*sut_token.as_ref().unwrap().name(), eq name);
     }
@@ -44,10 +44,10 @@ mod monitoring {
     fn create_same_token_twice_fails<Sut: Monitoring>() {
         let name = generate_name();
 
-        let sut_token_1 = Sut::Builder::new(&name).create();
+        let sut_token_1 = Sut::Builder::new(&name).token();
         assert_that!(sut_token_1, is_ok);
 
-        let sut_token_2 = Sut::Builder::new(&name).create();
+        let sut_token_2 = Sut::Builder::new(&name).token();
         assert_that!(sut_token_2, is_err);
         assert_that!(
             sut_token_2.err().unwrap(), eq
@@ -59,12 +59,21 @@ mod monitoring {
     fn token_removes_resources_when_going_out_of_scope<Sut: Monitoring>() {
         let name = generate_name();
 
-        let sut_token_1 = Sut::Builder::new(&name).create();
+        let sut_token_1 = Sut::Builder::new(&name).token();
         assert_that!(sut_token_1, is_ok);
         drop(sut_token_1);
 
-        let sut_token_2 = Sut::Builder::new(&name).create();
+        let sut_token_2 = Sut::Builder::new(&name).token();
         assert_that!(sut_token_2, is_ok);
+    }
+
+    #[test]
+    fn create_cleaner_fails_when_token_does_not_exist<Sut: Monitoring>() {
+        let name = generate_name();
+
+        let sut_cleaner = Sut::Builder::new(&name).cleaner();
+        assert_that!(sut_cleaner, is_err);
+        assert_that!(sut_cleaner.err().unwrap(), eq MonitoringCreateCleanerError::DoesNotExist);
     }
 
     #[test]
@@ -92,7 +101,7 @@ mod monitoring {
         for i in 0..LIMIT {
             sut_names.push(generate_name());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(false));
-            std::mem::forget(Sut::Builder::new(&sut_names[i]).create());
+            std::mem::forget(Sut::Builder::new(&sut_names[i]).token());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
 
             let list = <Sut as NamedConceptMgmt>::list().unwrap();
@@ -135,7 +144,7 @@ mod monitoring {
 
         let sut_1 = Sut::Builder::new(&sut_name)
             .config(&config_1)
-            .create()
+            .token()
             .unwrap();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
@@ -145,7 +154,7 @@ mod monitoring {
 
         let sut_2 = Sut::Builder::new(&sut_name)
             .config(&config_2)
-            .create()
+            .token()
             .unwrap();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
