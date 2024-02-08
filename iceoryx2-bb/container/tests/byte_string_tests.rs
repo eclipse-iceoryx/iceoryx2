@@ -14,7 +14,9 @@ use iceoryx2_bb_container::byte_string::*;
 use iceoryx2_bb_testing::assert_that;
 
 const SUT_CAPACITY: usize = 129;
+const SUT_CAPACITY_ALT: usize = 65;
 type Sut = FixedSizeByteString<SUT_CAPACITY>;
+type SutAlt = FixedSizeByteString<SUT_CAPACITY_ALT>;
 
 #[test]
 fn fixed_size_byte_string_new_string_is_empty() {
@@ -345,12 +347,23 @@ fn fixed_size_byte_string_strip_suffix_works() {
 }
 
 #[test]
-fn fixed_size_byte_ordering_works() {
+fn fixed_size_byte_string_ordering_works() {
     unsafe {
         assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla")), eq std::cmp::Ordering::Equal );
         assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuvbla")), eq std::cmp::Ordering::Less );
         assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubaa")), eq std::cmp::Ordering::Greater );
         assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla123")), eq std::cmp::Ordering::Less );
         assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuu")), eq std::cmp::Ordering::Greater );
+    }
+}
+
+#[test]
+fn fixed_size_byte_string_partial_ordering_works() {
+    unsafe {
+        assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubla")), eq Some(std::cmp::Ordering::Equal ));
+        assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuvbla")), eq Some(std::cmp::Ordering::Less ));
+        assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubaa")), eq Some(std::cmp::Ordering::Greater ));
+        assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubla123")), eq Some(std::cmp::Ordering::Less ));
+        assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuu")), eq Some(std::cmp::Ordering::Greater ));
     }
 }

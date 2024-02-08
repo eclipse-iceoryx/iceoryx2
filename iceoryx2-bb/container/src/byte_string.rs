@@ -78,15 +78,14 @@ impl<const CAPACITY: usize, const CAPACITY_OTHER: usize>
     PartialOrd<FixedSizeByteString<CAPACITY_OTHER>> for FixedSizeByteString<CAPACITY>
 {
     fn partial_cmp(&self, other: &FixedSizeByteString<CAPACITY_OTHER>) -> Option<Ordering> {
-        for i in 0..std::cmp::min(self.len, other.len) {
-            match unsafe { *self.data[i].as_ptr() }.cmp(unsafe { &*other.data[i].as_ptr() }) {
-                Ordering::Less => return Some(Ordering::Less),
-                Ordering::Greater => return Some(Ordering::Greater),
-                _ => (),
-            }
-        }
-
-        Some(self.len.cmp(&other.len))
+        Some(
+            self.data[..self.len]
+                .iter()
+                .zip(other.data[..other.len].iter())
+                .map(|(lhs, rhs)| unsafe { lhs.assume_init_read().cmp(rhs.assume_init_ref()) })
+                .find(|&ord| ord != Ordering::Equal)
+                .unwrap_or(self.len.cmp(&other.len)),
+        )
     }
 }
 
