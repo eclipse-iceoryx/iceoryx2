@@ -203,7 +203,7 @@ impl Builder {
         let msg = "Failed to acquire underlying shared memory";
         let full_name =
             unsafe { FileName::new_unchecked(self.config.path_for(&self.name).file_name()) };
-        let mut shm = fail!(from self, when SharedMemoryBuilder::new(&full_name)
+        let shm = fail!(from self, when SharedMemoryBuilder::new(&full_name)
                                                 .creation_mode(CreationMode::OpenOrCreate)
                                                 .size(shm_size)
                                                 .permission(Permission::OWNER_ALL)

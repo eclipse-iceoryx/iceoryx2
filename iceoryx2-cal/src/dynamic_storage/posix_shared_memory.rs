@@ -337,7 +337,7 @@ impl<T: Send + Sync + Debug> DynamicStorage<T> for Storage<T> {
         SharedMemory::does_support_persistency()
     }
 
-    fn acquire_ownership(&mut self) {
+    fn acquire_ownership(&self) {
         self.shm.acquire_ownership()
     }
 
@@ -349,7 +349,7 @@ impl<T: Send + Sync + Debug> DynamicStorage<T> for Storage<T> {
         self.shm.has_ownership()
     }
 
-    fn release_ownership(&mut self) {
+    fn release_ownership(&self) {
         self.shm.release_ownership()
     }
 }

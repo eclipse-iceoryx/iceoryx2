@@ -51,6 +51,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub use crate::dynamic_storage::*;
@@ -167,7 +168,7 @@ static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashMap<FilePath, StorageEntry>>> = Laz
 pub struct Storage<T: Send + Sync + Debug + 'static> {
     name: FileName,
     data: Arc<StorageDetails<T>>,
-    has_ownership: bool,
+    has_ownership: AtomicBool,
     config: Configuration,
 }
 
@@ -242,8 +243,8 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
         true
     }
 
-    fn acquire_ownership(&mut self) {
-        self.has_ownership = true;
+    fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed);
     }
 
     fn get(&self) -> &T {
@@ -251,17 +252,17 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
     }
 
     fn has_ownership(&self) -> bool {
-        self.has_ownership
+        self.has_ownership.load(Ordering::Relaxed)
     }
 
-    fn release_ownership(&mut self) {
-        self.has_ownership = false
+    fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed)
     }
 }
 
 impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
     fn drop(&mut self) {
-        if self.has_ownership {
+        if self.has_ownership() {
             match unsafe { Self::remove_cfg(&self.name, &self.config) } {
                 Ok(false) | Err(_) => {
                     fatal_panic!(from self, "This should never happen! Unable to remove dynamic storage");
@@ -331,7 +332,7 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
                 .clone()
                 .downcast::<StorageDetails<T>>()
                 .unwrap(),
-            has_ownership: false,
+            has_ownership: AtomicBool::new(false),
             config: self.config,
         })
     }
@@ -403,7 +404,7 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
                 .clone()
                 .downcast::<StorageDetails<T>>()
                 .unwrap(),
-            has_ownership: self.has_ownership,
+            has_ownership: AtomicBool::new(self.has_ownership),
             config: self.config,
         })
     }

@@ -57,6 +57,7 @@
 
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
@@ -81,8 +82,7 @@ use crate::service::static_config::publish_subscribe;
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerState;
-use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
@@ -100,15 +100,27 @@ pub struct Publisher<'a, Service: service::Service, MessageType: Debug> {
     pub(crate) sample_reference_counter: Vec<AtomicU64>,
     pub(crate) data_segment: Service::SharedMemory,
     config: LocalPublisherConfig,
+    dynamic_storage: Rc<Service::DynamicStorage>,
 
     subscriber_connections: SubscriberConnections<Service>,
-    subscriber_list_state: UnsafeCell<ContainerState<'a, UniqueSubscriberId>>,
+    subscriber_list_state: UnsafeCell<ContainerState<UniqueSubscriberId>>,
     history: Option<UnsafeCell<Queue<usize>>>,
     service: &'a Service,
     degration_callback: Option<DegrationCallback<'a>>,
     loan_counter: AtomicUsize,
-    _dynamic_config_guard: UniqueIndex<'a>,
+    dynamic_publisher_handle: ContainerHandle,
     _phantom_message_type: PhantomData<MessageType>,
+}
+
+impl<'a, Service: service::Service, MessageType: Debug> Drop
+    for Publisher<'a, Service, MessageType>
+{
+    fn drop(&mut self) {
+        self.dynamic_storage
+            .get()
+            .publish_subscribe()
+            .release_publisher_handle(self.dynamic_publisher_handle)
+    }
 }
 
 impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, MessageType> {
@@ -127,6 +139,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
             .publish_subscribe()
             .subscribers;
 
+        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
         let number_of_samples = service
             .state()
             .static_config
@@ -139,7 +152,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
 
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources
-        let _dynamic_config_guard = match service
+        let dynamic_publisher_handle = match service
             .state()
             .dynamic_storage
             .get()
@@ -162,6 +175,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
                 port_id,
                 static_config,
             ),
+            dynamic_storage,
             data_segment,
             config: *config,
             sample_reference_counter: {
@@ -179,7 +193,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
             service,
             degration_callback: None,
             loan_counter: AtomicUsize::new(0),
-            _dynamic_config_guard,
+            dynamic_publisher_handle,
             _phantom_message_type: PhantomData,
         };
 
@@ -422,7 +436,13 @@ impl<'a, Service: service::Service, MessageType: Debug> UpdateConnections
     for Publisher<'a, Service, MessageType>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        if unsafe { (*self.subscriber_list_state.get()).update() } {
+        if unsafe {
+            self.dynamic_storage
+                .get()
+                .publish_subscribe()
+                .subscribers
+                .update_state(&mut *self.subscriber_list_state.get())
+        } {
             fail!(from self, when self.populate_subscriber_channels(),
                 "Connections were updated only partially since at least one connection to a Subscriber port failed.");
         }

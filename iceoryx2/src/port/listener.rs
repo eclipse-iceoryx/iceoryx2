@@ -32,7 +32,7 @@
 //!
 //! See also [`crate::port::listener::Listener`]
 
-use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndex;
+use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError};
@@ -40,57 +40,67 @@ use iceoryx2_cal::named_concept::NamedConceptBuilder;
 
 use crate::service::naming_scheme::event_concept_name;
 use crate::{port::port_identifiers::UniqueListenerId, service};
-use std::{marker::PhantomData, time::Duration};
+use std::rc::Rc;
+use std::time::Duration;
 
 use super::event_id::EventId;
 use super::listen::{Listen, ListenerCreateError};
 
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]
-pub struct Listener<'a, Service: service::Service> {
-    _dynamic_config_guard: Option<UniqueIndex<'a>>,
+pub struct Listener<Service: service::Service> {
+    dynamic_listener_handle: ContainerHandle,
     listener: <Service::Event as iceoryx2_cal::event::Event<EventId>>::Listener,
     cache: Vec<EventId>,
-    _phantom_a: PhantomData<&'a Service>,
+    dynamic_storage: Rc<Service::DynamicStorage>,
 }
 
-impl<'a, Service: service::Service> Listener<'a, Service> {
-    pub(crate) fn new(service: &'a Service) -> Result<Self, ListenerCreateError> {
+impl<Service: service::Service> Drop for Listener<Service> {
+    fn drop(&mut self) {
+        self.dynamic_storage
+            .get()
+            .event()
+            .release_listener_handle(self.dynamic_listener_handle)
+    }
+}
+
+impl<Service: service::Service> Listener<Service> {
+    pub(crate) fn new(service: &Service) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
         let port_id = UniqueListenerId::new();
 
         let event_name = event_concept_name(&port_id);
+        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
+
         let listener = fail!(from origin,
                              when <Service::Event as iceoryx2_cal::event::Event<EventId>>::ListenerBuilder::new(&event_name).create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
 
-        let mut new_self = Self {
-            _dynamic_config_guard: None,
-            listener,
-            cache: vec![],
-            _phantom_a: PhantomData,
-        };
-
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
-        new_self._dynamic_config_guard = Some(
-            match service
-                .state()
-                .dynamic_storage
-                .get()
-                .event()
-                .add_listener_id(port_id)
-            {
-                Some(unique_index) => unique_index,
-                None => {
-                    fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,
+        let dynamic_listener_handle = match service
+            .state()
+            .dynamic_storage
+            .get()
+            .event()
+            .add_listener_id(port_id)
+        {
+            Some(unique_index) => unique_index,
+            None => {
+                fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,
                                  "{} since it would exceed the maximum supported amount of listeners of {}.",
                                  msg, service.state().static_config.event().max_listeners);
-                }
-            },
-        );
+            }
+        };
+
+        let new_self = Self {
+            dynamic_storage,
+            dynamic_listener_handle,
+            listener,
+            cache: vec![],
+        };
 
         Ok(new_self)
     }
@@ -108,7 +118,7 @@ impl<'a, Service: service::Service> Listener<'a, Service> {
     }
 }
 
-impl<'a, Service: service::Service> Listen for Listener<'a, Service> {
+impl<Service: service::Service> Listen for Listener<Service> {
     fn cache(&self) -> &[EventId] {
         &self.cache
     }

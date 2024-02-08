@@ -219,7 +219,7 @@ fn shared_memory_acquire_ownership_works() {
     test_requires!(POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY);
 
     let shm_name = generate_shm_name();
-    let mut sut_create = SharedMemoryBuilder::new(&shm_name)
+    let sut_create = SharedMemoryBuilder::new(&shm_name)
         .creation_mode(CreationMode::PurgeAndCreate)
         .size(1024)
         .permission(Permission::OWNER_ALL)

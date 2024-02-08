@@ -184,9 +184,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 Ok(Some((static_config, static_storage))) => {
                     let static_config = self.verify_service_properties(&static_config)?;
 
-                    let dynamic_config = fail!(from self, when self.base.open_dynamic_config_storage(),
+                    let dynamic_config = Rc::new(
+                        fail!(from self, when self.base.open_dynamic_config_storage(),
                             with EventOpenError::UnableToOpenDynamicServiceInformation,
-                            "{} since the dynamic service informations could not be opened.", msg);
+                            "{} since the dynamic service informations could not be opened.", msg),
+                    );
 
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::Event(static_config);
@@ -263,9 +265,9 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     ),
                     dynamic_config::event::DynamicConfig::memory_size(&dynamic_config_setting),
                 );
-                let dynamic_config = fail!(from self, when dynamic_config,
+                let dynamic_config = Rc::new(fail!(from self, when dynamic_config,
                     with EventCreateError::InternalFailure,
-                    "{} since the dynamic service segment could not be created.", msg);
+                    "{} since the dynamic service segment could not be created.", msg));
 
                 let service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
                                             with EventCreateError::Corrupted,

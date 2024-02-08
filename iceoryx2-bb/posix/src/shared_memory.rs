@@ -82,6 +82,7 @@ use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 use iceoryx2_pal_posix::*;
 
 use std::ptr::NonNull;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub use crate::access_mode::AccessMode;
 pub use crate::creation_mode::CreationMode;
@@ -191,7 +192,7 @@ impl SharedMemoryBuilder {
             name: self.name,
             base_address: base_address as *mut u8,
             size: actual_shm_size as usize,
-            has_ownership: false,
+            has_ownership: AtomicBool::new(false),
             memory_lock: None,
             file_descriptor: fd,
         };
@@ -284,7 +285,7 @@ impl SharedMemoryCreationBuilder {
             name: self.config.name,
             base_address: core::ptr::null_mut::<u8>(),
             size: self.config.size,
-            has_ownership: self.config.has_ownership,
+            has_ownership: AtomicBool::new(self.config.has_ownership),
             memory_lock: None,
             file_descriptor: fd,
         };
@@ -362,7 +363,7 @@ pub struct SharedMemory {
     name: FileName,
     size: usize,
     base_address: *mut u8,
-    has_ownership: bool,
+    has_ownership: AtomicBool,
     file_descriptor: FileDescriptor,
     memory_lock: Option<MemoryLock>,
 }
@@ -376,7 +377,7 @@ impl Drop for SharedMemory {
             trace!(from self, "close");
         }
 
-        if self.has_ownership {
+        if self.has_ownership() {
             match Self::shm_unlink(&self.name) {
                 Ok(_) => {
                     trace!(from self, "delete");
@@ -414,19 +415,19 @@ impl SharedMemory {
     /// memory. Ownership implies hereby that the posix shared memory is removed as soon as this
     /// object goes out of scope.
     pub fn has_ownership(&self) -> bool {
-        self.has_ownership
+        self.has_ownership.load(Ordering::Relaxed)
     }
 
     /// Releases the ownership of the underlying posix shared memory. If the object goes out of
     /// scope the shared memory is no longer removed.
-    pub fn release_ownership(&mut self) {
-        self.has_ownership = false
+    pub fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed)
     }
 
     /// Acquires the ownership of the underlying posix shared memory. If the object goes out of
     /// scope the shared memory will be removed.
-    pub fn acquire_ownership(&mut self) {
-        self.has_ownership = true
+    pub fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed)
     }
 
     /// Removes a shared memory file.

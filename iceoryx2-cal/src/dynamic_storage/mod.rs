@@ -134,11 +134,11 @@ pub trait DynamicStorage<T: Send + Sync>: Sized + Debug + NamedConceptMgmt + Nam
 
     /// Releases the ownership of the storage. When the object goes out of scope it is no longer
     /// removed.
-    fn release_ownership(&mut self);
+    fn release_ownership(&self);
 
     /// Acquires the ownership of the storage. When the object goes out of scope the underlying
     /// resources will be removed.
-    fn acquire_ownership(&mut self);
+    fn acquire_ownership(&self);
 
     /// Returns a const reference to the underlying object. It is const since the [`DynamicStorage`]
     /// can be accessed by multiple processes concurrently therefore it must be constant or

@@ -172,7 +172,7 @@ mod dynamic_storage {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_name();
 
-        let mut sut = Sut::Builder::new(&storage_name)
+        let sut = Sut::Builder::new(&storage_name)
             .create(TestData::new(9887))
             .unwrap();
 
@@ -222,7 +222,7 @@ mod dynamic_storage {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_name();
 
-        let mut sut = Sut::Builder::new(&storage_name)
+        let sut = Sut::Builder::new(&storage_name)
             .has_ownership(false)
             .create(TestData::new(9887))
             .unwrap();
@@ -259,7 +259,7 @@ mod dynamic_storage {
     fn has_ownership_works<Sut: DynamicStorage<TestData>>() {
         let storage_name = generate_name();
 
-        let mut sut = Sut::Builder::new(&storage_name)
+        let sut = Sut::Builder::new(&storage_name)
             .create(TestData::new(123))
             .unwrap();
 

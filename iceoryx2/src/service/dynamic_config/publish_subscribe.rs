@@ -27,7 +27,7 @@
 //! # }
 //! ```
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::UniqueIndex};
+use iceoryx2_bb_lock_free::mpmc::container::*;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
@@ -79,11 +79,19 @@ impl DynamicConfig {
         self.subscribers.len()
     }
 
-    pub(crate) fn add_subscriber_id(&self, id: UniqueSubscriberId) -> Option<UniqueIndex> {
-        unsafe { self.subscribers.add(id) }
+    pub(crate) fn add_subscriber_id(&self, id: UniqueSubscriberId) -> Option<ContainerHandle> {
+        unsafe { self.subscribers.add_with_handle(id) }
     }
 
-    pub(crate) fn add_publisher_id(&self, id: UniquePublisherId) -> Option<UniqueIndex> {
-        unsafe { self.publishers.add(id) }
+    pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
+        unsafe { self.subscribers.remove_with_handle(handle) }
+    }
+
+    pub(crate) fn add_publisher_id(&self, id: UniquePublisherId) -> Option<ContainerHandle> {
+        unsafe { self.publishers.add_with_handle(id) }
+    }
+
+    pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
+        unsafe { self.publishers.remove_with_handle(handle) }
     }
 }
