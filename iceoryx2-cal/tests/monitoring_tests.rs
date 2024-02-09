@@ -81,11 +81,11 @@ mod monitoring {
     fn monitor_works<Sut: Monitoring>() {
         let name = generate_name();
 
-        let mut sut_monitor = Sut::Builder::new(&name).monitor().unwrap();
+        let sut_monitor = Sut::Builder::new(&name).monitor().unwrap();
         assert_that!(*sut_monitor.name(), eq name);
         assert_that!(sut_monitor.state().unwrap(), eq State::DoesNotExist);
 
-        let sut_token = Sut::Builder::new(&name).create();
+        let sut_token = Sut::Builder::new(&name).token();
         assert_that!(sut_monitor.state().unwrap(), eq State::Alive);
 
         drop(sut_token);
