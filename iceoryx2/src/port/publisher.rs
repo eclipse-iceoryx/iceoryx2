@@ -95,7 +95,7 @@ use iceoryx2_cal::zero_copy_connection::{
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct Publisher<'a, Service: service::Service, MessageType: Debug> {
+pub struct Publisher<Service: service::Service, MessageType: Debug> {
     port_id: UniquePublisherId,
     pub(crate) sample_reference_counter: Vec<AtomicU64>,
     pub(crate) data_segment: Service::SharedMemory,
@@ -105,16 +105,14 @@ pub struct Publisher<'a, Service: service::Service, MessageType: Debug> {
     subscriber_connections: SubscriberConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<UniqueSubscriberId>>,
     history: Option<UnsafeCell<Queue<usize>>>,
-    service: &'a Service,
+    static_config: crate::service::static_config::StaticConfig,
     degration_callback: Option<DegrationCallback<'static>>,
     loan_counter: AtomicUsize,
     dynamic_publisher_handle: ContainerHandle,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> Drop
-    for Publisher<'a, Service, MessageType>
-{
+impl<Service: service::Service, MessageType: Debug> Drop for Publisher<Service, MessageType> {
     fn drop(&mut self) {
         self.dynamic_storage
             .get()
@@ -123,9 +121,9 @@ impl<'a, Service: service::Service, MessageType: Debug> Drop
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageType> {
     pub(crate) fn new(
-        service: &'a Service,
+        service: &Service,
         static_config: &publish_subscribe::StaticConfig,
         config: &LocalPublisherConfig,
     ) -> Result<Self, PublisherCreateError> {
@@ -190,7 +188,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
                 true => None,
                 false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
             },
-            service,
+            static_config: service.state().static_config.clone(),
             degration_callback: None,
             loan_counter: AtomicUsize::new(0),
             dynamic_publisher_handle,
@@ -230,7 +228,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
                         },
                         Err(e) => match &self.degration_callback {
                             Some(c) => match c.call(
-                                self.service.state().static_config.clone(),
+                                self.static_config.clone(),
                                 self.port_id,
                                 *subscriber_id,
                             ) {
@@ -424,13 +422,13 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
         }
     }
 }
-impl<'a, Service: service::Service, MessageType: Debug + Default> Publish<MessageType>
-    for Publisher<'a, Service, MessageType>
+impl<Service: service::Service, MessageType: Debug + Default> Publish<MessageType>
+    for Publisher<Service, MessageType>
 {
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> UpdateConnections
-    for Publisher<'a, Service, MessageType>
+impl<Service: service::Service, MessageType: Debug> UpdateConnections
+    for Publisher<Service, MessageType>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
@@ -448,8 +446,8 @@ impl<'a, Service: service::Service, MessageType: Debug> UpdateConnections
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> SendCopy<MessageType>
-    for Publisher<'a, Service, MessageType>
+impl<Service: service::Service, MessageType: Debug> SendCopy<MessageType>
+    for Publisher<Service, MessageType>
 {
     fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send copy of message";
@@ -464,8 +462,8 @@ impl<'a, Service: service::Service, MessageType: Debug> SendCopy<MessageType>
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
-    for Publisher<'a, Service, MessageType>
+impl<Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
+    for Publisher<Service, MessageType>
 {
     fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<MessageType>>, PublisherLoanError> {
         let msg = "Unable to loan Sample";
@@ -523,8 +521,8 @@ impl<'a, Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> PublishMgmt
-    for Publisher<'a, Service, MessageType>
+impl<Service: service::Service, MessageType: Debug> PublishMgmt
+    for Publisher<Service, MessageType>
 {
     fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
         self.release_sample(distance_to_chunk);
@@ -541,8 +539,8 @@ impl<'a, Service: service::Service, MessageType: Debug> PublishMgmt
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Default + Debug> DefaultLoan<MessageType>
-    for Publisher<'a, Service, MessageType>
+impl<Service: service::Service, MessageType: Default + Debug> DefaultLoan<MessageType>
+    for Publisher<Service, MessageType>
 {
     fn loan(&self) -> Result<SampleMut<MessageType>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))

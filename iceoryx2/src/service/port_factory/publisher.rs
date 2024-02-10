@@ -148,7 +148,7 @@ impl<'factory, Service: service::Service, MessageType: Debug>
     }
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
-    pub fn create(self) -> Result<Publisher<'factory, Service, MessageType>, PublisherCreateError> {
+    pub fn create(self) -> Result<Publisher<Service, MessageType>, PublisherCreateError> {
         Ok(
             fail!(from self, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), &self.config),
                 "Failed to create new Publisher port."),
