@@ -78,6 +78,7 @@ pub use crate::{
 };
 
 pub mod file_lock;
+pub mod process_local;
 
 /// Represents the state of a monitored process.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

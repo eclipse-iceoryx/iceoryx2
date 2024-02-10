@@ -187,4 +187,7 @@ mod monitoring {
 
     #[instantiate_tests(<iceoryx2_cal::monitoring::file_lock::FileLockMonitoring>)]
     mod file_lock {}
+
+    #[instantiate_tests(<iceoryx2_cal::monitoring::process_local::ProcessLocalMonitoring>)]
+    mod process_local {}
 }
