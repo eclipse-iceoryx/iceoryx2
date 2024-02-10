@@ -57,20 +57,18 @@ use super::DegrationCallback;
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
-pub struct Subscriber<'a, Service: service::Service, MessageType: Debug> {
+pub struct Subscriber<Service: service::Service, MessageType: Debug> {
     dynamic_subscriber_handle: ContainerHandle,
     publisher_connections: PublisherConnections<Service>,
     dynamic_storage: Rc<Service::DynamicStorage>,
-    service: &'a Service,
-    degration_callback: Option<DegrationCallback<'a>>,
+    static_config: crate::service::static_config::StaticConfig,
+    degration_callback: Option<DegrationCallback<'static>>,
 
     publisher_list_state: UnsafeCell<ContainerState<UniquePublisherId>>,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> Drop
-    for Subscriber<'a, Service, MessageType>
-{
+impl<Service: service::Service, MessageType: Debug> Drop for Subscriber<Service, MessageType> {
     fn drop(&mut self) {
         self.dynamic_storage
             .get()
@@ -79,9 +77,9 @@ impl<'a, Service: service::Service, MessageType: Debug> Drop
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageType> {
     pub(crate) fn new(
-        service: &'a Service,
+        service: &Service,
         static_config: &StaticConfig,
     ) -> Result<Self, SubscriberCreateError> {
         let msg = "Failed to create Subscriber port";
@@ -123,7 +121,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
             dynamic_storage,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle,
-            service,
+            static_config: service.state().static_config.clone(),
             degration_callback: None,
             _phantom_message_type: PhantomData,
         };
@@ -156,7 +154,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
                         }
                         Some(c) => {
                             match c.call(
-                                self.service.state().static_config.clone(),
+                                self.static_config.clone(),
                                 *publisher_id,
                                 self.publisher_connections.subscriber_id(),
                             ) {
@@ -218,7 +216,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
                 UniquePublisherId,
                 UniqueSubscriberId,
             ) -> DegrationAction
-            + 'a,
+            + 'static,
     >(
         &mut self,
         callback: Option<F>,
@@ -230,8 +228,8 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> Subscribe<MessageType>
-    for Subscriber<'a, Service, MessageType>
+impl<Service: service::Service, MessageType: Debug> Subscribe<MessageType>
+    for Subscriber<Service, MessageType>
 {
     fn receive(&self) -> Result<Option<Sample<MessageType>>, SubscriberReceiveError> {
         if let Err(e) = self.update_connections() {
@@ -270,8 +268,8 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscribe<MessageType>
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> SubscribeMgmt
-    for Subscriber<'a, Service, MessageType>
+impl<Service: service::Service, MessageType: Debug> SubscribeMgmt
+    for Subscriber<Service, MessageType>
 {
     fn release_sample(&self, channel_id: usize, sample: usize) {
         match self.publisher_connections.get(channel_id) {

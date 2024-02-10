@@ -106,7 +106,7 @@ pub struct Publisher<'a, Service: service::Service, MessageType: Debug> {
     subscriber_list_state: UnsafeCell<ContainerState<UniqueSubscriberId>>,
     history: Option<UnsafeCell<Queue<usize>>>,
     service: &'a Service,
-    degration_callback: Option<DegrationCallback<'a>>,
+    degration_callback: Option<DegrationCallback<'static>>,
     loan_counter: AtomicUsize,
     dynamic_publisher_handle: ContainerHandle,
     _phantom_message_type: PhantomData<MessageType>,
@@ -413,7 +413,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
                 UniquePublisherId,
                 UniqueSubscriberId,
             ) -> DegrationAction
-            + 'a,
+            + 'static,
     >(
         &mut self,
         callback: Option<F>,

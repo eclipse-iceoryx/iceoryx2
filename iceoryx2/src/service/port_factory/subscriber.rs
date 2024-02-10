@@ -49,9 +49,7 @@ impl<'factory, Service: service::Service, MessageType: Debug>
     PortFactorySubscriber<'factory, Service, MessageType>
 {
     /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
-    pub fn create(
-        &self,
-    ) -> Result<Subscriber<'factory, Service, MessageType>, SubscriberCreateError> {
+    pub fn create(&self) -> Result<Subscriber<Service, MessageType>, SubscriberCreateError> {
         Ok(
             fail!(from self, when Subscriber::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe()),
                 "Failed to create new Subscriber port."),
