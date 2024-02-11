@@ -47,8 +47,8 @@ use crate::{
 };
 
 /// Defines the strategy the [`Publisher`] shall pursue in
-/// [`crate::payload_mut::PayloadMut::send()`] or
-/// [`crate::port::publish::SendCopy::send_copy()`] when the buffer of a
+/// [`crate::sample_mut::SampleMut::send()`] or
+/// [`Publisher::send_copy()`] when the buffer of a
 /// [`crate::port::subscriber::Subscriber`] is full and the service does not overflow.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum UnableToDeliverStrategy {
@@ -144,8 +144,8 @@ impl<'factory, Service: service::Service, MessageType: Debug>
     }
 
     /// Defines how many [`crate::sample_mut::SampleMut`] the [`Publisher`] can loan with
-    /// [`crate::port::publish::DefaultLoan::loan()`] or
-    /// [`crate::port::publish::UninitLoan::loan_uninit()`] in parallel.
+    /// [`Publisher::loan()`] or
+    /// [`Publisher::loan_uninit()`] in parallel.
     pub fn max_loaned_samples(mut self, value: usize) -> Self {
         self.config.max_loaned_samples = value;
         self

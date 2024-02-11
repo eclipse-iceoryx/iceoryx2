@@ -58,12 +58,11 @@
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
 use crate::message::Message;
-use crate::payload_mut::{internal::PayloadMgmt, PayloadMut, UninitPayloadMut};
 use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
@@ -91,7 +90,7 @@ use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
 
-/// Defines a failure that can occur when a [`Publish`] is created with
+/// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum PublisherCreateError {
@@ -107,8 +106,8 @@ impl std::fmt::Display for PublisherCreateError {
 
 impl std::error::Error for PublisherCreateError {}
 
-/// Defines a failure that can occur in [`DefaultLoan::loan()`] and [`UninitLoan::loan_uninit()`]
-/// or is part of [`PublisherSendError`] emitted in [`SendCopy::send_copy()`].
+/// Defines a failure that can occur in [`Publisher::loan()`] and [`Publisher::loan_uninit()`]
+/// or is part of [`PublisherSendError`] emitted in [`Publisher::send_copy()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum PublisherLoanError {
     OutOfMemory,
@@ -127,6 +126,8 @@ impl std::error::Error for PublisherLoanError {}
 enum_gen! {
     /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send()`].
     PublisherSendError
+  entry:
+    ConnectionBrokenSincePublisherNoLongerExists
   mapping:
     PublisherLoanError to LoanError,
     ConnectionFailure to ConnectionError
@@ -155,6 +156,7 @@ pub(crate) struct DataSegment<Service: service::Service> {
     history: Option<UnsafeCell<Queue<usize>>>,
     static_config: crate::service::static_config::StaticConfig,
     loan_counter: AtomicUsize,
+    is_active: AtomicBool,
 }
 
 impl<Service: service::Service> DataSegment<Service> {
@@ -362,9 +364,15 @@ impl<Service: service::Service> DataSegment<Service> {
         }
     }
 
-    pub(crate) fn send_sample(&self, address_to_chunk: usize) -> Result<usize, ConnectionFailure> {
+    pub(crate) fn send_sample(&self, address_to_chunk: usize) -> Result<usize, PublisherSendError> {
+        let msg = "Unable to send sample";
+        if !self.is_active.load(Ordering::Relaxed) {
+            fail!(from self, with PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists,
+                "{} since the connections could not be updated.", msg);
+        }
+
         fail!(from self, when self.update_connections(),
-            "Unable to send sample since the connections could not be updated.");
+            "{} since the connections could not be updated.", msg);
 
         self.retrieve_returned_samples();
         self.add_sample_to_history(address_to_chunk);
@@ -436,6 +444,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
 
         let new_self = Self {
             data_segment: Rc::new(DataSegment {
+                is_active: AtomicBool::new(true),
                 memory: data_segment,
                 message_size: std::mem::size_of::<Message<Header, MessageType>>(),
                 message_type_layout: Layout::new::<MessageType>(),
@@ -523,12 +532,12 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
 
         sample.payload_mut().write(value);
         Ok(
-            fail!(from self, when self.data_segment.send_sample(sample.offset_to_chunk().value()),
+            fail!(from self, when self.data_segment.send_sample(sample.offset_to_chunk.value()),
             "{} since the underlying send operation failed.", msg),
         )
     }
 
-    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publish`]er.
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
@@ -608,8 +617,8 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
 }
 
 impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service, MessageType> {
-    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publish`]
-    /// and initialize it with the default value. This can be a performance hit and [`UninitLoan::loan_uninit`]
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
+    /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
     /// can be used to loan a [`core::mem::MaybeUninit<MessageType>`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.

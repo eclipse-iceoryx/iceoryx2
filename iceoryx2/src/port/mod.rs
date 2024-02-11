@@ -38,11 +38,6 @@ use crate::service;
 /// Defines the action a port shall take when an internal failure occurs. Can happen when the
 /// system is corrupted and files are modified by non-iceoryx2 instances. Is used as return value of
 /// the [`DegrationCallback`] to define a custom behavior.
-///
-/// Can be set with:
-///
-/// * [`publisher::Publisher::set_degration_callback()`]
-/// * [`subscriber::Subscriber::set_degration_callback()`]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegrationAction {
     /// Ignore the degration completely
