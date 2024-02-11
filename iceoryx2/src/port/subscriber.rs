@@ -42,6 +42,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
 
 use crate::port::DegrationAction;
+use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{
     message::Message, raw_sample::RawSample, sample::Sample, service,
@@ -51,7 +52,6 @@ use crate::{
 use super::details::publisher_connections::{Connection, PublisherConnections};
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
 use super::update_connections::ConnectionFailure;
-use super::DegrationCallback;
 
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -98,7 +98,7 @@ pub struct Subscriber<Service: service::Service, MessageType: Debug> {
     publisher_connections: Rc<PublisherConnections<Service>>,
     dynamic_storage: Rc<Service::DynamicStorage>,
     static_config: crate::service::static_config::StaticConfig,
-    degration_callback: Option<DegrationCallback<'static>>,
+    config: SubscriberConfig,
 
     publisher_list_state: UnsafeCell<ContainerState<UniquePublisherId>>,
     _phantom_message_type: PhantomData<MessageType>,
@@ -117,6 +117,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
     pub(crate) fn new(
         service: &Service,
         static_config: &StaticConfig,
+        config: SubscriberConfig,
     ) -> Result<Self, SubscriberCreateError> {
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
@@ -148,6 +149,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         };
 
         let new_self = Self {
+            config,
             publisher_connections: Rc::new(PublisherConnections::new(
                 publisher_list.capacity(),
                 port_id,
@@ -158,7 +160,6 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle,
             static_config: service.state().static_config.clone(),
-            degration_callback: None,
             _phantom_message_type: PhantomData,
         };
 
@@ -184,7 +185,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             match index {
                 Some(publisher_id) => match self.publisher_connections.create(i, *publisher_id) {
                     Ok(()) => (),
-                    Err(e) => match &self.degration_callback {
+                    Err(e) => match &self.config.degration_callback {
                         None => {
                             warn!(from self, "Unable to establish connection to new publisher {:?}.", publisher_id)
                         }
@@ -240,26 +241,6 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                     "{} since it would exceed the maximum {} of borrowed samples.",
                     msg, connection.receiver.max_borrowed_samples());
             }
-        }
-    }
-
-    /// Sets the [`DegrationCallback`] of the [`Subscriber`]. Whenever a connection to a
-    /// [`crate::port::publisher::Publisher`] is corrupted or a seems to be dead, this callback
-    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
-    pub fn set_degration_callback<
-        F: Fn(
-                service::static_config::StaticConfig,
-                UniquePublisherId,
-                UniqueSubscriberId,
-            ) -> DegrationAction
-            + 'static,
-    >(
-        &mut self,
-        callback: Option<F>,
-    ) {
-        match callback {
-            Some(c) => self.degration_callback = Some(DegrationCallback::new(c)),
-            None => self.degration_callback = None,
         }
     }
 

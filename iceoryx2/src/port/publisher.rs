@@ -71,7 +71,7 @@ use crate::message::Message;
 use crate::payload_mut::{internal::PayloadMgmt, PayloadMut, UninitPayloadMut};
 use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
-use crate::port::{DegrationAction, DegrationCallback};
+use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
 use crate::service;
 use crate::service::config_scheme::data_segment_config;
@@ -109,7 +109,6 @@ pub(crate) struct DataSegment<Service: service::Service> {
     subscriber_list_state: UnsafeCell<ContainerState<UniqueSubscriberId>>,
     history: Option<UnsafeCell<Queue<usize>>>,
     static_config: crate::service::static_config::StaticConfig,
-    degration_callback: Option<DegrationCallback<'static>>,
     loan_counter: AtomicUsize,
 }
 
@@ -256,7 +255,7 @@ impl<Service: service::Service> DataSegment<Service> {
                                 fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
                             }
                         },
-                        Err(e) => match &self.degration_callback {
+                        Err(e) => match &self.config.degration_callback {
                             Some(c) => match c.call(
                                 self.static_config.clone(),
                                 self.port_id,
@@ -350,7 +349,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     pub(crate) fn new(
         service: &Service,
         static_config: &publish_subscribe::StaticConfig,
-        config: &LocalPublisherConfig,
+        config: LocalPublisherConfig,
     ) -> Result<Self, PublisherCreateError> {
         let msg = "Unable to create Publisher port";
         let origin = "Publisher::new()";
@@ -410,14 +409,13 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
                     port_id,
                     static_config,
                 ),
-                config: *config,
+                config,
                 subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
                 history: match static_config.history_size == 0 {
                     true => None,
                     false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
                 },
                 static_config: service.state().static_config.clone(),
-                degration_callback: None,
                 loan_counter: AtomicUsize::new(0),
             },
             dynamic_publisher_handle,
@@ -451,27 +449,8 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
                 .create(&allocator_config),
             "Unable to create the data segment."))
     }
-
-    /// Sets the [`DegrationCallback`] of the [`Publisher`]. Whenever a connection to a
-    /// [`crate::port::subscriber::Subscriber`] is corrupted or a seems to be dead, this callback
-    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
-    pub fn set_degration_callback<
-        F: Fn(
-                service::static_config::StaticConfig,
-                UniquePublisherId,
-                UniqueSubscriberId,
-            ) -> DegrationAction
-            + 'static,
-    >(
-        &mut self,
-        callback: Option<F>,
-    ) {
-        match callback {
-            Some(c) => self.data_segment.degration_callback = Some(DegrationCallback::new(c)),
-            None => self.data_segment.degration_callback = None,
-        }
-    }
 }
+
 impl<Service: service::Service, MessageType: Debug + Default> Publish<MessageType>
     for Publisher<Service, MessageType>
 {

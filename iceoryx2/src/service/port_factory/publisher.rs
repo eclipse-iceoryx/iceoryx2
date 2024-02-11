@@ -36,7 +36,15 @@ use iceoryx2_bb_log::fail;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 use super::publish_subscribe::PortFactory;
-use crate::{port::publish::PublisherCreateError, port::publisher::Publisher, service};
+use crate::{
+    port::{
+        port_identifiers::{UniquePublisherId, UniqueSubscriberId},
+        publish::PublisherCreateError,
+        publisher::Publisher,
+        DegrationAction, DegrationCallback,
+    },
+    service,
+};
 
 /// Defines the strategy the [`Publisher`] shall pursue in
 /// [`crate::payload_mut::PayloadMut::send()`] or
@@ -93,10 +101,11 @@ impl<'de> Deserialize<'de> for UnableToDeliverStrategy {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug)]
 pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
 }
 
 /// Factory to create a new [`Publisher`] port/endpoint for
@@ -114,6 +123,7 @@ impl<'factory, Service: service::Service, MessageType: Debug>
     pub(crate) fn new(factory: &'factory PortFactory<Service, MessageType>) -> Self {
         Self {
             config: LocalPublisherConfig {
+                degration_callback: None,
                 max_loaned_samples: factory
                     .service
                     .state()
@@ -147,10 +157,33 @@ impl<'factory, Service: service::Service, MessageType: Debug>
         self
     }
 
+    /// Sets the [`DegrationCallback`] of the [`Publisher`]. Whenever a connection to a
+    /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
+    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
+    pub fn set_degration_callback<
+        F: Fn(
+                service::static_config::StaticConfig,
+                UniquePublisherId,
+                UniqueSubscriberId,
+            ) -> DegrationAction
+            + 'static,
+    >(
+        mut self,
+        callback: Option<F>,
+    ) -> Self {
+        match callback {
+            Some(c) => self.config.degration_callback = Some(DegrationCallback::new(c)),
+            None => self.config.degration_callback = None,
+        }
+
+        self
+    }
+
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     pub fn create(self) -> Result<Publisher<Service, MessageType>, PublisherCreateError> {
+        let origin = format!("{:?}", self);
         Ok(
-            fail!(from self, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), &self.config),
+            fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),
                 "Failed to create new Publisher port."),
         )
     }
