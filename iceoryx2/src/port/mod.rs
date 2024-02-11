@@ -32,8 +32,6 @@ pub mod port_identifiers;
 pub mod publish;
 /// Sending endpoint (port) for publish-subscribe based communication
 pub mod publisher;
-/// The interface of the receiving endpoint for publish-subscribe based communication
-pub mod subscribe;
 /// Receiving endpoint (port) for publish-subscribe based communication
 pub mod subscriber;
 /// Interface to perform cyclic updates to the ports. Required to deliver history to new
