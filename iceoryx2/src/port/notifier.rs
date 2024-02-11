@@ -37,6 +37,7 @@
 //!
 //! See also [`crate::port::notifier::Notifier`]
 
+use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 use crate::{
     port::port_identifiers::UniqueNotifierId,
     service::{self, naming_scheme::event_concept_name},
@@ -47,11 +48,34 @@ use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
 use std::{cell::UnsafeCell, rc::Rc};
 
-use super::{
-    event_id::EventId,
-    notify::{NotifierConnectionUpdateFailure, NotifierCreateError, Notify},
-    port_identifiers::UniqueListenerId,
-};
+/// Failures that can occur when a new [`Notify`]er is created with the
+/// [`crate::service::port_factory::notifier::PortFactoryNotifier`].
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum NotifierCreateError {
+    ExceedsMaxSupportedNotifiers,
+}
+
+impl std::fmt::Display for NotifierCreateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+    }
+}
+
+impl std::error::Error for NotifierCreateError {}
+
+/// Defines the failures that can occur while a [`Notify::notify()`] call.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum NotifierConnectionUpdateFailure {
+    OnlyPartialUpdate,
+}
+
+impl std::fmt::Display for NotifierConnectionUpdateFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+    }
+}
+
+impl std::error::Error for NotifierConnectionUpdateFailure {}
 
 #[derive(Debug, Default)]
 struct ListenerConnections<Service: service::Service> {
@@ -206,14 +230,22 @@ impl<Service: service::Service> Notifier<Service> {
 
         Ok(())
     }
-}
 
-impl<Service: service::Service> Notify for Notifier<Service> {
-    fn notify(&self) -> Result<usize, NotifierConnectionUpdateFailure> {
+    /// Notifies all [`crate::port::listener::Listener`] connected to the service with the default
+    /// event id provided on creation.
+    /// On success the number of
+    /// [`crate::port::listener::Listener`]s that were notified otherwise it returns
+    /// [`NotifierConnectionUpdateFailure`].
+    pub fn notify(&self) -> Result<usize, NotifierConnectionUpdateFailure> {
         self.notify_with_custom_event_id(self.default_event_id)
     }
 
-    fn notify_with_custom_event_id(
+    /// Notifies all [`crate::port::listener::Listener`] connected to the service with a custom
+    /// [`EventId`].
+    /// On success the number of
+    /// [`crate::port::listener::Listener`]s that were notified otherwise it returns
+    /// [`NotifierConnectionUpdateFailure`].
+    pub fn notify_with_custom_event_id(
         &self,
         value: EventId,
     ) -> Result<usize, NotifierConnectionUpdateFailure> {

@@ -22,8 +22,6 @@ pub mod event_id;
 pub mod listener;
 /// Sending endpoint (port) for event based communication
 pub mod notifier;
-/// The interface of the sending endpoint for event based communication
-pub mod notify;
 /// Defines port specific unique ids. Used to identify source/destination while communicating.
 pub mod port_identifiers;
 /// The interface of the sending endpoint for publish-subscribe based communication
