@@ -86,19 +86,22 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
-use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError};
+use iceoryx2_cal::shared_memory::{
+    SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, ShmPointer,
+};
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::shm_allocator::{self, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
 
-/// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct Publisher<Service: service::Service, MessageType: Debug> {
+pub(crate) struct DataSegment<Service: service::Service> {
+    sample_reference_counter: Vec<AtomicU64>,
+    memory: Service::SharedMemory,
+    message_size: usize,
+    message_type_layout: Layout,
     port_id: UniquePublisherId,
-    pub(crate) sample_reference_counter: Vec<AtomicU64>,
-    pub(crate) data_segment: Service::SharedMemory,
     config: LocalPublisherConfig,
     dynamic_storage: Rc<Service::DynamicStorage>,
 
@@ -108,13 +111,235 @@ pub struct Publisher<Service: service::Service, MessageType: Debug> {
     static_config: crate::service::static_config::StaticConfig,
     degration_callback: Option<DegrationCallback<'static>>,
     loan_counter: AtomicUsize,
+}
+
+impl<Service: service::Service> DataSegment<Service> {
+    fn sample_index(&self, distance_to_chunk: usize) -> usize {
+        distance_to_chunk / self.message_size
+    }
+
+    fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError> {
+        self.retrieve_returned_samples();
+
+        let msg = "Unable to allocate Sample";
+        let ptr = self.memory.allocate(layout)?;
+        if self.sample_reference_counter[self.sample_index(ptr.offset.value())]
+            .fetch_add(1, Ordering::Relaxed)
+            != 0
+        {
+            fatal_panic!(from self,
+                "{} since the allocated sample is already in use! This should never happen!", msg);
+        }
+
+        Ok(ptr)
+    }
+
+    fn borrow_sample(&self, distance_to_chunk: usize) {
+        self.sample_reference_counter[self.sample_index(distance_to_chunk)]
+            .fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn release_sample(&self, distance_to_chunk: PointerOffset) {
+        if self.sample_reference_counter[self.sample_index(distance_to_chunk.value())]
+            .fetch_sub(1, Ordering::Relaxed)
+            == 1
+        {
+            unsafe {
+                fatal_panic!(from self, when self.memory
+                .deallocate(
+                    distance_to_chunk,
+                    self.message_type_layout,
+                ), "Internal logic error. The sample should always contain a valid memory chunk from the provided allocator.");
+            };
+        }
+    }
+
+    fn retrieve_returned_samples(&self) {
+        for i in 0..self.subscriber_connections.len() {
+            match self.subscriber_connections.get(i) {
+                Some(ref connection) => loop {
+                    match connection.sender.reclaim() {
+                        Ok(Some(ptr_dist)) => {
+                            self.release_sample(ptr_dist);
+                        }
+                        Ok(None) => break,
+                        Err(e) => {
+                            warn!(from self, "Unable to reclaim samples from connection {:?} due to {:?}. This may lead to a situation where no more samples will be delivered to this connection.", connection, e)
+                        }
+                    }
+                },
+                None => (),
+            }
+        }
+    }
+
+    fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
+        self.release_sample(distance_to_chunk);
+        self.loan_counter.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    fn add_sample_to_history(&self, address_to_chunk: usize) {
+        match &self.history {
+            None => (),
+            Some(history) => {
+                let history = unsafe { &mut *history.get() };
+                self.borrow_sample(address_to_chunk);
+                match unsafe { history.push_with_overflow(address_to_chunk) } {
+                    None => (),
+                    Some(old) => self.release_sample(PointerOffset::new(old)),
+                }
+            }
+        }
+    }
+
+    fn deliver_sample(&self, address_to_chunk: usize) -> usize {
+        let deliver_call = match self.config.unable_to_deliver_strategy {
+            UnableToDeliverStrategy::Block => {
+                <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
+            }
+            UnableToDeliverStrategy::DiscardSample => {
+                <Service::Connection as ZeroCopyConnection>::Sender::try_send
+            }
+        };
+
+        let mut number_of_recipients = 0;
+        for i in 0..self.subscriber_connections.len() {
+            match self.subscriber_connections.get(i) {
+                Some(ref connection) => {
+                    match deliver_call(&connection.sender, PointerOffset::new(address_to_chunk)) {
+                        Err(ZeroCopySendError::ReceiveBufferFull) => {
+                            /* causes no problem
+                             *   blocking_send => can never happen
+                             *   try_send => we tried and expect that the buffer is full
+                             * */
+                        }
+                        Err(ZeroCopySendError::ClearRetrieveChannelBeforeSend) => {
+                            warn!(from self, "Unable to send sample via connection {:?} since the retrieve buffer is full. This can be caused by a corrupted retrieve channel.", connection);
+                        }
+                        Ok(overflow) => {
+                            self.borrow_sample(address_to_chunk);
+                            number_of_recipients += 1;
+
+                            if let Some(old) = overflow {
+                                self.release_sample(old)
+                            }
+                        }
+                    }
+                }
+                None => (),
+            }
+        }
+        number_of_recipients
+    }
+
+    fn populate_subscriber_channels(&self) -> Result<(), ZeroCopyCreationError> {
+        let mut visited_indices = vec![];
+        visited_indices.resize(self.subscriber_connections.capacity(), None);
+
+        unsafe {
+            (*self.subscriber_list_state.get()).for_each(|index, subscriber_id| {
+                visited_indices[index as usize] = Some(*subscriber_id);
+            })
+        };
+
+        // retrieve samples before destroying channel
+        self.retrieve_returned_samples();
+
+        for (i, index) in visited_indices.iter().enumerate() {
+            match index {
+                Some(subscriber_id) => {
+                    match self.subscriber_connections.create(i, *subscriber_id) {
+                        Ok(false) => (),
+                        Ok(true) => match &self.subscriber_connections.get(i) {
+                            Some(connection) => self.deliver_sample_history(connection),
+                            None => {
+                                fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
+                            }
+                        },
+                        Err(e) => match &self.degration_callback {
+                            Some(c) => match c.call(
+                                self.static_config.clone(),
+                                self.port_id,
+                                *subscriber_id,
+                            ) {
+                                DegrationAction::Ignore => (),
+                                DegrationAction::Warn => {
+                                    warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
+                                }
+                                DegrationAction::Fail => {
+                                    fail!(from self, with e,
+                                           "Unable to establish connection to new subscriber {:?}.", subscriber_id );
+                                }
+                            },
+                            None => {
+                                warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
+                            }
+                        },
+                    }
+                }
+                None => self.subscriber_connections.remove(i),
+            }
+        }
+
+        Ok(())
+    }
+
+    fn update_connections(&self) -> Result<(), ConnectionFailure> {
+        if unsafe {
+            self.dynamic_storage
+                .get()
+                .publish_subscribe()
+                .subscribers
+                .update_state(&mut *self.subscriber_list_state.get())
+        } {
+            fail!(from self, when self.populate_subscriber_channels(),
+                "Connections were updated only partially since at least one connection to a Subscriber port failed.");
+        }
+
+        Ok(())
+    }
+
+    fn deliver_sample_history(&self, connection: &Connection<Service>) {
+        match &self.history {
+            None => (),
+            Some(history) => {
+                let history = unsafe { &mut *history.get() };
+                for i in 0..history.len() {
+                    let ptr_distance = unsafe { history.get_unchecked(i) };
+
+                    match connection.sender.try_send(PointerOffset::new(ptr_distance)) {
+                        Ok(_) => self.borrow_sample(ptr_distance),
+                        Err(e) => {
+                            warn!(from self, "Failed to deliver history to new subscriber via {:?} due to {:?}", connection, e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn send_sample(&self, address_to_chunk: usize) -> Result<usize, ConnectionFailure> {
+        fail!(from self, when self.update_connections(),
+            "Unable to send sample since the connections could not be updated.");
+
+        self.retrieve_returned_samples();
+        self.add_sample_to_history(address_to_chunk);
+        Ok(self.deliver_sample(address_to_chunk))
+    }
+}
+
+/// Sending endpoint of a publish-subscriber based communication.
+#[derive(Debug)]
+pub struct Publisher<Service: service::Service, MessageType: Debug> {
+    pub(crate) data_segment: DataSegment<Service>,
     dynamic_publisher_handle: ContainerHandle,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
 impl<Service: service::Service, MessageType: Debug> Drop for Publisher<Service, MessageType> {
     fn drop(&mut self) {
-        self.dynamic_storage
+        self.data_segment
+            .dynamic_storage
             .get()
             .publish_subscribe()
             .release_publisher_handle(self.dynamic_publisher_handle)
@@ -166,118 +391,44 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         };
 
         let new_self = Self {
-            port_id,
-            subscriber_connections: SubscriberConnections::new(
-                subscriber_list.capacity(),
-                &service.state().global_config,
+            data_segment: DataSegment {
+                memory: data_segment,
+                message_size: std::mem::size_of::<Message<Header, MessageType>>(),
+                message_type_layout: Layout::new::<MessageType>(),
+                sample_reference_counter: {
+                    let mut v = Vec::with_capacity(number_of_samples);
+                    for _ in 0..number_of_samples {
+                        v.push(AtomicU64::new(0));
+                    }
+                    v
+                },
+                dynamic_storage,
                 port_id,
-                static_config,
-            ),
-            dynamic_storage,
-            data_segment,
-            config: *config,
-            sample_reference_counter: {
-                let mut v = Vec::with_capacity(number_of_samples);
-                for _ in 0..number_of_samples {
-                    v.push(AtomicU64::new(0));
-                }
-                v
+                subscriber_connections: SubscriberConnections::new(
+                    subscriber_list.capacity(),
+                    &service.state().global_config,
+                    port_id,
+                    static_config,
+                ),
+                config: *config,
+                subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
+                history: match static_config.history_size == 0 {
+                    true => None,
+                    false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
+                },
+                static_config: service.state().static_config.clone(),
+                degration_callback: None,
+                loan_counter: AtomicUsize::new(0),
             },
-            subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
-            history: match static_config.history_size == 0 {
-                true => None,
-                false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
-            },
-            static_config: service.state().static_config.clone(),
-            degration_callback: None,
-            loan_counter: AtomicUsize::new(0),
             dynamic_publisher_handle,
             _phantom_message_type: PhantomData,
         };
 
-        if let Err(e) = new_self.populate_subscriber_channels() {
+        if let Err(e) = new_self.data_segment.populate_subscriber_channels() {
             warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
         }
 
         Ok(new_self)
-    }
-
-    fn populate_subscriber_channels(&self) -> Result<(), ZeroCopyCreationError> {
-        let mut visited_indices = vec![];
-        visited_indices.resize(self.subscriber_connections.capacity(), None);
-
-        unsafe {
-            (*self.subscriber_list_state.get()).for_each(|index, subscriber_id| {
-                visited_indices[index as usize] = Some(*subscriber_id);
-            })
-        };
-
-        // retrieve samples before destroying channel
-        self.retrieve_returned_samples();
-
-        for (i, index) in visited_indices.iter().enumerate() {
-            match index {
-                Some(subscriber_id) => {
-                    match self.subscriber_connections.create(i, *subscriber_id) {
-                        Ok(false) => (),
-                        Ok(true) => match &self.subscriber_connections.get(i) {
-                            Some(connection) => self.deliver_history(connection),
-                            None => {
-                                fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
-                            }
-                        },
-                        Err(e) => match &self.degration_callback {
-                            Some(c) => match c.call(
-                                self.static_config.clone(),
-                                self.port_id,
-                                *subscriber_id,
-                            ) {
-                                DegrationAction::Ignore => (),
-                                DegrationAction::Warn => {
-                                    warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
-                                }
-                                DegrationAction::Fail => {
-                                    fail!(from self, with e,
-                                           "Unable to establish connection to new subscriber {:?}.", subscriber_id );
-                                }
-                            },
-                            None => {
-                                warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
-                            }
-                        },
-                    }
-                }
-                None => self.subscriber_connections.remove(i),
-            }
-        }
-
-        Ok(())
-    }
-
-    fn deliver_history(&self, connection: &Connection<Service>) {
-        match &self.history {
-            None => (),
-            Some(history) => {
-                let history = unsafe { &mut *history.get() };
-                for i in 0..history.len() {
-                    let ptr_distance = unsafe { history.get_unchecked(i) };
-
-                    match connection.sender.try_send(PointerOffset::new(ptr_distance)) {
-                        Ok(_) => {
-                            self.sample_reference_counter[Self::sample_index(ptr_distance)]
-                                .fetch_add(1, Ordering::Relaxed);
-                        }
-                        Err(e) => {
-                            warn!(from self, "Failed to deliver history to new subscriber via {:?} due to {:?}", connection, e);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn sample_index(distance_to_chunk: usize) -> usize {
-        distance_to_chunk / std::mem::size_of::<Message<Header, MessageType>>()
     }
 
     fn create_data_segment(
@@ -301,106 +452,6 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             "Unable to create the data segment."))
     }
 
-    fn add_to_history(&self, address_to_chunk: usize) {
-        match &self.history {
-            None => (),
-            Some(history) => {
-                let history = unsafe { &mut *history.get() };
-                self.sample_reference_counter[Self::sample_index(address_to_chunk)]
-                    .fetch_add(1, Ordering::Relaxed);
-                match unsafe { history.push_with_overflow(address_to_chunk) } {
-                    None => (),
-                    Some(old) => self.release_sample(PointerOffset::new(old)),
-                }
-            }
-        }
-    }
-
-    fn deliver_sample(&self, address_to_chunk: usize) -> usize {
-        let deliver_call = match self.config.unable_to_deliver_strategy {
-            UnableToDeliverStrategy::Block => {
-                <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
-            }
-            UnableToDeliverStrategy::DiscardSample => {
-                <Service::Connection as ZeroCopyConnection>::Sender::try_send
-            }
-        };
-
-        let mut number_of_recipients = 0;
-        for i in 0..self.subscriber_connections.len() {
-            match self.subscriber_connections.get(i) {
-                Some(ref connection) => {
-                    match deliver_call(&connection.sender, PointerOffset::new(address_to_chunk)) {
-                        Err(ZeroCopySendError::ReceiveBufferFull) => {
-                            /* causes no problem
-                             *   blocking_send => can never happen
-                             *   try_send => we tried and expect that the buffer is full
-                             * */
-                        }
-                        Ok(overflow) => {
-                            self.sample_reference_counter[Self::sample_index(address_to_chunk)]
-                                .fetch_add(1, Ordering::Relaxed);
-                            number_of_recipients += 1;
-
-                            if let Some(old) = overflow {
-                                self.release_sample(old)
-                            }
-                        }
-                    }
-                }
-                None => (),
-            }
-        }
-        number_of_recipients
-    }
-
-    fn release_sample(&self, distance_to_chunk: PointerOffset) {
-        if self.sample_reference_counter[Self::sample_index(distance_to_chunk.value())]
-            .fetch_sub(1, Ordering::Relaxed)
-            == 1
-        {
-            unsafe {
-                fatal_panic!(from self, when self.data_segment
-                .deallocate(
-                    distance_to_chunk,
-                    Layout::new::<MessageType>(),
-                ), "Internal logic error. The sample should always contain a valid memory chunk from the provided allocator.");
-            };
-        }
-    }
-
-    fn retrieve_returned_samples(&self) {
-        for i in 0..self.subscriber_connections.len() {
-            match self.subscriber_connections.get(i) {
-                Some(ref connection) => loop {
-                    match connection.sender.reclaim() {
-                        Ok(Some(ptr_dist)) => {
-                            let sample_index = Self::sample_index(ptr_dist.value());
-
-                            if self.sample_reference_counter[sample_index]
-                                .fetch_sub(1, Ordering::Relaxed)
-                                == 1
-                            {
-                                unsafe {
-                                    fatal_panic!(from self, when self.data_segment
-                                    .deallocate(
-                                        ptr_dist,
-                                        Layout::new::<Message<Header, MessageType>>(),
-                                    ), "This should never happen! Failed to deallocate the reclaimed ptr. Either the data was corrupted or an invalid ptr was returned.")
-                                };
-                            }
-                        }
-                        Ok(None) => break,
-                        Err(e) => {
-                            warn!(from self, "Unable to reclaim samples from connection {:?} due to {:?}. This may lead to a situation where no more samples will be delivered to this connection.", connection, e)
-                        }
-                    }
-                },
-                None => (),
-            }
-        }
-    }
-
     /// Sets the [`DegrationCallback`] of the [`Publisher`]. Whenever a connection to a
     /// [`crate::port::subscriber::Subscriber`] is corrupted or a seems to be dead, this callback
     /// is called and depending on the returned [`DegrationAction`] measures will be taken.
@@ -416,8 +467,8 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         callback: Option<F>,
     ) {
         match callback {
-            Some(c) => self.degration_callback = Some(DegrationCallback::new(c)),
-            None => self.degration_callback = None,
+            Some(c) => self.data_segment.degration_callback = Some(DegrationCallback::new(c)),
+            None => self.data_segment.degration_callback = None,
         }
     }
 }
@@ -430,18 +481,7 @@ impl<Service: service::Service, MessageType: Debug> UpdateConnections
     for Publisher<Service, MessageType>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        if unsafe {
-            self.dynamic_storage
-                .get()
-                .publish_subscribe()
-                .subscribers
-                .update_state(&mut *self.subscriber_list_state.get())
-        } {
-            fail!(from self, when self.populate_subscriber_channels(),
-                "Connections were updated only partially since at least one connection to a Subscriber port failed.");
-        }
-
-        Ok(())
+        self.data_segment.update_connections()
     }
 }
 
@@ -467,12 +507,12 @@ impl<Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
     fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<MessageType>>, PublisherLoanError> {
         let msg = "Unable to loan Sample";
 
-        self.retrieve_returned_samples();
-
-        if self.loan_counter.load(Ordering::Relaxed) >= self.config.max_loaned_samples {
+        if self.data_segment.loan_counter.load(Ordering::Relaxed)
+            >= self.data_segment.config.max_loaned_samples
+        {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
                 "{} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
-                msg, self.loan_counter.load(Ordering::Relaxed), self.config.max_loaned_samples);
+                msg, self.data_segment.loan_counter.load(Ordering::Relaxed), self.data_segment.config.max_loaned_samples);
         }
 
         match self
@@ -480,20 +520,12 @@ impl<Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
             .allocate(Layout::new::<Message<Header, MessageType>>())
         {
             Ok(chunk) => {
-                if self.sample_reference_counter[Self::sample_index(chunk.offset.value())]
-                    .fetch_add(1, Ordering::Relaxed)
-                    != 0
-                {
-                    fatal_panic!(from self,
-                                "{} since the allocated sample is already in use! This should never happen!", msg);
-                }
-
                 let message =
                     chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
 
                 let sample = unsafe {
                     (*message).write(Message {
-                        header: Header::new(self.port_id),
+                        header: Header::new(self.data_segment.port_id),
                         data: MaybeUninit::uninit(),
                     });
                     RawSampleMut::new_unchecked(
@@ -501,7 +533,9 @@ impl<Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
                     )
                 };
 
-                self.loan_counter.fetch_add(1, Ordering::Relaxed);
+                self.data_segment
+                    .loan_counter
+                    .fetch_add(1, Ordering::Relaxed);
                 Ok(SampleMut::new(self, sample, chunk.offset))
             }
             Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
@@ -524,17 +558,11 @@ impl<Service: service::Service, MessageType: Debug> PublishMgmt
     for Publisher<Service, MessageType>
 {
     fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
-        self.release_sample(distance_to_chunk);
-        self.loan_counter.fetch_sub(1, Ordering::Relaxed);
+        self.data_segment.return_loaned_sample(distance_to_chunk);
     }
 
     fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ConnectionFailure> {
-        fail!(from self, when self.update_connections(),
-            "Unable to send sample since the connections could not be updated.");
-
-        self.add_to_history(address_to_chunk);
-        self.retrieve_returned_samples();
-        Ok(self.deliver_sample(address_to_chunk))
+        self.data_segment.send_sample(address_to_chunk)
     }
 }
 
