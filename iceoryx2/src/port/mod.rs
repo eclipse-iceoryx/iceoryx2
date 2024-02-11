@@ -18,8 +18,6 @@ pub(crate) mod details;
 
 /// Defines the event id used to identify the source of an event.
 pub mod event_id;
-/// The interface of the receiving endpoint for event based communication
-pub mod listen;
 /// Receiving endpoint (port) for event based communication
 pub mod listener;
 /// Sending endpoint (port) for event based communication
