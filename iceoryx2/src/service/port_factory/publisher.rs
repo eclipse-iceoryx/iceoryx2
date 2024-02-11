@@ -39,8 +39,8 @@ use super::publish_subscribe::PortFactory;
 use crate::{
     port::{
         port_identifiers::{UniquePublisherId, UniqueSubscriberId},
-        publish::PublisherCreateError,
         publisher::Publisher,
+        publisher::PublisherCreateError,
         DegrationAction, DegrationCallback,
     },
     service,

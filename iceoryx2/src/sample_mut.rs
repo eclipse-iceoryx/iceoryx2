@@ -38,12 +38,12 @@
 
 use crate::{
     payload_mut::{internal::PayloadMgmt, PayloadMut, UninitPayloadMut},
-    port::{publish::internal::PublishMgmt, update_connections::ConnectionFailure},
+    port::{publisher::DataSegment, update_connections::ConnectionFailure},
     raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_cal::shared_memory::*;
-use std::{fmt::Debug, mem::MaybeUninit};
+use std::{fmt::Debug, mem::MaybeUninit, rc::Rc};
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 /// [`crate::port::publish::DefaultLoan::loan()`] or
@@ -59,62 +59,65 @@ use std::{fmt::Debug, mem::MaybeUninit};
 /// The generic parameter `M` is either a `MessageType` or a [`core::mem::MaybeUninit<MessageType>`], depending
 /// which API is used to obtain the sample.
 #[derive(Debug)]
-pub struct SampleMut<'publisher, M: Debug> {
-    pub(crate) publisher: &'publisher dyn PublishMgmt,
-    ptr: RawSampleMut<Header, M>,
+pub struct SampleMut<MessageType: Debug, Service: crate::service::Service> {
+    data_segment: Rc<DataSegment<Service>>,
+    ptr: RawSampleMut<Header, MessageType>,
     offset_to_chunk: PointerOffset,
 }
 
-impl<M: Debug> Drop for SampleMut<'_, M> {
+impl<MessageType: Debug, Service: crate::service::Service> Drop
+    for SampleMut<MessageType, Service>
+{
     fn drop(&mut self) {
-        self.publisher.return_loaned_sample(self.offset_to_chunk);
+        self.data_segment.return_loaned_sample(self.offset_to_chunk);
     }
 }
 
-impl<'publisher, MessageType: Debug> SampleMut<'publisher, MaybeUninit<MessageType>> {
+impl<MessageType: Debug, Service: crate::service::Service>
+    SampleMut<MaybeUninit<MessageType>, Service>
+{
     pub(crate) fn new(
-        publisher: &'publisher dyn PublishMgmt,
+        data_segment: &Rc<DataSegment<Service>>,
         ptr: RawSampleMut<Header, MaybeUninit<MessageType>>,
         offset_to_chunk: PointerOffset,
     ) -> Self {
-        // SAFETY: the transmute is not nice but safe since MaybeUninit is #[repr(transparent)} to the inner type
-        let publisher = unsafe { std::mem::transmute(publisher) };
-
         Self {
-            publisher,
+            data_segment: Rc::clone(data_segment),
             ptr,
             offset_to_chunk,
         }
     }
 }
 
-impl<'publisher, MessageType: Debug> PayloadMgmt for SampleMut<'publisher, MessageType> {
+impl<MessageType: Debug, Service: crate::service::Service> PayloadMgmt
+    for SampleMut<MessageType, Service>
+{
     fn offset_to_chunk(&self) -> PointerOffset {
         self.offset_to_chunk
     }
 }
 
-impl<'publisher, MessageType: Debug> UninitPayloadMut<MessageType>
-    for SampleMut<'publisher, MaybeUninit<MessageType>>
+impl<MessageType: Debug, Service: crate::service::Service> UninitPayloadMut<MessageType>
+    for SampleMut<MaybeUninit<MessageType>, Service>
 {
-    type InitializedSample = SampleMut<'publisher, MessageType>;
+    type InitializedSample = SampleMut<MessageType, Service>;
 
-    fn write_payload(mut self, value: MessageType) -> SampleMut<'publisher, MessageType> {
+    fn write_payload(mut self, value: MessageType) -> SampleMut<MessageType, Service> {
         self.payload_mut().write(value);
         // SAFETY: this is safe since the payload was initialized on the line above
         unsafe { self.assume_init() }
     }
 
-    unsafe fn assume_init(self) -> SampleMut<'publisher, MessageType> {
+    unsafe fn assume_init(self) -> SampleMut<MessageType, Service> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
     }
 }
 
 impl<
-        'publisher,
         M: Debug, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
-    > PayloadMut<M> for SampleMut<'publisher, M>
+        Service: crate::service::Service,
+    > PayloadMut<M> for SampleMut<M, Service>
 {
     fn header(&self) -> &Header {
         self.ptr.as_header_ref()
@@ -129,6 +132,6 @@ impl<
     }
 
     fn send(self) -> Result<usize, ConnectionFailure> {
-        self.publisher.send_impl(self.offset_to_chunk.value())
+        self.data_segment.send_sample(self.offset_to_chunk.value())
     }
 }

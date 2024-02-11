@@ -24,8 +24,6 @@ pub mod listener;
 pub mod notifier;
 /// Defines port specific unique ids. Used to identify source/destination while communicating.
 pub mod port_identifiers;
-/// The interface of the sending endpoint for publish-subscribe based communication
-pub mod publish;
 /// Sending endpoint (port) for publish-subscribe based communication
 pub mod publisher;
 /// Receiving endpoint (port) for publish-subscribe based communication

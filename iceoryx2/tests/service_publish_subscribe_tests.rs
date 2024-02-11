@@ -13,7 +13,7 @@
 #[generic_tests::define]
 mod service_publish_subscribe {
     use iceoryx2::config::Config;
-    use iceoryx2::port::publish::{PublisherCreateError, PublisherLoanError};
+    use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
     use iceoryx2::prelude::*;
