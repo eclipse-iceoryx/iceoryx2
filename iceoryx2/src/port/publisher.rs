@@ -405,7 +405,6 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     /// [`crate::port::subscriber::Subscriber`] is corrupted or a seems to be dead, this callback
     /// is called and depending on the returned [`DegrationAction`] measures will be taken.
     pub fn set_degration_callback<
-        'publisher,
         F: Fn(
                 service::static_config::StaticConfig,
                 UniquePublisherId,

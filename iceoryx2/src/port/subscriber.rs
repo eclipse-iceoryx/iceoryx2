@@ -53,7 +53,7 @@ use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
 use super::update_connections::ConnectionFailure;
 use super::DegrationCallback;
 
-/// Defines the failure that can occur when receiving data with [`Subscribe::receive()`].
+/// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SubscriberReceiveError {
     ExceedsMaxBorrowedSamples,
@@ -68,7 +68,7 @@ impl std::fmt::Display for SubscriberReceiveError {
 
 impl std::error::Error for SubscriberReceiveError {}
 
-/// Describes the failures when a new [`Subscribe`] is created via the
+/// Describes the failures when a new [`Subscriber`] is created via the
 /// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SubscriberCreateError {
@@ -212,8 +212,8 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         Ok(())
     }
 
-    fn receive_from_connection<'subscriber>(
-        &'subscriber self,
+    fn receive_from_connection(
+        &self,
         channel_id: usize,
         connection: &mut Connection<Service>,
     ) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {

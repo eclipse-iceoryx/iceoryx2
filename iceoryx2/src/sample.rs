@@ -46,7 +46,7 @@ use crate::service::header::publish_subscribe::Header;
 
 /// It stores the payload and is acquired by the [`crate::port::subscriber::Subscriber`] whenever
 /// it receives new data from a [`crate::port::publisher::Publisher`] via
-/// [`crate::port::subscribe::Subscribe::receive()`].
+/// [`crate::port::subscriber::Subscriber::receive()`].
 #[derive(Debug)]
 pub struct Sample<MessageType: Debug, Service: crate::service::Service> {
     pub(crate) publisher_connections: Rc<PublisherConnections<Service>>,

@@ -48,7 +48,7 @@ use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
 use std::{cell::UnsafeCell, rc::Rc};
 
-/// Failures that can occur when a new [`Notify`]er is created with the
+/// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum NotifierCreateError {
@@ -63,7 +63,7 @@ impl std::fmt::Display for NotifierCreateError {
 
 impl std::error::Error for NotifierCreateError {}
 
-/// Defines the failures that can occur while a [`Notify::notify()`] call.
+/// Defines the failures that can occur while a [`Notifier::notify()`] call.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum NotifierConnectionUpdateFailure {
     OnlyPartialUpdate,
