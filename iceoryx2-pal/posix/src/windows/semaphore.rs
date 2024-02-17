@@ -83,6 +83,7 @@ pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> in
     let milli_seconds = (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
         - now.as_millis() as i64;
 
+    #[allow(clippy::blocks_in_conditions)]
     match (*sem).semaphore.wait(|atomic, value| -> WaitAction {
         WaitOnAddress(
             (atomic as *const AtomicU32).cast(),

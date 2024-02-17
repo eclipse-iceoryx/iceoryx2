@@ -288,9 +288,11 @@ impl UdpClient {
                             "This should never happen! {} since the socket could not be attached to a fd set.", msg);
 
         let mut received_bytes = Ok(0);
-        match fd_set.timed_wait(timeout, FileEvent::Read, |_| {
+        let receive_call = |_: &FileDescriptor| {
             received_bytes = self.socket.receive(buffer);
-        }) {
+        };
+
+        match fd_set.timed_wait(timeout, FileEvent::Read, receive_call) {
             Err(FileDescriptorSetWaitError::Interrupt) => {
                 fail!(from self, with UdpReceiveError::Interrupt,
                     "{} since an interrupt signal was received.", msg);

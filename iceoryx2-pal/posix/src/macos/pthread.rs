@@ -636,6 +636,7 @@ pub unsafe fn pthread_cond_timedwait(
     mutex: *mut pthread_mutex_t,
     abstime: *const timespec,
 ) -> int {
+    #[allow(clippy::blocks_in_conditions)]
     match (*cond).cv.wait(
         &(*mutex).mtx,
         wake_one,

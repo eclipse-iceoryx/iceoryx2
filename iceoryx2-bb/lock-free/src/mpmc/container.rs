@@ -271,14 +271,14 @@ impl<T: Copy + Debug> Container<T> {
     ///
     pub unsafe fn add(&self, value: T) -> Option<UniqueIndex<'_>> {
         self.verify_memory_initialization("add");
-        match self
-            .index_set
-            .acquire_with_additional_cleanup(|index: u32| {
-                // set deactivate the active index to indicate that the value can be used again
-                // requires that T does not implement drop
-                unsafe { &*self.active_index_ptr.as_ptr().offset(index as isize) }
-                    .store(false, Ordering::Relaxed);
-            }) {
+        let cleanup_call = |index: u32| {
+            // set deactivate the active index to indicate that the value can be used again
+            // requires that T does not implement drop
+            unsafe { &*self.active_index_ptr.as_ptr().offset(index as isize) }
+                .store(false, Ordering::Relaxed);
+        };
+
+        match self.index_set.acquire_with_additional_cleanup(cleanup_call) {
             Some(index) => {
                 unsafe {
                     *(*self.data_ptr.as_ptr().offset(index.value() as isize)).get() =
