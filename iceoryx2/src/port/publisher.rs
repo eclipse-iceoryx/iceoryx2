@@ -471,7 +471,6 @@ impl<'a, Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
     for Publisher<'a, Service, MessageType>
 {
     fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<MessageType>>, PublisherLoanError> {
-        self.retrieve_returned_samples();
         let msg = "Unable to loan Sample";
 
         if self.loan_counter.load(Ordering::Relaxed) >= self.config.max_loaned_samples {
@@ -534,6 +533,7 @@ impl<'a, Service: service::Service, MessageType: Debug> PublishMgmt
     }
 
     fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ConnectionFailure> {
+        self.retrieve_returned_samples();
         fail!(from self, when self.update_connections(),
             "Unable to send sample since the connections could not be updated.");
 

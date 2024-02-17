@@ -946,6 +946,128 @@ mod service_publish_subscribe {
         );
     }
 
+    fn retrieve_channel_capacity_is_never_exceeded<Sut: Service>(
+        publisher_borrow_size: usize,
+        buffer_size: usize,
+        max_borrow: usize,
+    ) {
+        const ITERATIONS: usize = 16;
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .max_publishers(1)
+            .max_subscribers(1)
+            .enable_safe_overflow(false)
+            .history_size(0)
+            .subscriber_max_buffer_size(buffer_size)
+            .subscriber_max_borrowed_samples(max_borrow)
+            .create::<usize>()
+            .unwrap();
+
+        let sut_publisher = sut
+            .publisher()
+            .max_loaned_samples(publisher_borrow_size)
+            .create()
+            .unwrap();
+        let sut_subscriber = sut.subscriber().create().unwrap();
+
+        let mut borrowed_samples = vec![];
+        let mut cached_samples = vec![];
+
+        let mut send_sample = || {
+            if borrowed_samples.is_empty() {
+                for _ in 0..publisher_borrow_size {
+                    borrowed_samples.push(sut_publisher.loan().unwrap());
+                }
+            }
+
+            let sample = borrowed_samples.pop().unwrap();
+            sample.send().unwrap();
+        };
+
+        for _ in 0..ITERATIONS {
+            for _ in 0..max_borrow {
+                send_sample();
+                cached_samples.push(sut_subscriber.receive().unwrap().unwrap());
+            }
+
+            for _ in 0..buffer_size {
+                send_sample();
+            }
+
+            cached_samples.clear();
+            for _ in 0..buffer_size {
+                sut_subscriber.receive().unwrap().unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_large_publisher_borrow_size<
+        Sut: Service,
+    >() {
+        const PUBLISHER_BORROW_SIZE: usize = 10;
+        const BUFFER_SIZE: usize = 1;
+        const MAX_BORROW: usize = 1;
+        retrieve_channel_capacity_is_never_exceeded::<Sut>(
+            PUBLISHER_BORROW_SIZE,
+            BUFFER_SIZE,
+            MAX_BORROW,
+        );
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_large_buffer_size<Sut: Service>() {
+        const PUBLISHER_BORROW_SIZE: usize = 1;
+        const BUFFER_SIZE: usize = 10;
+        const MAX_BORROW: usize = 1;
+        retrieve_channel_capacity_is_never_exceeded::<Sut>(
+            PUBLISHER_BORROW_SIZE,
+            BUFFER_SIZE,
+            MAX_BORROW,
+        );
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_large_max_borrow<Sut: Service>() {
+        const PUBLISHER_BORROW_SIZE: usize = 1;
+        const BUFFER_SIZE: usize = 1;
+        const MAX_BORROW: usize = 10;
+
+        retrieve_channel_capacity_is_never_exceeded::<Sut>(
+            PUBLISHER_BORROW_SIZE,
+            BUFFER_SIZE,
+            MAX_BORROW,
+        );
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_large_settings<Sut: Service>() {
+        const PUBLISHER_BORROW_SIZE: usize = 20;
+        const BUFFER_SIZE: usize = 14;
+        const MAX_BORROW: usize = 15;
+
+        retrieve_channel_capacity_is_never_exceeded::<Sut>(
+            PUBLISHER_BORROW_SIZE,
+            BUFFER_SIZE,
+            MAX_BORROW,
+        );
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_small_settings<Sut: Service>() {
+        const PUBLISHER_BORROW_SIZE: usize = 1;
+        const BUFFER_SIZE: usize = 1;
+        const MAX_BORROW: usize = 1;
+
+        retrieve_channel_capacity_is_never_exceeded::<Sut>(
+            PUBLISHER_BORROW_SIZE,
+            BUFFER_SIZE,
+            MAX_BORROW,
+        );
+    }
+
     #[test]
     fn creating_max_supported_amount_of_ports_work<Sut: Service>() {
         const MAX_PUBLISHERS: usize = 4;
