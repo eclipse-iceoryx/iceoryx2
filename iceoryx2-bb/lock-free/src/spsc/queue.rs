@@ -170,24 +170,30 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     ///    to ensure that at most one thread access this method.
     pub unsafe fn push(&self, t: &T) -> bool {
         let current_write_pos = self.write_position.load(Ordering::Relaxed);
-        let is_full = current_write_pos == self.read_position.load(Ordering::Relaxed) + CAPACITY;
+        ////////////////
+        // SYNC POINT with `read_position` store in `pop`
+        ////////////////
+        let current_read_pos = self.read_position.load(Ordering::Acquire);
+        let is_full = Self::check_is_full(current_write_pos, current_read_pos);
 
-        match is_full {
-            true => false,
-            false => {
-                unsafe {
-                    self.data[current_write_pos % CAPACITY]
-                        .get()
-                        .write(MaybeUninit::new(*t));
-                }
-                ////////////////
-                // SYNC POINT
-                ////////////////
-                self.write_position
-                    .store(current_write_pos + 1, Ordering::Release);
-                true
-            }
+        if is_full {
+            return false;
         }
+
+        unsafe {
+            self.data[current_write_pos % CAPACITY]
+                .get()
+                .write(MaybeUninit::new(*t));
+        }
+        ////////////////
+        // SYNC POINT with `write_position` load in `pop`
+        // prevent that writing to `data` is reordered after advancing of
+        // `write_position` which would signal that the data is ready although
+        // the data is not yet written and create a data race.
+        ////////////////
+        self.write_position
+            .store(current_write_pos + 1, Ordering::Release);
+        true
     }
 
     /// Acquires an index from the [`Queue`]. If the queue is empty
@@ -200,30 +206,32 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     pub unsafe fn pop(&self) -> Option<T> {
         let current_read_pos = self.read_position.load(Ordering::Relaxed);
         ////////////////
-        // SYNC POINT
+        // SYNC POINT with `write_position` store in `push`
         ////////////////
         let is_empty = current_read_pos == self.write_position.load(Ordering::Acquire);
 
-        match is_empty {
-            true => None,
-            false => {
-                let out: T = unsafe {
-                    *self.data[current_read_pos % CAPACITY]
-                        .get()
-                        .as_ref()
-                        .unwrap()
-                        .as_ptr()
-                };
-
-                // prevent that `out` and `read_position` statements are reordered according to
-                // the AS-IF rule.
-                core::sync::atomic::fence(Ordering::AcqRel);
-                self.read_position
-                    .store(current_read_pos + 1, Ordering::Relaxed);
-
-                Some(out)
-            }
+        if is_empty {
+            return None;
         }
+
+        let out: T = unsafe {
+            *self.data[current_read_pos % CAPACITY]
+                .get()
+                .as_ref()
+                .unwrap()
+                .as_ptr()
+        };
+
+        ////////////////
+        // SYNC POINT with `read_position` load in `push`
+        // prevent that reading from `data` is reordered after advancing of
+        // `read_position` which would signal a free slot although the data
+        // is not yet read and create a data race.
+        ////////////////
+        self.read_position
+            .store(current_read_pos + 1, Ordering::Release);
+
+        Some(out)
     }
 
     fn acquire_read_and_write_position(&self) -> (usize, usize) {
@@ -259,7 +267,11 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     /// Returns true if the queue is full, otherwise false
     pub fn is_full(&self) -> bool {
         let (write_position, read_position) = self.acquire_read_and_write_position();
-        write_position == read_position + CAPACITY
+        Self::check_is_full(write_position, read_position)
+    }
+
+    fn check_is_full(write_pos: usize, read_pos: usize) -> bool {
+        write_pos == read_pos + CAPACITY
     }
 }
 
