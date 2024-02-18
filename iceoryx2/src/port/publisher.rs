@@ -473,6 +473,8 @@ impl<'a, Service: service::Service, MessageType: Debug> UninitLoan<MessageType>
     fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<MessageType>>, PublisherLoanError> {
         let msg = "Unable to loan Sample";
 
+        self.retrieve_returned_samples();
+
         if self.loan_counter.load(Ordering::Relaxed) >= self.config.max_loaned_samples {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
                 "{} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
