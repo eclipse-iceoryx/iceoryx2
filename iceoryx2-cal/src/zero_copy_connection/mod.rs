@@ -41,7 +41,6 @@ impl std::error::Error for ZeroCopyCreationError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopySendError {
     ReceiveBufferFull,
-    ClearRetrieveChannelBeforeSend,
 }
 
 impl std::fmt::Display for ZeroCopySendError {

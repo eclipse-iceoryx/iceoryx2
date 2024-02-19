@@ -15,11 +15,13 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Fixes for [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
-    * retrieve channel overflow caused by big publisher loans
-    * `CreationMode::OpenOrCreate` in `iceoryx2-bb-posix::SharedMemory`
  * Fix undefined behavior in `spsc::{queue|index_queue}` [#87](https://github.com/eclipse-iceoryx/iceoryx2/issues/87)
  * Fix `open_or_create` race [#108](https://github.com/eclipse-iceoryx/iceoryx2/issues/108)
+ * Fixes for [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
+    * Fix retrieve channel overflow caused by big publisher loans
+    * Fix `CreationMode::OpenOrCreate` in `iceoryx2-bb-posix::SharedMemory`
+    * Add missing memory synchronization to posix shm zero copy connection
+    * Remove retrieve buffer full check from zero copy connection - sender had insufficient infos available
  * Fix insufficient memory reordering protection in `spsc::Queue::push` and `spsc::Queue::pop` [#119](https://github.com/eclipse-iceoryx/iceoryx2/issues/119)
 
 ### Refactoring
