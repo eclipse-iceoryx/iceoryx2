@@ -19,6 +19,7 @@
  * Fix `open_or_create` race [#108](https://github.com/eclipse-iceoryx/iceoryx2/issues/108)
  * Fix retrieve channel overflow caused by big publisher loans [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
  * Fix insufficient memory reordering protection in `spsc::Queue::push` and `spsc::Queue::pop` [#119](https://github.com/eclipse-iceoryx/iceoryx2/issues/119)
+ * Fix data race due to operation reordering in `spmc::UnrestrictedAtomic::load` [#125](https://github.com/eclipse-iceoryx/iceoryx2/issues/125)
 
 ### Refactoring
 
