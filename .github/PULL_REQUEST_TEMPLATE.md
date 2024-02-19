@@ -5,7 +5,7 @@
 
 1. [ ] Add sensible notes for the reviewer
 1. [ ] PR title is short, expressive and meaningful
-1. [ ] Relevant issues are linked
+1. [ ] Relevant issues are linked in the [References](#references) section
 1. [ ] Every source code file has a copyright header with `SPDX-License-Identifier: Apache-2.0 OR MIT`
 1. [ ] Branch follows the naming format (`iox2-123-introduce-posix-ipc-example`)
 1. [ ] Commits messages are according to this [guideline][commit-guidelines]
@@ -34,6 +34,6 @@
 
 ## References
 
-Use either 'Closes #123' or 'Relates to #123' to reference the corresponding issue.
+<!-- Use either 'Closes #123' or 'Relates to #123' to reference the corresponding issue. -->
 
-Closes #**ISSUE-NUMBER**
+Closes # <!-- Add issue number after '#' -->
