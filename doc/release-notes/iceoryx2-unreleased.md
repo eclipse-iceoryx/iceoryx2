@@ -15,9 +15,10 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Fix retrieve channel overflow caused by big publisher loans [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
- * Fix `open_or_create` race [#108](https://github.com/eclipse-iceoryx/iceoryx2/issues/108)
  * Fix undefined behavior in `spsc::{queue|index_queue}` [#87](https://github.com/eclipse-iceoryx/iceoryx2/issues/87)
+ * Fix `open_or_create` race [#108](https://github.com/eclipse-iceoryx/iceoryx2/issues/108)
+ * Fix retrieve channel overflow caused by big publisher loans [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
+ * Fix insufficient memory reordering protection in `spsc::Queue::push` and `spsc::Queue::pop` [#119](https://github.com/eclipse-iceoryx/iceoryx2/issues/119)
 
 ### Refactoring
 
