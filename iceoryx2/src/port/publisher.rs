@@ -239,6 +239,8 @@ impl<Service: service::Service> DataSegment<Service> {
     }
 
     fn deliver_sample(&self, address_to_chunk: usize) -> usize {
+        self.retrieve_returned_samples();
+
         let deliver_call = match self.config.unable_to_deliver_strategy {
             UnableToDeliverStrategy::Block => {
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
@@ -371,7 +373,6 @@ impl<Service: service::Service> DataSegment<Service> {
         fail!(from self, when self.update_connections(),
             "{} since the connections could not be updated.", msg);
 
-        self.retrieve_returned_samples();
         self.add_sample_to_history(address_to_chunk);
         Ok(self.deliver_sample(address_to_chunk))
     }
