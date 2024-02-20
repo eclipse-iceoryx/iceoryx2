@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_container::semantic_string::*;
+use iceoryx2_bb_system_types::base64url::*;
 use iceoryx2_bb_system_types::file_name::*;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::group_name::*;
@@ -154,6 +155,15 @@ mod semantic_string {
         assert_that!(sut.as_bytes(), eq b"a012");
     }
 
+    #[test]
+    fn invalid_utf8_characters_fail<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
+        let sut = Sut::new(&[b'a', b'b', 0xdf, 0xff]);
+        assert_that!(sut, is_err);
+
+        let sut = Sut::new(&[b'f', b'u', b'u', 0xff, 0xff]);
+        assert_that!(sut, is_err);
+    }
+
     #[instantiate_tests(<{FileName::max_len()}, FileName>)]
     mod file_name {}
 
@@ -168,4 +178,7 @@ mod semantic_string {
 
     #[instantiate_tests(<{GroupName::max_len()}, GroupName>)]
     mod group_name {}
+
+    #[instantiate_tests(<{Base64Url::max_len()}, Base64Url>)]
+    mod base64url {}
 }

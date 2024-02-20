@@ -356,14 +356,14 @@ macro_rules! semantic_string {
 
         impl From<$string_name> for String {
             fn from(value: $string_name) -> String {
-                // SAFETY: every semantic string shall contain valid utf-8 characters
+                // SAFETY: every semantic string shall contain only valid utf-8 characters
                 unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
             }
         }
 
         impl From<&$string_name> for String {
             fn from(value: &$string_name) -> String {
-                // SAFETY: every semantic string shall contain valid utf-8 characters
+                // SAFETY: every semantic string shall contain only valid utf-8 characters
                 unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
             }
         }
@@ -446,6 +446,10 @@ macro_rules! semantic_string {
             }
 
             fn does_contain_invalid_characters(string: &[u8]) -> bool {
+                if String::from_utf8(string.to_vec()).is_err() {
+                    return true;
+                }
+
                 $invalid_characters(string)
             }
         }
