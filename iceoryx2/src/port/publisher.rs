@@ -259,9 +259,6 @@ impl<Service: service::Service> DataSegment<Service> {
                              *   try_send => we tried and expect that the buffer is full
                              * */
                         }
-                        Err(ZeroCopySendError::ClearRetrieveChannelBeforeSend) => {
-                            warn!(from self, "Unable to send sample via connection {:?} since the retrieve buffer is full. This can be caused by a corrupted retrieve channel.", connection);
-                        }
                         Ok(overflow) => {
                             self.borrow_sample(address_to_chunk);
                             number_of_recipients += 1;
@@ -566,7 +563,6 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     pub fn loan_uninit(
         &self,
     ) -> Result<SampleMut<MaybeUninit<MessageType>, Service>, PublisherLoanError> {
-        self.data_segment.retrieve_returned_samples();
         let msg = "Unable to loan Sample";
 
         if self.data_segment.loan_counter.load(Ordering::Relaxed)
