@@ -354,6 +354,20 @@ macro_rules! semantic_string {
             }
         }
 
+        impl From<$string_name> for String {
+            fn from(value: $string_name) -> String {
+                // SAFETY: every semantic string shall contain valid utf-8 characters
+                unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
+            }
+        }
+
+        impl From<&$string_name> for String {
+            fn from(value: &$string_name) -> String {
+                // SAFETY: every semantic string shall contain valid utf-8 characters
+                unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
+            }
+        }
+
         impl PartialEq<$string_name> for $string_name {
             fn eq(&self, other: &$string_name) -> bool {
                 *self.normalize().as_bytes() == *other.normalize().as_bytes()

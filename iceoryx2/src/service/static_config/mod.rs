@@ -54,7 +54,9 @@ impl StaticConfig {
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
-            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern).as_hex_string(),
+            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
+                .value()
+                .into(),
             service_name: *service_name,
             messaging_pattern,
         }
@@ -67,7 +69,9 @@ impl StaticConfig {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
         Self {
-            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern).as_hex_string(),
+            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
+                .value()
+                .into(),
             service_name: *service_name,
             messaging_pattern,
         }

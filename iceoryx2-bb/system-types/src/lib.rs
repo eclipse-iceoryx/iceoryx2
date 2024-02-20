@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod base64url;
 pub mod file_name;
 pub mod file_path;
 pub mod group_name;

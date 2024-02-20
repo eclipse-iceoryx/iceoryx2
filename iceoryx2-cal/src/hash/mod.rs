@@ -21,17 +21,51 @@
 //!     let some_text = "Hello World".to_string();
 //!     let hash = H::new(some_text.as_bytes());
 //!
-//!     println!("Hash as hex: {}", hash.as_hex_string());
+//!     println!("Hash value: {:?}", hash.value());
 //! }
 //! ```
 
+use iceoryx2_bb_container::semantic_string::{SemanticString, SemanticStringError};
+use iceoryx2_bb_system_types::base64url::Base64Url;
+
 pub mod sha1;
+
+/// Represents the value of the hash.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct HashValue {
+    value: Base64Url,
+}
+
+impl HashValue {
+    pub(crate) fn new(bytes: &[u8]) -> Result<HashValue, SemanticStringError> {
+        Ok(Self {
+            value: Base64Url::new(bytes)?,
+        })
+    }
+
+    /// Returns the base64url representation of the [`HashValue`]
+    pub fn as_base64url(&self) -> &Base64Url {
+        &self.value
+    }
+}
+
+impl From<HashValue> for String {
+    fn from(value: HashValue) -> Self {
+        value.as_base64url().into()
+    }
+}
+
+impl From<&HashValue> for String {
+    fn from(value: &HashValue) -> Self {
+        value.as_base64url().into()
+    }
+}
 
 /// Interface to generate hashes.
 pub trait Hash {
     /// Creates a new hash from `bytes`.
     fn new(bytes: &[u8]) -> Self;
 
-    /// Converts the hash into as string of hex-characters
-    fn as_hex_string(&self) -> String;
+    /// Returns the value of the [`Hash`]
+    fn value(&self) -> HashValue;
 }
