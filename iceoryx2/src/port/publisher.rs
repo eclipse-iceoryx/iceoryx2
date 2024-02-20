@@ -339,9 +339,6 @@ impl<'a, Service: service::Service, MessageType: Debug> Publisher<'a, Service, M
                              *   try_send => we tried and expect that the buffer is full
                              * */
                         }
-                        Err(ZeroCopySendError::ClearRetrieveChannelBeforeSend) => {
-                            warn!(from self, "Unable to send sample via connection {:?} since the retrieve buffer is full. This can be caused by a corrupted retrieve channel.", connection);
-                        }
                         Ok(overflow) => {
                             self.sample_reference_counter[Self::sample_index(address_to_chunk)]
                                 .fetch_add(1, Ordering::Relaxed);
@@ -535,11 +532,11 @@ impl<'a, Service: service::Service, MessageType: Debug> PublishMgmt
     }
 
     fn send_impl(&self, address_to_chunk: usize) -> Result<usize, ConnectionFailure> {
-        self.retrieve_returned_samples();
         fail!(from self, when self.update_connections(),
             "Unable to send sample since the connections could not be updated.");
 
         self.add_to_history(address_to_chunk);
+        self.retrieve_returned_samples();
         Ok(self.deliver_sample(address_to_chunk))
     }
 }

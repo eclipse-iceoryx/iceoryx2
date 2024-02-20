@@ -274,7 +274,13 @@ impl SharedMemoryCreationBuilder {
                     }
                     Err(SharedMemoryCreationError::DoesNotExist) => {
                         shm_created = true;
-                        SharedMemory::shm_create(&self.config.name, &self.config)?
+                        match SharedMemory::shm_create(&self.config.name, &self.config) {
+                            Ok(fd) => fd,
+                            Err(SharedMemoryCreationError::AlreadyExist) => {
+                                SharedMemory::shm_open(&self.config.name, &self.config)?
+                            }
+                            Err(e) => return Err(e),
+                        }
                     }
                     Err(v) => return Err(v),
                 }

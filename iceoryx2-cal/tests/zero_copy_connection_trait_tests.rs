@@ -288,43 +288,6 @@ mod zero_copy_connection {
     }
 
     #[test]
-    fn retrieve_channel_must_always_have_enough_space_left<Sut: ZeroCopyConnection>() {
-        let name = generate_name();
-        const BUFFER_SIZE: usize = 34;
-        const MAX_BORROWED_SAMPLES: usize = 34;
-
-        let sut_sender = Sut::Builder::new(&name)
-            .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples(MAX_BORROWED_SAMPLES)
-            .create_sender()
-            .unwrap();
-
-        let sut_receiver = Sut::Builder::new(&name)
-            .buffer_size(BUFFER_SIZE)
-            .receiver_max_borrowed_samples(MAX_BORROWED_SAMPLES)
-            .create_receiver()
-            .unwrap();
-
-        for i in 0..BUFFER_SIZE {
-            assert_that!(sut_sender.try_send(PointerOffset::new(i)), is_ok);
-        }
-
-        for _ in 0..MAX_BORROWED_SAMPLES {
-            let sample = sut_receiver.receive().unwrap().unwrap();
-            assert_that!(sut_receiver.release(sample), is_ok);
-        }
-
-        assert_that!(sut_sender.try_send(PointerOffset::new(0)), is_ok);
-
-        let result = sut_sender.try_send(PointerOffset::new(0));
-        assert_that!(result, is_err);
-        assert_that!(
-            result.err().unwrap(), eq
-            ZeroCopySendError::ClearRetrieveChannelBeforeSend
-        );
-    }
-
-    #[test]
     fn receiver_cannot_borrow_more_samples_than_set_up<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         const BUFFER_SIZE: usize = 56;

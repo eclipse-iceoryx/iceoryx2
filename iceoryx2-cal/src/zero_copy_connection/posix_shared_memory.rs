@@ -237,10 +237,13 @@ impl Builder {
                 fatal_panic!(from self, when unsafe { (*mgmt_ptr).retrieve_channel.init(&allocator) },
                             "{} since the retrieve channel allocation failed. - This is an implementation bug!", msg);
 
+                //////////////////////////////////////////
+                // SYNC POINT: write SharedManagementData
+                //////////////////////////////////////////
                 unsafe {
                     (*mgmt_ptr)
                         .init_state
-                        .store(IS_INITIALIZED_STATE_VALUE, Ordering::Relaxed)
+                        .store(IS_INITIALIZED_STATE_VALUE, Ordering::Release)
                 };
                 shm.release_ownership();
             }
@@ -251,7 +254,11 @@ impl Builder {
                                             with ZeroCopyCreationError::InternalError, "{} since the adaptive wait could not be created.", msg);
 
                 let mgmt_ref = unsafe { &mut *mgmt_ptr };
-                while mgmt_ref.init_state.load(Ordering::Relaxed) != IS_INITIALIZED_STATE_VALUE {
+
+                //////////////////////////////////////////
+                // SYNC POINT: read SharedManagementData
+                //////////////////////////////////////////
+                while mgmt_ref.init_state.load(Ordering::Acquire) != IS_INITIALIZED_STATE_VALUE {
                     if fail!(from self, when adaptive_wait.wait(), with ZeroCopyCreationError::InternalError,
                             "{} since a failure while waiting for creation finalization occurred.", msg)
                         < MAX_CREATION_DURATION
@@ -426,15 +433,6 @@ impl ZeroCopyPortDetails for Sender {
 impl ZeroCopySender for Sender {
     fn try_send(&self, ptr: PointerOffset) -> Result<Option<PointerOffset>, ZeroCopySendError> {
         let msg = "Unable to send sample";
-        let space_in_retrieve_channel =
-            self.mgmt().retrieve_channel.capacity() - self.mgmt().retrieve_channel.len();
-
-        if space_in_retrieve_channel
-            <= self.mgmt().max_borrowed_samples + self.mgmt().receive_channel.len()
-        {
-            fail!(from self, with ZeroCopySendError::ClearRetrieveChannelBeforeSend,
-                "{} since sufficient space for every sample in the retrieve channel cannot be guaranteed. Samples have to be retrieved before a new sample can be send.", msg);
-        }
 
         if !self.mgmt().enable_safe_overflow && self.mgmt().receive_channel.is_full() {
             fail!(from self, with ZeroCopySendError::ReceiveBufferFull,

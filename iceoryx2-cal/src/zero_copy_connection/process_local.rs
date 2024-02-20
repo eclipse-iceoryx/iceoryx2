@@ -311,15 +311,6 @@ impl ZeroCopyPortDetails for Sender {
 impl ZeroCopySender for Sender {
     fn try_send(&self, ptr: PointerOffset) -> Result<Option<PointerOffset>, ZeroCopySendError> {
         let msg = "Unable to send sample";
-        let space_in_retrieve_channel =
-            self.mgmt.retrieve_channel.capacity() - self.mgmt.retrieve_channel.len();
-
-        if space_in_retrieve_channel
-            <= self.mgmt.max_borrowed_samples + self.mgmt.receive_channel.len()
-        {
-            fail!(from self, with ZeroCopySendError::ClearRetrieveChannelBeforeSend,
-                "{} since sufficient space for every sample in the retrieve channel cannot be guaranteed. Samples have to be retrieved before a new sample can be send.", msg);
-        }
 
         if !self.mgmt.enable_safe_overflow && self.mgmt.receive_channel.is_full() {
             fail!(from self, with ZeroCopySendError::ReceiveBufferFull,
