@@ -27,12 +27,12 @@ semantic_string! {
     value.is_empty()
   },
   invalid_characters: |value: &[u8]| {
-    value.iter().find(|&&c| {
-        !((b'a' <= c && c <= b'z') ||
-          (b'A' <= c && c <= b'Z') ||
-          (b'0' <= c && c <= b'9') ||
-          c == b'-' || c == b'_')
-    }).is_some()
+    value.iter().any(|c| {
+        !(c.is_ascii_lowercase() ||
+          c.is_ascii_uppercase() ||
+          c.is_ascii_digit() ||
+          *c == b'-' || *c == b'_')
+    })
   },
   normalize: |this: &Base64Url| {
       *this

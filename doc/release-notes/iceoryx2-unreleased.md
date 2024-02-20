@@ -10,6 +10,9 @@
 
  * Introduce `iceoryx2-bb-posix::process_state` for process monitoring [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
  * Introduce concept `iceoryx2-cal::monitoring` [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
+ * New constructs from [#123](https://github.com/eclipse-iceoryx/iceoryx2/issues/123)
+    * Introduce semantic string `iceoryx2-bb-system-types::base64url`
+    * Introduce `iceoryx2-cal::hash::HashValue` that contains the result of a hash
 
 ### Bugfixes
 

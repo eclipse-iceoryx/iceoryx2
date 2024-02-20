@@ -446,7 +446,7 @@ macro_rules! semantic_string {
             }
 
             fn does_contain_invalid_characters(string: &[u8]) -> bool {
-                if String::from_utf8(string.to_vec()).is_err() {
+                if core::str::from_utf8(string).is_err() {
                     return true;
                 }
 
