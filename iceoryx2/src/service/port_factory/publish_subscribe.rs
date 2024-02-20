@@ -123,7 +123,7 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// # }
     /// ```
     pub fn subscriber(&self) -> PortFactorySubscriber<Service, MessageType> {
-        PortFactorySubscriber { factory: self }
+        PortFactorySubscriber::new(self)
     }
 
     /// Returns a [`PortFactoryPublisher`] to create a new

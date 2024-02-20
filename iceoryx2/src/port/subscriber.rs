@@ -37,11 +37,12 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
 
 use crate::port::DegrationAction;
+use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{
     message::Message, raw_sample::RawSample, sample::Sample, service,
@@ -50,27 +51,60 @@ use crate::{
 
 use super::details::publisher_connections::{Connection, PublisherConnections};
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
-use super::subscribe::internal::SubscribeMgmt;
-use super::subscribe::{Subscribe, SubscriberCreateError, SubscriberReceiveError};
 use super::update_connections::ConnectionFailure;
-use super::DegrationCallback;
+
+/// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum SubscriberReceiveError {
+    ExceedsMaxBorrowedSamples,
+    ConnectionFailure(ConnectionFailure),
+}
+
+impl std::fmt::Display for SubscriberReceiveError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+    }
+}
+
+impl std::error::Error for SubscriberReceiveError {}
+
+/// Describes the failures when a new [`Subscriber`] is created via the
+/// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum SubscriberCreateError {
+    ExceedsMaxSupportedSubscribers,
+}
+
+impl std::fmt::Display for SubscriberCreateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+    }
+}
+
+impl std::error::Error for SubscriberCreateError {}
+
+pub(crate) mod internal {
+    use std::fmt::Debug;
+
+    pub(crate) trait SubscribeMgmt: Debug {
+        fn release_sample(&self, channel_id: usize, sample: usize);
+    }
+}
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
-pub struct Subscriber<'a, Service: service::Service, MessageType: Debug> {
+pub struct Subscriber<Service: service::Service, MessageType: Debug> {
     dynamic_subscriber_handle: ContainerHandle,
-    publisher_connections: PublisherConnections<Service>,
+    publisher_connections: Rc<PublisherConnections<Service>>,
     dynamic_storage: Rc<Service::DynamicStorage>,
-    service: &'a Service,
-    degration_callback: Option<DegrationCallback<'a>>,
+    static_config: crate::service::static_config::StaticConfig,
+    config: SubscriberConfig,
 
     publisher_list_state: UnsafeCell<ContainerState<UniquePublisherId>>,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> Drop
-    for Subscriber<'a, Service, MessageType>
-{
+impl<Service: service::Service, MessageType: Debug> Drop for Subscriber<Service, MessageType> {
     fn drop(&mut self) {
         self.dynamic_storage
             .get()
@@ -79,10 +113,11 @@ impl<'a, Service: service::Service, MessageType: Debug> Drop
     }
 }
 
-impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageType> {
     pub(crate) fn new(
-        service: &'a Service,
+        service: &Service,
         static_config: &StaticConfig,
+        config: SubscriberConfig,
     ) -> Result<Self, SubscriberCreateError> {
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
@@ -114,17 +149,17 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
         };
 
         let new_self = Self {
-            publisher_connections: PublisherConnections::new(
+            config,
+            publisher_connections: Rc::new(PublisherConnections::new(
                 publisher_list.capacity(),
                 port_id,
                 &service.state().global_config,
                 static_config,
-            ),
+            )),
             dynamic_storage,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle,
-            service,
-            degration_callback: None,
+            static_config: service.state().static_config.clone(),
             _phantom_message_type: PhantomData,
         };
 
@@ -150,13 +185,13 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
             match index {
                 Some(publisher_id) => match self.publisher_connections.create(i, *publisher_id) {
                     Ok(()) => (),
-                    Err(e) => match &self.degration_callback {
+                    Err(e) => match &self.config.degration_callback {
                         None => {
                             warn!(from self, "Unable to establish connection to new publisher {:?}.", publisher_id)
                         }
                         Some(c) => {
                             match c.call(
-                                self.service.state().static_config.clone(),
+                                self.static_config.clone(),
                                 *publisher_id,
                                 self.publisher_connections.subscriber_id(),
                             ) {
@@ -178,11 +213,11 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
         Ok(())
     }
 
-    fn receive_from_connection<'subscriber>(
-        &'subscriber self,
+    fn receive_from_connection(
+        &self,
         channel_id: usize,
         connection: &mut Connection<Service>,
-    ) -> Result<Option<Sample<'subscriber, MessageType>>, SubscriberReceiveError> {
+    ) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {
         let msg = "Unable to receive another sample";
         match connection.receiver.receive() {
             Ok(data) => match data {
@@ -191,7 +226,7 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
                     let absolute_address = relative_addr.value()
                         + connection.data_segment.allocator_data_start_address();
                     Ok(Some(Sample {
-                        subscriber: self,
+                        publisher_connections: Rc::clone(&self.publisher_connections),
                         channel_id,
                         ptr: unsafe {
                             RawSample::new_unchecked(
@@ -209,31 +244,9 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscriber<'a, Service, 
         }
     }
 
-    /// Sets the [`DegrationCallback`] of the [`Subscriber`]. Whenever a connection to a
-    /// [`crate::port::publisher::Publisher`] is corrupted or a seems to be dead, this callback
-    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
-    pub fn set_degration_callback<
-        F: Fn(
-                service::static_config::StaticConfig,
-                UniquePublisherId,
-                UniqueSubscriberId,
-            ) -> DegrationAction
-            + 'a,
-    >(
-        &mut self,
-        callback: Option<F>,
-    ) {
-        match callback {
-            Some(c) => self.degration_callback = Some(DegrationCallback::new(c)),
-            None => self.degration_callback = None,
-        }
-    }
-}
-
-impl<'a, Service: service::Service, MessageType: Debug> Subscribe<MessageType>
-    for Subscriber<'a, Service, MessageType>
-{
-    fn receive(&self) -> Result<Option<Sample<MessageType>>, SubscriberReceiveError> {
+    /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
+    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
+    pub fn receive(&self) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {
         if let Err(e) = self.update_connections() {
             fail!(from self,
                 with SubscriberReceiveError::ConnectionFailure(e),
@@ -254,7 +267,11 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscribe<MessageType>
         Ok(None)
     }
 
-    fn update_connections(&self) -> Result<(), ConnectionFailure> {
+    /// Explicitly updates all connections to the [`crate::port::publisher::Publisher`]s. This is
+    /// required to be called whenever a new [`crate::port::publisher::Publisher`] connected to
+    /// the service. It is done implicitly whenever [`Subscriber::receive()`]
+    /// is called.
+    pub fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
             self.dynamic_storage
                 .get()
@@ -267,27 +284,5 @@ impl<'a, Service: service::Service, MessageType: Debug> Subscribe<MessageType>
         }
 
         Ok(())
-    }
-}
-
-impl<'a, Service: service::Service, MessageType: Debug> SubscribeMgmt
-    for Subscriber<'a, Service, MessageType>
-{
-    fn release_sample(&self, channel_id: usize, sample: usize) {
-        match self.publisher_connections.get(channel_id) {
-            Some(c) => {
-                let distance = sample - c.data_segment.allocator_data_start_address();
-                match c.receiver.release(PointerOffset::new(distance)) {
-                    Ok(()) => (),
-                    Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                        fatal_panic!(from self, when c.receiver.release(PointerOffset::new(distance)),
-                                    "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
-                    }
-                }
-            }
-            None => {
-                warn!(from self, "Unable to release sample since the connection is broken. The sample will be discarded and has to be reclaimed manually by the publisher.");
-            }
-        }
     }
 }

@@ -287,14 +287,8 @@ pub mod port;
 
 pub(crate) mod raw_sample;
 
-/// The interface for the payload that is received by a [`crate::port::subscriber::Subscriber`].
-pub mod payload;
-
 /// The payload that is received by a [`crate::port::subscriber::Subscriber`].
 pub mod sample;
-
-/// The interface for the payload that is sent by a [`crate::port::publisher::Publisher`].
-pub mod payload_mut;
 
 /// The payload that is sent by a [`crate::port::publisher::Publisher`].
 pub mod sample_mut;
