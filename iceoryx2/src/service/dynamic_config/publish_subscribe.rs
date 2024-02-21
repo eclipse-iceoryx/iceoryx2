@@ -80,18 +80,18 @@ impl DynamicConfig {
     }
 
     pub(crate) fn add_subscriber_id(&self, id: UniqueSubscriberId) -> Option<ContainerHandle> {
-        unsafe { self.subscribers.add_with_handle(id) }
+        unsafe { self.subscribers.add(id) }
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
-        unsafe { self.subscribers.remove_with_handle(handle) }
+        unsafe { self.subscribers.remove(handle) }
     }
 
     pub(crate) fn add_publisher_id(&self, id: UniquePublisherId) -> Option<ContainerHandle> {
-        unsafe { self.publishers.add_with_handle(id) }
+        unsafe { self.publishers.add(id) }
     }
 
     pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
-        unsafe { self.publishers.remove_with_handle(handle) }
+        unsafe { self.publishers.remove(handle) }
     }
 }

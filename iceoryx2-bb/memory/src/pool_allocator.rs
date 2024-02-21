@@ -150,7 +150,10 @@ impl PoolAllocator {
 
     fn get_index(&self, ptr: NonNull<u8>) -> Option<u32> {
         let position = ptr.as_ptr() as usize;
-        if position < self.start || position > self.start + self.size {
+        if position < self.start
+            || position > self.start + self.size
+            || (position - self.start) % self.bucket_size != 0
+        {
             return None;
         }
 
