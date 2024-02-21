@@ -12,6 +12,10 @@
 
 #[generic_tests::define]
 mod service_publish_subscribe {
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use std::thread;
+    use std::time::Duration;
+
     use iceoryx2::config::Config;
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::port::subscriber::SubscriberCreateError;
@@ -24,6 +28,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -508,6 +513,110 @@ mod service_publish_subscribe {
         let result = subscriber.receive().unwrap();
         assert_that!(result, is_some);
         assert_that!(*result.unwrap(), eq 4567);
+    }
+
+    #[test]
+    fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
+        let _watch_dog = Watchdog::new(Duration::from_secs(1));
+
+        const NUMBER_OF_SUBSCRIBER_THREADS: usize = 4;
+        const NUMBER_OF_RECONNECTIONS: usize = 100;
+
+        let service_name = generate_name();
+        let keep_running = AtomicBool::new(true);
+
+        thread::scope(|s| {
+            for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
+                s.spawn(|| {
+                    let sut = Sut::new(&service_name)
+                        .publish_subscribe()
+                        .open_or_create::<u64>()
+                        .unwrap();
+
+                    let mut latest_counter = 0u64;
+                    for _ in 0..NUMBER_OF_RECONNECTIONS {
+                        let subscriber = sut.subscriber().create().unwrap();
+
+                        loop {
+                            if let Some(counter) = subscriber.receive().unwrap() {
+                                assert_that!(latest_counter, lt * counter);
+                                latest_counter = *counter;
+                                break;
+                            }
+                        }
+                    }
+
+                    keep_running.store(false, Ordering::SeqCst);
+                });
+            }
+
+            s.spawn(|| {
+                let sut2 = Sut::new(&service_name)
+                    .publish_subscribe()
+                    .open_or_create::<u64>()
+                    .unwrap();
+                let publisher = sut2.publisher().create().unwrap();
+                let mut counter = 1u64;
+
+                while keep_running.load(Ordering::Relaxed) {
+                    assert_that!(publisher.send_copy(counter), is_ok);
+                    counter += 1;
+                }
+            });
+        });
+    }
+
+    #[test]
+    fn concurrent_communication_with_publisher_reconnects_does_not_deadlock<Sut: Service>() {
+        let _watch_dog = Watchdog::new(Duration::from_secs(1));
+
+        const NUMBER_OF_PUBLISHER_THREADS: usize = 4;
+        const NUMBER_OF_RECONNECTIONS: usize = 100;
+
+        let service_name = generate_name();
+        let keep_running = AtomicBool::new(true);
+        let reconnection_cycle = AtomicUsize::new(0);
+
+        thread::scope(|s| {
+            s.spawn(|| {
+                let sut = Sut::new(&service_name)
+                    .publish_subscribe()
+                    .open_or_create::<u64>()
+                    .unwrap();
+
+                let subscriber = sut.subscriber().create().unwrap();
+
+                while keep_running.load(Ordering::Relaxed) {
+                    if let Some(_) = subscriber.receive().unwrap() {
+                        if reconnection_cycle.fetch_add(1, Ordering::Relaxed)
+                            == NUMBER_OF_RECONNECTIONS
+                        {
+                            keep_running.store(false, Ordering::Relaxed);
+                        }
+                    }
+                }
+            });
+
+            for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
+                s.spawn(|| {
+                    let sut2 = Sut::new(&service_name)
+                        .publish_subscribe()
+                        .open_or_create::<u64>()
+                        .unwrap();
+
+                    while keep_running.load(Ordering::Relaxed) {
+                        let publisher = sut2.publisher().create().unwrap();
+
+                        let current_cycle = reconnection_cycle.load(Ordering::Relaxed);
+                        let mut counter = 1u64;
+                        while current_cycle == reconnection_cycle.load(Ordering::Relaxed) {
+                            assert_that!(publisher.send_copy(counter), is_ok);
+                            counter += 1;
+                        }
+                    }
+                });
+            }
+        });
     }
 
     #[test]
