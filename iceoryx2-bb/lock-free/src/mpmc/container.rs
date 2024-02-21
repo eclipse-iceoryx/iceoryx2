@@ -86,7 +86,7 @@ impl ContainerHandle {
 pub struct ContainerState<T: Copy + Debug> {
     container_id: u64,
     current_change_counter: u64,
-    data: Vec<MaybeUninit<(u32, T)>>,
+    data: Vec<MaybeUninit<T>>,
     active_index: Vec<bool>,
 }
 
@@ -115,8 +115,7 @@ impl<T: Copy + Debug> ContainerState<T> {
     pub fn for_each<F: FnMut(u32, &T)>(&self, mut callback: F) {
         for i in 0..self.data.len() {
             if self.active_index[i] {
-                let entry = unsafe { self.data[i].assume_init_ref() };
-                callback(entry.0, &entry.1);
+                callback(i as _, unsafe { self.data[i].assume_init_ref() });
             }
         }
     }
@@ -274,15 +273,16 @@ impl<T: Copy + Debug> Container<T> {
 
         match self.index_set.acquire_raw_index() {
             Some(index) => {
-                unsafe {
-                    *(*self.data_ptr.as_ptr().offset(index as isize)).get() =
-                        MaybeUninit::new(value)
-                };
+                core::ptr::copy_nonoverlapping(
+                    &value,
+                    (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
+                    1,
+                );
 
                 //////////////////////////////////////
                 // SYNC POINT with reading data values
                 //////////////////////////////////////
-                unsafe { &*self.active_index_ptr.as_ptr().offset(index as isize) }
+                unsafe { &*self.active_index_ptr.as_ptr().add(index as _) }
                     .store(true, Ordering::Release);
 
                 // MUST HAPPEN AFTER all other operations
@@ -317,7 +317,7 @@ impl<T: Copy + Debug> Container<T> {
                 "The ContainerHandle used as handle was not created by this Container instance.");
         }
 
-        unsafe { &*self.active_index_ptr.as_ptr().offset(handle.index as isize) }
+        unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
             .store(false, Ordering::Relaxed);
         self.index_set.release_raw_index(handle.index);
 
@@ -380,16 +380,15 @@ impl<T: Copy + Debug> Container<T> {
                 unsafe {
                     // TODO: can be implemented more efficiently when only elements are copied that
                     // have been changed
-                    *previous_state.active_index.as_mut_ptr().add(i) =
+                    previous_state.active_index[i] =
                         (*self.active_index_ptr.as_ptr().add(i)).load(Ordering::Acquire)
                 };
-                if unsafe { *previous_state.active_index.as_mut_ptr().add(i) } {
-                    unsafe {
-                        *previous_state.data.as_mut_ptr().add(i) = MaybeUninit::new((
-                            i as u32,
-                            *(*(*self.data_ptr.as_ptr().add(i)).get()).assume_init_ref(),
-                        ))
-                    };
+                if previous_state.active_index[i] {
+                    core::ptr::copy_nonoverlapping(
+                        (*self.data_ptr.as_ptr().add(i)).get(),
+                        previous_state.data.as_mut_ptr().add(i),
+                        1,
+                    );
                 }
 
                 // MUST HAPPEN AFTER all other operations
