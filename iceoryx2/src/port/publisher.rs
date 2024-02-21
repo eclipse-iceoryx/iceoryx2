@@ -382,17 +382,19 @@ impl<Service: service::Service> DataSegment<Service> {
 #[derive(Debug)]
 pub struct Publisher<Service: service::Service, MessageType: Debug> {
     pub(crate) data_segment: Rc<DataSegment<Service>>,
-    dynamic_publisher_handle: ContainerHandle,
+    dynamic_publisher_handle: Option<ContainerHandle>,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
 impl<Service: service::Service, MessageType: Debug> Drop for Publisher<Service, MessageType> {
     fn drop(&mut self) {
-        self.data_segment
-            .dynamic_storage
-            .get()
-            .publish_subscribe()
-            .release_publisher_handle(self.dynamic_publisher_handle)
+        if let Some(handle) = self.dynamic_publisher_handle {
+            self.data_segment
+                .dynamic_storage
+                .get()
+                .publish_subscribe()
+                .release_publisher_handle(handle)
+        }
     }
 }
 
@@ -423,6 +425,48 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
+        let data_segment = Rc::new(DataSegment {
+            is_active: AtomicBool::new(true),
+            memory: data_segment,
+            message_size: std::mem::size_of::<Message<Header, MessageType>>(),
+            message_type_layout: Layout::new::<MessageType>(),
+            sample_reference_counter: {
+                let mut v = Vec::with_capacity(number_of_samples);
+                for _ in 0..number_of_samples {
+                    v.push(AtomicU64::new(0));
+                }
+                v
+            },
+            dynamic_storage,
+            port_id,
+            subscriber_connections: SubscriberConnections::new(
+                subscriber_list.capacity(),
+                &service.state().global_config,
+                port_id,
+                static_config,
+            ),
+            config,
+            subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
+            history: match static_config.history_size == 0 {
+                true => None,
+                false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
+            },
+            static_config: service.state().static_config.clone(),
+            loan_counter: AtomicUsize::new(0),
+        });
+
+        let mut new_self = Self {
+            data_segment,
+            dynamic_publisher_handle: None,
+            _phantom_message_type: PhantomData,
+        };
+
+        if let Err(e) = new_self.data_segment.populate_subscriber_channels() {
+            warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
+        }
+
+        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources
         let dynamic_publisher_handle = match service
@@ -440,43 +484,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             }
         };
 
-        let new_self = Self {
-            data_segment: Rc::new(DataSegment {
-                is_active: AtomicBool::new(true),
-                memory: data_segment,
-                message_size: std::mem::size_of::<Message<Header, MessageType>>(),
-                message_type_layout: Layout::new::<MessageType>(),
-                sample_reference_counter: {
-                    let mut v = Vec::with_capacity(number_of_samples);
-                    for _ in 0..number_of_samples {
-                        v.push(AtomicU64::new(0));
-                    }
-                    v
-                },
-                dynamic_storage,
-                port_id,
-                subscriber_connections: SubscriberConnections::new(
-                    subscriber_list.capacity(),
-                    &service.state().global_config,
-                    port_id,
-                    static_config,
-                ),
-                config,
-                subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
-                history: match static_config.history_size == 0 {
-                    true => None,
-                    false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
-                },
-                static_config: service.state().static_config.clone(),
-                loan_counter: AtomicUsize::new(0),
-            }),
-            dynamic_publisher_handle,
-            _phantom_message_type: PhantomData,
-        };
-
-        if let Err(e) = new_self.data_segment.populate_subscriber_channels() {
-            warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
-        }
+        new_self.dynamic_publisher_handle = Some(dynamic_publisher_handle);
 
         Ok(new_self)
     }

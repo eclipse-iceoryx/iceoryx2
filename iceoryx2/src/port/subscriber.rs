@@ -35,6 +35,7 @@ use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::rc::Rc;
+use std::sync::atomic::Ordering;
 
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -94,7 +95,7 @@ pub(crate) mod internal {
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
 pub struct Subscriber<Service: service::Service, MessageType: Debug> {
-    dynamic_subscriber_handle: ContainerHandle,
+    dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: Rc<PublisherConnections<Service>>,
     dynamic_storage: Rc<Service::DynamicStorage>,
     static_config: crate::service::static_config::StaticConfig,
@@ -106,10 +107,12 @@ pub struct Subscriber<Service: service::Service, MessageType: Debug> {
 
 impl<Service: service::Service, MessageType: Debug> Drop for Subscriber<Service, MessageType> {
     fn drop(&mut self) {
-        self.dynamic_storage
-            .get()
-            .publish_subscribe()
-            .release_subscriber_handle(self.dynamic_subscriber_handle)
+        if let Some(handle) = self.dynamic_subscriber_handle {
+            self.dynamic_storage
+                .get()
+                .publish_subscribe()
+                .release_subscriber_handle(handle)
+        }
     }
 }
 
@@ -131,6 +134,30 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             .publishers;
 
         let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
+
+        let publisher_connections = Rc::new(PublisherConnections::new(
+            publisher_list.capacity(),
+            port_id,
+            &service.state().global_config,
+            static_config,
+        ));
+
+        let mut new_self = Self {
+            config,
+            publisher_connections,
+            dynamic_storage,
+            publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
+            dynamic_subscriber_handle: None,
+            static_config: service.state().static_config.clone(),
+            _phantom_message_type: PhantomData,
+        };
+
+        if let Err(e) = new_self.populate_publisher_channels() {
+            warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
+        }
+
+        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels
         let dynamic_subscriber_handle = match service
@@ -148,24 +175,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             }
         };
 
-        let new_self = Self {
-            config,
-            publisher_connections: Rc::new(PublisherConnections::new(
-                publisher_list.capacity(),
-                port_id,
-                &service.state().global_config,
-                static_config,
-            )),
-            dynamic_storage,
-            publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
-            dynamic_subscriber_handle,
-            static_config: service.state().static_config.clone(),
-            _phantom_message_type: PhantomData,
-        };
-
-        if let Err(e) = new_self.populate_publisher_channels() {
-            warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
-        }
+        new_self.dynamic_subscriber_handle = Some(dynamic_subscriber_handle);
 
         Ok(new_self)
     }

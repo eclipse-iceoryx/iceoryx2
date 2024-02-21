@@ -13,6 +13,7 @@
 #[generic_tests::define]
 mod service_publish_subscribe {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use std::sync::Barrier;
     use std::thread;
     use std::time::Duration;
 
@@ -26,6 +27,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
+    use iceoryx2_bb_log::set_log_level;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -517,20 +519,39 @@ mod service_publish_subscribe {
 
     #[test]
     fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
+        set_log_level(iceoryx2_bb_log::LogLevel::Debug);
         let _watch_dog = Watchdog::new(Duration::from_secs(1));
 
         const NUMBER_OF_SUBSCRIBER_THREADS: usize = 4;
         const NUMBER_OF_RECONNECTIONS: usize = 100;
 
+        let create_service_barrier = Barrier::new(2);
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
 
         thread::scope(|s| {
+            s.spawn(|| {
+                let sut2 = Sut::new(&service_name)
+                    .publish_subscribe()
+                    .create::<u64>()
+                    .unwrap();
+                let publisher = sut2.publisher().create().unwrap();
+
+                create_service_barrier.wait();
+                let mut counter = 1u64;
+
+                while keep_running.load(Ordering::Relaxed) {
+                    assert_that!(publisher.send_copy(counter), is_ok);
+                    counter += 1;
+                }
+            });
+
+            create_service_barrier.wait();
             for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
                 s.spawn(|| {
                     let sut = Sut::new(&service_name)
                         .publish_subscribe()
-                        .open_or_create::<u64>()
+                        .open::<u64>()
                         .unwrap();
 
                     let mut latest_counter = 0u64;
@@ -549,20 +570,6 @@ mod service_publish_subscribe {
                     keep_running.store(false, Ordering::SeqCst);
                 });
             }
-
-            s.spawn(|| {
-                let sut2 = Sut::new(&service_name)
-                    .publish_subscribe()
-                    .open_or_create::<u64>()
-                    .unwrap();
-                let publisher = sut2.publisher().create().unwrap();
-                let mut counter = 1u64;
-
-                while keep_running.load(Ordering::Relaxed) {
-                    assert_that!(publisher.send_copy(counter), is_ok);
-                    counter += 1;
-                }
-            });
         });
     }
 
