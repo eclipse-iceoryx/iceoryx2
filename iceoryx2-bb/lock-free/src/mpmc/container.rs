@@ -129,7 +129,7 @@ impl<T: Copy + Debug> ContainerState<T> {
 #[derive(Debug)]
 pub struct Container<T: Copy + Debug> {
     // must be first member, otherwise the offset calculations fail
-    active_index_ptr: RelocatablePointer<AtomicBool>,
+    active_index_ptr: RelocatablePointer<AtomicU64>,
     data_ptr: RelocatablePointer<UnsafeCell<MaybeUninit<T>>>,
     capacity: usize,
     change_counter: AtomicU64,
@@ -173,8 +173,8 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             "{} since the underlying UniqueIndexSet could not be initialized", msg);
 
         self.active_index_ptr.init(fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
-                        std::mem::size_of::<AtomicBool>() * self.capacity,
-                        std::mem::align_of::<AtomicBool>())), "{} since the allocation of the active index memory failed.",
+                        std::mem::size_of::<AtomicU64>() * self.capacity,
+                        std::mem::align_of::<AtomicU64>())), "{} since the allocation of the active index memory failed.",
                 msg));
         self.data_ptr.init(
             fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
@@ -185,9 +185,9 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
         );
 
         for i in 0..self.capacity {
-            (self.active_index_ptr.as_ptr() as *mut AtomicBool)
+            (self.active_index_ptr.as_ptr() as *mut AtomicU64)
                 .add(i)
-                .write(AtomicBool::new(false));
+                .write(AtomicU64::new(0));
             (self.data_ptr.as_ptr() as *mut UnsafeCell<MaybeUninit<T>>)
                 .add(i)
                 .write(UnsafeCell::new(MaybeUninit::uninit()));
@@ -202,13 +202,13 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             - align_to::<u32>(std::mem::size_of::<Container<T>>()) as isize
             + align_to::<u32>(std::mem::size_of::<UniqueIndexSet>()) as isize;
 
-        let distance_to_active_index = align_to::<AtomicBool>(
+        let distance_to_active_index = align_to::<AtomicU64>(
             distance_to_data as usize + (std::mem::size_of::<u32>() * (capacity + 1)),
         ) as isize;
         let distance_to_container_data = align_to::<UnsafeCell<MaybeUninit<T>>>(
-            distance_to_active_index as usize + (std::mem::size_of::<AtomicBool>() * capacity),
+            distance_to_active_index as usize + (std::mem::size_of::<AtomicU64>() * capacity),
         ) as isize
-            - std::mem::size_of::<RelocatablePointer<AtomicBool>>() as isize;
+            - std::mem::size_of::<RelocatablePointer<AtomicU64>>() as isize;
 
         Self {
             container_id: UniqueId::new(),
@@ -235,12 +235,12 @@ impl<T: Copy + Debug> Container<T> {
 
     /// Returns the required memory size of the data segment of the [`Container`].
     pub const fn const_memory_size(capacity: usize) -> usize {
-        (std::mem::size_of::<u32>() * (capacity + 1))
-            + ((std::mem::size_of::<AtomicBool>() + std::mem::size_of::<T>()) * capacity)
-            + std::mem::align_of::<u32>()
-            - 1
-            + std::mem::align_of::<T>()
-            - 1
+        // UniqueIndexSet
+        (std::mem::size_of::<u32>() * (capacity + 1) + std::mem::align_of::<u32>() - 1)
+        //  ActiveIndexPtr
+        + (std::mem::size_of::<AtomicU64>() * capacity + std::mem::align_of::<u64>() - 1)
+        // data ptr
+        + (std::mem::size_of::<T>() * capacity + std::mem::align_of::<T>() - 1)
     }
 
     /// Returns the capacity of the container.
@@ -283,7 +283,7 @@ impl<T: Copy + Debug> Container<T> {
                 // SYNC POINT with reading data values
                 //////////////////////////////////////
                 unsafe { &*self.active_index_ptr.as_ptr().add(index as _) }
-                    .store(true, Ordering::Release);
+                    .store(1, Ordering::Release);
 
                 // MUST HAPPEN AFTER all other operations
                 self.change_counter.fetch_add(1, Ordering::Release);
@@ -318,7 +318,7 @@ impl<T: Copy + Debug> Container<T> {
         }
 
         unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
-            .store(false, Ordering::Relaxed);
+            .store(0, Ordering::Relaxed);
         self.index_set.release_raw_index(handle.index);
 
         // MUST HAPPEN AFTER all other operations
@@ -381,7 +381,7 @@ impl<T: Copy + Debug> Container<T> {
                     // TODO: can be implemented more efficiently when only elements are copied that
                     // have been changed
                     previous_state.active_index[i] =
-                        (*self.active_index_ptr.as_ptr().add(i)).load(Ordering::Acquire)
+                        (*self.active_index_ptr.as_ptr().add(i)).load(Ordering::Acquire) == 1
                 };
                 if previous_state.active_index[i] {
                     core::ptr::copy_nonoverlapping(
@@ -424,7 +424,7 @@ pub struct FixedSizeContainer<T: Copy + Debug, const CAPACITY: usize> {
     next_free_index_plus_one: UnsafeCell<u32>,
 
     // DO NOT CHANGE MEMBER ORDER actual Container variable data
-    active_index: [AtomicBool; CAPACITY],
+    active_index: [AtomicU64; CAPACITY],
     data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
 }
 
@@ -439,7 +439,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, C
             },
             next_free_index: core::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
             next_free_index_plus_one: UnsafeCell::new(CAPACITY as u32 + 1),
-            active_index: core::array::from_fn(|_| AtomicBool::new(false)),
+            active_index: core::array::from_fn(|_| AtomicU64::new(0)),
             data: core::array::from_fn(|_| UnsafeCell::new(MaybeUninit::uninit())),
         }
     }
