@@ -38,6 +38,8 @@ use std::{
     sync::atomic::{AtomicBool, AtomicU64, Ordering},
 };
 
+// ATTENTION: To ensure the functionality also in the case of an overflow with the 'write_cell'
+// value, the value of `NUMBER_OF_CELLS` must be a power of two
 const NUMBER_OF_CELLS: usize = 2;
 
 /// Can be acquired via [`UnrestrictedAtomic::acquire_producer()`] if not another thread has
@@ -122,6 +124,9 @@ impl<T: Copy> UnrestrictedAtomic<T> {
 
         /////////////////////////
         // SYNC POINT - write
+        // prevent reordering of `data` after advancing `write_cell` which would signal
+        // the completion of the store operation an would result in a data race when
+        // `data` would be written after the `write_cell` operation
         /////////////////////////
         self.write_cell.fetch_add(1, Ordering::Release);
     }
@@ -132,7 +137,6 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         // SYNC POINT - read
         /////////////////////////
         let mut read_cell = self.write_cell.load(Ordering::Acquire) - 1;
-        let mut read_cell_update;
 
         let mut return_value;
 
@@ -144,14 +148,21 @@ impl<T: Copy> UnrestrictedAtomic<T> {
 
             /////////////////////////
             // SYNC POINT - read (for write while reading)
+            // prevent reordering of reading from `data` after checking for a change
+            // of the `write_cell` position which would result in a data race
             /////////////////////////
-            read_cell_update = self.write_cell.load(Ordering::Acquire) - 1;
-
-            if read_cell_update == read_cell {
+            let expected_write_cell = read_cell + 1;
+            let write_cell_result = self.write_cell.compare_exchange(
+                expected_write_cell,
+                expected_write_cell,
+                Ordering::Release,
+                Ordering::Acquire,
+            );
+            if let Err(write_cell) = write_cell_result {
+                read_cell = write_cell - 1;
+            } else {
                 break;
             }
-
-            read_cell = read_cell_update;
         }
 
         return_value

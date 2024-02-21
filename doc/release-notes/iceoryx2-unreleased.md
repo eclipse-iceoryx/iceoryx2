@@ -23,6 +23,7 @@
     * Add missing memory synchronization to posix shm zero copy connection
     * Remove retrieve buffer full check from zero copy connection - sender had insufficient infos available
  * Fix insufficient memory reordering protection in `spsc::Queue::push` and `spsc::Queue::pop` [#119](https://github.com/eclipse-iceoryx/iceoryx2/issues/119)
+ * Fix data race due to operation reordering in `spmc::UnrestrictedAtomic::load` [#125](https://github.com/eclipse-iceoryx/iceoryx2/issues/125)
 
 ### Refactoring
 
