@@ -30,7 +30,9 @@ impl Hash for Sha1 {
         }
     }
 
-    fn as_hex_string(&self) -> String {
-        self.hash.to_string()
+    fn value(&self) -> HashValue {
+        // hash.to_string() returns a hex representation which is always a valid Base64Url
+        // representation
+        HashValue::new(self.hash.to_string().as_bytes()).unwrap()
     }
 }
