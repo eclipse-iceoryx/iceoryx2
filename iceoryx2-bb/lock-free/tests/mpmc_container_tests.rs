@@ -47,7 +47,6 @@ mod mpmc_container {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::mpmc::container::*;
-    use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashMap;
@@ -238,77 +237,75 @@ mod mpmc_container {
     fn mpmc_container_state_updated_when_contents_are_changed<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
-        // let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        // let mut stored_indices: Vec<ContainerHandle> = vec![];
+        let sut = FixedSizeContainer::<T, CAPACITY>::new();
+        let mut stored_indices: Vec<ContainerHandle> = vec![];
 
-        // for i in 0..CAPACITY - 1 {
-        //     let index = unsafe { sut.add((i * 3 + 1).into()) };
-        //     assert_that!(index, is_some);
-        //     stored_indices.push(index.unwrap());
-        // }
+        for i in 0..CAPACITY - 1 {
+            let index = unsafe { sut.add((i * 3 + 1).into()) };
+            assert_that!(index, is_some);
+            stored_indices.push(index.unwrap());
+        }
 
-        // let mut state = sut.get_state();
-        // for i in stored_indices {
-        //     unsafe { sut.remove(i) }
-        // }
-        // stored_indices.clear();
+        let mut state = sut.get_state();
+        for i in stored_indices {
+            unsafe { sut.remove(i) }
+        }
 
-        // let mut results = HashMap::<ContainerHandle, usize>::new();
-        // for i in 0..CAPACITY - 1 {
-        //     let index = unsafe { sut.add((i * 81 + 56).into()) };
-        //     assert_that!(index, is_some);
-        //     results.insert(index.as_ref().unwrap(), i * 81 + 56);
-        //     stored_indices.push(index.unwrap());
-        // }
+        let mut results = HashMap::<u32, usize>::new();
+        for i in 0..CAPACITY - 1 {
+            let index = unsafe { sut.add((i * 81 + 56).into()) };
+            assert_that!(index, is_some);
+            results.insert(index.as_ref().unwrap().index(), i * 81 + 56);
+        }
 
-        // assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
-        // let mut contained_values = vec![];
-        // state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
+        assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
+        let mut contained_values = vec![];
+        state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
 
-        // for i in 0..CAPACITY - 1 {
-        //     assert_that!(contained_values[i], eq * results.get(&(i as u32)).unwrap());
-        // }
+        for i in 0..CAPACITY - 1 {
+            assert_that!(contained_values[i], eq * results.get(&(i as u32)).unwrap());
+        }
     }
 
     #[test]
     fn mpmc_container_state_updated_works_for_new_and_removed_elements<
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
-        //let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        //let mut state = sut.get_state();
-        //let mut stored_indices: Vec<ContainerHandle> = vec![];
-        //let mut stored_values: Vec<(ContainerHandle, usize)> = vec![];
+        let sut = FixedSizeContainer::<T, CAPACITY>::new();
+        let mut state = sut.get_state();
+        let mut stored_indices: Vec<ContainerHandle> = vec![];
+        let mut stored_values: Vec<(u32, usize)> = vec![];
 
-        //for i in 0..CAPACITY {
-        //    let v = i * 3 + 1;
-        //    let index = unsafe { sut.add(v.into()) };
-        //    assert_that!(index, is_some);
-        //    stored_values.push((*index.as_ref().unwrap(), v));
-        //    stored_indices.push(index.unwrap());
+        for i in 0..CAPACITY {
+            let v = i * 3 + 1;
+            let index = unsafe { sut.add(v.into()) };
+            assert_that!(index, is_some);
+            stored_values.push((index.as_ref().unwrap().index(), v));
+            stored_indices.push(index.unwrap());
 
-        //    unsafe { sut.update_state(&mut state) };
-        //    let mut contained_values = vec![];
-        //    state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
+            unsafe { sut.update_state(&mut state) };
+            let mut contained_values = vec![];
+            state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
 
-        //    assert_that!(contained_values, len stored_values.len());
-        //    for e in &stored_values {
-        //        assert_that!(contained_values, contains * e);
-        //    }
-        //}
+            assert_that!(contained_values, len stored_values.len());
+            for e in &stored_values {
+                assert_that!(contained_values, contains * e);
+            }
+        }
 
-        //for _ in 0..CAPACITY {
-        //    stored_indices.pop();
-        //    stored_values.pop();
+        for _ in 0..CAPACITY {
+            unsafe { sut.remove(stored_indices.pop().unwrap()) };
+            stored_values.pop();
 
-        //    unsafe { sut.update_state(&mut state) };
-        //    let mut contained_values = vec![];
-        //    state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
+            unsafe { sut.update_state(&mut state) };
+            let mut contained_values = vec![];
+            state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
 
-        //    assert_that!(contained_values, len stored_values.len());
-        //    for e in &stored_values {
-        //        assert_that!(contained_values, contains * e);
-        //    }
-        //}
+            assert_that!(contained_values, len stored_values.len());
+            for e in &stored_values {
+                assert_that!(contained_values, contains * e);
+            }
+        }
     }
 
     #[test]
@@ -327,98 +324,101 @@ mod mpmc_container {
     fn mpmc_container_concurrent_add_release_for_each<
         T: Debug + Copy + From<usize> + Into<usize> + Send,
     >() {
-        //const REPETITIONS: i64 = 1000;
-        //let number_of_threads_per_op =
-        //    (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
+        const REPETITIONS: i64 = 1000;
+        let number_of_threads_per_op =
+            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
 
-        //let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        //let barrier = Barrier::new(number_of_threads_per_op * 2);
-        //let mut added_content: Vec<Mutex<Vec<(u32, T)>>> = vec![];
-        //let mut extracted_content: Vec<Mutex<Vec<(u32, T)>>> = vec![];
+        let sut = FixedSizeContainer::<T, CAPACITY>::new();
+        let barrier = Barrier::new(number_of_threads_per_op * 2);
+        let mut added_content: Vec<Mutex<Vec<(u32, T)>>> = vec![];
+        let mut extracted_content: Vec<Mutex<Vec<(u32, T)>>> = vec![];
 
-        //for _ in 0..number_of_threads_per_op {
-        //    added_content.push(Mutex::new(vec![]));
-        //    extracted_content.push(Mutex::new(vec![]));
-        //}
+        for _ in 0..number_of_threads_per_op {
+            added_content.push(Mutex::new(vec![]));
+            extracted_content.push(Mutex::new(vec![]));
+        }
 
-        //let finished_threads_counter = AtomicU64::new(0);
-        //thread::scope(|s| {
-        //    for thread_number in 0..number_of_threads_per_op {
-        //        let barrier = &barrier;
-        //        let sut = &sut;
-        //        let added_content = &added_content;
-        //        let finished_threads_counter = &finished_threads_counter;
-        //        s.spawn(move || {
-        //            let mut repetition = 0;
-        //            let mut ids = vec![];
-        //            let mut counter = 0;
+        let finished_threads_counter = AtomicU64::new(0);
+        thread::scope(|s| {
+            for thread_number in 0..number_of_threads_per_op {
+                let barrier = &barrier;
+                let sut = &sut;
+                let added_content = &added_content;
+                let finished_threads_counter = &finished_threads_counter;
+                s.spawn(move || {
+                    let mut repetition = 0;
+                    let mut ids = vec![];
+                    let mut counter = 0;
 
-        //            barrier.wait();
-        //            while repetition < REPETITIONS {
-        //                counter += 1;
-        //                let value = counter * number_of_threads_per_op + thread_number;
+                    barrier.wait();
+                    while repetition < REPETITIONS {
+                        counter += 1;
+                        let value = counter * number_of_threads_per_op + thread_number;
 
-        //                match sut.add(value.into()) {
-        //                    Some(index) => {
-        //                        let index_value = index.value();
-        //                        ids.push(index);
-        //                        added_content[thread_number]
-        //                            .lock()
-        //                            .unwrap()
-        //                            .push((index_value, value.into()));
-        //                    }
-        //                    None => {
-        //                        repetition += 1;
-        //                        ids.clear();
-        //                    }
-        //                }
-        //            }
+                        match unsafe { sut.add(value.into()) } {
+                            Some(index) => {
+                                let index_value = index.index();
+                                ids.push(index);
+                                added_content[thread_number]
+                                    .lock()
+                                    .unwrap()
+                                    .push((index_value, value.into()));
+                            }
+                            None => {
+                                repetition += 1;
+                                for id in &ids {
+                                    unsafe { sut.remove(*id) };
+                                }
+                                ids.clear();
+                            }
+                        }
+                    }
 
-        //            finished_threads_counter.fetch_add(1, Ordering::Relaxed);
-        //        });
-        //    }
+                    finished_threads_counter.fetch_add(1, Ordering::Relaxed);
+                });
+            }
 
-        //    for thread_number in 0..number_of_threads_per_op {
-        //        let sut = &sut;
-        //        let barrier = &barrier;
-        //        let finished_threads_counter = &finished_threads_counter;
-        //        let extracted_content = &extracted_content;
-        //        s.spawn(move || {
-        //            barrier.wait();
+            for thread_number in 0..number_of_threads_per_op {
+                let sut = &sut;
+                let barrier = &barrier;
+                let finished_threads_counter = &finished_threads_counter;
+                let extracted_content = &extracted_content;
+                s.spawn(move || {
+                    barrier.wait();
 
-        //            let mut state = sut.get_state();
-        //            while finished_threads_counter.load(Ordering::Relaxed)
-        //                != number_of_threads_per_op as u64
-        //            {
-        //                if unsafe { sut.update_state(&mut state) } {
-        //                    state.for_each(|index: u32, value: &T| {
-        //                        extracted_content[thread_number]
-        //                            .lock()
-        //                            .unwrap()
-        //                            .push((index, *value));
-        //                    })
-        //                }
-        //            }
-        //        });
-        //    }
-        //});
+                    let mut state = sut.get_state();
+                    while finished_threads_counter.load(Ordering::Relaxed)
+                        != number_of_threads_per_op as u64
+                    {
+                        if unsafe { sut.update_state(&mut state) } {
+                            state.for_each(|index: u32, value: &T| {
+                                extracted_content[thread_number]
+                                    .lock()
+                                    .unwrap()
+                                    .push((index, *value));
+                            })
+                        }
+                    }
+                });
+            }
+        });
 
-        //let mut added_contents_set = HashSet::<(u32, usize)>::new();
+        let mut added_contents_set = HashSet::<(u32, usize)>::new();
 
-        //for thread_number in 0..number_of_threads_per_op {
-        //    for entry in &*added_content[thread_number].lock().unwrap() {
-        //        added_contents_set.insert((entry.0, entry.1.into()));
-        //    }
-        //}
+        for thread_number in 0..number_of_threads_per_op {
+            for entry in &*added_content[thread_number].lock().unwrap() {
+                added_contents_set.insert((entry.0, entry.1.into()));
+            }
+        }
 
-        //for thread_number in 0..number_of_threads_per_op {
-        //    for entry in &*extracted_content[thread_number].lock().unwrap() {
-        //        assert_that!(added_contents_set.get(&(entry.0, entry.1.into())), is_some);
-        //    }
-        //}
+        for thread_number in 0..number_of_threads_per_op {
+            for entry in &*extracted_content[thread_number].lock().unwrap() {
+                assert_that!(added_contents_set.get(&(entry.0, entry.1.into())), is_some);
+            }
+        }
 
-        //// check if it is still in a consistent state
-        //mpmc_container_add_and_remove_elements_works::<T>();
+        // check if it is still in a consistent state
+        mpmc_container_add_and_remove_elements_works::<T>();
     }
 
     #[instantiate_tests(<usize>)]

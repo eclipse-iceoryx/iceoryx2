@@ -67,10 +67,17 @@ use std::{
 
 /// A handle that corresponds to an element inside the [`Container`]. Will be acquired when using
 /// [`Container::add_with_handle()`] and can be released with [`Container::remove_with_handle()`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ContainerHandle {
     index: u32,
     container_id: u64,
+}
+
+impl ContainerHandle {
+    /// Returns the underlying index of the container handle
+    pub fn index(&self) -> u32 {
+        self.index
+    }
 }
 
 /// Contains a state of the [`Container`]. Can be created with [`Container::get_state()`] and
