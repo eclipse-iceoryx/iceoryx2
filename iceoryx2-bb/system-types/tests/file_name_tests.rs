@@ -80,3 +80,15 @@ fn file_name_retain_fails_when_it_results_in_illegal_name() {
     assert_that!(sut, len 4);
     assert_that!(sut.as_bytes(), eq b".fuu");
 }
+
+#[test]
+fn file_name_with_utf_8_content_works() {
+    let mut sut = FileName::new(b"hui").unwrap();
+    assert_that!(sut.insert_bytes(3, "🧐".as_bytes()), is_ok);
+    assert_that!(sut.insert_bytes(3, "🧐".as_bytes()), is_ok);
+    assert_that!(Into::<String>::into(sut), eq "hui🧐🧐");
+
+    assert_that!(sut.remove(6), eq Err(SemanticStringError::InvalidName));
+    assert_that!(sut.pop(), eq Err(SemanticStringError::InvalidName));
+    assert_that!(sut.insert(6, b'a'), eq Err(SemanticStringError::InvalidName));
+}

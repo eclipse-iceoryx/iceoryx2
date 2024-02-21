@@ -20,7 +20,6 @@ use std::ops::Deref;
 
 enum_gen! {SemanticStringError
   entry:
-    InvalidCharacter,
     InvalidName
 
   generalization:
@@ -88,6 +87,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///
     ///   * The slice must contain only valid characters.
     ///   * The slice must have a length that is less or equal CAPACITY
+    ///   * The slice must not contain invalid UTF-8 characters
     ///
     unsafe fn new_unchecked(bytes: &[u8]) -> Self;
 
@@ -95,8 +95,10 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///
     /// # Safety
     ///
-    ///  * The pointer must be '\0' (null) terminated
-    ///  * The pointer must be valid and non-null
+    ///   * The pointer must be '\0' (null) terminated
+    ///   * The pointer must be valid and non-null
+    ///   * The contents must have a length that is less or equal CAPACITY
+    ///   * The contents must not contain invalid UTF-8 characters
     ///
     unsafe fn from_c_str(ptr: *mut std::ffi::c_char) -> Result<Self, SemanticStringError> {
         Self::new(std::slice::from_raw_parts(ptr as *const u8, strlen(ptr)))
@@ -142,12 +144,6 @@ pub trait SemanticString<const CAPACITY: usize>:
     /// illegal characters or the content would result in an illegal name it fails.
     fn insert_bytes(&mut self, idx: usize, bytes: &[u8]) -> Result<(), SemanticStringError> {
         let msg = "Unable to insert byte string";
-        if Self::does_contain_invalid_characters(bytes) {
-            fail!(from self, with SemanticStringError::InvalidCharacter,
-                "{} \"{}\" since it contains illegal characters.",
-                msg, as_escaped_string(bytes) );
-        }
-
         fail!(from self, when unsafe { self.get_mut_string().insert_bytes(idx, bytes) },
                 with SemanticStringError::ExceedsMaximumLength,
                     "{} \"{}\" since it would exceed the maximum allowed length of {}.",
@@ -171,6 +167,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///   * The user must ensure that the bytes contain only valid characters.
     ///   * The user must ensure that the result, after the bytes were added, is valid.
     ///   * The slice must have a length that is less or equal CAPACITY
+    ///   * The slice is not contain invalid UTF-8 characters
     ///
     unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]);
 
@@ -356,14 +353,14 @@ macro_rules! semantic_string {
 
         impl From<$string_name> for String {
             fn from(value: $string_name) -> String {
-                // SAFETY: every semantic string shall contain only valid utf-8 characters
+                // SAFETY: It is ensured that the semantic string contains only valid utf-8 strings
                 unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
             }
         }
 
         impl From<&$string_name> for String {
             fn from(value: &$string_name) -> String {
-                // SAFETY: every semantic string shall contain only valid utf-8 characters
+                // SAFETY: It is ensured that the semantic string contains only valid utf-8 strings
                 unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
             }
         }
@@ -442,6 +439,10 @@ macro_rules! semantic_string {
             }
 
             fn is_invalid_content(string: &[u8]) -> bool {
+                if Self::does_contain_invalid_characters(string) {
+                    return true;
+                }
+
                 $invalid_content(string)
             }
 
