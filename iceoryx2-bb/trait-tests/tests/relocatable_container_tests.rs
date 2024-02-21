@@ -23,6 +23,7 @@ mod relocatable_container {
     };
     use iceoryx2_bb_memory::{bump_allocator::BumpAllocator, memory::Memory};
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_cal::zero_copy_connection::used_chunk_list::RelocatableUsedChunkList;
     use pin_init::PtrPinWith;
 
     #[test]
@@ -94,4 +95,7 @@ mod relocatable_container {
 
     #[instantiate_tests(<RelocatableSafelyOverflowingIndexQueue>)]
     mod safely_overflowing_index_queue {}
+
+    #[instantiate_tests(<RelocatableUsedChunkList>)]
+    mod used_chunk_list {}
 }

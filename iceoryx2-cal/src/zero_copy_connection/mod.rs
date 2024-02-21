@@ -12,6 +12,7 @@
 
 pub mod posix_shared_memory;
 pub mod process_local;
+pub mod used_chunk_list;
 
 use std::fmt::Debug;
 
