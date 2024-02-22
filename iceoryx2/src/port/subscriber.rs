@@ -43,6 +43,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
 
 use crate::port::DegrationAction;
+use crate::service::dynamic_config::publish_subscribe::PublisherDetails;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{
@@ -51,7 +52,7 @@ use crate::{
 };
 
 use super::details::publisher_connections::{Connection, PublisherConnections};
-use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
+use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::ConnectionFailure;
 
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
@@ -101,7 +102,7 @@ pub struct Subscriber<Service: service::Service, MessageType: Debug> {
     static_config: crate::service::static_config::StaticConfig,
     config: SubscriberConfig,
 
-    publisher_list_state: UnsafeCell<ContainerState<UniquePublisherId>>,
+    publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
@@ -185,32 +186,38 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         visited_indices.resize(self.publisher_connections.capacity(), None);
 
         unsafe {
-            (*self.publisher_list_state.get()).for_each(|index, publisher_id| {
-                visited_indices[index as usize] = Some(*publisher_id);
+            (*self.publisher_list_state.get()).for_each(|index, details| {
+                visited_indices[index as usize] = Some(*details);
             })
         };
 
         // update all connections
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
-                Some(publisher_id) => match self.publisher_connections.create(i, *publisher_id) {
+                Some(details) => match self.publisher_connections.create(
+                    i,
+                    details.publisher_id,
+                    details.number_of_samples,
+                ) {
                     Ok(()) => (),
                     Err(e) => match &self.config.degration_callback {
                         None => {
-                            warn!(from self, "Unable to establish connection to new publisher {:?}.", publisher_id)
+                            warn!(from self, "Unable to establish connection to new publisher {:?}.", details.publisher_id)
                         }
                         Some(c) => {
                             match c.call(
                                 self.static_config.clone(),
-                                *publisher_id,
+                                details.publisher_id,
                                 self.publisher_connections.subscriber_id(),
                             ) {
                                 DegrationAction::Ignore => (),
                                 DegrationAction::Warn => {
-                                    warn!(from self, "Unable to establish connection to new publisher {:?}.", publisher_id)
+                                    warn!(from self, "Unable to establish connection to new publisher {:?}.",
+                                        details.publisher_id)
                                 }
                                 DegrationAction::Fail => {
-                                    fail!(from self, with e, "Unable to establish connection to new publisher {:?}.", publisher_id);
+                                    fail!(from self, with e, "Unable to establish connection to new publisher {:?}.",
+                                        details.publisher_id);
                                 }
                             }
                         }

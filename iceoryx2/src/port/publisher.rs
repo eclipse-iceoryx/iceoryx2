@@ -69,6 +69,7 @@ use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
 use crate::service;
 use crate::service::config_scheme::data_segment_config;
+use crate::service::dynamic_config::publish_subscribe::PublisherDetails;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
@@ -78,7 +79,7 @@ use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::{
@@ -127,7 +128,8 @@ enum_gen! {
     /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send()`].
     PublisherSendError
   entry:
-    ConnectionBrokenSincePublisherNoLongerExists
+    ConnectionBrokenSincePublisherNoLongerExists,
+    ConnectionCorrupted
   mapping:
     PublisherLoanError to LoanError,
     ConnectionFailure to ConnectionError
@@ -238,7 +240,7 @@ impl<Service: service::Service> DataSegment<Service> {
         }
     }
 
-    fn deliver_sample(&self, address_to_chunk: usize) -> usize {
+    fn deliver_sample(&self, address_to_chunk: usize) -> Result<usize, PublisherSendError> {
         self.retrieve_returned_samples();
 
         let deliver_call = match self.config.unable_to_deliver_strategy {
@@ -262,6 +264,32 @@ impl<Service: service::Service> DataSegment<Service> {
                              *   try_send => we tried and expect that the buffer is full
                              * */
                         }
+                        Err(ZeroCopySendError::ConnectionCorrupted) => {
+                            match &self.config.degration_callback {
+                                Some(c) => match c.call(
+                                    self.static_config.clone(),
+                                    self.port_id,
+                                    connection.subscriber_id,
+                                ) {
+                                    DegrationAction::Ignore => (),
+                                    DegrationAction::Warn => {
+                                        error!(from self,
+                                            "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                            address_to_chunk, connection.subscriber_id);
+                                    }
+                                    DegrationAction::Fail => {
+                                        fail!(from self, with PublisherSendError::ConnectionCorrupted,
+                                            "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                            address_to_chunk, connection.subscriber_id);
+                                    }
+                                },
+                                None => {
+                                    error!(from self,
+                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        address_to_chunk, connection.subscriber_id);
+                                }
+                            }
+                        }
                         Ok(overflow) => {
                             self.borrow_sample(address_to_chunk);
                             number_of_recipients += 1;
@@ -275,7 +303,7 @@ impl<Service: service::Service> DataSegment<Service> {
                 None => (),
             }
         }
-        number_of_recipients
+        Ok(number_of_recipients)
     }
 
     fn populate_subscriber_channels(&self) -> Result<(), ZeroCopyCreationError> {
@@ -375,7 +403,7 @@ impl<Service: service::Service> DataSegment<Service> {
             "{} since the connections could not be updated.", msg);
 
         self.add_sample_to_history(address_to_chunk);
-        Ok(self.deliver_sample(address_to_chunk))
+        self.deliver_sample(address_to_chunk)
     }
 }
 
@@ -422,7 +450,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             .messaging_pattern
             .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
-        let data_segment = fail!(from origin, when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples),
+        let data_segment = fail!(from origin, when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples, static_config),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
@@ -445,6 +473,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
                 &service.state().global_config,
                 port_id,
                 static_config,
+                number_of_samples,
             ),
             config,
             subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
@@ -475,8 +504,10 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             .dynamic_storage
             .get()
             .publish_subscribe()
-            .add_publisher_id(port_id)
-        {
+            .add_publisher_id(PublisherDetails {
+                publisher_id: port_id,
+                number_of_samples,
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with PublisherCreateError::ExceedsMaxSupportedPublishers,
@@ -494,19 +525,26 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         port_id: UniquePublisherId,
         global_config: &config::Config,
         number_of_samples: usize,
+        static_config: &publish_subscribe::StaticConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
         let allocator_config = shm_allocator::pool_allocator::Config {
-            bucket_layout: Layout::new::<Message<Header, MessageType>>(),
+            bucket_layout:
+                // # SAFETY: type_size and type_alignment are acquired via
+                //           core::mem::{size_of|align_of}
+                unsafe {
+                Layout::from_size_align_unchecked(
+                    static_config.type_size,
+                    static_config.type_alignment,
+                )
+            },
         };
-        let chunk_size = allocator_config.bucket_layout.size();
-        let chunk_align = allocator_config.bucket_layout.align();
 
         Ok(fail!(from "Publisher::create_data_segment()",
             when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
             Service::SharedMemory,
                 >>::new(&data_segment_name(port_id))
                 .config(&data_segment_config::<Service>(global_config))
-                .size(chunk_size * number_of_samples + chunk_align - 1)
+                .size(static_config.type_size * number_of_samples + static_config.type_alignment - 1)
                 .create(&allocator_config),
             "Unable to create the data segment."))
     }

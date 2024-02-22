@@ -30,12 +30,14 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct Connection<Service: service::Service> {
     pub(crate) sender: <Service::Connection as ZeroCopyConnection>::Sender,
+    pub(crate) subscriber_id: UniqueSubscriberId,
 }
 
 impl<Service: service::Service> Connection<Service> {
     fn new(
         this: &SubscriberConnections<Service>,
         subscriber_id: UniqueSubscriberId,
+        number_of_samples: usize,
     ) -> Result<Self, ZeroCopyCreationError> {
         let sender = fail!(from this, when <Service::Connection as ZeroCopyConnection>::
                         Builder::new( &connection_name(this.port_id, subscriber_id))
@@ -43,11 +45,15 @@ impl<Service: service::Service> Connection<Service> {
                                 .buffer_size(this.static_config.subscriber_max_buffer_size)
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
-                                .create_sender(),
+                                .number_of_samples(number_of_samples)
+                                .create_sender(this.static_config.type_size),
                         "Unable to establish connection to subscriber {:?} from publisher {:?}.",
                         subscriber_id, this.port_id);
 
-        Ok(Self { sender })
+        Ok(Self {
+            sender,
+            subscriber_id,
+        })
     }
 }
 
@@ -57,6 +63,7 @@ pub(crate) struct SubscriberConnections<Service: service::Service> {
     port_id: UniquePublisherId,
     config: Rc<config::Config>,
     static_config: StaticConfig,
+    number_of_samples: usize,
 }
 
 impl<Service: service::Service> SubscriberConnections<Service> {
@@ -65,12 +72,14 @@ impl<Service: service::Service> SubscriberConnections<Service> {
         config: &Rc<config::Config>,
         port_id: UniquePublisherId,
         static_config: &StaticConfig,
+        number_of_samples: usize,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
             config: Rc::clone(config),
             port_id,
             static_config: static_config.clone(),
+            number_of_samples,
         }
     }
 
@@ -97,7 +106,11 @@ impl<Service: service::Service> SubscriberConnections<Service> {
         subscriber_id: UniqueSubscriberId,
     ) -> Result<bool, ZeroCopyCreationError> {
         if self.get(index).is_none() {
-            *self.get_mut(index) = Some(Connection::new(self, subscriber_id)?);
+            *self.get_mut(index) = Some(Connection::new(
+                self,
+                subscriber_id,
+                self.number_of_samples,
+            )?);
             Ok(true)
         } else {
             Ok(false)

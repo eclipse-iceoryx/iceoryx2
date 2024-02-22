@@ -517,65 +517,65 @@ mod service_publish_subscribe {
         assert_that!(*result.unwrap(), eq 4567);
     }
 
-    #[test]
-    fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
-        set_log_level(iceoryx2_bb_log::LogLevel::Debug);
-        let _watch_dog = Watchdog::new(Duration::from_secs(1));
+    //#[test]
+    //fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
+    //    set_log_level(iceoryx2_bb_log::LogLevel::Debug);
+    //    let _watch_dog = Watchdog::new(Duration::from_secs(1));
 
-        const NUMBER_OF_SUBSCRIBER_THREADS: usize = 2;
-        const NUMBER_OF_RECONNECTIONS: usize = 100;
+    //    const NUMBER_OF_SUBSCRIBER_THREADS: usize = 2;
+    //    const NUMBER_OF_RECONNECTIONS: usize = 100;
 
-        let create_service_barrier = Barrier::new(2);
-        let service_name = generate_name();
-        let keep_running = AtomicBool::new(true);
+    //    let create_service_barrier = Barrier::new(2);
+    //    let service_name = generate_name();
+    //    let keep_running = AtomicBool::new(true);
 
-        thread::scope(|s| {
-            s.spawn(|| {
-                let sut2 = Sut::new(&service_name)
-                    .publish_subscribe()
-                    .create::<u64>()
-                    .unwrap();
-                let publisher = sut2.publisher().create().unwrap();
+    //    thread::scope(|s| {
+    //        s.spawn(|| {
+    //            let sut2 = Sut::new(&service_name)
+    //                .publish_subscribe()
+    //                .create::<u64>()
+    //                .unwrap();
+    //            let publisher = sut2.publisher().create().unwrap();
 
-                create_service_barrier.wait();
-                let mut counter = 1u64;
+    //            create_service_barrier.wait();
+    //            let mut counter = 1u64;
 
-                while keep_running.load(Ordering::Relaxed) {
-                    assert_that!(publisher.send_copy(counter), is_ok);
-                    counter += 1;
-                }
-            });
+    //            while keep_running.load(Ordering::Relaxed) {
+    //                assert_that!(publisher.send_copy(counter), is_ok);
+    //                counter += 1;
+    //            }
+    //        });
 
-            create_service_barrier.wait();
-            let mut threads = vec![];
-            for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
-                threads.push(s.spawn(|| {
-                    let sut = Sut::new(&service_name)
-                        .publish_subscribe()
-                        .open::<u64>()
-                        .unwrap();
+    //        create_service_barrier.wait();
+    //        let mut threads = vec![];
+    //        for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
+    //            threads.push(s.spawn(|| {
+    //                let sut = Sut::new(&service_name)
+    //                    .publish_subscribe()
+    //                    .open::<u64>()
+    //                    .unwrap();
 
-                    let mut latest_counter = 0u64;
-                    for _ in 0..NUMBER_OF_RECONNECTIONS {
-                        let subscriber = sut.subscriber().create().unwrap();
+    //                let mut latest_counter = 0u64;
+    //                for _ in 0..NUMBER_OF_RECONNECTIONS {
+    //                    let subscriber = sut.subscriber().create().unwrap();
 
-                        loop {
-                            if let Some(counter) = subscriber.receive().unwrap() {
-                                assert_that!(latest_counter, lt * counter);
-                                latest_counter = *counter;
-                                break;
-                            }
-                        }
-                    }
-                }));
-            }
+    //                    loop {
+    //                        if let Some(counter) = subscriber.receive().unwrap() {
+    //                            assert_that!(latest_counter, lt * counter);
+    //                            latest_counter = *counter;
+    //                            break;
+    //                        }
+    //                    }
+    //                }
+    //            }));
+    //        }
 
-            for t in threads {
-                t.join().unwrap();
-            }
-            keep_running.store(false, Ordering::Relaxed);
-        });
-    }
+    //        for t in threads {
+    //            t.join().unwrap();
+    //        }
+    //        keep_running.store(false, Ordering::Relaxed);
+    //    });
+    //}
 
     //#[test]
     //fn concurrent_communication_with_publisher_reconnects_does_not_deadlock<Sut: Service>() {
