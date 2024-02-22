@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod zero_copy_connection {
+    use std::collections::HashSet;
     use std::time::{Duration, Instant};
 
     use iceoryx2_bb_container::semantic_string::*;
@@ -27,6 +28,8 @@ mod zero_copy_connection {
     use iceoryx2_cal::zero_copy_connection::*;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
+    const SAMPLE_SIZE: usize = 123;
+    const NUMBER_OF_SAMPLES: usize = 2345;
 
     fn generate_name() -> FileName {
         let mut file = FileName::new(b"test_").unwrap();
@@ -39,18 +42,34 @@ mod zero_copy_connection {
     fn create_non_existing_connection_works<Sut: ZeroCopyConnection>() {
         let name = generate_name();
 
-        assert_that!(Sut::Builder::new(&name).create_receiver(), is_ok);
-        assert_that!(Sut::Builder::new(&name).create_sender(), is_ok);
+        assert_that!(
+            Sut::Builder::new(&name)
+                .number_of_samples(NUMBER_OF_SAMPLES)
+                .create_receiver(SAMPLE_SIZE),
+            is_ok
+        );
+        assert_that!(
+            Sut::Builder::new(&name)
+                .number_of_samples(NUMBER_OF_SAMPLES)
+                .create_sender(SAMPLE_SIZE),
+            is_ok
+        );
     }
 
     #[test]
     fn establish_connection_works<Sut: ZeroCopyConnection>() {
         let name = generate_name();
 
-        let sut_sender = Sut::Builder::new(&name).create_sender().unwrap();
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
         assert_that!(!sut_sender.is_connected(), eq true);
 
-        let sut_receiver = Sut::Builder::new(&name).create_receiver().unwrap();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
         assert_that!(sut_receiver.is_connected(), eq true);
         assert_that!(sut_sender.is_connected(), eq true);
 
@@ -62,7 +81,10 @@ mod zero_copy_connection {
     fn builder_sets_default_values<Sut: ZeroCopyConnection>() {
         let name = generate_name();
 
-        let sut_sender = Sut::Builder::new(&name).create_sender().unwrap();
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
         assert_that!(sut_sender.buffer_size(), eq DEFAULT_BUFFER_SIZE);
         assert_that!(
             sut_sender.max_borrowed_samples(), eq
@@ -73,7 +95,10 @@ mod zero_copy_connection {
             DEFAULT_ENABLE_SAFE_OVERFLOW
         );
 
-        let sut_receiver = Sut::Builder::new(&name).create_receiver().unwrap();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
         assert_that!(sut_receiver.buffer_size(), eq DEFAULT_BUFFER_SIZE);
         assert_that!(
             sut_receiver.max_borrowed_samples(), eq
@@ -89,17 +114,27 @@ mod zero_copy_connection {
     fn multi_connections_fail<Sut: ZeroCopyConnection>() {
         let name = generate_name();
 
-        let _sut_sender = Sut::Builder::new(&name).create_sender().unwrap();
-        let _sut_receiver = Sut::Builder::new(&name).create_receiver().unwrap();
+        let _sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let _sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
 
-        let sut_sender = Sut::Builder::new(&name).create_sender();
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE);
         assert_that!(sut_sender, is_err);
         assert_that!(
             sut_sender.err().unwrap(), eq
             ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected
         );
 
-        let sut_receiver = Sut::Builder::new(&name).create_receiver();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE);
         assert_that!(sut_receiver, is_err);
         assert_that!(
             sut_receiver.err().unwrap(), eq
@@ -111,11 +146,19 @@ mod zero_copy_connection {
     fn when_sender_goes_out_of_scope_another_sender_can_connect<Sut: ZeroCopyConnection>() {
         let name = generate_name();
 
-        let _sut_sender = Sut::Builder::new(&name).create_sender().unwrap();
-        let _sut_receiver = Sut::Builder::new(&name).create_receiver().unwrap();
+        let _sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let _sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
 
         drop(_sut_sender);
-        let sut_sender = Sut::Builder::new(&name).create_sender();
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE);
         assert_that!(sut_sender, is_ok);
     }
 
@@ -123,11 +166,19 @@ mod zero_copy_connection {
     fn when_receiver_goes_out_of_scope_another_receiver_can_connect<Sut: ZeroCopyConnection>() {
         let name = generate_name();
 
-        let _sut_sender = Sut::Builder::new(&name).create_sender().unwrap();
-        let _sut_receiver = Sut::Builder::new(&name).create_receiver().unwrap();
+        let _sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let _sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
 
         drop(_sut_receiver);
-        let sut_receiver = Sut::Builder::new(&name).create_receiver();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE);
         assert_that!(sut_receiver, is_ok);
     }
 
@@ -135,8 +186,14 @@ mod zero_copy_connection {
     fn connection_is_cleaned_up_when_unused<Sut: ZeroCopyConnection + NamedConceptMgmt>() {
         let name = generate_name();
 
-        let sut_sender = Sut::Builder::new(&name).create_sender().unwrap();
-        let sut_receiver = Sut::Builder::new(&name).create_receiver().unwrap();
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
 
         drop(sut_sender);
         drop(sut_receiver);
@@ -150,10 +207,14 @@ mod zero_copy_connection {
 
         let _sut_sender = Sut::Builder::new(&name)
             .buffer_size(12)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
 
-        let sut_receiver = Sut::Builder::new(&name).buffer_size(16).create_receiver();
+        let sut_receiver = Sut::Builder::new(&name)
+            .buffer_size(16)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE);
 
         assert_that!(sut_receiver, is_err);
     }
@@ -164,12 +225,14 @@ mod zero_copy_connection {
 
         let _sut_sender = Sut::Builder::new(&name)
             .receiver_max_borrowed_samples(2)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
             .receiver_max_borrowed_samples(4)
-            .create_receiver();
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE);
 
         assert_that!(sut_receiver, is_err);
     }
@@ -180,10 +243,13 @@ mod zero_copy_connection {
 
         let _sut_sender = Sut::Builder::new(&name)
             .enable_safe_overflow(true)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
 
-        let sut_receiver = Sut::Builder::new(&name).create_receiver();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE);
 
         assert_that!(sut_receiver, is_err);
         assert_that!(
@@ -193,21 +259,67 @@ mod zero_copy_connection {
     }
 
     #[test]
+    fn connecting_with_incompatible_sample_size_fails<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+
+        let _sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(2 * SAMPLE_SIZE);
+
+        assert_that!(sut_receiver, is_err);
+        assert_that!(
+            sut_receiver.err().unwrap(), eq
+            ZeroCopyCreationError::IncompatibleSampleSize
+        );
+    }
+
+    #[test]
+    fn connecting_with_incompatible_number_of_samples_fails<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+
+        let _sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES * 2)
+            .create_receiver(SAMPLE_SIZE);
+
+        assert_that!(sut_receiver, is_err);
+    }
+
+    #[test]
     fn send_receive_and_retrieval_works<Sut: ZeroCopyConnection>() {
         let name = generate_name();
 
-        let sut_sender = Sut::Builder::new(&name).create_sender().unwrap();
-        let sut_receiver = Sut::Builder::new(&name).create_receiver().unwrap();
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
 
-        assert_that!(sut_sender.try_send(PointerOffset::new(1237789)), is_ok);
+        let sample_offset = SAMPLE_SIZE * 2;
+        assert_that!(
+            sut_sender.try_send(PointerOffset::new(sample_offset)),
+            is_ok
+        );
         let sample = sut_receiver.receive().unwrap();
         assert_that!(sample, is_some);
-        assert_that!(sample.as_ref().unwrap().value(), eq 1237789);
+        assert_that!(sample.as_ref().unwrap().value(), eq sample_offset);
 
         assert_that!(sut_receiver.release(sample.unwrap()), is_ok);
         let retrieval = sut_sender.reclaim().unwrap();
         assert_that!(retrieval, is_some);
-        assert_that!(retrieval.as_ref().unwrap().value(), eq 1237789);
+        assert_that!(retrieval.as_ref().unwrap().value(), eq sample_offset);
 
         let retrieval = sut_sender.reclaim().unwrap();
         assert_that!(retrieval, is_none);
@@ -220,11 +332,18 @@ mod zero_copy_connection {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
+
         for i in 0..BUFFER_SIZE {
-            assert_that!(sut_sender.try_send(PointerOffset::new(i)), is_ok);
+            let sample_offset = SAMPLE_SIZE * i;
+            assert_that!(
+                sut_sender.try_send(PointerOffset::new(sample_offset)),
+                is_ok
+            );
         }
+
         let result = sut_sender.try_send(PointerOffset::new(9));
         assert_that!(result, is_err);
         assert_that!(result.err().unwrap(), eq ZeroCopySendError::ReceiveBufferFull);
@@ -237,17 +356,25 @@ mod zero_copy_connection {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
+            .number_of_samples(NUMBER_OF_SAMPLES)
             .enable_safe_overflow(true)
-            .create_sender()
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
+
         for i in 0..BUFFER_SIZE {
-            assert_that!(sut_sender.try_send(PointerOffset::new(i)), is_ok);
+            let sample_offset = SAMPLE_SIZE * i;
+            assert_that!(
+                sut_sender.try_send(PointerOffset::new(sample_offset)),
+                is_ok
+            );
         }
 
         for i in 0..BUFFER_SIZE {
-            let result = sut_sender.try_send(PointerOffset::new(9));
+            let overflow_sample_offset = SAMPLE_SIZE * i;
+            let sample_offset = SAMPLE_SIZE * (BUFFER_SIZE + i);
+            let result = sut_sender.try_send(PointerOffset::new(sample_offset));
             assert_that!(result, is_ok);
-            assert_that!(result.ok().unwrap().unwrap().value(), eq i);
+            assert_that!(result.ok().unwrap().unwrap().value(), eq overflow_sample_offset);
         }
     }
 
@@ -259,21 +386,29 @@ mod zero_copy_connection {
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
             .receiver_max_borrowed_samples(BUFFER_SIZE)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
+
         for i in 0..BUFFER_SIZE {
-            assert_that!(sut_sender.try_send(PointerOffset::new(i)), is_ok);
+            let sample_offset = SAMPLE_SIZE * i;
+            assert_that!(
+                sut_sender.try_send(PointerOffset::new(sample_offset)),
+                is_ok
+            );
         }
 
         let receiver = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
             .receiver_max_borrowed_samples(BUFFER_SIZE)
-            .create_receiver()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
             .unwrap();
         for i in 0..BUFFER_SIZE {
             let sample = receiver.receive();
+            let sample_offset = SAMPLE_SIZE * i;
             assert_that!(sample, is_ok);
-            assert_that!(sample.ok().unwrap().unwrap().value(), eq i);
+            assert_that!(sample.ok().unwrap().unwrap().value(), eq sample_offset);
         }
     }
 
@@ -281,7 +416,10 @@ mod zero_copy_connection {
     fn new_connection_has_empty_receive_buffer<Sut: ZeroCopyConnection>() {
         let name = generate_name();
 
-        let receiver = Sut::Builder::new(&name).create_receiver().unwrap();
+        let receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
 
         let sample = receiver.receive().unwrap();
         assert_that!(sample, is_none);
@@ -297,18 +435,25 @@ mod zero_copy_connection {
             .buffer_size(BUFFER_SIZE)
             .receiver_max_borrowed_samples(MAX_BORROW)
             .enable_safe_overflow(true)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
         let sut_receiver = Sut::Builder::new(&name)
             .buffer_size(BUFFER_SIZE)
             .receiver_max_borrowed_samples(MAX_BORROW)
             .enable_safe_overflow(true)
-            .create_receiver()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
             .unwrap();
 
+        let mut sample_offset = SAMPLE_SIZE;
         for _ in 0..2 {
-            for i in 0..BUFFER_SIZE {
-                assert_that!(sut_sender.try_send(PointerOffset::new(i)), is_ok);
+            for _ in 0..BUFFER_SIZE {
+                sample_offset += SAMPLE_SIZE;
+                assert_that!(
+                    sut_sender.try_send(PointerOffset::new(sample_offset)),
+                    is_ok
+                );
             }
 
             let mut samples = vec![];
@@ -338,17 +483,22 @@ mod zero_copy_connection {
 
         let sut_sender = Sut::Builder::new(&name)
             .buffer_size(1)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
 
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
 
+        let sample_offset_1 = SAMPLE_SIZE * 12;
+        let sample_offset_2 = SAMPLE_SIZE * 234;
+
         std::thread::scope(|s| {
             s.spawn(|| {
                 let sut_receiver = Sut::Builder::new(&name)
                     .buffer_size(1)
-                    .create_receiver()
+                    .number_of_samples(NUMBER_OF_SAMPLES)
+                    .create_receiver(SAMPLE_SIZE)
                     .unwrap();
 
                 barrier.wait();
@@ -357,17 +507,188 @@ mod zero_copy_connection {
                 std::thread::sleep(TIMEOUT);
                 let sample_2 = sut_receiver.receive();
 
-                assert_that!(sample_1.unwrap().unwrap().value(), eq 7789);
-                assert_that!(sample_2.unwrap().unwrap().value(), eq 227789);
+                assert_that!(sample_1.unwrap().unwrap().value(), eq sample_offset_1);
+                assert_that!(sample_2.unwrap().unwrap().value(), eq sample_offset_2);
             });
 
             barrier.wait();
             let now = Instant::now();
 
-            assert_that!(sut_sender.blocking_send(PointerOffset::new(7789)), is_ok);
-            assert_that!(sut_sender.blocking_send(PointerOffset::new(227789)), is_ok);
+            assert_that!(
+                sut_sender.blocking_send(PointerOffset::new(sample_offset_1)),
+                is_ok
+            );
+            assert_that!(
+                sut_sender.blocking_send(PointerOffset::new(sample_offset_2)),
+                is_ok
+            );
             assert_that!(now.elapsed(), time_at_least TIMEOUT);
         });
+    }
+
+    #[test]
+    fn send_samples_can_be_acquired<Sut: ZeroCopyConnection>() {
+        const BUFFER_SIZE: usize = 10;
+        let name = generate_name();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let _sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
+
+        let mut offsets = HashSet::new();
+
+        for i in 0..BUFFER_SIZE {
+            let sample_offset = SAMPLE_SIZE * i;
+            offsets.insert(sample_offset);
+            assert_that!(
+                sut_sender.try_send(PointerOffset::new(sample_offset)),
+                is_ok
+            );
+        }
+
+        for _ in 0..BUFFER_SIZE {
+            let acquired_offset = unsafe { sut_sender.acquire_used_offsets() };
+            assert_that!(acquired_offset, is_some);
+            let acquired_offset = acquired_offset.unwrap().value();
+            assert_that!(offsets.remove(&acquired_offset), eq true);
+        }
+    }
+
+    #[test]
+    fn send_samples_can_be_acquired_with_overflow<Sut: ZeroCopyConnection>() {
+        const BUFFER_SIZE: usize = 10;
+        let name = generate_name();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .receiver_max_borrowed_samples(BUFFER_SIZE)
+            .enable_safe_overflow(true)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let _sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .receiver_max_borrowed_samples(BUFFER_SIZE)
+            .enable_safe_overflow(true)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
+
+        for i in 0..BUFFER_SIZE {
+            let sample_offset = SAMPLE_SIZE * i;
+            assert_that!(
+                sut_sender.try_send(PointerOffset::new(sample_offset)),
+                is_ok
+            );
+        }
+
+        let mut offsets = HashSet::new();
+        for i in 0..BUFFER_SIZE {
+            let sample_offset = SAMPLE_SIZE * (i + BUFFER_SIZE);
+            offsets.insert(sample_offset);
+            assert_that!(
+                sut_sender.try_send(PointerOffset::new(sample_offset)),
+                is_ok
+            );
+        }
+
+        for _ in 0..BUFFER_SIZE {
+            let acquired_offset = unsafe { sut_sender.acquire_used_offsets() };
+            assert_that!(acquired_offset, is_some);
+            let acquired_offset = acquired_offset.unwrap().value();
+            assert_that!(offsets.remove(&acquired_offset), eq true);
+        }
+    }
+
+    #[test]
+    fn send_and_reclaimed_samples_cannot_be_acquired<Sut: ZeroCopyConnection>() {
+        const BUFFER_SIZE: usize = 10;
+        let name = generate_name();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .receiver_max_borrowed_samples(BUFFER_SIZE)
+            .enable_safe_overflow(true)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .receiver_max_borrowed_samples(BUFFER_SIZE)
+            .enable_safe_overflow(true)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
+
+        for i in 0..BUFFER_SIZE {
+            let sample_offset = SAMPLE_SIZE * i;
+            assert_that!(
+                sut_sender.try_send(PointerOffset::new(sample_offset)),
+                is_ok
+            );
+        }
+
+        for _ in 0..BUFFER_SIZE {
+            let offset = sut_receiver.receive().unwrap().unwrap();
+            sut_receiver.release(offset).unwrap();
+        }
+
+        for _ in 0..BUFFER_SIZE {
+            assert_that!(sut_sender.reclaim().unwrap(), is_some);
+        }
+
+        assert_that!(unsafe { sut_sender.acquire_used_offsets() }, is_none);
+    }
+
+    #[test]
+    fn send_samples_can_be_acquired_when_receiver_is_dropped<Sut: ZeroCopyConnection>() {
+        const BUFFER_SIZE: usize = 10;
+        let name = generate_name();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .receiver_max_borrowed_samples(BUFFER_SIZE)
+            .enable_safe_overflow(true)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .buffer_size(BUFFER_SIZE)
+            .receiver_max_borrowed_samples(BUFFER_SIZE)
+            .enable_safe_overflow(true)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
+
+        let mut offsets = HashSet::new();
+        for i in 0..BUFFER_SIZE {
+            let sample_offset = SAMPLE_SIZE * (i + BUFFER_SIZE);
+            offsets.insert(sample_offset);
+            assert_that!(
+                sut_sender.try_send(PointerOffset::new(sample_offset)),
+                is_ok
+            );
+        }
+
+        for _ in 0..BUFFER_SIZE {
+            assert_that!(sut_receiver.receive().unwrap(), is_some);
+        }
+
+        drop(sut_receiver);
+
+        for _ in 0..BUFFER_SIZE {
+            let acquired_offset = unsafe { sut_sender.acquire_used_offsets() };
+            assert_that!(acquired_offset, is_some);
+            let acquired_offset = acquired_offset.unwrap().value();
+            assert_that!(offsets.remove(&acquired_offset), eq true);
+        }
     }
 
     #[test]
@@ -379,7 +700,12 @@ mod zero_copy_connection {
             assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len i);
             sut_names.push(generate_name());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(false));
-            std::mem::forget(Sut::Builder::new(&sut_names[i]).create_sender().unwrap());
+            std::mem::forget(
+                Sut::Builder::new(&sut_names[i])
+                    .number_of_samples(NUMBER_OF_SAMPLES)
+                    .create_sender(SAMPLE_SIZE)
+                    .unwrap(),
+            );
             assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
 
             let list = <Sut as NamedConceptMgmt>::list().unwrap();
@@ -424,7 +750,8 @@ mod zero_copy_connection {
 
         let sut_1 = Sut::Builder::new(&sut_name)
             .config(&config_1)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
@@ -434,7 +761,8 @@ mod zero_copy_connection {
 
         let sut_2 = Sut::Builder::new(&sut_name)
             .config(&config_2)
-            .create_sender()
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
             .unwrap();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));

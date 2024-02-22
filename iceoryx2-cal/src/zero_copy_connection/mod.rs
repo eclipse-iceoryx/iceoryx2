@@ -26,9 +26,12 @@ pub enum ZeroCopyCreationError {
     InternalError,
     AnotherInstanceIsAlreadyConnected,
     ConnectionMaybeCorrupted,
+    InvalidSampleSize,
     IncompatibleBufferSize,
     IncompatibleMaxBorrowedSampleSetting,
     IncompatibleOverflowSetting,
+    IncompatibleSampleSize,
+    IncompatibleNumberOfSamples,
 }
 
 impl std::fmt::Display for ZeroCopyCreationError {
@@ -41,6 +44,7 @@ impl std::error::Error for ZeroCopyCreationError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopySendError {
+    ConnectionCorrupted,
     ReceiveBufferFull,
     UsedChunkListFull,
 }
@@ -100,9 +104,10 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     fn buffer_size(self, value: usize) -> Self;
     fn enable_safe_overflow(self, value: bool) -> Self;
     fn receiver_max_borrowed_samples(self, value: usize) -> Self;
+    fn number_of_samples(self, value: usize) -> Self;
 
-    fn create_sender(self) -> Result<C::Sender, ZeroCopyCreationError>;
-    fn create_receiver(self) -> Result<C::Receiver, ZeroCopyCreationError>;
+    fn create_sender(self, sample_size: usize) -> Result<C::Sender, ZeroCopyCreationError>;
+    fn create_receiver(self, sample_size: usize) -> Result<C::Receiver, ZeroCopyCreationError>;
 }
 
 pub trait ZeroCopyPortDetails {

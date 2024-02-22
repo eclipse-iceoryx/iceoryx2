@@ -30,6 +30,8 @@ use std::{
     },
 };
 
+use self::used_chunk_list::UsedChunkList;
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
 enum State {
@@ -42,8 +44,11 @@ struct Management {
     name: FileName,
     receive_channel: SafelyOverflowingIndexQueue,
     retrieve_channel: IndexQueue,
+    used_chunk_list: UsedChunkList,
     enable_safe_overflow: bool,
     max_borrowed_samples: usize,
+    sample_size: usize,
+    number_of_samples: usize,
     state: AtomicU8,
 }
 
@@ -113,6 +118,8 @@ pub struct Builder {
     buffer_size: usize,
     enable_safe_overflow: bool,
     max_borrowed_samples: usize,
+    sample_size: usize,
+    number_of_samples: usize,
     config: Configuration,
 }
 
@@ -137,6 +144,18 @@ impl Builder {
                         "{} since the buffer size is not compatible.", msg);
         }
 
+        if entry.sample_size != self.sample_size {
+            fail!(from self, with ZeroCopyCreationError::IncompatibleSampleSize,
+                        "{} since the requested sample size is set to {} but should be set to {}.",
+                        msg, self.sample_size, entry.sample_size);
+        }
+
+        if entry.number_of_samples != self.number_of_samples {
+            fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSamples,
+                        "{} since the requested number of samples is set to {} but should be set to {}.",
+                        msg, self.number_of_samples, entry.number_of_samples);
+        }
+
         Ok(())
     }
 
@@ -152,6 +171,8 @@ impl NamedConceptBuilder<Connection> for Builder {
             buffer_size: DEFAULT_BUFFER_SIZE,
             enable_safe_overflow: DEFAULT_ENABLE_SAFE_OVERFLOW,
             max_borrowed_samples: DEFAULT_MAX_BORROWED_SAMPLES,
+            sample_size: 0,
+            number_of_samples: 0,
             config: Configuration::default(),
         }
     }
@@ -173,12 +194,19 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
         self
     }
 
+    fn number_of_samples(mut self, value: usize) -> Self {
+        self.number_of_samples = value;
+        self
+    }
+
     fn receiver_max_borrowed_samples(mut self, value: usize) -> Self {
         self.max_borrowed_samples = value.clamp(1, usize::MAX);
         self
     }
 
-    fn create_sender(self) -> Result<Sender, ZeroCopyCreationError> {
+    fn create_sender(mut self, sample_size: usize) -> Result<Sender, ZeroCopyCreationError> {
+        self.sample_size = sample_size;
+
         let msg = "Unable to create sender";
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
             with ZeroCopyCreationError::InternalError,
@@ -209,9 +237,12 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
                     name: self.name,
                     receive_channel: SafelyOverflowingIndexQueue::new(self.buffer_size),
                     retrieve_channel: IndexQueue::new(self.retrieve_channel_size()),
+                    used_chunk_list: UsedChunkList::new(self.number_of_samples),
                     enable_safe_overflow: self.enable_safe_overflow,
                     max_borrowed_samples: self.max_borrowed_samples,
                     state: AtomicU8::new(State::Sender as u8),
+                    sample_size: self.sample_size,
+                    number_of_samples: self.number_of_samples,
                 });
                 guard.insert(full_path, entry.clone());
 
@@ -223,7 +254,9 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
         }
     }
 
-    fn create_receiver(self) -> Result<Receiver, ZeroCopyCreationError> {
+    fn create_receiver(mut self, sample_size: usize) -> Result<Receiver, ZeroCopyCreationError> {
+        self.sample_size = sample_size;
+
         let msg = "Unable to create receiver";
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
             with ZeroCopyCreationError::InternalError,
@@ -255,9 +288,12 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
                     name: self.name,
                     receive_channel: SafelyOverflowingIndexQueue::new(self.buffer_size),
                     retrieve_channel: IndexQueue::new(self.retrieve_channel_size()),
+                    used_chunk_list: UsedChunkList::new(self.number_of_samples),
                     enable_safe_overflow: self.enable_safe_overflow,
                     max_borrowed_samples: self.max_borrowed_samples,
                     state: AtomicU8::new(State::Receiver as u8),
+                    sample_size: self.sample_size,
+                    number_of_samples: self.number_of_samples,
                 });
                 guard.insert(full_path, entry.clone());
 
@@ -317,8 +353,24 @@ impl ZeroCopySender for Sender {
                         "{} since the receive buffer is full.", msg);
         }
 
+        if !self
+            .mgmt
+            .used_chunk_list
+            .insert(ptr.value() / self.mgmt.sample_size)
+        {
+            fail!(from self, with ZeroCopySendError::UsedChunkListFull,
+                    "{} since the used chunk list is full.", msg);
+        }
+
         match unsafe { self.mgmt.receive_channel.push(ptr.value()) } {
-            Some(v) => Ok(Some(PointerOffset::new(v))),
+            Some(v) => {
+                if !self.mgmt.used_chunk_list.remove(v / self.mgmt.sample_size) {
+                    fail!(from self, with ZeroCopySendError::ConnectionCorrupted,
+                        "{} since an invalid offset was returned on overflow.", msg);
+                }
+
+                Ok(Some(PointerOffset::new(v)))
+            }
             None => Ok(None),
         }
     }
@@ -343,12 +395,22 @@ impl ZeroCopySender for Sender {
     fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
         match unsafe { self.mgmt.retrieve_channel.pop() } {
             None => Ok(None),
-            Some(v) => Ok(Some(PointerOffset::new(v))),
+            Some(v) => {
+                if !self.mgmt.used_chunk_list.remove(v / self.mgmt.sample_size) {
+                    fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedOffset,
+                        "Unable to reclaim sample since the receiver returned the corrupted offset {}.", v);
+                }
+
+                Ok(Some(PointerOffset::new(v)))
+            }
         }
     }
 
     unsafe fn acquire_used_offsets(&self) -> Option<PointerOffset> {
-        todo!()
+        match self.mgmt.used_chunk_list.pop() {
+            None => None,
+            Some(v) => Some(PointerOffset::new(v * self.mgmt.sample_size)),
+        }
     }
 }
 
