@@ -12,7 +12,6 @@
 
 use std::{
     alloc::Layout,
-    cell::UnsafeCell,
     sync::atomic::{AtomicBool, Ordering},
 };
 
@@ -28,9 +27,8 @@ use crate::shm_allocator::PointerOffset;
 #[derive(Debug)]
 #[repr(C)]
 pub struct RelocatableUsedChunkList {
-    data_ptr: RelocatablePointer<UnsafeCell<PointerOffset>>,
+    data_ptr: RelocatablePointer<AtomicBool>,
     capacity: usize,
-    size: UnsafeCell<usize>,
     is_memory_initialized: AtomicBool,
 }
 
@@ -39,7 +37,6 @@ impl RelocatableContainer for RelocatableUsedChunkList {
         Self {
             data_ptr: RelocatablePointer::new_uninit(),
             capacity,
-            size: UnsafeCell::new(0),
             is_memory_initialized: AtomicBool::new(false),
         }
     }
@@ -55,17 +52,17 @@ impl RelocatableContainer for RelocatableUsedChunkList {
 
         let memory = fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                    std::mem::size_of::<PointerOffset>() * self.capacity,
-                    std::mem::align_of::<PointerOffset>())),
+                    std::mem::size_of::<AtomicBool>() * self.capacity,
+                    std::mem::align_of::<AtomicBool>())),
             "Failed to initialize since the allocation of the data memory failed.");
 
         self.data_ptr.init(memory);
 
-        for _ in 0..self.capacity {
+        for i in 0..self.capacity {
             unsafe {
-                (self.data_ptr.as_ptr() as *mut UnsafeCell<PointerOffset>)
-                    .add(self.size())
-                    .write(UnsafeCell::new(PointerOffset::new(0)))
+                (self.data_ptr.as_ptr() as *mut AtomicBool)
+                    .add(i)
+                    .write(AtomicBool::new(false))
             };
         }
 
@@ -82,7 +79,6 @@ impl RelocatableContainer for RelocatableUsedChunkList {
         Self {
             data_ptr: RelocatablePointer::new(distance_to_data),
             capacity,
-            size: UnsafeCell::new(0),
             is_memory_initialized: AtomicBool::new(true),
         }
     }
@@ -90,15 +86,11 @@ impl RelocatableContainer for RelocatableUsedChunkList {
 
 impl RelocatableUsedChunkList {
     pub const fn const_memory_size(capacity: usize) -> usize {
-        std::mem::size_of::<PointerOffset>() * capacity + std::mem::align_of::<PointerOffset>() - 1
+        std::mem::size_of::<AtomicBool>() * capacity + std::mem::align_of::<AtomicBool>() - 1
     }
 
     pub fn capacity(&self) -> usize {
         self.capacity
-    }
-
-    pub fn size(&self) -> usize {
-        unsafe { *self.size.get() }
     }
 
     fn verify_init(&self, source: &str) {
@@ -107,48 +99,35 @@ impl RelocatableUsedChunkList {
         }
     }
 
-    pub fn insert(&self, value: PointerOffset) -> bool {
-        self.verify_init("insert");
+    fn set(&self, idx: usize, value: bool) -> bool {
+        self.verify_init("set");
 
-        if self.size() == self.capacity {
-            return false;
+        if self.capacity <= idx {
+            fatal_panic!(from self,
+                "This should never happen. Out of bounds access with index {}.", idx);
         }
 
-        unsafe { *(*self.data_ptr.as_ptr().add(self.size())).get() = value };
-        unsafe { *self.size.get() += 1 };
-
-        true
+        unsafe { (*self.data_ptr.as_ptr().add(idx)).swap(value, Ordering::Relaxed) }
     }
 
-    pub fn remove(&self, value: PointerOffset) -> bool {
-        for i in 0..self.size() {
-            let rhs = unsafe { *(*self.data_ptr.as_ptr().add(i)).get() };
-            if rhs == value {
-                unsafe { *self.size.get() -= 1 };
-                if i + 1 != self.size() {
-                    unsafe {
-                        *(*self.data_ptr.as_ptr().add(i)).get() =
-                            *(*self.data_ptr.as_ptr().add(self.size())).get()
-                    };
-                }
+    pub fn insert(&self, value: usize) -> bool {
+        !self.set(value, true)
+    }
 
-                return true;
+    pub fn remove(&self, value: usize) -> bool {
+        self.set(value, false)
+    }
+
+    pub fn pop(&self) -> Option<usize> {
+        self.verify_init("pop");
+
+        for i in 0..self.capacity {
+            if unsafe { (*self.data_ptr.as_ptr().add(i)).swap(false, Ordering::Relaxed) } {
+                return Some(i);
             }
         }
 
-        false
-    }
-
-    pub fn pop(&self) -> Option<PointerOffset> {
-        self.verify_init("pop");
-
-        if self.size() == 0 {
-            return None;
-        }
-
-        let value = unsafe { *(*self.data_ptr.as_ptr().add(self.size() - 1)).get() };
-        unsafe { *self.size.get() -= 1 };
-        Some(value)
+        None
     }
 }
 
@@ -156,7 +135,7 @@ impl RelocatableUsedChunkList {
 #[repr(C)]
 pub struct FixedSizeUsedChunkList<const CAPACITY: usize> {
     list: RelocatableUsedChunkList,
-    data: [UnsafeCell<PointerOffset>; CAPACITY],
+    data: [AtomicBool; CAPACITY],
 }
 
 impl<const CAPACITY: usize> FixedSizeUsedChunkList<CAPACITY> {
@@ -168,15 +147,15 @@ impl<const CAPACITY: usize> FixedSizeUsedChunkList<CAPACITY> {
                     align_to::<PointerOffset>(std::mem::size_of::<RelocatableUsedChunkList>()) as _,
                 )
             },
-            data: core::array::from_fn(|_| UnsafeCell::new(PointerOffset::new(0))),
+            data: core::array::from_fn(|_| AtomicBool::new(false)),
         }
     }
 
-    pub fn insert(&self, value: PointerOffset) -> bool {
+    pub fn insert(&self, value: usize) -> bool {
         self.list.insert(value)
     }
 
-    pub fn pop(&mut self) -> Option<PointerOffset> {
+    pub fn pop(&mut self) -> Option<usize> {
         self.list.pop()
     }
 
@@ -184,7 +163,7 @@ impl<const CAPACITY: usize> FixedSizeUsedChunkList<CAPACITY> {
         CAPACITY
     }
 
-    pub fn size(&self) -> usize {
-        self.list.size()
+    pub fn remove(&self, value: usize) -> bool {
+        self.list.remove(value)
     }
 }

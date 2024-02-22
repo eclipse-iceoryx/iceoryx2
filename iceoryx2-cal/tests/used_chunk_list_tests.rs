@@ -10,25 +10,60 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_cal::zero_copy_connection::{used_chunk_list::FixedSizeUsedChunkList, PointerOffset};
+#[generic_tests::define]
+mod used_chunk_list {
+    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
 
-#[test]
-fn used_chunk_list_insert_pop_works() {
-    let mut sut = FixedSizeUsedChunkList::<128>::new();
+    #[test]
+    fn used_chunk_list_insert_pop_works<const CAPACITY: usize>() {
+        let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
-    assert_that!(sut.size(), eq 0);
-    for i in 0..sut.capacity() {
-        assert_that!(sut.insert(PointerOffset::new(i + 5)), eq true);
-        assert_that!(sut.size(), eq i + 1);
+        for i in 0..sut.capacity() {
+            assert_that!(sut.insert(i), eq true);
+            assert_that!(sut.insert(i), eq false);
+        }
+
+        for i in 0..sut.capacity() {
+            assert_that!(sut.insert(i), eq false);
+            assert_that!(sut.pop(), eq Some(i));
+            assert_that!(sut.insert(i), eq true);
+            assert_that!(sut.pop(), eq Some(i));
+        }
+
+        assert_that!(sut.pop(), eq None);
     }
-    assert_that!(sut.insert(PointerOffset::new(123)), eq false);
-    assert_that!(sut.size(), eq sut.capacity());
 
-    for i in 0..sut.capacity() {
-        assert_that!(sut.pop(), eq Some(PointerOffset::new(sut.capacity() - i - 1 + 5)));
-        assert_that!(sut.size(), eq sut.capacity() - i - 1);
+    #[test]
+    fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
+        let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+
+        for i in 0..sut.capacity() {
+            assert_that!(sut.remove(i), eq false);
+            assert_that!(sut.insert(i), eq true);
+            assert_that!(sut.remove(i), eq true);
+            assert_that!(sut.remove(i), eq false);
+
+            assert_that!(sut.insert(i), eq true);
+        }
+
+        for i in 0..sut.capacity() {
+            assert_that!(sut.remove(sut.capacity() - i - 1), eq true);
+            assert_that!(sut.remove(sut.capacity() - i - 1), eq false);
+        }
+
+        assert_that!(sut.pop(), eq None);
     }
-    assert_that!(sut.pop(), eq None);
-    assert_that!(sut.size(), eq 0);
+
+    #[instantiate_tests(<1>)]
+    mod capacity_1 {}
+
+    #[instantiate_tests(<2>)]
+    mod capacity_2 {}
+
+    #[instantiate_tests(<3>)]
+    mod capacity_3 {}
+
+    #[instantiate_tests(<128>)]
+    mod capacity_128 {}
 }
