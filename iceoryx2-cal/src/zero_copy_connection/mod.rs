@@ -42,6 +42,7 @@ impl std::error::Error for ZeroCopyCreationError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopySendError {
     ReceiveBufferFull,
+    UsedChunkListFull,
 }
 
 impl std::fmt::Display for ZeroCopySendError {
@@ -66,7 +67,9 @@ impl std::fmt::Display for ZeroCopyReceiveError {
 impl std::error::Error for ZeroCopyReceiveError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ZeroCopyReclaimError {}
+pub enum ZeroCopyReclaimError {
+    ReceiverReturnedCorruptedOffset,
+}
 
 impl std::fmt::Display for ZeroCopyReclaimError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -116,6 +119,14 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
         -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
     fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError>;
+
+    /// # SAFETY
+    ///
+    /// * must ensure that no receiver is still holding data, otherwise data races may occur on
+    ///     receiver side
+    /// * must ensure that [`ZeroCopySender::try_send()`] and [`ZeroCopySender::blocking_send()`]
+    ///     are not called after using this method
+    unsafe fn acquire_used_offsets(&self) -> Option<PointerOffset>;
 }
 
 pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept {

@@ -30,6 +30,8 @@ use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_posix::shared_memory::{SharedMemory, SharedMemoryBuilder};
 
+use self::used_chunk_list::RelocatableUsedChunkList;
+
 const MAX_CREATION_DURATION: Duration = Duration::from_millis(10);
 const IS_INITIALIZED_STATE_VALUE: u64 = 0xbeefaffedeadbeef;
 
@@ -137,6 +139,7 @@ fn cleanup_shared_memory<T: Debug>(
 struct SharedManagementData {
     receive_channel: RelocatableSafelyOverflowingIndexQueue,
     retrieve_channel: RelocatableIndexQueue,
+    used_chunk_list: RelocatableUsedChunkList,
     max_borrowed_samples: usize,
     state: AtomicU8,
     init_state: AtomicU64,
@@ -145,17 +148,20 @@ struct SharedManagementData {
 
 impl SharedManagementData {
     fn new(
-        receive_channel_buffer_size: usize,
-        retrieve_channel_buffer_size: usize,
+        receive_channel_buffer_capacity: usize,
+        retrieve_channel_buffer_capacity: usize,
         enable_safe_overflow: bool,
         max_borrowed_samples: usize,
     ) -> Self {
         Self {
             receive_channel: unsafe {
-                RelocatableSafelyOverflowingIndexQueue::new_uninit(receive_channel_buffer_size)
+                RelocatableSafelyOverflowingIndexQueue::new_uninit(receive_channel_buffer_capacity)
             },
             retrieve_channel: unsafe {
-                RelocatableIndexQueue::new_uninit(retrieve_channel_buffer_size)
+                RelocatableIndexQueue::new_uninit(retrieve_channel_buffer_capacity)
+            },
+            used_chunk_list: unsafe {
+                RelocatableUsedChunkList::new_uninit(retrieve_channel_buffer_capacity)
             },
             state: AtomicU8::new(State::None.value()),
             init_state: AtomicU64::new(0),
@@ -165,14 +171,15 @@ impl SharedManagementData {
     }
 
     const fn const_memory_size(
-        receive_channel_buffer_size: usize,
-        retrieve_channel_buffer_size: usize,
+        receive_channel_buffer_capacity: usize,
+        retrieve_channel_buffer_capacity: usize,
     ) -> usize {
-        // we do not have to consider the alignment of Self since posix shared memory is always
-        // page size aligned
-        std::mem::size_of::<Self>()
-            + RelocatableIndexQueue::const_memory_size(retrieve_channel_buffer_size)
-            + RelocatableSafelyOverflowingIndexQueue::const_memory_size(receive_channel_buffer_size)
+        std::mem::size_of::<Self>() + std::mem::align_of::<Self>() - 1
+            + RelocatableIndexQueue::const_memory_size(retrieve_channel_buffer_capacity)
+            + RelocatableSafelyOverflowingIndexQueue::const_memory_size(
+                receive_channel_buffer_capacity,
+            )
+            + RelocatableUsedChunkList::const_memory_size(retrieve_channel_buffer_capacity)
     }
 }
 
@@ -236,6 +243,8 @@ impl Builder {
                             "{} since the receive channel allocation failed. - This is an implementation bug!", msg);
                 fatal_panic!(from self, when unsafe { (*mgmt_ptr).retrieve_channel.init(&allocator) },
                             "{} since the retrieve channel allocation failed. - This is an implementation bug!", msg);
+                fatal_panic!(from self, when unsafe { (*mgmt_ptr).used_chunk_list.init(&allocator) },
+                            "{} since the used chunk list allocation failed. - This is an implementation bug!", msg);
 
                 //////////////////////////////////////////
                 // SYNC POINT: write SharedManagementData
@@ -342,7 +351,7 @@ impl NamedConceptBuilder<Connection> for Builder {
 
 impl ZeroCopyConnectionBuilder<Connection> for Builder {
     fn buffer_size(mut self, value: usize) -> Self {
-        self.buffer_size = value;
+        self.buffer_size = value.clamp(1, usize::MAX);
         self
     }
 
@@ -352,7 +361,7 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
     }
 
     fn receiver_max_borrowed_samples(mut self, value: usize) -> Self {
-        self.max_borrowed_samples = value;
+        self.max_borrowed_samples = value.clamp(1, usize::MAX);
         self
     }
 
@@ -440,7 +449,15 @@ impl ZeroCopySender for Sender {
         }
 
         match unsafe { self.mgmt().receive_channel.push(ptr.value()) } {
-            Some(v) => Ok(Some(PointerOffset::new(v))),
+            Some(v) => {
+                let offset = PointerOffset::new(v);
+                //if !self.mgmt().used_chunk_list.insert(offset) {
+                //    fail!(from self, with ZeroCopySendError::UsedChunkListFull,
+                //    "{} since the used chunk list is full.", msg);
+                //}
+
+                Ok(Some(offset))
+            }
             None => Ok(None),
         }
     }
@@ -463,8 +480,19 @@ impl ZeroCopySender for Sender {
     fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
         match unsafe { self.mgmt().retrieve_channel.pop() } {
             None => Ok(None),
-            Some(v) => Ok(Some(PointerOffset::new(v))),
+            Some(v) => {
+                let offset = PointerOffset::new(v);
+                //if !self.mgmt().used_chunk_list.remove(offset) {
+                //    fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedOffset,
+                //        "Unable to reclaim sample since the receiver returned the corrupted offset {}.", v);
+                //}
+                Ok(Some(offset))
+            }
         }
+    }
+
+    unsafe fn acquire_used_offsets(&self) -> Option<PointerOffset> {
+        todo!()
     }
 }
 

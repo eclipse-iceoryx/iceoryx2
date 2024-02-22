@@ -14,7 +14,7 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_cal::zero_copy_connection::{used_chunk_list::FixedSizeUsedChunkList, PointerOffset};
 
 #[test]
-fn used_chunk_list_insert_remove_works() {
+fn used_chunk_list_insert_pop_works() {
     let mut sut = FixedSizeUsedChunkList::<128>::new();
 
     assert_that!(sut.size(), eq 0);
@@ -26,9 +26,9 @@ fn used_chunk_list_insert_remove_works() {
     assert_that!(sut.size(), eq sut.capacity());
 
     for i in 0..sut.capacity() {
-        assert_that!(sut.remove(), eq Some(PointerOffset::new(sut.capacity() - i - 1 + 5)));
+        assert_that!(sut.pop(), eq Some(PointerOffset::new(sut.capacity() - i - 1 + 5)));
         assert_that!(sut.size(), eq sut.capacity() - i - 1);
     }
-    assert_that!(sut.remove(), eq None);
+    assert_that!(sut.pop(), eq None);
     assert_that!(sut.size(), eq 0);
 }

@@ -255,7 +255,8 @@ impl<Service: service::Service> DataSegment<Service> {
             match self.subscriber_connections.get(i) {
                 Some(ref connection) => {
                     match deliver_call(&connection.sender, PointerOffset::new(address_to_chunk)) {
-                        Err(ZeroCopySendError::ReceiveBufferFull) => {
+                        Err(ZeroCopySendError::ReceiveBufferFull)
+                        | Err(ZeroCopySendError::UsedChunkListFull) => {
                             /* causes no problem
                              *   blocking_send => can never happen
                              *   try_send => we tried and expect that the buffer is full

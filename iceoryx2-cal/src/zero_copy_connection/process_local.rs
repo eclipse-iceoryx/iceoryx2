@@ -164,7 +164,7 @@ impl NamedConceptBuilder<Connection> for Builder {
 
 impl ZeroCopyConnectionBuilder<Connection> for Builder {
     fn buffer_size(mut self, value: usize) -> Self {
-        self.buffer_size = value;
+        self.buffer_size = value.clamp(1, usize::MAX);
         self
     }
 
@@ -174,7 +174,7 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
     }
 
     fn receiver_max_borrowed_samples(mut self, value: usize) -> Self {
-        self.max_borrowed_samples = value;
+        self.max_borrowed_samples = value.clamp(1, usize::MAX);
         self
     }
 
@@ -345,6 +345,10 @@ impl ZeroCopySender for Sender {
             None => Ok(None),
             Some(v) => Ok(Some(PointerOffset::new(v))),
         }
+    }
+
+    unsafe fn acquire_used_offsets(&self) -> Option<PointerOffset> {
+        todo!()
     }
 }
 
