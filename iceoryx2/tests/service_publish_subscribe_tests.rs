@@ -517,6 +517,84 @@ mod service_publish_subscribe {
         assert_that!(*result.unwrap(), eq 4567);
     }
 
+    #[test]
+    fn publisher_reclaims_all_samples_after_disconnect<Sut: Service>() {
+        set_log_level(iceoryx2_bb_log::LogLevel::Error);
+        let service_name = generate_name();
+        const RECONNECTIONS: usize = 20;
+        const MAX_SUBSCRIBERS: usize = 10;
+
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .max_publishers(1)
+            .max_subscribers(MAX_SUBSCRIBERS)
+            .history_size(0)
+            .subscriber_max_borrowed_samples(1)
+            .subscriber_max_buffer_size(3)
+            .create::<u64>()
+            .unwrap();
+
+        let publisher = sut.publisher().create().unwrap();
+
+        for n in 0..MAX_SUBSCRIBERS {
+            let mut subscribers = vec![];
+            for _ in 0..n {
+                subscribers.push(sut.subscriber().create());
+            }
+
+            for _ in 0..RECONNECTIONS {
+                assert_that!(publisher.send_copy(1234), eq Ok(n));
+                assert_that!(publisher.send_copy(4567), eq Ok(n));
+                assert_that!(publisher.send_copy(789), eq Ok(n));
+                subscribers.clear();
+                assert_that!(publisher.send_copy(789), eq Ok(0));
+                assert_that!(publisher.send_copy(789), eq Ok(0));
+            }
+        }
+    }
+
+    #[test]
+    fn publisher_updates_connections_after_reconnect<Sut: Service>() {
+        set_log_level(iceoryx2_bb_log::LogLevel::Error);
+        let service_name = generate_name();
+        const RECONNECTIONS: usize = 20;
+        const MAX_SUBSCRIBERS: usize = 10;
+
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .max_publishers(1)
+            .max_subscribers(2)
+            .history_size(0)
+            .subscriber_max_borrowed_samples(1)
+            .subscriber_max_buffer_size(3)
+            .create::<u64>()
+            .unwrap();
+
+        let publisher = sut.publisher().create().unwrap();
+
+        for n in 0..MAX_SUBSCRIBERS {
+            let mut subscribers = vec![];
+            for _ in 0..n {
+                subscribers.push(sut.subscriber().create().unwrap());
+            }
+
+            for _ in 0..RECONNECTIONS {
+                assert_that!(publisher.send_copy(1234), eq Ok(n));
+                for subscriber in &subscribers {
+                    assert_that!(subscriber.receive().unwrap(), is_some);
+                }
+            }
+        }
+    }
+
+    // TODO: add tests for
+    //  * subscriber_updates_connections_after_reconnect
+    //  * drop(subscriber), keep sample
+    //  * drop(publisher), keep sample
+    //  * drop(publisher & subscriber), keep sample
+    //  * drop(service)
+    //  * drop(all)
+
     //#[test]
     //fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
     //    set_log_level(iceoryx2_bb_log::LogLevel::Debug);
