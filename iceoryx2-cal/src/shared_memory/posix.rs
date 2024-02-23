@@ -409,5 +409,6 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
     fn payload_start_address(&self) -> usize {
         (self.shared_memory.base_address().as_ptr() as *const u8) as usize
             + self.allocator().mgmt_size
+            + self.allocator().allocator.relative_start_address()
     }
 }

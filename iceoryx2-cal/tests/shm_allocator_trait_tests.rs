@@ -72,7 +72,7 @@ mod shm_allocator {
             self.sut = Some(unsafe {
                 Sut::new_uninit(
                     MAX_ALIGNMENT,
-                    NonNull::new_unchecked(self.memory.as_mut_slice()),
+                    NonNull::new_unchecked(&mut self.memory.as_mut_slice()[13..4096]),
                     &Sut::Configuration::default(),
                 )
             });
@@ -98,6 +98,18 @@ mod shm_allocator {
             unsafe { test.sut().deallocate(distance.unwrap(), layout) },
             is_ok
         );
+    }
+
+    #[test]
+    fn first_allocated_offset_must_start_at_zero<Sut: ShmAllocator>() {
+        let mut test = TestFixture::<Sut>::new();
+        test.init();
+
+        let layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
+        let distance = unsafe { test.sut().allocate(layout).unwrap() };
+        assert_that!(distance.value(), eq 0);
+
+        assert_that!(unsafe { test.sut().deallocate(distance, layout) }, is_ok);
     }
 
     #[test]
