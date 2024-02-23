@@ -37,6 +37,7 @@ use iceoryx2_cal::{
 pub(crate) struct Connection<Service: service::Service> {
     pub(crate) receiver: <Service::Connection as ZeroCopyConnection>::Receiver,
     pub(crate) data_segment: Service::SharedMemory,
+    pub(crate) publisher_id: UniquePublisherId,
 }
 
 impl<Service: service::Service> Connection<Service> {
@@ -71,6 +72,7 @@ impl<Service: service::Service> Connection<Service> {
         Ok(Self {
             receiver,
             data_segment,
+            publisher_id,
         })
     }
 }
@@ -120,9 +122,7 @@ impl<Service: service::Service> PublisherConnections<Service> {
         publisher_id: UniquePublisherId,
         number_of_samples: usize,
     ) -> Result<(), ConnectionFailure> {
-        if self.get(index).is_none() {
-            *self.get_mut(index) = Some(Connection::new(self, publisher_id, number_of_samples)?);
-        }
+        *self.get_mut(index) = Some(Connection::new(self, publisher_id, number_of_samples)?);
 
         Ok(())
     }

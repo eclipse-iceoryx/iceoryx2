@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod service_publish_subscribe {
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::Barrier;
     use std::thread;
     use std::time::Duration;
@@ -517,40 +517,40 @@ mod service_publish_subscribe {
         assert_that!(*result.unwrap(), eq 4567);
     }
 
-    //#[test]
-    //fn publisher_reclaims_all_samples_after_disconnect<Sut: Service>() {
-    //    let service_name = generate_name();
-    //    const RECONNECTIONS: usize = 20;
-    //    const MAX_SUBSCRIBERS: usize = 10;
+    #[test]
+    fn publisher_reclaims_all_samples_after_disconnect<Sut: Service>() {
+        let service_name = generate_name();
+        const RECONNECTIONS: usize = 20;
+        const MAX_SUBSCRIBERS: usize = 10;
 
-    //    let sut = Sut::new(&service_name)
-    //        .publish_subscribe()
-    //        .max_publishers(1)
-    //        .max_subscribers(MAX_SUBSCRIBERS)
-    //        .history_size(0)
-    //        .subscriber_max_borrowed_samples(1)
-    //        .subscriber_max_buffer_size(3)
-    //        .create::<u64>()
-    //        .unwrap();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .max_publishers(1)
+            .max_subscribers(MAX_SUBSCRIBERS)
+            .history_size(0)
+            .subscriber_max_borrowed_samples(1)
+            .subscriber_max_buffer_size(3)
+            .create::<u64>()
+            .unwrap();
 
-    //    let publisher = sut.publisher().create().unwrap();
+        let publisher = sut.publisher().create().unwrap();
 
-    //    for n in 0..MAX_SUBSCRIBERS {
-    //        let mut subscribers = vec![];
-    //        for _ in 0..n {
-    //            subscribers.push(sut.subscriber().create());
-    //        }
+        for n in 0..MAX_SUBSCRIBERS {
+            for _ in 0..RECONNECTIONS {
+                let mut subscribers = vec![];
+                for _ in 0..n {
+                    subscribers.push(sut.subscriber().create());
+                }
 
-    //        for _ in 0..RECONNECTIONS {
-    //            assert_that!(publisher.send_copy(1234), eq Ok(n));
-    //            assert_that!(publisher.send_copy(4567), eq Ok(n));
-    //            assert_that!(publisher.send_copy(789), eq Ok(n));
-    //            subscribers.clear();
-    //            assert_that!(publisher.send_copy(789), eq Ok(0));
-    //            assert_that!(publisher.send_copy(789), eq Ok(0));
-    //        }
-    //    }
-    //}
+                assert_that!(publisher.send_copy(1234), eq Ok(n));
+                assert_that!(publisher.send_copy(4567), eq Ok(n));
+                assert_that!(publisher.send_copy(789), eq Ok(n));
+                subscribers.clear();
+                assert_that!(publisher.send_copy(789), eq Ok(0));
+                assert_that!(publisher.send_copy(789), eq Ok(0));
+            }
+        }
+    }
 
     #[test]
     fn publisher_updates_connections_after_reconnect<Sut: Service>() {
@@ -571,12 +571,12 @@ mod service_publish_subscribe {
         let publisher = sut.publisher().create().unwrap();
 
         for n in 0..MAX_SUBSCRIBERS {
-            let mut subscribers = vec![];
-            for _ in 0..n {
-                subscribers.push(sut.subscriber().create().unwrap());
-            }
-
             for _ in 0..RECONNECTIONS {
+                let mut subscribers = vec![];
+                for _ in 0..n {
+                    subscribers.push(sut.subscriber().create().unwrap());
+                }
+
                 assert_that!(publisher.send_copy(1234), eq Ok(n));
                 for subscriber in &subscribers {
                     assert_that!(subscriber.receive().unwrap(), is_some);
@@ -585,18 +585,40 @@ mod service_publish_subscribe {
         }
     }
 
-    // TODO: add tests for
-    //  * write tests for shared memory with pool allocator
-    //      * allocate on one side, translate pointer, write on other side - whole shm
-    //  * write full test suite for shm pool allocator
-    //  * publisher reclaims samples when subscriber connection is just dropped
-    //  * update_history_after_reconnect
-    //  * subscriber_updates_connections_after_reconnect
-    //  * drop(subscriber), keep sample
-    //  * drop(publisher), keep sample
-    //  * drop(publisher & subscriber), keep sample
-    //  * drop(service)
-    //  * drop(all)
+    #[test]
+    fn subscriber_updates_connections_after_reconnect<Sut: Service>() {
+        let service_name = generate_name();
+        const RECONNECTIONS: usize = 20;
+        const MAX_PUBLISHERS: usize = 10;
+
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .max_publishers(MAX_PUBLISHERS)
+            .history_size(0)
+            .subscriber_max_borrowed_samples(1)
+            .subscriber_max_buffer_size(1)
+            .create::<u64>()
+            .unwrap();
+
+        let subscriber = sut.subscriber().create().unwrap();
+
+        for n in 0..MAX_PUBLISHERS {
+            for k in 0..RECONNECTIONS {
+                let mut publishers = vec![];
+                for _ in 0..n {
+                    publishers.push(sut.publisher().create().unwrap());
+                }
+
+                for publisher in publishers {
+                    let payload: u64 = (n * k + 12) as _;
+                    assert_that!(publisher.send_copy(payload), eq Ok(1));
+                    let sample = subscriber.receive().unwrap();
+                    assert_that!(sample, is_some);
+                    assert_that!(*sample.unwrap(), eq payload);
+                }
+            }
+        }
+    }
 
     #[test]
     fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
@@ -658,58 +680,60 @@ mod service_publish_subscribe {
         });
     }
 
-    //#[test]
-    //fn concurrent_communication_with_publisher_reconnects_does_not_deadlock<Sut: Service>() {
-    //    let _watch_dog = Watchdog::new(Duration::from_secs(1));
+    #[test]
+    fn concurrent_communication_with_publisher_reconnects_does_not_deadlock<Sut: Service>() {
+        let _watch_dog = Watchdog::new(Duration::from_secs(1));
 
-    //    const NUMBER_OF_PUBLISHER_THREADS: usize = 4;
-    //    const NUMBER_OF_RECONNECTIONS: usize = 100;
+        const NUMBER_OF_PUBLISHER_THREADS: usize = 4;
+        const NUMBER_OF_RECONNECTIONS: usize = 100;
 
-    //    let service_name = generate_name();
-    //    let keep_running = AtomicBool::new(true);
-    //    let reconnection_cycle = AtomicUsize::new(0);
+        let service_name = generate_name();
+        let keep_running = AtomicBool::new(true);
+        let reconnection_cycle = AtomicUsize::new(0);
 
-    //    thread::scope(|s| {
-    //        s.spawn(|| {
-    //            let sut = Sut::new(&service_name)
-    //                .publish_subscribe()
-    //                .open_or_create::<u64>()
-    //                .unwrap();
+        thread::scope(|s| {
+            s.spawn(|| {
+                let sut = Sut::new(&service_name)
+                    .publish_subscribe()
+                    .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
+                    .open_or_create::<u64>()
+                    .unwrap();
 
-    //            let subscriber = sut.subscriber().create().unwrap();
+                let subscriber = sut.subscriber().create().unwrap();
 
-    //            while keep_running.load(Ordering::Relaxed) {
-    //                if let Some(_) = subscriber.receive().unwrap() {
-    //                    if reconnection_cycle.fetch_add(1, Ordering::Relaxed)
-    //                        == NUMBER_OF_RECONNECTIONS
-    //                    {
-    //                        keep_running.store(false, Ordering::Relaxed);
-    //                    }
-    //                }
-    //            }
-    //        });
+                while keep_running.load(Ordering::Relaxed) {
+                    if let Some(_) = subscriber.receive().unwrap() {
+                        if reconnection_cycle.fetch_add(1, Ordering::Relaxed)
+                            == NUMBER_OF_RECONNECTIONS
+                        {
+                            keep_running.store(false, Ordering::Relaxed);
+                        }
+                    }
+                }
+            });
 
-    //        for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
-    //            s.spawn(|| {
-    //                let sut2 = Sut::new(&service_name)
-    //                    .publish_subscribe()
-    //                    .open_or_create::<u64>()
-    //                    .unwrap();
+            for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
+                s.spawn(|| {
+                    let sut2 = Sut::new(&service_name)
+                        .publish_subscribe()
+                        .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
+                        .open_or_create::<u64>()
+                        .unwrap();
 
-    //                while keep_running.load(Ordering::Relaxed) {
-    //                    let publisher = sut2.publisher().create().unwrap();
+                    while keep_running.load(Ordering::Relaxed) {
+                        let publisher = sut2.publisher().create().unwrap();
 
-    //                    let current_cycle = reconnection_cycle.load(Ordering::Relaxed);
-    //                    let mut counter = 1u64;
-    //                    while current_cycle == reconnection_cycle.load(Ordering::Relaxed) {
-    //                        assert_that!(publisher.send_copy(counter), is_ok);
-    //                        counter += 1;
-    //                    }
-    //                }
-    //            });
-    //        }
-    //    });
-    //}
+                        let current_cycle = reconnection_cycle.load(Ordering::Relaxed);
+                        let mut counter = 1u64;
+                        while current_cycle == reconnection_cycle.load(Ordering::Relaxed) {
+                            assert_that!(publisher.send_copy(counter), is_ok);
+                            counter += 1;
+                        }
+                    }
+                });
+            }
+        });
+    }
 
     #[test]
     fn communication_with_max_subscribers_and_publishers<Sut: Service>() {

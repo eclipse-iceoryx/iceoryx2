@@ -194,35 +194,44 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         // update all connections
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
-                Some(details) => match self.publisher_connections.create(
-                    i,
-                    details.publisher_id,
-                    details.number_of_samples,
-                ) {
-                    Ok(()) => (),
-                    Err(e) => match &self.config.degration_callback {
-                        None => {
-                            warn!(from self, "Unable to establish connection to new publisher {:?}.", details.publisher_id)
-                        }
-                        Some(c) => {
-                            match c.call(
-                                self.static_config.clone(),
-                                details.publisher_id,
-                                self.publisher_connections.subscriber_id(),
-                            ) {
-                                DegrationAction::Ignore => (),
-                                DegrationAction::Warn => {
-                                    warn!(from self, "Unable to establish connection to new publisher {:?}.",
+                Some(details) => {
+                    let create_connection = match self.publisher_connections.get(i) {
+                        None => true,
+                        Some(connection) => connection.publisher_id != details.publisher_id,
+                    };
+
+                    if create_connection {
+                        match self.publisher_connections.create(
+                            i,
+                            details.publisher_id,
+                            details.number_of_samples,
+                        ) {
+                            Ok(()) => (),
+                            Err(e) => match &self.config.degration_callback {
+                                None => {
+                                    warn!(from self, "Unable to establish connection to new publisher {:?}.", details.publisher_id)
+                                }
+                                Some(c) => {
+                                    match c.call(
+                                        self.static_config.clone(),
+                                        details.publisher_id,
+                                        self.publisher_connections.subscriber_id(),
+                                    ) {
+                                        DegrationAction::Ignore => (),
+                                        DegrationAction::Warn => {
+                                            warn!(from self, "Unable to establish connection to new publisher {:?}.",
                                         details.publisher_id)
-                                }
-                                DegrationAction::Fail => {
-                                    fail!(from self, with e, "Unable to establish connection to new publisher {:?}.",
+                                        }
+                                        DegrationAction::Fail => {
+                                            fail!(from self, with e, "Unable to establish connection to new publisher {:?}.",
                                         details.publisher_id);
+                                        }
+                                    }
                                 }
-                            }
+                            },
                         }
-                    },
-                },
+                    }
+                }
                 None => self.publisher_connections.remove(i),
             }
         }
