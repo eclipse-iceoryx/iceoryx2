@@ -398,7 +398,7 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
         layout: std::alloc::Layout,
     ) -> Result<(), DeallocationError> {
         fail!(from self, when self.allocator().allocator.deallocate(offset, layout),
-            "Failed to deallocate shared memory chunk due to an internal allocator failure.");
+            "Failed to deallocate shared memory chunk {:?} due to an internal allocator failure.", offset);
         Ok(())
     }
 

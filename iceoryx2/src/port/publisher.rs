@@ -197,7 +197,7 @@ impl<Service: service::Service> DataSegment<Service> {
                 .deallocate(
                     distance_to_chunk,
                     self.message_type_layout,
-                ), "Internal logic error. The sample should always contain a valid memory chunk from the provided allocator.");
+                ), "Internal logic error. The sample {:?} does not belong to the data segment.", distance_to_chunk);
             };
         }
     }
@@ -218,6 +218,20 @@ impl<Service: service::Service> DataSegment<Service> {
                 },
                 None => (),
             }
+        }
+    }
+
+    fn remove_connection(&self, i: usize) {
+        if let Some(connection) = self.subscriber_connections.get(i) {
+            while let Some(offset) =
+                // # SAFETY: the receiver no longer exist, therefore we can
+                //           reacquire all delivered samples
+                unsafe { connection.sender.acquire_used_offsets() }
+            {
+                self.release_sample(offset);
+            }
+
+            self.subscriber_connections.remove(i);
         }
     }
 
@@ -316,42 +330,51 @@ impl<Service: service::Service> DataSegment<Service> {
             })
         };
 
-        // retrieve samples before destroying channel
-        self.retrieve_returned_samples();
-
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
                 Some(subscriber_id) => {
-                    match self.subscriber_connections.create(i, *subscriber_id) {
-                        Ok(false) => (),
-                        Ok(true) => match &self.subscriber_connections.get(i) {
-                            Some(connection) => self.deliver_sample_history(connection),
-                            None => {
-                                fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
+                    let create_connection = match self.subscriber_connections.get(i) {
+                        None => true,
+                        Some(connection) => {
+                            let create_connection = connection.subscriber_id != *subscriber_id;
+                            if create_connection {
+                                self.remove_connection(i);
                             }
-                        },
-                        Err(e) => match &self.config.degration_callback {
-                            Some(c) => match c.call(
-                                self.static_config.clone(),
-                                self.port_id,
-                                *subscriber_id,
-                            ) {
-                                DegrationAction::Ignore => (),
-                                DegrationAction::Warn => {
-                                    warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
-                                }
-                                DegrationAction::Fail => {
-                                    fail!(from self, with e,
-                                           "Unable to establish connection to new subscriber {:?}.", subscriber_id );
+                            create_connection
+                        }
+                    };
+
+                    if create_connection {
+                        match self.subscriber_connections.create(i, *subscriber_id) {
+                            Ok(()) => match &self.subscriber_connections.get(i) {
+                                Some(connection) => self.deliver_sample_history(connection),
+                                None => {
+                                    fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
                                 }
                             },
-                            None => {
-                                warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
-                            }
-                        },
+                            Err(e) => match &self.config.degration_callback {
+                                Some(c) => match c.call(
+                                    self.static_config.clone(),
+                                    self.port_id,
+                                    *subscriber_id,
+                                ) {
+                                    DegrationAction::Ignore => (),
+                                    DegrationAction::Warn => {
+                                        warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
+                                    }
+                                    DegrationAction::Fail => {
+                                        fail!(from self, with e,
+                                           "Unable to establish connection to new subscriber {:?}.", subscriber_id );
+                                    }
+                                },
+                                None => {
+                                    warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
+                                }
+                            },
+                        }
                     }
                 }
-                None => self.subscriber_connections.remove(i),
+                None => self.remove_connection(i),
             }
         }
 

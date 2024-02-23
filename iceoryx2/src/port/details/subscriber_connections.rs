@@ -104,17 +104,14 @@ impl<Service: service::Service> SubscriberConnections<Service> {
         &self,
         index: usize,
         subscriber_id: UniqueSubscriberId,
-    ) -> Result<bool, ZeroCopyCreationError> {
-        if self.get(index).is_none() {
-            *self.get_mut(index) = Some(Connection::new(
-                self,
-                subscriber_id,
-                self.number_of_samples,
-            )?);
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+    ) -> Result<(), ZeroCopyCreationError> {
+        *self.get_mut(index) = Some(Connection::new(
+            self,
+            subscriber_id,
+            self.number_of_samples,
+        )?);
+
+        Ok(())
     }
 
     pub(crate) fn len(&self) -> usize {

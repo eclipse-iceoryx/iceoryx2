@@ -112,8 +112,7 @@ impl ShmAllocator for PoolAllocator {
                 msg, layout.align(), self.max_alignment());
         }
 
-        let chunk = fail!(from self, when self.allocator.allocate(layout),
-                                        "{}.", msg);
+        let chunk = fail!(from self, when self.allocator.allocate(layout), "{}.", msg);
         Ok(PointerOffset::new(
             (chunk.as_ptr() as *const u8) as usize - self.base_address,
         ))
@@ -125,8 +124,8 @@ impl ShmAllocator for PoolAllocator {
         layout: Layout,
     ) -> Result<(), DeallocationError> {
         fail!(from self, when self.allocator.deallocate(NonNull::new_unchecked(
-                    (offset.0 + self.base_address) as *mut u8), layout),
-            "Failed to release shared memory chunk");
+                    (offset.value() + self.base_address) as *mut u8), layout),
+            "Failed to release shared memory chunk {:?}.", offset);
 
         Ok(())
     }
