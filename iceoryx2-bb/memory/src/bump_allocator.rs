@@ -55,6 +55,10 @@ impl BumpAllocator {
         }
     }
 
+    pub fn start(&self) -> usize {
+        self.start
+    }
+
     pub fn used_space(&self) -> usize {
         self.current_position.load(Ordering::Relaxed)
     }

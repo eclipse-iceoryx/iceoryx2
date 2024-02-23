@@ -89,6 +89,10 @@ impl PoolAllocator {
         self.size
     }
 
+    pub fn start(&self) -> usize {
+        self.start
+    }
+
     pub fn max_alignment(&self) -> usize {
         self.bucket_alignment
     }

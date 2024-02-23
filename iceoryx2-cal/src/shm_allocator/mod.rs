@@ -88,6 +88,10 @@ pub trait ShmAllocator: Send + Sync + 'static {
     /// Returns the max supported alignment by the allocator.
     fn max_alignment(&self) -> usize;
 
+    /// Returns the offset to the beginning of the allocator payload. The smallest offset a user
+    /// can allocate.
+    fn relative_start_address(&self) -> usize;
+
     /// Allocates memory and returns the pointer offset.
     ///
     /// # Safety

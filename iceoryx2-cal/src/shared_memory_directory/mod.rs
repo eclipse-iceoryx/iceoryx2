@@ -133,8 +133,8 @@ impl SharedMemoryDirectoryCreator {
                                 .open(),
                                 "{} since the management segment could not be opened.", msg);
 
-        let files = align_to::<FileReferenceSet>(mgmt_shm.allocator_data_start_address())
-            as *mut FileReferenceSet;
+        let files =
+            align_to::<FileReferenceSet>(mgmt_shm.payload_start_address()) as *mut FileReferenceSet;
 
         Ok(SharedMemoryDirectory {
             _mgmt_shm: mgmt_shm,
@@ -181,18 +181,17 @@ impl<
             self.files(),
             memory,
             layout,
-            self.data_shm.allocator_data_start_address(),
+            self.data_shm.payload_start_address(),
         ))
     }
 
     pub fn open_file(&self, name: &FileName) -> Option<File> {
         self.files()
-            .borrow(name, self.data_shm.allocator_data_start_address())
+            .borrow(name, self.data_shm.payload_start_address())
     }
 
     pub fn list_files(&self) -> Vec<File> {
-        self.files()
-            .list(self.data_shm.allocator_data_start_address())
+        self.files().list(self.data_shm.payload_start_address())
     }
 
     pub fn does_file_exist(&self, name: &FileName) -> bool {

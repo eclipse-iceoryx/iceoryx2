@@ -240,8 +240,8 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             Ok(data) => match data {
                 None => Ok(None),
                 Some(relative_addr) => {
-                    let absolute_address = relative_addr.value()
-                        + connection.data_segment.allocator_data_start_address();
+                    let absolute_address =
+                        relative_addr.value() + connection.data_segment.payload_start_address();
                     Ok(Some(Sample {
                         publisher_connections: Rc::clone(&self.publisher_connections),
                         channel_id,

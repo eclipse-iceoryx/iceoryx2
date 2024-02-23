@@ -63,6 +63,10 @@ impl ShmAllocator for PoolAllocator {
         )
     }
 
+    fn relative_start_address(&self) -> usize {
+        self.allocator.start() - self.base_address
+    }
+
     unsafe fn new_uninit(
         max_supported_alignment_by_memory: usize,
         base_address: NonNull<[u8]>,

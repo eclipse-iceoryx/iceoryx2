@@ -388,7 +388,7 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
 
         Ok(ShmPointer {
             offset,
-            data_ptr: (offset.value() + self.allocator_data_start_address()) as *mut u8,
+            data_ptr: (offset.value() + self.payload_start_address()) as *mut u8,
         })
     }
 
@@ -406,7 +406,7 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
         self.shared_memory.release_ownership()
     }
 
-    fn allocator_data_start_address(&self) -> usize {
+    fn payload_start_address(&self) -> usize {
         (self.shared_memory.base_address().as_ptr() as *const u8) as usize
             + self.allocator().mgmt_size
     }

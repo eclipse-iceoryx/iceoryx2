@@ -126,7 +126,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
 
     /// Returns the start address of the shared memory. Used by the [`ShmPointer`] to calculate
     /// the actual memory position.
-    fn allocator_data_start_address(&self) -> usize;
+    fn payload_start_address(&self) -> usize;
 
     /// Allocates memory. The alignment in the layout must be smaller or equal
     /// [`SharedMemory::max_alignment()`] otherwise the method will fail.
