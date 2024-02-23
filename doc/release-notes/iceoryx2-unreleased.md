@@ -13,6 +13,7 @@
  * New constructs from [#123](https://github.com/eclipse-iceoryx/iceoryx2/issues/123)
     * Introduce semantic string `iceoryx2-bb-system-types::base64url`
     * Introduce `iceoryx2-cal::hash::HashValue` that contains the result of a hash
+ * Port `UsedChunkList` from iceoryx1 [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
  * Performance improvements, especially for AMD CPUs [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
 
 ### Bugfixes
@@ -26,8 +27,12 @@
     * Fix `CreationMode::OpenOrCreate` in `iceoryx2-bb-posix::SharedMemory`
     * Add missing memory synchronization to posix shm zero copy connection
     * Remove retrieve buffer full check from zero copy connection - sender had insufficient infos available
+    * Fix data race in `iceoryx2-bb-lock-free::mpmc::Container`
  * Fix insufficient memory reordering protection in `spsc::Queue::push` and `spsc::Queue::pop` [#119](https://github.com/eclipse-iceoryx/iceoryx2/issues/119)
  * Fix data race due to operation reordering in `spmc::UnrestrictedAtomic::load` [#125](https://github.com/eclipse-iceoryx/iceoryx2/issues/125)
+ * Fix broken `Publisher|Subscriber::populate_{subscriber|publisher}_channels()` [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
+ * Fix failing reacquire of delivered samples in the zero copy receive channel [#130](https://github.com/eclipse-iceoryx/iceoryx2/issues/130)
+ * Fix receiving of invalid samples when subscriber is connected [#131](https://github.com/eclipse-iceoryx/iceoryx2/issues/131)
  * Fixes for FreeBSD 14.0 [#140](https://github.com/eclipse-iceoryx/iceoryx2/issues/140)
     * Fix segfault in `iceoryx2-pal-posix;:shm_list()` caused by `sysctl`
     * Adjust test to handle unordered event notifications
@@ -38,6 +43,7 @@
 
  * Replace `iceoryx2::service::Service` with `iceoryx2::service::Details` [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
  * Remove `'config` lifetime from all structs  [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
+ * Remove `UniqueIndex` returning method from `iceoryx2-bb-lock-free::mpmc::Container`, cannot be implemented correctly in our context [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
 
 ### Workflow
 

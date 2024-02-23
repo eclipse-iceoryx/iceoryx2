@@ -125,7 +125,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
 
     fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError>;
 
-    /// # SAFETY
+    /// # Safety
     ///
     /// * must ensure that no receiver is still holding data, otherwise data races may occur on
     ///     receiver side

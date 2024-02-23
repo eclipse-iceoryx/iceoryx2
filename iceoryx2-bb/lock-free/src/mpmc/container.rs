@@ -31,7 +31,7 @@
 //! let container = FixedSizeContainer::<u32, CAPACITY>::new();
 //! let mut stored_indices = vec![];
 //!
-//! match container.add(1234567) {
+//! match unsafe { container.add(1234567) } {
 //!     Some(index) => stored_indices.push(index),
 //!     None => println!("container is full"),
 //! };
@@ -66,7 +66,7 @@ use std::{
 };
 
 /// A handle that corresponds to an element inside the [`Container`]. Will be acquired when using
-/// [`Container::add_with_handle()`] and can be released with [`Container::remove_with_handle()`].
+/// [`Container::add()`] and can be released with [`Container::remove()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ContainerHandle {
     index: u32,
@@ -265,7 +265,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
     ///     before calling this method
-    ///  * Use [`Container::remove_with_handle()`] to release the acquired index again. Otherwise, the
+    ///  * Use [`Container::remove()`] to release the acquired index again. Otherwise, the
     ///     element will leak.
     ///
     pub unsafe fn add(&self, value: T) -> Option<ContainerHandle> {
@@ -305,7 +305,7 @@ impl<T: Copy + Debug> Container<T> {
     ///  * Ensure that no one else possesses the [`UniqueIndex`] and the index was unrecoverable
     ///     lost
     ///  * Ensure that the `handle` was acquired by the same [`Container`]
-    ///     with [`Container::add_with_handle()`], otherwise the method will panic.
+    ///     with [`Container::add()`], otherwise the method will panic.
     ///
     /// **Important:** If the UniqueIndex still exists it causes double frees or freeing an index
     /// which was allocated afterwards

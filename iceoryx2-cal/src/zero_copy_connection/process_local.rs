@@ -407,10 +407,10 @@ impl ZeroCopySender for Sender {
     }
 
     unsafe fn acquire_used_offsets(&self) -> Option<PointerOffset> {
-        match self.mgmt.used_chunk_list.pop() {
-            None => None,
-            Some(v) => Some(PointerOffset::new(v * self.mgmt.sample_size)),
-        }
+        self.mgmt
+            .used_chunk_list
+            .pop()
+            .map(|v| PointerOffset::new(v * self.mgmt.sample_size))
     }
 }
 

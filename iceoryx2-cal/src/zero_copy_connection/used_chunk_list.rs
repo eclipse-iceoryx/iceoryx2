@@ -151,13 +151,9 @@ pub mod details {
         pub fn pop(&self) -> Option<usize> {
             self.verify_init("pop");
 
-            for i in 0..self.capacity {
-                if unsafe { (*self.data_ptr.as_ptr().add(i)).swap(false, Ordering::Relaxed) } {
-                    return Some(i);
-                }
-            }
-
-            None
+            (0..self.capacity).find(|&i| unsafe {
+                (*self.data_ptr.as_ptr().add(i)).swap(false, Ordering::Relaxed)
+            })
         }
     }
 }
@@ -169,8 +165,8 @@ pub struct FixedSizeUsedChunkList<const CAPACITY: usize> {
     data: [AtomicBool; CAPACITY],
 }
 
-impl<const CAPACITY: usize> FixedSizeUsedChunkList<CAPACITY> {
-    pub fn new() -> Self {
+impl<const CAPACITY: usize> Default for FixedSizeUsedChunkList<CAPACITY> {
+    fn default() -> Self {
         Self {
             list: unsafe {
                 RelocatableUsedChunkList::new(
@@ -180,6 +176,12 @@ impl<const CAPACITY: usize> FixedSizeUsedChunkList<CAPACITY> {
             },
             data: core::array::from_fn(|_| AtomicBool::new(false)),
         }
+    }
+}
+
+impl<const CAPACITY: usize> FixedSizeUsedChunkList<CAPACITY> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn insert(&self, value: usize) -> bool {
