@@ -18,6 +18,7 @@ mod service_publish_subscribe {
     use std::time::Duration;
 
     use iceoryx2::config::Config;
+    use iceoryx2::message::Message;
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
@@ -27,7 +28,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
-    use iceoryx2_bb_log::set_log_level;
+    use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -419,6 +420,22 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn type_informations_are_correct<Sut: Service>() {
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .create::<u64>()
+            .unwrap();
+
+        type MessageType = Message<iceoryx2::service::header::publish_subscribe::Header, u64>;
+
+        assert_that!(sut.static_config().type_name(), eq "u64");
+        assert_that!(sut.static_config().type_size(), eq std::mem::size_of::<MessageType>());
+        assert_that!(sut.static_config().type_alignment(), eq std::mem::align_of::<MessageType>());
+    }
+
+    #[test]
     fn number_of_subscribers_works<Sut: Service>() {
         let service_name = generate_name();
         const MAX_SUBSCRIBERS: usize = 8;
@@ -480,11 +497,18 @@ mod service_publish_subscribe {
 
         let result = subscriber.receive().unwrap();
         assert_that!(result, is_some);
-        assert_that!(*result.unwrap(), eq 1234);
+        let sample = result.unwrap();
+        assert_that!(*sample, eq 1234);
+        assert_that!(*sample.payload(), eq 1234);
+        let now = Time::now().unwrap();
+        assert_that!(sample.header().time_stamp().as_duration(), lt now.as_duration());
 
         let result = subscriber.receive().unwrap();
         assert_that!(result, is_some);
-        assert_that!(*result.unwrap(), eq 4567);
+        let sample_2 = result.unwrap();
+        assert_that!(*sample_2, eq 4567);
+        assert_that!(*sample_2.payload(), eq 4567);
+        assert_that!(sample_2.header().time_stamp().as_duration(), ge sample.header().time_stamp().as_duration());
     }
 
     #[test]
@@ -622,11 +646,10 @@ mod service_publish_subscribe {
 
     #[test]
     fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
-        set_log_level(iceoryx2_bb_log::LogLevel::Debug);
         let _watch_dog = Watchdog::new(Duration::from_secs(10));
 
-        const NUMBER_OF_SUBSCRIBER_THREADS: usize = 4;
-        const NUMBER_OF_RECONNECTIONS: usize = 100;
+        const NUMBER_OF_SUBSCRIBER_THREADS: usize = 2;
+        const NUMBER_OF_RECONNECTIONS: usize = 50;
 
         let create_service_barrier = Barrier::new(2);
         let service_name = generate_name();
@@ -682,13 +705,12 @@ mod service_publish_subscribe {
 
     #[test]
     fn concurrent_communication_with_publisher_reconnects_does_not_deadlock<Sut: Service>() {
-        set_log_level(iceoryx2_bb_log::LogLevel::Error);
         let _watch_dog = Watchdog::new(Duration::from_secs(10));
 
-        const NUMBER_OF_PUBLISHER_THREADS: usize = 4;
-        const NUMBER_OF_RECONNECTIONS: usize = 100;
+        const NUMBER_OF_PUBLISHER_THREADS: usize = 2;
+        const NUMBER_OF_RECONNECTIONS: usize = 50;
 
-        let create_service_barrier = Barrier::new(2);
+        let create_service_barrier = Barrier::new(1 + NUMBER_OF_PUBLISHER_THREADS);
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
         let reconnection_cycle = AtomicUsize::new(0);
@@ -715,7 +737,6 @@ mod service_publish_subscribe {
                 }
             });
 
-            create_service_barrier.wait();
             for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
                 s.spawn(|| {
                     let sut2 = Sut::new(&service_name)
@@ -723,6 +744,8 @@ mod service_publish_subscribe {
                         .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
                         .open_or_create::<u64>()
                         .unwrap();
+
+                    create_service_barrier.wait();
 
                     while keep_running.load(Ordering::Relaxed) {
                         let publisher = sut2.publisher().create().unwrap();

@@ -280,7 +280,8 @@ pub mod config;
 /// Central instance that handles all incoming events, the event loop
 pub mod iox2;
 
-pub(crate) mod message;
+#[doc(hidden)]
+pub mod message;
 
 /// The ports or communication endpoints of iceoryx2
 pub mod port;
