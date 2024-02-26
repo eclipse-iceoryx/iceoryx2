@@ -13,7 +13,10 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use std::io::Write;
+use std::{
+    io::Write,
+    sync::atomic::{AtomicU8, Ordering},
+};
 
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
@@ -124,10 +127,20 @@ unsafe fn write_real_shm_name(name: *const c_char, buffer: &[u8]) -> bool {
 }
 
 unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
+    static COUNTER: AtomicU8 = AtomicU8::new(0);
+
     let mut now = timespec::new();
     clock_gettime(CLOCK_REALTIME, &mut now);
     let pid = getpid();
-    let shm_name = pid.to_string() + "_" + &now.tv_sec.to_string() + "_" + &now.tv_nsec.to_string();
+    let shm_name = pid.to_string()
+        + "_"
+        + &now.tv_sec.to_string()
+        + "_"
+        // the accuracy is more in the micro second range, therefore dividing by 1000 is safe when
+        // we compensate it with the atomic fetch_add
+        + &(now.tv_nsec / 1000).to_string()
+        + "_"
+        + &COUNTER.fetch_add(1, Ordering::Relaxed).to_string();
 
     let mut buffer = [0u8; SHM_MAX_NAME_LEN];
     buffer.as_mut_slice().write_all(shm_name.as_bytes()).expect(

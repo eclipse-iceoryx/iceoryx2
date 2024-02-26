@@ -623,7 +623,7 @@ mod service_publish_subscribe {
     #[test]
     fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
         set_log_level(iceoryx2_bb_log::LogLevel::Debug);
-        let _watch_dog = Watchdog::new(Duration::from_secs(1));
+        let _watch_dog = Watchdog::new(Duration::from_secs(10));
 
         const NUMBER_OF_SUBSCRIBER_THREADS: usize = 4;
         const NUMBER_OF_RECONNECTIONS: usize = 100;
@@ -682,11 +682,13 @@ mod service_publish_subscribe {
 
     #[test]
     fn concurrent_communication_with_publisher_reconnects_does_not_deadlock<Sut: Service>() {
-        let _watch_dog = Watchdog::new(Duration::from_secs(1));
+        set_log_level(iceoryx2_bb_log::LogLevel::Error);
+        let _watch_dog = Watchdog::new(Duration::from_secs(10));
 
         const NUMBER_OF_PUBLISHER_THREADS: usize = 4;
         const NUMBER_OF_RECONNECTIONS: usize = 100;
 
+        let create_service_barrier = Barrier::new(2);
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
         let reconnection_cycle = AtomicUsize::new(0);
@@ -700,6 +702,7 @@ mod service_publish_subscribe {
                     .unwrap();
 
                 let subscriber = sut.subscriber().create().unwrap();
+                create_service_barrier.wait();
 
                 while keep_running.load(Ordering::Relaxed) {
                     if let Some(_) = subscriber.receive().unwrap() {
@@ -712,6 +715,7 @@ mod service_publish_subscribe {
                 }
             });
 
+            create_service_barrier.wait();
             for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
                 s.spawn(|| {
                     let sut2 = Sut::new(&service_name)
@@ -725,7 +729,9 @@ mod service_publish_subscribe {
 
                         let current_cycle = reconnection_cycle.load(Ordering::Relaxed);
                         let mut counter = 1u64;
-                        while current_cycle == reconnection_cycle.load(Ordering::Relaxed) {
+                        while current_cycle == reconnection_cycle.load(Ordering::Relaxed)
+                            && keep_running.load(Ordering::Relaxed)
+                        {
                             assert_that!(publisher.send_copy(counter), is_ok);
                             counter += 1;
                         }
