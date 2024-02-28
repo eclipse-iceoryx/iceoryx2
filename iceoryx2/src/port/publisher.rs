@@ -569,6 +569,11 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             "Unable to create the data segment."))
     }
 
+    /// Returns the [`UniquePublisherId`] of the [`Publisher`]
+    pub fn id(&self) -> UniquePublisherId {
+        self.data_segment.port_id
+    }
+
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.

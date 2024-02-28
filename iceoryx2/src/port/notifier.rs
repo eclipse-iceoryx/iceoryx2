@@ -142,6 +142,7 @@ pub struct Notifier<Service: service::Service> {
     default_event_id: EventId,
     dynamic_storage: Rc<Service::DynamicStorage>,
     dynamic_notifier_handle: Option<ContainerHandle>,
+    port_id: UniqueNotifierId,
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {
@@ -173,6 +174,7 @@ impl<Service: service::Service> Notifier<Service> {
             listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
             dynamic_storage,
             dynamic_notifier_handle: None,
+            port_id,
         };
 
         if let Err(e) = new_self.populate_listener_channels() {
@@ -241,6 +243,11 @@ impl<Service: service::Service> Notifier<Service> {
         }
 
         Ok(())
+    }
+
+    /// Returns the [`UniqueNotifierId`] of the [`Notifier`]
+    pub fn id(&self) -> UniqueNotifierId {
+        self.port_id
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with the default

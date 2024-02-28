@@ -274,9 +274,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                                             "{} since the configuration could not be serialized.", msg);
 
                 // only unlock the static details when the service is successfully created
-                let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
+                let mut unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
                             with EventCreateError::Corrupted,
                             "{} since the configuration could not be written to the static storage.", msg);
+
+                unlocked_static_details.release_ownership();
 
                 Ok(event::PortFactory::new(ServiceType::from_state(
                     service::ServiceState::new(

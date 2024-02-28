@@ -24,6 +24,7 @@ use crate::service::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 
@@ -67,6 +68,7 @@ pub enum PublishSubscribeCreateError {
     InternalFailure,
     IsBeingCreatedByAnotherInstance,
     UnableToCreateStaticServiceInformation,
+    OldConnectionsStillActive,
 }
 
 impl std::fmt::Display for PublishSubscribeCreateError {
@@ -397,7 +399,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     number_of_subscribers: pubsub_config.max_subscribers,
                 };
 
-                let dynamic_config = self.base.create_dynamic_config_storage(
+                let dynamic_config = match self.base.create_dynamic_config_storage(
                     dynamic_config::MessagingPattern::PublishSubscribe(
                         dynamic_config::publish_subscribe::DynamicConfig::new(
                             &dynamic_config_setting,
@@ -406,19 +408,27 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     dynamic_config::publish_subscribe::DynamicConfig::memory_size(
                         &dynamic_config_setting,
                     ),
-                );
-                let dynamic_config = Rc::new(fail!(from self, when dynamic_config,
-                    with PublishSubscribeCreateError::InternalFailure,
-                    "{} since the dynamic service segment could not be created.", msg));
-
+                ) {
+                    Ok(c) => Rc::new(c),
+                    Err(DynamicStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with PublishSubscribeCreateError::OldConnectionsStillActive,
+                            "{} since there are still Publishers, Subscribers or active Samples.", msg);
+                    }
+                    Err(e) => {
+                        fail!(from self, with PublishSubscribeCreateError::InternalFailure,
+                            "{} since the dynamic service segment could not be created ({:?}).", msg, e);
+                    }
+                };
                 let service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
                             with PublishSubscribeCreateError::Corrupted,
                             "{} since the configuration could not be serialized.", msg);
 
                 // only unlock the static details when the service is successfully created
-                let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
+                let mut unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
                             with PublishSubscribeCreateError::Corrupted,
                             "{} since the configuration could not be written to the static storage.", msg);
+
+                unlocked_static_details.release_ownership();
 
                 Ok(publish_subscribe::PortFactory::new(
                     ServiceType::from_state(service::ServiceState::new(

@@ -296,7 +296,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     .config(&static_config_storage_config::<ServiceType>(
                         self.global_config.as_ref(),
                     ))
-                    .has_ownership(false)
+                    .has_ownership(true)
                     .create_locked(),
                     "Failed to create static service information since the underlying static storage could not be created."),
         )
