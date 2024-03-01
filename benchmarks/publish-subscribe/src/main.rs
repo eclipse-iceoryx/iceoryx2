@@ -110,12 +110,21 @@ fn main() {
     let args = Args::parse();
 
     set_log_level(iceoryx2_bb_log::LogLevel::Error);
+    let mut at_least_one_benchmark_did_run = false;
 
     if args.bench_zero_copy || args.bench_all {
         perform_benchmark::<zero_copy::Service>(args.iterations);
+        at_least_one_benchmark_did_run = true;
     }
 
     if args.bench_process_local || args.bench_all {
         perform_benchmark::<process_local::Service>(args.iterations);
+        at_least_one_benchmark_did_run = true;
+    }
+
+    if !at_least_one_benchmark_did_run {
+        println!(
+            "Please use either '--bench_all' or select a specific benchmark. See `--help` for details."
+        );
     }
 }

@@ -129,7 +129,7 @@
     ```
 
 5. Do not use `Header::time_stamp()`, when required make it part of the payload
-    type
+    type. **Be aware, this can be expensive and can lead to a significantly increased latency!**
 
     ```rust
     // old
