@@ -13,6 +13,7 @@
  * New constructs from [#123](https://github.com/eclipse-iceoryx/iceoryx2/issues/123)
     * Introduce semantic string `iceoryx2-bb-system-types::base64url`
     * Introduce `iceoryx2-cal::hash::HashValue` that contains the result of a hash
+ * Performance improvements, especially for AMD CPUs [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
 
 ### Bugfixes
 
@@ -51,6 +52,7 @@
  * Introduce traits for all ports (`Listen`, `Notify`, `Publish`, `DefaultLoan`, `UninitLoan`, `Subscribe`)
    and for samples (`PayloadMut`, `Payload`) [#69](https://github.com/eclipse-iceoryx/iceoryx2/issues/69)
  * Implement `Ord` and `PartialOrd` for `FixedSizeByteString` and `ServiceName` [#110](https://github.com/eclipse-iceoryx/iceoryx2/issues/110)
+ * Remove `publish_subscribe::Header::time_stamp()` due to ordering and performance problems [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
 
 ### API Breaking Changes
 
@@ -125,3 +127,52 @@
     // new
     fn my_generic_service_function<ServiceType: iceoryx2::service::Service>();
     ```
+
+5. Do not use `Header::time_stamp()`, when required make it part of the payload
+    type
+
+    ```rust
+    // old
+    let subscriber = service.subscriber().create()?;
+    println!("sample timestamp: {:?}", sample.unwrap().header().time_stamp());
+
+    // new
+    use iceoryx2_bb_posix::clock::{Time, TimeBuilder};
+
+    #[derive(Debug)]
+    #[repr(C)]
+    pub struct TimeStamp {
+        seconds: u64,
+        nanoseconds: u32,
+    }
+
+    impl TimeStamp {
+        pub fn new() -> Self {
+            let now = Time::now().unwrap();
+            Self {
+                seconds: now.seconds(),
+                nanoseconds: now.nanoseconds(),
+            }
+        }
+    }
+
+    pub struct MyMessageType {
+        payload: u64,
+        time_stamp: TimeStamp
+    }
+
+    // sender side
+    let publisher = service.publisher().create()?;
+    let sample = publisher.loan_uninit()?;
+    let sample = sample.write_payload(MyMessageType {
+        payload: 1234,
+        time_stamp: TimeStamp::now();
+    });
+    sample.send()?;
+
+    // receiver side
+    let subscriber = service.subscriber().create()?;
+    println!("sample timestamp: {:?}", sample.unwrap().time_stamp);
+    ```
+
+

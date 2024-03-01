@@ -10,5 +10,11 @@ respond upon message reception. This process repeats `n` times, and the average
 latency is subsequently computed.
 
 ```sh
-cargo run --release benchmark_publish_subscribe
+cargo run --release benchmark-publish-subscribe -- --bench-all
+```
+
+For more benchmark configuration details, see
+
+```sh
+cargo run --release benchmark-publish-subscribe -- --help
 ```

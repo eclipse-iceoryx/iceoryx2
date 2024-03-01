@@ -23,8 +23,7 @@
 //!
 //! while let Some(sample) = subscriber.receive()? {
 //!     println!("received: {:?}", *sample);
-//!     println!("header timestamp {:?}, publisher id {:?}",
-//!         sample.header().time_stamp(), sample.header().publisher_id());
+//!     println!("header publisher id {:?}", sample.header().publisher_id());
 //! }
 //!
 //! # Ok(())

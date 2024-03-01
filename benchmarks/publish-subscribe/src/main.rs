@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use clap::Parser;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_log::set_log_level;
 use iceoryx2_bb_posix::barrier::BarrierHandle;
@@ -17,7 +18,7 @@ use iceoryx2_bb_posix::{barrier::BarrierBuilder, clock::Time};
 
 const ITERATIONS: u64 = 10000000;
 
-fn perform_benchmark<T: Service>() {
+fn perform_benchmark<T: Service>(iterations: u64) {
     let service_name_a2b = ServiceName::new("a2b").unwrap();
     let service_name_b2a = ServiceName::new("b2a").unwrap();
 
@@ -27,7 +28,7 @@ fn perform_benchmark<T: Service>() {
         .max_subscribers(1)
         .history_size(0)
         .subscriber_max_buffer_size(1)
-        .enable_safe_overflow(false)
+        .enable_safe_overflow(true)
         .create::<u64>()
         .unwrap();
 
@@ -37,7 +38,7 @@ fn perform_benchmark<T: Service>() {
         .max_subscribers(1)
         .history_size(0)
         .subscriber_max_buffer_size(1)
-        .enable_safe_overflow(false)
+        .enable_safe_overflow(true)
         .create::<u64>()
         .unwrap();
 
@@ -51,7 +52,7 @@ fn perform_benchmark<T: Service>() {
 
             barrier.wait();
 
-            for i in 0..ITERATIONS {
+            for i in 0..iterations {
                 while sender_a2b.send_copy(i).expect("failed to send") == 0 {}
 
                 while receiver_b2a.receive().unwrap().is_none() {}
@@ -64,7 +65,7 @@ fn perform_benchmark<T: Service>() {
 
             barrier.wait();
 
-            for i in 0..ITERATIONS {
+            for i in 0..iterations {
                 while receiver_a2b.receive().unwrap().is_none() {}
 
                 while sender_b2a.send_copy(i).expect("failed to send") == 0 {}
@@ -79,16 +80,42 @@ fn perform_benchmark<T: Service>() {
         t2.join().expect("thread failure");
         let stop = start.elapsed().expect("failed to measure time");
         println!(
-            "{} ::: Time: {}, Latency: {} ns",
+            "{} ::: Iterations: {}, Time: {}, Latency: {} ns",
             std::any::type_name::<T>(),
+            iterations,
             stop.as_secs_f64(),
-            stop.as_nanos() / (ITERATIONS as u128 * 2)
+            stop.as_nanos() / (iterations as u128 * 2)
         );
     });
 }
 
+#[derive(Parser, Debug)]
+#[clap(version, about, long_about = None)]
+struct Args {
+    /// Number of iterations the A --> B --> A communication is repeated
+    #[clap(short, long, default_value_t = ITERATIONS)]
+    iterations: u64,
+    /// Run benchmark for every service setup
+    #[clap(short, long, default_value_t = false)]
+    bench_all: bool,
+    /// Run benchmark for the IPC zero copy setup
+    #[clap(short, long, default_value_t = false)]
+    bench_zero_copy: bool,
+    /// Run benchmark for the process local setup
+    #[clap(short, long, default_value_t = false)]
+    bench_process_local: bool,
+}
+
 fn main() {
+    let args = Args::parse();
+
     set_log_level(iceoryx2_bb_log::LogLevel::Error);
-    perform_benchmark::<zero_copy::Service>();
-    perform_benchmark::<process_local::Service>();
+
+    if args.bench_zero_copy || args.bench_all {
+        perform_benchmark::<zero_copy::Service>(args.iterations);
+    }
+
+    if args.bench_process_local || args.bench_all {
+        perform_benchmark::<process_local::Service>(args.iterations);
+    }
 }
