@@ -26,8 +26,7 @@
 //! let sample = publisher.loan_uninit()?;
 //! let sample = sample.write_payload(1234);
 //!
-//! println!("timestamp: {:?}, publisher port id: {:?}",
-//!     sample.header().time_stamp(), sample.header().publisher_id());
+//! println!("publisher port id: {:?}", sample.header().publisher_id());
 //! sample.send()?;
 //!
 //! # Ok(())
