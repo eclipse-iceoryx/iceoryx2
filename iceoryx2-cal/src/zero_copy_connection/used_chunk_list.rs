@@ -123,19 +123,22 @@ pub mod details {
             self.capacity
         }
 
+        #[inline(always)]
         fn verify_init(&self, source: &str) {
-            if !self.is_memory_initialized.load(Ordering::Relaxed) {
-                fatal_panic!(from self, "Undefined behavior when calling \"{}\" and the object is not initialized.", source);
-            }
+            debug_assert!(
+                self.is_memory_initialized.load(Ordering::Relaxed),
+                "Undefined behavior when calling \"{}\" and the object is not initialized.",
+                source
+            );
         }
 
         fn set(&self, idx: usize, value: bool) -> bool {
             self.verify_init("set");
-
-            if self.capacity <= idx {
-                fatal_panic!(from self,
-                "This should never happen. Out of bounds access with index {}.", idx);
-            }
+            debug_assert!(
+                idx < self.capacity,
+                "This should never happen. Out of bounds access with index {}.",
+                idx
+            );
 
             unsafe { (*self.data_ptr.as_ptr().add(idx)).swap(value, Ordering::Relaxed) }
         }

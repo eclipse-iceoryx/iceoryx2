@@ -71,6 +71,20 @@
    }
    ```
 
+ * If a panic error check is expensive and located on the hot path then use `debug_assert!`.
+   * Use it only when the panic check prevents API misuse and the misbehavior can be easily
+        detected with unit tests
+
+   ```rust
+    // bad
+    if expensive_check() {
+        fatal_panic!("oh no ...");
+    }
+
+    // good
+    debug_assert!(expensive_check(), "oh no ...");
+   ```
+
 ### Re-Exports And Preludes
 
  * The most common functionality of a construct shall be fully usable by only

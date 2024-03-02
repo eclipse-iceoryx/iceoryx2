@@ -210,10 +210,13 @@ pub mod details {
     impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug>
         SafelyOverflowingIndexQueue<PointerType>
     {
+        #[inline(always)]
         fn verify_init(&self, source: &str) {
-            if !self.is_memory_initialized.load(Ordering::Relaxed) {
-                fatal_panic!(from self, "Undefined behavior when calling \"{}\" and the object is not initialized.", source);
-            }
+            debug_assert!(
+                self.is_memory_initialized.load(Ordering::Relaxed),
+                "Undefined behavior when calling \"{}\" and the object is not initialized.",
+                source
+            );
         }
 
         /// Returns the amount of memory required to create a [`SafelyOverflowingIndexQueue`] with

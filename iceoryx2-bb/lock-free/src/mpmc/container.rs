@@ -227,10 +227,10 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
 }
 
 impl<T: Copy + Debug> Container<T> {
+    #[inline(always)]
     fn verify_memory_initialization(&self, source: &str) {
-        if !self.is_memory_initialized.load(Ordering::Relaxed) {
-            fatal_panic!(from self, "Undefined behavior when calling \"{}\" and the object is not initialized with 'initialize_memory'.", source);
-        }
+        debug_assert!(self.is_memory_initialized.load(Ordering::Relaxed),
+            "Undefined behavior when calling \"{}\" and the object is not initialized with 'initialize_memory'.", source);
     }
 
     /// Returns the required memory size of the data segment of the [`Container`].
@@ -352,10 +352,10 @@ impl<T: Copy + Debug> Container<T> {
     ///     with [`Container::get_state()`], otherwise the method will panic.
     ///
     pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
-        if previous_state.container_id != self.container_id.value() {
-            fatal_panic!(from self,
-                "The ContainerState used as previous_state was not created by this Container instance.");
-        }
+        debug_assert!(
+            previous_state.container_id == self.container_id.value(),
+            "The ContainerState used as previous_state was not created by this Container instance."
+        );
 
         // MUST HAPPEN BEFORE all other operations
         let current_change_counter = self.change_counter.load(Ordering::Acquire);
