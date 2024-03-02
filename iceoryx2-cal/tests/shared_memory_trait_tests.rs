@@ -148,10 +148,7 @@ mod shared_memory {
         );
 
         unsafe {
-            assert_that!(
-                sut_create.deallocate(chunks[0].offset, DEFAULT_LAYOUT,),
-                is_ok
-            );
+            sut_create.deallocate(chunks[0].offset, DEFAULT_LAYOUT);
         }
 
         let chunk = sut_create.allocate(DEFAULT_LAYOUT);
@@ -189,10 +186,7 @@ mod shared_memory {
         );
 
         unsafe {
-            assert_that!(
-                sut_create.deallocate(chunks[0].offset, DEFAULT_LAYOUT,),
-                is_ok
-            );
+            sut_create.deallocate(chunks[0].offset, DEFAULT_LAYOUT);
         }
 
         let chunk = sut_open.allocate(DEFAULT_LAYOUT);

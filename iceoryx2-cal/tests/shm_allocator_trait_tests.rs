@@ -94,10 +94,9 @@ mod shm_allocator {
         let distance = unsafe { test.sut().allocate(layout) };
         assert_that!(distance, is_ok);
 
-        assert_that!(
-            unsafe { test.sut().deallocate(distance.unwrap(), layout) },
-            is_ok
-        );
+        unsafe {
+            test.sut().deallocate(distance.unwrap(), layout);
+        }
     }
 
     #[test]
@@ -109,7 +108,7 @@ mod shm_allocator {
         let distance = unsafe { test.sut().allocate(layout).unwrap() };
         assert_that!(distance.value(), eq 0);
 
-        assert_that!(unsafe { test.sut().deallocate(distance, layout) }, is_ok);
+        unsafe { test.sut().deallocate(distance, layout) };
     }
 
     #[test]
@@ -122,10 +121,9 @@ mod shm_allocator {
         let distance = unsafe { test.sut().allocate(layout) };
         assert_that!(distance, is_ok);
 
-        assert_that!(
-            unsafe { test.sut().deallocate(distance.unwrap(), layout) },
-            is_ok
-        );
+        unsafe {
+            test.sut().deallocate(distance.unwrap(), layout);
+        }
     }
 
     #[test]

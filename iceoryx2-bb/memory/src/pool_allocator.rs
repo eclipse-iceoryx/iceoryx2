@@ -152,16 +152,22 @@ impl PoolAllocator {
         (ptr.as_ptr() as usize + size - adjusted_start) / bucket_size
     }
 
-    fn get_index(&self, ptr: NonNull<u8>) -> Option<u32> {
+    fn verify_ptr_is_managaed_by_allocator(&self, ptr: NonNull<u8>) {
         let position = ptr.as_ptr() as usize;
-        if position < self.start
-            || position > self.start + self.size
-            || (position - self.start) % self.bucket_size != 0
-        {
-            return None;
-        }
+        debug_assert!(
+            !(position < self.start
+                || position > self.start + self.size
+                || (position - self.start) % self.bucket_size != 0),
+            "The pointer {:?} is not managed by this allocator.",
+            ptr
+        );
+    }
 
-        Some(((position - self.start) / self.bucket_size) as u32)
+    fn get_index(&self, ptr: NonNull<u8>) -> u32 {
+        self.verify_ptr_is_managaed_by_allocator(ptr);
+        let position = ptr.as_ptr() as usize;
+
+        ((position - self.start) / self.bucket_size) as u32
     }
 }
 
@@ -194,23 +200,10 @@ impl BaseAllocator for PoolAllocator {
         }
     }
 
-    unsafe fn deallocate(
-        &self,
-        ptr: NonNull<u8>,
-        _layout: Layout,
-    ) -> Result<(), DeallocationError> {
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
         self.verify_init("deallocate");
 
-        match self.get_index(ptr) {
-            Some(index) => {
-                self.buckets.release_raw_index(index);
-                Ok(())
-            }
-            None => {
-                fail!(from self, with DeallocationError::ProvidedPointerNotContainedInAllocator,
-                    "Tried to release memory ({}) which does not belong to this allocator.", ptr.as_ptr() as usize);
-            }
-        }
+        self.buckets.release_raw_index(self.get_index(ptr));
     }
 }
 
@@ -225,10 +218,7 @@ impl Allocator for PoolAllocator {
         self.verify_init("grow");
 
         let msg = "Unable to grow memory chunk";
-        if self.get_index(ptr).is_none() {
-            fail!(from self, with AllocationGrowError::ProvidedPointerNotContainedInAllocator,
-                "{} since the ptr is not managed by this allocator.", msg);
-        }
+        self.verify_ptr_is_managaed_by_allocator(ptr);
 
         if old_layout.size() >= new_layout.size() {
             fail!(from self, with AllocationGrowError::GrowWouldShrink,
@@ -261,10 +251,7 @@ impl Allocator for PoolAllocator {
         self.verify_init("shrink");
 
         let msg = "Unable to shrink memory chunk";
-        if self.get_index(ptr).is_none() {
-            fail!(from self, with AllocationShrinkError::ProvidedPointerNotContainedInAllocator,
-                "{} since the ptr is not managed by this allocator.", msg);
-        }
+        self.verify_ptr_is_managaed_by_allocator(ptr);
 
         if old_layout.size() <= new_layout.size() {
             fail!(from self, with AllocationShrinkError::ShrinkWouldGrow,
@@ -351,8 +338,8 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> BaseAllocator
         self.state.allocate(layout)
     }
 
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) -> Result<(), DeallocationError> {
-        self.state.deallocate(ptr, layout)
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+        self.state.deallocate(ptr, layout);
     }
 }
 

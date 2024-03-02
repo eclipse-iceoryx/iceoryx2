@@ -54,8 +54,8 @@
 
 use std::{mem::MaybeUninit, ptr::NonNull};
 
+use iceoryx2_bb_elementary::allocator::AllocationError;
 pub use iceoryx2_bb_elementary::allocator::BaseAllocator;
-use iceoryx2_bb_elementary::allocator::{AllocationError, DeallocationError};
 
 use crate::bump_allocator::BumpAllocator;
 use pin_init::*;
@@ -144,11 +144,7 @@ impl<const SIZE: usize, Allocator: BaseAllocator> BaseAllocator for Memory<SIZE,
     }
 
     /// Calls [`BaseAllocator::deallocate()`] on the underlying allocator
-    unsafe fn deallocate(
-        &self,
-        ptr: NonNull<u8>,
-        layout: std::alloc::Layout,
-    ) -> Result<(), DeallocationError> {
-        self.data.allocator.deallocate(ptr, layout)
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: std::alloc::Layout) {
+        self.data.allocator.deallocate(ptr, layout);
     }
 }

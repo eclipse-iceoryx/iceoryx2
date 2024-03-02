@@ -193,12 +193,9 @@ impl<Service: service::Service> DataSegment<Service> {
             == 1
         {
             unsafe {
-                fatal_panic!(from self, when self.memory
-                .deallocate(
-                    distance_to_chunk,
-                    self.message_type_layout,
-                ), "Internal logic error. The sample {:?} does not belong to the data segment.", distance_to_chunk);
-            };
+                self.memory
+                    .deallocate(distance_to_chunk, self.message_type_layout);
+            }
         }
     }
 

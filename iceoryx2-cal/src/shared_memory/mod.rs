@@ -59,8 +59,6 @@ pub mod process_local;
 
 use std::fmt::Debug;
 
-use iceoryx2_bb_elementary::allocator::DeallocationError;
-
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_system_types::file_name::*;
@@ -139,11 +137,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
-    unsafe fn deallocate(
-        &self,
-        offset: PointerOffset,
-        layout: std::alloc::Layout,
-    ) -> Result<(), DeallocationError>;
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout);
 
     /// Releases the ownership of the [`SharedMemory`] meaning when it goes out of scope the
     /// underlying resource will not be removed.

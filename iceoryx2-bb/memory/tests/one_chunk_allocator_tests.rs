@@ -175,22 +175,21 @@ fn one_chunk_allocator_shrink_fails_when_alignment_increases() {
 }
 
 #[test]
+#[should_panic]
 fn one_chunk_allocator_shrink_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    assert_that!(
-        unsafe {
-            sut.shrink(
-                NonNull::new(1234 as *mut u8).unwrap(),
-                Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
-                Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
-            )
-        },
-        is_err
-    );
+    unsafe {
+        sut.shrink(
+            NonNull::new(1234 as *mut u8).unwrap(),
+            Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
+            Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
+        )
+        .unwrap();
+    }
 }
 
 #[test]
@@ -330,25 +329,25 @@ fn one_chunk_allocator_grow_with_increased_alignment_fails() {
 }
 
 #[test]
+#[should_panic]
 fn one_chunk_allocator_grow_with_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
     let mut test = TestFixture::new();
     let sut = test.create_one_chunk_allocator();
 
-    assert_that!(
-        unsafe {
-            sut.grow(
-                NonNull::new(123 as *mut u8).unwrap(),
-                Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
-                Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
-            )
-        },
-        is_err
-    );
+    unsafe {
+        sut.grow(
+            NonNull::new(123 as *mut u8).unwrap(),
+            Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
+            Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
+        )
+        .unwrap();
+    }
 }
 
 #[test]
+#[should_panic]
 fn one_chunk_allocator_deallocate_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -361,12 +360,9 @@ fn one_chunk_allocator_deallocate_non_allocated_chunk_fails() {
     );
 
     unsafe {
-        assert_that!(
-            sut.deallocate(
-                NonNull::new(123 as *mut u8).unwrap(),
-                Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
-            ),
-            is_err
-        )
+        sut.deallocate(
+            NonNull::new(123 as *mut u8).unwrap(),
+            Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
+        );
     }
 }

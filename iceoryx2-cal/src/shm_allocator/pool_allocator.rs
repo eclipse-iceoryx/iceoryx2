@@ -13,7 +13,7 @@
 use std::{alloc::Layout, ptr::NonNull};
 
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
-use iceoryx2_bb_elementary::allocator::{BaseAllocator, DeallocationError};
+use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::fail;
 
 use super::{PointerOffset, ShmAllocationError, ShmAllocatorInitError};
@@ -122,15 +122,10 @@ impl ShmAllocator for PoolAllocator {
         ))
     }
 
-    unsafe fn deallocate(
-        &self,
-        offset: PointerOffset,
-        layout: Layout,
-    ) -> Result<(), DeallocationError> {
-        fail!(from self, when self.allocator.deallocate(NonNull::new_unchecked(
-                    (offset.value() + self.allocator.start()) as *mut u8), layout),
-            "Failed to release shared memory chunk {:?}.", offset);
-
-        Ok(())
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
+        self.allocator.deallocate(
+            NonNull::new_unchecked((offset.value() + self.allocator.start()) as *mut u8),
+            layout,
+        );
     }
 }

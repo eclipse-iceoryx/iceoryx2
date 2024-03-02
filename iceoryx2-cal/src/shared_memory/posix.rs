@@ -16,7 +16,6 @@ use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub use crate::shared_memory::*;
-use iceoryx2_bb_elementary::allocator::DeallocationError;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::shared_memory::{AccessMode, Permission};
@@ -392,14 +391,8 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
         })
     }
 
-    unsafe fn deallocate(
-        &self,
-        offset: PointerOffset,
-        layout: std::alloc::Layout,
-    ) -> Result<(), DeallocationError> {
-        fail!(from self, when self.allocator().allocator.deallocate(offset, layout),
-            "Failed to deallocate shared memory chunk {:?} due to an internal allocator failure.", offset);
-        Ok(())
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
+        self.allocator().allocator.deallocate(offset, layout);
     }
 
     fn release_ownership(&mut self) {

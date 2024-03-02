@@ -88,15 +88,10 @@ impl ShmAllocator for BumpAllocator {
         ))
     }
 
-    unsafe fn deallocate(
-        &self,
-        offset: PointerOffset,
-        layout: Layout,
-    ) -> Result<(), DeallocationError> {
-        fail!(from self, when self.allocator.deallocate(NonNull::new_unchecked(
-                    (offset.0 + self.base_address) as *mut u8), layout),
-            "Failed to release shared memory chunk");
-
-        Ok(())
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
+        self.allocator.deallocate(
+            NonNull::new_unchecked((offset.0 + self.base_address) as *mut u8),
+            layout,
+        );
     }
 }

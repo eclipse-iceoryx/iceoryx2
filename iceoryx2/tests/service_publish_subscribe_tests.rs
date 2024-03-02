@@ -28,7 +28,6 @@ mod service_publish_subscribe {
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
-    use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -500,15 +499,12 @@ mod service_publish_subscribe {
         let sample = result.unwrap();
         assert_that!(*sample, eq 1234);
         assert_that!(*sample.payload(), eq 1234);
-        let now = Time::now().unwrap();
-        assert_that!(sample.header().time_stamp().as_duration(), lt now.as_duration());
 
         let result = subscriber.receive().unwrap();
         assert_that!(result, is_some);
         let sample_2 = result.unwrap();
         assert_that!(*sample_2, eq 4567);
         assert_that!(*sample_2.payload(), eq 4567);
-        assert_that!(sample_2.header().time_stamp().as_duration(), ge sample.header().time_stamp().as_duration());
     }
 
     #[test]

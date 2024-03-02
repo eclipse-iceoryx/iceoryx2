@@ -115,6 +115,7 @@ fn pool_allocator_allocate_more_than_bucket_alignment_fails() {
 }
 
 #[test]
+#[should_panic]
 fn pool_allocator_deallocate_non_allocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
@@ -128,13 +129,10 @@ fn pool_allocator_deallocate_non_allocated_chunk_fails() {
     );
 
     unsafe {
-        assert_that!(
-            sut.deallocate(
-                NonNull::new(123 as *mut u8).unwrap(),
-                Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
-            ),
-            is_err
-        )
+        sut.deallocate(
+            NonNull::new(123 as *mut u8).unwrap(),
+            Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
+        );
     }
 }
 
@@ -160,15 +158,12 @@ fn pool_allocator_acquire_and_release_works() {
     assert_that!(memory, is_err);
 
     for memory in memory_storage {
-        assert_that!(
-            unsafe {
-                sut.deallocate(
-                    NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
-                    Layout::from_size_align_unchecked(CHUNK_SIZE, 1),
-                )
-            },
-            is_ok
-        );
+        unsafe {
+            sut.deallocate(
+                NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
+                Layout::from_size_align_unchecked(CHUNK_SIZE, 1),
+            );
+        }
     }
 
     for _ in 0..sut.number_of_buckets() {
@@ -304,6 +299,7 @@ fn pool_allocator_grow_with_size_decrease_fails() {
 }
 
 #[test]
+#[should_panic]
 fn pool_allocator_grow_with_unallocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
@@ -311,16 +307,14 @@ fn pool_allocator_grow_with_unallocated_chunk_fails() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    assert_that!(
-        unsafe {
-            sut.grow(
-                NonNull::new(431 as *mut u8).unwrap(),
-                Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
-                Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
-            )
-        },
-        is_err
-    );
+    unsafe {
+        sut.grow(
+            NonNull::new(431 as *mut u8).unwrap(),
+            Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
+            Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
+        )
+        .unwrap();
+    }
 }
 
 #[test]
@@ -450,6 +444,7 @@ fn pool_allocator_shrink_with_alignment_larger_than_bucket_alignment_fails() {
 }
 
 #[test]
+#[should_panic]
 fn pool_allocator_shrink_non_allocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
@@ -457,16 +452,14 @@ fn pool_allocator_shrink_non_allocated_chunk_fails() {
 
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
-    assert_that!(
-        unsafe {
-            sut.shrink(
-                NonNull::new(1234 as *mut u8).unwrap(),
-                Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
-                Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
-            )
-        },
-        is_err
-    );
+    unsafe {
+        sut.shrink(
+            NonNull::new(1234 as *mut u8).unwrap(),
+            Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
+            Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
+        )
+        .unwrap();
+    };
 }
 
 #[test]

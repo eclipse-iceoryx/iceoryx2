@@ -14,9 +14,7 @@
 
 use std::{alloc::Layout, ptr::NonNull};
 
-use iceoryx2_bb_elementary::allocator::{
-    AllocationGrowError, AllocationShrinkError, DeallocationError,
-};
+use iceoryx2_bb_elementary::allocator::{AllocationGrowError, AllocationShrinkError};
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::memory::heap;
 
@@ -37,9 +35,8 @@ impl BaseAllocator for HeapAllocator {
                 "Failed to allocate {} bytes with an alignment of {}.", layout.size(), layout.align()))
     }
 
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) -> Result<(), DeallocationError> {
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         heap::deallocate(ptr, layout);
-        Ok(())
     }
 }
 
