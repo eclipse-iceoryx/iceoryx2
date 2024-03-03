@@ -15,6 +15,7 @@ mod sample_mut {
     use iceoryx2::port::publisher::Publisher;
     use iceoryx2::port::subscriber::Subscriber;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -42,6 +43,7 @@ mod sample_mut {
             let service_name = generate_name();
             let service = Sut::new(&service_name)
                 .publish_subscribe()
+                .max_publishers(1)
                 .create::<u64>()
                 .unwrap();
 
@@ -60,14 +62,6 @@ mod sample_mut {
                 subscriber,
             }
         }
-
-        fn publisher(&self) -> &Publisher<Sut, u64> {
-            &self.publisher
-        }
-
-        fn subscriber(&self) -> &Subscriber<Sut, u64> {
-            &self.subscriber
-        }
     }
 
     #[test]
@@ -77,7 +71,7 @@ mod sample_mut {
         let mut sample_vec = vec![];
 
         for _ in 0..4 {
-            while let Ok(sample) = test.publisher().loan() {
+            while let Ok(sample) = test.publisher.loan() {
                 sample_vec.push(sample);
             }
 
@@ -89,8 +83,8 @@ mod sample_mut {
     #[test]
     fn header_tracks_correct_origin<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
-        let sample = test.publisher().loan().unwrap();
-        assert_that!(sample.header().publisher_id(), eq test.publisher().id());
+        let sample = test.publisher.loan().unwrap();
+        assert_that!(sample.header().publisher_id(), eq test.publisher.id());
     }
 
     #[test]
@@ -98,7 +92,7 @@ mod sample_mut {
         const PAYLOAD_1: u64 = 891283689123555;
         const PAYLOAD_2: u64 = 71820;
         let test = TestFixture::<Sut>::new();
-        let sample = test.publisher().loan_uninit().unwrap();
+        let sample = test.publisher.loan_uninit().unwrap();
         let mut sample = sample.write_payload(PAYLOAD_1);
 
         assert_that!(*sample.payload(), eq PAYLOAD_1);
@@ -114,7 +108,7 @@ mod sample_mut {
     fn assume_init_works<Sut: Service>() {
         const PAYLOAD: u64 = 7182055123;
         let test = TestFixture::<Sut>::new();
-        let mut sample = test.publisher().loan_uninit().unwrap();
+        let mut sample = test.publisher.loan_uninit().unwrap();
         let _ = *sample.payload_mut().write(PAYLOAD);
         let mut sample = unsafe { sample.assume_init() };
 
@@ -126,31 +120,38 @@ mod sample_mut {
     fn send_works<Sut: Service>() {
         const PAYLOAD: u64 = 3215357;
         let test = TestFixture::<Sut>::new();
-        let sample = test.publisher().loan_uninit().unwrap();
+        let sample = test.publisher.loan_uninit().unwrap();
         let sample = sample.write_payload(PAYLOAD);
 
         assert_that!(sample.send(), eq Ok(1));
 
-        let received_sample = test.subscriber().receive().unwrap().unwrap();
+        let received_sample = test.subscriber.receive().unwrap().unwrap();
         assert_that!(*received_sample, eq PAYLOAD);
     }
 
     #[test]
-    fn sample_of_dropped_service_does_not_block_new_service_creation<Sut: Service>() {
-        //TODO: sample_mut_from_dropped_publisher
-        //TODO: drop tests for events
-        //TODO: refactor sample tests with TestFixture like SampleMut tests
-
+    fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let service_name = test.service_name.clone();
-        let _sample = test.publisher().loan_uninit().unwrap();
+        let _sample = test.publisher.loan_uninit().unwrap();
 
         drop(test);
 
-        assert_that!(
-            Sut::new(&service_name).publish_subscribe().create::<u64>(),
-            is_ok
-        );
+        let result = Sut::new(&service_name).publish_subscribe().create::<u64>();
+        assert_that!(result, is_err);
+        assert_that!(result.err().unwrap(), eq PublishSubscribeCreateError::OldConnectionsStillActive);
+    }
+
+    #[test]
+    fn sample_of_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
+        let test = TestFixture::<Sut>::new();
+        let service = test.service;
+        let publisher = test.publisher;
+        let _sample = publisher.loan_uninit().unwrap();
+
+        drop(publisher);
+
+        assert_that!(service.publisher().create(), is_ok);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
