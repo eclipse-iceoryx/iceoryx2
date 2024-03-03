@@ -19,7 +19,7 @@
 # Constants
 
 iox2_task_timeout_template: &IOX2_TASK_TIMEOUT
-  timeout_in: 30m  # This needs to be reasonable large in order not to run in a timeout in the docker image re-builds
+  timeout_in: 45m  # This needs to be reasonable large in order not to run in a timeout in the docker image re-builds
 
 iox2_common_cpu_and_memory_config_for_build_and_test_template: &IOX2_COMMON_CPU_AND_MEMORY_CONFIG_FOR_BUILD_AND_TEST
   cpu: 2
@@ -148,18 +148,20 @@ ubuntu_22_04_x64_stable_debug_task:
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
   linux_only_doc_test_script: cargo test --doc -- --ignored
 
-ubuntu_22_04_x64_beta_debug_task:
-  depends_on: ubuntu_22_04_x64_stable_debug
-  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
-  set_toolchain_script: rustup default beta
-  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+### TODO commented out due to limited CI time
+### ubuntu_22_04_x64_beta_debug_task:
+###   depends_on: ubuntu_22_04_x64_stable_debug
+###   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+###   set_toolchain_script: rustup default beta
+###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
-ubuntu_22_04_x64_nightly_debug_task:
-  depends_on: ubuntu_22_04_x64_beta_debug
-  allow_failures: true
-  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
-  set_toolchain_script: rustup default nightly
-  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+### TODO commented out due to limited CI time
+### ubuntu_22_04_x64_nightly_debug_task:
+###   depends_on: ubuntu_22_04_x64_beta_debug
+###   allow_failures: true
+###   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+###   set_toolchain_script: rustup default nightly
+###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 # Pipeline 3
 
@@ -189,12 +191,13 @@ ubuntu_22_04_aarch64_stable_debug_task:
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
-ubuntu_22_04_aarch64_beta_debug_task:
-  depends_on: ubuntu_22_04_aarch64_stable_debug
-  allow_failures: true
-  <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
-  set_toolchain_script: rustup default beta
-  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+### TODO commented out due to limited CI time
+### ubuntu_22_04_aarch64_beta_debug_task:
+###   depends_on: ubuntu_22_04_aarch64_stable_debug
+###   allow_failures: true
+###   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
+###   set_toolchain_script: rustup default beta
+###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 # Pipeline 5
 
