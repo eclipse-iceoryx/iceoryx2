@@ -96,13 +96,13 @@ struct Args {
     #[clap(short, long, default_value_t = ITERATIONS)]
     iterations: u64,
     /// Run benchmark for every service setup
-    #[clap(short, long, default_value_t = false)]
+    #[clap(short, long)]
     bench_all: bool,
     /// Run benchmark for the IPC zero copy setup
-    #[clap(short, long, default_value_t = false)]
+    #[clap(long)]
     bench_zero_copy: bool,
     /// Run benchmark for the process local setup
-    #[clap(short, long, default_value_t = false)]
+    #[clap(long)]
     bench_process_local: bool,
 }
 
