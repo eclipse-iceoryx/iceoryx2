@@ -21,6 +21,7 @@ use crate::service::{self, dynamic_config::event::DynamicConfigSettings};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
+use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 
 use super::ServiceState;
 
@@ -55,6 +56,7 @@ pub enum EventCreateError {
     AlreadyExists,
     PermissionDenied,
     UnableToCreateStaticServiceInformation,
+    OldConnectionsStillActive,
 }
 
 impl std::fmt::Display for EventCreateError {
@@ -259,15 +261,22 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     number_of_notifiers: event_config.max_notifiers,
                 };
 
-                let dynamic_config = self.base.create_dynamic_config_storage(
+                let dynamic_config = match self.base.create_dynamic_config_storage(
                     dynamic_config::MessagingPattern::Event(
                         dynamic_config::event::DynamicConfig::new(&dynamic_config_setting),
                     ),
                     dynamic_config::event::DynamicConfig::memory_size(&dynamic_config_setting),
-                );
-                let dynamic_config = Rc::new(fail!(from self, when dynamic_config,
-                    with EventCreateError::InternalFailure,
-                    "{} since the dynamic service segment could not be created.", msg));
+                ) {
+                    Ok(c) => Rc::new(c),
+                    Err(DynamicStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with EventCreateError::OldConnectionsStillActive,
+                            "{} since there are still active Listeners or Notifiers.", msg);
+                    }
+                    Err(e) => {
+                        fail!(from self, with EventCreateError::InternalFailure,
+                            "{} since the dynamic service segment could not be created ({:?}).", msg, e);
+                    }
+                };
 
                 let service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
                                             with EventCreateError::Corrupted,

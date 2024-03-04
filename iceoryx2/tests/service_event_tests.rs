@@ -12,11 +12,16 @@
 
 #[generic_tests::define]
 mod service_event {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Barrier;
+    use std::time::Duration;
+
     use iceoryx2::config::Config;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -363,6 +368,182 @@ mod service_event {
             assert_that!(sut.dynamic_config().number_of_listeners(), eq MAX_LISTENERS - i - 1);
             assert_that!(sut2.dynamic_config().number_of_listeners(), eq MAX_LISTENERS - i - 1);
         }
+    }
+
+    #[test]
+    // TODO iox2-139
+    #[ignore]
+    fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
+        let _watch_dog = Watchdog::new(Duration::from_secs(10));
+
+        const NUMBER_OF_LISTENER_THREADS: usize = 2;
+        const NUMBER_OF_NOTIFIER_THREADS: usize = 2;
+        const NUMBER_OF_ITERATIONS: usize = 50;
+        const EVENT_ID: EventId = EventId::new(558);
+
+        let keep_running = AtomicBool::new(true);
+        let service_name = generate_name();
+        let barrier = Barrier::new(NUMBER_OF_LISTENER_THREADS + NUMBER_OF_NOTIFIER_THREADS);
+
+        let sut = Sut::new(&service_name)
+            .event()
+            .max_listeners(NUMBER_OF_LISTENER_THREADS)
+            .max_notifiers(NUMBER_OF_NOTIFIER_THREADS)
+            .create()
+            .unwrap();
+
+        std::thread::scope(|s| {
+            let mut listener_threads = vec![];
+            for _ in 0..NUMBER_OF_LISTENER_THREADS {
+                listener_threads.push(s.spawn(|| {
+                    let mut listener = sut.listener().create().unwrap();
+                    barrier.wait();
+
+                    let mut counter = 0;
+                    while counter < NUMBER_OF_ITERATIONS {
+                        let event_ids = listener.blocking_wait().unwrap();
+                        if !event_ids.is_empty() {
+                            counter += 1;
+                            for id in event_ids {
+                                assert_that!(*id, eq EVENT_ID);
+                            }
+                        }
+                    }
+                }));
+            }
+
+            for _ in 0..NUMBER_OF_NOTIFIER_THREADS {
+                s.spawn(|| {
+                    barrier.wait();
+
+                    while keep_running.load(Ordering::Relaxed) {
+                        let notifier = sut.notifier().create().unwrap();
+                        assert_that!(notifier.notify_with_custom_event_id(EVENT_ID), is_ok);
+                    }
+                });
+            }
+
+            for thread in listener_threads {
+                thread.join().unwrap();
+            }
+
+            keep_running.store(false, Ordering::Relaxed);
+        });
+    }
+
+    #[test]
+    // TODO iox2-139
+    #[ignore]
+    fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
+        let _watch_dog = Watchdog::new(Duration::from_secs(1));
+
+        const NUMBER_OF_LISTENER_THREADS: usize = 2;
+        const NUMBER_OF_NOTIFIER_THREADS: usize = 2;
+        const NUMBER_OF_ITERATIONS: usize = 50;
+        const EVENT_ID: EventId = EventId::new(558);
+
+        let keep_running = AtomicBool::new(true);
+        let service_name = generate_name();
+        let barrier = Barrier::new(NUMBER_OF_LISTENER_THREADS + NUMBER_OF_NOTIFIER_THREADS);
+
+        let sut = Sut::new(&service_name)
+            .event()
+            .max_listeners(NUMBER_OF_LISTENER_THREADS * 2)
+            .max_notifiers(NUMBER_OF_NOTIFIER_THREADS)
+            .create()
+            .unwrap();
+
+        std::thread::scope(|s| {
+            let mut listener_threads = vec![];
+            for _ in 0..NUMBER_OF_LISTENER_THREADS {
+                listener_threads.push(s.spawn(|| {
+                    barrier.wait();
+
+                    let mut counter = 0;
+                    let mut listener = sut.listener().create().unwrap();
+                    while counter < NUMBER_OF_ITERATIONS {
+                        let event_ids = listener.blocking_wait().unwrap();
+                        if !event_ids.is_empty() {
+                            counter += 1;
+                            for id in event_ids {
+                                assert_that!(*id, eq EVENT_ID);
+                            }
+                            listener = sut.listener().create().unwrap();
+                        }
+                    }
+                }));
+            }
+
+            for _ in 0..NUMBER_OF_NOTIFIER_THREADS {
+                s.spawn(|| {
+                    let notifier = sut.notifier().create().unwrap();
+                    barrier.wait();
+
+                    while keep_running.load(Ordering::Relaxed) {
+                        assert_that!(notifier.notify_with_custom_event_id(EVENT_ID), is_ok);
+                    }
+                });
+            }
+
+            for thread in listener_threads {
+                thread.join().unwrap();
+            }
+
+            keep_running.store(false, Ordering::Relaxed);
+        });
+    }
+
+    #[test]
+    fn communication_persists_when_service_is_dropped<Sut: Service>() {
+        let service_name = generate_name();
+        let event_id = EventId::new(43212);
+
+        let sut = Sut::new(&service_name).event().create().unwrap();
+
+        let notifier = sut.notifier().default_event_id(event_id).create().unwrap();
+        let mut listener = sut.listener().create().unwrap();
+
+        assert_that!(Sut::does_exist(&service_name), eq Ok(true));
+        drop(sut);
+        assert_that!(Sut::does_exist(&service_name), eq Ok(false));
+
+        assert_that!(notifier.notify(), eq Ok(1));
+
+        let mut received_events = 0;
+        for event in listener.try_wait().unwrap().iter() {
+            assert_that!(*event, eq event_id);
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 1);
+    }
+
+    #[test]
+    fn persisting_connection_does_prevent_service_recreation<Sut: Service>() {
+        let service_name = generate_name();
+        let event_id = EventId::new(43212);
+
+        let sut = Sut::new(&service_name).event().create().unwrap();
+
+        let notifier = sut.notifier().default_event_id(event_id).create().unwrap();
+        let listener = sut.listener().create().unwrap();
+
+        assert_that!(Sut::does_exist(&service_name), eq Ok(true));
+        drop(sut);
+        assert_that!(Sut::does_exist(&service_name), eq Ok(false));
+
+        let sut = Sut::new(&service_name).event().create();
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq EventCreateError::OldConnectionsStillActive);
+
+        drop(listener);
+
+        let sut = Sut::new(&service_name).event().create();
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq EventCreateError::OldConnectionsStillActive);
+
+        drop(notifier);
+
+        assert_that!(Sut::new(&service_name).event().create(), is_ok);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
