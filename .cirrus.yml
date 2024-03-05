@@ -274,16 +274,17 @@ windows_server_2019_x64_stable_release_task:
 ###   set_toolchain_script: rustup default 1.70.0
 ###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
-freebsd_x64_stable_debug_task:
-  depends_on: preflight_check
-  <<: *IOX2_CONTAINER_FREEBSD_X64
-  env:
-    PATH: /root/.cargo/bin:$PATH
-    HOME: /root  # must be set manually to '/root' or 'rustup' will throw an error
-  <<: *IOX2_FREEBSD_SETUP
-  set_toolchain_script: rustup default stable
-  <<: *IOX2_CARGO_FMT_AND_CLIPPY
-  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+### TODO iox2-140 uncomment when FreeBSD is fixed
+### freebsd_x64_stable_debug_task:
+###   depends_on: preflight_check
+###   <<: *IOX2_CONTAINER_FREEBSD_X64
+###   env:
+###     PATH: /root/.cargo/bin:$PATH
+###     HOME: /root  # must be set manually to '/root' or 'rustup' will throw an error
+###   <<: *IOX2_FREEBSD_SETUP
+###   set_toolchain_script: rustup default stable
+###   <<: *IOX2_CARGO_FMT_AND_CLIPPY
+###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 #
 # macOS
