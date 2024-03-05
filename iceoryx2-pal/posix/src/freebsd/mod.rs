@@ -25,6 +25,7 @@ pub mod resource;
 pub mod sched;
 pub mod select;
 pub mod semaphore;
+pub mod settings;
 pub mod signal;
 pub mod socket;
 pub mod stat;

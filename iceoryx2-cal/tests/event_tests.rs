@@ -169,16 +169,20 @@ mod event {
             sources.push(Sut::NotifierBuilder::new(&name).open().unwrap());
         }
 
+        let mut event_ids = vec![];
         for i in 0..REPETITIONS {
-            for notifier in &sources {
-                notifier.notify(i).unwrap();
+            for (n, notifier) in sources.iter().enumerate() {
+                let event_id = n as u64 * (SOURCES + REPETITIONS + 1) + i;
+                assert_that!(notifier.notify(event_id), is_ok);
+                event_ids.push(event_id);
             }
         }
 
-        for i in 0..REPETITIONS {
+        for _ in 0..REPETITIONS {
             for _ in 0..SOURCES {
                 let result = wait_call(&sut_listener).unwrap();
-                assert_that!(result, eq Some(i));
+                assert_that!(result, is_some);
+                assert_that!(event_ids, contains result.unwrap());
             }
         }
     }

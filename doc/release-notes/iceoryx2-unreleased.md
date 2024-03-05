@@ -28,6 +28,9 @@
     * Remove retrieve buffer full check from zero copy connection - sender had insufficient infos available
  * Fix insufficient memory reordering protection in `spsc::Queue::push` and `spsc::Queue::pop` [#119](https://github.com/eclipse-iceoryx/iceoryx2/issues/119)
  * Fix data race due to operation reordering in `spmc::UnrestrictedAtomic::load` [#125](https://github.com/eclipse-iceoryx/iceoryx2/issues/125)
+ * Fixes for FreeBSD 14.0 [#140](https://github.com/eclipse-iceoryx/iceoryx2/issues/140)
+    * Fix segfault in `iceoryx2-pal-posix;:shm_list()` caused by `sysctl`
+    * Adjust test to handle unordered event notifications
 
 ### Refactoring
 

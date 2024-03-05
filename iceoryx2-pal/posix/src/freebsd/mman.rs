@@ -13,9 +13,14 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::c_string_length;
-use crate::posix::stdlib::*;
-use crate::posix::types::*;
+use iceoryx2_pal_configuration::PATH_SEPARATOR;
+
+use crate::posix::*;
+
+use super::{
+    open_with_mode,
+    settings::{MAX_PATH_LENGTH, SHM_STATE_DIRECTORY, SHM_STATE_SUFFIX},
+};
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
     crate::internal::mlock(addr, len)
@@ -33,12 +38,94 @@ pub unsafe fn munlockall() -> int {
     crate::internal::munlockall()
 }
 
+unsafe fn remove_leading_path_separator(value: *const c_char) -> *const c_char {
+    if *value as u8 == PATH_SEPARATOR {
+        value.add(1)
+    } else {
+        value
+    }
+}
+
+unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LENGTH] {
+    let name = remove_leading_path_separator(name);
+
+    let mut state_file_path = [0u8; MAX_PATH_LENGTH];
+
+    // path
+    state_file_path[..SHM_STATE_DIRECTORY.len()].copy_from_slice(SHM_STATE_DIRECTORY);
+
+    // name
+    let mut name_len = 0;
+    for i in 0..usize::MAX {
+        let c = *(name.add(i) as *const u8);
+
+        state_file_path[i + SHM_STATE_DIRECTORY.len()] = if c == b'/' { b'\\' } else { c };
+        if *(name.add(i)) == 0i8 {
+            name_len = i;
+            break;
+        }
+    }
+
+    // suffix
+    let start_index = SHM_STATE_DIRECTORY.len() + name_len;
+    state_file_path[start_index..start_index + suffix.len()].copy_from_slice(suffix);
+
+    state_file_path
+}
+
+unsafe fn create_shm_state_file(name: *const c_char) -> bool {
+    let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
+    let shm_state_fd = open_with_mode(
+        shm_file_path.as_ptr().cast(),
+        O_EXCL | O_CREAT | O_RDWR,
+        S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH,
+    );
+
+    if shm_state_fd == -1 {
+        return false;
+    }
+
+    close(shm_state_fd);
+    true
+}
+
+unsafe fn does_shm_exist(name: *const c_char) -> bool {
+    let shm_file_path = shm_file_path(name, SHM_STATE_SUFFIX);
+    access(shm_file_path.as_ptr().cast(), F_OK) == 0
+}
+
 pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
-    crate::internal::shm_open(name, oflag, mode)
+    let shm_exists = does_shm_exist(name);
+    if oflag & O_EXCL != 0 && shm_exists {
+        Errno::set(Errno::EEXIST);
+        return -1;
+    }
+
+    if !shm_exists {
+        if oflag & O_CREAT == 0 {
+            Errno::set(Errno::ENOENT);
+            return -1;
+        }
+
+        if !create_shm_state_file(name) {
+            return -1;
+        }
+    }
+
+    crate::internal::shm_open(name.cast(), oflag, mode)
 }
 
 pub unsafe fn shm_unlink(name: *const c_char) -> int {
-    crate::internal::shm_unlink(name)
+    if does_shm_exist(name) {
+        let ret_val = crate::internal::shm_unlink(name.cast());
+        if ret_val == 0 || (ret_val == -1 && Errno::get() == Errno::ENOENT) {
+            remove(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr().cast());
+        }
+        return ret_val;
+    }
+
+    Errno::set(Errno::ENOENT);
+    -1
 }
 
 pub unsafe fn mmap(
@@ -60,84 +147,48 @@ pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
     crate::internal::mprotect(addr, len, prot)
 }
 
+unsafe fn trim_ascii(value: &[i8]) -> &[u8] {
+    let length = value.iter().position(|&c| c == 0).unwrap_or(value.len());
+    core::slice::from_raw_parts(value.as_ptr().cast(), length)
+}
+
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let mut result = vec![];
+    let mut search_path = SHM_STATE_DIRECTORY.to_vec();
+    search_path.push(0);
+    let dir = opendir(search_path.as_ptr().cast());
 
-    let listmib = b"kern.ipc.posix_shm_list\0";
-    let mut mib = [0 as int; 3];
-    let mut miblen: size_t = 3;
-    if sysctlnametomib(listmib.as_ptr() as *mut i8, mib.as_mut_ptr(), &mut miblen) == -1 {
+    if dir.is_null() {
         return result;
     }
 
-    let mut len: size_t = 0;
-    if sysctl(
-        mib.as_mut_ptr(),
-        miblen as _,
-        core::ptr::null_mut::<void>(),
-        &mut len,
-        core::ptr::null_mut::<void>(),
-        0,
-    ) == -1
-    {
-        return result;
-    }
-
-    len = len * 4 / 3;
-    let buffer = calloc(0, len);
-
-    if buffer.is_null() {
-        return result;
-    }
-
-    if sysctl(
-        mib.as_mut_ptr(),
-        miblen as _,
-        buffer,
-        &mut len,
-        core::ptr::null_mut::<void>(),
-        0,
-    ) != 0
-    {
-        free(buffer);
-        return result;
-    }
-
-    let mut temp = buffer;
-    let mut current_position = 0;
-    while current_position < len {
-        let kif = temp as *const kinfo_file;
-        if (*kif).kf_structsize == 0 || *(*kif).kf_path.as_ptr() == 0 {
+    loop {
+        let entry = crate::internal::readdir(dir);
+        if entry.is_null() {
             break;
         }
 
-        let mut name = [0; 256];
-        let raw_c = (*kif).kf_path.as_ptr().offset(1);
-        let raw_c_len = c_string_length(raw_c);
+        if (*entry).d_type == crate::internal::DT_REG as _ {
+            let file_name = trim_ascii(&(*entry).d_name);
+            if file_name.ends_with(SHM_STATE_SUFFIX) {
+                let mut shm_name = [0i8; 256];
+                for (i, letter) in shm_name
+                    .iter_mut()
+                    .enumerate()
+                    .take(file_name.len() - SHM_STATE_SUFFIX.len())
+                {
+                    if (*entry).d_name[i] == 0 {
+                        break;
+                    }
 
-        name[..raw_c_len].copy_from_slice(core::slice::from_raw_parts(raw_c.cast(), raw_c_len));
+                    *letter = (*entry).d_name[i];
+                }
 
-        result.push(name);
-
-        temp = temp.add((*kif).kf_structsize as usize);
-        current_position += (*kif).kf_structsize as usize;
+                result.push(shm_name);
+            }
+        }
     }
 
-    free(buffer);
+    closedir(dir);
     result
-}
-
-pub unsafe fn sysctl(
-    name: *mut int,
-    namelen: uint,
-    oldp: *mut void,
-    oldlenp: *mut size_t,
-    newp: *mut void,
-    newlen: size_t,
-) -> int {
-    crate::internal::sysctl(name, namelen, oldp, oldlenp, newp, newlen)
-}
-
-pub unsafe fn sysctlnametomib(name: *mut c_char, mibp: *mut int, sizep: *mut size_t) -> int {
-    crate::internal::sysctlnametomib(name, mibp, sizep)
 }
