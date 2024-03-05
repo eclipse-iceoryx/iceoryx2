@@ -67,9 +67,8 @@ unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LEN
     }
 
     // suffix
-    for i in 0..suffix.len() {
-        state_file_path[i + SHM_STATE_DIRECTORY.len() + name_len] = suffix[i];
-    }
+    let start_index = SHM_STATE_DIRECTORY.len() + name_len;
+    state_file_path[start_index..start_index + suffix.len()].copy_from_slice(suffix);
 
     state_file_path
 }
@@ -149,12 +148,8 @@ pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
 }
 
 unsafe fn trim_ascii(value: &[i8]) -> &[u8] {
-    for i in 0..value.len() {
-        if value[i] == 0 {
-            return core::slice::from_raw_parts(value.as_ptr().cast(), i);
-        }
-    }
-    core::slice::from_raw_parts(value.as_ptr().cast(), value.len())
+    let length = value.iter().position(|&c| c == 0).unwrap_or(value.len());
+    core::slice::from_raw_parts(value.as_ptr().cast(), length)
 }
 
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {
