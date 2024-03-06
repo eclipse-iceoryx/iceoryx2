@@ -77,6 +77,8 @@ pub type RelocatableQueue<T> = details::Queue<T, RelocatablePointer<MaybeUninit<
 mod details {
     use std::marker::PhantomData;
 
+    use iceoryx2_bb_elementary::math::unaligned_mem_size;
+
     use super::*;
     /// **Non-movable** relocatable queue with runtime fixed size capacity.
     #[repr(C)]
@@ -196,7 +198,7 @@ mod details {
 
         /// Returns the required memory size for a queue with a specified capacity
         pub const fn const_memory_size(capacity: usize) -> usize {
-            std::mem::size_of::<T>() * capacity + std::mem::align_of::<T>() - 1
+            unaligned_mem_size::<T>(capacity)
         }
 
         /// Returns true if the queue is empty, otherwise false

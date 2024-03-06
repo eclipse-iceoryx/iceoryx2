@@ -107,6 +107,8 @@ pub type RelocatableSafelyOverflowingIndexQueue =
     details::SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<usize>>>;
 
 pub mod details {
+    use iceoryx2_bb_elementary::math::unaligned_mem_size;
+
     use super::*;
 
     /// A threadsafe lock-free safely overflowing index queue with a capacity which can be set up at runtime,
@@ -222,9 +224,7 @@ pub mod details {
         /// Returns the amount of memory required to create a [`SafelyOverflowingIndexQueue`] with
         /// the provided capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
-            std::mem::size_of::<UnsafeCell<usize>>() * (capacity + 1)
-                + std::mem::align_of::<usize>()
-                - 1
+            unaligned_mem_size::<UnsafeCell<usize>>(capacity + 1)
         }
 
         fn at(&self, position: usize) -> *mut usize {

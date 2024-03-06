@@ -12,6 +12,11 @@
 
 //! Contains simplistic math functions.
 
+/// Returns the required memory size when alignment adjustments are taken into account
+pub const fn unaligned_mem_size<T>(array_capacity: usize) -> usize {
+    core::mem::size_of::<T>() * array_capacity + core::mem::align_of::<T>() - 1
+}
+
 /// Aligns value to alignment. It increments value to the next multiple of alignment.
 pub const fn align(value: usize, alignment: usize) -> usize {
     if value % alignment == 0 {

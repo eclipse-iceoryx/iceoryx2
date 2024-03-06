@@ -31,7 +31,7 @@ pub type RelocatableUsedChunkList = details::UsedChunkList<RelocatablePointer<At
 pub mod details {
     use std::fmt::Debug;
 
-    use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+    use iceoryx2_bb_elementary::{math::unaligned_mem_size, owning_pointer::OwningPointer};
 
     use super::*;
 
@@ -119,7 +119,7 @@ pub mod details {
 
     impl<PointerType: PointerTrait<AtomicBool> + Debug> UsedChunkList<PointerType> {
         pub const fn const_memory_size(capacity: usize) -> usize {
-            std::mem::size_of::<AtomicBool>() * capacity + std::mem::align_of::<AtomicBool>() - 1
+            unaligned_mem_size::<AtomicBool>(capacity)
         }
 
         pub fn capacity(&self) -> usize {

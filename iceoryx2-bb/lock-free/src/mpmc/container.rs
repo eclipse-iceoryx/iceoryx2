@@ -48,6 +48,7 @@
 //! ```
 
 use iceoryx2_bb_elementary::allocator::AllocationError;
+use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
@@ -235,12 +236,11 @@ impl<T: Copy + Debug> Container<T> {
 
     /// Returns the required memory size of the data segment of the [`Container`].
     pub const fn const_memory_size(capacity: usize) -> usize {
-        // UniqueIndexSet
-        (std::mem::size_of::<u32>() * (capacity + 1) + std::mem::align_of::<u32>() - 1)
+        UniqueIndexSet::const_memory_size(capacity)
         //  ActiveIndexPtr
-        + (std::mem::size_of::<AtomicU64>() * capacity + std::mem::align_of::<u64>() - 1)
+        + unaligned_mem_size::<AtomicU64>(capacity)
         // data ptr
-        + (std::mem::size_of::<T>() * capacity + std::mem::align_of::<T>() - 1)
+        + unaligned_mem_size::<T>(capacity)
     }
 
     /// Returns the capacity of the container.

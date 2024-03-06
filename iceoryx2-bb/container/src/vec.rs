@@ -70,7 +70,9 @@ use std::{
 };
 
 use iceoryx2_bb_elementary::{
-    math::align_to, pointer_trait::PointerTrait, relocatable_container::RelocatableContainer,
+    math::{align_to, unaligned_mem_size},
+    pointer_trait::PointerTrait,
+    relocatable_container::RelocatableContainer,
     relocatable_ptr::RelocatablePointer,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -187,7 +189,7 @@ impl<T> Vec<T> {
 
     /// Returns the required memory size for a vec with a specified capacity
     pub const fn const_memory_size(capacity: usize) -> usize {
-        std::mem::size_of::<T>() * capacity + std::mem::align_of::<T>() - 1
+        unaligned_mem_size::<T>(capacity)
     }
 
     /// Returns the capacity of the vector
