@@ -403,12 +403,13 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
         let shm = fail!(from self, when self.create_or_open_shm(),
             "{} since the corresponding connection could not be created or opened", msg);
 
-        let mgmt_ref = unsafe { &mut *(shm.base_address().as_ptr() as *mut SharedManagementData) };
-        self.reserve_port(mgmt_ref, State::Sender.value(), msg)?;
+        let mgmt = unsafe { &mut *(shm.base_address().as_ptr() as *mut SharedManagementData) };
+        self.reserve_port(mgmt, State::Sender.value(), msg)?;
 
         Ok(Sender {
             shared_memory: shm,
             name: self.name,
+            mgmt,
         })
     }
 
@@ -422,13 +423,14 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
         let shm = fail!(from self, when self.create_or_open_shm(),
             "{} since the corresponding connection could not be created or opened", msg);
 
-        let mgmt_ref = unsafe { &mut *(shm.base_address().as_ptr() as *mut SharedManagementData) };
-        self.reserve_port(mgmt_ref, State::Receiver.value(), msg)?;
+        let mgmt = unsafe { &mut *(shm.base_address().as_ptr() as *mut SharedManagementData) };
+        self.reserve_port(mgmt, State::Receiver.value(), msg)?;
 
         Ok(Receiver {
             shared_memory: shm,
             borrow_counter: UnsafeCell::new(0),
             name: self.name,
+            mgmt,
         })
     }
 }
@@ -437,6 +439,7 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
 pub struct Sender {
     shared_memory: SharedMemory,
     name: FileName,
+    mgmt: *const SharedManagementData,
 }
 
 impl Drop for Sender {
@@ -446,8 +449,9 @@ impl Drop for Sender {
 }
 
 impl Sender {
+    #[inline(always)]
     fn mgmt(&self) -> &SharedManagementData {
-        unsafe { &*(self.shared_memory.base_address().as_ptr() as *const SharedManagementData) }
+        unsafe { &*self.mgmt }
     }
 }
 
@@ -555,6 +559,7 @@ pub struct Receiver {
     shared_memory: SharedMemory,
     borrow_counter: UnsafeCell<usize>,
     name: FileName,
+    mgmt: *const SharedManagementData,
 }
 
 impl Drop for Receiver {
@@ -564,8 +569,9 @@ impl Drop for Receiver {
 }
 
 impl Receiver {
+    #[inline(always)]
     fn mgmt(&self) -> &SharedManagementData {
-        unsafe { &*(self.shared_memory.base_address().as_ptr() as *const SharedManagementData) }
+        unsafe { &*self.mgmt }
     }
 
     #[allow(clippy::mut_from_ref)]
