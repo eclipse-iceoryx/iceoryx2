@@ -47,9 +47,9 @@ mod used_chunk_list {
             assert_that!(sut.insert(i), eq true);
         }
 
-        for i in 0..sut.capacity() {
-            assert_that!(sut.remove(sut.capacity() - i - 1), eq true);
-            assert_that!(sut.remove(sut.capacity() - i - 1), eq false);
+        for i in (0..sut.capacity()).rev() {
+            assert_that!(sut.remove(i), eq true);
+            assert_that!(sut.remove(i), eq false);
         }
 
         assert_that!(sut.pop(), eq None);

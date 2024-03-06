@@ -33,7 +33,7 @@ impl ShmAllocator for BumpAllocator {
     }
 
     fn relative_start_address(&self) -> usize {
-        self.allocator.start() - self.base_address
+        self.allocator.start_address() - self.base_address
     }
 
     unsafe fn new_uninit(

@@ -333,11 +333,11 @@ impl<Service: service::Service> DataSegment<Service> {
                     let create_connection = match self.subscriber_connections.get(i) {
                         None => true,
                         Some(connection) => {
-                            let create_connection = connection.subscriber_id != *subscriber_id;
-                            if create_connection {
+                            let is_connected = connection.subscriber_id != *subscriber_id;
+                            if is_connected {
                                 self.remove_connection(i);
                             }
-                            create_connection
+                            is_connected
                         }
                     };
 

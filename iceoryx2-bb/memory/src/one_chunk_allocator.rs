@@ -82,7 +82,7 @@ impl OneChunkAllocator {
         self.allocated_chunk_start.store(0, Ordering::Relaxed)
     }
 
-    pub fn start(&self) -> usize {
+    pub fn start_address(&self) -> usize {
         self.start
     }
 

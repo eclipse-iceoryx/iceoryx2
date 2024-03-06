@@ -96,6 +96,9 @@ pub mod details {
                 };
             }
 
+            // relaxed is sufficient since no relocatable container can be used
+            // before init was called. Meaning, it is not allowed to send or share
+            // the container with other threads when it is in an uninitialized state.
             self.is_memory_initialized.store(true, Ordering::Relaxed);
 
             Ok(())

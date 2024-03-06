@@ -148,20 +148,22 @@ ubuntu_22_04_x64_stable_debug_task:
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
   linux_only_doc_test_script: cargo test --doc -- --ignored
 
-### TODO commented out due to limited CI time
-### ubuntu_22_04_x64_beta_debug_task:
-###   depends_on: ubuntu_22_04_x64_stable_debug
-###   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
-###   set_toolchain_script: rustup default beta
-###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+ubuntu_22_04_x64_beta_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
+  depends_on: ubuntu_22_04_x64_stable_debug
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+  set_toolchain_script: rustup default beta
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
-### TODO commented out due to limited CI time
-### ubuntu_22_04_x64_nightly_debug_task:
-###   depends_on: ubuntu_22_04_x64_beta_debug
-###   allow_failures: true
-###   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
-###   set_toolchain_script: rustup default nightly
-###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+ubuntu_22_04_x64_nightly_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
+  depends_on: ubuntu_22_04_x64_beta_debug
+  allow_failures: true
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
+  set_toolchain_script: rustup default nightly
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 # Pipeline 3
 
@@ -177,12 +179,13 @@ ubuntu_22_04_x64_stable_release_task:
 
 # Pipeline 4
 
-### TODO commented out due to limited CI time
-### ubuntu_22_04_aarch64_min_version_debug_task:
-###   depends_on: preflight_check
-###   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
-###   set_toolchain_script: rustup default 1.70.0
-###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+ubuntu_22_04_aarch64_min_version_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
+  set_toolchain_script: rustup default 1.70.0
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 ubuntu_22_04_aarch64_stable_debug_task:
   depends_on: preflight_check
@@ -191,13 +194,14 @@ ubuntu_22_04_aarch64_stable_debug_task:
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
-### TODO commented out due to limited CI time
-### ubuntu_22_04_aarch64_beta_debug_task:
-###   depends_on: ubuntu_22_04_aarch64_stable_debug
-###   allow_failures: true
-###   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
-###   set_toolchain_script: rustup default beta
-###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+ubuntu_22_04_aarch64_beta_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
+  depends_on: ubuntu_22_04_aarch64_stable_debug
+  allow_failures: true
+  <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
+  set_toolchain_script: rustup default beta
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 # Pipeline 5
 
@@ -263,16 +267,17 @@ windows_server_2019_x64_stable_release_task:
 
 # Pipeline 9
 
-### TODO commented out due to limited CI time
-### freebsd_x64_min_version_debug_task:
-###   depends_on: preflight_check
-###   <<: *IOX2_CONTAINER_FREEBSD_X64
-###   env:
-###     PATH: /root/.cargo/bin:$PATH
-###     HOME: /root  # must be set manually to '/root' or 'rustup' will throw an error
-###   <<: *IOX2_FREEBSD_SETUP
-###   set_toolchain_script: rustup default 1.70.0
-###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+freebsd_x64_min_version_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_FREEBSD_X64
+  env:
+    PATH: /root/.cargo/bin:$PATH
+    HOME: /root  # must be set manually to '/root' or 'rustup' will throw an error
+  <<: *IOX2_FREEBSD_SETUP
+  set_toolchain_script: rustup default 1.70.0
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 freebsd_x64_stable_debug_task:
   depends_on: preflight_check
@@ -291,18 +296,19 @@ freebsd_x64_stable_debug_task:
 
 # Pipeline 10
 
-### TODO commented out due to limited CI time
-### macos_aarch64_min_version_debug_task:
-###   depends_on: preflight_check
-###   <<: *IOX2_CONTAINER_MACOS_AARCH64
-###   env:
-###     PATH: /Users/admin/.cargo/bin:$PATH
-###   setup_script:
-###     - uname -a
-###     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
-###     - rustup component add clippy rustfmt
-###   set_toolchain_script: rustup default 1.70.0
-###   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+macos_aarch64_min_version_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
+  depends_on: preflight_check
+  <<: *IOX2_CONTAINER_MACOS_AARCH64
+  env:
+    PATH: /Users/admin/.cargo/bin:$PATH
+  setup_script:
+    - uname -a
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
+    - rustup component add clippy rustfmt
+  set_toolchain_script: rustup default 1.70.0
+  <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 macos_aarch64_stable_debug_task:
   depends_on: preflight_check

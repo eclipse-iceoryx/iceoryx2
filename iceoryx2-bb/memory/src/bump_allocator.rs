@@ -55,7 +55,7 @@ impl BumpAllocator {
         }
     }
 
-    pub fn start(&self) -> usize {
+    pub fn start_address(&self) -> usize {
         self.start
     }
 

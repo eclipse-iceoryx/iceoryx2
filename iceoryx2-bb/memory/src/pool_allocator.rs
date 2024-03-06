@@ -89,7 +89,7 @@ impl PoolAllocator {
         self.size
     }
 
-    pub fn start(&self) -> usize {
+    pub fn start_address(&self) -> usize {
         self.start
     }
 

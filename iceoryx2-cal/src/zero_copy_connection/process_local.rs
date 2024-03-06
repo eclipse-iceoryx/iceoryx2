@@ -42,8 +42,8 @@ enum State {
 #[derive(Debug)]
 struct Management {
     name: FileName,
-    receive_channel: SafelyOverflowingIndexQueue,
-    retrieve_channel: IndexQueue,
+    submission_channel: SafelyOverflowingIndexQueue,
+    completion_channel: IndexQueue,
     used_chunk_list: UsedChunkList,
     enable_safe_overflow: bool,
     max_borrowed_samples: usize,
@@ -139,7 +139,7 @@ impl Builder {
                         "{} since the max borrow setting is not compatible.", msg);
         }
 
-        if entry.receive_channel.capacity() != self.buffer_size {
+        if entry.submission_channel.capacity() != self.buffer_size {
             fail!(from self, with ZeroCopyCreationError::IncompatibleBufferSize,
                         "{} since the buffer size is not compatible.", msg);
         }
@@ -159,7 +159,7 @@ impl Builder {
         Ok(())
     }
 
-    fn retrieve_channel_size(&self) -> usize {
+    fn completion_channel_size(&self) -> usize {
         self.buffer_size + self.max_borrowed_samples + 1
     }
 }
@@ -235,8 +235,8 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
             None => {
                 let entry = Arc::new(Management {
                     name: self.name,
-                    receive_channel: SafelyOverflowingIndexQueue::new(self.buffer_size),
-                    retrieve_channel: IndexQueue::new(self.retrieve_channel_size()),
+                    submission_channel: SafelyOverflowingIndexQueue::new(self.buffer_size),
+                    completion_channel: IndexQueue::new(self.completion_channel_size()),
                     used_chunk_list: UsedChunkList::new(self.number_of_samples),
                     enable_safe_overflow: self.enable_safe_overflow,
                     max_borrowed_samples: self.max_borrowed_samples,
@@ -286,8 +286,8 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
             None => {
                 let entry = Arc::new(Management {
                     name: self.name,
-                    receive_channel: SafelyOverflowingIndexQueue::new(self.buffer_size),
-                    retrieve_channel: IndexQueue::new(self.retrieve_channel_size()),
+                    submission_channel: SafelyOverflowingIndexQueue::new(self.buffer_size),
+                    completion_channel: IndexQueue::new(self.completion_channel_size()),
                     used_chunk_list: UsedChunkList::new(self.number_of_samples),
                     enable_safe_overflow: self.enable_safe_overflow,
                     max_borrowed_samples: self.max_borrowed_samples,
@@ -327,7 +327,7 @@ impl NamedConcept for Sender {
 
 impl ZeroCopyPortDetails for Sender {
     fn buffer_size(&self) -> usize {
-        self.mgmt.receive_channel.capacity()
+        self.mgmt.submission_channel.capacity()
     }
 
     fn max_borrowed_samples(&self) -> usize {
@@ -348,7 +348,7 @@ impl ZeroCopySender for Sender {
     fn try_send(&self, ptr: PointerOffset) -> Result<Option<PointerOffset>, ZeroCopySendError> {
         let msg = "Unable to send sample";
 
-        if !self.mgmt.enable_safe_overflow && self.mgmt.receive_channel.is_full() {
+        if !self.mgmt.enable_safe_overflow && self.mgmt.submission_channel.is_full() {
             fail!(from self, with ZeroCopySendError::ReceiveBufferFull,
                         "{} since the receive buffer is full.", msg);
         }
@@ -362,7 +362,7 @@ impl ZeroCopySender for Sender {
                     "{} since the used chunk list is full.", msg);
         }
 
-        match unsafe { self.mgmt.receive_channel.push(ptr.value()) } {
+        match unsafe { self.mgmt.submission_channel.push(ptr.value()) } {
             Some(v) => {
                 if !self.mgmt.used_chunk_list.remove(v / self.mgmt.sample_size) {
                     fail!(from self, with ZeroCopySendError::ConnectionCorrupted,
@@ -380,11 +380,11 @@ impl ZeroCopySender for Sender {
         ptr: PointerOffset,
     ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
         if !self.mgmt.enable_safe_overflow {
-            while self.mgmt.receive_channel.is_full() {
+            while self.mgmt.submission_channel.is_full() {
                 AdaptiveWaitBuilder::new()
                     .create()
                     .unwrap()
-                    .wait_while(|| self.mgmt.receive_channel.is_full())
+                    .wait_while(|| self.mgmt.submission_channel.is_full())
                     .unwrap();
             }
         }
@@ -393,7 +393,7 @@ impl ZeroCopySender for Sender {
     }
 
     fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
-        match unsafe { self.mgmt.retrieve_channel.pop() } {
+        match unsafe { self.mgmt.completion_channel.pop() } {
             None => Ok(None),
             Some(v) => {
                 if !self.mgmt.used_chunk_list.remove(v / self.mgmt.sample_size) {
@@ -474,7 +474,7 @@ impl NamedConcept for Receiver {
 
 impl ZeroCopyPortDetails for Receiver {
     fn buffer_size(&self) -> usize {
-        self.mgmt.receive_channel.capacity()
+        self.mgmt.submission_channel.capacity()
     }
 
     fn max_borrowed_samples(&self) -> usize {
@@ -500,7 +500,7 @@ impl ZeroCopyReceiver for Receiver {
                 "Unable to receive another sample since this would exceed the max borrow value.");
         }
 
-        match unsafe { self.mgmt.receive_channel.pop() } {
+        match unsafe { self.mgmt.submission_channel.pop() } {
             None => Ok(None),
             Some(v) => {
                 *self.borrow_counter() += 1;
@@ -513,7 +513,7 @@ impl ZeroCopyReceiver for Receiver {
         &self,
         ptr: crate::shared_memory::PointerOffset,
     ) -> Result<(), super::ZeroCopyReleaseError> {
-        match unsafe { self.mgmt.retrieve_channel.push(ptr.value()) } {
+        match unsafe { self.mgmt.completion_channel.push(ptr.value()) } {
             true => {
                 *self.borrow_counter() -= 1;
                 Ok(())
