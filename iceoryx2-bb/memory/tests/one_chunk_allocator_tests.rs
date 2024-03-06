@@ -338,12 +338,11 @@ fn one_chunk_allocator_grow_with_non_allocated_chunk_fails() {
     let sut = test.create_one_chunk_allocator();
 
     unsafe {
-        sut.grow(
+        let _ = sut.grow(
             NonNull::new(123 as *mut u8).unwrap(),
             Layout::from_size_align_unchecked(CHUNK_SIZE / 2, CHUNK_ALIGNMENT),
             Layout::from_size_align_unchecked(CHUNK_SIZE, CHUNK_ALIGNMENT),
-        )
-        .unwrap();
+        );
     }
 }
 

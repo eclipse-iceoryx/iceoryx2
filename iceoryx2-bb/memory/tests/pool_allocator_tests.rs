@@ -310,12 +310,11 @@ fn pool_allocator_grow_with_non_allocated_chunk_fails() {
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
     unsafe {
-        sut.grow(
+        let _ = sut.grow(
             NonNull::new(431 as *mut u8).unwrap(),
             Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
             Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
-        )
-        .unwrap();
+        );
     }
 }
 
@@ -456,12 +455,11 @@ fn pool_allocator_shrink_non_allocated_chunk_fails() {
     let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
 
     unsafe {
-        sut.shrink(
+        let _ = sut.shrink(
             NonNull::new(1234 as *mut u8).unwrap(),
             Layout::from_size_align_unchecked(BUCKET_SIZE, BUCKET_ALIGNMENT),
             Layout::from_size_align_unchecked(BUCKET_SIZE / 2, BUCKET_ALIGNMENT),
-        )
-        .unwrap();
+        );
     };
 }
 
