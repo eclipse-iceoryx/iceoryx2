@@ -176,6 +176,7 @@ fn one_chunk_allocator_shrink_fails_when_alignment_increases() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn one_chunk_allocator_shrink_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -329,6 +330,7 @@ fn one_chunk_allocator_grow_with_increased_alignment_fails() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn one_chunk_allocator_grow_with_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;
@@ -347,6 +349,7 @@ fn one_chunk_allocator_grow_with_non_allocated_chunk_fails() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn one_chunk_allocator_deallocate_non_allocated_chunk_fails() {
     const CHUNK_SIZE: usize = 128;
     const CHUNK_ALIGNMENT: usize = 1;

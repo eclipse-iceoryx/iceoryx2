@@ -116,6 +116,7 @@ fn pool_allocator_allocate_more_than_bucket_alignment_fails() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn pool_allocator_deallocate_non_allocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
@@ -300,7 +301,8 @@ fn pool_allocator_grow_with_size_decrease_fails() {
 
 #[test]
 #[should_panic]
-fn pool_allocator_grow_with_unallocated_chunk_fails() {
+#[cfg(debug_assertions)]
+fn pool_allocator_grow_with_non_allocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
     const BUCKET_ALIGNMENT: usize = 1;
@@ -445,6 +447,7 @@ fn pool_allocator_shrink_with_alignment_larger_than_bucket_alignment_fails() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn pool_allocator_shrink_non_allocated_chunk_fails() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;
