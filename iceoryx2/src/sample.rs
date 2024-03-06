@@ -64,8 +64,7 @@ impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<Messa
     fn drop(&mut self) {
         match self.publisher_connections.get(self.channel_id) {
             Some(c) => {
-                let distance =
-                    self.ptr.as_ptr() as usize - c.data_segment.allocator_data_start_address();
+                let distance = self.ptr.as_ptr() as usize - c.data_segment.payload_start_address();
                 match c.receiver.release(PointerOffset::new(distance)) {
                     Ok(()) => (),
                     Err(ZeroCopyReleaseError::RetrieveBufferFull) => {

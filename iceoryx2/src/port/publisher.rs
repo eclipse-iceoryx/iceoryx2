@@ -69,6 +69,7 @@ use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
 use crate::service;
 use crate::service::config_scheme::data_segment_config;
+use crate::service::dynamic_config::publish_subscribe::PublisherDetails;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
@@ -78,7 +79,7 @@ use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::{
@@ -127,7 +128,8 @@ enum_gen! {
     /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send()`].
     PublisherSendError
   entry:
-    ConnectionBrokenSincePublisherNoLongerExists
+    ConnectionBrokenSincePublisherNoLongerExists,
+    ConnectionCorrupted
   mapping:
     PublisherLoanError to LoanError,
     ConnectionFailure to ConnectionError
@@ -191,12 +193,9 @@ impl<Service: service::Service> DataSegment<Service> {
             == 1
         {
             unsafe {
-                fatal_panic!(from self, when self.memory
-                .deallocate(
-                    distance_to_chunk,
-                    self.message_type_layout,
-                ), "Internal logic error. The sample should always contain a valid memory chunk from the provided allocator.");
-            };
+                self.memory
+                    .deallocate(distance_to_chunk, self.message_type_layout);
+            }
         }
     }
 
@@ -219,6 +218,20 @@ impl<Service: service::Service> DataSegment<Service> {
         }
     }
 
+    fn remove_connection(&self, i: usize) {
+        if let Some(connection) = self.subscriber_connections.get(i) {
+            // # SAFETY: the receiver no longer exist, therefore we can
+            //           reacquire all delivered samples
+            unsafe {
+                connection
+                    .sender
+                    .acquire_used_offsets(|offset| self.release_sample(offset))
+            };
+
+            self.subscriber_connections.remove(i);
+        }
+    }
+
     pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
         self.release_sample(distance_to_chunk);
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
@@ -238,7 +251,7 @@ impl<Service: service::Service> DataSegment<Service> {
         }
     }
 
-    fn deliver_sample(&self, address_to_chunk: usize) -> usize {
+    fn deliver_sample(&self, address_to_chunk: usize) -> Result<usize, PublisherSendError> {
         self.retrieve_returned_samples();
 
         let deliver_call = match self.config.unable_to_deliver_strategy {
@@ -255,11 +268,38 @@ impl<Service: service::Service> DataSegment<Service> {
             match self.subscriber_connections.get(i) {
                 Some(ref connection) => {
                     match deliver_call(&connection.sender, PointerOffset::new(address_to_chunk)) {
-                        Err(ZeroCopySendError::ReceiveBufferFull) => {
+                        Err(ZeroCopySendError::ReceiveBufferFull)
+                        | Err(ZeroCopySendError::UsedChunkListFull) => {
                             /* causes no problem
                              *   blocking_send => can never happen
                              *   try_send => we tried and expect that the buffer is full
                              * */
+                        }
+                        Err(ZeroCopySendError::ConnectionCorrupted) => {
+                            match &self.config.degration_callback {
+                                Some(c) => match c.call(
+                                    self.static_config.clone(),
+                                    self.port_id,
+                                    connection.subscriber_id,
+                                ) {
+                                    DegrationAction::Ignore => (),
+                                    DegrationAction::Warn => {
+                                        error!(from self,
+                                            "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                            address_to_chunk, connection.subscriber_id);
+                                    }
+                                    DegrationAction::Fail => {
+                                        fail!(from self, with PublisherSendError::ConnectionCorrupted,
+                                            "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                            address_to_chunk, connection.subscriber_id);
+                                    }
+                                },
+                                None => {
+                                    error!(from self,
+                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        address_to_chunk, connection.subscriber_id);
+                                }
+                            }
                         }
                         Ok(overflow) => {
                             self.borrow_sample(address_to_chunk);
@@ -274,7 +314,7 @@ impl<Service: service::Service> DataSegment<Service> {
                 None => (),
             }
         }
-        number_of_recipients
+        Ok(number_of_recipients)
     }
 
     fn populate_subscriber_channels(&self) -> Result<(), ZeroCopyCreationError> {
@@ -287,42 +327,51 @@ impl<Service: service::Service> DataSegment<Service> {
             })
         };
 
-        // retrieve samples before destroying channel
-        self.retrieve_returned_samples();
-
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
                 Some(subscriber_id) => {
-                    match self.subscriber_connections.create(i, *subscriber_id) {
-                        Ok(false) => (),
-                        Ok(true) => match &self.subscriber_connections.get(i) {
-                            Some(connection) => self.deliver_sample_history(connection),
-                            None => {
-                                fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
+                    let create_connection = match self.subscriber_connections.get(i) {
+                        None => true,
+                        Some(connection) => {
+                            let is_connected = connection.subscriber_id != *subscriber_id;
+                            if is_connected {
+                                self.remove_connection(i);
                             }
-                        },
-                        Err(e) => match &self.config.degration_callback {
-                            Some(c) => match c.call(
-                                self.static_config.clone(),
-                                self.port_id,
-                                *subscriber_id,
-                            ) {
-                                DegrationAction::Ignore => (),
-                                DegrationAction::Warn => {
-                                    warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
-                                }
-                                DegrationAction::Fail => {
-                                    fail!(from self, with e,
-                                           "Unable to establish connection to new subscriber {:?}.", subscriber_id );
+                            is_connected
+                        }
+                    };
+
+                    if create_connection {
+                        match self.subscriber_connections.create(i, *subscriber_id) {
+                            Ok(()) => match &self.subscriber_connections.get(i) {
+                                Some(connection) => self.deliver_sample_history(connection),
+                                None => {
+                                    fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
                                 }
                             },
-                            None => {
-                                warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
-                            }
-                        },
+                            Err(e) => match &self.config.degration_callback {
+                                Some(c) => match c.call(
+                                    self.static_config.clone(),
+                                    self.port_id,
+                                    *subscriber_id,
+                                ) {
+                                    DegrationAction::Ignore => (),
+                                    DegrationAction::Warn => {
+                                        warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
+                                    }
+                                    DegrationAction::Fail => {
+                                        fail!(from self, with e,
+                                           "Unable to establish connection to new subscriber {:?}.", subscriber_id );
+                                    }
+                                },
+                                None => {
+                                    warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
+                                }
+                            },
+                        }
                     }
                 }
-                None => self.subscriber_connections.remove(i),
+                None => self.remove_connection(i),
             }
         }
 
@@ -374,7 +423,7 @@ impl<Service: service::Service> DataSegment<Service> {
             "{} since the connections could not be updated.", msg);
 
         self.add_sample_to_history(address_to_chunk);
-        Ok(self.deliver_sample(address_to_chunk))
+        self.deliver_sample(address_to_chunk)
     }
 }
 
@@ -382,17 +431,19 @@ impl<Service: service::Service> DataSegment<Service> {
 #[derive(Debug)]
 pub struct Publisher<Service: service::Service, MessageType: Debug> {
     pub(crate) data_segment: Rc<DataSegment<Service>>,
-    dynamic_publisher_handle: ContainerHandle,
+    dynamic_publisher_handle: Option<ContainerHandle>,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
 impl<Service: service::Service, MessageType: Debug> Drop for Publisher<Service, MessageType> {
     fn drop(&mut self) {
-        self.data_segment
-            .dynamic_storage
-            .get()
-            .publish_subscribe()
-            .release_publisher_handle(self.dynamic_publisher_handle)
+        if let Some(handle) = self.dynamic_publisher_handle {
+            self.data_segment
+                .dynamic_storage
+                .get()
+                .publish_subscribe()
+                .release_publisher_handle(handle)
+        }
     }
 }
 
@@ -419,9 +470,52 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             .messaging_pattern
             .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
-        let data_segment = fail!(from origin, when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples),
+        let data_segment = fail!(from origin, when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples, static_config),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
+
+        let data_segment = Rc::new(DataSegment {
+            is_active: AtomicBool::new(true),
+            memory: data_segment,
+            message_size: std::mem::size_of::<Message<Header, MessageType>>(),
+            message_type_layout: Layout::new::<MessageType>(),
+            sample_reference_counter: {
+                let mut v = Vec::with_capacity(number_of_samples);
+                for _ in 0..number_of_samples {
+                    v.push(AtomicU64::new(0));
+                }
+                v
+            },
+            dynamic_storage,
+            port_id,
+            subscriber_connections: SubscriberConnections::new(
+                subscriber_list.capacity(),
+                &service.state().global_config,
+                port_id,
+                static_config,
+                number_of_samples,
+            ),
+            config,
+            subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
+            history: match static_config.history_size == 0 {
+                true => None,
+                false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
+            },
+            static_config: service.state().static_config.clone(),
+            loan_counter: AtomicUsize::new(0),
+        });
+
+        let mut new_self = Self {
+            data_segment,
+            dynamic_publisher_handle: None,
+            _phantom_message_type: PhantomData,
+        };
+
+        if let Err(e) = new_self.data_segment.populate_subscriber_channels() {
+            warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
+        }
+
+        std::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources
@@ -430,8 +524,10 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             .dynamic_storage
             .get()
             .publish_subscribe()
-            .add_publisher_id(port_id)
-        {
+            .add_publisher_id(PublisherDetails {
+                publisher_id: port_id,
+                number_of_samples,
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with PublisherCreateError::ExceedsMaxSupportedPublishers,
@@ -440,43 +536,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             }
         };
 
-        let new_self = Self {
-            data_segment: Rc::new(DataSegment {
-                is_active: AtomicBool::new(true),
-                memory: data_segment,
-                message_size: std::mem::size_of::<Message<Header, MessageType>>(),
-                message_type_layout: Layout::new::<MessageType>(),
-                sample_reference_counter: {
-                    let mut v = Vec::with_capacity(number_of_samples);
-                    for _ in 0..number_of_samples {
-                        v.push(AtomicU64::new(0));
-                    }
-                    v
-                },
-                dynamic_storage,
-                port_id,
-                subscriber_connections: SubscriberConnections::new(
-                    subscriber_list.capacity(),
-                    &service.state().global_config,
-                    port_id,
-                    static_config,
-                ),
-                config,
-                subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
-                history: match static_config.history_size == 0 {
-                    true => None,
-                    false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
-                },
-                static_config: service.state().static_config.clone(),
-                loan_counter: AtomicUsize::new(0),
-            }),
-            dynamic_publisher_handle,
-            _phantom_message_type: PhantomData,
-        };
-
-        if let Err(e) = new_self.data_segment.populate_subscriber_channels() {
-            warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
-        }
+        new_self.dynamic_publisher_handle = Some(dynamic_publisher_handle);
 
         Ok(new_self)
     }
@@ -485,19 +545,26 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         port_id: UniquePublisherId,
         global_config: &config::Config,
         number_of_samples: usize,
+        static_config: &publish_subscribe::StaticConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
         let allocator_config = shm_allocator::pool_allocator::Config {
-            bucket_layout: Layout::new::<Message<Header, MessageType>>(),
+            bucket_layout:
+                // # SAFETY: type_size and type_alignment are acquired via
+                //           core::mem::{size_of|align_of}
+                unsafe {
+                Layout::from_size_align_unchecked(
+                    static_config.type_size,
+                    static_config.type_alignment,
+                )
+            },
         };
-        let chunk_size = allocator_config.bucket_layout.size();
-        let chunk_align = allocator_config.bucket_layout.align();
 
         Ok(fail!(from "Publisher::create_data_segment()",
             when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
             Service::SharedMemory,
                 >>::new(&data_segment_name(port_id))
                 .config(&data_segment_config::<Service>(global_config))
-                .size(chunk_size * number_of_samples + chunk_align - 1)
+                .size(static_config.type_size * number_of_samples + static_config.type_alignment - 1)
                 .create(&allocator_config),
             "Unable to create the data segment."))
     }

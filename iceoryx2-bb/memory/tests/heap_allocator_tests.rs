@@ -36,7 +36,6 @@ fn heap_allocator_allocate_deallocate_works() {
             NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
             layout,
         )
-        .unwrap()
     };
 }
 
@@ -70,7 +69,6 @@ fn heap_allocator_allocate_zeroed_and_free_works() {
             NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
             layout,
         )
-        .unwrap()
     };
 }
 
@@ -121,7 +119,6 @@ fn heap_allocator_grow_memory_keeps_content() {
             NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
             layout,
         )
-        .unwrap()
     };
 }
 
@@ -163,7 +160,6 @@ fn heap_allocator_shrink_memory_keeps_content() {
             NonNull::new(memory.as_ref().as_ptr() as *mut u8).unwrap(),
             layout,
         )
-        .unwrap()
     };
 }
 

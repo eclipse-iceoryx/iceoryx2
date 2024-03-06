@@ -132,17 +132,13 @@ impl<T> StorageDetails<T> {
 
 impl<T> Drop for StorageDetails<T> {
     fn drop(&mut self) {
-        let mem_address = self.data_ptr as u64;
         unsafe { std::ptr::drop_in_place(self.data_ptr) };
 
         unsafe {
-            let result = HeapAllocator::new().deallocate(
+            HeapAllocator::new().deallocate(
                 NonNull::new_unchecked(self.data_ptr as *mut u8),
                 self.layout,
             );
-            if result.is_err() {
-                fatal_panic!(from "StorageDetails::drop", "Failed to release memory at address {:#x} ({:?}).", mem_address, result.as_ref().err().unwrap());
-            }
         };
     }
 }

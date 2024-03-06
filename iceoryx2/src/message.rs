@@ -12,8 +12,9 @@
 
 use core::fmt;
 
+#[doc(hidden)]
 #[repr(C)]
-pub(crate) struct Message<Header, Data> {
+pub struct Message<Header, Data> {
     pub(crate) header: Header,
     pub(crate) data: Data,
 }

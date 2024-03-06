@@ -16,10 +16,7 @@ pub mod pool_allocator;
 use std::{alloc::Layout, ptr::NonNull};
 
 pub use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_elementary::{
-    allocator::{BaseAllocator, DeallocationError},
-    enum_gen,
-};
+use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
 
 pub trait ShmAllocatorConfig: Copy + Default {}
 
@@ -88,6 +85,10 @@ pub trait ShmAllocator: Send + Sync + 'static {
     /// Returns the max supported alignment by the allocator.
     fn max_alignment(&self) -> usize;
 
+    /// Returns the offset to the beginning of the allocator payload. The smallest offset a user
+    /// can allocate.
+    fn relative_start_address(&self) -> usize;
+
     /// Allocates memory and returns the pointer offset.
     ///
     /// # Safety
@@ -103,9 +104,5 @@ pub trait ShmAllocator: Send + Sync + 'static {
     /// * the provided distance must have been allocated before with the same layout
     /// * [`ShmAllocator::init()`] must have been called before using this method
     ///
-    unsafe fn deallocate(
-        &self,
-        distance: PointerOffset,
-        layout: Layout,
-    ) -> Result<(), DeallocationError>;
+    unsafe fn deallocate(&self, distance: PointerOffset, layout: Layout);
 }

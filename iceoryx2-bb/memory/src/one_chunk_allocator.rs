@@ -70,15 +70,19 @@ impl OneChunkAllocator {
         self.allocated_chunk_start.load(Ordering::Relaxed) == 0
     }
 
-    fn is_allocated_chunk(&self, ptr: &NonNull<u8>) -> bool {
-        ptr.as_ptr() as usize == self.allocated_chunk_start.load(Ordering::Relaxed)
+    fn verify_ptr_is_managed_by_allocator(&self, ptr: NonNull<u8>) {
+        debug_assert!(
+            ptr.as_ptr() as usize == self.allocated_chunk_start.load(Ordering::Relaxed),
+            "Tried to access memory ({:?}) that does not belong to this allocator.",
+            ptr
+        );
     }
 
     fn release_chunk(&self) {
         self.allocated_chunk_start.store(0, Ordering::Relaxed)
     }
 
-    pub fn start(&self) -> usize {
+    pub fn start_address(&self) -> usize {
         self.start
     }
 
@@ -111,21 +115,9 @@ impl BaseAllocator for OneChunkAllocator {
         .unwrap())
     }
 
-    unsafe fn deallocate(
-        &self,
-        ptr: NonNull<u8>,
-        _layout: Layout,
-    ) -> Result<(), DeallocationError> {
-        match self.is_allocated_chunk(&ptr) {
-            true => {
-                self.release_chunk();
-                Ok(())
-            }
-            false => {
-                fail!(from self, with DeallocationError::ProvidedPointerNotContainedInAllocator,
-                    "Tried to release memory ({}) which does not belong to this allocator.", ptr.as_ptr() as usize);
-            }
-        }
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
+        self.verify_ptr_is_managed_by_allocator(ptr);
+        self.release_chunk();
     }
 }
 
@@ -137,10 +129,7 @@ impl Allocator for OneChunkAllocator {
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocationGrowError> {
         let msg = "Unable to grow memory chunk";
-        if !self.is_allocated_chunk(&ptr) {
-            fail!(from self, with AllocationGrowError::ProvidedPointerNotContainedInAllocator,
-                "{} since the provided pointer is not contained in this allocator.", msg);
-        }
+        self.verify_ptr_is_managed_by_allocator(ptr);
 
         if old_layout.size() >= new_layout.size() {
             fail!(from self, with AllocationGrowError::GrowWouldShrink,
@@ -170,10 +159,7 @@ impl Allocator for OneChunkAllocator {
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocationShrinkError> {
         let msg = "Unable to shrink memory chunk";
-        if !self.is_allocated_chunk(&ptr) {
-            fail!(from self, with AllocationShrinkError::ProvidedPointerNotContainedInAllocator,
-                "{} since the provided pointer is not contained in this allocator.", msg);
-        }
+        self.verify_ptr_is_managed_by_allocator(ptr);
 
         if old_layout.size() <= new_layout.size() {
             fail!(from self, with AllocationShrinkError::ShrinkWouldGrow,

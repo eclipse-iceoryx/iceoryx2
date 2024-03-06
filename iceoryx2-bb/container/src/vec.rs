@@ -70,7 +70,9 @@ use std::{
 };
 
 use iceoryx2_bb_elementary::{
-    math::align_to, pointer_trait::PointerTrait, relocatable_container::RelocatableContainer,
+    math::{align_to, unaligned_mem_size},
+    pointer_trait::PointerTrait,
+    relocatable_container::RelocatableContainer,
     relocatable_ptr::RelocatablePointer,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -175,18 +177,19 @@ impl<T: PartialEq> PartialEq for Vec<T> {
 impl<T: Eq> Eq for Vec<T> {}
 
 impl<T> Vec<T> {
+    #[inline(always)]
     fn verify_init(&self, source: &str) {
-        if !self
-            .is_initialized
-            .load(std::sync::atomic::Ordering::Relaxed)
-        {
-            fatal_panic!(from source, "Undefined behavior - the object was not initialized with 'init' before.");
-        }
+        debug_assert!(
+            self.is_initialized
+                .load(std::sync::atomic::Ordering::Relaxed),
+            "From: {}, Undefined behavior - the object was not initialized with 'init' before.",
+            source
+        );
     }
 
     /// Returns the required memory size for a vec with a specified capacity
     pub const fn const_memory_size(capacity: usize) -> usize {
-        std::mem::size_of::<T>() * capacity + std::mem::align_of::<T>() - 1
+        unaligned_mem_size::<T>(capacity)
     }
 
     /// Returns the capacity of the vector

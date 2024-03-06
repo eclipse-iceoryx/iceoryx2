@@ -101,6 +101,8 @@ pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCe
 pub mod details {
     use std::fmt::Debug;
 
+    use iceoryx2_bb_elementary::math::unaligned_mem_size;
+
     use super::*;
 
     /// A threadsafe lock-free index queue with a capacity which can be set up at runtime, when the
@@ -195,16 +197,19 @@ pub mod details {
     }
 
     impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> IndexQueue<PointerType> {
+        #[inline(always)]
         fn verify_init(&self, source: &str) {
-            if !self.is_memory_initialized.load(Ordering::Relaxed) {
-                fatal_panic!(from self, "Undefined behavior when calling \"{}\" and the object is not initialized.", source);
-            }
+            debug_assert!(
+                self.is_memory_initialized.load(Ordering::Relaxed),
+                "Undefined behavior when calling \"{}\" and the object is not initialized.",
+                source
+            );
         }
 
         /// Returns the amount of memory required to create a [`IndexQueue`] with the provided
         /// capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
-            std::mem::size_of::<UnsafeCell<u64>>() * capacity + std::mem::align_of::<u64>() - 1
+            unaligned_mem_size::<UnsafeCell<u64>>(capacity)
         }
 
         unsafe fn at(&self, position: usize) -> *mut usize {

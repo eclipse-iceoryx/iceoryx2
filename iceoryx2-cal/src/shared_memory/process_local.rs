@@ -42,11 +42,8 @@ impl Drop for SharedMemoryEntry {
         self.allocator = None;
 
         unsafe {
-            fatal_panic!(from self, when HeapAllocator::new()
-                .deallocate(self.memory, self.layout),
-                "This should never happen! Failed to release shared memory.");
-            fatal_panic!(from self, when HeapAllocator::new().deallocate(self.mgmt_memory, self.layout),
-                "This should never happen! Failed to release shared memory allocator management memory.");
+            HeapAllocator::new().deallocate(self.memory, self.layout);
+            HeapAllocator::new().deallocate(self.mgmt_memory, self.layout);
         };
     }
 }
@@ -199,9 +196,12 @@ impl<Allocator: ShmAllocator + Debug>
         let mgmt_memory = match HeapAllocator::new().allocate(mgmt_layout) {
             Ok(m) => m,
             Err(_) => {
-                fatal_panic!(from self,
-                    when unsafe { HeapAllocator::new().deallocate(NonNull::new_unchecked(memory.as_ptr() as *mut u8), mgmt_layout) },
-                    "This should never happen! {} since the deallocation of the shared memory failed in the error path.", msg);
+                unsafe {
+                    HeapAllocator::new().deallocate(
+                        NonNull::new_unchecked(memory.as_ptr() as *mut u8),
+                        mgmt_layout,
+                    );
+                }
                 fail!(from self, with SharedMemoryCreateError::InternalError,
                     "{} since the allocators management memory could not be initialized.", msg);
             }
@@ -381,25 +381,19 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
 
         Ok(ShmPointer {
             offset,
-            data_ptr: (offset.value() + self.allocator_data_start_address()) as *mut u8,
+            data_ptr: (offset.value() + self.payload_start_address()) as *mut u8,
         })
     }
 
-    unsafe fn deallocate(
-        &self,
-        offset: PointerOffset,
-        layout: std::alloc::Layout,
-    ) -> Result<(), DeallocationError> {
-        fail!(from self, when self.allocator().deallocate(offset, layout),
-            "Failed to deallocate shared memory chunk due to an internal allocator failure.");
-        Ok(())
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
+        self.allocator().deallocate(offset, layout);
     }
 
     fn release_ownership(&mut self) {
         self.has_ownership = false;
     }
 
-    fn allocator_data_start_address(&self) -> usize {
+    fn payload_start_address(&self) -> usize {
         self.shm.memory.as_ptr() as usize
     }
 }

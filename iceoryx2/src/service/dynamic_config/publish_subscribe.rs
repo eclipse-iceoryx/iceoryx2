@@ -39,12 +39,18 @@ pub(crate) struct DynamicConfigSettings {
     pub number_of_publishers: usize,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct PublisherDetails {
+    pub(crate) publisher_id: UniquePublisherId,
+    pub(crate) number_of_samples: usize,
+}
+
 /// The dynamic configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[derive(Debug)]
 pub struct DynamicConfig {
     pub(crate) subscribers: Container<UniqueSubscriberId>,
-    pub(crate) publishers: Container<UniquePublisherId>,
+    pub(crate) publishers: Container<PublisherDetails>,
 }
 
 impl DynamicConfig {
@@ -66,7 +72,7 @@ impl DynamicConfig {
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
         Container::<UniqueSubscriberId>::memory_size(config.number_of_subscribers)
-            + Container::<UniquePublisherId>::memory_size(config.number_of_publishers)
+            + Container::<PublisherDetails>::memory_size(config.number_of_publishers)
     }
 
     /// Returns how many [`crate::port::publisher::Publisher`] ports are currently connected.
@@ -80,18 +86,18 @@ impl DynamicConfig {
     }
 
     pub(crate) fn add_subscriber_id(&self, id: UniqueSubscriberId) -> Option<ContainerHandle> {
-        unsafe { self.subscribers.add_with_handle(id) }
+        unsafe { self.subscribers.add(id) }
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
-        unsafe { self.subscribers.remove_with_handle(handle) }
+        unsafe { self.subscribers.remove(handle) }
     }
 
-    pub(crate) fn add_publisher_id(&self, id: UniquePublisherId) -> Option<ContainerHandle> {
-        unsafe { self.publishers.add_with_handle(id) }
+    pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
+        unsafe { self.publishers.add(details) }
     }
 
     pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
-        unsafe { self.publishers.remove_with_handle(handle) }
+        unsafe { self.publishers.remove(handle) }
     }
 }

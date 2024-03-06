@@ -13,7 +13,7 @@
 use std::{alloc::Layout, ptr::NonNull};
 
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
-use iceoryx2_bb_elementary::allocator::{BaseAllocator, DeallocationError};
+use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::fail;
 
 use super::{PointerOffset, ShmAllocationError, ShmAllocatorInitError};
@@ -61,6 +61,10 @@ impl ShmAllocator for PoolAllocator {
             config.bucket_layout,
             memory_size,
         )
+    }
+
+    fn relative_start_address(&self) -> usize {
+        self.allocator.start_address() - self.base_address
     }
 
     unsafe fn new_uninit(
@@ -112,22 +116,16 @@ impl ShmAllocator for PoolAllocator {
                 msg, layout.align(), self.max_alignment());
         }
 
-        let chunk = fail!(from self, when self.allocator.allocate(layout),
-                                        "{}.", msg);
+        let chunk = fail!(from self, when self.allocator.allocate(layout), "{}.", msg);
         Ok(PointerOffset::new(
-            (chunk.as_ptr() as *const u8) as usize - self.base_address,
+            (chunk.as_ptr() as *const u8) as usize - self.allocator.start_address(),
         ))
     }
 
-    unsafe fn deallocate(
-        &self,
-        offset: PointerOffset,
-        layout: Layout,
-    ) -> Result<(), DeallocationError> {
-        fail!(from self, when self.allocator.deallocate(NonNull::new_unchecked(
-                    (offset.0 + self.base_address) as *mut u8), layout),
-            "Failed to release shared memory chunk");
-
-        Ok(())
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
+        self.allocator.deallocate(
+            NonNull::new_unchecked((offset.value() + self.allocator.start_address()) as *mut u8),
+            layout,
+        );
     }
 }

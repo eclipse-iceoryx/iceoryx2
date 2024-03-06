@@ -88,13 +88,12 @@ fn bump_allocator_after_deallocate_allocating_all_memory_works() {
         assert_that!(sample, is_ok);
     }
 
-    let result = unsafe {
+    unsafe {
         sut.deallocate(
             NonNull::new_unchecked(test.raw_memory.as_mut_ptr()),
             Layout::from_size_align_unchecked(1, 1),
-        )
-    };
-    assert_that!(result, is_ok);
+        );
+    }
 
     for _ in 0..number_of_samples {
         let sample = sut.allocate(unsafe { Layout::from_size_align_unchecked(sample_size, 1) });

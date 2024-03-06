@@ -46,7 +46,7 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
-use std::{cell::UnsafeCell, rc::Rc};
+use std::{cell::UnsafeCell, rc::Rc, sync::atomic::Ordering};
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].
@@ -141,15 +141,17 @@ pub struct Notifier<Service: service::Service> {
     listener_list_state: UnsafeCell<ContainerState<UniqueListenerId>>,
     default_event_id: EventId,
     dynamic_storage: Rc<Service::DynamicStorage>,
-    dynamic_notifier_handle: ContainerHandle,
+    dynamic_notifier_handle: Option<ContainerHandle>,
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {
     fn drop(&mut self) {
-        self.dynamic_storage
-            .get()
-            .event()
-            .release_notifier_handle(self.dynamic_notifier_handle)
+        if let Some(handle) = self.dynamic_notifier_handle {
+            self.dynamic_storage
+                .get()
+                .event()
+                .release_notifier_handle(handle)
+        }
     }
 }
 
@@ -165,7 +167,28 @@ impl<Service: service::Service> Notifier<Service> {
         let listener_list = &service.state().dynamic_storage.get().event().listeners;
         let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
 
-        let dynamic_notifier_handle = match dynamic_storage.get().event().add_notifier_id(port_id) {
+        let mut new_self = Self {
+            listener_connections: ListenerConnections::new(listener_list.capacity()),
+            default_event_id,
+            listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
+            dynamic_storage,
+            dynamic_notifier_handle: None,
+        };
+
+        if let Err(e) = new_self.populate_listener_channels() {
+            warn!(from new_self, "The new Notifier port is unable to connect to every Listener port, caused by {:?}.", e);
+        }
+
+        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+
+        // !MUST! be the last task otherwise a notifier is added to the dynamic config without
+        // the creation of all required channels
+        let dynamic_notifier_handle = match new_self
+            .dynamic_storage
+            .get()
+            .event()
+            .add_notifier_id(port_id)
+        {
             Some(handle) => handle,
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
@@ -173,18 +196,7 @@ impl<Service: service::Service> Notifier<Service> {
                             msg, service.state().static_config.event().max_notifiers);
             }
         };
-
-        let new_self = Self {
-            listener_connections: ListenerConnections::new(listener_list.capacity()),
-            default_event_id,
-            listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
-            dynamic_storage,
-            dynamic_notifier_handle,
-        };
-
-        if let Err(e) = new_self.populate_listener_channels() {
-            warn!(from new_self, "The new Notifier port is unable to connect to every Listener port, caused by {:?}.", e);
-        }
+        new_self.dynamic_notifier_handle = Some(dynamic_notifier_handle);
 
         Ok(new_self)
     }

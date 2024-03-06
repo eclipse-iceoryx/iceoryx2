@@ -35,6 +35,7 @@ use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::rc::Rc;
+use std::sync::atomic::Ordering;
 
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -42,6 +43,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
 
 use crate::port::DegrationAction;
+use crate::service::dynamic_config::publish_subscribe::PublisherDetails;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{
@@ -50,7 +52,7 @@ use crate::{
 };
 
 use super::details::publisher_connections::{Connection, PublisherConnections};
-use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
+use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::ConnectionFailure;
 
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
@@ -94,22 +96,24 @@ pub(crate) mod internal {
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
 pub struct Subscriber<Service: service::Service, MessageType: Debug> {
-    dynamic_subscriber_handle: ContainerHandle,
+    dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: Rc<PublisherConnections<Service>>,
     dynamic_storage: Rc<Service::DynamicStorage>,
     static_config: crate::service::static_config::StaticConfig,
     config: SubscriberConfig,
 
-    publisher_list_state: UnsafeCell<ContainerState<UniquePublisherId>>,
+    publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
 impl<Service: service::Service, MessageType: Debug> Drop for Subscriber<Service, MessageType> {
     fn drop(&mut self) {
-        self.dynamic_storage
-            .get()
-            .publish_subscribe()
-            .release_subscriber_handle(self.dynamic_subscriber_handle)
+        if let Some(handle) = self.dynamic_subscriber_handle {
+            self.dynamic_storage
+                .get()
+                .publish_subscribe()
+                .release_subscriber_handle(handle)
+        }
     }
 }
 
@@ -131,6 +135,30 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             .publishers;
 
         let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
+
+        let publisher_connections = Rc::new(PublisherConnections::new(
+            publisher_list.capacity(),
+            port_id,
+            &service.state().global_config,
+            static_config,
+        ));
+
+        let mut new_self = Self {
+            config,
+            publisher_connections,
+            dynamic_storage,
+            publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
+            dynamic_subscriber_handle: None,
+            static_config: service.state().static_config.clone(),
+            _phantom_message_type: PhantomData,
+        };
+
+        if let Err(e) = new_self.populate_publisher_channels() {
+            warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
+        }
+
+        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels
         let dynamic_subscriber_handle = match service
@@ -148,24 +176,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             }
         };
 
-        let new_self = Self {
-            config,
-            publisher_connections: Rc::new(PublisherConnections::new(
-                publisher_list.capacity(),
-                port_id,
-                &service.state().global_config,
-                static_config,
-            )),
-            dynamic_storage,
-            publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
-            dynamic_subscriber_handle,
-            static_config: service.state().static_config.clone(),
-            _phantom_message_type: PhantomData,
-        };
-
-        if let Err(e) = new_self.populate_publisher_channels() {
-            warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
-        }
+        new_self.dynamic_subscriber_handle = Some(dynamic_subscriber_handle);
 
         Ok(new_self)
     }
@@ -175,37 +186,52 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         visited_indices.resize(self.publisher_connections.capacity(), None);
 
         unsafe {
-            (*self.publisher_list_state.get()).for_each(|index, publisher_id| {
-                visited_indices[index as usize] = Some(*publisher_id);
+            (*self.publisher_list_state.get()).for_each(|index, details| {
+                visited_indices[index as usize] = Some(*details);
             })
         };
 
         // update all connections
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
-                Some(publisher_id) => match self.publisher_connections.create(i, *publisher_id) {
-                    Ok(()) => (),
-                    Err(e) => match &self.config.degration_callback {
-                        None => {
-                            warn!(from self, "Unable to establish connection to new publisher {:?}.", publisher_id)
-                        }
-                        Some(c) => {
-                            match c.call(
-                                self.static_config.clone(),
-                                *publisher_id,
-                                self.publisher_connections.subscriber_id(),
-                            ) {
-                                DegrationAction::Ignore => (),
-                                DegrationAction::Warn => {
-                                    warn!(from self, "Unable to establish connection to new publisher {:?}.", publisher_id)
+                Some(details) => {
+                    let create_connection = match self.publisher_connections.get(i) {
+                        None => true,
+                        Some(connection) => connection.publisher_id != details.publisher_id,
+                    };
+
+                    if create_connection {
+                        match self.publisher_connections.create(
+                            i,
+                            details.publisher_id,
+                            details.number_of_samples,
+                        ) {
+                            Ok(()) => (),
+                            Err(e) => match &self.config.degration_callback {
+                                None => {
+                                    warn!(from self, "Unable to establish connection to new publisher {:?}.", details.publisher_id)
                                 }
-                                DegrationAction::Fail => {
-                                    fail!(from self, with e, "Unable to establish connection to new publisher {:?}.", publisher_id);
+                                Some(c) => {
+                                    match c.call(
+                                        self.static_config.clone(),
+                                        details.publisher_id,
+                                        self.publisher_connections.subscriber_id(),
+                                    ) {
+                                        DegrationAction::Ignore => (),
+                                        DegrationAction::Warn => {
+                                            warn!(from self, "Unable to establish connection to new publisher {:?}.",
+                                        details.publisher_id)
+                                        }
+                                        DegrationAction::Fail => {
+                                            fail!(from self, with e, "Unable to establish connection to new publisher {:?}.",
+                                        details.publisher_id);
+                                        }
+                                    }
                                 }
-                            }
+                            },
                         }
-                    },
-                },
+                    }
+                }
                 None => self.publisher_connections.remove(i),
             }
         }
@@ -223,8 +249,8 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             Ok(data) => match data {
                 None => Ok(None),
                 Some(relative_addr) => {
-                    let absolute_address = relative_addr.value()
-                        + connection.data_segment.allocator_data_start_address();
+                    let absolute_address =
+                        relative_addr.value() + connection.data_segment.payload_start_address();
                     Ok(Some(Sample {
                         publisher_connections: Rc::clone(&self.publisher_connections),
                         channel_id,

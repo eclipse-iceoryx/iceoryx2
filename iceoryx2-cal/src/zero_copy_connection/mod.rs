@@ -12,6 +12,7 @@
 
 pub mod posix_shared_memory;
 pub mod process_local;
+pub mod used_chunk_list;
 
 use std::fmt::Debug;
 
@@ -25,9 +26,12 @@ pub enum ZeroCopyCreationError {
     InternalError,
     AnotherInstanceIsAlreadyConnected,
     ConnectionMaybeCorrupted,
+    InvalidSampleSize,
     IncompatibleBufferSize,
     IncompatibleMaxBorrowedSampleSetting,
     IncompatibleOverflowSetting,
+    IncompatibleSampleSize,
+    IncompatibleNumberOfSamples,
 }
 
 impl std::fmt::Display for ZeroCopyCreationError {
@@ -40,7 +44,9 @@ impl std::error::Error for ZeroCopyCreationError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopySendError {
+    ConnectionCorrupted,
     ReceiveBufferFull,
+    UsedChunkListFull,
 }
 
 impl std::fmt::Display for ZeroCopySendError {
@@ -65,7 +71,9 @@ impl std::fmt::Display for ZeroCopyReceiveError {
 impl std::error::Error for ZeroCopyReceiveError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ZeroCopyReclaimError {}
+pub enum ZeroCopyReclaimError {
+    ReceiverReturnedCorruptedOffset,
+}
 
 impl std::fmt::Display for ZeroCopyReclaimError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -96,9 +104,10 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     fn buffer_size(self, value: usize) -> Self;
     fn enable_safe_overflow(self, value: bool) -> Self;
     fn receiver_max_borrowed_samples(self, value: usize) -> Self;
+    fn number_of_samples(self, value: usize) -> Self;
 
-    fn create_sender(self) -> Result<C::Sender, ZeroCopyCreationError>;
-    fn create_receiver(self) -> Result<C::Receiver, ZeroCopyCreationError>;
+    fn create_sender(self, sample_size: usize) -> Result<C::Sender, ZeroCopyCreationError>;
+    fn create_receiver(self, sample_size: usize) -> Result<C::Receiver, ZeroCopyCreationError>;
 }
 
 pub trait ZeroCopyPortDetails {
@@ -115,6 +124,14 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
         -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
     fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError>;
+
+    /// # Safety
+    ///
+    /// * must ensure that no receiver is still holding data, otherwise data races may occur on
+    ///     receiver side
+    /// * must ensure that [`ZeroCopySender::try_send()`] and [`ZeroCopySender::blocking_send()`]
+    ///     are not called after using this method
+    unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, callback: F);
 }
 
 pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept {

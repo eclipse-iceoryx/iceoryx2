@@ -21,7 +21,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use iceoryx2_bb_elementary::{allocator::DeallocationError, math::align};
+use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_log::fail;
 
 pub use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
@@ -53,6 +53,10 @@ impl BumpAllocator {
             size,
             current_position: AtomicUsize::new(0),
         }
+    }
+
+    pub fn start_address(&self) -> usize {
+        self.start
     }
 
     pub fn used_space(&self) -> usize {
@@ -107,13 +111,8 @@ impl BaseAllocator for BumpAllocator {
         })
     }
 
-    unsafe fn deallocate(
-        &self,
-        _ptr: NonNull<u8>,
-        _layout: std::alloc::Layout,
-    ) -> Result<(), DeallocationError> {
+    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: std::alloc::Layout) {
         self.current_position
             .store(0, std::sync::atomic::Ordering::Relaxed);
-        Ok(())
     }
 }

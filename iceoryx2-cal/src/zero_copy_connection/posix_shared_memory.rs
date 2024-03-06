@@ -30,6 +30,8 @@ use iceoryx2_bb_posix::creation_mode::CreationMode;
 use iceoryx2_bb_posix::permission::Permission;
 use iceoryx2_bb_posix::shared_memory::{SharedMemory, SharedMemoryBuilder};
 
+use self::used_chunk_list::RelocatableUsedChunkList;
+
 const MAX_CREATION_DURATION: Duration = Duration::from_millis(10);
 const IS_INITIALIZED_STATE_VALUE: u64 = 0xbeefaffedeadbeef;
 
@@ -135,9 +137,12 @@ fn cleanup_shared_memory<T: Debug>(
 
 #[repr(C)]
 struct SharedManagementData {
-    receive_channel: RelocatableSafelyOverflowingIndexQueue,
-    retrieve_channel: RelocatableIndexQueue,
+    submission_channel: RelocatableSafelyOverflowingIndexQueue,
+    completion_channel: RelocatableIndexQueue,
+    used_chunk_list: RelocatableUsedChunkList,
     max_borrowed_samples: usize,
+    sample_size: usize,
+    number_of_samples: usize,
     state: AtomicU8,
     init_state: AtomicU64,
     enable_safe_overflow: bool,
@@ -145,34 +150,43 @@ struct SharedManagementData {
 
 impl SharedManagementData {
     fn new(
-        receive_channel_buffer_size: usize,
-        retrieve_channel_buffer_size: usize,
+        submission_channel_buffer_capacity: usize,
+        completion_channel_buffer_capacity: usize,
         enable_safe_overflow: bool,
         max_borrowed_samples: usize,
+        sample_size: usize,
+        number_of_samples: usize,
     ) -> Self {
         Self {
-            receive_channel: unsafe {
-                RelocatableSafelyOverflowingIndexQueue::new_uninit(receive_channel_buffer_size)
+            submission_channel: unsafe {
+                RelocatableSafelyOverflowingIndexQueue::new_uninit(
+                    submission_channel_buffer_capacity,
+                )
             },
-            retrieve_channel: unsafe {
-                RelocatableIndexQueue::new_uninit(retrieve_channel_buffer_size)
+            completion_channel: unsafe {
+                RelocatableIndexQueue::new_uninit(completion_channel_buffer_capacity)
             },
+            used_chunk_list: unsafe { RelocatableUsedChunkList::new_uninit(number_of_samples) },
             state: AtomicU8::new(State::None.value()),
             init_state: AtomicU64::new(0),
             enable_safe_overflow,
+            sample_size,
             max_borrowed_samples,
+            number_of_samples,
         }
     }
 
     const fn const_memory_size(
-        receive_channel_buffer_size: usize,
-        retrieve_channel_buffer_size: usize,
+        submission_channel_buffer_capacity: usize,
+        completion_channel_buffer_capacity: usize,
+        number_of_samples: usize,
     ) -> usize {
-        // we do not have to consider the alignment of Self since posix shared memory is always
-        // page size aligned
-        std::mem::size_of::<Self>()
-            + RelocatableIndexQueue::const_memory_size(retrieve_channel_buffer_size)
-            + RelocatableSafelyOverflowingIndexQueue::const_memory_size(receive_channel_buffer_size)
+        std::mem::size_of::<Self>() + std::mem::align_of::<Self>() - 1
+            + RelocatableIndexQueue::const_memory_size(completion_channel_buffer_capacity)
+            + RelocatableSafelyOverflowingIndexQueue::const_memory_size(
+                submission_channel_buffer_capacity,
+            )
+            + RelocatableUsedChunkList::const_memory_size(number_of_samples)
     }
 }
 
@@ -182,22 +196,25 @@ pub struct Builder {
     buffer_size: usize,
     enable_safe_overflow: bool,
     max_borrowed_samples: usize,
+    sample_size: usize,
+    number_of_samples: usize,
     config: Configuration,
 }
 
 impl Builder {
-    fn receive_channel_size(&self) -> usize {
+    fn submission_channel_size(&self) -> usize {
         self.buffer_size
     }
 
-    fn retrieve_channel_size(&self) -> usize {
+    fn completion_channel_size(&self) -> usize {
         self.buffer_size + self.max_borrowed_samples + 1
     }
 
     fn create_or_open_shm(&self) -> Result<SharedMemory, ZeroCopyCreationError> {
         let shm_size = SharedManagementData::const_memory_size(
-            self.receive_channel_size(),
-            self.retrieve_channel_size(),
+            self.submission_channel_size(),
+            self.completion_channel_size(),
+            self.number_of_samples,
         );
 
         let msg = "Failed to acquire underlying shared memory";
@@ -216,10 +233,12 @@ impl Builder {
                 let msg = "Failed to set up newly created connection";
                 unsafe {
                     mgmt_ptr.write(SharedManagementData::new(
-                        self.receive_channel_size(),
-                        self.retrieve_channel_size(),
+                        self.submission_channel_size(),
+                        self.completion_channel_size(),
                         self.enable_safe_overflow,
                         self.max_borrowed_samples,
+                        self.sample_size,
+                        self.number_of_samples,
                     ))
                 };
 
@@ -232,10 +251,12 @@ impl Builder {
                     supplementary_len,
                 );
 
-                fatal_panic!(from self, when unsafe { (*mgmt_ptr).receive_channel.init(&allocator) },
+                fatal_panic!(from self, when unsafe { (*mgmt_ptr).submission_channel.init(&allocator) },
                             "{} since the receive channel allocation failed. - This is an implementation bug!", msg);
-                fatal_panic!(from self, when unsafe { (*mgmt_ptr).retrieve_channel.init(&allocator) },
+                fatal_panic!(from self, when unsafe { (*mgmt_ptr).completion_channel.init(&allocator) },
                             "{} since the retrieve channel allocation failed. - This is an implementation bug!", msg);
+                fatal_panic!(from self, when unsafe { (*mgmt_ptr).used_chunk_list.init(&allocator) },
+                            "{} since the used chunk list allocation failed. - This is an implementation bug!", msg);
 
                 //////////////////////////////////////////
                 // SYNC POINT: write SharedManagementData
@@ -267,22 +288,34 @@ impl Builder {
                     }
                 }
 
-                if mgmt_ref.receive_channel.capacity() != self.receive_channel_size() {
+                if mgmt_ref.submission_channel.capacity() != self.submission_channel_size() {
                     fail!(from self, with ZeroCopyCreationError::IncompatibleBufferSize,
                         "{} since the connection has a buffer size of {} but a buffer size of {} is required.",
-                        msg, mgmt_ref.receive_channel.capacity(), self.receive_channel_size());
+                        msg, mgmt_ref.submission_channel.capacity(), self.submission_channel_size());
                 }
 
-                if mgmt_ref.retrieve_channel.capacity() != self.retrieve_channel_size() {
+                if mgmt_ref.completion_channel.capacity() != self.completion_channel_size() {
                     fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSampleSetting,
                         "{} since the max borrowed sample setting is set to {} but a value of {} is required.",
-                        msg, mgmt_ref.retrieve_channel.capacity() - mgmt_ref.receive_channel.capacity(), self.max_borrowed_samples);
+                        msg, mgmt_ref.completion_channel.capacity() - mgmt_ref.submission_channel.capacity(), self.max_borrowed_samples);
                 }
 
                 if mgmt_ref.enable_safe_overflow != self.enable_safe_overflow {
                     fail!(from self, with ZeroCopyCreationError::IncompatibleOverflowSetting,
                         "{} since the safe overflow is set to {} but should be set to {}.",
                         msg, mgmt_ref.enable_safe_overflow, self.enable_safe_overflow);
+                }
+
+                if mgmt_ref.sample_size != self.sample_size {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleSampleSize,
+                        "{} since the requested sample size is set to {} but should be set to {}.",
+                        msg, self.sample_size, mgmt_ref.sample_size);
+                }
+
+                if mgmt_ref.number_of_samples != self.number_of_samples {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSamples,
+                        "{} since the requested number of samples is set to {} but should be set to {}.",
+                        msg, self.number_of_samples, mgmt_ref.number_of_samples);
                 }
             }
         }
@@ -330,6 +363,8 @@ impl NamedConceptBuilder<Connection> for Builder {
             buffer_size: DEFAULT_BUFFER_SIZE,
             enable_safe_overflow: DEFAULT_ENABLE_SAFE_OVERFLOW,
             max_borrowed_samples: DEFAULT_MAX_BORROWED_SAMPLES,
+            sample_size: 0,
+            number_of_samples: 0,
             config: Configuration::default(),
         }
     }
@@ -342,7 +377,7 @@ impl NamedConceptBuilder<Connection> for Builder {
 
 impl ZeroCopyConnectionBuilder<Connection> for Builder {
     fn buffer_size(mut self, value: usize) -> Self {
-        self.buffer_size = value;
+        self.buffer_size = value.clamp(1, usize::MAX);
         self
     }
 
@@ -351,39 +386,51 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
         self
     }
 
-    fn receiver_max_borrowed_samples(mut self, value: usize) -> Self {
-        self.max_borrowed_samples = value;
+    fn number_of_samples(mut self, value: usize) -> Self {
+        self.number_of_samples = value;
         self
     }
 
-    fn create_sender(self) -> Result<Sender, ZeroCopyCreationError> {
+    fn receiver_max_borrowed_samples(mut self, value: usize) -> Self {
+        self.max_borrowed_samples = value.clamp(1, usize::MAX);
+        self
+    }
+
+    fn create_sender(mut self, sample_size: usize) -> Result<Sender, ZeroCopyCreationError> {
+        self.sample_size = sample_size;
+
         let msg = "Unable to create sender";
         let shm = fail!(from self, when self.create_or_open_shm(),
             "{} since the corresponding connection could not be created or opened", msg);
 
-        let mgmt_ref = unsafe { &mut *(shm.base_address().as_ptr() as *mut SharedManagementData) };
-        self.reserve_port(mgmt_ref, State::Sender.value(), msg)?;
+        let mgmt = unsafe { &mut *(shm.base_address().as_ptr() as *mut SharedManagementData) };
+        self.reserve_port(mgmt, State::Sender.value(), msg)?;
 
         Ok(Sender {
             shared_memory: shm,
             name: self.name,
+            mgmt,
         })
     }
 
     fn create_receiver(
-        self,
+        mut self,
+        sample_size: usize,
     ) -> Result<<Connection as ZeroCopyConnection>::Receiver, ZeroCopyCreationError> {
+        self.sample_size = sample_size;
+
         let msg = "Unable to create receiver";
         let shm = fail!(from self, when self.create_or_open_shm(),
             "{} since the corresponding connection could not be created or opened", msg);
 
-        let mgmt_ref = unsafe { &mut *(shm.base_address().as_ptr() as *mut SharedManagementData) };
-        self.reserve_port(mgmt_ref, State::Receiver.value(), msg)?;
+        let mgmt = unsafe { &mut *(shm.base_address().as_ptr() as *mut SharedManagementData) };
+        self.reserve_port(mgmt, State::Receiver.value(), msg)?;
 
         Ok(Receiver {
             shared_memory: shm,
             borrow_counter: UnsafeCell::new(0),
             name: self.name,
+            mgmt,
         })
     }
 }
@@ -392,6 +439,7 @@ impl ZeroCopyConnectionBuilder<Connection> for Builder {
 pub struct Sender {
     shared_memory: SharedMemory,
     name: FileName,
+    mgmt: *const SharedManagementData,
 }
 
 impl Drop for Sender {
@@ -401,8 +449,9 @@ impl Drop for Sender {
 }
 
 impl Sender {
+    #[inline(always)]
     fn mgmt(&self) -> &SharedManagementData {
-        unsafe { &*(self.shared_memory.base_address().as_ptr() as *const SharedManagementData) }
+        unsafe { &*self.mgmt }
     }
 }
 
@@ -414,7 +463,7 @@ impl NamedConcept for Sender {
 
 impl ZeroCopyPortDetails for Sender {
     fn buffer_size(&self) -> usize {
-        self.mgmt().receive_channel.capacity()
+        self.mgmt().submission_channel.capacity()
     }
 
     fn max_borrowed_samples(&self) -> usize {
@@ -434,13 +483,33 @@ impl ZeroCopySender for Sender {
     fn try_send(&self, ptr: PointerOffset) -> Result<Option<PointerOffset>, ZeroCopySendError> {
         let msg = "Unable to send sample";
 
-        if !self.mgmt().enable_safe_overflow && self.mgmt().receive_channel.is_full() {
+        if !self.mgmt().enable_safe_overflow && self.mgmt().submission_channel.is_full() {
             fail!(from self, with ZeroCopySendError::ReceiveBufferFull,
                              "{} since the receive buffer is full.", msg);
         }
 
-        match unsafe { self.mgmt().receive_channel.push(ptr.value()) } {
-            Some(v) => Ok(Some(PointerOffset::new(v))),
+        if !self
+            .mgmt()
+            .used_chunk_list
+            .insert(ptr.value() / self.mgmt().sample_size)
+        {
+            fail!(from self, with ZeroCopySendError::UsedChunkListFull,
+                    "{} since the used chunk list is full.", msg);
+        }
+
+        match unsafe { self.mgmt().submission_channel.push(ptr.value()) } {
+            Some(v) => {
+                if !self
+                    .mgmt()
+                    .used_chunk_list
+                    .remove(v / self.mgmt().sample_size)
+                {
+                    fail!(from self, with ZeroCopySendError::ConnectionCorrupted,
+                        "{} since an invalid offset was returned on overflow.", msg);
+                }
+
+                Ok(Some(PointerOffset::new(v)))
+            }
             None => Ok(None),
         }
     }
@@ -453,7 +522,7 @@ impl ZeroCopySender for Sender {
             AdaptiveWaitBuilder::new()
                 .create()
                 .unwrap()
-                .wait_while(|| self.mgmt().receive_channel.is_full())
+                .wait_while(|| self.mgmt().submission_channel.is_full())
                 .unwrap();
         }
 
@@ -461,10 +530,27 @@ impl ZeroCopySender for Sender {
     }
 
     fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
-        match unsafe { self.mgmt().retrieve_channel.pop() } {
+        match unsafe { self.mgmt().completion_channel.pop() } {
             None => Ok(None),
-            Some(v) => Ok(Some(PointerOffset::new(v))),
+            Some(v) => {
+                if !self
+                    .mgmt()
+                    .used_chunk_list
+                    .remove(v / self.mgmt().sample_size)
+                {
+                    fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedOffset,
+                        "Unable to reclaim sample since the receiver returned the corrupted offset {}.", v);
+                }
+                Ok(Some(PointerOffset::new(v)))
+            }
         }
+    }
+
+    unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, mut callback: F) {
+        let sample_size = self.mgmt().sample_size;
+        self.mgmt()
+            .used_chunk_list
+            .remove_all(|index| callback(PointerOffset::new(index * sample_size)));
     }
 }
 
@@ -473,6 +559,7 @@ pub struct Receiver {
     shared_memory: SharedMemory,
     borrow_counter: UnsafeCell<usize>,
     name: FileName,
+    mgmt: *const SharedManagementData,
 }
 
 impl Drop for Receiver {
@@ -482,8 +569,9 @@ impl Drop for Receiver {
 }
 
 impl Receiver {
+    #[inline(always)]
     fn mgmt(&self) -> &SharedManagementData {
-        unsafe { &*(self.shared_memory.base_address().as_ptr() as *const SharedManagementData) }
+        unsafe { &*self.mgmt }
     }
 
     #[allow(clippy::mut_from_ref)]
@@ -504,7 +592,7 @@ impl NamedConcept for Receiver {
 
 impl ZeroCopyPortDetails for Receiver {
     fn buffer_size(&self) -> usize {
-        self.mgmt().receive_channel.capacity()
+        self.mgmt().submission_channel.capacity()
     }
 
     fn max_borrowed_samples(&self) -> usize {
@@ -528,7 +616,7 @@ impl ZeroCopyReceiver for Receiver {
                     self.borrow_counter(), self.max_borrowed_samples());
         }
 
-        match unsafe { self.mgmt().receive_channel.pop() } {
+        match unsafe { self.mgmt().submission_channel.pop() } {
             None => Ok(None),
             Some(v) => {
                 *self.borrow_counter() += 1;
@@ -538,7 +626,7 @@ impl ZeroCopyReceiver for Receiver {
     }
 
     fn release(&self, ptr: PointerOffset) -> Result<(), ZeroCopyReleaseError> {
-        match unsafe { self.mgmt().retrieve_channel.push(ptr.value()) } {
+        match unsafe { self.mgmt().completion_channel.push(ptr.value()) } {
             true => {
                 *self.borrow_counter() -= 1;
                 Ok(())

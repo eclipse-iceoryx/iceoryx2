@@ -47,7 +47,6 @@ mod mpmc_container {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::mpmc::container::*;
-    use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashMap;
@@ -63,14 +62,12 @@ mod mpmc_container {
     #[test]
     fn mpmc_container_add_elements_until_full_works<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        let mut stored_indices = vec![];
         assert_that!(sut.capacity(), eq CAPACITY);
         for i in 0..CAPACITY {
-            let index = sut.add((i * 5 + 2).into());
+            let index = unsafe { sut.add((i * 5 + 2).into()) };
             assert_that!(index, is_some);
-            stored_indices.push(index.unwrap());
         }
-        let index = sut.add(0.into());
+        let index = unsafe { sut.add(0.into()) };
         assert_that!(index, is_none);
 
         let state = sut.get_state();
@@ -88,15 +85,15 @@ mod mpmc_container {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut stored_indices = vec![];
         for i in 0..CAPACITY - 1 {
-            let index = sut.add((i * 3 + 1).into());
+            let index = unsafe { sut.add((i * 3 + 1).into()) };
             assert_that!(index, is_some);
             stored_indices.push(index.unwrap());
 
-            let index = sut.add((i * 7 + 5).into());
+            let index = unsafe { sut.add((i * 7 + 5).into()) };
             assert_that!(index, is_some);
             stored_indices.push(index.unwrap());
 
-            stored_indices.remove(stored_indices.len() - 2);
+            unsafe { sut.remove(stored_indices.remove(stored_indices.len() - 2)) };
         }
 
         let state = sut.get_state();
@@ -129,7 +126,7 @@ mod mpmc_container {
             assert_that!(index, is_some);
             stored_indices.push(index.unwrap());
 
-            stored_indices.remove(stored_indices.len() - 2);
+            unsafe { sut.remove(stored_indices.remove(stored_indices.len() - 2)) };
         }
 
         let state = unsafe { sut.get_state() };
@@ -149,15 +146,15 @@ mod mpmc_container {
         let mut stored_handles: Vec<ContainerHandle> = vec![];
 
         for i in 0..CAPACITY - 1 {
-            let handle = unsafe { sut.add_with_handle((i * 3 + 1).into()) };
+            let handle = unsafe { sut.add((i * 3 + 1).into()) };
             assert_that!(handle, is_some);
             stored_handles.push(handle.unwrap());
 
-            let handle = unsafe { sut.add_with_handle((i * 7 + 5).into()) };
+            let handle = unsafe { sut.add((i * 7 + 5).into()) };
             assert_that!(handle, is_some);
             stored_handles.push(handle.unwrap());
 
-            unsafe { sut.remove_with_handle(stored_handles[stored_handles.len() - 2].clone()) };
+            unsafe { sut.remove(stored_handles[stored_handles.len() - 2].clone()) };
         }
 
         let state = sut.get_state();
@@ -190,12 +187,10 @@ mod mpmc_container {
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        let mut stored_indices: Vec<UniqueIndex> = vec![];
 
         for i in 0..CAPACITY - 1 {
-            let index = sut.add((i * 3 + 1).into());
+            let index = unsafe { sut.add((i * 3 + 1).into()) };
             assert_that!(index, is_some);
-            stored_indices.push(index.unwrap());
         }
 
         let mut state = sut.get_state();
@@ -217,15 +212,18 @@ mod mpmc_container {
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        let mut stored_indices: Vec<UniqueIndex> = vec![];
+        let mut stored_indices: Vec<ContainerHandle> = vec![];
 
         for i in 0..CAPACITY - 1 {
-            let index = sut.add((i * 3 + 1).into());
+            let index = unsafe { sut.add((i * 3 + 1).into()) };
             assert_that!(index, is_some);
             stored_indices.push(index.unwrap());
         }
 
         let mut state = sut.get_state();
+        for i in &stored_indices {
+            unsafe { sut.remove(*i) }
+        }
         stored_indices.clear();
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
@@ -240,23 +238,24 @@ mod mpmc_container {
         T: Debug + Copy + From<usize> + Into<usize>,
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
-        let mut stored_indices: Vec<UniqueIndex> = vec![];
+        let mut stored_indices: Vec<ContainerHandle> = vec![];
 
         for i in 0..CAPACITY - 1 {
-            let index = sut.add((i * 3 + 1).into());
+            let index = unsafe { sut.add((i * 3 + 1).into()) };
             assert_that!(index, is_some);
             stored_indices.push(index.unwrap());
         }
 
         let mut state = sut.get_state();
-        stored_indices.clear();
+        for i in stored_indices {
+            unsafe { sut.remove(i) }
+        }
 
         let mut results = HashMap::<u32, usize>::new();
         for i in 0..CAPACITY - 1 {
-            let index = sut.add((i * 81 + 56).into());
+            let index = unsafe { sut.add((i * 81 + 56).into()) };
             assert_that!(index, is_some);
-            results.insert(index.as_ref().unwrap().value(), i * 81 + 56);
-            stored_indices.push(index.unwrap());
+            results.insert(index.as_ref().unwrap().index(), i * 81 + 56);
         }
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
@@ -274,14 +273,14 @@ mod mpmc_container {
     >() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
         let mut state = sut.get_state();
-        let mut stored_indices: Vec<UniqueIndex> = vec![];
+        let mut stored_indices: Vec<ContainerHandle> = vec![];
         let mut stored_values: Vec<(u32, usize)> = vec![];
 
         for i in 0..CAPACITY {
             let v = i * 3 + 1;
-            let index = sut.add(v.into());
+            let index = unsafe { sut.add(v.into()) };
             assert_that!(index, is_some);
-            stored_values.push((index.as_ref().unwrap().value(), v));
+            stored_values.push((index.as_ref().unwrap().index(), v));
             stored_indices.push(index.unwrap());
 
             unsafe { sut.update_state(&mut state) };
@@ -295,7 +294,7 @@ mod mpmc_container {
         }
 
         for _ in 0..CAPACITY {
-            stored_indices.pop();
+            unsafe { sut.remove(stored_indices.pop().unwrap()) };
             stored_values.pop();
 
             unsafe { sut.update_state(&mut state) };
@@ -307,6 +306,18 @@ mod mpmc_container {
                 assert_that!(contained_values, contains * e);
             }
         }
+    }
+
+    #[test]
+    fn mpmc_container_state_updated_works_when_same_element_is_added_and_removed<
+        T: Debug + Copy + From<usize> + Into<usize>,
+    >() {
+        let sut = FixedSizeContainer::<T, CAPACITY>::new();
+        let mut state = sut.get_state();
+
+        let index = unsafe { sut.add(123.into()) }.unwrap();
+        unsafe { sut.remove(index) };
+        assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
     }
 
     #[test]
@@ -344,9 +355,9 @@ mod mpmc_container {
                         counter += 1;
                         let value = counter * number_of_threads_per_op + thread_number;
 
-                        match sut.add(value.into()) {
+                        match unsafe { sut.add(value.into()) } {
                             Some(index) => {
-                                let index_value = index.value();
+                                let index_value = index.index();
                                 ids.push(index);
                                 added_content[thread_number]
                                     .lock()
@@ -355,6 +366,9 @@ mod mpmc_container {
                             }
                             None => {
                                 repetition += 1;
+                                for id in &ids {
+                                    unsafe { sut.remove(*id) };
+                                }
                                 ids.clear();
                             }
                         }

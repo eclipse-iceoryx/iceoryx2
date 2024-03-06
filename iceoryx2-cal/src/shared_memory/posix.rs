@@ -16,7 +16,6 @@ use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub use crate::shared_memory::*;
-use iceoryx2_bb_elementary::allocator::DeallocationError;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::shared_memory::{AccessMode, Permission};
@@ -388,26 +387,21 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
 
         Ok(ShmPointer {
             offset,
-            data_ptr: (offset.value() + self.allocator_data_start_address()) as *mut u8,
+            data_ptr: (offset.value() + self.payload_start_address()) as *mut u8,
         })
     }
 
-    unsafe fn deallocate(
-        &self,
-        offset: PointerOffset,
-        layout: std::alloc::Layout,
-    ) -> Result<(), DeallocationError> {
-        fail!(from self, when self.allocator().allocator.deallocate(offset, layout),
-            "Failed to deallocate shared memory chunk due to an internal allocator failure.");
-        Ok(())
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
+        self.allocator().allocator.deallocate(offset, layout);
     }
 
     fn release_ownership(&mut self) {
         self.shared_memory.release_ownership()
     }
 
-    fn allocator_data_start_address(&self) -> usize {
+    fn payload_start_address(&self) -> usize {
         (self.shared_memory.base_address().as_ptr() as *const u8) as usize
             + self.allocator().mgmt_size
+            + self.allocator().allocator.relative_start_address()
     }
 }

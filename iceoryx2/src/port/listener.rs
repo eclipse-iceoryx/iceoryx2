@@ -41,6 +41,7 @@ use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use crate::service::naming_scheme::event_concept_name;
 use crate::{port::port_identifiers::UniqueListenerId, service};
 use std::rc::Rc;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use super::event_id::EventId;
@@ -64,7 +65,7 @@ impl std::error::Error for ListenerCreateError {}
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]
 pub struct Listener<Service: service::Service> {
-    dynamic_listener_handle: ContainerHandle,
+    dynamic_listener_handle: Option<ContainerHandle>,
     listener: <Service::Event as iceoryx2_cal::event::Event<EventId>>::Listener,
     cache: Vec<EventId>,
     dynamic_storage: Rc<Service::DynamicStorage>,
@@ -72,10 +73,12 @@ pub struct Listener<Service: service::Service> {
 
 impl<Service: service::Service> Drop for Listener<Service> {
     fn drop(&mut self) {
-        self.dynamic_storage
-            .get()
-            .event()
-            .release_listener_handle(self.dynamic_listener_handle)
+        if let Some(handle) = self.dynamic_listener_handle {
+            self.dynamic_storage
+                .get()
+                .event()
+                .release_listener_handle(handle)
+        }
     }
 }
 
@@ -92,6 +95,15 @@ impl<Service: service::Service> Listener<Service> {
                              when <Service::Event as iceoryx2_cal::event::Event<EventId>>::ListenerBuilder::new(&event_name).create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
+
+        let mut new_self = Self {
+            dynamic_storage,
+            dynamic_listener_handle: None,
+            listener,
+            cache: vec![],
+        };
+
+        std::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
@@ -110,12 +122,7 @@ impl<Service: service::Service> Listener<Service> {
             }
         };
 
-        let new_self = Self {
-            dynamic_storage,
-            dynamic_listener_handle,
-            listener,
-            cache: vec![],
-        };
+        new_self.dynamic_listener_handle = Some(dynamic_listener_handle);
 
         Ok(new_self)
     }

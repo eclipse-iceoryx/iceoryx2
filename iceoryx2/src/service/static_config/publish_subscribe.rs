@@ -49,6 +49,8 @@ pub struct StaticConfig {
     pub(crate) subscriber_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
     pub(crate) type_name: String,
+    pub(crate) type_size: usize,
+    pub(crate) type_alignment: usize,
 }
 
 impl StaticConfig {
@@ -67,6 +69,8 @@ impl StaticConfig {
                 .subscriber_max_borrowed_samples,
             enable_safe_overflow: config.defaults.publish_subscribe.enable_safe_overflow,
             type_name: String::new(),
+            type_size: 0,
+            type_alignment: 0,
         }
     }
 
@@ -107,5 +111,13 @@ impl StaticConfig {
     /// Returns the type name of the [`crate::service::Service`].
     pub fn type_name(&self) -> &str {
         &self.type_name
+    }
+
+    pub fn type_size(&self) -> usize {
+        self.type_size
+    }
+
+    pub fn type_alignment(&self) -> usize {
+        self.type_alignment
     }
 }

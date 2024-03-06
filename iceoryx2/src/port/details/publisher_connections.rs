@@ -37,12 +37,14 @@ use iceoryx2_cal::{
 pub(crate) struct Connection<Service: service::Service> {
     pub(crate) receiver: <Service::Connection as ZeroCopyConnection>::Receiver,
     pub(crate) data_segment: Service::SharedMemory,
+    pub(crate) publisher_id: UniquePublisherId,
 }
 
 impl<Service: service::Service> Connection<Service> {
     fn new(
         this: &PublisherConnections<Service>,
         publisher_id: UniquePublisherId,
+        number_of_samples: usize,
     ) -> Result<Self, ConnectionFailure> {
         let msg = format!(
             "Unable to establish connection to publisher {:?} from subscriber {:?}.",
@@ -56,7 +58,8 @@ impl<Service: service::Service> Connection<Service> {
                                     .buffer_size(this.static_config.subscriber_max_buffer_size)
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
-                                    .create_receiver(),
+                                    .number_of_samples(number_of_samples)
+                                    .create_receiver(this.static_config.type_size),
                         "{} since the zero copy connection could not be established.", msg);
 
         let data_segment = fail!(from this,
@@ -69,6 +72,7 @@ impl<Service: service::Service> Connection<Service> {
         Ok(Self {
             receiver,
             data_segment,
+            publisher_id,
         })
     }
 }
@@ -116,10 +120,9 @@ impl<Service: service::Service> PublisherConnections<Service> {
         &self,
         index: usize,
         publisher_id: UniquePublisherId,
+        number_of_samples: usize,
     ) -> Result<(), ConnectionFailure> {
-        if self.get(index).is_none() {
-            *self.get_mut(index) = Some(Connection::new(self, publisher_id)?);
-        }
+        *self.get_mut(index) = Some(Connection::new(self, publisher_id, number_of_samples)?);
 
         Ok(())
     }

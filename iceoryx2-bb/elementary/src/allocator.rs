@@ -28,7 +28,6 @@ pub enum AllocationError {
 /// Failures caused by [`Allocator::grow()`] or [`Allocator::grow_zeroed()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum AllocationGrowError {
-    ProvidedPointerNotContainedInAllocator,
     GrowWouldShrink,
     SizeIsZero,
     OutOfMemory,
@@ -39,17 +38,9 @@ pub enum AllocationGrowError {
 /// Failures caused by [`Allocator::shrink()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum AllocationShrinkError {
-    ProvidedPointerNotContainedInAllocator,
     ShrinkWouldGrow,
     SizeIsZero,
     AlignmentFailure,
-    InternalError,
-}
-
-/// Failures caused by [`BaseAllocator::deallocate()`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum DeallocationError {
-    ProvidedPointerNotContainedInAllocator,
     InternalError,
 }
 
@@ -82,7 +73,7 @@ pub trait BaseAllocator {
     ///  * `layout` must have the same value as in the allocation or, when the memory was
     ///     resized, the same value as it was resized to
     ///
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) -> Result<(), DeallocationError>;
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout);
 }
 
 /// Allocator with grow and shrink features.

@@ -768,7 +768,6 @@ impl File {
         let msg = "Unable to resize file to";
         handle_errno!(FileTruncateError, from this,
             Errno::EINTR => (Interrupt, "{} {} since an interrupt signal was received.", msg, size),
-            Errno::EINVAL => (SizeTooBig, "{} {} since the size is too big. Maybe the file can only shrink?", msg, size),
             Errno::EFBIG => (SizeTooBig, "{} {} since the size is too big. Maybe the file can only shrink?", msg, size),
             Errno::EIO => (IOerror, "{} {} due to an I/O error while writing to the file system.", msg, size),
             Errno::EBADF => (FileNotOpenedForWriting, "{} {} file is not opened for writing.", msg, size),

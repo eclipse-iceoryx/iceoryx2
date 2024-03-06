@@ -14,8 +14,10 @@
 //!
 //! See [`crate::service`]
 //!
+use crate::message::Message;
 use crate::service;
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
+use crate::service::header::publish_subscribe::Header;
 use crate::service::messaging_pattern::MessagingPattern;
 use crate::service::port_factory::publish_subscribe;
 use crate::service::*;
@@ -225,6 +227,13 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
+    fn finalize_config<MessageType: Debug>(&mut self) {
+        self.config_details_mut().type_name = std::any::type_name::<MessageType>().to_string();
+        self.config_details_mut().type_size = core::mem::size_of::<Message<Header, MessageType>>();
+        self.config_details_mut().type_alignment =
+            core::mem::align_of::<Message<Header, MessageType>>();
+    }
+
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create<MessageType: Debug>(
@@ -234,7 +243,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         PublishSubscribeOpenOrCreateError,
     > {
         let msg = "Unable to open or create publish subscribe service";
-        self.config_details_mut().type_name = std::any::type_name::<MessageType>().to_string();
+        self.finalize_config::<MessageType>();
 
         match self.is_service_available(msg) {
             Ok(Some(_)) => Ok(self.open::<MessageType>()?),
@@ -276,7 +285,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeOpenError>
     {
         let msg = "Unable to open publish subscribe service";
-        self.config_details_mut().type_name = std::any::type_name::<MessageType>().to_string();
+        self.finalize_config::<MessageType>();
 
         let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
                                         with PublishSubscribeOpenError::InternalFailure,
@@ -351,7 +360,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         self.adjust_properties_to_meaningful_values();
 
         let msg = "Unable to create publish subscribe service";
-        self.config_details_mut().type_name = std::any::type_name::<MessageType>().to_string();
+        self.finalize_config::<MessageType>();
 
         if !self.config_details().enable_safe_overflow
             && (self.config_details().subscriber_max_buffer_size
