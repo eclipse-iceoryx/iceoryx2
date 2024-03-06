@@ -154,12 +154,14 @@ pub mod details {
             self.set(value, false)
         }
 
-        pub fn pop(&self) -> Option<usize> {
+        pub fn remove_all<F: FnMut(usize)>(&self, mut callback: F) {
             self.verify_init("pop");
 
-            (0..self.capacity).find(|&i| unsafe {
-                (*self.data_ptr.as_ptr().add(i)).swap(false, Ordering::Relaxed)
-            })
+            for i in 0..self.capacity {
+                if unsafe { (*self.data_ptr.as_ptr().add(i)).swap(false, Ordering::Relaxed) } {
+                    callback(i);
+                }
+            }
         }
     }
 }
@@ -194,8 +196,8 @@ impl<const CAPACITY: usize> FixedSizeUsedChunkList<CAPACITY> {
         self.list.insert(value)
     }
 
-    pub fn pop(&mut self) -> Option<usize> {
-        self.list.pop()
+    pub fn remove_all<F: FnMut(usize)>(&mut self, callback: F) {
+        self.list.remove_all(callback)
     }
 
     pub const fn capacity(&self) -> usize {

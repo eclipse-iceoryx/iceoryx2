@@ -220,13 +220,13 @@ impl<Service: service::Service> DataSegment<Service> {
 
     fn remove_connection(&self, i: usize) {
         if let Some(connection) = self.subscriber_connections.get(i) {
-            while let Some(offset) =
-                // # SAFETY: the receiver no longer exist, therefore we can
-                //           reacquire all delivered samples
-                unsafe { connection.sender.acquire_used_offsets() }
-            {
-                self.release_sample(offset);
-            }
+            // # SAFETY: the receiver no longer exist, therefore we can
+            //           reacquire all delivered samples
+            unsafe {
+                connection
+                    .sender
+                    .acquire_used_offsets(|offset| self.release_sample(offset))
+            };
 
             self.subscriber_connections.remove(i);
         }

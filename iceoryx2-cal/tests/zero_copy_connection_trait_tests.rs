@@ -554,10 +554,11 @@ mod zero_copy_connection {
         }
 
         for _ in 0..BUFFER_SIZE {
-            let acquired_offset = unsafe { sut_sender.acquire_used_offsets() };
-            assert_that!(acquired_offset, is_some);
-            let acquired_offset = acquired_offset.unwrap().value();
-            assert_that!(offsets.remove(&acquired_offset), eq true);
+            unsafe {
+                sut_sender.acquire_used_offsets(|offset| {
+                    assert_that!(offsets.remove(&offset.value()), eq true);
+                })
+            };
         }
     }
 
@@ -600,10 +601,11 @@ mod zero_copy_connection {
         }
 
         for _ in 0..BUFFER_SIZE {
-            let acquired_offset = unsafe { sut_sender.acquire_used_offsets() };
-            assert_that!(acquired_offset, is_some);
-            let acquired_offset = acquired_offset.unwrap().value();
-            assert_that!(offsets.remove(&acquired_offset), eq true);
+            unsafe {
+                sut_sender.acquire_used_offsets(|offset| {
+                    assert_that!(offsets.remove(&offset.value()), eq true);
+                })
+            };
         }
     }
 
@@ -644,7 +646,9 @@ mod zero_copy_connection {
             assert_that!(sut_sender.reclaim().unwrap(), is_some);
         }
 
-        assert_that!(unsafe { sut_sender.acquire_used_offsets() }, is_none);
+        let mut sample_acquired = false;
+        unsafe { sut_sender.acquire_used_offsets(|_| sample_acquired = true) };
+        assert_that!(sample_acquired, eq false);
     }
 
     #[test]
@@ -684,10 +688,11 @@ mod zero_copy_connection {
         drop(sut_receiver);
 
         for _ in 0..BUFFER_SIZE {
-            let acquired_offset = unsafe { sut_sender.acquire_used_offsets() };
-            assert_that!(acquired_offset, is_some);
-            let acquired_offset = acquired_offset.unwrap().value();
-            assert_that!(offsets.remove(&acquired_offset), eq true);
+            unsafe {
+                sut_sender.acquire_used_offsets(|offset| {
+                    assert_that!(offsets.remove(&offset.value()), eq true);
+                })
+            };
         }
     }
 

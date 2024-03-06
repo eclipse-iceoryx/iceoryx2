@@ -406,11 +406,11 @@ impl ZeroCopySender for Sender {
         }
     }
 
-    unsafe fn acquire_used_offsets(&self) -> Option<PointerOffset> {
+    unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, mut callback: F) {
+        let sample_size = self.mgmt.sample_size;
         self.mgmt
             .used_chunk_list
-            .pop()
-            .map(|v| PointerOffset::new(v * self.mgmt.sample_size))
+            .remove_all(|index| callback(PointerOffset::new(index * sample_size)));
     }
 }
 

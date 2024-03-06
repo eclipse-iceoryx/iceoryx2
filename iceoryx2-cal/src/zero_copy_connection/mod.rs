@@ -131,7 +131,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
     ///     receiver side
     /// * must ensure that [`ZeroCopySender::try_send()`] and [`ZeroCopySender::blocking_send()`]
     ///     are not called after using this method
-    unsafe fn acquire_used_offsets(&self) -> Option<PointerOffset>;
+    unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, callback: F);
 }
 
 pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept {

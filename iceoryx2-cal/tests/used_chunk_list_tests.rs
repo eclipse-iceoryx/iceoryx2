@@ -16,27 +16,26 @@ mod used_chunk_list {
     use iceoryx2_cal::zero_copy_connection::used_chunk_list::FixedSizeUsedChunkList;
 
     #[test]
-    fn used_chunk_list_insert_pop_works<const CAPACITY: usize>() {
+    fn used_chunk_list_insert_remove_all_works<const CAPACITY: usize>() {
         let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
         for i in 0..sut.capacity() {
             assert_that!(sut.insert(i), eq true);
-            assert_that!(sut.insert(i), eq false);
         }
 
-        for i in 0..sut.capacity() {
-            assert_that!(sut.insert(i), eq false);
-            assert_that!(sut.pop(), eq Some(i));
-            assert_that!(sut.insert(i), eq true);
-            assert_that!(sut.pop(), eq Some(i));
-        }
+        let mut removed_indices = vec![false; sut.capacity()];
+        sut.remove_all(|index| {
+            removed_indices[index] = true;
+        });
 
-        assert_that!(sut.pop(), eq None);
+        for index in removed_indices {
+            assert_that!(index, eq true);
+        }
     }
 
     #[test]
     fn used_chunk_list_insert_remove_works<const CAPACITY: usize>() {
-        let mut sut = FixedSizeUsedChunkList::<CAPACITY>::new();
+        let sut = FixedSizeUsedChunkList::<CAPACITY>::new();
 
         for i in 0..sut.capacity() {
             assert_that!(sut.remove(i), eq false);
@@ -51,8 +50,6 @@ mod used_chunk_list {
             assert_that!(sut.remove(i), eq true);
             assert_that!(sut.remove(i), eq false);
         }
-
-        assert_that!(sut.pop(), eq None);
     }
 
     #[instantiate_tests(<1>)]
