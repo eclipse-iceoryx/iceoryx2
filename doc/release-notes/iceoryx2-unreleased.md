@@ -36,6 +36,7 @@
  * Fixes for FreeBSD 14.0 [#140](https://github.com/eclipse-iceoryx/iceoryx2/issues/140)
     * Fix segfault in `iceoryx2-pal-posix;:shm_list()` caused by `sysctl`
     * Adjust test to handle unordered event notifications
+ * Fix non UTF-8 windows platform error messages [#145](https://github.com/eclipse-iceoryx/iceoryx2/issues/145)
 
 ### Refactoring
 
