@@ -39,6 +39,7 @@ they interact and exchange data.
 
 | Name | Description |
 |------|-------------|
-| [discovery](examples/discovery/README.md) | List all available services in a system. |
-| [event](examples/event/README.md) | Exchanging event signals between multiple processes.|
-| [publish subscribe](examples/publish_subscribe/README.md) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |
+| [discovery](examples/discovery) | List all available services in a system. |
+| [docker](examples/docker) | Communicate between different docker containers and the host. |
+| [event](examples/event) | Exchanging event signals between multiple processes.|
+| [publish subscribe](examples/publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |
