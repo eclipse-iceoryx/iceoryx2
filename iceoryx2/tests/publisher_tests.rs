@@ -20,6 +20,7 @@ mod publisher {
     use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
 
     type TestResult<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -157,10 +158,9 @@ mod publisher {
         Ok(())
     }
 
-    //TODO iox2-#44
-    #[ignore]
     #[test]
     fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
+        let _watchdog = Watchdog::new(Duration::from_secs(10));
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()
