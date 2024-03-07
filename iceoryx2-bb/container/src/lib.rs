@@ -16,5 +16,4 @@ pub mod byte_string;
 pub mod queue;
 #[macro_use]
 pub mod semantic_string;
-pub mod bit_set;
 pub mod vec;

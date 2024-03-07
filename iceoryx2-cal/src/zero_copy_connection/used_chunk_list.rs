@@ -23,8 +23,6 @@ use iceoryx2_bb_elementary::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 
-use crate::shm_allocator::PointerOffset;
-
 pub type UsedChunkList = details::UsedChunkList<OwningPointer<AtomicBool>>;
 pub type RelocatableUsedChunkList = details::UsedChunkList<RelocatablePointer<AtomicBool>>;
 

@@ -9,6 +9,33 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! A **threadsafe** and **lock-free** bitset. Bits can be set and read from multiple threads
+//! without any restriction. It provides 3 versions.
+//!  * [`BitSet`] - Stores data in the heap and has a fixed capacity that must be defined at
+//!                 runtime.
+//!  * [`RelocatableBitSet`] - Stores data in the memory the allocator provides in
+//!                 [`RelocatableBitSet::init()`]. Is relocatable and can be used in shared memory,
+//!                 when the data allocator provides shared memory.
+//!  * [`FixedSizeBitSet`] - Bitset with a compile time fixed capacity.
+//!
+//!  # Example
+//!
+//!  ```
+//!  use iceoryx2_bb_lock_free::mpmc::bit_set::*;
+//!
+//!  let capacity = 123;
+//!  let bitset = BitSet::new(capacity);
+//!
+//!  // set bit number 5
+//!  bitset.set(5);
+//!
+//!  // resets the bitset and calls the callback for every bit that was set
+//!  bitset.reset(|id| {
+//!     println!("bit {} was set", id );
+//!  });
+//!  ```
+
 use std::{
     alloc::Layout,
     fmt::Debug,
@@ -24,7 +51,9 @@ use iceoryx2_bb_elementary::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 
+/// This BitSet variant's data is stored in the heap.
 pub type BitSet = details::BitSet<OwningPointer<AtomicU8>>;
+/// This BitSet variant can be stored inside shared memory.
 pub type RelocatableBitSet = details::BitSet<RelocatablePointer<AtomicU8>>;
 
 pub mod details {
@@ -43,6 +72,12 @@ pub mod details {
     unsafe impl<PointerType: PointerTrait<AtomicU8>> Sync for BitSet<PointerType> {}
 
     impl BitSet<OwningPointer<AtomicU8>> {
+        /// Create a new [`BitSet`] with data located in the heap.
+        ///
+        /// ```
+        /// use iceoryx2_bb_lock_free::mpmc::bit_set::*;
+        /// let bitset = BitSet::new(123);
+        /// ```
         pub fn new(capacity: usize) -> Self {
             let array_capacity = Self::array_capacity(capacity);
             let mut data_ptr = OwningPointer::<AtomicU8>::new_with_alloc(array_capacity);
@@ -121,10 +156,13 @@ pub mod details {
         pub(super) const fn array_capacity(capacity: usize) -> usize {
             capacity.div_ceil(8)
         }
+
+        /// Returns the required memory size for a BitSet with a specified capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
             unaligned_mem_size::<AtomicU8>(Self::array_capacity(capacity))
         }
 
+        /// Returns the capacity of the BitSet
         pub fn capacity(&self) -> usize {
             self.capacity
         }
@@ -138,25 +176,32 @@ pub mod details {
             );
         }
 
-        fn set_bit(&self, index: usize, bit: usize) {
+        fn set_bit(&self, index: usize, bit: usize) -> bool {
             let data_ref = unsafe { &(*self.data_ptr.as_ptr().add(index)) };
             let mut current = data_ref.load(Ordering::Relaxed);
+            let bit = 1 << bit;
+
             loop {
-                let current_with_bit_set = current & (1 << bit);
+                if current & bit != 0 {
+                    return false;
+                }
+
+                let current_with_bit = current | bit;
 
                 match data_ref.compare_exchange(
                     current,
-                    current_with_bit_set,
+                    current_with_bit,
                     Ordering::Relaxed,
                     Ordering::Relaxed,
                 ) {
-                    Ok(_) => break,
+                    Ok(_) => return true,
                     Err(v) => current = v,
                 }
             }
         }
 
-        pub fn set(&self, id: usize) {
+        /// Sets a bit in the BitSet
+        pub fn set(&self, id: usize) -> bool {
             self.verify_init("set");
             debug_assert!(
                 id < self.capacity,
@@ -166,9 +211,11 @@ pub mod details {
 
             let bitset_index = id / 8;
             let bit = id % 8;
-            self.set_bit(bitset_index, bit);
+            self.set_bit(bitset_index, bit)
         }
 
+        /// Reset every set bit in the BitSet and call the provided callback for every bit that
+        /// was set.
         pub fn reset<F: FnMut(usize)>(&self, mut callback: F) {
             self.verify_init("set");
             for i in 0..self.array_capacity {
@@ -185,6 +232,7 @@ pub mod details {
     }
 }
 
+/// This BitSet variant owns all data it requires.
 #[derive(Debug)]
 #[repr(C)]
 pub struct FixedSizeBitSet<const CAPACITY: usize> {
@@ -195,6 +243,9 @@ pub struct FixedSizeBitSet<const CAPACITY: usize> {
     //       For now we can live with it, since the bitsets are usually rather small
     data: [AtomicU8; CAPACITY],
 }
+
+unsafe impl<const CAPACITY: usize> Send for FixedSizeBitSet<CAPACITY> {}
+unsafe impl<const CAPACITY: usize> Sync for FixedSizeBitSet<CAPACITY> {}
 
 impl<const CAPACITY: usize> Default for FixedSizeBitSet<CAPACITY> {
     fn default() -> Self {
@@ -211,18 +262,23 @@ impl<const CAPACITY: usize> Default for FixedSizeBitSet<CAPACITY> {
 }
 
 impl<const CAPACITY: usize> FixedSizeBitSet<CAPACITY> {
+    /// Creates a new FixedSizeBitSet
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns the capacity
     pub fn capacity(&self) -> usize {
         self.bitset.capacity()
     }
 
-    pub fn set(&self, id: usize) {
+    /// Sets a bit in the BitSet
+    pub fn set(&self, id: usize) -> bool {
         self.bitset.set(id)
     }
 
+    /// Reset every set bit in the BitSet and call the provided callback for every bit that
+    /// was set.
     pub fn reset<F: FnMut(usize)>(&self, callback: F) {
         self.bitset.reset(callback)
     }
