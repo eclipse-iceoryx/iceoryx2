@@ -15,6 +15,7 @@
     * Introduce `iceoryx2-cal::hash::HashValue` that contains the result of a hash
  * Port `UsedChunkList` from iceoryx1 [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
  * Performance improvements, especially for AMD CPUs [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
+ * Introduce lock-free mpmc BitSet [#139](https://github.com/eclipse-iceoryx/iceoryx2/issues/139)
 
 ### Bugfixes
 
