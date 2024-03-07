@@ -1,0 +1,15 @@
+services:
+  publisher:
+    image: archlinux:latest
+    command: /iceoryx2/target/debug/examples/publish_subscribe_publisher
+    volumes:
+      - .:/iceoryx2
+      - /dev/shm/:/dev/shm/
+      - /tmp/iceoryx2:/tmp/iceoryx2
+  subscriber:
+    image: archlinux:latest
+    command: /iceoryx2/target/debug/examples/publish_subscribe_subscriber
+    volumes:
+      - .:/iceoryx2
+      - /dev/shm/:/dev/shm/
+      - /tmp/iceoryx2:/tmp/iceoryx2
