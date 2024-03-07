@@ -52,6 +52,8 @@ pub enum ShmAllocatorInitError {
 pub trait ShmAllocator: Send + Sync + 'static {
     type Configuration: ShmAllocatorConfig;
 
+    /// Returns the required memory size of the additional dynamic part of the allocator that is
+    /// allocated in [`ShmAllocator::init()`].
     fn management_size(memory_size: usize, config: &Self::Configuration) -> usize;
 
     /// Creates a new uninitialized shared memory allocator.
