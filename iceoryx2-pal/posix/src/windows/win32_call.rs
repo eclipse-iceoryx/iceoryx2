@@ -116,7 +116,7 @@ macro_rules! win32call {
                         std::println!(
                             "< Win32 API error > {}:{} {} \n [ {} ] {}",
                             std::file!(), std::line!(), std::stringify!($call), last_error,
-                            std::str::from_utf8(&buffer).unwrap()
+                            std::str::from_utf8(&buffer).unwrap_or("non UTF-8 error messages are not supported")
                         );
                     },
                 }
@@ -157,7 +157,7 @@ macro_rules! win32call {
                         std::println!(
                             "< Win32 WinSock2 API error > {}:{} {} \n [ {} ] {}",
                             std::file!(), std::line!(), std::stringify!($call), last_error,
-                            std::str::from_utf8(&buffer).unwrap()
+                            std::str::from_utf8(&buffer).unwrap_or("non UTF-8 error messages are not supported")
                         );
                     },
                 }
