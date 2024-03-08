@@ -38,6 +38,7 @@
     * Fix segfault in `iceoryx2-pal-posix;:shm_list()` caused by `sysctl`
     * Adjust test to handle unordered event notifications
  * Fix non UTF-8 windows platform error messages [#145](https://github.com/eclipse-iceoryx/iceoryx2/issues/145)
+ * Correct inconsistent default config entries for windows [#149](https://github.com/eclipse-iceoryx/iceoryx2/issues/149)
 
 ### Refactoring
 

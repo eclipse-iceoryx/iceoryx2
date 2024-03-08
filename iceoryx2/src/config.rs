@@ -252,7 +252,7 @@ impl Default for Config {
             global: Global {
                 root_path_unix: "/tmp/iceoryx2/".to_string(),
                 prefix: "iox2_".to_string(),
-                root_path_windows: "C:\\Windows\\Temp\\iceoryx2\\".to_string(),
+                root_path_windows: "C:\\Temp\\iceoryx2\\".to_string(),
                 service: Service {
                     directory: "services".to_string(),
                     publisher_data_segment_suffix: ".publisher_data".to_string(),
