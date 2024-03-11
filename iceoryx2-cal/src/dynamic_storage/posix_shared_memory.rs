@@ -42,6 +42,7 @@
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::directory::*;
+use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -213,12 +214,12 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
         let msg = "Failed to create dynamic_storage::PosixSharedMemory";
 
         let full_name = self.config.path_for(&self.storage_name).file_name();
-        let shm = match SharedMemoryBuilder::new(&full_name)
+        let mut shm = match SharedMemoryBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
             // posix shared memory is always aligned to the greatest possible value (PAGE_SIZE)
             // therefore we do not have to add additional alignment space for T
             .size(std::mem::size_of::<Data<T>>() + self.supplementary_size)
-            .permission(FINAL_PERMISSIONS)
+            .permission(Permission::OWNER_WRITE)
             .zero_memory(false)
             .has_ownership(self.has_ownership)
             .create()
@@ -252,6 +253,12 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
         unsafe {
             core::ptr::addr_of_mut!((*value).version).write(AtomicU64::new(get_package_version().0))
         };
+
+        if let Err(e) = shm.set_permission(FINAL_PERMISSIONS) {
+            fail!(from self, with DynamicStorageCreateError::InternalError,
+                "{} since the final permissions could not be applied to the underlying shared memory ({:?}).",
+                msg, e);
+        }
 
         Ok(Storage {
             shm,

@@ -14,6 +14,7 @@ mod dynamic_storage_posix_shared_memory {
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary::math::ToB64;
     use iceoryx2_bb_posix::creation_mode::CreationMode;
+    use iceoryx2_bb_posix::permission::Permission;
     use iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
@@ -57,5 +58,27 @@ mod dynamic_storage_posix_shared_memory {
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::VersionMismatch);
+    }
+
+    #[test]
+    fn write_only_segment_is_not_initialized() {
+        type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
+        let storage_name = generate_name();
+        let file_name = <Sut as NamedConceptMgmt>::Configuration::default()
+            .path_for(&storage_name)
+            .file_name();
+
+        let _raw_shm = SharedMemoryBuilder::new(&file_name)
+            .creation_mode(CreationMode::PurgeAndCreate)
+            .size(1234)
+            .has_ownership(true)
+            .permission(Permission::OWNER_WRITE)
+            .create()
+            .unwrap();
+
+        let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name).open();
+
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::InitializationNotYetFinalized);
     }
 }

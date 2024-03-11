@@ -385,12 +385,17 @@ impl Drop for SharedMemory {
         }
 
         if self.has_ownership() {
-            match Self::shm_unlink(&self.name) {
-                Ok(_) => {
-                    trace!(from self, "delete");
-                }
-                Err(_) => {
-                    error!(from self, "Failed to cleanup shared memory.");
+            match self.set_permission(Permission::OWNER_ALL) {
+                Ok(()) => match Self::shm_unlink(&self.name) {
+                    Ok(_) => {
+                        trace!(from self, "delete");
+                    }
+                    Err(_) => {
+                        error!(from self, "Failed to cleanup shared memory.");
+                    }
+                },
+                Err(e) => {
+                    error!(from self, "Failed to cleanup shared memory since the permissions could not be adjusted ({:?}).", e);
                 }
             }
         }
