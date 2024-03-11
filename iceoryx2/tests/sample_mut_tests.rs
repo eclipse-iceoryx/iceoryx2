@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod sample_mut {
-    use iceoryx2::port::publisher::Publisher;
+    use iceoryx2::port::publisher::{Publisher, PublisherLoanError};
     use iceoryx2::port::subscriber::Subscriber;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
@@ -31,14 +31,14 @@ mod sample_mut {
         .unwrap()
     }
 
-    struct TestFixture<Sut: Service> {
+    struct TestContext<Sut: Service> {
         service_name: ServiceName,
         service: PortFactory<Sut, u64>,
         publisher: Publisher<Sut, u64>,
         subscriber: Subscriber<Sut, u64>,
     }
 
-    impl<Sut: Service> TestFixture<Sut> {
+    impl<Sut: Service> TestContext<Sut> {
         fn new() -> Self {
             let service_name = generate_name();
             let service = Sut::new(&service_name)
@@ -66,33 +66,40 @@ mod sample_mut {
 
     #[test]
     fn when_going_out_of_scope_it_is_released<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
+        let test_context = TestContext::<Sut>::new();
 
         let mut sample_vec = vec![];
 
         for _ in 0..4 {
-            while let Ok(sample) = test.publisher.loan() {
+            while let Ok(sample) = test_context.publisher.loan() {
                 sample_vec.push(sample);
             }
 
             assert_that!(sample_vec, len MAX_LOANED_SAMPLES);
+
+            let loan_result = test_context.publisher.loan();
+            assert_that!(loan_result, is_err);
+            assert_that!(loan_result.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
+
             sample_vec.clear();
+
+            assert_that!(test_context.publisher.loan(), is_ok);
         }
     }
 
     #[test]
     fn header_tracks_correct_origin<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
-        let sample = test.publisher.loan().unwrap();
-        assert_that!(sample.header().publisher_id(), eq test.publisher.id());
+        let test_context = TestContext::<Sut>::new();
+        let sample = test_context.publisher.loan().unwrap();
+        assert_that!(sample.header().publisher_id(), eq test_context.publisher.id());
     }
 
     #[test]
     fn write_payload_works<Sut: Service>() {
         const PAYLOAD_1: u64 = 891283689123555;
         const PAYLOAD_2: u64 = 71820;
-        let test = TestFixture::<Sut>::new();
-        let sample = test.publisher.loan_uninit().unwrap();
+        let test_context = TestContext::<Sut>::new();
+        let sample = test_context.publisher.loan_uninit().unwrap();
         let mut sample = sample.write_payload(PAYLOAD_1);
 
         assert_that!(*sample.payload(), eq PAYLOAD_1);
@@ -107,8 +114,8 @@ mod sample_mut {
     #[test]
     fn assume_init_works<Sut: Service>() {
         const PAYLOAD: u64 = 7182055123;
-        let test = TestFixture::<Sut>::new();
-        let mut sample = test.publisher.loan_uninit().unwrap();
+        let test_context = TestContext::<Sut>::new();
+        let mut sample = test_context.publisher.loan_uninit().unwrap();
         let _ = *sample.payload_mut().write(PAYLOAD);
         let mut sample = unsafe { sample.assume_init() };
 
@@ -119,23 +126,23 @@ mod sample_mut {
     #[test]
     fn send_works<Sut: Service>() {
         const PAYLOAD: u64 = 3215357;
-        let test = TestFixture::<Sut>::new();
-        let sample = test.publisher.loan_uninit().unwrap();
+        let test_context = TestContext::<Sut>::new();
+        let sample = test_context.publisher.loan_uninit().unwrap();
         let sample = sample.write_payload(PAYLOAD);
 
         assert_that!(sample.send(), eq Ok(1));
 
-        let received_sample = test.subscriber.receive().unwrap().unwrap();
+        let received_sample = test_context.subscriber.receive().unwrap().unwrap();
         assert_that!(*received_sample, eq PAYLOAD);
     }
 
     #[test]
     fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
-        let service_name = test.service_name.clone();
-        let _sample = test.publisher.loan_uninit().unwrap();
+        let test_context = TestContext::<Sut>::new();
+        let service_name = test_context.service_name.clone();
+        let _sample = test_context.publisher.loan_uninit().unwrap();
 
-        drop(test);
+        drop(test_context);
 
         let result = Sut::new(&service_name).publish_subscribe().create::<u64>();
         assert_that!(result, is_err);
@@ -144,9 +151,9 @@ mod sample_mut {
 
     #[test]
     fn sample_of_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
-        let service = test.service;
-        let publisher = test.publisher;
+        let test_context = TestContext::<Sut>::new();
+        let service = test_context.service;
+        let publisher = test_context.publisher;
         let _sample = publisher.loan_uninit().unwrap();
 
         drop(publisher);

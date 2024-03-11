@@ -371,7 +371,7 @@ mod service_event {
     }
 
     #[test]
-    // TODO iox2-139
+    // TODO iox2-139, enable when bitset is integrated into events
     #[ignore]
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let _watch_dog = Watchdog::new(Duration::from_secs(10));
@@ -432,7 +432,7 @@ mod service_event {
     }
 
     #[test]
-    // TODO iox2-139
+    // TODO iox2-139, enable when bitset is integrated into events
     #[ignore]
     fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
         let _watch_dog = Watchdog::new(Duration::from_secs(1));

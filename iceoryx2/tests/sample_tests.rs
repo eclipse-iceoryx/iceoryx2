@@ -28,7 +28,7 @@ mod sample {
         .unwrap()
     }
 
-    struct TestFixture<Sut: Service> {
+    struct TestContext<Sut: Service> {
         service_name: ServiceName,
         service: PortFactory<Sut, u64>,
         publisher_1: Publisher<Sut, u64>,
@@ -36,7 +36,7 @@ mod sample {
         subscriber: Subscriber<Sut, u64>,
     }
 
-    impl<Sut: Service> TestFixture<Sut> {
+    impl<Sut: Service> TestContext<Sut> {
         fn new() -> Self {
             let service_name = generate_name();
             let service = Sut::new(&service_name)
@@ -64,28 +64,28 @@ mod sample {
 
     #[test]
     fn origin_is_tracked_correctly<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
+        let test_context = TestContext::<Sut>::new();
 
-        assert_that!(test.publisher_1.send_copy(123), eq Ok(1));
-        let sample = test.subscriber.receive().unwrap().unwrap();
-        assert_that!(sample.origin(), eq test.publisher_1.id());
+        assert_that!(test_context.publisher_1.send_copy(123), eq Ok(1));
+        let sample = test_context.subscriber.receive().unwrap().unwrap();
+        assert_that!(sample.origin(), eq test_context.publisher_1.id());
 
-        assert_that!(test.publisher_2.send_copy(123), eq Ok(1));
-        let sample = test.subscriber.receive().unwrap().unwrap();
-        assert_that!(sample.origin(), eq test.publisher_2.id());
+        assert_that!(test_context.publisher_2.send_copy(123), eq Ok(1));
+        let sample = test_context.subscriber.receive().unwrap().unwrap();
+        assert_that!(sample.origin(), eq test_context.publisher_2.id());
     }
 
     #[test]
     fn sample_of_dropped_service_does_not_block_new_service_creation<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
+        let test_context = TestContext::<Sut>::new();
 
-        let service_name = test.service_name;
+        let service_name = test_context.service_name;
 
-        assert_that!(test.publisher_1.send_copy(5), eq Ok(1));
-        let sample = test.subscriber.receive().unwrap();
+        assert_that!(test_context.publisher_1.send_copy(5), eq Ok(1));
+        let sample = test_context.subscriber.receive().unwrap();
         assert_that!(sample, is_some);
 
-        drop(test);
+        drop(test_context);
 
         assert_that!(
             Sut::new(&service_name).publish_subscribe().create::<u64>(),
@@ -95,12 +95,12 @@ mod sample {
 
     #[test]
     fn when_everything_is_dropped_the_sample_can_still_be_consumed<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
+        let test_context = TestContext::<Sut>::new();
 
-        let sut = test.service;
-        let publisher_1 = test.publisher_1;
-        let publisher_2 = test.publisher_2;
-        let subscriber = test.subscriber;
+        let sut = test_context.service;
+        let publisher_1 = test_context.publisher_1;
+        let publisher_2 = test_context.publisher_2;
+        let subscriber = test_context.subscriber;
 
         drop(sut);
 
@@ -118,43 +118,45 @@ mod sample {
 
     #[test]
     fn sample_received_from_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
+        let test_context = TestContext::<Sut>::new();
+        const PAYLOAD_1: u64 = 123554;
 
-        let publisher = test.publisher_1;
+        let publisher = test_context.publisher_1;
 
-        assert_that!(publisher.send_copy(123554), eq Ok(1));
-        let sample = test.subscriber.receive().unwrap().unwrap();
+        assert_that!(publisher.send_copy(PAYLOAD_1), eq Ok(1));
+        let sample = test_context.subscriber.receive().unwrap().unwrap();
 
         drop(publisher);
 
-        const PAYLOAD: u64 = 123981235645;
+        const PAYLOAD_2: u64 = 123981235645;
 
-        let publisher = test.service.publisher().create().unwrap();
-        assert_that!(publisher.send_copy(PAYLOAD), eq Ok(1));
-        assert_that!(*sample, eq 123554);
-        let sample_2 = test.subscriber.receive().unwrap().unwrap();
-        assert_that!(*sample_2, eq PAYLOAD);
+        let publisher = test_context.service.publisher().create().unwrap();
+        assert_that!(publisher.send_copy(PAYLOAD_2), eq Ok(1));
+        assert_that!(*sample, eq PAYLOAD_1);
+        let sample_2 = test_context.subscriber.receive().unwrap().unwrap();
+        assert_that!(*sample_2, eq PAYLOAD_2);
     }
 
     #[test]
     fn sample_from_dropped_subscriber_does_not_block_new_subscribers<Sut: Service>() {
-        let test = TestFixture::<Sut>::new();
+        let test_context = TestContext::<Sut>::new();
+        const PAYLOAD_1: u64 = 7781123554;
 
-        let subscriber = test.subscriber;
+        let subscriber = test_context.subscriber;
 
-        assert_that!(test.publisher_1.send_copy(1234), eq Ok(1));
+        assert_that!(test_context.publisher_1.send_copy(PAYLOAD_1), eq Ok(1));
         let _sample = subscriber.receive().unwrap().unwrap();
 
         drop(subscriber);
 
-        const PAYLOAD: u64 = 123666645;
+        const PAYLOAD_2: u64 = 123666645;
 
-        let subscriber = test.service.subscriber().create().unwrap();
-        assert_that!(test.publisher_1.send_copy(PAYLOAD), eq Ok(1));
+        let subscriber = test_context.service.subscriber().create().unwrap();
+        assert_that!(test_context.publisher_1.send_copy(PAYLOAD_2), eq Ok(1));
         let sample_1 = subscriber.receive().unwrap().unwrap();
         let sample_2 = subscriber.receive().unwrap().unwrap();
-        assert_that!(*sample_1, eq 1234);
-        assert_that!(*sample_2, eq PAYLOAD);
+        assert_that!(*sample_1, eq PAYLOAD_1);
+        assert_that!(*sample_2, eq PAYLOAD_2);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

@@ -95,6 +95,44 @@ mod shm_allocator_pool_allocator {
     }
 
     #[test]
+    fn allocate_twice_release_once_until_memory_is_exhausted_works() {
+        const REPETITIONS: usize = 10;
+        let test = TestFixture::new(BUCKET_CONFIG);
+
+        for _ in 0..REPETITIONS {
+            let mut mem_set = HashSet::new();
+            for _ in 0..(test.sut.number_of_buckets() - 1) {
+                let memory_1 = unsafe { test.sut.allocate(BUCKET_CONFIG).unwrap() };
+                // the returned offset must be a multiple of the bucket size
+                assert_that!((memory_1.value() - test.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+
+                let memory_2 = unsafe { test.sut.allocate(BUCKET_CONFIG).unwrap() };
+                // the returned offset must be a multiple of the bucket size
+                assert_that!((memory_2.value() - test.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!(mem_set.insert(memory_2.value()), eq true);
+
+                unsafe {
+                    test.sut.deallocate(memory_1, BUCKET_CONFIG);
+                }
+            }
+
+            let memory = unsafe { test.sut.allocate(BUCKET_CONFIG).unwrap() };
+            // the returned offset must be a multiple of the bucket size
+            assert_that!((memory.value() - test.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+            assert_that!(mem_set.insert(memory.value()), eq true);
+
+            assert_that!(unsafe { test.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
+
+            for memory in mem_set {
+                unsafe {
+                    test.sut
+                        .deallocate(PointerOffset::new(memory), BUCKET_CONFIG)
+                }
+            }
+        }
+    }
+
+    #[test]
     fn allocate_with_unsupported_alignment_fails() {
         let test = TestFixture::new(Layout::from_size_align(BUCKET_CONFIG.size(), 1).unwrap());
         assert_that!(unsafe { test.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::ExceedsMaxSupportedAlignment));
