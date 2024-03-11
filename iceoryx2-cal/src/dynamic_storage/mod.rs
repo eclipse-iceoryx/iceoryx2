@@ -80,6 +80,7 @@ pub enum DynamicStorageOpenError {
     DoesNotExist,
     Open,
     InitializationNotYetFinalized,
+    VersionMismatch,
     InternalError,
 }
 

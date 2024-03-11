@@ -44,9 +44,11 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::shared_memory::*;
 use std::fmt::Debug;
+use std::fmt::Display;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
 
 pub use crate::dynamic_storage::*;
 use crate::static_storage::file::NamedConceptConfiguration;
@@ -55,7 +57,63 @@ use iceoryx2_bb_system_types::path::Path;
 pub use std::ops::Deref;
 
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_ALL;
-const IS_INITIALIZED_STATE_VALUE: u64 = 0xbeefaffedeadbeef;
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+struct PackageVersion(u64);
+
+impl PackageVersion {
+    fn from_u64(value: u64) -> Self {
+        Self(value)
+    }
+
+    fn from_version(major: u16, minor: u16, patch: u16) -> Self {
+        Self(((major as u64) << 32) | ((minor as u64) << 16) | patch as u64)
+    }
+
+    fn major(&self) -> u16 {
+        ((self.0 >> 32) & (u16::MAX as u64)) as u16
+    }
+
+    fn minor(&self) -> u16 {
+        ((self.0 >> 16) & (u16::MAX as u64)) as u16
+    }
+
+    fn patch(&self) -> u16 {
+        ((self.0) & (u16::MAX as u64)) as u16
+    }
+}
+
+impl Display for PackageVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major(), self.minor(), self.patch())
+    }
+}
+
+fn get_package_version() -> PackageVersion {
+    static PACKAGE_VERSION: AtomicU64 = AtomicU64::new(0);
+
+    if PACKAGE_VERSION.load(Ordering::Relaxed) == 0 {
+        let major = option_env!("CARGO_PKG_VERSION_MAJOR")
+            .unwrap_or("65535")
+            .parse::<u16>()
+            .unwrap_or(65535);
+        let minor = option_env!("CARGO_PKG_VERSION_MINOR")
+            .unwrap_or("65535")
+            .parse::<u16>()
+            .unwrap_or(65535);
+        let patch = option_env!("CARGO_PKG_VERSION_PATCH")
+            .unwrap_or("65535")
+            .parse::<u16>()
+            .unwrap_or(65535);
+
+        PACKAGE_VERSION.store(
+            PackageVersion::from_version(major, minor, patch).0,
+            Ordering::Relaxed,
+        );
+    }
+
+    PackageVersion::from_u64(PACKAGE_VERSION.load(Ordering::Relaxed))
+}
 
 /// The builder of [`Storage`].
 #[derive(Debug)]
@@ -76,7 +134,7 @@ pub struct Configuration {
 
 #[repr(C)]
 struct Data<T: Send + Sync + Debug> {
-    state: AtomicU64,
+    version: AtomicU64,
     data: T,
 }
 
@@ -192,8 +250,7 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
         }
 
         unsafe {
-            core::ptr::addr_of_mut!((*value).state)
-                .write(AtomicU64::new(IS_INITIALIZED_STATE_VALUE))
+            core::ptr::addr_of_mut!((*value).version).write(AtomicU64::new(get_package_version().0))
         };
 
         Ok(Storage {
@@ -242,12 +299,16 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
         }
 
         let init_state = shm.base_address().as_ptr() as *const Data<T>;
-        if unsafe { &(*init_state) }
-            .state
-            .load(std::sync::atomic::Ordering::Relaxed)
-            != IS_INITIALIZED_STATE_VALUE
-        {
+        let package_version = unsafe { &(*init_state) }
+            .version
+            .load(std::sync::atomic::Ordering::Relaxed);
+        let package_version = PackageVersion::from_u64(package_version);
+        if package_version.0 == 0 {
             return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
+        } else if package_version != get_package_version() {
+            fail!(from self, with DynamicStorageOpenError::VersionMismatch,
+                "{} since the dynamic storage was created with version {} but this process requires version {}.",
+                msg, package_version, get_package_version());
         }
 
         Ok(Storage {
