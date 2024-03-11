@@ -36,10 +36,10 @@ use std::rc::Rc;
 use std::{fmt::Debug, ops::Deref};
 
 use iceoryx2_bb_log::{fatal_panic, warn};
-use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyReceiver, ZeroCopyReleaseError};
 
 use crate::port::details::publisher_connections::PublisherConnections;
+use crate::port::port_identifiers::UniquePublisherId;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
 
@@ -51,6 +51,8 @@ pub struct Sample<MessageType: Debug, Service: crate::service::Service> {
     pub(crate) publisher_connections: Rc<PublisherConnections<Service>>,
     pub(crate) ptr: RawSample<Header, MessageType>,
     pub(crate) channel_id: usize,
+    pub(crate) offset: PointerOffset,
+    pub(crate) origin: UniquePublisherId,
 }
 
 impl<MessageType: Debug, Service: crate::service::Service> Deref for Sample<MessageType, Service> {
@@ -64,12 +66,12 @@ impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<Messa
     fn drop(&mut self) {
         match self.publisher_connections.get(self.channel_id) {
             Some(c) => {
-                let distance = self.ptr.as_ptr() as usize - c.data_segment.payload_start_address();
-                match c.receiver.release(PointerOffset::new(distance)) {
-                    Ok(()) => (),
-                    Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                        fatal_panic!(from self, when c.receiver.release(PointerOffset::new(distance)),
-                                    "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
+                if c.publisher_id == self.origin {
+                    match c.receiver.release(self.offset) {
+                        Ok(()) => (),
+                        Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
+                            fatal_panic!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
+                        }
                     }
                 }
             }
@@ -89,5 +91,10 @@ impl<MessageType: Debug, Service: crate::service::Service> Sample<MessageType, S
     /// Returns a reference to the header of the sample.
     pub fn header(&self) -> &Header {
         self.ptr.as_header_ref()
+    }
+
+    /// Returns the [`UniquePublisherId`] of the sender
+    pub fn origin(&self) -> UniquePublisherId {
+        self.origin
     }
 }

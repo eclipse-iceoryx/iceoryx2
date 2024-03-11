@@ -15,6 +15,9 @@
     * Introduce semantic string `iceoryx2-bb-system-types::base64url`
     * Introduce `iceoryx2-cal::hash::HashValue` that contains the result of a hash
  * Port `UsedChunkList` from iceoryx1 [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
+ * From [#133](https://github.com/eclipse-iceoryx/iceoryx2/issues/133)
+    * Add `Notifier|Listener|Publisher|Subscriber::id()` method to acquire unique port id
+    * Add `Sample::origin()` to determine the `UniquePublisherId` of the sender
  * Performance improvements, especially for AMD CPUs [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
 
 ### Bugfixes
@@ -34,6 +37,7 @@
  * Fix broken `Publisher|Subscriber::populate_{subscriber|publisher}_channels()` [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
  * Fix failing reacquire of delivered samples in the zero copy receive channel [#130](https://github.com/eclipse-iceoryx/iceoryx2/issues/130)
  * Fix receiving of invalid samples when subscriber is connected [#131](https://github.com/eclipse-iceoryx/iceoryx2/issues/131)
+ * Fix problem where sample is released to the wrong publisher [#133](https://github.com/eclipse-iceoryx/iceoryx2/issues/133)
  * Fixes for FreeBSD 14.0 [#140](https://github.com/eclipse-iceoryx/iceoryx2/issues/140)
     * Fix segfault in `iceoryx2-pal-posix;:shm_list()` caused by `sysctl`
     * Adjust test to handle unordered event notifications

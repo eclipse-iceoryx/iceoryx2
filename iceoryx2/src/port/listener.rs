@@ -69,6 +69,7 @@ pub struct Listener<Service: service::Service> {
     listener: <Service::Event as iceoryx2_cal::event::Event<EventId>>::Listener,
     cache: Vec<EventId>,
     dynamic_storage: Rc<Service::DynamicStorage>,
+    port_id: UniqueListenerId,
 }
 
 impl<Service: service::Service> Drop for Listener<Service> {
@@ -101,6 +102,7 @@ impl<Service: service::Service> Listener<Service> {
             dynamic_listener_handle: None,
             listener,
             cache: vec![],
+            port_id,
         };
 
         std::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -193,5 +195,10 @@ impl<Service: service::Service> Listener<Service> {
         }
 
         Ok(self.cache())
+    }
+
+    /// Returns the [`UniqueListenerId`] of the [`Listener`]
+    pub fn id(&self) -> UniqueListenerId {
+        self.port_id
     }
 }

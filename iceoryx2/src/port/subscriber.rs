@@ -248,9 +248,9 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         match connection.receiver.receive() {
             Ok(data) => match data {
                 None => Ok(None),
-                Some(relative_addr) => {
+                Some(offset) => {
                     let absolute_address =
-                        relative_addr.value() + connection.data_segment.payload_start_address();
+                        offset.value() + connection.data_segment.payload_start_address();
                     Ok(Some(Sample {
                         publisher_connections: Rc::clone(&self.publisher_connections),
                         channel_id,
@@ -259,6 +259,8 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                                 absolute_address as *mut Message<Header, MessageType>,
                             )
                         },
+                        offset,
+                        origin: connection.publisher_id,
                     }))
                 }
             },
@@ -268,6 +270,11 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                     msg, connection.receiver.max_borrowed_samples());
             }
         }
+    }
+
+    /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
+    pub fn id(&self) -> UniqueSubscriberId {
+        self.publisher_connections.subscriber_id()
     }
 
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
