@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::marker::PhantomData;
+use std::mem::MaybeUninit;
 use std::{alloc::Layout, fmt::Debug};
 
 use crate::dynamic_storage::*;
@@ -26,6 +27,20 @@ use crate::static_storage::file::{
 };
 
 type StorageType<T> = crate::dynamic_storage::posix_shared_memory::Storage<AllocatorDetails<T>>;
+
+fn get_payload_start_address<Allocator: ShmAllocator + Debug>(
+    storage: &StorageType<Allocator>,
+) -> usize {
+    (storage.get() as *const AllocatorDetails<Allocator>) as usize
+        + storage.get().payload_start_offset
+        + unsafe {
+            storage
+                .get()
+                .allocator
+                .assume_init_ref()
+                .relative_start_address()
+        }
+}
 
 #[derive(Debug)]
 pub struct Configuration<Allocator: ShmAllocator + Debug> {
@@ -159,7 +174,7 @@ impl<Allocator: ShmAllocator + Debug>
         .create_and_initialize(
             AllocatorDetails {
                 allocator_id: Allocator::unique_id(),
-                allocator: None,
+                allocator: MaybeUninit::uninit(),
                 mgmt_size: allocator_mgmt_size,
                 payload_size: self.size,
                 payload_start_offset: 0,
@@ -175,7 +190,7 @@ impl<Allocator: ShmAllocator + Debug>
 
                 details.payload_start_offset = (memory.as_ptr() as *const u8) as usize - (details as *const AllocatorDetails<Allocator>) as usize;
 
-                details.allocator = Some(unsafe {
+                details.allocator.write(unsafe {
                     Allocator::new_uninit(
                         SystemInfo::PageSize.value(),
                         memory,
@@ -183,7 +198,7 @@ impl<Allocator: ShmAllocator + Debug>
                     )
                 });
 
-                if let Err(e) = unsafe { details.allocator.as_ref().unwrap_unchecked().init(init_allocator) } {
+                if let Err(e) = unsafe { details.allocator.assume_init_ref().init(init_allocator) } {
                     debug!(from self, "{} since the management memory for the allocator could not be initialized ({:?}).", msg, e);
                     false
                 } else {
@@ -211,6 +226,7 @@ impl<Allocator: ShmAllocator + Debug>
         };
 
         Ok(Memory::<Allocator> {
+            payload_start_address: get_payload_start_address(&storage),
             storage,
             name: self.name,
         })
@@ -261,8 +277,9 @@ impl<Allocator: ShmAllocator + Debug>
         }
 
         Ok(Memory::<Allocator> {
-            storage,
+            payload_start_address: get_payload_start_address(&storage),
             name: self.name,
+            storage,
         })
     }
 }
@@ -271,15 +288,16 @@ impl<Allocator: ShmAllocator + Debug>
 pub struct Memory<Allocator: ShmAllocator> {
     storage: StorageType<Allocator>,
     name: FileName,
+    payload_start_address: usize,
 }
 
 #[derive(Debug)]
 #[repr(C)]
 struct AllocatorDetails<Allocator: ShmAllocator> {
     allocator_id: u8,
+    allocator: MaybeUninit<Allocator>,
     mgmt_size: usize,
     payload_size: usize,
-    allocator: Option<Allocator>,
     payload_start_offset: usize,
 }
 
@@ -329,16 +347,16 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
     }
 
     fn max_alignment(&self) -> usize {
-        unsafe { self.storage.get().allocator.as_ref().unwrap_unchecked() }.max_alignment()
+        unsafe { self.storage.get().allocator.assume_init_ref() }.max_alignment()
     }
 
     fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
-        let offset = fail!(from self, when unsafe { self.storage.get().allocator.as_ref().unwrap_unchecked().allocate(layout) },
+        let offset = fail!(from self, when unsafe { self.storage.get().allocator.assume_init_ref().allocate(layout) },
             "Failed to allocate shared memory due to an internal allocator failure.");
 
         Ok(ShmPointer {
             offset,
-            data_ptr: (offset.value() + self.payload_start_address()) as *mut u8,
+            data_ptr: (offset.value() + self.payload_start_address) as *mut u8,
         })
     }
 
@@ -346,8 +364,7 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
         self.storage
             .get()
             .allocator
-            .as_ref()
-            .unwrap_unchecked()
+            .assume_init_ref()
             .deallocate(offset, layout);
     }
 
@@ -356,15 +373,6 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
     }
 
     fn payload_start_address(&self) -> usize {
-        (self.storage.get() as *const AllocatorDetails<Allocator>) as usize
-            + self.storage.get().payload_start_offset
-            + unsafe {
-                self.storage
-                    .get()
-                    .allocator
-                    .as_ref()
-                    .unwrap_unchecked()
-                    .relative_start_address()
-            }
+        self.payload_start_address
     }
 }
