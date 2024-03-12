@@ -72,9 +72,12 @@ pub struct PoolAllocator {
 
 impl PoolAllocator {
     fn verify_init(&self, source: &str) {
-        if !self.is_memory_initialized.load(Ordering::Relaxed) {
-            fatal_panic!(from self, "Undefined behavior when calling \"{}\" and the object is not initialized.", source);
-        }
+        debug_assert!(
+            self.is_memory_initialized.load(Ordering::Relaxed),
+            "From: {:?}, Undefined behavior when calling \"{}\" and the object is not initialized.",
+            self,
+            source
+        );
     }
 
     pub fn number_of_buckets(&self) -> u32 {
