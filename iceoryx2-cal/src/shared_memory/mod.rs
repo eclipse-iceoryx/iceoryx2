@@ -54,6 +54,7 @@
 //! }
 //! ```
 
+pub mod common;
 pub mod posix;
 pub mod process_local;
 
