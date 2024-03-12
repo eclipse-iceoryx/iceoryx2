@@ -226,10 +226,16 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
         {
             Ok(v) => v,
             Err(SharedMemoryCreationError::AlreadyExist) => {
-                fail!(from self, with DynamicStorageCreateError::AlreadyExists, "{} since a shared memory with the name already exists.", msg);
+                fail!(from self, with DynamicStorageCreateError::AlreadyExists,
+                    "{} since a shared memory with the name already exists.", msg);
+            }
+            Err(SharedMemoryCreationError::InsufficientPermissions) => {
+                fail!(from self, with DynamicStorageCreateError::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
             }
             Err(_) => {
-                fail!(from self, with DynamicStorageCreateError::Creation, "{} since the underlying shared memory could not be created.", msg);
+                fail!(from self, with DynamicStorageCreateError::InternalError,
+                    "{} since the underlying shared memory could not be created.", msg);
             }
         };
 
@@ -295,7 +301,7 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
                 return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
             }
             Err(_) => {
-                fail!(from self, with DynamicStorageOpenError::Open, "{} since the underlying shared memory could not be opened.", msg);
+                fail!(from self, with DynamicStorageOpenError::InternalError, "{} since the underlying shared memory could not be opened.", msg);
             }
         };
 

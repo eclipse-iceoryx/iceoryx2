@@ -80,6 +80,8 @@ pub enum SharedMemoryOpenError {
     SizeIsZero,
     SizeDoesNotFit,
     WrongAllocatorSelected,
+    InitializationNotYetFinalized,
+    VersionMismatch,
     InternalError,
 }
 

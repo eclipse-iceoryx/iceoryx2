@@ -68,8 +68,7 @@ pub mod process_local;
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum DynamicStorageCreateError {
     AlreadyExists,
-    Creation,
-    Write,
+    InsufficientPermissions,
     InitializationFailed,
     InternalError,
 }
@@ -78,7 +77,6 @@ pub enum DynamicStorageCreateError {
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum DynamicStorageOpenError {
     DoesNotExist,
-    Open,
     InitializationNotYetFinalized,
     VersionMismatch,
     InternalError,

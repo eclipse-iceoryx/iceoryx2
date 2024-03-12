@@ -13,28 +13,22 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicU64, Ordering};
 
+use crate::dynamic_storage::*;
 pub use crate::shared_memory::*;
-use iceoryx2_bb_log::fail;
-use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_bb_posix::shared_memory::{AccessMode, Permission};
+use iceoryx2_bb_log::{debug, fail};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
-use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
 
 use crate::static_storage::file::{
     NamedConcept, NamedConceptBuilder, NamedConceptConfiguration, NamedConceptMgmt,
-    NamedConceptRemoveError,
 };
 
-const IS_INITIALIZED_STATE_VALUE: u64 = 0xbeefaffedeadbeef;
+type StorageType<T> = crate::dynamic_storage::posix_shared_memory::Storage<AllocatorDetails<T>>;
 
 #[derive(Debug)]
 pub struct Configuration<Allocator: ShmAllocator + Debug> {
-    pub is_memory_locked: bool,
-    pub permission: Permission,
     pub zero_memory: bool,
     path: Path,
     suffix: FileName,
@@ -42,11 +36,20 @@ pub struct Configuration<Allocator: ShmAllocator + Debug> {
     _phantom: PhantomData<Allocator>,
 }
 
+impl<T: ShmAllocator + Debug> From<&Configuration<T>>
+    for <StorageType<T> as NamedConceptMgmt>::Configuration
+{
+    fn from(value: &Configuration<T>) -> Self {
+        <StorageType<T> as NamedConceptMgmt>::Configuration::default()
+            .prefix(value.prefix)
+            .suffix(value.suffix)
+            .path_hint(value.path)
+    }
+}
+
 impl<Allocator: ShmAllocator + Debug> Default for Configuration<Allocator> {
     fn default() -> Self {
         Self {
-            is_memory_locked: false,
-            permission: Permission::OWNER_ALL,
             zero_memory: true,
             path: Memory::<Allocator>::default_path_hint(),
             suffix: Memory::<Allocator>::default_suffix(),
@@ -59,8 +62,6 @@ impl<Allocator: ShmAllocator + Debug> Default for Configuration<Allocator> {
 impl<Allocator: ShmAllocator + Debug> Clone for Configuration<Allocator> {
     fn clone(&self) -> Self {
         Self {
-            is_memory_locked: self.is_memory_locked,
-            permission: self.permission,
             zero_memory: self.zero_memory,
             path: self.path,
             suffix: self.suffix,
@@ -107,18 +108,6 @@ pub struct Builder<Allocator: ShmAllocator + Debug> {
     _phantom_allocator: PhantomData<Allocator>,
 }
 
-impl<Allocator: ShmAllocator + Debug> Builder<Allocator> {
-    fn allocator_details_size() -> usize {
-        std::mem::size_of::<AllocatorDetails<Allocator>>()
-            + std::mem::align_of::<AllocatorDetails<Allocator>>()
-            - 1
-    }
-
-    fn allocator_size(&self, allocator_config: &Allocator::Configuration) -> usize {
-        Self::allocator_details_size() + Allocator::management_size(self.size, allocator_config)
-    }
-}
-
 impl<Allocator: ShmAllocator + Debug> NamedConceptBuilder<Memory<Allocator>>
     for Builder<Allocator>
 {
@@ -156,157 +145,135 @@ impl<Allocator: ShmAllocator + Debug>
                     "{} since the size is zero.", msg);
         }
 
-        let allocator_mgmt_size = self.allocator_size(allocator_config);
+        let allocator_mgmt_size = Allocator::management_size(self.size, allocator_config);
 
-        let shm = match iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder::new(&self.config.path_for(&self.name).file_name())
-        .is_memory_locked(self.config.is_memory_locked)
-        .creation_mode(CreationMode::CreateExclusive)
-        .size(self.size + allocator_mgmt_size)
-        .permission(self.config.permission)
-        .zero_memory(self.config.zero_memory)
-        .create()
-        {
-            Ok(s) => s,
-            Err(iceoryx2_bb_posix::shared_memory::SharedMemoryCreationError::AlreadyExist) => {
-                fail!(from self, with SharedMemoryCreateError::AlreadyExists,
-                        "{} since a shared memory with that name already exists.", msg);
-            }
-            Err(
-                iceoryx2_bb_posix::shared_memory::SharedMemoryCreationError::InsufficientPermissions,
-            ) => {
-                fail!(from self, with SharedMemoryCreateError::InsufficientPermissions,
-                        "{} due to insufficient permissions.", msg);
-            }
-            Err(v) => {
-                fail!(from self, with SharedMemoryCreateError::InternalError,
-                        "{} since an unknown error has occurred ({:?})", msg, v);
-            }
-        };
-
-        let allocator_addr = shm.base_address().as_ptr() as *mut AllocatorDetails<Allocator>;
         let slice = unsafe {
             std::slice::from_raw_parts_mut(
-                (allocator_addr as usize + allocator_mgmt_size) as *mut u8,
+                //TODO
+                (11) as *mut u8,
                 self.size,
             )
         };
 
-        unsafe {
-            allocator_addr.write(AllocatorDetails {
-                state: AtomicU64::new(0),
+        let storage = match <<StorageType<Allocator> as DynamicStorage<
+            AllocatorDetails<Allocator>,
+        >>::Builder as NamedConceptBuilder<StorageType<Allocator>>>::new(
+            &self.name
+        )
+        .config(&(&self.config).into())
+        .supplementary_size(self.size + allocator_mgmt_size)
+        .has_ownership(true)
+        .create_and_initialize(
+            AllocatorDetails {
                 allocator_id: Allocator::unique_id(),
-                allocator: Allocator::new_uninit(
-                    SystemInfo::PageSize.value(),
-                    NonNull::new_unchecked(slice),
-                    allocator_config,
-                ),
+                allocator: unsafe {
+                    Allocator::new_uninit(
+                        SystemInfo::PageSize.value(),
+                        NonNull::new_unchecked(slice),
+                        allocator_config,
+                    )
+                },
                 mgmt_size: allocator_mgmt_size,
-            })
-        };
-
-        let mgmt_addr = unsafe {
-            NonNull::new_unchecked(
-                (shm.base_address().as_ptr() as usize + Self::allocator_details_size()) as *mut u8,
-            )
-        };
-        let bump_allocator = BumpAllocator::new(
-            mgmt_addr,
-            Allocator::management_size(self.size, allocator_config),
-        );
-
-        fail!(from self, when unsafe { (*allocator_addr).allocator.init(&bump_allocator) },
-                with SharedMemoryCreateError::InternalError,
-                "{} since the management memory for the allocator could not be initialized.", msg);
-
-        unsafe {
-            (*allocator_addr)
-                .state
-                .store(IS_INITIALIZED_STATE_VALUE, Ordering::Relaxed)
+                supplementary_size: self.size,
+            },
+            |details, init_allocator| -> bool {
+                if let Err(e) = unsafe { details.allocator.init(init_allocator) } {
+                    debug!(from self, "{} since the management memory for the allocator could not be initialized ({:?}).", msg, e);
+                    false
+                } else {
+                    true
+                }
+            },
+        ) {
+            Ok(s) => s,
+            Err(DynamicStorageCreateError::AlreadyExists) => {
+                fail!(from self, with SharedMemoryCreateError::AlreadyExists,
+                        "{} since a shared memory with that name already exists.", msg);
+                }
+            Err(DynamicStorageCreateError::InsufficientPermissions) => {
+                fail!(from self, with SharedMemoryCreateError::InsufficientPermissions,
+                        "{} due to insufficient permissions.", msg);
+                }
+            Err(DynamicStorageCreateError::InitializationFailed) => {
+                fail!(from self, with SharedMemoryCreateError::InternalError,
+                        "{} since the initialization failed.", msg);
+                }
+            Err(DynamicStorageCreateError::InternalError) => {
+                fail!(from self, with SharedMemoryCreateError::InternalError,
+                        "{} since an unknown error has occurred.", msg);
+                }
         };
 
         Ok(Memory::<Allocator> {
-            shared_memory: shm,
+            storage,
             name: self.name,
-            allocator: unsafe { NonNull::new_unchecked(allocator_addr) },
         })
     }
 
     fn open(self) -> Result<Memory<Allocator>, SharedMemoryOpenError> {
         let msg = "Unable to open shared memory";
 
-        let shm = match iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder::new(&self.config.path_for(&self.name).file_name())
-        .is_memory_locked(self.config.is_memory_locked)
-        .open_existing(AccessMode::ReadWrite)
+        let storage = match <<StorageType<Allocator> as DynamicStorage<
+            AllocatorDetails<Allocator>,
+        >>::Builder as NamedConceptBuilder<StorageType<Allocator>>>::new(
+            &self.name
+        )
+        .config(&(&self.config).into())
+        .has_ownership(false)
+        .open()
         {
             Ok(s) => s,
-            Err(iceoryx2_bb_posix::shared_memory::SharedMemoryCreationError::DoesNotExist) => {
+            Err(DynamicStorageOpenError::DoesNotExist) => {
                 fail!(from self, with SharedMemoryOpenError::DoesNotExist,
                         "{} since a shared memory with that name does not exist.", msg);
             }
-            Err(iceoryx2_bb_posix::shared_memory::SharedMemoryCreationError::SizeDoesNotFit) => {
-                fail!(from self, with SharedMemoryOpenError::SizeDoesNotFit,
-                        "{} since the requested size is not equal the actual size of the shared memory.", msg);
+            Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
+                fail!(from self, with SharedMemoryOpenError::InitializationNotYetFinalized,
+                        "{} since the underlying shared memory is not yet initialized.", msg);
             }
-            Err(
-                iceoryx2_bb_posix::shared_memory::SharedMemoryCreationError::InsufficientPermissions,
-            ) => {
-                fail!(from self, with SharedMemoryOpenError::InsufficientPermissions,
-                        "{} due to insufficient permissions.", msg);
+            Err(DynamicStorageOpenError::VersionMismatch) => {
+                fail!(from self, with SharedMemoryOpenError::VersionMismatch,
+                        "{} since the version number of the construct does not match.", msg);
             }
-            Err(v) => {
+            Err(DynamicStorageOpenError::InternalError) => {
                 fail!(from self, with SharedMemoryOpenError::InternalError,
-                        "{} since an unknown error has occurred ({:?}).", msg, v);
+                        "{} since an unknown error has occurred.", msg);
             }
         };
 
-        let allocator_addr = shm.base_address().as_ptr() as *mut AllocatorDetails<Allocator>;
-
-        if unsafe { &*allocator_addr }.state.load(Ordering::Relaxed) != IS_INITIALIZED_STATE_VALUE {
-            fail!(from self, with SharedMemoryOpenError::InternalError,
-                    "{} since the creation of the shared memory is not yet finished.", msg);
-        }
-
-        const SPACE_FOR_ALLOCATOR_ID: usize = 1;
-
-        if shm.size() <= SPACE_FOR_ALLOCATOR_ID {
-            fail!(from self, with SharedMemoryOpenError::SizeDoesNotFit,
-                "{} since the shared memories size {} is smaller than the minimum required size of {}.",
-                msg, shm.size(), SPACE_FOR_ALLOCATOR_ID);
-        }
-
-        if unsafe { &*allocator_addr }.allocator_id != Allocator::unique_id() {
+        if storage.get().allocator_id != Allocator::unique_id() {
             fail!(from self, with SharedMemoryOpenError::WrongAllocatorSelected,
                 "{} since the shared memory contains an allocator with unique id {} but the selected allocator has the unique id {}.",
-                msg, unsafe{&*allocator_addr}.allocator_id, Allocator::unique_id());
+                msg, storage.get().allocator_id, Allocator::unique_id());
+        }
+
+        let available_memory = get_available_memory_size(&storage);
+        if available_memory < self.size {
+            fail!(from self, with SharedMemoryOpenError::SizeDoesNotFit,
+                    "{} since a memory size of {} was requested but only {} is available.",
+                    msg, self.size, available_memory);
         }
 
         Ok(Memory::<Allocator> {
-            shared_memory: shm,
+            storage,
             name: self.name,
-            allocator: unsafe { NonNull::new_unchecked(allocator_addr) },
         })
     }
 }
 
 #[derive(Debug)]
 pub struct Memory<Allocator: ShmAllocator> {
-    shared_memory: iceoryx2_bb_posix::shared_memory::SharedMemory,
+    storage: StorageType<Allocator>,
     name: FileName,
-    allocator: NonNull<AllocatorDetails<Allocator>>,
 }
 
+#[derive(Debug)]
 #[repr(C)]
 struct AllocatorDetails<Allocator: ShmAllocator> {
-    state: AtomicU64,
     allocator_id: u8,
-    allocator: Allocator,
     mgmt_size: usize,
-}
-
-impl<Allocator: ShmAllocator + Debug> Memory<Allocator> {
-    fn allocator(&self) -> &AllocatorDetails<Allocator> {
-        unsafe { self.allocator.as_ref() }
-    }
+    supplementary_size: usize,
+    allocator: Allocator,
 }
 
 impl<Allocator: ShmAllocator + Debug> NamedConcept for Memory<Allocator> {
@@ -322,50 +289,33 @@ impl<Allocator: ShmAllocator + Debug> NamedConceptMgmt for Memory<Allocator> {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-        let full_name = cfg.path_for(name).file_name();
-
-        Ok(iceoryx2_bb_posix::shared_memory::SharedMemory::does_exist(
-            &full_name,
-        ))
+        Ok(fail!(from "shared_memory::posix::does_exist_cfg()",
+            when StorageType::<Allocator>::does_exist_cfg(name, &cfg.into()),
+            "Unable to remove shared memory concept \"{}\".", name))
     }
 
     fn list_cfg(
-        config: &Self::Configuration,
+        cfg: &Self::Configuration,
     ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
-        let entries = iceoryx2_bb_posix::shared_memory::SharedMemory::list();
-
-        let mut result = vec![];
-        for entry in &entries {
-            if let Some(entry_name) = config.extract_name_from_file(entry) {
-                result.push(entry_name);
-            }
-        }
-
-        Ok(result)
+        Ok(fail!(from "shared_memory::posix::list_cfg()",
+            when StorageType::<Allocator>::list_cfg(&cfg.into()),
+            "Unable to list shared memory concepts."))
     }
 
     unsafe fn remove_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        let full_name = cfg.path_for(name).file_name();
-        let msg = "Unable to remove shared_memory::posix";
-        let origin = "shared_memory::Posix::remove_cfg()";
-
-        match iceoryx2_bb_posix::shared_memory::SharedMemory::remove(&full_name) {
-            Ok(v) => Ok(v),
-            Err(
-                iceoryx2_bb_posix::shared_memory::SharedMemoryRemoveError::InsufficientPermissions,
-            ) => {
-                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
-                        "{} \"{}\" due to insufficient permissions.", msg, name);
-            }
-            Err(v) => {
-                fail!(from origin, with NamedConceptRemoveError::InternalError,
-                        "{} \"{}\" due to an internal failure ({:?}).", msg, name, v);
-            }
-        }
+        Ok(fail!(from "shared_memory::posix::remove_cfg()",
+            when StorageType::<Allocator>::remove_cfg(name, &cfg.into()),
+            "Unable to remove shared memory concept \"{}\".", name))
     }
+}
+
+fn get_available_memory_size<Allocator: ShmAllocator + Debug>(
+    storage: &StorageType<Allocator>,
+) -> usize {
+    storage.get().supplementary_size - storage.get().mgmt_size
 }
 
 impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocator>
@@ -374,15 +324,15 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
     type Builder = Builder<Allocator>;
 
     fn size(&self) -> usize {
-        self.shared_memory.size() - self.allocator().mgmt_size
+        get_available_memory_size(&self.storage)
     }
 
     fn max_alignment(&self) -> usize {
-        self.allocator().allocator.max_alignment()
+        self.storage.get().allocator.max_alignment()
     }
 
     fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
-        let offset = fail!(from self, when unsafe { self.allocator().allocator.allocate(layout) },
+        let offset = fail!(from self, when unsafe { self.storage.get().allocator.allocate(layout) },
             "Failed to allocate shared memory due to an internal allocator failure.");
 
         Ok(ShmPointer {
@@ -392,16 +342,16 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
-        self.allocator().allocator.deallocate(offset, layout);
+        self.storage.get().allocator.deallocate(offset, layout);
     }
 
     fn release_ownership(&mut self) {
-        self.shared_memory.release_ownership()
+        self.storage.release_ownership()
     }
 
     fn payload_start_address(&self) -> usize {
-        (self.shared_memory.base_address().as_ptr() as *const u8) as usize
-            + self.allocator().mgmt_size
-            + self.allocator().allocator.relative_start_address()
+        (self.storage.get() as *const AllocatorDetails<Allocator>) as usize
+            + self.storage.get().mgmt_size
+            + self.storage.get().allocator.relative_start_address()
     }
 }
