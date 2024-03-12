@@ -209,7 +209,6 @@ mod shared_memory {
                 .unwrap();
 
             let chunk = sut_create.allocate(layout).unwrap();
-            println!(">>> {}", i);
             assert_that!((chunk.data_ptr as usize) % layout.align(), eq 0);
         }
     }

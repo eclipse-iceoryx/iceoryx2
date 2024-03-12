@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::ptr::NonNull;
+use std::{alloc::Layout, fmt::Debug};
 
 use crate::dynamic_storage::*;
 pub use crate::shared_memory::*;
+use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::{debug, fail};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -39,6 +39,7 @@ pub struct Configuration<Allocator: ShmAllocator + Debug> {
 impl<T: ShmAllocator + Debug> From<&Configuration<T>>
     for <StorageType<T> as NamedConceptMgmt>::Configuration
 {
+    #[allow(private_interfaces)]
     fn from(value: &Configuration<T>) -> Self {
         <StorageType<T> as NamedConceptMgmt>::Configuration::default()
             .prefix(value.prefix)
@@ -147,14 +148,6 @@ impl<Allocator: ShmAllocator + Debug>
 
         let allocator_mgmt_size = Allocator::management_size(self.size, allocator_config);
 
-        let slice = unsafe {
-            std::slice::from_raw_parts_mut(
-                //TODO
-                (11) as *mut u8,
-                self.size,
-            )
-        };
-
         let storage = match <<StorageType<Allocator> as DynamicStorage<
             AllocatorDetails<Allocator>,
         >>::Builder as NamedConceptBuilder<StorageType<Allocator>>>::new(
@@ -166,18 +159,31 @@ impl<Allocator: ShmAllocator + Debug>
         .create_and_initialize(
             AllocatorDetails {
                 allocator_id: Allocator::unique_id(),
-                allocator: unsafe {
-                    Allocator::new_uninit(
-                        SystemInfo::PageSize.value(),
-                        NonNull::new_unchecked(slice),
-                        allocator_config,
-                    )
-                },
+                allocator: None,
                 mgmt_size: allocator_mgmt_size,
-                supplementary_size: self.size,
+                payload_size: self.size,
+                payload_start_offset: 0,
             },
             |details, init_allocator| -> bool {
-                if let Err(e) = unsafe { details.allocator.init(init_allocator) } {
+                let memory = match init_allocator.allocate(unsafe { Layout::from_size_align_unchecked(self.size, 1) }) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        debug!(from self, "{} since the payload memory could not be acquired ({:?}).", msg, e);
+                        return false;
+                    }
+                };
+
+                details.payload_start_offset = (memory.as_ptr() as *const u8) as usize - (details as *const AllocatorDetails<Allocator>) as usize;
+
+                details.allocator = Some(unsafe {
+                    Allocator::new_uninit(
+                        SystemInfo::PageSize.value(),
+                        memory,
+                        allocator_config,
+                    )
+                });
+
+                if let Err(e) = unsafe { details.allocator.as_ref().unwrap_unchecked().init(init_allocator) } {
                     debug!(from self, "{} since the management memory for the allocator could not be initialized ({:?}).", msg, e);
                     false
                 } else {
@@ -247,11 +253,11 @@ impl<Allocator: ShmAllocator + Debug>
                 msg, storage.get().allocator_id, Allocator::unique_id());
         }
 
-        let available_memory = get_available_memory_size(&storage);
-        if available_memory < self.size {
+        let payload_size = storage.get().payload_size;
+        if payload_size < self.size {
             fail!(from self, with SharedMemoryOpenError::SizeDoesNotFit,
                     "{} since a memory size of {} was requested but only {} is available.",
-                    msg, self.size, available_memory);
+                    msg, self.size, payload_size);
         }
 
         Ok(Memory::<Allocator> {
@@ -272,8 +278,9 @@ pub struct Memory<Allocator: ShmAllocator> {
 struct AllocatorDetails<Allocator: ShmAllocator> {
     allocator_id: u8,
     mgmt_size: usize,
-    supplementary_size: usize,
-    allocator: Allocator,
+    payload_size: usize,
+    allocator: Option<Allocator>,
+    payload_start_offset: usize,
 }
 
 impl<Allocator: ShmAllocator + Debug> NamedConcept for Memory<Allocator> {
@@ -312,27 +319,21 @@ impl<Allocator: ShmAllocator + Debug> NamedConceptMgmt for Memory<Allocator> {
     }
 }
 
-fn get_available_memory_size<Allocator: ShmAllocator + Debug>(
-    storage: &StorageType<Allocator>,
-) -> usize {
-    storage.get().supplementary_size - storage.get().mgmt_size
-}
-
 impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocator>
     for Memory<Allocator>
 {
     type Builder = Builder<Allocator>;
 
     fn size(&self) -> usize {
-        get_available_memory_size(&self.storage)
+        self.storage.get().payload_size
     }
 
     fn max_alignment(&self) -> usize {
-        self.storage.get().allocator.max_alignment()
+        unsafe { self.storage.get().allocator.as_ref().unwrap_unchecked() }.max_alignment()
     }
 
     fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
-        let offset = fail!(from self, when unsafe { self.storage.get().allocator.allocate(layout) },
+        let offset = fail!(from self, when unsafe { self.storage.get().allocator.as_ref().unwrap_unchecked().allocate(layout) },
             "Failed to allocate shared memory due to an internal allocator failure.");
 
         Ok(ShmPointer {
@@ -342,7 +343,12 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
-        self.storage.get().allocator.deallocate(offset, layout);
+        self.storage
+            .get()
+            .allocator
+            .as_ref()
+            .unwrap_unchecked()
+            .deallocate(offset, layout);
     }
 
     fn release_ownership(&mut self) {
@@ -351,7 +357,14 @@ impl<Allocator: ShmAllocator + Debug> crate::shared_memory::SharedMemory<Allocat
 
     fn payload_start_address(&self) -> usize {
         (self.storage.get() as *const AllocatorDetails<Allocator>) as usize
-            + self.storage.get().mgmt_size
-            + self.storage.get().allocator.relative_start_address()
+            + self.storage.get().payload_start_offset
+            + unsafe {
+                self.storage
+                    .get()
+                    .allocator
+                    .as_ref()
+                    .unwrap_unchecked()
+                    .relative_start_address()
+            }
     }
 }
