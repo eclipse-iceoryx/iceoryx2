@@ -16,6 +16,8 @@
 use crate::posix::types::*;
 use crate::posix::Struct;
 
+use super::Errno;
+
 pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
     crate::internal::open(pathname, flags, mode as core::ffi::c_uint)
 }
@@ -44,7 +46,19 @@ pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
 }
 
 pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
-    crate::internal::fchmod(fd, mode)
+    // TODO iox2-156, shared memory permission cannot be adjusted with fchmod, therefore setting
+    //                  it so that the owner can access everything
+    // when fixed use:
+    // crate::internal::fchmod(fd, mode)
+
+    let ret_val = crate::internal::fchmod(fd, mode);
+    if ret_val == -1 && Errno::get() == Errno::EINVAL {
+        Errno::set(Errno::ESUCCES);
+        return 0;
+    }
+
+    ret_val
+    // TODO iox2-156, end
 }
 
 pub unsafe fn open(pathname: *const c_char, flags: int) -> int {

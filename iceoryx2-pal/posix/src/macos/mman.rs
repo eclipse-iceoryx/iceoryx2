@@ -149,7 +149,7 @@ unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
     buffer
 }
 
-pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
+pub unsafe fn shm_open(name: *const c_char, oflag: int, _mode: mode_t) -> int {
     let real_name = get_real_shm_name(name);
     if oflag & O_EXCL != 0 && real_name.is_some() {
         Errno::set(Errno::EEXIST);
@@ -171,6 +171,10 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
         }
     };
 
+    // TODO iox2-156, shared memory permission cannot be adjusted with fchmod, therefore setting
+    //                  it so that the owner can access everything
+    let mode = S_IRWXU;
+    // TODO iox2-156, end
     crate::internal::shm_open(real_name.as_ptr().cast(), oflag, mode as uint)
 }
 
