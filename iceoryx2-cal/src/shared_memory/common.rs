@@ -27,6 +27,8 @@ use crate::static_storage::file::{
 };
 
 pub mod details {
+    use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+
     use super::*;
 
     fn get_payload_start_address<
@@ -159,6 +161,42 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        Builder<Allocator, Storage>
+    {
+        fn initialize(
+            &self,
+            allocator_config: &Allocator::Configuration,
+            details: &mut AllocatorDetails<Allocator>,
+            init_allocator: &mut BumpAllocator,
+        ) -> bool {
+            let msg = "Unable to initialize shared memory";
+            let res =
+                init_allocator.allocate(unsafe { Layout::from_size_align_unchecked(self.size, 1) });
+            let memory = match res {
+                Ok(m) => m,
+                Err(e) => {
+                    debug!(from self, "{} since the payload memory could not be acquired ({:?}).", msg, e);
+                    return false;
+                }
+            };
+
+            details.payload_start_offset = (memory.as_ptr() as *const u8) as usize
+                - (details as *const AllocatorDetails<Allocator>) as usize;
+
+            details.allocator.write(unsafe {
+                Allocator::new_uninit(SystemInfo::PageSize.value(), memory, allocator_config)
+            });
+
+            if let Err(e) = unsafe { details.allocator.assume_init_ref().init(init_allocator) } {
+                debug!(from self, "{} since the management memory for the allocator could not be initialized ({:?}).", msg, e);
+                false
+            } else {
+                true
+            }
+        }
+    }
+
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
         crate::shared_memory::SharedMemoryBuilder<Allocator, Memory<Allocator, Storage>>
         for Builder<Allocator, Storage>
     {
@@ -180,65 +218,40 @@ pub mod details {
 
             let allocator_mgmt_size = Allocator::management_size(self.size, allocator_config);
 
-            let storage = match Storage::Builder::new(
-            &self.name
-        )
-        .config(&(&self.config).convert())
-        .supplementary_size(self.size + allocator_mgmt_size)
-        .has_ownership(true)
-        .create_and_initialize(
-            AllocatorDetails {
-                allocator_id: Allocator::unique_id(),
-                allocator: MaybeUninit::uninit(),
-                mgmt_size: allocator_mgmt_size,
-                payload_size: self.size,
-                payload_start_offset: 0,
-            },
-            |details, init_allocator| -> bool {
-                let memory = match init_allocator.allocate(unsafe { Layout::from_size_align_unchecked(self.size, 1) }) {
-                    Ok(m) => m,
-                    Err(e) => {
-                        debug!(from self, "{} since the payload memory could not be acquired ({:?}).", msg, e);
-                        return false;
-                    }
-                };
-
-                details.payload_start_offset = (memory.as_ptr() as *const u8) as usize - (details as *const AllocatorDetails<Allocator>) as usize;
-
-                details.allocator.write(unsafe {
-                    Allocator::new_uninit(
-                        SystemInfo::PageSize.value(),
-                        memory,
-                        allocator_config,
-                    )
-                });
-
-                if let Err(e) = unsafe { details.allocator.assume_init_ref().init(init_allocator) } {
-                    debug!(from self, "{} since the management memory for the allocator could not be initialized ({:?}).", msg, e);
-                    false
-                } else {
-                    true
-                }
-            },
-        ) {
-            Ok(s) => s,
-            Err(DynamicStorageCreateError::AlreadyExists) => {
-                fail!(from self, with SharedMemoryCreateError::AlreadyExists,
+            let storage = match Storage::Builder::new(&self.name)
+                .config(&self.config.convert())
+                .supplementary_size(self.size + allocator_mgmt_size)
+                .has_ownership(true)
+                .create_and_initialize(
+                    AllocatorDetails {
+                        allocator_id: Allocator::unique_id(),
+                        allocator: MaybeUninit::uninit(),
+                        mgmt_size: allocator_mgmt_size,
+                        payload_size: self.size,
+                        payload_start_offset: 0,
+                    },
+                    |details, init_allocator| -> bool {
+                        self.initialize(allocator_config, details, init_allocator)
+                    },
+                ) {
+                Ok(s) => s,
+                Err(DynamicStorageCreateError::AlreadyExists) => {
+                    fail!(from self, with SharedMemoryCreateError::AlreadyExists,
                         "{} since a shared memory with that name already exists.", msg);
                 }
-            Err(DynamicStorageCreateError::InsufficientPermissions) => {
-                fail!(from self, with SharedMemoryCreateError::InsufficientPermissions,
+                Err(DynamicStorageCreateError::InsufficientPermissions) => {
+                    fail!(from self, with SharedMemoryCreateError::InsufficientPermissions,
                         "{} due to insufficient permissions.", msg);
                 }
-            Err(DynamicStorageCreateError::InitializationFailed) => {
-                fail!(from self, with SharedMemoryCreateError::InternalError,
+                Err(DynamicStorageCreateError::InitializationFailed) => {
+                    fail!(from self, with SharedMemoryCreateError::InternalError,
                         "{} since the initialization failed.", msg);
                 }
-            Err(DynamicStorageCreateError::InternalError) => {
-                fail!(from self, with SharedMemoryCreateError::InternalError,
+                Err(DynamicStorageCreateError::InternalError) => {
+                    fail!(from self, with SharedMemoryCreateError::InternalError,
                         "{} since an unknown error has occurred.", msg);
                 }
-        };
+            };
 
             Ok(Memory::<Allocator, Storage> {
                 payload_start_address: get_payload_start_address(&storage),
@@ -252,7 +265,7 @@ pub mod details {
             let msg = "Unable to open shared memory";
 
             let storage = match Storage::Builder::new(&self.name)
-                .config(&(&self.config).convert())
+                .config(&self.config.convert())
                 .has_ownership(false)
                 .open()
             {
