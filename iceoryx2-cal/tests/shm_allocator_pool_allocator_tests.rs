@@ -21,18 +21,18 @@ mod shm_allocator_pool_allocator {
         zero_copy_connection::PointerOffset,
     };
 
-    const MAX_SUPPORTED_ALIGNMENT: usize = 32;
+    const MAX_SUPPORTED_ALIGNMENT: usize = 4096;
     const BUCKET_CONFIG: Layout = unsafe { Layout::from_size_align_unchecked(32, 4) };
-    const MEM_SIZE: usize = 8192;
-    const PAYLOAD_SIZE: usize = 1024;
+    const MEM_SIZE: usize = 16384 * 10;
+    const PAYLOAD_SIZE: usize = 8192;
 
-    struct TestFixture {
+    struct TestContext {
         _payload_memory: Box<[u8; MEM_SIZE]>,
         _base_address: NonNull<[u8]>,
         sut: Box<PoolAllocator>,
     }
 
-    impl TestFixture {
+    impl TestContext {
         fn new(bucket_layout: Layout) -> Self {
             let mut payload_memory = Box::new([0u8; MEM_SIZE]);
             let base_address =
@@ -58,36 +58,37 @@ mod shm_allocator_pool_allocator {
 
     #[test]
     fn is_setup_correctly() {
-        let test = TestFixture::new(Layout::from_size_align(2, 1).unwrap());
+        let test_context = TestContext::new(Layout::from_size_align(2, 1).unwrap());
 
-        assert_that!(test.sut.number_of_buckets() as usize, eq PAYLOAD_SIZE / 2);
-        assert_that!(test.sut.relative_start_address() as usize, eq 0);
+        assert_that!(test_context.sut.number_of_buckets() as usize, eq PAYLOAD_SIZE / 2);
+        assert_that!(test_context.sut.relative_start_address() as usize, eq 0);
 
-        let test = TestFixture::new(BUCKET_CONFIG);
+        let test_context = TestContext::new(BUCKET_CONFIG);
 
-        assert_that!(test.sut.bucket_size(), eq BUCKET_CONFIG.size());
-        assert_that!(test.sut.max_alignment(), eq BUCKET_CONFIG.align());
+        assert_that!(test_context.sut.bucket_size(), eq BUCKET_CONFIG.size());
+        assert_that!(test_context.sut.max_alignment(), eq BUCKET_CONFIG.align());
     }
 
     #[test]
     fn allocate_and_release_all_buckets_works() {
         const REPETITIONS: usize = 10;
-        let test = TestFixture::new(BUCKET_CONFIG);
+        let test_context = TestContext::new(BUCKET_CONFIG);
 
         for _ in 0..REPETITIONS {
             let mut mem_set = HashSet::new();
-            for _ in 0..test.sut.number_of_buckets() {
-                let memory = unsafe { test.sut.allocate(BUCKET_CONFIG).unwrap() };
+            for _ in 0..test_context.sut.number_of_buckets() {
+                let memory = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory.value() - test.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!((memory.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
                 assert_that!(mem_set.insert(memory.value()), eq true);
             }
 
-            assert_that!(unsafe { test.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
+            assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
 
             for memory in mem_set {
                 unsafe {
-                    test.sut
+                    test_context
+                        .sut
                         .deallocate(PointerOffset::new(memory), BUCKET_CONFIG)
                 }
             }
@@ -97,35 +98,36 @@ mod shm_allocator_pool_allocator {
     #[test]
     fn allocate_twice_release_once_until_memory_is_exhausted_works() {
         const REPETITIONS: usize = 10;
-        let test = TestFixture::new(BUCKET_CONFIG);
+        let test_context = TestContext::new(BUCKET_CONFIG);
 
         for _ in 0..REPETITIONS {
             let mut mem_set = HashSet::new();
-            for _ in 0..(test.sut.number_of_buckets() - 1) {
-                let memory_1 = unsafe { test.sut.allocate(BUCKET_CONFIG).unwrap() };
+            for _ in 0..(test_context.sut.number_of_buckets() - 1) {
+                let memory_1 = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory_1.value() - test.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!((memory_1.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
 
-                let memory_2 = unsafe { test.sut.allocate(BUCKET_CONFIG).unwrap() };
+                let memory_2 = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory_2.value() - test.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!((memory_2.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
                 assert_that!(mem_set.insert(memory_2.value()), eq true);
 
                 unsafe {
-                    test.sut.deallocate(memory_1, BUCKET_CONFIG);
+                    test_context.sut.deallocate(memory_1, BUCKET_CONFIG);
                 }
             }
 
-            let memory = unsafe { test.sut.allocate(BUCKET_CONFIG).unwrap() };
+            let memory = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
             // the returned offset must be a multiple of the bucket size
-            assert_that!((memory.value() - test.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+            assert_that!((memory.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
             assert_that!(mem_set.insert(memory.value()), eq true);
 
-            assert_that!(unsafe { test.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
+            assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
 
             for memory in mem_set {
                 unsafe {
-                    test.sut
+                    test_context
+                        .sut
                         .deallocate(PointerOffset::new(memory), BUCKET_CONFIG)
                 }
             }
@@ -133,8 +135,58 @@ mod shm_allocator_pool_allocator {
     }
 
     #[test]
+    fn allocated_memory_has_correct_alignment_uniform_alignment_case() {
+        for i in 0..12 {
+            for n in 0..i {
+                let layout = Layout::from_size_align(2_usize.pow(i), 2_usize.pow(i)).unwrap();
+                let test_context = TestContext::new(layout);
+
+                let mem_layout =
+                    Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
+                let mut counter = 0;
+                while let Ok(memory) = unsafe { test_context.sut.allocate(mem_layout) } {
+                    assert_that!(memory.value() % mem_layout.align(), eq 0 );
+                    counter += 1;
+                }
+
+                // just to make sure that actually samples are allocated
+                assert_that!(counter, ge 1);
+            }
+        }
+    }
+
+    #[test]
+    fn allocated_memory_has_correct_alignment_mixed_alignment_case() {
+        for i in 0..12 {
+            let layout = Layout::from_size_align(2_usize.pow(i), 2_usize.pow(i)).unwrap();
+            let test_context = TestContext::new(layout);
+
+            let mut counter = 0;
+            let mut keep_running = true;
+            while keep_running {
+                for n in 0..i + 1 {
+                    let mem_layout =
+                        Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
+
+                    if let Ok(memory) = unsafe { test_context.sut.allocate(mem_layout) } {
+                        assert_that!(memory.value() % mem_layout.align(), eq 0 );
+                        counter += 1;
+                    } else {
+                        keep_running = false;
+                        break;
+                    }
+                }
+            }
+
+            // just to make sure that actually samples are allocated
+            assert_that!(counter, ge 2);
+        }
+    }
+
+    #[test]
     fn allocate_with_unsupported_alignment_fails() {
-        let test = TestFixture::new(Layout::from_size_align(BUCKET_CONFIG.size(), 1).unwrap());
-        assert_that!(unsafe { test.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::ExceedsMaxSupportedAlignment));
+        let test_context =
+            TestContext::new(Layout::from_size_align(BUCKET_CONFIG.size(), 1).unwrap());
+        assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::ExceedsMaxSupportedAlignment));
     }
 }

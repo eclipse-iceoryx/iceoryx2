@@ -203,13 +203,19 @@ mod shared_memory {
                 bucket_layout: layout,
             };
 
-            let sut_create = Sut::Builder::new(&name)
-                .size(DEFAULT_SIZE)
-                .create(&shm_config)
-                .unwrap();
+            for n in 0..i + 1 {
+                let sut_create = Sut::Builder::new(&name)
+                    .size(DEFAULT_SIZE)
+                    .create(&shm_config)
+                    .unwrap();
 
-            let chunk = sut_create.allocate(layout).unwrap();
-            assert_that!((chunk.data_ptr as usize) % layout.align(), eq 0);
+                let chunk_layout =
+                    unsafe { Layout::from_size_align_unchecked(2_usize.pow(n), 2_usize.pow(n)) };
+
+                while let Ok(chunk) = sut_create.allocate(chunk_layout) {
+                    assert_that!((chunk.data_ptr as usize) % chunk_layout.align(), eq 0);
+                }
+            }
         }
     }
 
