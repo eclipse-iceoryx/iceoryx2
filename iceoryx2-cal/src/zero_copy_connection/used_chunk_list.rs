@@ -23,8 +23,6 @@ use iceoryx2_bb_elementary::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 
-use crate::shm_allocator::PointerOffset;
-
 pub type UsedChunkList = details::UsedChunkList<OwningPointer<AtomicBool>>;
 pub type RelocatableUsedChunkList = details::UsedChunkList<RelocatablePointer<AtomicBool>>;
 
@@ -179,7 +177,7 @@ impl<const CAPACITY: usize> Default for FixedSizeUsedChunkList<CAPACITY> {
             list: unsafe {
                 RelocatableUsedChunkList::new(
                     CAPACITY,
-                    align_to::<PointerOffset>(std::mem::size_of::<RelocatableUsedChunkList>()) as _,
+                    align_to::<AtomicBool>(std::mem::size_of::<RelocatableUsedChunkList>()) as _,
                 )
             },
             data: core::array::from_fn(|_| AtomicBool::new(false)),

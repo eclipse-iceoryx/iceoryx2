@@ -19,6 +19,7 @@
     * Add `Notifier|Listener|Publisher|Subscriber::id()` method to acquire unique port id
     * Add `Sample::origin()` to determine the `UniquePublisherId` of the sender
  * Performance improvements, especially for AMD CPUs [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
+ * Introduce lock-free mpmc BitSet [#139](https://github.com/eclipse-iceoryx/iceoryx2/issues/139)
 
 ### Bugfixes
 

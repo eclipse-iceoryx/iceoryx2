@@ -75,29 +75,23 @@ pub unsafe fn CMSG_DATA(cmsg: *const cmsghdr) -> *mut uchar {
 }
 
 pub unsafe fn FD_CLR(fd: int, set: *mut fd_set) {
-    println!("fd_clr {}", fd);
     let fd = fd as usize;
     const BITS: usize = core::mem::size_of::<i32>() * 8;
     (*set).fds_bits[fd / BITS] &= !(1i32 << (fd % BITS));
 }
 
 pub unsafe fn FD_ISSET(fd: int, set: *const fd_set) -> bool {
-    println!("fd_isset {}", fd);
     let fd = fd as usize;
     const BITS: usize = core::mem::size_of::<i32>() * 8;
     (*set).fds_bits[fd / BITS] & (1i32 << (fd % BITS)) != 0
 }
 
 pub unsafe fn FD_SET(fd: int, set: *mut fd_set) {
-    println!("fd_set {}", fd);
     let fd = fd as usize;
     const BITS: usize = core::mem::size_of::<i32>() * 8;
-    println!("contents before {}", (*set).fds_bits[fd / BITS]);
     (*set).fds_bits[fd / BITS] |= 1i32 << (fd % BITS);
-    println!("contents after {}", (*set).fds_bits[fd / BITS]);
 }
 
 pub unsafe fn FD_ZERO(set: *mut fd_set) {
-    println!("fd_zero");
     (*set) = fd_set::new();
 }
