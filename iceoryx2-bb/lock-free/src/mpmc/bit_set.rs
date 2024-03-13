@@ -49,29 +49,33 @@ use iceoryx2_bb_elementary::{
     relocatable_container::RelocatableContainer,
     relocatable_ptr::{PointerTrait, RelocatablePointer},
 };
+
 use iceoryx2_bb_log::{fail, fatal_panic};
 
+type BitsetElement = AtomicU8;
+const BITSET_ELEMENT_BITSIZE: usize = core::mem::size_of::<BitsetElement>() * 8;
+
 /// This BitSet variant's data is stored in the heap.
-pub type BitSet = details::BitSet<OwningPointer<AtomicU8>>;
+pub type BitSet = details::BitSet<OwningPointer<BitsetElement>>;
 /// This BitSet variant can be stored inside shared memory.
-pub type RelocatableBitSet = details::BitSet<RelocatablePointer<AtomicU8>>;
+pub type RelocatableBitSet = details::BitSet<RelocatablePointer<BitsetElement>>;
 
 pub mod details {
     use super::*;
 
     #[derive(Debug)]
     #[repr(C)]
-    pub struct BitSet<PointerType: PointerTrait<AtomicU8>> {
+    pub struct BitSet<PointerType: PointerTrait<BitsetElement>> {
         data_ptr: PointerType,
         capacity: usize,
         array_capacity: usize,
         is_memory_initialized: AtomicBool,
     }
 
-    unsafe impl<PointerType: PointerTrait<AtomicU8>> Send for BitSet<PointerType> {}
-    unsafe impl<PointerType: PointerTrait<AtomicU8>> Sync for BitSet<PointerType> {}
+    unsafe impl<PointerType: PointerTrait<BitsetElement>> Send for BitSet<PointerType> {}
+    unsafe impl<PointerType: PointerTrait<BitsetElement>> Sync for BitSet<PointerType> {}
 
-    impl BitSet<OwningPointer<AtomicU8>> {
+    impl BitSet<OwningPointer<BitsetElement>> {
         /// Create a new [`BitSet`] with data located in the heap.
         ///
         /// ```
@@ -80,10 +84,10 @@ pub mod details {
         /// ```
         pub fn new(capacity: usize) -> Self {
             let array_capacity = Self::array_capacity(capacity);
-            let mut data_ptr = OwningPointer::<AtomicU8>::new_with_alloc(array_capacity);
+            let mut data_ptr = OwningPointer::<BitsetElement>::new_with_alloc(array_capacity);
 
             for i in 0..array_capacity {
-                unsafe { data_ptr.as_mut_ptr().add(i).write(AtomicU8::new(0u8)) };
+                unsafe { data_ptr.as_mut_ptr().add(i).write(BitsetElement::new(0)) };
             }
 
             Self {
@@ -95,7 +99,7 @@ pub mod details {
         }
     }
 
-    impl RelocatableContainer for BitSet<RelocatablePointer<AtomicU8>> {
+    impl RelocatableContainer for BitSet<RelocatablePointer<BitsetElement>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
@@ -116,17 +120,17 @@ pub mod details {
 
             let memory = fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                    std::mem::size_of::<AtomicU8>() * self.array_capacity,
-                    std::mem::align_of::<AtomicU8>())),
+                    std::mem::size_of::<BitsetElement>() * self.array_capacity,
+                    std::mem::align_of::<BitsetElement>())),
             "Failed to initialize since the allocation of the data memory failed.");
 
             self.data_ptr.init(memory);
 
             for i in 0..self.array_capacity {
                 unsafe {
-                    (self.data_ptr.as_ptr() as *mut AtomicU8)
+                    (self.data_ptr.as_ptr() as *mut BitsetElement)
                         .add(i)
-                        .write(AtomicU8::new(0u8))
+                        .write(BitsetElement::new(0))
                 };
             }
 
@@ -152,14 +156,14 @@ pub mod details {
         }
     }
 
-    impl<PointerType: PointerTrait<AtomicU8> + Debug> BitSet<PointerType> {
+    impl<PointerType: PointerTrait<BitsetElement> + Debug> BitSet<PointerType> {
         pub(super) const fn array_capacity(capacity: usize) -> usize {
-            capacity.div_ceil(8)
+            capacity.div_ceil(BITSET_ELEMENT_BITSIZE)
         }
 
         /// Returns the required memory size for a BitSet with a specified capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
-            unaligned_mem_size::<AtomicU8>(Self::array_capacity(capacity))
+            unaligned_mem_size::<BitsetElement>(Self::array_capacity(capacity))
         }
 
         /// Returns the capacity of the BitSet
@@ -209,8 +213,8 @@ pub mod details {
                 id
             );
 
-            let bitset_index = id / 8;
-            let bit = id % 8;
+            let bitset_index = id / BITSET_ELEMENT_BITSIZE;
+            let bit = id % BITSET_ELEMENT_BITSIZE;
             self.set_bit(bitset_index, bit)
         }
 
@@ -219,11 +223,10 @@ pub mod details {
         pub fn reset<F: FnMut(usize)>(&self, mut callback: F) {
             self.verify_init("set");
             for i in 0..self.array_capacity {
-                let value =
-                    unsafe { (*self.data_ptr.as_ptr().add(i)).swap(0u8, Ordering::Relaxed) };
-                for b in 0..8 {
+                let value = unsafe { (*self.data_ptr.as_ptr().add(i)).swap(0, Ordering::Relaxed) };
+                for b in 0..BITSET_ELEMENT_BITSIZE {
                     if value & (1 << b) != 0 {
-                        let index = i * 8 + b;
+                        let index = i * BITSET_ELEMENT_BITSIZE + b;
                         callback(index);
                     }
                 }
@@ -239,9 +242,9 @@ pub struct FixedSizeBitSet<const CAPACITY: usize> {
     bitset: RelocatableBitSet,
     // TODO: we waste here some memory since rust does us not allow to perform const operations
     //       on generic parameters. Whenever this is supported, change this line into
-    //       data: [AtomicU8; Self::array_capacity(CAPACITY)]
+    //       data: [BitsetElement; Self::array_capacity(CAPACITY)]
     //       For now we can live with it, since the bitsets are usually rather small
-    data: [AtomicU8; CAPACITY],
+    data: [BitsetElement; CAPACITY],
 }
 
 unsafe impl<const CAPACITY: usize> Send for FixedSizeBitSet<CAPACITY> {}
@@ -253,10 +256,10 @@ impl<const CAPACITY: usize> Default for FixedSizeBitSet<CAPACITY> {
             bitset: unsafe {
                 RelocatableBitSet::new(
                     CAPACITY,
-                    align_to::<AtomicU8>(std::mem::size_of::<RelocatableBitSet>()) as _,
+                    align_to::<BitsetElement>(std::mem::size_of::<RelocatableBitSet>()) as _,
                 )
             },
-            data: core::array::from_fn(|_| AtomicU8::new(0u8)),
+            data: core::array::from_fn(|_| BitsetElement::new(0)),
         }
     }
 }
