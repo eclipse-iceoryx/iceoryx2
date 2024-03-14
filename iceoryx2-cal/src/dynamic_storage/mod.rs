@@ -54,7 +54,7 @@
 //! }
 //! ```
 
-use std::fmt::Debug;
+use std::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_system_types::file_name::*;
@@ -109,14 +109,19 @@ pub trait DynamicStorageBuilder<T: Send + Sync, D: DynamicStorage<T>>:
     ) -> Result<D, DynamicStorageCreateError>;
 
     /// Opens a [`DynamicStorage`]. The implementation must ensure that a [`DynamicStorage`]
-    /// which is in the midst of creation cannot be opened.
+    /// which is in the midst of creation cannot be opened. If the [`DynamicStorage`] does not
+    /// exist or is not initialized it fails.
     fn open(self) -> Result<D, DynamicStorageOpenError>;
 
     /// Opens a [`DynamicStorage`]. The implementation must ensure that a [`DynamicStorage`]
-    /// which is in the midst of creation cannot be opened. In contrast to the counterpart
-    /// [`DynamicStorageBuilder::open()`] it does not print an error message when the channel
-    /// does not exist or is not yet finalized.
-    fn try_open(self) -> Result<D, DynamicStorageOpenError>;
+    /// which is in the midst of creation cannot be opened. If the [`DynamicStorage`] does not
+    /// exist or is not initialized after the timeout it fails.
+    /// The timeout defines how long the [`DynamicStorageBuilder`] should wait for
+    /// [`DynamicStorageBuilder::create()`] or [`DynamicStorageBuilder::create_and_initialize()`]
+    /// to finialize
+    /// the initialization. This is required when the [`DynamicStorage`] is created and initialized
+    /// concurrently from another process. It can be set to [`Duration::ZERO`] for no timeout.
+    fn open_with_timeout(self, timeout: Duration) -> Result<D, DynamicStorageOpenError>;
 }
 
 /// Is being built by the [`DynamicStorageBuilder`]. The [`DynamicStorage`] trait shall provide

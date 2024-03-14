@@ -215,7 +215,7 @@ impl CommunicationChannelConnector<usize, Channel> for Connector {
 
         match SharedMemoryBuilder::new(&self.channel_name)
             .config(&self.config.into())
-            .try_open()
+            .open()
         {
             Ok(shared_memory) => Ok(Sender { shared_memory }),
             Err(DynamicStorageOpenError::DoesNotExist)

@@ -262,12 +262,19 @@ pub mod details {
         }
 
         fn open(self) -> Result<Memory<Allocator, Storage>, SharedMemoryOpenError> {
+            self.open_with_timeout(Duration::ZERO)
+        }
+
+        fn open_with_timeout(
+            self,
+            timeout: Duration,
+        ) -> Result<Memory<Allocator, Storage>, SharedMemoryOpenError> {
             let msg = "Unable to open shared memory";
 
             let storage = match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())
                 .has_ownership(false)
-                .open()
+                .open_with_timeout(timeout)
             {
                 Ok(s) => s,
                 Err(DynamicStorageOpenError::DoesNotExist) => {

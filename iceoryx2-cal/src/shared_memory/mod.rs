@@ -58,7 +58,7 @@ pub mod common;
 pub mod posix;
 pub mod process_local;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
@@ -108,8 +108,17 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
         allocator_config: &Allocator::Configuration,
     ) -> Result<Shm, SharedMemoryCreateError>;
 
-    /// Opens already existing [`SharedMemory`]. If it does not exist the method will fail.
+    /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
+    /// yet finished the method will fail.
     fn open(self) -> Result<Shm, SharedMemoryOpenError>;
+
+    /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
+    /// yet finished after the timeout the method will fail.
+    /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for
+    /// [`SharedMemoryBuilder::create()`] to finialize
+    /// the initialization. This is required when the [`SharedMemory`] is created and initialized
+    /// concurrently from another process. It can be set to [`Duration::ZERO`] for no timeout.
+    fn open_with_timeout(self, timeout: Duration) -> Result<Shm, SharedMemoryOpenError>;
 }
 
 /// Abstract concept of a memory shared between multiple processes. Can be created with the

@@ -306,7 +306,11 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
         self
     }
 
-    fn try_open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
+    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
+        self.open_with_timeout(Duration::ZERO)
+    }
+
+    fn open_with_timeout(self, _timeout: Duration) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open dynamic storage";
 
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
@@ -316,7 +320,8 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
         let full_path = self.config.path_for(&self.name);
         let mut entry = guard.get_mut(&full_path);
         if entry.is_none() {
-            return Err(DynamicStorageOpenError::DoesNotExist);
+            fail!(from self, with DynamicStorageOpenError::DoesNotExist,
+                "{} since the storage does not exist.", msg);
         }
 
         Ok(Storage::<T> {
@@ -331,19 +336,6 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
             has_ownership: AtomicBool::new(false),
             config: self.config,
         })
-    }
-
-    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        let msg = "Failed to open dynamic storage";
-        let origin = format!("{:?}", self);
-        match self.try_open() {
-            Err(DynamicStorageOpenError::DoesNotExist) => {
-                fail!(from origin, with DynamicStorageOpenError::DoesNotExist,
-                "{} since the storage does not exist.", msg);
-            }
-            Err(e) => Err(e),
-            Ok(s) => Ok(s),
-        }
     }
 
     fn create_and_initialize<F: FnOnce(&mut T, &mut BumpAllocator) -> bool>(

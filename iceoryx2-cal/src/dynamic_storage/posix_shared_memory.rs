@@ -41,6 +41,7 @@
 //! ```
 
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
@@ -282,35 +283,39 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
     }
 
     fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        let msg = "Failed to open ";
-        let origin = format!("{:?}", self);
-        match self.try_open() {
-            Err(DynamicStorageOpenError::DoesNotExist) => {
-                fail!(from origin, with DynamicStorageOpenError::DoesNotExist, "{} since a shared memory with that name does not exists.", msg);
-            }
-            Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
-                fail!(from origin, with DynamicStorageOpenError::InitializationNotYetFinalized, "{} since it is not yet readable - most likely since it is not finalized.", msg);
-            }
-            Err(e) => Err(e),
-            Ok(s) => Ok(s),
-        }
+        self.open_with_timeout(Duration::ZERO)
     }
 
-    fn try_open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
+    fn open_with_timeout(self, timeout: Duration) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open ";
 
         let full_name = self.config.path_for(&self.storage_name).file_name();
-        let shm = match SharedMemoryBuilder::new(&full_name).open_existing(AccessMode::ReadWrite) {
-            Ok(v) => v,
-            Err(SharedMemoryCreationError::DoesNotExist) => {
-                return Err(DynamicStorageOpenError::DoesNotExist);
-            }
-            Err(SharedMemoryCreationError::InsufficientPermissions) => {
-                return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
-            }
-            Err(_) => {
-                fail!(from self, with DynamicStorageOpenError::InternalError, "{} since the underlying shared memory could not be opened.", msg);
-            }
+        let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
+                                    with DynamicStorageOpenError::InternalError,
+                                    "{} since the AdaptiveWait could not be initialized.", msg);
+
+        let mut elapsed_time = Duration::ZERO;
+        let shm = loop {
+            match SharedMemoryBuilder::new(&full_name).open_existing(AccessMode::ReadWrite) {
+                Ok(v) => break v,
+                Err(SharedMemoryCreationError::DoesNotExist) => {
+                    fail!(from self, with DynamicStorageOpenError::DoesNotExist,
+                    "{} since a shared memory with that name does not exists.", msg);
+                }
+                Err(SharedMemoryCreationError::InsufficientPermissions) => {
+                    if elapsed_time >= timeout {
+                        fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
+                        "{} since it is not yet readable - most likely since it is not finalized after {:?}.", msg, timeout);
+                    }
+                }
+                Err(_) => {
+                    fail!(from self, with DynamicStorageOpenError::InternalError, "{} since the underlying shared memory could not be opened.", msg);
+                }
+            };
+
+            elapsed_time = fail!(from self, when adaptive_wait.wait(),
+                                    with DynamicStorageOpenError::InternalError,
+                                    "{} since the adaptive wait call failed.", msg);
         };
 
         let required_size = std::mem::size_of::<Data<T>>() + self.supplementary_size;
