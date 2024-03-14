@@ -240,6 +240,9 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
         };
 
         let value = shm.base_address().as_ptr() as *mut Data<T>;
+        let version_ptr = unsafe { core::ptr::addr_of_mut!((*value).version) };
+        unsafe { version_ptr.write(AtomicU64::new(0)) };
+
         unsafe { core::ptr::addr_of_mut!((*value).data).write(initial_value) };
 
         let supplementary_start =
@@ -256,9 +259,14 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
                 "{} since the initialization of the underlying construct failed.", msg);
         }
 
-        unsafe {
-            core::ptr::addr_of_mut!((*value).version).write(AtomicU64::new(get_package_version().0))
-        };
+        // The mem-sync is actually not required since an uninitialized dynamic storage has
+        // only write permissions and can be therefore not consumed.
+        // This is only for the case that this strategy fails on an obscure POSIX platform.
+        //
+        //////////////////////////////////////////
+        // SYNC POINT: write Data<T>::data
+        //////////////////////////////////////////
+        unsafe { (*version_ptr).store(get_package_version().0, Ordering::Release) };
 
         if let Err(e) = shm.set_permission(FINAL_PERMISSIONS) {
             fail!(from self, with DynamicStorageCreateError::InternalError,
@@ -312,9 +320,18 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
         }
 
         let init_state = shm.base_address().as_ptr() as *const Data<T>;
+
+        // The mem-sync is actually not required since an uninitialized dynamic storage has
+        // only write permissions and can be therefore not consumed.
+        // This is only for the case that this strategy fails on an obscure POSIX platform.
+        //
+        //////////////////////////////////////////
+        // SYNC POINT: read Data<T>::data
+        //////////////////////////////////////////
         let package_version = unsafe { &(*init_state) }
             .version
-            .load(std::sync::atomic::Ordering::Relaxed);
+            .load(std::sync::atomic::Ordering::Acquire);
+
         let package_version = PackageVersion::from_u64(package_version);
         if package_version.0 == 0 {
             return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
