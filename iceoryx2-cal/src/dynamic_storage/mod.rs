@@ -56,6 +56,7 @@
 
 use std::{fmt::Debug, time::Duration};
 
+use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_system_types::file_name::*;
 use tiny_fn::tiny_fn;
@@ -63,7 +64,7 @@ use tiny_fn::tiny_fn;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 
 tiny_fn! {
-    pub(crate) struct Initializer<T> = FnOnce(value: &mut T, allocator: &mut BumpAllocator) -> bool;
+    pub(crate) struct Initializer<T> = FnMut(value: &mut T, allocator: &mut BumpAllocator) -> bool;
 }
 
 impl<T> Debug for Initializer<'_, T> {
@@ -93,6 +94,13 @@ pub enum DynamicStorageOpenError {
     InternalError,
 }
 
+enum_gen! {
+    DynamicStorageOpenOrCreateError
+  mapping:
+    DynamicStorageOpenError,
+    DynamicStorageCreateError
+}
+
 /// Builder for the [`DynamicStorage`]. T is not allowed to implement the [`Drop`] trait.
 pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     Debug + Sized + NamedConceptBuilder<D>
@@ -104,7 +112,7 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     fn supplementary_size(self, value: usize) -> Self;
 
     /// The timeout defines how long the [`DynamicStorageBuilder`] should wait for
-    /// [`DynamicStorageBuilder::create()`] or [`DynamicStorageBuilder::create_and_initialize()`]
+    /// [`DynamicStorageBuilder::create()`]
     /// to finialize the initialization. This is required when the [`DynamicStorage`] is
     /// created and initialized concurrently from another process.
     /// By default it is set to [`Duration::ZERO`] for no timeout.
@@ -114,10 +122,8 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     /// with a mutable reference to the new value and a mutable reference to a bump allocator
     /// which provides access to the supplementary memory. If the initialization failed it
     /// shall return false, otherwise true.
-    fn initializer<F: FnOnce(&mut T, &mut BumpAllocator) -> bool + 'builder>(
-        self,
-        value: F,
-    ) -> Self;
+    fn initializer<F: FnMut(&mut T, &mut BumpAllocator) -> bool + 'builder>(self, value: F)
+        -> Self;
 
     /// Creates a new [`DynamicStorage`]. The returned object has the ownership of the
     /// [`DynamicStorage`] and when it goes out of scope the underlying resources shall be
@@ -128,6 +134,9 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     /// which is in the midst of creation cannot be opened. If the [`DynamicStorage`] does not
     /// exist or is not initialized it fails.
     fn open(self) -> Result<D, DynamicStorageOpenError>;
+
+    /// Opens the [`DynamicStorage`] if it exists, otherwise it creates it.
+    fn open_or_create(self, initial_value: T) -> Result<D, DynamicStorageOpenOrCreateError>;
 }
 
 /// Is being built by the [`DynamicStorageBuilder`]. The [`DynamicStorage`] trait shall provide

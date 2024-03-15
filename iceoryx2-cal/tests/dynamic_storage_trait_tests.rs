@@ -445,6 +445,23 @@ mod dynamic_storage {
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
+    #[test]
+    fn open_or_create_works<Sut: DynamicStorage<TestData>>() {
+        let sut_name = generate_name();
+
+        assert_that!(Sut::does_exist(&sut_name), eq Ok(false));
+        let sut_1 = Sut::Builder::new(&sut_name).open_or_create(TestData::new(123));
+        assert_that!(sut_1, is_ok);
+        assert_that!(Sut::does_exist(&sut_name), eq Ok(true));
+
+        let sut_2 = Sut::Builder::new(&sut_name).open_or_create(TestData::new(123));
+        assert_that!(sut_2, is_ok);
+
+        drop(sut_2);
+        drop(sut_1);
+        assert_that!(Sut::does_exist(&sut_name), eq Ok(false));
+    }
+
     #[instantiate_tests(<iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>>)]
     mod posix_shared_memory {}
 

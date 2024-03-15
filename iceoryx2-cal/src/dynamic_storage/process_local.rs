@@ -299,32 +299,8 @@ impl<'builder, T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>>
     }
 }
 
-impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder, T, Storage<T>>
-    for Builder<'builder, T>
-{
-    fn has_ownership(mut self, value: bool) -> Self {
-        self.has_ownership = value;
-        self
-    }
-
-    fn initializer<F: FnOnce(&mut T, &mut BumpAllocator) -> bool + 'builder>(
-        mut self,
-        value: F,
-    ) -> Self {
-        self.initializer = Initializer::new(value);
-        self
-    }
-
-    fn timeout(self, _value: Duration) -> Self {
-        self
-    }
-
-    fn supplementary_size(mut self, value: usize) -> Self {
-        self.supplementary_size = value;
-        self
-    }
-
-    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
+impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
+    fn open_impl(&self) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open dynamic storage";
 
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
@@ -352,7 +328,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder,
         })
     }
 
-    fn create(self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
+    fn create_impl(&mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage";
 
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
@@ -409,5 +385,54 @@ impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder,
             has_ownership: AtomicBool::new(self.has_ownership),
             config: self.config,
         })
+    }
+}
+
+impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder, T, Storage<T>>
+    for Builder<'builder, T>
+{
+    fn has_ownership(mut self, value: bool) -> Self {
+        self.has_ownership = value;
+        self
+    }
+
+    fn initializer<F: FnMut(&mut T, &mut BumpAllocator) -> bool + 'builder>(
+        mut self,
+        value: F,
+    ) -> Self {
+        self.initializer = Initializer::new(value);
+        self
+    }
+
+    fn timeout(self, _value: Duration) -> Self {
+        self
+    }
+
+    fn supplementary_size(mut self, value: usize) -> Self {
+        self.supplementary_size = value;
+        self
+    }
+
+    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
+        self.open_impl()
+    }
+
+    fn create(mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
+        self.create_impl(initial_value)
+    }
+
+    fn open_or_create(
+        mut self,
+        initial_value: T,
+    ) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
+        match self.open_impl() {
+            Ok(storage) => Ok(storage),
+            Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl(initial_value) {
+                Ok(storage) => Ok(storage),
+                Err(DynamicStorageCreateError::AlreadyExists) => Ok(self.open_impl()?),
+                Err(e) => Err(e.into()),
+            },
+            Err(e) => Err(e.into()),
+        }
     }
 }
