@@ -141,6 +141,7 @@ pub mod details {
         name: FileName,
         size: usize,
         config: Configuration<Allocator, Storage>,
+        timeout: Duration,
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
@@ -151,6 +152,7 @@ pub mod details {
                 name: *name,
                 config: Configuration::default(),
                 size: 0,
+                timeout: Duration::ZERO,
             }
         }
 
@@ -202,6 +204,11 @@ pub mod details {
     {
         fn size(mut self, value: usize) -> Self {
             self.size = value;
+            self
+        }
+
+        fn timeout(mut self, value: Duration) -> Self {
+            self.timeout = value;
             self
         }
 
@@ -262,19 +269,13 @@ pub mod details {
         }
 
         fn open(self) -> Result<Memory<Allocator, Storage>, SharedMemoryOpenError> {
-            self.open_with_timeout(Duration::ZERO)
-        }
-
-        fn open_with_timeout(
-            self,
-            timeout: Duration,
-        ) -> Result<Memory<Allocator, Storage>, SharedMemoryOpenError> {
             let msg = "Unable to open shared memory";
 
             let storage = match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())
                 .has_ownership(false)
-                .open_with_timeout(timeout)
+                .timeout(self.timeout)
+                .open()
             {
                 Ok(s) => s,
                 Err(DynamicStorageOpenError::DoesNotExist) => {

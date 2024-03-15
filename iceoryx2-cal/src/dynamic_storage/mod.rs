@@ -92,6 +92,13 @@ pub trait DynamicStorageBuilder<T: Send + Sync, D: DynamicStorage<T>>:
     /// Sets the size of the supplementary data
     fn supplementary_size(self, value: usize) -> Self;
 
+    /// The timeout defines how long the [`DynamicStorageBuilder`] should wait for
+    /// [`DynamicStorageBuilder::create()`] or [`DynamicStorageBuilder::create_and_initialize()`]
+    /// to finialize the initialization. This is required when the [`DynamicStorage`] is
+    /// created and initialized concurrently from another process.
+    /// By default it is set to [`Duration::ZERO`] for no timeout.
+    fn timeout(self, value: Duration) -> Self;
+
     /// Creates a new [`DynamicStorage`]. The returned object has the ownership of the
     /// [`DynamicStorage`] and when it goes out of scope the underlying resources shall be
     /// removed without corrupting already opened [`DynamicStorage`]s.
@@ -112,16 +119,6 @@ pub trait DynamicStorageBuilder<T: Send + Sync, D: DynamicStorage<T>>:
     /// which is in the midst of creation cannot be opened. If the [`DynamicStorage`] does not
     /// exist or is not initialized it fails.
     fn open(self) -> Result<D, DynamicStorageOpenError>;
-
-    /// Opens a [`DynamicStorage`]. The implementation must ensure that a [`DynamicStorage`]
-    /// which is in the midst of creation cannot be opened. If the [`DynamicStorage`] does not
-    /// exist or is not initialized after the timeout it fails.
-    /// The timeout defines how long the [`DynamicStorageBuilder`] should wait for
-    /// [`DynamicStorageBuilder::create()`] or [`DynamicStorageBuilder::create_and_initialize()`]
-    /// to finialize
-    /// the initialization. This is required when the [`DynamicStorage`] is created and initialized
-    /// concurrently from another process. It can be set to [`Duration::ZERO`] for no timeout.
-    fn open_with_timeout(self, timeout: Duration) -> Result<D, DynamicStorageOpenError>;
 }
 
 /// Is being built by the [`DynamicStorageBuilder`]. The [`DynamicStorage`] trait shall provide

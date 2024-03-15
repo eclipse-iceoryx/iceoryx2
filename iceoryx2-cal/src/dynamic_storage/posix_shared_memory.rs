@@ -124,6 +124,7 @@ pub struct Builder<T: Send + Sync + Debug> {
     supplementary_size: usize,
     has_ownership: bool,
     config: Configuration,
+    timeout: Duration,
     _phantom_data: PhantomData<T>,
 }
 
@@ -186,6 +187,7 @@ impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<T> {
             storage_name: *storage_name,
             supplementary_size: 0,
             config: Configuration::default(),
+            timeout: Duration::ZERO,
             _phantom_data: PhantomData,
         }
     }
@@ -199,6 +201,11 @@ impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<T> {
 impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T> {
     fn has_ownership(mut self, value: bool) -> Self {
         self.has_ownership = value;
+        self
+    }
+
+    fn timeout(mut self, value: Duration) -> Self {
+        self.timeout = value;
         self
     }
 
@@ -283,10 +290,6 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
     }
 
     fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        self.open_with_timeout(Duration::ZERO)
-    }
-
-    fn open_with_timeout(self, timeout: Duration) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open ";
 
         let full_name = self.config.path_for(&self.storage_name).file_name();
@@ -303,9 +306,10 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
                     "{} since a shared memory with that name does not exists.", msg);
                 }
                 Err(SharedMemoryCreationError::InsufficientPermissions) => {
-                    if elapsed_time >= timeout {
+                    if elapsed_time >= self.timeout {
                         fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
-                        "{} since it is not yet readable - most likely since it is not finalized after {:?}.", msg, timeout);
+                        "{} since it is not yet readable - most likely since it is not finalized after {:?}.",
+                        msg, self.timeout);
                     }
                 }
                 Err(_) => {

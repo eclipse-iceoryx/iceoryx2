@@ -301,16 +301,16 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
         self
     }
 
+    fn timeout(self, _value: Duration) -> Self {
+        self
+    }
+
     fn supplementary_size(mut self, value: usize) -> Self {
         self.supplementary_size = value;
         self
     }
 
     fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        self.open_with_timeout(Duration::ZERO)
-    }
-
-    fn open_with_timeout(self, _timeout: Duration) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open dynamic storage";
 
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),

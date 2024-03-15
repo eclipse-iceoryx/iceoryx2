@@ -102,6 +102,13 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
     /// Sets the size of the [`SharedMemory`]
     fn size(self, value: usize) -> Self;
 
+    /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for
+    /// [`SharedMemoryBuilder::create()`] to finialize
+    /// the initialization. This is required when the [`SharedMemory`] is created and initialized
+    /// concurrently from another process. By default it is set to [`Duration::ZERO`] for no
+    /// timeout.
+    fn timeout(self, value: Duration) -> Self;
+
     /// Creates new [`SharedMemory`]. If it already exists the method will fail.
     fn create(
         self,
@@ -111,14 +118,6 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
     /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
     /// yet finished the method will fail.
     fn open(self) -> Result<Shm, SharedMemoryOpenError>;
-
-    /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
-    /// yet finished after the timeout the method will fail.
-    /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for
-    /// [`SharedMemoryBuilder::create()`] to finialize
-    /// the initialization. This is required when the [`SharedMemory`] is created and initialized
-    /// concurrently from another process. It can be set to [`Duration::ZERO`] for no timeout.
-    fn open_with_timeout(self, timeout: Duration) -> Result<Shm, SharedMemoryOpenError>;
 }
 
 /// Abstract concept of a memory shared between multiple processes. Can be created with the
