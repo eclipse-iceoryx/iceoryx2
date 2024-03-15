@@ -249,13 +249,14 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<ServiceType::DynamicStorage, DynamicStorageCreateError> {
         match <<ServiceType::DynamicStorage as DynamicStorage<
             DynamicConfig,
-        >>::Builder as NamedConceptBuilder<
+        >>::Builder<'_> as NamedConceptBuilder<
             ServiceType::DynamicStorage,
         >>::new(&dynamic_config_storage_name(&self.service_config))
             .config(&dynamic_config_storage_config::<ServiceType>(self.global_config.as_ref()))
             .supplementary_size(additional_size)
             .has_ownership(false)
-            .create_and_initialize(DynamicConfig::new_uninit(messaging_pattern), Self::config_init_call ) {
+            .initializer(Self::config_init_call)
+            .create(DynamicConfig::new_uninit(messaging_pattern) ) {
                 Ok(dynamic_storage) => Ok(dynamic_storage),
                 Err(e) => {
                     fail!(from self, with e, "Failed to create dynamic storage for service.");
@@ -270,7 +271,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let storage = fail!(from self, when
             <<ServiceType::DynamicStorage as DynamicStorage<
                     DynamicConfig,
-                >>::Builder as NamedConceptBuilder<
+                >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage,
                 >>::new(&dynamic_config_storage_name(&self.service_config))
                     .config(&dynamic_config_storage_config::<ServiceType>(self.global_config.as_ref()))

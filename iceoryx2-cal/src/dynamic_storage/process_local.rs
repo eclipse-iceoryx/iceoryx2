@@ -233,7 +233,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
 }
 
 impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
-    type Builder = Builder<T>;
+    type Builder<'builder> = Builder<'builder, T>;
 
     fn does_support_persistency() -> bool {
         true
@@ -270,21 +270,25 @@ impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
 }
 
 #[derive(Debug)]
-pub struct Builder<T: Send + Sync + Debug> {
+pub struct Builder<'builder, T: Send + Sync + Debug> {
     name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
     config: Configuration,
+    initializer: Initializer<'builder, T>,
     _phantom_data: PhantomData<T>,
 }
 
-impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Builder<T> {
+impl<'builder, T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>>
+    for Builder<'builder, T>
+{
     fn new(storage_name: &FileName) -> Self {
         Self {
             name: *storage_name,
             has_ownership: true,
             supplementary_size: 0,
             config: Configuration::default(),
+            initializer: Initializer::new(|_, _| true),
             _phantom_data: PhantomData,
         }
     }
@@ -295,9 +299,19 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Build
     }
 }
 
-impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for Builder<T> {
+impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder, T, Storage<T>>
+    for Builder<'builder, T>
+{
     fn has_ownership(mut self, value: bool) -> Self {
         self.has_ownership = value;
+        self
+    }
+
+    fn initializer<F: FnOnce(&mut T, &mut BumpAllocator) -> bool + 'builder>(
+        mut self,
+        value: F,
+    ) -> Self {
+        self.initializer = Initializer::new(value);
         self
     }
 
@@ -338,11 +352,7 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
         })
     }
 
-    fn create_and_initialize<F: FnOnce(&mut T, &mut BumpAllocator) -> bool>(
-        self,
-        initial_value: T,
-        initializer: F,
-    ) -> Result<Storage<T>, DynamicStorageCreateError> {
+    fn create(self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage";
 
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
@@ -370,8 +380,12 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
             self.supplementary_size,
         );
 
-        if !initializer(unsafe { &mut *value }, &mut allocator) {
-            fail!(from self, with DynamicStorageCreateError::InitializationFailed,
+        let origin = format!("{:?}", self);
+        if !self
+            .initializer
+            .call(unsafe { &mut *value }, &mut allocator)
+        {
+            fail!(from origin, with DynamicStorageCreateError::InitializationFailed,
                 "{} since the initialization of the underlying construct failed.", msg);
         }
 

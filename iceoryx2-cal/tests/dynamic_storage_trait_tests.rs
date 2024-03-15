@@ -281,7 +281,7 @@ mod dynamic_storage {
 
         let sut = Sut::Builder::new(&storage_name)
             .supplementary_size(134)
-            .create_and_initialize(TestData::new(123), |value, allocator| {
+            .initializer(|value, allocator| {
                 let layout = Layout::from_size_align(134, 1).unwrap();
                 let mem = allocator.allocate(layout).unwrap();
 
@@ -299,6 +299,7 @@ mod dynamic_storage {
                 }
                 true
             })
+            .create(TestData::new(123))
             .unwrap();
 
         assert_that!(sut.get().value.load(Ordering::Relaxed), eq 8912);
@@ -327,7 +328,8 @@ mod dynamic_storage {
 
         let sut = Sut::Builder::new(&storage_name)
             .supplementary_size(134)
-            .create_and_initialize(TestData::new(123), |_, _| false);
+            .initializer(|_, _| false)
+            .create(TestData::new(123));
 
         assert_that!(sut, is_err);
         assert_that!(
@@ -352,7 +354,7 @@ mod dynamic_storage {
             suts.push(
                 Sut::Builder::new(&sut_names[i])
                     .supplementary_size(134)
-                    .create_and_initialize(TestData::new(123), |_, _| true),
+                    .create(TestData::new(123)),
             );
             assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
 
@@ -401,7 +403,7 @@ mod dynamic_storage {
         let sut_1 = Sut::Builder::new(&sut_name)
             .config(&config_1)
             .supplementary_size(134)
-            .create_and_initialize(TestData::new(123), |_, _| true)
+            .create(TestData::new(123))
             .unwrap();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
@@ -412,7 +414,7 @@ mod dynamic_storage {
         let sut_2 = Sut::Builder::new(&sut_name)
             .config(&config_2)
             .supplementary_size(134)
-            .create_and_initialize(TestData::new(123), |_, _| true)
+            .create(TestData::new(123))
             .unwrap();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));

@@ -25,7 +25,8 @@ use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_log::fail;
 
 type SharedMemory = dynamic_storage::posix_shared_memory::Storage<Management>;
-type SharedMemoryBuilder = <SharedMemory as DynamicStorage<Management>>::Builder;
+type SharedMemoryBuilder<'builder> =
+    <SharedMemory as DynamicStorage<Management>>::Builder<'builder>;
 
 #[derive(Debug)]
 pub struct Channel {}
@@ -165,15 +166,13 @@ impl CommunicationChannelCreator<usize, Channel> for Creator {
             .supplementary_size(SafelyOverflowingIndexQueue::const_memory_size(
                 self.buffer_size,
             ))
-            .create_and_initialize(
-                Management {
-                    enable_safe_overflow: self.enable_safe_overflow,
-                    index_queue: unsafe {
-                        RelocatableSafelyOverflowingIndexQueue::new_uninit(self.buffer_size)
-                    },
+            .initializer(|mgmt, allocator| unsafe { mgmt.index_queue.init(allocator).is_ok() })
+            .create(Management {
+                enable_safe_overflow: self.enable_safe_overflow,
+                index_queue: unsafe {
+                    RelocatableSafelyOverflowingIndexQueue::new_uninit(self.buffer_size)
                 },
-                |mgmt, allocator| unsafe { mgmt.index_queue.init(allocator).is_ok() },
-            ) {
+            }) {
             Ok(s) => s,
             Err(DynamicStorageCreateError::AlreadyExists) => {
                 fail!(from self, with CommunicationChannelCreateError::AlreadyExists,

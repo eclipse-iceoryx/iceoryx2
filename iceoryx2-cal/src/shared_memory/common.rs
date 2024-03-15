@@ -229,18 +229,16 @@ pub mod details {
                 .config(&self.config.convert())
                 .supplementary_size(self.size + allocator_mgmt_size)
                 .has_ownership(true)
-                .create_and_initialize(
-                    AllocatorDetails {
-                        allocator_id: Allocator::unique_id(),
-                        allocator: MaybeUninit::uninit(),
-                        mgmt_size: allocator_mgmt_size,
-                        payload_size: self.size,
-                        payload_start_offset: 0,
-                    },
-                    |details, init_allocator| -> bool {
-                        self.initialize(allocator_config, details, init_allocator)
-                    },
-                ) {
+                .initializer(|details, init_allocator| -> bool {
+                    self.initialize(allocator_config, details, init_allocator)
+                })
+                .create(AllocatorDetails {
+                    allocator_id: Allocator::unique_id(),
+                    allocator: MaybeUninit::uninit(),
+                    mgmt_size: allocator_mgmt_size,
+                    payload_size: self.size,
+                    payload_start_offset: 0,
+                }) {
                 Ok(s) => s,
                 Err(DynamicStorageCreateError::AlreadyExists) => {
                     fail!(from self, with SharedMemoryCreateError::AlreadyExists,
