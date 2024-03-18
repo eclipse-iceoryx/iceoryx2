@@ -39,14 +39,13 @@
 //! storage.get().store(456, Ordering::Relaxed);
 //!
 //! ```
-
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use std::fmt::Debug;
-use std::fmt::Display;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
@@ -59,63 +58,6 @@ use iceoryx2_bb_system_types::path::Path;
 pub use std::ops::Deref;
 
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_ALL;
-
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-struct PackageVersion(u64);
-
-impl PackageVersion {
-    fn from_u64(value: u64) -> Self {
-        Self(value)
-    }
-
-    fn from_version(major: u16, minor: u16, patch: u16) -> Self {
-        Self(((major as u64) << 32) | ((minor as u64) << 16) | patch as u64)
-    }
-
-    fn major(&self) -> u16 {
-        ((self.0 >> 32) & (u16::MAX as u64)) as u16
-    }
-
-    fn minor(&self) -> u16 {
-        ((self.0 >> 16) & (u16::MAX as u64)) as u16
-    }
-
-    fn patch(&self) -> u16 {
-        ((self.0) & (u16::MAX as u64)) as u16
-    }
-}
-
-impl Display for PackageVersion {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.{}.{}", self.major(), self.minor(), self.patch())
-    }
-}
-
-fn get_package_version() -> PackageVersion {
-    static PACKAGE_VERSION: AtomicU64 = AtomicU64::new(0);
-
-    if PACKAGE_VERSION.load(Ordering::Relaxed) == 0 {
-        let major = option_env!("CARGO_PKG_VERSION_MAJOR")
-            .unwrap_or("65535")
-            .parse::<u16>()
-            .unwrap_or(65535);
-        let minor = option_env!("CARGO_PKG_VERSION_MINOR")
-            .unwrap_or("65535")
-            .parse::<u16>()
-            .unwrap_or(65535);
-        let patch = option_env!("CARGO_PKG_VERSION_PATCH")
-            .unwrap_or("65535")
-            .parse::<u16>()
-            .unwrap_or(65535);
-
-        PACKAGE_VERSION.store(
-            PackageVersion::from_version(major, minor, patch).0,
-            Ordering::Relaxed,
-        );
-    }
-
-    PackageVersion::from_u64(PACKAGE_VERSION.load(Ordering::Relaxed))
-}
 
 /// The builder of [`Storage`].
 #[derive(Debug)]
@@ -205,7 +147,7 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
         let msg = "Failed to open ";
 
         let full_name = self.config.path_for(&self.storage_name).file_name();
-        let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
+        let mut wait_for_read_write_access = fail!(from self, when AdaptiveWaitBuilder::new().create(),
                                     with DynamicStorageOpenError::InternalError,
                                     "{} since the AdaptiveWait could not be initialized.", msg);
 
@@ -229,7 +171,7 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
                 }
             };
 
-            elapsed_time = fail!(from self, when adaptive_wait.wait(),
+            elapsed_time = fail!(from self, when wait_for_read_write_access.wait(),
                                     with DynamicStorageOpenError::InternalError,
                                     "{} since the adaptive wait call failed.", msg);
         };
@@ -251,15 +193,15 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
         //////////////////////////////////////////
         let package_version = unsafe { &(*init_state) }
             .version
-            .load(std::sync::atomic::Ordering::Acquire);
+            .load(std::sync::atomic::Ordering::SeqCst);
 
         let package_version = PackageVersion::from_u64(package_version);
-        if package_version.0 == 0 {
+        if package_version.to_u64() == 0 {
             return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
-        } else if package_version != get_package_version() {
+        } else if package_version != PackageVersion::get() {
             fail!(from self, with DynamicStorageOpenError::VersionMismatch,
                 "{} since the dynamic storage was created with version {} but this process requires version {}.",
-                msg, package_version, get_package_version());
+                msg, package_version, PackageVersion::get());
         }
 
         Ok(Storage {
@@ -329,7 +271,7 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
         //////////////////////////////////////////
         // SYNC POINT: write Data<T>::data
         //////////////////////////////////////////
-        unsafe { (*version_ptr).store(get_package_version().0, Ordering::Release) };
+        unsafe { (*version_ptr).store(PackageVersion::get().to_u64(), Ordering::SeqCst) };
 
         if let Err(e) = shm.set_permission(FINAL_PERMISSIONS) {
             fail!(from origin, with DynamicStorageCreateError::InternalError,

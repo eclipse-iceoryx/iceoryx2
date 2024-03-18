@@ -203,7 +203,7 @@ mod shared_memory {
                 bucket_layout: layout,
             };
 
-            for n in 0..i + 1 {
+            for n in 0..=i {
                 let sut_create = Sut::Builder::new(&name)
                     .size(DEFAULT_SIZE)
                     .create(&shm_config)

@@ -137,7 +137,7 @@ mod shm_allocator_pool_allocator {
     #[test]
     fn allocated_memory_has_correct_alignment_uniform_alignment_case() {
         for i in 0..12 {
-            for n in 0..i {
+            for n in 0..=i {
                 let layout = Layout::from_size_align(2_usize.pow(i), 2_usize.pow(i)).unwrap();
                 let test_context = TestContext::new(layout);
 
@@ -164,7 +164,7 @@ mod shm_allocator_pool_allocator {
             let mut counter = 0;
             let mut keep_running = true;
             while keep_running {
-                for n in 0..i + 1 {
+                for n in 0..=i {
                     let mem_layout =
                         Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
 
