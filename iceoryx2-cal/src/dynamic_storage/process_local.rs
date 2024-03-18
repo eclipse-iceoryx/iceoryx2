@@ -40,7 +40,7 @@
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
+use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexGuard, MutexHandle};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
@@ -300,13 +300,12 @@ impl<'builder, T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>>
 }
 
 impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
-    fn open_impl(&self) -> Result<Storage<T>, DynamicStorageOpenError> {
+    fn open_impl(
+        &self,
+        guard: &mut MutexGuard<'static, 'static, HashMap<FilePath, StorageEntry>>,
+    ) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open dynamic storage";
 
-        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
-            with DynamicStorageOpenError::InternalError,
-            "{} due to a failure while acquiring the lock.", msg
-        );
         let full_path = self.config.path_for(&self.name);
         let mut entry = guard.get_mut(&full_path);
         if entry.is_none() {
@@ -328,13 +327,12 @@ impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
         })
     }
 
-    fn create_impl(&mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
+    fn create_impl(
+        &mut self,
+        guard: &mut MutexGuard<'static, 'static, HashMap<FilePath, StorageEntry>>,
+        initial_value: T,
+    ) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage";
-
-        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
-            with DynamicStorageCreateError::InternalError,
-            "{} due to a failure while acquiring the lock.", msg
-        );
 
         let full_path = self.config.path_for(&self.name);
         let entry = guard.get_mut(&full_path);
@@ -414,24 +412,43 @@ impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder,
     }
 
     fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        self.open_impl()
+        let msg = "Failed to open dynamic storage";
+        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+            with DynamicStorageOpenError::InternalError,
+            "{} due to a failure while acquiring the lock.", msg
+        );
+
+        self.open_impl(&mut guard)
     }
 
     fn create(mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
-        self.create_impl(initial_value)
+        let msg = "Failed to create dynamic storage";
+        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+            with DynamicStorageCreateError::InternalError,
+            "{} due to a failure while acquiring the lock.", msg
+        );
+
+        self.create_impl(&mut guard, initial_value)
     }
 
     fn open_or_create(
         mut self,
         initial_value: T,
     ) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
-        match self.open_impl() {
+        let msg = "Failed to open or create dynamic storage";
+        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+            with DynamicStorageOpenOrCreateError::DynamicStorageOpenError(DynamicStorageOpenError::InternalError),
+            "{} due to a failure while acquiring the lock.", msg
+        );
+
+        match self.open_impl(&mut guard) {
             Ok(storage) => Ok(storage),
-            Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl(initial_value) {
-                Ok(storage) => Ok(storage),
-                Err(DynamicStorageCreateError::AlreadyExists) => Ok(self.open_impl()?),
-                Err(e) => Err(e.into()),
-            },
+            Err(DynamicStorageOpenError::DoesNotExist) => {
+                match self.create_impl(&mut guard, initial_value) {
+                    Ok(storage) => Ok(storage),
+                    Err(e) => Err(e.into()),
+                }
+            }
             Err(e) => Err(e.into()),
         }
     }

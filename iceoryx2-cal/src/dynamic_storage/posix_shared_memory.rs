@@ -340,7 +340,6 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
                 Ok(storage) => return Ok(storage),
                 Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl() {
                     Ok(shm) => {
-                        let shm = shm;
                         return Ok(self.init_impl(shm, initial_value)?);
                     }
                     Err(DynamicStorageCreateError::AlreadyExists) => continue,
