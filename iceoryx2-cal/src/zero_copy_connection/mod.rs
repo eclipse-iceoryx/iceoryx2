@@ -25,6 +25,8 @@ pub use iceoryx2_bb_system_types::path::Path;
 pub enum ZeroCopyCreationError {
     InternalError,
     AnotherInstanceIsAlreadyConnected,
+    InsufficientPermissions,
+    VersionMismatch,
     ConnectionMaybeCorrupted,
     InvalidSampleSize,
     IncompatibleBufferSize,
