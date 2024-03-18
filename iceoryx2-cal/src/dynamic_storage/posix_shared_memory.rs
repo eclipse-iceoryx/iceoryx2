@@ -211,11 +211,11 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
         })
     }
 
-    fn create_impl(&mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
+    fn create_impl(&mut self) -> Result<SharedMemory, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic_storage::PosixSharedMemory";
 
         let full_name = self.config.path_for(&self.storage_name).file_name();
-        let mut shm = match SharedMemoryBuilder::new(&full_name)
+        let shm = match SharedMemoryBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
             // posix shared memory is always aligned to the greatest possible value (PAGE_SIZE)
             // therefore we do not have to add additional alignment space for T
@@ -240,6 +240,15 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
             }
         };
 
+        Ok(shm)
+    }
+
+    fn init_impl(
+        &mut self,
+        mut shm: SharedMemory,
+        initial_value: T,
+    ) -> Result<Storage<T>, DynamicStorageCreateError> {
+        let msg = "Failed to init dynamic_storage::PosixSharedMemory";
         let value = shm.base_address().as_ptr() as *mut Data<T>;
         let version_ptr = unsafe { core::ptr::addr_of_mut!((*value).version) };
         unsafe { version_ptr.write(AtomicU64::new(0)) };
@@ -314,7 +323,8 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
     }
 
     fn create(mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
-        self.create_impl(initial_value)
+        let shm = self.create_impl()?;
+        self.init_impl(shm, initial_value)
     }
 
     fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
@@ -325,14 +335,19 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
         mut self,
         initial_value: T,
     ) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
-        match self.open_impl() {
-            Ok(storage) => Ok(storage),
-            Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl(initial_value) {
-                Ok(storage) => Ok(storage),
-                Err(DynamicStorageCreateError::AlreadyExists) => Ok(self.open_impl()?),
-                Err(e) => Err(e.into()),
-            },
-            Err(e) => Err(e.into()),
+        loop {
+            match self.open_impl() {
+                Ok(storage) => return Ok(storage),
+                Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl() {
+                    Ok(shm) => {
+                        let shm = shm;
+                        return Ok(self.init_impl(shm, initial_value)?);
+                    }
+                    Err(DynamicStorageCreateError::AlreadyExists) => continue,
+                    Err(e) => return Err(e.into()),
+                },
+                Err(e) => return Err(e.into()),
+            }
         }
     }
 }
