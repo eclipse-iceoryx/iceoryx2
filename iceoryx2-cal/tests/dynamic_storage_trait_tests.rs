@@ -281,7 +281,7 @@ mod dynamic_storage {
 
         let sut = Sut::Builder::new(&storage_name)
             .supplementary_size(134)
-            .create_and_initialize(TestData::new(123), |value, allocator| {
+            .initializer(|value, allocator| {
                 let layout = Layout::from_size_align(134, 1).unwrap();
                 let mem = allocator.allocate(layout).unwrap();
 
@@ -299,6 +299,7 @@ mod dynamic_storage {
                 }
                 true
             })
+            .create(TestData::new(123))
             .unwrap();
 
         assert_that!(sut.get().value.load(Ordering::Relaxed), eq 8912);
@@ -327,7 +328,8 @@ mod dynamic_storage {
 
         let sut = Sut::Builder::new(&storage_name)
             .supplementary_size(134)
-            .create_and_initialize(TestData::new(123), |_, _| false);
+            .initializer(|_, _| false)
+            .create(TestData::new(123));
 
         assert_that!(sut, is_err);
         assert_that!(
@@ -352,7 +354,7 @@ mod dynamic_storage {
             suts.push(
                 Sut::Builder::new(&sut_names[i])
                     .supplementary_size(134)
-                    .create_and_initialize(TestData::new(123), |_, _| true),
+                    .create(TestData::new(123)),
             );
             assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
 
@@ -401,7 +403,7 @@ mod dynamic_storage {
         let sut_1 = Sut::Builder::new(&sut_name)
             .config(&config_1)
             .supplementary_size(134)
-            .create_and_initialize(TestData::new(123), |_, _| true)
+            .create(TestData::new(123))
             .unwrap();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
@@ -412,7 +414,7 @@ mod dynamic_storage {
         let sut_2 = Sut::Builder::new(&sut_name)
             .config(&config_2)
             .supplementary_size(134)
-            .create_and_initialize(TestData::new(123), |_, _| true)
+            .create(TestData::new(123))
             .unwrap();
 
         assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_name, &config_1), eq Ok(true));
@@ -441,6 +443,23 @@ mod dynamic_storage {
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
+    }
+
+    #[test]
+    fn open_or_create_works<Sut: DynamicStorage<TestData>>() {
+        let sut_name = generate_name();
+
+        assert_that!(Sut::does_exist(&sut_name), eq Ok(false));
+        let sut_1 = Sut::Builder::new(&sut_name).open_or_create(TestData::new(123));
+        assert_that!(sut_1, is_ok);
+        assert_that!(Sut::does_exist(&sut_name), eq Ok(true));
+
+        let sut_2 = Sut::Builder::new(&sut_name).open_or_create(TestData::new(123));
+        assert_that!(sut_2, is_ok);
+
+        drop(sut_2);
+        drop(sut_1);
+        assert_that!(Sut::does_exist(&sut_name), eq Ok(false));
     }
 
     #[instantiate_tests(<iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>>)]

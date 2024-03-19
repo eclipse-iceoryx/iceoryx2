@@ -40,7 +40,7 @@
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
+use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexGuard, MutexHandle};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
@@ -233,7 +233,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
 }
 
 impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
-    type Builder = Builder<T>;
+    type Builder<'builder> = Builder<'builder, T>;
 
     fn does_support_persistency() -> bool {
         true
@@ -270,21 +270,25 @@ impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
 }
 
 #[derive(Debug)]
-pub struct Builder<T: Send + Sync + Debug> {
+pub struct Builder<'builder, T: Send + Sync + Debug> {
     name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
     config: Configuration,
+    initializer: Initializer<'builder, T>,
     _phantom_data: PhantomData<T>,
 }
 
-impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Builder<T> {
+impl<'builder, T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>>
+    for Builder<'builder, T>
+{
     fn new(storage_name: &FileName) -> Self {
         Self {
             name: *storage_name,
             has_ownership: true,
             supplementary_size: 0,
             config: Configuration::default(),
+            initializer: Initializer::new(|_, _| true),
             _phantom_data: PhantomData,
         }
     }
@@ -295,28 +299,18 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Build
     }
 }
 
-impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for Builder<T> {
-    fn has_ownership(mut self, value: bool) -> Self {
-        self.has_ownership = value;
-        self
-    }
-
-    fn supplementary_size(mut self, value: usize) -> Self {
-        self.supplementary_size = value;
-        self
-    }
-
-    fn try_open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
+impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
+    fn open_impl(
+        &self,
+        guard: &mut MutexGuard<'static, 'static, HashMap<FilePath, StorageEntry>>,
+    ) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open dynamic storage";
 
-        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
-            with DynamicStorageOpenError::InternalError,
-            "{} due to a failure while acquiring the lock.", msg
-        );
         let full_path = self.config.path_for(&self.name);
         let mut entry = guard.get_mut(&full_path);
         if entry.is_none() {
-            return Err(DynamicStorageOpenError::DoesNotExist);
+            fail!(from self, with DynamicStorageOpenError::DoesNotExist,
+                "{} since the storage does not exist.", msg);
         }
 
         Ok(Storage::<T> {
@@ -333,30 +327,12 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
         })
     }
 
-    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        let msg = "Failed to open dynamic storage";
-        let origin = format!("{:?}", self);
-        match self.try_open() {
-            Err(DynamicStorageOpenError::DoesNotExist) => {
-                fail!(from origin, with DynamicStorageOpenError::DoesNotExist,
-                "{} since the storage does not exist.", msg);
-            }
-            Err(e) => Err(e),
-            Ok(s) => Ok(s),
-        }
-    }
-
-    fn create_and_initialize<F: FnOnce(&mut T, &mut BumpAllocator) -> bool>(
-        self,
+    fn create_impl(
+        &mut self,
+        guard: &mut MutexGuard<'static, 'static, HashMap<FilePath, StorageEntry>>,
         initial_value: T,
-        initializer: F,
     ) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage";
-
-        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
-            with DynamicStorageCreateError::InternalError,
-            "{} due to a failure while acquiring the lock.", msg
-        );
 
         let full_path = self.config.path_for(&self.name);
         let entry = guard.get_mut(&full_path);
@@ -378,8 +354,12 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
             self.supplementary_size,
         );
 
-        if !initializer(unsafe { &mut *value }, &mut allocator) {
-            fail!(from self, with DynamicStorageCreateError::InitializationFailed,
+        let origin = format!("{:?}", self);
+        if !self
+            .initializer
+            .call(unsafe { &mut *value }, &mut allocator)
+        {
+            fail!(from origin, with DynamicStorageCreateError::InitializationFailed,
                 "{} since the initialization of the underlying construct failed.", msg);
         }
 
@@ -403,5 +383,73 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorageBuilder<T, Storage<T>> for 
             has_ownership: AtomicBool::new(self.has_ownership),
             config: self.config,
         })
+    }
+}
+
+impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder, T, Storage<T>>
+    for Builder<'builder, T>
+{
+    fn has_ownership(mut self, value: bool) -> Self {
+        self.has_ownership = value;
+        self
+    }
+
+    fn initializer<F: FnMut(&mut T, &mut BumpAllocator) -> bool + 'builder>(
+        mut self,
+        value: F,
+    ) -> Self {
+        self.initializer = Initializer::new(value);
+        self
+    }
+
+    fn timeout(self, _value: Duration) -> Self {
+        self
+    }
+
+    fn supplementary_size(mut self, value: usize) -> Self {
+        self.supplementary_size = value;
+        self
+    }
+
+    fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
+        let msg = "Failed to open dynamic storage";
+        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+            with DynamicStorageOpenError::InternalError,
+            "{} due to a failure while acquiring the lock.", msg
+        );
+
+        self.open_impl(&mut guard)
+    }
+
+    fn create(mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
+        let msg = "Failed to create dynamic storage";
+        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+            with DynamicStorageCreateError::InternalError,
+            "{} due to a failure while acquiring the lock.", msg
+        );
+
+        self.create_impl(&mut guard, initial_value)
+    }
+
+    fn open_or_create(
+        mut self,
+        initial_value: T,
+    ) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
+        let msg = "Failed to open or create dynamic storage";
+        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+            with DynamicStorageOpenOrCreateError::DynamicStorageOpenError(DynamicStorageOpenError::InternalError),
+            "{} due to a failure while acquiring the lock.", msg
+        );
+
+        match self.open_impl(&mut guard) {
+            Ok(storage) => Ok(storage),
+            Err(DynamicStorageOpenError::DoesNotExist) => {
+                match self.create_impl(&mut guard, initial_value) {
+                    Ok(storage) => Ok(storage),
+                    Err(e) => Err(e.into()),
+                }
+            }
+            Err(e) => Err(e.into()),
+        }
     }
 }

@@ -52,6 +52,7 @@
  * Replace `iceoryx2::service::Service` with `iceoryx2::service::Details` [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
  * Remove `'config` lifetime from all structs  [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
  * Remove `UniqueIndex` returning method from `iceoryx2-bb-lock-free::mpmc::Container`, cannot be implemented correctly in our context [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
+ * All `iceoryx2-cal::shared_memory` implementations use a `DynamicStorage` concept as base [#153](https://github.com/eclipse-iceoryx/iceoryx2/issues/153)
 
 ### Workflow
 

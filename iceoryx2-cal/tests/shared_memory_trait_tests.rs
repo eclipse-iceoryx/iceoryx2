@@ -29,8 +29,8 @@ mod shared_memory {
     type DefaultAllocator = PoolAllocator;
     type AllocatorConfig = <DefaultAllocator as ShmAllocator>::Configuration;
 
-    const NUMBER_OF_CHUNKS: usize = 16;
-    const CHUNK_SIZE: usize = 128;
+    const NUMBER_OF_CHUNKS: usize = 32;
+    const CHUNK_SIZE: usize = 8192;
     const DEFAULT_SIZE: usize = CHUNK_SIZE * NUMBER_OF_CHUNKS;
     const DEFAULT_LAYOUT: Layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
     const SHM_CONFIG: AllocatorConfig = AllocatorConfig {
@@ -191,6 +191,32 @@ mod shared_memory {
 
         let chunk = sut_open.allocate(DEFAULT_LAYOUT);
         assert_that!(chunk, is_ok);
+    }
+
+    #[test]
+    fn allocated_chunks_have_correct_alignment<Sut: SharedMemory<DefaultAllocator>>() {
+        let name = generate_name();
+
+        for i in 0..12 {
+            let layout = unsafe { Layout::from_size_align_unchecked(128, 2_usize.pow(i)) };
+            let shm_config = AllocatorConfig {
+                bucket_layout: layout,
+            };
+
+            for n in 0..=i {
+                let sut_create = Sut::Builder::new(&name)
+                    .size(DEFAULT_SIZE)
+                    .create(&shm_config)
+                    .unwrap();
+
+                let chunk_layout =
+                    unsafe { Layout::from_size_align_unchecked(2_usize.pow(n), 2_usize.pow(n)) };
+
+                while let Ok(chunk) = sut_create.allocate(chunk_layout) {
+                    assert_that!((chunk.data_ptr as usize) % chunk_layout.align(), eq 0);
+                }
+            }
+        }
     }
 
     #[test]

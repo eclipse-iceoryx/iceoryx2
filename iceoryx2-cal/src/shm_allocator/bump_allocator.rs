@@ -38,15 +38,15 @@ impl ShmAllocator for BumpAllocator {
 
     unsafe fn new_uninit(
         max_supported_alignment_by_memory: usize,
-        base_address: NonNull<[u8]>,
+        managed_memory: NonNull<[u8]>,
         _config: &Self::Configuration,
     ) -> Self {
         Self {
             allocator: iceoryx2_bb_memory::bump_allocator::BumpAllocator::new(
-                unsafe { NonNull::new_unchecked(base_address.as_ptr() as *mut u8) },
-                base_address.len(),
+                unsafe { NonNull::new_unchecked(managed_memory.as_ptr() as *mut u8) },
+                managed_memory.len(),
             ),
-            base_address: (base_address.as_ptr() as *mut u8) as usize,
+            base_address: (managed_memory.as_ptr() as *mut u8) as usize,
             max_supported_alignment_by_memory,
         }
     }
@@ -57,7 +57,7 @@ impl ShmAllocator for BumpAllocator {
 
     unsafe fn init<Allocator: BaseAllocator>(
         &self,
-        _allocator: &Allocator,
+        _mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError> {
         let msg = "Unable to initialize allocator";
         if self.max_supported_alignment_by_memory < self.max_alignment() {

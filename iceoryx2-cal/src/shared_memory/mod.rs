@@ -54,10 +54,11 @@
 //! }
 //! ```
 
+pub mod common;
 pub mod posix;
 pub mod process_local;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
@@ -80,6 +81,8 @@ pub enum SharedMemoryOpenError {
     SizeIsZero,
     SizeDoesNotFit,
     WrongAllocatorSelected,
+    InitializationNotYetFinalized,
+    VersionMismatch,
     InternalError,
 }
 
@@ -99,13 +102,21 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
     /// Sets the size of the [`SharedMemory`]
     fn size(self, value: usize) -> Self;
 
+    /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for
+    /// [`SharedMemoryBuilder::create()`] to finialize
+    /// the initialization. This is required when the [`SharedMemory`] is created and initialized
+    /// concurrently from another process. By default it is set to [`Duration::ZERO`] for no
+    /// timeout.
+    fn timeout(self, value: Duration) -> Self;
+
     /// Creates new [`SharedMemory`]. If it already exists the method will fail.
     fn create(
         self,
         allocator_config: &Allocator::Configuration,
     ) -> Result<Shm, SharedMemoryCreateError>;
 
-    /// Opens already existing [`SharedMemory`]. If it does not exist the method will fail.
+    /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
+    /// yet finished the method will fail.
     fn open(self) -> Result<Shm, SharedMemoryOpenError>;
 }
 

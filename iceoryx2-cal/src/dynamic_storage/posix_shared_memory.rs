@@ -39,14 +39,17 @@
 //! storage.get().store(456, Ordering::Relaxed);
 //!
 //! ```
-
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
+use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
 
 pub use crate::dynamic_storage::*;
 use crate::static_storage::file::NamedConceptConfiguration;
@@ -55,15 +58,16 @@ use iceoryx2_bb_system_types::path::Path;
 pub use std::ops::Deref;
 
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_ALL;
-const IS_INITIALIZED_STATE_VALUE: u64 = 0xbeefaffedeadbeef;
 
 /// The builder of [`Storage`].
 #[derive(Debug)]
-pub struct Builder<T: Send + Sync + Debug> {
+pub struct Builder<'builder, T: Send + Sync + Debug> {
     storage_name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
     config: Configuration,
+    timeout: Duration,
+    initializer: Initializer<'builder, T>,
     _phantom_data: PhantomData<T>,
 }
 
@@ -76,7 +80,7 @@ pub struct Configuration {
 
 #[repr(C)]
 struct Data<T: Send + Sync + Debug> {
-    state: AtomicU64,
+    version: AtomicU64,
     data: T,
 }
 
@@ -119,13 +123,15 @@ impl NamedConceptConfiguration for Configuration {
     }
 }
 
-impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<T> {
+impl<'builder, T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'builder, T> {
     fn new(storage_name: &FileName) -> Self {
         Self {
             has_ownership: true,
             storage_name: *storage_name,
             supplementary_size: 0,
             config: Configuration::default(),
+            timeout: Duration::ZERO,
+            initializer: Initializer::new(|_, _| true),
             _phantom_data: PhantomData,
         }
     }
@@ -136,22 +142,76 @@ impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<T> {
     }
 }
 
-impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T> {
-    fn has_ownership(mut self, value: bool) -> Self {
-        self.has_ownership = value;
-        self
+impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
+    fn open_impl(&self) -> Result<Storage<T>, DynamicStorageOpenError> {
+        let msg = "Failed to open ";
+
+        let full_name = self.config.path_for(&self.storage_name).file_name();
+        let mut wait_for_read_write_access = fail!(from self, when AdaptiveWaitBuilder::new().create(),
+                                    with DynamicStorageOpenError::InternalError,
+                                    "{} since the AdaptiveWait could not be initialized.", msg);
+
+        let mut elapsed_time = Duration::ZERO;
+        let shm = loop {
+            match SharedMemoryBuilder::new(&full_name).open_existing(AccessMode::ReadWrite) {
+                Ok(v) => break v,
+                Err(SharedMemoryCreationError::DoesNotExist) => {
+                    fail!(from self, with DynamicStorageOpenError::DoesNotExist,
+                    "{} since a shared memory with that name does not exists.", msg);
+                }
+                Err(SharedMemoryCreationError::InsufficientPermissions) => {
+                    if elapsed_time >= self.timeout {
+                        fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
+                        "{} since it is not yet readable - most likely since it is not finalized after {:?}.",
+                        msg, self.timeout);
+                    }
+                }
+                Err(_) => {
+                    fail!(from self, with DynamicStorageOpenError::InternalError, "{} since the underlying shared memory could not be opened.", msg);
+                }
+            };
+
+            elapsed_time = fail!(from self, when wait_for_read_write_access.wait(),
+                                    with DynamicStorageOpenError::InternalError,
+                                    "{} since the adaptive wait call failed.", msg);
+        };
+
+        let required_size = std::mem::size_of::<Data<T>>() + self.supplementary_size;
+        if shm.size() < required_size {
+            fail!(from self, with DynamicStorageOpenError::InternalError,
+                "{} since the actual size {} does not match the required size of {}.", msg, shm.size(), required_size);
+        }
+
+        let init_state = shm.base_address().as_ptr() as *const Data<T>;
+
+        // The mem-sync is actually not required since an uninitialized dynamic storage has
+        // only write permissions and can be therefore not consumed.
+        // This is only for the case that this strategy fails on an obscure POSIX platform.
+        //
+        //////////////////////////////////////////
+        // SYNC POINT: read Data<T>::data
+        //////////////////////////////////////////
+        let package_version = unsafe { &(*init_state) }
+            .version
+            .load(std::sync::atomic::Ordering::SeqCst);
+
+        let package_version = PackageVersion::from_u64(package_version);
+        if package_version.to_u64() == 0 {
+            return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
+        } else if package_version != PackageVersion::get() {
+            fail!(from self, with DynamicStorageOpenError::VersionMismatch,
+                "{} since the dynamic storage was created with version {} but this process requires version {}.",
+                msg, package_version, PackageVersion::get());
+        }
+
+        Ok(Storage {
+            shm,
+            name: self.storage_name,
+            _phantom_data: PhantomData,
+        })
     }
 
-    fn supplementary_size(mut self, value: usize) -> Self {
-        self.supplementary_size = value;
-        self
-    }
-
-    fn create_and_initialize<F: FnOnce(&mut T, &mut BumpAllocator) -> bool>(
-        self,
-        initial_value: T,
-        initializer: F,
-    ) -> Result<Storage<T>, DynamicStorageCreateError> {
+    fn create_impl(&mut self) -> Result<SharedMemory, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic_storage::PosixSharedMemory";
 
         let full_name = self.config.path_for(&self.storage_name).file_name();
@@ -160,21 +220,39 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
             // posix shared memory is always aligned to the greatest possible value (PAGE_SIZE)
             // therefore we do not have to add additional alignment space for T
             .size(std::mem::size_of::<Data<T>>() + self.supplementary_size)
-            .permission(FINAL_PERMISSIONS)
+            .permission(Permission::OWNER_WRITE)
             .zero_memory(false)
             .has_ownership(self.has_ownership)
             .create()
         {
             Ok(v) => v,
             Err(SharedMemoryCreationError::AlreadyExist) => {
-                fail!(from self, with DynamicStorageCreateError::AlreadyExists, "{} since a shared memory with the name already exists.", msg);
+                fail!(from self, with DynamicStorageCreateError::AlreadyExists,
+                    "{} since a shared memory with the name already exists.", msg);
+            }
+            Err(SharedMemoryCreationError::InsufficientPermissions) => {
+                fail!(from self, with DynamicStorageCreateError::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
             }
             Err(_) => {
-                fail!(from self, with DynamicStorageCreateError::Creation, "{} since the underlying shared memory could not be created.", msg);
+                fail!(from self, with DynamicStorageCreateError::InternalError,
+                    "{} since the underlying shared memory could not be created.", msg);
             }
         };
 
+        Ok(shm)
+    }
+
+    fn init_impl(
+        &mut self,
+        mut shm: SharedMemory,
+        initial_value: T,
+    ) -> Result<Storage<T>, DynamicStorageCreateError> {
+        let msg = "Failed to init dynamic_storage::PosixSharedMemory";
         let value = shm.base_address().as_ptr() as *mut Data<T>;
+        let version_ptr = unsafe { core::ptr::addr_of_mut!((*value).version) };
+        unsafe { version_ptr.write(AtomicU64::new(0)) };
+
         unsafe { core::ptr::addr_of_mut!((*value).data).write(initial_value) };
 
         let supplementary_start =
@@ -186,75 +264,90 @@ impl<T: Send + Sync + Debug> DynamicStorageBuilder<T, Storage<T>> for Builder<T>
             supplementary_len,
         );
 
-        if !initializer(unsafe { &mut (*value).data }, &mut allocator) {
-            fail!(from self, with DynamicStorageCreateError::InitializationFailed,
+        let origin = format!("{:?}", self);
+        if !self
+            .initializer
+            .call(unsafe { &mut (*value).data }, &mut allocator)
+        {
+            fail!(from origin, with DynamicStorageCreateError::InitializationFailed,
                 "{} since the initialization of the underlying construct failed.", msg);
         }
 
-        unsafe {
-            core::ptr::addr_of_mut!((*value).state)
-                .write(AtomicU64::new(IS_INITIALIZED_STATE_VALUE))
-        };
+        // The mem-sync is actually not required since an uninitialized dynamic storage has
+        // only write permissions and can be therefore not consumed.
+        // This is only for the case that this strategy fails on an obscure POSIX platform.
+        //
+        //////////////////////////////////////////
+        // SYNC POINT: write Data<T>::data
+        //////////////////////////////////////////
+        unsafe { (*version_ptr).store(PackageVersion::get().to_u64(), Ordering::SeqCst) };
+
+        if let Err(e) = shm.set_permission(FINAL_PERMISSIONS) {
+            fail!(from origin, with DynamicStorageCreateError::InternalError,
+                "{} since the final permissions could not be applied to the underlying shared memory ({:?}).",
+                msg, e);
+        }
 
         Ok(Storage {
             shm,
             name: self.storage_name,
             _phantom_data: PhantomData,
         })
+    }
+}
+
+impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storage<T>>
+    for Builder<'builder, T>
+{
+    fn has_ownership(mut self, value: bool) -> Self {
+        self.has_ownership = value;
+        self
+    }
+
+    fn initializer<F: FnMut(&mut T, &mut BumpAllocator) -> bool + 'builder>(
+        mut self,
+        value: F,
+    ) -> Self {
+        self.initializer = Initializer::new(value);
+        self
+    }
+
+    fn timeout(mut self, value: Duration) -> Self {
+        self.timeout = value;
+        self
+    }
+
+    fn supplementary_size(mut self, value: usize) -> Self {
+        self.supplementary_size = value;
+        self
+    }
+
+    fn create(mut self, initial_value: T) -> Result<Storage<T>, DynamicStorageCreateError> {
+        let shm = self.create_impl()?;
+        self.init_impl(shm, initial_value)
     }
 
     fn open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        let msg = "Failed to open ";
-        let origin = format!("{:?}", self);
-        match self.try_open() {
-            Err(DynamicStorageOpenError::DoesNotExist) => {
-                fail!(from origin, with DynamicStorageOpenError::DoesNotExist, "{} since a shared memory with that name does not exists.", msg);
-            }
-            Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
-                fail!(from origin, with DynamicStorageOpenError::InitializationNotYetFinalized, "{} since it is not yet readable - most likely since it is not finalized.", msg);
-            }
-            Err(e) => Err(e),
-            Ok(s) => Ok(s),
-        }
+        self.open_impl()
     }
 
-    fn try_open(self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        let msg = "Failed to open ";
-
-        let full_name = self.config.path_for(&self.storage_name).file_name();
-        let shm = match SharedMemoryBuilder::new(&full_name).open_existing(AccessMode::ReadWrite) {
-            Ok(v) => v,
-            Err(SharedMemoryCreationError::DoesNotExist) => {
-                return Err(DynamicStorageOpenError::DoesNotExist);
+    fn open_or_create(
+        mut self,
+        initial_value: T,
+    ) -> Result<Storage<T>, DynamicStorageOpenOrCreateError> {
+        loop {
+            match self.open_impl() {
+                Ok(storage) => return Ok(storage),
+                Err(DynamicStorageOpenError::DoesNotExist) => match self.create_impl() {
+                    Ok(shm) => {
+                        return Ok(self.init_impl(shm, initial_value)?);
+                    }
+                    Err(DynamicStorageCreateError::AlreadyExists) => continue,
+                    Err(e) => return Err(e.into()),
+                },
+                Err(e) => return Err(e.into()),
             }
-            Err(SharedMemoryCreationError::InsufficientPermissions) => {
-                return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
-            }
-            Err(_) => {
-                fail!(from self, with DynamicStorageOpenError::Open, "{} since the underlying shared memory could not be opened.", msg);
-            }
-        };
-
-        let required_size = std::mem::size_of::<Data<T>>() + self.supplementary_size;
-        if shm.size() < required_size {
-            fail!(from self, with DynamicStorageOpenError::InternalError,
-                "{} since the actual size {} does not match the required size of {}.", msg, shm.size(), required_size);
         }
-
-        let init_state = shm.base_address().as_ptr() as *const Data<T>;
-        if unsafe { &(*init_state) }
-            .state
-            .load(std::sync::atomic::Ordering::Relaxed)
-            != IS_INITIALIZED_STATE_VALUE
-        {
-            return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
-        }
-
-        Ok(Storage {
-            shm,
-            name: self.storage_name,
-            _phantom_data: PhantomData,
-        })
     }
 }
 
@@ -327,7 +420,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
 }
 
 impl<T: Send + Sync + Debug> DynamicStorage<T> for Storage<T> {
-    type Builder = Builder<T>;
+    type Builder<'builder> = Builder<'builder, T>;
 
     fn does_support_persistency() -> bool {
         SharedMemory::does_support_persistency()

@@ -64,7 +64,7 @@ pub trait ShmAllocator: Send + Sync + 'static {
     ///
     unsafe fn new_uninit(
         max_supported_alignment_by_memory: usize,
-        base_address: NonNull<[u8]>,
+        managed_memory: NonNull<[u8]>,
         config: &Self::Configuration,
     ) -> Self;
 
@@ -77,7 +77,7 @@ pub trait ShmAllocator: Send + Sync + 'static {
     ///
     unsafe fn init<Allocator: BaseAllocator>(
         &self,
-        allocator: &Allocator,
+        mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError>;
 
     /// Returns the unique id of the allocator. It is inequal to any other
