@@ -12,7 +12,7 @@
 
 #![no_std]
 
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+#[cfg(not(target_os = "windows"))]
 pub mod settings {
     pub const TEMP_DIRECTORY: &[u8] = b"/tmp/";
     pub const TEST_DIRECTORY: &[u8] = b"/tmp/iceoryx2/tests/";
@@ -21,10 +21,11 @@ pub mod settings {
     pub const ROOT: &[u8] = b"/";
     pub const FILENAME_LENGTH: usize = 255;
     pub const PATH_LENGTH: usize = 4096;
+    #[cfg(not(target_os = "macos"))]
     pub const AT_LEAST_TIMING_VARIANCE: f32 = 0.25;
+    #[cfg(target_os = "macos")]
+    pub const AT_LEAST_TIMING_VARIANCE: f32 = 0.75;
 }
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
-pub use settings::*;
 
 #[cfg(target_os = "windows")]
 pub mod settings {
@@ -37,19 +38,5 @@ pub mod settings {
     pub const PATH_LENGTH: usize = 255;
     pub const AT_LEAST_TIMING_VARIANCE: f32 = 1.0;
 }
-#[cfg(target_os = "windows")]
-pub use settings::*;
 
-#[cfg(target_os = "macos")]
-pub mod settings {
-    pub const TEMP_DIRECTORY: &[u8] = b"/tmp/";
-    pub const TEST_DIRECTORY: &[u8] = b"/tmp/iceoryx2/tests/";
-    pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"/dev/shm/";
-    pub const PATH_SEPARATOR: u8 = b'/';
-    pub const ROOT: &[u8] = b"/";
-    pub const FILENAME_LENGTH: usize = 255;
-    pub const PATH_LENGTH: usize = 4096;
-    pub const AT_LEAST_TIMING_VARIANCE: f32 = 0.75;
-}
-#[cfg(target_os = "macos")]
 pub use settings::*;
