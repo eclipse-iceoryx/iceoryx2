@@ -12,9 +12,14 @@
 
 use std::time::Duration;
 
-use super::{ListenerWaitError, NotifierNotifyError};
+use super::{ListenerCreateError, ListenerWaitError, NotifierNotifyError};
+
+pub mod semaphore;
 
 pub trait SignalMechanism {
+    fn new() -> Self;
+    fn init(&mut self) -> Result<(), ListenerCreateError>;
+
     fn notify(&self) -> Result<(), NotifierNotifyError>;
     fn try_wait(&self) -> Result<(), ListenerWaitError>;
     fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError>;
