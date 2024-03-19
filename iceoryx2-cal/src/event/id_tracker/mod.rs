@@ -10,13 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod bitset;
-pub mod queue;
+pub mod bit_set;
 
 use super::{NotifierNotifyError, TriggerId};
-use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 
-pub trait IdTracker: RelocatableContainer {
+pub trait IdTracker: Send + Sync {
     fn trigger_id_max(&self) -> TriggerId;
     fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
     fn acquire(&self) -> Option<TriggerId>;

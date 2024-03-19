@@ -52,18 +52,19 @@ use iceoryx2_bb_elementary::{
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 
-type BitsetElement = AtomicU8;
-const BITSET_ELEMENT_BITSIZE: usize = core::mem::size_of::<BitsetElement>() * 8;
-
 /// This BitSet variant's data is stored in the heap.
-pub type BitSet = details::BitSet<OwningPointer<BitsetElement>>;
+pub type BitSet = details::BitSet<OwningPointer<details::BitsetElement>>;
 /// This BitSet variant can be stored inside shared memory.
-pub type RelocatableBitSet = details::BitSet<RelocatablePointer<BitsetElement>>;
+pub type RelocatableBitSet = details::BitSet<RelocatablePointer<details::BitsetElement>>;
 
+#[doc(hidden)]
 pub mod details {
     use std::sync::atomic::AtomicUsize;
 
     use super::*;
+
+    pub type BitsetElement = AtomicU8;
+    const BITSET_ELEMENT_BITSIZE: usize = core::mem::size_of::<BitsetElement>() * 8;
 
     #[derive(Debug)]
     #[repr(C)]
@@ -295,9 +296,9 @@ pub struct FixedSizeBitSet<const CAPACITY: usize> {
     bitset: RelocatableBitSet,
     // TODO: we waste here some memory since rust does us not allow to perform const operations
     //       on generic parameters. Whenever this is supported, change this line into
-    //       data: [BitsetElement; Self::array_capacity(CAPACITY)]
+    //       data: [`details::BitsetElement; Self::array_capacity(CAPACITY)`]
     //       For now we can live with it, since the bitsets are usually rather small
-    data: [BitsetElement; CAPACITY],
+    data: [details::BitsetElement; CAPACITY],
 }
 
 unsafe impl<const CAPACITY: usize> Send for FixedSizeBitSet<CAPACITY> {}
@@ -309,10 +310,11 @@ impl<const CAPACITY: usize> Default for FixedSizeBitSet<CAPACITY> {
             bitset: unsafe {
                 RelocatableBitSet::new(
                     CAPACITY,
-                    align_to::<BitsetElement>(std::mem::size_of::<RelocatableBitSet>()) as _,
+                    align_to::<details::BitsetElement>(std::mem::size_of::<RelocatableBitSet>())
+                        as _,
                 )
             },
-            data: core::array::from_fn(|_| BitsetElement::new(0)),
+            data: core::array::from_fn(|_| details::BitsetElement::new(0)),
         }
     }
 }

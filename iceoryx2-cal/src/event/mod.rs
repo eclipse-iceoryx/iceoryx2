@@ -80,7 +80,7 @@ impl std::fmt::Display for ListenerCreateError {
 
 impl std::error::Error for ListenerCreateError {}
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TriggerId(u64);
 
 impl TriggerId {

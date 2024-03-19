@@ -32,4 +32,5 @@ ouroboros = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-pal-posix = { workspace = true }
+pin-init = { workspace = true }
 generic-tests = { workspace = true }

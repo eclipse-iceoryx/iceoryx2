@@ -10,21 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
+use std::fmt::Debug;
+
+use iceoryx2_bb_elementary::relocatable_ptr::PointerTrait;
+use iceoryx2_bb_lock_free::mpmc::bit_set::details::*;
 use iceoryx2_bb_log::fail;
 
 use super::IdTracker;
 use crate::event::{NotifierNotifyError, TriggerId};
 
-impl IdTracker for RelocatableBitSet {
+impl<PointerType: PointerTrait<BitsetElement> + Debug> IdTracker for BitSet<PointerType> {
     fn trigger_id_max(&self) -> TriggerId {
         TriggerId::new(self.capacity() as u64)
     }
 
     fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError> {
-        if self.trigger_id_max() >= id {
+        if self.trigger_id_max() <= id {
             fail!(from self, with NotifierNotifyError::TriggerIdOutOfBounds,
-                "Unable to set bit {:?} since it is out of bounds.", id);
+                "Unable to set bit {:?} since it is out of bounds (max = {:?}).",
+                id, self.trigger_id_max());
         }
         self.set(id.as_u64() as usize);
 
