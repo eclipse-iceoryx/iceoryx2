@@ -61,6 +61,8 @@ pub type BitSet = details::BitSet<OwningPointer<BitsetElement>>;
 pub type RelocatableBitSet = details::BitSet<RelocatablePointer<BitsetElement>>;
 
 pub mod details {
+    use std::sync::atomic::AtomicUsize;
+
     use super::*;
 
     #[derive(Debug)]
@@ -69,6 +71,7 @@ pub mod details {
         data_ptr: PointerType,
         capacity: usize,
         array_capacity: usize,
+        reset_position: AtomicUsize,
         is_memory_initialized: AtomicBool,
     }
 
@@ -95,6 +98,7 @@ pub mod details {
                 capacity,
                 array_capacity,
                 is_memory_initialized: AtomicBool::new(true),
+                reset_position: AtomicUsize::new(0),
             }
         }
     }
@@ -106,6 +110,7 @@ pub mod details {
                 capacity,
                 array_capacity: Self::array_capacity(capacity),
                 is_memory_initialized: AtomicBool::new(false),
+                reset_position: AtomicUsize::new(0),
             }
         }
 
@@ -152,6 +157,7 @@ pub mod details {
                 capacity,
                 array_capacity: Self::array_capacity(capacity),
                 is_memory_initialized: AtomicBool::new(true),
+                reset_position: AtomicUsize::new(0),
             }
         }
     }
@@ -180,7 +186,10 @@ pub mod details {
             );
         }
 
-        fn set_bit(&self, index: usize, bit: usize) -> bool {
+        fn set_bit(&self, id: usize) -> bool {
+            let index = id / BITSET_ELEMENT_BITSIZE;
+            let bit = id % BITSET_ELEMENT_BITSIZE;
+
             let data_ref = unsafe { &(*self.data_ptr.as_ptr().add(index)) };
             let mut current = data_ref.load(Ordering::Relaxed);
             let bit = 1 << bit;
@@ -204,7 +213,36 @@ pub mod details {
             }
         }
 
+        fn clear_bit(&self, id: usize) -> bool {
+            let index = id / BITSET_ELEMENT_BITSIZE;
+            let bit = id % BITSET_ELEMENT_BITSIZE;
+
+            let data_ref = unsafe { &(*self.data_ptr.as_ptr().add(index)) };
+            let mut current = data_ref.load(Ordering::Relaxed);
+            let bit = 1 << bit;
+
+            loop {
+                if current & bit == 0 {
+                    return false;
+                }
+
+                let current_with_bit = current & !bit;
+
+                match data_ref.compare_exchange(
+                    current,
+                    current_with_bit,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => return true,
+                    Err(v) => current = v,
+                }
+            }
+        }
+
         /// Sets a bit in the BitSet
+        /// If the bit was successfully set it returns true, if the bit was already set it
+        /// returns false.
         pub fn set(&self, id: usize) -> bool {
             self.verify_init("set");
             debug_assert!(
@@ -213,14 +251,29 @@ pub mod details {
                 id
             );
 
-            let bitset_index = id / BITSET_ELEMENT_BITSIZE;
-            let bit = id % BITSET_ELEMENT_BITSIZE;
-            self.set_bit(bitset_index, bit)
+            self.set_bit(id)
+        }
+
+        /// Resets the next set bit and returns the bit index. If no bit was set it returns
+        /// [`None`].
+        pub fn reset_next(&self) -> Option<usize> {
+            let mut current_position = self.reset_position.load(Ordering::Relaxed);
+            for _ in 0..self.capacity {
+                current_position = (current_position + 1) % self.capacity;
+
+                if self.clear_bit(current_position) {
+                    self.reset_position
+                        .store(current_position, Ordering::Relaxed);
+                    return Some(current_position);
+                }
+            }
+
+            None
         }
 
         /// Reset every set bit in the BitSet and call the provided callback for every bit that
-        /// was set.
-        pub fn reset<F: FnMut(usize)>(&self, mut callback: F) {
+        /// was set. This is the most efficient way to acquire all bits that were set.
+        pub fn reset_all<F: FnMut(usize)>(&self, mut callback: F) {
             self.verify_init("set");
             for i in 0..self.array_capacity {
                 let value = unsafe { (*self.data_ptr.as_ptr().add(i)).swap(0, Ordering::Relaxed) };
@@ -282,7 +335,13 @@ impl<const CAPACITY: usize> FixedSizeBitSet<CAPACITY> {
 
     /// Reset every set bit in the BitSet and call the provided callback for every bit that
     /// was set.
-    pub fn reset<F: FnMut(usize)>(&self, callback: F) {
-        self.bitset.reset(callback)
+    pub fn reset_next(&self) -> Option<usize> {
+        self.bitset.reset_next()
+    }
+
+    /// Reset every set bit in the BitSet and call the provided callback for every bit that
+    /// was set.
+    pub fn reset_all<F: FnMut(usize)>(&self, callback: F) {
+        self.bitset.reset_all(callback)
     }
 }
