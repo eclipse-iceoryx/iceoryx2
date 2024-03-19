@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod common;
 pub mod posix_shared_memory;
 pub mod process_local;
 pub mod used_chunk_list;
