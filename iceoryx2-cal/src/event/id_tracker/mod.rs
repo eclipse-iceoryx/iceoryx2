@@ -13,12 +13,12 @@
 pub mod bitset;
 pub mod queue;
 
-use super::TriggerId;
+use super::{NotifierNotifyError, TriggerId};
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 
 pub trait IdTracker: RelocatableContainer {
     fn trigger_id_max(&self) -> TriggerId;
-    fn set(&self, id: TriggerId);
-    fn reset_next(&self) -> TriggerId;
-    fn reset_all<F: FnMut(TriggerId)>(&self, callback: F);
+    fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
+    fn acquire(&self) -> Option<TriggerId>;
+    fn acquire_all<F: FnMut(TriggerId)>(&self, callback: F);
 }

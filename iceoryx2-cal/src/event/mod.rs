@@ -24,6 +24,7 @@ pub use iceoryx2_bb_system_types::path::Path;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierNotifyError {
     FailedToDeliverSignal,
+    TriggerIdOutOfBounds,
     InternalFailure,
 }
 
