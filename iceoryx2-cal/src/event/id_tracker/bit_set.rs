@@ -10,16 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::fmt::Debug;
-
-use iceoryx2_bb_elementary::relocatable_ptr::PointerTrait;
-use iceoryx2_bb_lock_free::mpmc::bit_set::details::*;
+use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
 use iceoryx2_bb_log::fail;
 
 use super::IdTracker;
 use crate::event::{NotifierNotifyError, TriggerId};
 
-impl<PointerType: PointerTrait<BitsetElement> + Debug> IdTracker for BitSet<PointerType> {
+impl IdTracker for RelocatableBitSet {
     fn trigger_id_max(&self) -> TriggerId {
         TriggerId::new(self.capacity() as u64)
     }

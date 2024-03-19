@@ -12,9 +12,11 @@
 
 pub mod bit_set;
 
+use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+
 use super::{NotifierNotifyError, TriggerId};
 
-pub trait IdTracker: Send + Sync {
+pub trait IdTracker: RelocatableContainer + Send + Sync {
     fn trigger_id_max(&self) -> TriggerId;
     fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
     fn acquire(&self) -> Option<TriggerId>;

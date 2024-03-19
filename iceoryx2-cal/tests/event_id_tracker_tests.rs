@@ -14,32 +14,33 @@
 mod event_id_tracker {
     use std::collections::HashSet;
 
-    use iceoryx2_bb_lock_free::mpmc::bit_set::BitSet;
+    use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::event::{id_tracker::IdTracker, TriggerId};
 
-    trait NewSut {
-        fn new_sut(capacity: usize) -> Self;
-    }
+    use iceoryx2_bb_memory::bump_allocator::*;
+    use iceoryx2_bb_memory::memory::Memory;
+    use pin_init::PtrPinWith;
 
-    impl NewSut for BitSet {
-        fn new_sut(capacity: usize) -> Self {
-            BitSet::new(capacity)
-        }
-    }
+    const MEMORY_SIZE: usize = 1024 * 1024;
+
     #[test]
-    fn max_trigger_id_must_be_at_least_capacity<Sut: IdTracker + NewSut>() {
+    fn max_trigger_id_must_be_at_least_capacity<Sut: IdTracker>() {
+        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
         const CAPACITY: usize = 5234;
 
-        let sut = Sut::new_sut(CAPACITY);
+        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
         assert_that!(sut.trigger_id_max().as_u64(), ge CAPACITY as u64);
     }
 
     #[test]
-    fn add_and_acquire_works<Sut: IdTracker + NewSut>() {
+    fn add_and_acquire_works<Sut: IdTracker>() {
+        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
         const CAPACITY: usize = 1234;
 
-        let sut = Sut::new_sut(CAPACITY);
+        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
 
         assert_that!(sut.acquire(), eq None);
         for i in 0..CAPACITY {
@@ -51,10 +52,12 @@ mod event_id_tracker {
     }
 
     #[test]
-    fn add_until_full_and_then_acquire_works<Sut: IdTracker + NewSut>() {
+    fn add_until_full_and_then_acquire_works<Sut: IdTracker>() {
+        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
         const CAPACITY: usize = 1234;
 
-        let sut = Sut::new_sut(CAPACITY);
+        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
 
         for i in 0..CAPACITY {
             let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
@@ -72,10 +75,12 @@ mod event_id_tracker {
     }
 
     #[test]
-    fn add_and_acquire_all_works<Sut: IdTracker + NewSut>() {
+    fn add_and_acquire_all_works<Sut: IdTracker>() {
+        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
         const CAPACITY: usize = 3234;
 
-        let sut = Sut::new_sut(CAPACITY);
+        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
 
         for i in 0..CAPACITY {
             let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
@@ -96,10 +101,12 @@ mod event_id_tracker {
     }
 
     #[test]
-    fn add_acquire_and_acquire_all_works<Sut: IdTracker + NewSut>() {
+    fn add_acquire_and_acquire_all_works<Sut: IdTracker>() {
+        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
         const CAPACITY: usize = 234;
 
-        let sut = Sut::new_sut(CAPACITY);
+        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
 
         for i in 0..CAPACITY {
             let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
@@ -121,6 +128,6 @@ mod event_id_tracker {
         assert_that!(ids, len CAPACITY);
     }
 
-    #[instantiate_tests(<BitSet>)]
+    #[instantiate_tests(<RelocatableBitSet>)]
     mod bitset {}
 }
