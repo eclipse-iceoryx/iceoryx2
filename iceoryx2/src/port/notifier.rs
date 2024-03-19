@@ -80,8 +80,7 @@ impl std::error::Error for NotifierConnectionUpdateFailure {}
 #[derive(Debug, Default)]
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
-    connections:
-        Vec<UnsafeCell<Option<<Service::Event as iceoryx2_cal::event::Event<EventId>>::Notifier>>>,
+    connections: Vec<UnsafeCell<Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier>>>,
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
@@ -101,7 +100,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn create(&self, index: usize, listener_id: UniqueListenerId) -> Result<(), ()> {
         let event_name = event_concept_name(&listener_id);
         if self.get(index).is_none() {
-            let notifier = fail!(from self, when <Service::Event as iceoryx2_cal::event::Event<EventId>>::NotifierBuilder::new(&event_name).open(),
+            let notifier = fail!(from self, when <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name).open(),
                                     with (),
                                     "Unable to establish a connection to Listener port {:?}.", listener_id);
             *self.get_mut(index) = Some(notifier);
@@ -113,7 +112,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn get(
         &self,
         index: usize,
-    ) -> &Option<<Service::Event as iceoryx2_cal::event::Event<EventId>>::Notifier> {
+    ) -> &Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier> {
         unsafe { &(*self.connections[index].get()) }
     }
 
@@ -121,7 +120,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn get_mut(
         &self,
         index: usize,
-    ) -> &mut Option<<Service::Event as iceoryx2_cal::event::Event<EventId>>::Notifier> {
+    ) -> &mut Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier> {
         unsafe { &mut (*self.connections[index].get()) }
     }
 

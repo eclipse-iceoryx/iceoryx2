@@ -10,15 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod bitset;
-pub mod queue;
+use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
 
-use super::TriggerId;
-use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+use super::IdTracker;
+use crate::event::TriggerId;
 
-pub trait IdTracker: RelocatableContainer {
-    fn trigger_id_max(&self) -> TriggerId;
-    fn set(&self, id: TriggerId);
-    fn reset_next(&self) -> TriggerId;
-    fn reset_all<F: FnMut(TriggerId)>(&self, callback: F);
-}
+//impl IdTracker for RelocatableBitSet {
+//    fn set(&self, id: TriggerId) {
+//        self.set(id)
+//    }
+//}

@@ -38,28 +38,4 @@
 //! # }
 //! ```
 
-use iceoryx2_cal::event::TriggerId;
-
-/// Id to identify the source in event based communication.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct EventId(u64);
-
-impl EventId {
-    /// Creates a new [`EventId`] from a given integer value.
-    pub const fn new(value: u64) -> Self {
-        EventId(value)
-    }
-
-    /// Returns the underlying integer value of the [`EventId`].
-    pub const fn as_u64(&self) -> u64 {
-        self.0
-    }
-}
-
-impl Default for EventId {
-    fn default() -> Self {
-        Self::new(0)
-    }
-}
-
-impl TriggerId for EventId {}
+pub type EventId = iceoryx2_cal::event::TriggerId;
