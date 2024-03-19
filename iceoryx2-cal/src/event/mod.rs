@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod id_tracker;
 pub mod process_local;
+pub mod signal;
 pub mod unix_datagram_socket;
 
 use std::{fmt::Debug, time::Duration};
