@@ -12,6 +12,7 @@
 
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
+use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 
 use crate::dynamic_storage::{
@@ -30,194 +31,214 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 
 use self::used_chunk_list::RelocatableUsedChunkList;
 
-type Storage = crate::dynamic_storage::posix_shared_memory::Storage<SharedManagementData>;
+pub type Connection = details::Connection<
+    crate::dynamic_storage::posix_shared_memory::Storage<details::SharedManagementData>,
+>;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Configuration {
-    suffix: FileName,
-    prefix: FileName,
-    path_hint: Path,
-}
+pub mod details {
+    use super::*;
 
-impl Configuration {
-    fn convert(&self) -> <Storage as NamedConceptMgmt>::Configuration {
-        <Storage as NamedConceptMgmt>::Configuration::default()
-            .prefix(self.prefix)
-            .suffix(self.suffix)
-            .path_hint(self.path_hint)
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct Configuration<Storage: DynamicStorage<SharedManagementData>> {
+        suffix: FileName,
+        prefix: FileName,
+        path_hint: Path,
+        _data: PhantomData<Storage>,
     }
-}
 
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            suffix: Connection::default_suffix(),
-            prefix: Connection::default_prefix(),
-            path_hint: Connection::default_path_hint(),
+    impl<Storage: DynamicStorage<SharedManagementData>> Clone for Configuration<Storage> {
+        fn clone(&self) -> Self {
+            *self
         }
     }
-}
 
-impl NamedConceptConfiguration for Configuration {
-    fn prefix(mut self, value: FileName) -> Self {
-        self.prefix = value;
-        self
+    impl<Storage: DynamicStorage<SharedManagementData>> Copy for Configuration<Storage> {}
+
+    impl<Storage: DynamicStorage<SharedManagementData>> Configuration<Storage> {
+        fn convert(&self) -> <Storage as NamedConceptMgmt>::Configuration {
+            <Storage as NamedConceptMgmt>::Configuration::default()
+                .prefix(self.prefix)
+                .suffix(self.suffix)
+                .path_hint(self.path_hint)
+        }
     }
 
-    fn get_prefix(&self) -> &FileName {
-        &self.prefix
-    }
-
-    fn suffix(mut self, value: FileName) -> Self {
-        self.suffix = value;
-        self
-    }
-
-    fn path_hint(mut self, value: Path) -> Self {
-        self.path_hint = value;
-        self
-    }
-
-    fn get_suffix(&self) -> &FileName {
-        &self.suffix
-    }
-
-    fn get_path_hint(&self) -> &Path {
-        &self.path_hint
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-enum State {
-    None = 0b00000000,
-    Sender = 0b00000001,
-    Receiver = 0b00000010,
-    MarkedForDestruction = 0b10000000,
-}
-
-impl State {
-    fn value(&self) -> u8 {
-        *self as u8
-    }
-}
-
-fn cleanup_shared_memory(storage: &Storage, state_to_remove: State) {
-    let mut current_state = storage.get().state.load(Ordering::Relaxed);
-    loop {
-        let new_state = if current_state == state_to_remove.value() {
-            State::MarkedForDestruction.value()
-        } else {
-            current_state & !state_to_remove.value()
-        };
-
-        match storage.get().state.compare_exchange(
-            current_state,
-            new_state,
-            Ordering::Relaxed,
-            Ordering::Relaxed,
-        ) {
-            Ok(_) => {
-                current_state = new_state;
-                break;
-            }
-            Err(s) => {
-                current_state = s;
+    impl<Storage: DynamicStorage<SharedManagementData>> Default for Configuration<Storage> {
+        fn default() -> Self {
+            Self {
+                suffix: Connection::<Storage>::default_suffix(),
+                prefix: Connection::<Storage>::default_prefix(),
+                path_hint: Connection::<Storage>::default_path_hint(),
+                _data: PhantomData,
             }
         }
     }
 
-    if current_state == State::MarkedForDestruction.value() {
-        storage.acquire_ownership()
+    impl<Storage: DynamicStorage<SharedManagementData>> NamedConceptConfiguration
+        for Configuration<Storage>
+    {
+        fn prefix(mut self, value: FileName) -> Self {
+            self.prefix = value;
+            self
+        }
+
+        fn get_prefix(&self) -> &FileName {
+            &self.prefix
+        }
+
+        fn suffix(mut self, value: FileName) -> Self {
+            self.suffix = value;
+            self
+        }
+
+        fn path_hint(mut self, value: Path) -> Self {
+            self.path_hint = value;
+            self
+        }
+
+        fn get_suffix(&self) -> &FileName {
+            &self.suffix
+        }
+
+        fn get_path_hint(&self) -> &Path {
+            &self.path_hint
+        }
     }
-}
 
-#[derive(Debug)]
-#[repr(C)]
-struct SharedManagementData {
-    submission_channel: RelocatableSafelyOverflowingIndexQueue,
-    completion_channel: RelocatableIndexQueue,
-    used_chunk_list: RelocatableUsedChunkList,
-    max_borrowed_samples: usize,
-    sample_size: usize,
-    number_of_samples: usize,
-    state: AtomicU8,
-    init_state: AtomicU64,
-    enable_safe_overflow: bool,
-}
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[repr(u8)]
+    enum State {
+        None = 0b00000000,
+        Sender = 0b00000001,
+        Receiver = 0b00000010,
+        MarkedForDestruction = 0b10000000,
+    }
 
-impl SharedManagementData {
-    fn new(
-        submission_channel_buffer_capacity: usize,
-        completion_channel_buffer_capacity: usize,
+    impl State {
+        fn value(&self) -> u8 {
+            *self as u8
+        }
+    }
+
+    fn cleanup_shared_memory<Storage: DynamicStorage<SharedManagementData>>(
+        storage: &Storage,
+        state_to_remove: State,
+    ) {
+        let mut current_state = storage.get().state.load(Ordering::Relaxed);
+        loop {
+            let new_state = if current_state == state_to_remove.value() {
+                State::MarkedForDestruction.value()
+            } else {
+                current_state & !state_to_remove.value()
+            };
+
+            match storage.get().state.compare_exchange(
+                current_state,
+                new_state,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    current_state = new_state;
+                    break;
+                }
+                Err(s) => {
+                    current_state = s;
+                }
+            }
+        }
+
+        if current_state == State::MarkedForDestruction.value() {
+            storage.acquire_ownership()
+        }
+    }
+
+    #[derive(Debug)]
+    #[repr(C)]
+    pub struct SharedManagementData {
+        submission_channel: RelocatableSafelyOverflowingIndexQueue,
+        completion_channel: RelocatableIndexQueue,
+        used_chunk_list: RelocatableUsedChunkList,
+        max_borrowed_samples: usize,
+        sample_size: usize,
+        number_of_samples: usize,
+        state: AtomicU8,
+        init_state: AtomicU64,
+        enable_safe_overflow: bool,
+    }
+
+    impl SharedManagementData {
+        fn new(
+            submission_channel_buffer_capacity: usize,
+            completion_channel_buffer_capacity: usize,
+            enable_safe_overflow: bool,
+            max_borrowed_samples: usize,
+            sample_size: usize,
+            number_of_samples: usize,
+        ) -> Self {
+            Self {
+                submission_channel: unsafe {
+                    RelocatableSafelyOverflowingIndexQueue::new_uninit(
+                        submission_channel_buffer_capacity,
+                    )
+                },
+                completion_channel: unsafe {
+                    RelocatableIndexQueue::new_uninit(completion_channel_buffer_capacity)
+                },
+                used_chunk_list: unsafe { RelocatableUsedChunkList::new_uninit(number_of_samples) },
+                state: AtomicU8::new(State::None.value()),
+                init_state: AtomicU64::new(0),
+                enable_safe_overflow,
+                sample_size,
+                max_borrowed_samples,
+                number_of_samples,
+            }
+        }
+
+        const fn const_memory_size(
+            submission_channel_buffer_capacity: usize,
+            completion_channel_buffer_capacity: usize,
+            number_of_samples: usize,
+        ) -> usize {
+            RelocatableIndexQueue::const_memory_size(completion_channel_buffer_capacity)
+                + RelocatableSafelyOverflowingIndexQueue::const_memory_size(
+                    submission_channel_buffer_capacity,
+                )
+                + RelocatableUsedChunkList::const_memory_size(number_of_samples)
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct Builder<Storage: DynamicStorage<SharedManagementData>> {
+        name: FileName,
+        buffer_size: usize,
         enable_safe_overflow: bool,
         max_borrowed_samples: usize,
         sample_size: usize,
         number_of_samples: usize,
-    ) -> Self {
-        Self {
-            submission_channel: unsafe {
-                RelocatableSafelyOverflowingIndexQueue::new_uninit(
-                    submission_channel_buffer_capacity,
-                )
-            },
-            completion_channel: unsafe {
-                RelocatableIndexQueue::new_uninit(completion_channel_buffer_capacity)
-            },
-            used_chunk_list: unsafe { RelocatableUsedChunkList::new_uninit(number_of_samples) },
-            state: AtomicU8::new(State::None.value()),
-            init_state: AtomicU64::new(0),
-            enable_safe_overflow,
-            sample_size,
-            max_borrowed_samples,
-            number_of_samples,
+        config: Configuration<Storage>,
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> Builder<Storage> {
+        fn submission_channel_size(&self) -> usize {
+            self.buffer_size
         }
-    }
 
-    const fn const_memory_size(
-        submission_channel_buffer_capacity: usize,
-        completion_channel_buffer_capacity: usize,
-        number_of_samples: usize,
-    ) -> usize {
-        RelocatableIndexQueue::const_memory_size(completion_channel_buffer_capacity)
-            + RelocatableSafelyOverflowingIndexQueue::const_memory_size(
-                submission_channel_buffer_capacity,
-            )
-            + RelocatableUsedChunkList::const_memory_size(number_of_samples)
-    }
-}
+        fn completion_channel_size(&self) -> usize {
+            self.buffer_size + self.max_borrowed_samples + 1
+        }
 
-#[derive(Debug)]
-pub struct Builder {
-    name: FileName,
-    buffer_size: usize,
-    enable_safe_overflow: bool,
-    max_borrowed_samples: usize,
-    sample_size: usize,
-    number_of_samples: usize,
-    config: Configuration,
-}
+        fn create_or_open_shm(&self) -> Result<Storage, ZeroCopyCreationError> {
+            let supplementary_size = SharedManagementData::const_memory_size(
+                self.submission_channel_size(),
+                self.completion_channel_size(),
+                self.number_of_samples,
+            );
 
-impl Builder {
-    fn submission_channel_size(&self) -> usize {
-        self.buffer_size
-    }
+            let dynamic_storage_config = self.config.convert();
 
-    fn completion_channel_size(&self) -> usize {
-        self.buffer_size + self.max_borrowed_samples + 1
-    }
-
-    fn create_or_open_shm(&self) -> Result<Storage, ZeroCopyCreationError> {
-        let supplementary_size = SharedManagementData::const_memory_size(
-            self.submission_channel_size(),
-            self.completion_channel_size(),
-            self.number_of_samples,
-        );
-
-        let dynamic_storage_config = self.config.convert();
-
-        let msg = "Failed to acquire underlying shared memory";
-        let storage = <<Storage as DynamicStorage<SharedManagementData>>::Builder<'_> as NamedConceptBuilder<
+            let msg = "Failed to acquire underlying shared memory";
+            let storage = <<Storage as DynamicStorage<SharedManagementData>>::Builder<'_> as NamedConceptBuilder<
             Storage,
         >>::new(&self.name)
         .config(&dynamic_storage_config)
@@ -243,421 +264,433 @@ impl Builder {
                                 )
             );
 
-        let storage = match storage {
-            Ok(storage) => storage,
-            Err(DynamicStorageOpenOrCreateError::DynamicStorageCreateError(
-                DynamicStorageCreateError::InsufficientPermissions,
-            )) => {
-                fail!(from self, with ZeroCopyCreationError::InsufficientPermissions,
+            let storage = match storage {
+                Ok(storage) => storage,
+                Err(DynamicStorageOpenOrCreateError::DynamicStorageCreateError(
+                    DynamicStorageCreateError::InsufficientPermissions,
+                )) => {
+                    fail!(from self, with ZeroCopyCreationError::InsufficientPermissions,
                     "{} due to insufficient permissions to create underlying dynamic storage.", msg);
-            }
-            Err(DynamicStorageOpenOrCreateError::DynamicStorageOpenError(
-                DynamicStorageOpenError::VersionMismatch,
-            )) => {
-                fail!(from self, with ZeroCopyCreationError::VersionMismatch,
+                }
+                Err(DynamicStorageOpenOrCreateError::DynamicStorageOpenError(
+                    DynamicStorageOpenError::VersionMismatch,
+                )) => {
+                    fail!(from self, with ZeroCopyCreationError::VersionMismatch,
                     "{} since the version of the connection does not match.", msg);
-            }
-            Err(e) => {
-                fail!(from self, with ZeroCopyCreationError::VersionMismatch,
+                }
+                Err(e) => {
+                    fail!(from self, with ZeroCopyCreationError::VersionMismatch,
                     "{} due to an internal failure ({:?}).", msg, e);
-            }
-        };
+                }
+            };
 
-        if storage.has_ownership() {
-            storage.release_ownership();
-        } else {
-            let msg = "Failed to open existing connection";
+            if storage.has_ownership() {
+                storage.release_ownership();
+            } else {
+                let msg = "Failed to open existing connection";
 
-            if storage.get().submission_channel.capacity() != self.submission_channel_size() {
-                fail!(from self, with ZeroCopyCreationError::IncompatibleBufferSize,
+                if storage.get().submission_channel.capacity() != self.submission_channel_size() {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleBufferSize,
                         "{} since the connection has a buffer size of {} but a buffer size of {} is required.",
                         msg, storage.get().submission_channel.capacity(), self.submission_channel_size());
-            }
+                }
 
-            if storage.get().completion_channel.capacity() != self.completion_channel_size() {
-                fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSampleSetting,
+                if storage.get().completion_channel.capacity() != self.completion_channel_size() {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSampleSetting,
                         "{} since the max borrowed sample setting is set to {} but a value of {} is required.",
                         msg, storage.get().completion_channel.capacity() - storage.get().submission_channel.capacity(), self.max_borrowed_samples);
-            }
+                }
 
-            if storage.get().enable_safe_overflow != self.enable_safe_overflow {
-                fail!(from self, with ZeroCopyCreationError::IncompatibleOverflowSetting,
+                if storage.get().enable_safe_overflow != self.enable_safe_overflow {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleOverflowSetting,
                         "{} since the safe overflow is set to {} but should be set to {}.",
                         msg, storage.get().enable_safe_overflow, self.enable_safe_overflow);
-            }
+                }
 
-            if storage.get().sample_size != self.sample_size {
-                fail!(from self, with ZeroCopyCreationError::IncompatibleSampleSize,
+                if storage.get().sample_size != self.sample_size {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleSampleSize,
                         "{} since the requested sample size is set to {} but should be set to {}.",
                         msg, self.sample_size, storage.get().sample_size);
-            }
+                }
 
-            if storage.get().number_of_samples != self.number_of_samples {
-                fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSamples,
+                if storage.get().number_of_samples != self.number_of_samples {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSamples,
                         "{} since the requested number of samples is set to {} but should be set to {}.",
                         msg, self.number_of_samples, storage.get().number_of_samples);
+                }
             }
+
+            Ok(storage)
         }
 
-        Ok(storage)
-    }
+        fn reserve_port(
+            &self,
+            mgmt_ref: &SharedManagementData,
+            new_state: u8,
+            msg: &str,
+        ) -> Result<(), ZeroCopyCreationError> {
+            let mut current_state = State::None.value();
 
-    fn reserve_port(
-        &self,
-        mgmt_ref: &SharedManagementData,
-        new_state: u8,
-        msg: &str,
-    ) -> Result<(), ZeroCopyCreationError> {
-        let mut current_state = State::None.value();
-
-        loop {
-            match mgmt_ref.state.compare_exchange(
-                current_state,
-                current_state | new_state,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break,
-                Err(v) => {
-                    current_state = v;
-                    if current_state & new_state != 0 {
-                        fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
+            loop {
+                match mgmt_ref.state.compare_exchange(
+                    current_state,
+                    current_state | new_state,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break,
+                    Err(v) => {
+                        current_state = v;
+                        if current_state & new_state != 0 {
+                            fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
                             "{} since an instance is already connected.", msg);
-                    } else if current_state & State::MarkedForDestruction.value() != 0 {
-                        fail!(from self, with ZeroCopyCreationError::InternalError,
+                        } else if current_state & State::MarkedForDestruction.value() != 0 {
+                            fail!(from self, with ZeroCopyCreationError::InternalError,
                             "{} since the connection is currently being cleaned up.", msg);
+                        }
                     }
                 }
             }
-        }
 
-        Ok(())
-    }
-}
-
-impl NamedConceptBuilder<Connection> for Builder {
-    fn new(name: &FileName) -> Self {
-        Self {
-            name: *name,
-            buffer_size: DEFAULT_BUFFER_SIZE,
-            enable_safe_overflow: DEFAULT_ENABLE_SAFE_OVERFLOW,
-            max_borrowed_samples: DEFAULT_MAX_BORROWED_SAMPLES,
-            sample_size: 0,
-            number_of_samples: 0,
-            config: Configuration::default(),
+            Ok(())
         }
     }
 
-    fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
-        self
-    }
-}
+    impl<Storage: DynamicStorage<SharedManagementData>> NamedConceptBuilder<Connection<Storage>>
+        for Builder<Storage>
+    {
+        fn new(name: &FileName) -> Self {
+            Self {
+                name: *name,
+                buffer_size: DEFAULT_BUFFER_SIZE,
+                enable_safe_overflow: DEFAULT_ENABLE_SAFE_OVERFLOW,
+                max_borrowed_samples: DEFAULT_MAX_BORROWED_SAMPLES,
+                sample_size: 0,
+                number_of_samples: 0,
+                config: Configuration::default(),
+            }
+        }
 
-impl ZeroCopyConnectionBuilder<Connection> for Builder {
-    fn buffer_size(mut self, value: usize) -> Self {
-        self.buffer_size = value.clamp(1, usize::MAX);
-        self
-    }
-
-    fn enable_safe_overflow(mut self, value: bool) -> Self {
-        self.enable_safe_overflow = value;
-        self
-    }
-
-    fn number_of_samples(mut self, value: usize) -> Self {
-        self.number_of_samples = value;
-        self
-    }
-
-    fn receiver_max_borrowed_samples(mut self, value: usize) -> Self {
-        self.max_borrowed_samples = value.clamp(1, usize::MAX);
-        self
+        fn config(mut self, config: &Configuration<Storage>) -> Self {
+            self.config = *config;
+            self
+        }
     }
 
-    fn create_sender(mut self, sample_size: usize) -> Result<Sender, ZeroCopyCreationError> {
-        self.sample_size = sample_size;
+    impl<Storage: DynamicStorage<SharedManagementData>>
+        ZeroCopyConnectionBuilder<Connection<Storage>> for Builder<Storage>
+    {
+        fn buffer_size(mut self, value: usize) -> Self {
+            self.buffer_size = value.clamp(1, usize::MAX);
+            self
+        }
 
-        let msg = "Unable to create sender";
-        let storage = fail!(from self, when self.create_or_open_shm(),
-            "{} since the corresponding connection could not be created or opened", msg);
+        fn enable_safe_overflow(mut self, value: bool) -> Self {
+            self.enable_safe_overflow = value;
+            self
+        }
 
-        self.reserve_port(storage.get(), State::Sender.value(), msg)?;
+        fn number_of_samples(mut self, value: usize) -> Self {
+            self.number_of_samples = value;
+            self
+        }
 
-        Ok(Sender {
-            storage,
-            name: self.name,
-        })
-    }
+        fn receiver_max_borrowed_samples(mut self, value: usize) -> Self {
+            self.max_borrowed_samples = value.clamp(1, usize::MAX);
+            self
+        }
 
-    fn create_receiver(
-        mut self,
-        sample_size: usize,
-    ) -> Result<<Connection as ZeroCopyConnection>::Receiver, ZeroCopyCreationError> {
-        self.sample_size = sample_size;
-
-        let msg = "Unable to create receiver";
-        let storage = fail!(from self, when self.create_or_open_shm(),
-            "{} since the corresponding connection could not be created or opened", msg);
-
-        self.reserve_port(storage.get(), State::Receiver.value(), msg)?;
-
-        Ok(Receiver {
-            storage,
-            borrow_counter: UnsafeCell::new(0),
-            name: self.name,
-        })
-    }
-}
-
-#[derive(Debug)]
-pub struct Sender {
-    storage: Storage,
-    name: FileName,
-}
-
-impl Drop for Sender {
-    fn drop(&mut self) {
-        cleanup_shared_memory(&self.storage, State::Sender);
-    }
-}
-
-impl NamedConcept for Sender {
-    fn name(&self) -> &FileName {
-        &self.name
-    }
-}
-
-impl ZeroCopyPortDetails for Sender {
-    fn buffer_size(&self) -> usize {
-        self.storage.get().submission_channel.capacity()
-    }
-
-    fn max_borrowed_samples(&self) -> usize {
-        self.storage.get().max_borrowed_samples
-    }
-
-    fn has_enabled_safe_overflow(&self) -> bool {
-        self.storage.get().enable_safe_overflow
-    }
-
-    fn is_connected(&self) -> bool {
-        self.storage.get().state.load(Ordering::Relaxed)
-            == State::Sender.value() | State::Receiver.value()
-    }
-}
-
-impl ZeroCopySender for Sender {
-    fn try_send(&self, ptr: PointerOffset) -> Result<Option<PointerOffset>, ZeroCopySendError> {
-        let msg = "Unable to send sample";
-
-        if !self.storage.get().enable_safe_overflow
-            && self.storage.get().submission_channel.is_full()
+        fn create_sender(
+            mut self,
+            sample_size: usize,
+        ) -> Result<<Connection<Storage> as ZeroCopyConnection>::Sender, ZeroCopyCreationError>
         {
-            fail!(from self, with ZeroCopySendError::ReceiveBufferFull,
+            self.sample_size = sample_size;
+
+            let msg = "Unable to create sender";
+            let storage = fail!(from self, when self.create_or_open_shm(),
+            "{} since the corresponding connection could not be created or opened", msg);
+
+            self.reserve_port(storage.get(), State::Sender.value(), msg)?;
+
+            Ok(Sender {
+                storage,
+                name: self.name,
+            })
+        }
+
+        fn create_receiver(
+            mut self,
+            sample_size: usize,
+        ) -> Result<<Connection<Storage> as ZeroCopyConnection>::Receiver, ZeroCopyCreationError>
+        {
+            self.sample_size = sample_size;
+
+            let msg = "Unable to create receiver";
+            let storage = fail!(from self, when self.create_or_open_shm(),
+            "{} since the corresponding connection could not be created or opened", msg);
+
+            self.reserve_port(storage.get(), State::Receiver.value(), msg)?;
+
+            Ok(Receiver {
+                storage,
+                borrow_counter: UnsafeCell::new(0),
+                name: self.name,
+            })
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct Sender<Storage: DynamicStorage<SharedManagementData>> {
+        storage: Storage,
+        name: FileName,
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> Drop for Sender<Storage> {
+        fn drop(&mut self) {
+            cleanup_shared_memory(&self.storage, State::Sender);
+        }
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> NamedConcept for Sender<Storage> {
+        fn name(&self) -> &FileName {
+            &self.name
+        }
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyPortDetails for Sender<Storage> {
+        fn buffer_size(&self) -> usize {
+            self.storage.get().submission_channel.capacity()
+        }
+
+        fn max_borrowed_samples(&self) -> usize {
+            self.storage.get().max_borrowed_samples
+        }
+
+        fn has_enabled_safe_overflow(&self) -> bool {
+            self.storage.get().enable_safe_overflow
+        }
+
+        fn is_connected(&self) -> bool {
+            self.storage.get().state.load(Ordering::Relaxed)
+                == State::Sender.value() | State::Receiver.value()
+        }
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopySender for Sender<Storage> {
+        fn try_send(&self, ptr: PointerOffset) -> Result<Option<PointerOffset>, ZeroCopySendError> {
+            let msg = "Unable to send sample";
+
+            if !self.storage.get().enable_safe_overflow
+                && self.storage.get().submission_channel.is_full()
+            {
+                fail!(from self, with ZeroCopySendError::ReceiveBufferFull,
                              "{} since the receive buffer is full.", msg);
-        }
+            }
 
-        if !self
-            .storage
-            .get()
-            .used_chunk_list
-            .insert(ptr.value() / self.storage.get().sample_size)
-        {
-            fail!(from self, with ZeroCopySendError::UsedChunkListFull,
+            if !self
+                .storage
+                .get()
+                .used_chunk_list
+                .insert(ptr.value() / self.storage.get().sample_size)
+            {
+                fail!(from self, with ZeroCopySendError::UsedChunkListFull,
                     "{} since the used chunk list is full.", msg);
-        }
+            }
 
-        match unsafe { self.storage.get().submission_channel.push(ptr.value()) } {
-            Some(v) => {
-                if !self
-                    .storage
-                    .get()
-                    .used_chunk_list
-                    .remove(v / self.storage.get().sample_size)
-                {
-                    fail!(from self, with ZeroCopySendError::ConnectionCorrupted,
+            match unsafe { self.storage.get().submission_channel.push(ptr.value()) } {
+                Some(v) => {
+                    if !self
+                        .storage
+                        .get()
+                        .used_chunk_list
+                        .remove(v / self.storage.get().sample_size)
+                    {
+                        fail!(from self, with ZeroCopySendError::ConnectionCorrupted,
                         "{} since an invalid offset was returned on overflow.", msg);
+                    }
+
+                    Ok(Some(PointerOffset::new(v)))
                 }
-
-                Ok(Some(PointerOffset::new(v)))
+                None => Ok(None),
             }
-            None => Ok(None),
-        }
-    }
-
-    fn blocking_send(
-        &self,
-        ptr: PointerOffset,
-    ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
-        if !self.storage.get().enable_safe_overflow {
-            AdaptiveWaitBuilder::new()
-                .create()
-                .unwrap()
-                .wait_while(|| self.storage.get().submission_channel.is_full())
-                .unwrap();
         }
 
-        self.try_send(ptr)
-    }
+        fn blocking_send(
+            &self,
+            ptr: PointerOffset,
+        ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
+            if !self.storage.get().enable_safe_overflow {
+                AdaptiveWaitBuilder::new()
+                    .create()
+                    .unwrap()
+                    .wait_while(|| self.storage.get().submission_channel.is_full())
+                    .unwrap();
+            }
 
-    fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
-        match unsafe { self.storage.get().completion_channel.pop() } {
-            None => Ok(None),
-            Some(v) => {
-                if !self
-                    .storage
-                    .get()
-                    .used_chunk_list
-                    .remove(v / self.storage.get().sample_size)
-                {
-                    fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedOffset,
+            self.try_send(ptr)
+        }
+
+        fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
+            match unsafe { self.storage.get().completion_channel.pop() } {
+                None => Ok(None),
+                Some(v) => {
+                    if !self
+                        .storage
+                        .get()
+                        .used_chunk_list
+                        .remove(v / self.storage.get().sample_size)
+                    {
+                        fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedOffset,
                         "Unable to reclaim sample since the receiver returned the corrupted offset {}.", v);
+                    }
+                    Ok(Some(PointerOffset::new(v)))
                 }
-                Ok(Some(PointerOffset::new(v)))
+            }
+        }
+
+        unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, mut callback: F) {
+            let sample_size = self.storage.get().sample_size;
+            self.storage
+                .get()
+                .used_chunk_list
+                .remove_all(|index| callback(PointerOffset::new(index * sample_size)));
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct Receiver<Storage: DynamicStorage<SharedManagementData>> {
+        storage: Storage,
+        borrow_counter: UnsafeCell<usize>,
+        name: FileName,
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> Drop for Receiver<Storage> {
+        fn drop(&mut self) {
+            cleanup_shared_memory(&self.storage, State::Receiver);
+        }
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> Receiver<Storage> {
+        #[allow(clippy::mut_from_ref)]
+        // convenience to access internal mutable object
+        fn borrow_counter(&self) -> &mut usize {
+            #[deny(clippy::mut_from_ref)]
+            unsafe {
+                &mut *self.borrow_counter.get()
             }
         }
     }
 
-    unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, mut callback: F) {
-        let sample_size = self.storage.get().sample_size;
-        self.storage
-            .get()
-            .used_chunk_list
-            .remove_all(|index| callback(PointerOffset::new(index * sample_size)));
-    }
-}
-
-#[derive(Debug)]
-pub struct Receiver {
-    storage: Storage,
-    borrow_counter: UnsafeCell<usize>,
-    name: FileName,
-}
-
-impl Drop for Receiver {
-    fn drop(&mut self) {
-        cleanup_shared_memory(&self.storage, State::Receiver);
-    }
-}
-
-impl Receiver {
-    #[allow(clippy::mut_from_ref)]
-    // convenience to access internal mutable object
-    fn borrow_counter(&self) -> &mut usize {
-        #[deny(clippy::mut_from_ref)]
-        unsafe {
-            &mut *self.borrow_counter.get()
+    impl<Storage: DynamicStorage<SharedManagementData>> NamedConcept for Receiver<Storage> {
+        fn name(&self) -> &FileName {
+            &self.name
         }
     }
-}
 
-impl NamedConcept for Receiver {
-    fn name(&self) -> &FileName {
-        &self.name
+    impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyPortDetails for Receiver<Storage> {
+        fn buffer_size(&self) -> usize {
+            self.storage.get().submission_channel.capacity()
+        }
+
+        fn max_borrowed_samples(&self) -> usize {
+            self.storage.get().max_borrowed_samples
+        }
+
+        fn has_enabled_safe_overflow(&self) -> bool {
+            self.storage.get().enable_safe_overflow
+        }
+
+        fn is_connected(&self) -> bool {
+            self.storage.get().state.load(Ordering::Relaxed)
+                == State::Sender.value() | State::Receiver.value()
+        }
     }
-}
 
-impl ZeroCopyPortDetails for Receiver {
-    fn buffer_size(&self) -> usize {
-        self.storage.get().submission_channel.capacity()
-    }
-
-    fn max_borrowed_samples(&self) -> usize {
-        self.storage.get().max_borrowed_samples
-    }
-
-    fn has_enabled_safe_overflow(&self) -> bool {
-        self.storage.get().enable_safe_overflow
-    }
-
-    fn is_connected(&self) -> bool {
-        self.storage.get().state.load(Ordering::Relaxed)
-            == State::Sender.value() | State::Receiver.value()
-    }
-}
-
-impl ZeroCopyReceiver for Receiver {
-    fn receive(&self) -> Result<Option<PointerOffset>, ZeroCopyReceiveError> {
-        if *self.borrow_counter() >= self.storage.get().max_borrowed_samples {
-            fail!(from self, with ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue,
+    impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyReceiver for Receiver<Storage> {
+        fn receive(&self) -> Result<Option<PointerOffset>, ZeroCopyReceiveError> {
+            if *self.borrow_counter() >= self.storage.get().max_borrowed_samples {
+                fail!(from self, with ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue,
                 "Unable to receive another sample since already {} samples were borrowed and this would exceed the max borrow value of {}.",
                     self.borrow_counter(), self.max_borrowed_samples());
-        }
+            }
 
-        match unsafe { self.storage.get().submission_channel.pop() } {
-            None => Ok(None),
-            Some(v) => {
-                *self.borrow_counter() += 1;
-                Ok(Some(PointerOffset::new(v)))
+            match unsafe { self.storage.get().submission_channel.pop() } {
+                None => Ok(None),
+                Some(v) => {
+                    *self.borrow_counter() += 1;
+                    Ok(Some(PointerOffset::new(v)))
+                }
             }
         }
-    }
 
-    fn release(&self, ptr: PointerOffset) -> Result<(), ZeroCopyReleaseError> {
-        match unsafe { self.storage.get().completion_channel.push(ptr.value()) } {
-            true => {
-                *self.borrow_counter() -= 1;
-                Ok(())
-            }
-            false => {
-                fail!(from self, with ZeroCopyReleaseError::RetrieveBufferFull,
+        fn release(&self, ptr: PointerOffset) -> Result<(), ZeroCopyReleaseError> {
+            match unsafe { self.storage.get().completion_channel.push(ptr.value()) } {
+                true => {
+                    *self.borrow_counter() -= 1;
+                    Ok(())
+                }
+                false => {
+                    fail!(from self, with ZeroCopyReleaseError::RetrieveBufferFull,
                     "Unable to release pointer since the retrieve buffer is full.");
+                }
             }
         }
     }
-}
 
-#[derive(Debug)]
-pub struct Connection {}
+    #[derive(Debug)]
+    pub struct Connection<Storage: DynamicStorage<SharedManagementData>> {
+        _data: PhantomData<Storage>,
+    }
 
-impl NamedConceptMgmt for Connection {
-    type Configuration = Configuration;
+    impl<Storage: DynamicStorage<SharedManagementData>> NamedConceptMgmt for Connection<Storage> {
+        type Configuration = Configuration<Storage>;
 
-    fn does_exist_cfg(
-        name: &FileName,
-        cfg: &Self::Configuration,
-    ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-        Ok(
-            fail!(from "posix_shared_memory::ZeroCopyConnection::does_exist_cfg()",
+        fn does_exist_cfg(
+            name: &FileName,
+            cfg: &Self::Configuration,
+        ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
+            Ok(
+                fail!(from "posix_shared_memory::ZeroCopyConnection::does_exist_cfg()",
                     when Storage::does_exist_cfg(name, &cfg.convert()),
                     "Failed to check if ZeroCopyConnection \"{}\" exists.",
                     name),
-        )
-    }
+            )
+        }
 
-    fn list_cfg(
-        cfg: &Self::Configuration,
-    ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
-        Ok(
-            fail!(from "posix_shared_memory::ZeroCopyConnection::list_cfg()",
+        fn list_cfg(
+            cfg: &Self::Configuration,
+        ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
+            Ok(
+                fail!(from "posix_shared_memory::ZeroCopyConnection::list_cfg()",
                     when Storage::list_cfg(&cfg.convert()),
                     "Failed to list all ZeroCopyConnections."),
-        )
-    }
+            )
+        }
 
-    unsafe fn remove_cfg(
-        name: &FileName,
-        cfg: &Self::Configuration,
-    ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        Ok(
-            fail!(from "posix_shared_memory::ZeroCopyConnection::remove_cfg()",
+        unsafe fn remove_cfg(
+            name: &FileName,
+            cfg: &Self::Configuration,
+        ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
+            Ok(
+                fail!(from "posix_shared_memory::ZeroCopyConnection::remove_cfg()",
                     when Storage::remove_cfg(name, &cfg.convert()),
                     "Failed to remove ZeroCopyConnection \"{}\".", name),
-        )
-    }
-}
-
-impl ZeroCopyConnection for Connection {
-    type Sender = Sender;
-    type Builder = Builder;
-    type Receiver = Receiver;
-
-    fn does_support_safe_overflow() -> bool {
-        true
+            )
+        }
     }
 
-    fn has_configurable_buffer_size() -> bool {
-        true
+    impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyConnection for Connection<Storage> {
+        type Sender = Sender<Storage>;
+        type Builder = Builder<Storage>;
+        type Receiver = Receiver<Storage>;
+
+        fn does_support_safe_overflow() -> bool {
+            true
+        }
+
+        fn has_configurable_buffer_size() -> bool {
+            true
+        }
     }
 }
