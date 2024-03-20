@@ -44,6 +44,7 @@
     * Adjust test to handle unordered event notifications
  * Fix non UTF-8 windows platform error messages [#145](https://github.com/eclipse-iceoryx/iceoryx2/issues/145)
  * Correct inconsistent default config entries for windows [#149](https://github.com/eclipse-iceoryx/iceoryx2/issues/149)
+ * Fix that drop is not called when DynamicStorage is destroyed [#160](https://github.com/eclipse-iceoryx/iceoryx2/issues/160)
 
 ### Refactoring
 
@@ -53,6 +54,7 @@
  * Remove `'config` lifetime from all structs  [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
  * Remove `UniqueIndex` returning method from `iceoryx2-bb-lock-free::mpmc::Container`, cannot be implemented correctly in our context [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
  * All `iceoryx2-cal::shared_memory` implementations use a `DynamicStorage` concept as base [#153](https://github.com/eclipse-iceoryx/iceoryx2/issues/153)
+ * Hardening DynamicStorage, storages with distinct types cannot be opened [#160](https://github.com/eclipse-iceoryx/iceoryx2/issues/160)
 
 ### Workflow
 
