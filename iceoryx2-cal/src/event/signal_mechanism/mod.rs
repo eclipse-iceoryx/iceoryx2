@@ -21,7 +21,7 @@ pub trait SignalMechanism {
     fn init(&mut self) -> Result<(), ListenerCreateError>;
 
     fn notify(&self) -> Result<(), NotifierNotifyError>;
-    fn try_wait(&self) -> Result<(), ListenerWaitError>;
-    fn timed_wait(&self, timeout: Duration) -> Result<(), ListenerWaitError>;
+    fn try_wait(&self) -> Result<bool, ListenerWaitError>;
+    fn timed_wait(&self, timeout: Duration) -> Result<bool, ListenerWaitError>;
     fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
 }

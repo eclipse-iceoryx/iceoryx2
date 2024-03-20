@@ -12,7 +12,7 @@
 
 pub mod id_tracker;
 pub mod process_local;
-pub mod signal;
+pub mod signal_mechanism;
 pub mod unix_datagram_socket;
 
 use std::{fmt::Debug, time::Duration};

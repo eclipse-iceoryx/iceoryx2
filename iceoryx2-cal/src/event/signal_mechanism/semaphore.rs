@@ -59,27 +59,24 @@ impl SignalMechanism for Semaphore {
         Ok(())
     }
 
-    fn try_wait(&self) -> Result<(), ListenerWaitError> {
-        fail!(from self, when self.semaphore().try_wait(),
+    fn try_wait(&self) -> Result<bool, ListenerWaitError> {
+        Ok(fail!(from self, when self.semaphore().try_wait(),
             with ListenerWaitError::InternalFailure,
-            "Failed to dedcrement underlying semaphore.");
-        Ok(())
+            "Failed to dedcrement underlying semaphore."))
     }
 
     fn timed_wait(
         &self,
         timeout: std::time::Duration,
-    ) -> Result<(), crate::event::ListenerWaitError> {
-        fail!(from self, when self.semaphore().timed_wait(timeout),
+    ) -> Result<bool, crate::event::ListenerWaitError> {
+        Ok(fail!(from self, when self.semaphore().timed_wait(timeout),
             with ListenerWaitError::InternalFailure,
-            "Failed to dedcrement underlying semaphore.");
-        Ok(())
+            "Failed to dedcrement underlying semaphore."))
     }
 
     fn blocking_wait(&self) -> Result<(), crate::event::ListenerWaitError> {
-        fail!(from self, when self.semaphore().wait(),
+        Ok(fail!(from self, when self.semaphore().wait(),
             with ListenerWaitError::InternalFailure,
-            "Failed to dedcrement underlying semaphore.");
-        Ok(())
+            "Failed to dedcrement underlying semaphore."))
     }
 }
