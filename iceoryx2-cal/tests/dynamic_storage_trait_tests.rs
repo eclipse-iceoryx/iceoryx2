@@ -584,6 +584,66 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        let storage_name = generate_name();
+        let sut = WrongTypeSut::Builder::new(&storage_name).create(123);
+        assert_that!(sut, is_ok);
+        assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
+    }
+
+    #[test]
+    fn different_types_are_separated_also_in_list<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
+        const NUMBER_OF_TESTDATA_STORAGES: usize = 10;
+        const NUMBER_OF_U64_STORAGES: usize = 15;
+
+        let mut testdata_storages = vec![];
+        let mut testdata_storages_names = vec![];
+        let mut u64_storages = vec![];
+        let mut u64_storages_names = vec![];
+
+        for _ in 0..NUMBER_OF_TESTDATA_STORAGES {
+            let storage_name = generate_name();
+            testdata_storages.push(
+                Sut::Builder::new(&storage_name)
+                    .create(TestData::new(123))
+                    .unwrap(),
+            );
+            testdata_storages_names.push(storage_name);
+
+            u64_storages.push(
+                WrongTypeSut::Builder::new(&storage_name)
+                    .create(34)
+                    .unwrap(),
+            );
+
+            u64_storages_names.push(storage_name);
+        }
+
+        for _ in 0..NUMBER_OF_U64_STORAGES {
+            let storage_name = generate_name();
+            u64_storages.push(
+                WrongTypeSut::Builder::new(&storage_name)
+                    .create(21)
+                    .unwrap(),
+            );
+            u64_storages_names.push(storage_name);
+        }
+
+        let testdata_list = Sut::list().unwrap();
+        let u64_list = WrongTypeSut::list().unwrap();
+
+        assert_that!(testdata_list, len testdata_storages.len());
+        assert_that!(u64_list, len u64_storages.len());
+
+        for name in testdata_list {
+            assert_that!(testdata_storages_names, contains name);
+        }
+
+        for name in u64_list {
+            assert_that!(u64_storages_names, contains name);
+        }
     }
 
     #[test]
@@ -591,6 +651,12 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        let storage_name = generate_name();
+        let _sut = Sut::Builder::new(&storage_name)
+            .create(TestData::new(1234))
+            .unwrap();
+        let sut = WrongTypeSut::Builder::new(&storage_name).open();
+        assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
 
     #[test]
@@ -598,6 +664,11 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        let storage_name = generate_name();
+        let _sut = Sut::Builder::new(&storage_name)
+            .create(TestData::new(1234))
+            .unwrap();
+        assert_that!(unsafe { WrongTypeSut::remove(&storage_name) }, eq Ok(false));
     }
 
     #[instantiate_tests(<iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>,

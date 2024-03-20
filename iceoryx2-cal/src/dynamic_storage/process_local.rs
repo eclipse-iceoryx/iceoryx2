@@ -129,6 +129,14 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     fn get_path_hint(&self) -> &Path {
         &self.path_hint
     }
+
+    fn path_for(&self, value: &FileName) -> iceoryx2_bb_system_types::file_path::FilePath {
+        self.path_for_with_type(value)
+    }
+
+    fn extract_name_from_file(&self, value: &FileName) -> Option<FileName> {
+        self.extract_name_from_file_with_type(value)
+    }
 }
 
 impl<T> StorageDetails<T> {
