@@ -17,6 +17,7 @@ mod dynamic_storage {
     use iceoryx2_bb_elementary::math::ToB64;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
@@ -34,6 +35,7 @@ mod dynamic_storage {
         value: AtomicI64,
         supplementary_ptr: *mut u8,
         supplementary_len: usize,
+        _lifetime_tracker: LifetimeTracker,
     }
 
     impl TestData {
@@ -42,6 +44,7 @@ mod dynamic_storage {
                 value: AtomicI64::new(value),
                 supplementary_ptr: std::ptr::null_mut::<u8>(),
                 supplementary_len: 0,
+                _lifetime_tracker: LifetimeTracker::new(),
             }
         }
     }
@@ -461,6 +464,68 @@ mod dynamic_storage {
         drop(sut_1);
         assert_that!(Sut::does_exist(&sut_name), eq Ok(false));
     }
+
+    #[test]
+    fn when_storage_is_removed_it_calls_drop<Sut: DynamicStorage<TestData>>() {
+        let storage_name = generate_name();
+
+        LifetimeTracker::start_tracking();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .create(TestData::new(123))
+            .unwrap();
+
+        assert_that!(sut.has_ownership(), eq true);
+        drop(sut);
+
+        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+    }
+
+    #[test]
+    fn when_storage_is_persistent_it_does_not_call_drop<Sut: DynamicStorage<TestData>>() {
+        if Sut::does_support_persistency() {
+            let storage_name = generate_name();
+
+            LifetimeTracker::start_tracking();
+
+            let sut = Sut::Builder::new(&storage_name)
+                .create(TestData::new(123))
+                .unwrap();
+            sut.release_ownership();
+            drop(sut);
+
+            assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
+        }
+    }
+
+    #[test]
+    fn explicit_remove_of_persistent_storage_calls_drop<Sut: DynamicStorage<TestData>>() {
+        let storage_name = generate_name();
+
+        LifetimeTracker::start_tracking();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .create(TestData::new(123))
+            .unwrap();
+        sut.release_ownership();
+        // it leaks a memory mapping here but this we want explicitly to test remove also
+        // for platforms that do not support persistent dynamic storage
+        std::mem::forget(sut);
+
+        assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
+        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+    }
+
+    #[test]
+    fn remove_storage_with_unfinished_initialization_does_not_call_drop<
+        Sut: DynamicStorage<TestData>,
+    >() {
+    }
+
+    #[test]
+    fn opening_dynamic_storage_with_wrong_type_fails<Sut: DynamicStorage<TestData>>() {}
+
+    fn removing_dynamic_storage_with_wrong_type_fails<Sut: DynamicStorage<TestData>>() {}
 
     #[instantiate_tests(<iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>>)]
     mod posix_shared_memory {}
