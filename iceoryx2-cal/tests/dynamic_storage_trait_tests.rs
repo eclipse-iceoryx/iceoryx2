@@ -21,7 +21,9 @@ mod dynamic_storage {
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
+    use std::process::Termination;
     use std::sync::atomic::{AtomicI64, Ordering};
+    use std::sync::Barrier;
 
     fn generate_name() -> FileName {
         let mut file = FileName::new(b"test_").unwrap();
@@ -495,6 +497,7 @@ mod dynamic_storage {
             drop(sut);
 
             assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
+            assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
         }
     }
 
@@ -518,8 +521,27 @@ mod dynamic_storage {
 
     #[test]
     fn remove_storage_with_unfinished_initialization_does_not_call_drop<
-        Sut: DynamicStorage<TestData>,
+        Sut: DynamicStorage<TestData> + 'static,
     >() {
+        if std::any::TypeId::of::<Sut>()
+            // skip process local test since the process locality ensures that an initializer
+            // never dies
+            != std::any::TypeId::of::<iceoryx2_cal::dynamic_storage::process_local::Storage<TestData>>(
+            )
+        {
+            let storage_name = generate_name();
+            LifetimeTracker::start_tracking();
+
+            let _ = Sut::Builder::new(&storage_name)
+                .has_ownership(false)
+                .initializer(|_, _| {
+                    assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
+                    false
+                })
+                .create(TestData::new(0));
+
+            assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
+        }
     }
 
     #[test]
