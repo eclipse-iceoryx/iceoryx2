@@ -132,8 +132,6 @@ impl<T> StorageDetails<T> {
 
 impl<T> Drop for StorageDetails<T> {
     fn drop(&mut self) {
-        unsafe { std::ptr::drop_in_place(self.data_ptr) };
-
         unsafe {
             HeapAllocator::new().deallocate(
                 NonNull::new_unchecked(self.data_ptr as *mut u8),
@@ -223,12 +221,26 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
         let msg = "Unable to remove dynamic_storage::process_local";
         let origin = "dynamic_storage::process_local::Storage::remove_cfg()";
 
-        let guard = PROCESS_LOCAL_STORAGE.lock();
-        if guard.is_err() {
-            fatal_panic!(from origin, "{} since the lock could not be acquired.", msg);
+        let mut guard = fatal_panic!(from origin, when PROCESS_LOCAL_STORAGE.lock()
+                                , "{} since the lock could not be acquired.", msg);
+
+        let mut entry = guard.get_mut(&storage_name);
+        if entry.is_none() {
+            return Ok(false);
         }
 
-        Ok(guard.unwrap().remove(&storage_name).is_some())
+        std::ptr::drop_in_place(
+            entry
+                .as_mut()
+                .unwrap()
+                .content
+                .clone()
+                .downcast::<StorageDetails<T>>()
+                .unwrap()
+                .data_ptr,
+        );
+
+        Ok(guard.remove(&storage_name).is_some())
     }
 }
 

@@ -41,6 +41,7 @@
 //! ```
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::warn;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
@@ -354,10 +355,19 @@ impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storag
 /// Implements [`DynamicStorage`] for POSIX shared memory. It is built by
 /// [`Builder`].
 #[derive(Debug)]
-pub struct Storage<T> {
+pub struct Storage<T: Debug + Send + Sync> {
     shm: SharedMemory,
     name: FileName,
     _phantom_data: PhantomData<T>,
+}
+
+impl<T: Debug + Send + Sync> Drop for Storage<T> {
+    fn drop(&mut self) {
+        if self.shm.has_ownership() {
+            let data = unsafe { &mut (*(self.shm.base_address().as_ptr() as *mut Data<T>)).data };
+            unsafe { core::ptr::drop_in_place(data) };
+        }
+    }
 }
 
 impl<T: Send + Sync + Debug> NamedConcept for Storage<T> {
@@ -403,17 +413,30 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
         let msg = "Unable to remove dynamic_storage::posix_shared_memory";
         let origin = "dynamic_storage::posix_shared_memory::Storage::remove_cfg()";
 
-        match iceoryx2_bb_posix::shared_memory::SharedMemory::remove(&full_name) {
-            Ok(v) => Ok(v),
-            Err(
-                iceoryx2_bb_posix::shared_memory::SharedMemoryRemoveError::InsufficientPermissions,
-            ) => {
-                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
-                             "{} \"{}\" due to insufficient permissions.", msg, name);
+        match Builder::<T>::new(name).config(cfg).open() {
+            Ok(s) => {
+                s.acquire_ownership();
+                Ok(true)
             }
-            Err(v) => {
-                fail!(from origin, with NamedConceptRemoveError::InternalError,
-                            "{} \"{}\" due to an internal failure ({:?}).", msg, name, v);
+            Err(DynamicStorageOpenError::DoesNotExist) => Ok(false),
+            Err(e) => {
+                warn!(from origin,
+                    "Removing DynamicStorage in broken state ({:?}) will not call drop of the underlying data type {:?}.",
+                    e, std::any::type_name::<T>());
+
+                match iceoryx2_bb_posix::shared_memory::SharedMemory::remove(&full_name) {
+                    Ok(v) => return Ok(v),
+                    Err(
+                        iceoryx2_bb_posix::shared_memory::SharedMemoryRemoveError::InsufficientPermissions,
+                    ) => {
+                        fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+                                     "{} \"{}\" due to insufficient permissions.", msg, name);
+                    }
+                    Err(v) => {
+                        fail!(from origin, with NamedConceptRemoveError::InternalError,
+                                    "{} \"{}\" due to an internal failure ({:?}).", msg, name, v);
+                    }
+                }
             }
         }
     }
