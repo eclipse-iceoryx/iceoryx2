@@ -58,6 +58,8 @@ use crate::static_storage::file::NamedConceptRemoveError;
 use iceoryx2_bb_system_types::path::Path;
 pub use std::ops::Deref;
 
+use self::dynamic_storage_configuration::DynamicStorageConfiguration;
+
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_ALL;
 
 /// The builder of [`Storage`].
@@ -66,17 +68,29 @@ pub struct Builder<'builder, T: Send + Sync + Debug> {
     storage_name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
-    config: Configuration,
+    config: Configuration<T>,
     timeout: Duration,
     initializer: Initializer<'builder, T>,
     _phantom_data: PhantomData<T>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Configuration {
+#[derive(Debug)]
+pub struct Configuration<T: Send + Sync + Debug> {
     suffix: FileName,
     prefix: FileName,
     path: Path,
+    _data: PhantomData<T>,
+}
+
+impl<T: Send + Sync + Debug> Clone for Configuration<T> {
+    fn clone(&self) -> Self {
+        Self {
+            suffix: self.suffix,
+            prefix: self.prefix,
+            path: self.path,
+            _data: PhantomData,
+        }
+    }
 }
 
 #[repr(C)]
@@ -85,17 +99,20 @@ struct Data<T: Send + Sync + Debug> {
     data: T,
 }
 
-impl Default for Configuration {
+impl<T: Send + Sync + Debug> Default for Configuration<T> {
     fn default() -> Self {
         Self {
             path: Storage::<()>::default_path_hint(),
             suffix: Storage::<()>::default_suffix(),
             prefix: Storage::<()>::default_prefix(),
+            _data: PhantomData,
         }
     }
 }
 
-impl NamedConceptConfiguration for Configuration {
+impl<T: Send + Sync + Debug> DynamicStorageConfiguration<T> for Configuration<T> {}
+
+impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     fn prefix(mut self, value: FileName) -> Self {
         self.prefix = value;
         self
@@ -122,6 +139,14 @@ impl NamedConceptConfiguration for Configuration {
     fn get_path_hint(&self) -> &Path {
         &self.path
     }
+
+    fn path_for(&self, value: &FileName) -> iceoryx2_bb_system_types::file_path::FilePath {
+        self.path_for_with_type(value)
+    }
+
+    fn extract_name_from_file(&self, value: &FileName) -> Option<FileName> {
+        self.extract_name_from_file_with_type(value)
+    }
 }
 
 impl<'builder, T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'builder, T> {
@@ -137,7 +162,7 @@ impl<'builder, T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Build
         }
     }
 
-    fn config(mut self, config: &Configuration) -> Self {
+    fn config(mut self, config: &Configuration<T>) -> Self {
         self.config = config.clone();
         self
     }
@@ -377,7 +402,7 @@ impl<T: Send + Sync + Debug> NamedConcept for Storage<T> {
 }
 
 impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
-    type Configuration = Configuration;
+    type Configuration = Configuration<T>;
 
     fn does_exist_cfg(
         name: &FileName,

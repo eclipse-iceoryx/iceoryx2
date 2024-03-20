@@ -57,6 +57,8 @@ use std::sync::Arc;
 pub use crate::dynamic_storage::*;
 use crate::static_storage::file::NamedConceptConfiguration;
 
+use self::dynamic_storage_configuration::DynamicStorageConfiguration;
+
 #[derive(Debug)]
 struct StorageEntry {
     content: Arc<dyn Any + Send + Sync>,
@@ -68,24 +70,39 @@ struct StorageDetails<T> {
     layout: Layout,
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub struct Configuration {
+#[derive(PartialEq, Eq, Copy, Debug)]
+pub struct Configuration<T: Send + Sync + Debug> {
     suffix: FileName,
     prefix: FileName,
     path_hint: Path,
+    _data: PhantomData<T>,
 }
 
-impl Default for Configuration {
+impl<T: Send + Sync + Debug> Clone for Configuration<T> {
+    fn clone(&self) -> Self {
+        Self {
+            suffix: self.suffix,
+            prefix: self.prefix,
+            path_hint: self.path_hint,
+            _data: PhantomData,
+        }
+    }
+}
+
+impl<T: Send + Sync + Debug> Default for Configuration<T> {
     fn default() -> Self {
         Self {
             suffix: Storage::<()>::default_suffix(),
             prefix: Storage::<()>::default_prefix(),
             path_hint: Storage::<()>::default_path_hint(),
+            _data: PhantomData,
         }
     }
 }
 
-impl NamedConceptConfiguration for Configuration {
+impl<T: Send + Sync + Debug> DynamicStorageConfiguration<T> for Configuration<T> {}
+
+impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     fn prefix(mut self, value: FileName) -> Self {
         self.prefix = value;
         self
@@ -163,7 +180,7 @@ pub struct Storage<T: Send + Sync + Debug + 'static> {
     name: FileName,
     data: Arc<StorageDetails<T>>,
     has_ownership: AtomicBool,
-    config: Configuration,
+    config: Configuration<T>,
 }
 
 impl<T: Send + Sync + Debug + 'static> NamedConcept for Storage<T> {
@@ -173,7 +190,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConcept for Storage<T> {
 }
 
 impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
-    type Configuration = Configuration;
+    type Configuration = Configuration<T>;
 
     fn does_exist_cfg(
         name: &FileName,
@@ -286,7 +303,7 @@ pub struct Builder<'builder, T: Send + Sync + Debug> {
     name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
-    config: Configuration,
+    config: Configuration<T>,
     initializer: Initializer<'builder, T>,
     _phantom_data: PhantomData<T>,
 }
@@ -305,8 +322,8 @@ impl<'builder, T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>>
         }
     }
 
-    fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+    fn config(mut self, config: &Configuration<T>) -> Self {
+        self.config = config.clone();
         self
     }
 }
@@ -335,7 +352,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
                 .downcast::<StorageDetails<T>>()
                 .unwrap(),
             has_ownership: AtomicBool::new(false),
-            config: self.config,
+            config: self.config.clone(),
         })
     }
 
@@ -393,7 +410,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
                 .downcast::<StorageDetails<T>>()
                 .unwrap(),
             has_ownership: AtomicBool::new(self.has_ownership),
-            config: self.config,
+            config: self.config.clone(),
         })
     }
 }
