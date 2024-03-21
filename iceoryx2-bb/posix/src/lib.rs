@@ -51,6 +51,7 @@ pub mod file_descriptor_set;
 pub mod file_lock;
 pub mod file_type;
 pub mod group;
+pub mod ipc_capable;
 pub mod memory;
 pub mod memory_lock;
 pub mod message_queue;
