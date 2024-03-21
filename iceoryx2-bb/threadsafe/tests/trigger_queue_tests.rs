@@ -16,6 +16,7 @@ use std::time::Duration;
 
 use iceoryx2_bb_posix::clock::{nanosleep, Time};
 use iceoryx2_bb_posix::mutex::MutexHandle;
+use iceoryx2_bb_posix::semaphore::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_threadsafe::trigger_queue::*;

@@ -406,7 +406,7 @@ fn unnamed_semaphore_multiple_ipc_semaphores_are_working() {
         .create(&handle)
         .unwrap();
 
-    let sut2 = UnnamedSemaphore::from_ipc_handle(&handle).unwrap();
+    let sut2 = unsafe { UnnamedSemaphore::from_ipc_handle(&handle) };
 
     assert_that!(sut1.post(), is_ok);
     assert_that!(sut2.try_wait().unwrap(), eq true);
@@ -418,35 +418,15 @@ fn unnamed_semaphore_multiple_ipc_semaphores_are_working() {
 }
 
 #[test]
+#[should_panic]
 fn unnamed_semaphore_acquire_uninitialized_ipc_handle_failes() {
     let handle = UnnamedSemaphoreHandle::new();
 
-    let sut = UnnamedSemaphore::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(*sut.as_ref().err().unwrap(), eq AcquireIpcHandleError::Uninitialized);
-
-    let sut1 = UnnamedSemaphoreBuilder::new()
-        .is_interprocess_capable(true)
-        .create(&handle)
-        .unwrap();
-
-    let sut2 = UnnamedSemaphore::from_ipc_handle(&handle);
-    assert_that!(sut2, is_ok);
-
-    drop(sut1);
-
-    let sut3 = UnnamedSemaphore::from_ipc_handle(&handle);
-    assert_that!(sut3, is_ok);
-
-    drop(sut2);
-    drop(sut3);
-
-    let sut = UnnamedSemaphore::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(*sut.as_ref().err().unwrap(), eq AcquireIpcHandleError::Uninitialized);
+    unsafe { UnnamedSemaphore::from_ipc_handle(&handle) };
 }
 
 #[test]
+#[should_panic]
 fn unnamed_semaphore_acquiring_non_ipc_capable_handle_fails() {
     let handle = UnnamedSemaphoreHandle::new();
     let _sut1 = UnnamedSemaphoreBuilder::new()
@@ -454,10 +434,5 @@ fn unnamed_semaphore_acquiring_non_ipc_capable_handle_fails() {
         .create(&handle)
         .unwrap();
 
-    let sut = UnnamedSemaphore::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(
-        *sut.as_ref().err().unwrap(), eq
-        AcquireIpcHandleError::IsNotInterProcessCapable
-    );
+    unsafe { UnnamedSemaphore::from_ipc_handle(&handle) };
 }

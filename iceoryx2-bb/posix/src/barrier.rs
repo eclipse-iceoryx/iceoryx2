@@ -219,4 +219,8 @@ impl<'a> IpcConstructible<'a, BarrierHandle> for Barrier<'a> {
     }
 }
 
-impl<'a> IpcCapable<'a, BarrierHandle> for Barrier<'a> {}
+impl<'a> IpcCapable<'a, BarrierHandle> for Barrier<'a> {
+    fn is_interprocess_capable(&self) -> bool {
+        self.handle.is_inter_process_capable()
+    }
+}

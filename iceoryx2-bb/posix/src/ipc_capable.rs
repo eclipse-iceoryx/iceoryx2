@@ -144,9 +144,11 @@ pub trait Handle: Send + Sync {
     fn state(&self) -> HandleState;
 }
 
-/// Every struct that implements this trait is inter-process capable without any restriction,
-/// meaning there is no configuration/variation that is not inter-process capable.
+/// Represents struct that can be configured for inter-process use.
 pub trait IpcCapable<'a, T: Handle>: internal::IpcConstructible<'a, T> + Sized {
+    /// Returns true if the object is interprocess capable, otherwise false
+    fn is_interprocess_capable(&self) -> bool;
+
     /// Creates an IPC Capable object from its handle.
     ///
     /// # Safety
