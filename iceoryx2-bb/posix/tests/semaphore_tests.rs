@@ -15,7 +15,6 @@ use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::semaphore::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_posix::unmovable_ipc_handle::AcquireIpcHandleError;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;

@@ -45,17 +45,16 @@
 //!     None => println!("Timeout occurred while trying to get lock.")
 //! };
 //! ```
-pub use crate::unmovable_ipc_handle::internal::CreateIpcConstruct;
-pub use crate::unmovable_ipc_handle::IpcCapable;
-use crate::unmovable_ipc_handle::IpcHandleState;
+pub use crate::ipc_capable::{Handle, IpcCapable};
 
+use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
+use crate::ipc_capable::HandleState;
 use iceoryx2_bb_elementary::scope_guard::*;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::*;
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::time::Duration;
 
 use crate::adaptive_wait::*;
@@ -343,32 +342,11 @@ impl MutexBuilder {
         self
     }
 
-    /// Creates a new mutex with a guarded value.
-    pub fn create<T: Debug>(
-        self,
-        t: T,
-        handle: &MutexHandle<T>,
-    ) -> Result<Mutex<T>, MutexCreationError> {
+    fn initialize_mutex<T: Debug>(
+        &self,
+        mutex: *mut posix::pthread_mutex_t,
+    ) -> Result<Capability, MutexCreationError> {
         let msg = "Unable to create mutex";
-        if handle
-            .reference_counter
-            .compare_exchange(
-                IpcHandleState::Uninitialized as _,
-                IpcHandleState::PerformingInitialization as _,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            )
-            .is_err()
-        {
-            fail!(from self, with MutexCreationError::HandleAlreadyInitialized,
-                "{} since the handle is already initialized with another mutex.", msg);
-        }
-
-        unsafe { *handle.clock_type.get() = self.clock_type };
-        unsafe { *handle.value.get() = Some(t) };
-        handle
-            .is_interprocess_capable
-            .store(self.is_interprocess_capable, Ordering::Relaxed);
 
         let mut mutex_attributes = ScopeGuardBuilder::new(posix::pthread_mutexattr_t::new())
             .on_init(
@@ -450,7 +428,7 @@ impl MutexBuilder {
             );
         }
 
-        match unsafe { posix::pthread_mutex_init(handle.as_ptr(), mutex_attributes.get()) }.into() {
+        match unsafe { posix::pthread_mutex_init(mutex, mutex_attributes.get()) }.into() {
             Errno::ESUCCES => (),
             Errno::ENOMEM => {
                 fail!(from self, with MutexCreationError::InsufficientMemory, "{} due to insufficient memory.", msg);
@@ -471,9 +449,26 @@ impl MutexBuilder {
             }
         };
 
-        handle
-            .reference_counter
-            .store(IpcHandleState::Initialized as _, Ordering::Release);
+        match self.is_interprocess_capable {
+            true => Ok(Capability::InterProcess),
+            false => Ok(Capability::ProcessLocal),
+        }
+    }
+
+    /// Creates a new mutex with a guarded value.
+    pub fn create<T: Debug>(
+        self,
+        t: T,
+        handle: &MutexHandle<T>,
+    ) -> Result<Mutex<T>, MutexCreationError> {
+        unsafe {
+            handle
+                .handle
+                .initialize(|mtx| self.initialize_mutex::<T>(mtx))?
+        };
+
+        unsafe { *handle.clock_type.get() = self.clock_type };
+        unsafe { *handle.value.get() = Some(t) };
 
         Ok(Mutex::new(handle))
     }
@@ -481,49 +476,48 @@ impl MutexBuilder {
 
 #[derive(Debug)]
 pub struct MutexHandle<T: Sized + Debug> {
-    handle: UnsafeCell<posix::pthread_mutex_t>,
+    pub(crate) handle: HandleStorage<posix::pthread_mutex_t>,
     clock_type: UnsafeCell<ClockType>,
-    is_interprocess_capable: AtomicBool,
     value: UnsafeCell<Option<T>>,
-    reference_counter: AtomicI64,
 }
 
 unsafe impl<T: Sized + Debug> Send for MutexHandle<T> {}
 unsafe impl<T: Sized + Debug> Sync for MutexHandle<T> {}
 
-impl<T: Sized + Debug> crate::unmovable_ipc_handle::internal::UnmovableIpcHandle
-    for MutexHandle<T>
-{
-    fn reference_counter(&self) -> &std::sync::atomic::AtomicI64 {
-        &self.reference_counter
-    }
-
-    fn is_interprocess_capable(&self) -> bool {
-        self.is_interprocess_capable.load(Ordering::Relaxed)
-    }
-}
-
-impl<T: Sized + Debug> Default for MutexHandle<T> {
-    fn default() -> Self {
-        Self {
-            handle: UnsafeCell::new(posix::pthread_mutex_t::new()),
-            clock_type: UnsafeCell::new(ClockType::default()),
-            is_interprocess_capable: AtomicBool::new(false),
-            value: UnsafeCell::new(None),
-            reference_counter: AtomicI64::new(IpcHandleState::Uninitialized as _),
+impl<T: Sized + Debug> Drop for MutexHandle<T> {
+    fn drop(&mut self) {
+        if self.handle.state() == HandleState::Initialized {
+            unsafe {
+                self.handle.cleanup(|mtx| {
+                if posix::pthread_mutex_destroy(mtx) != 0 {
+                    warn!(from self,
+                        "Unable to destroy mutex. Was it already destroyed by another instance in another process?");
+                }
+            })
+            };
         }
     }
 }
 
+impl<T: Sized + Debug> Handle for MutexHandle<T> {
+    fn new() -> Self {
+        Self {
+            handle: HandleStorage::new(posix::pthread_mutex_t::new()),
+            clock_type: UnsafeCell::new(ClockType::default()),
+            value: UnsafeCell::new(None),
+        }
+    }
+
+    fn state(&self) -> crate::ipc_capable::HandleState {
+        self.handle.state()
+    }
+
+    fn is_inter_process_capable(&self) -> bool {
+        self.handle.is_inter_process_capable()
+    }
+}
+
 impl<T: Sized + Debug> MutexHandle<T> {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub(crate) fn as_ptr(&self) -> *mut posix::pthread_mutex_t {
-        self.handle.get()
-    }
-
     fn clock_type(&self) -> ClockType {
         unsafe { *self.clock_type.get() }
     }
@@ -566,32 +560,19 @@ pub struct Mutex<'a, T: Sized + Debug> {
 unsafe impl<T: Sized + Send + Debug> Send for Mutex<'_, T> {}
 unsafe impl<T: Sized + Send + Debug> Sync for Mutex<'_, T> {}
 
-impl<T: Sized + Debug> Drop for Mutex<'_, T> {
-    fn drop(&mut self) {
-        if self.handle.reference_counter.fetch_sub(1, Ordering::AcqRel) == 1 {
-            if unsafe { posix::pthread_mutex_destroy(self.handle.as_ptr()) } != 0 {
-                fatal_panic!(from self, "This should never happen! Failed to destroy mutex handle - possible leak?");
-            }
-
-            self.handle.reference_counter.store(-1, Ordering::Release);
-        }
-    }
-}
-
-impl<'a, T: Debug> CreateIpcConstruct<'a, MutexHandle<T>> for Mutex<'a, T> {
+impl<'a, T: Debug> IpcConstructible<'a, MutexHandle<T>> for Mutex<'a, T> {
     fn new(handle: &'a MutexHandle<T>) -> Self {
         Self { handle }
     }
 }
 
-impl<'a, T: Debug> IpcCapable<'a, MutexHandle<T>> for Mutex<'a, T> {}
+impl<'a, T: Debug> IpcCapable<'a, MutexHandle<T>> for Mutex<'a, T> {
+    fn is_interprocess_capable(&self) -> bool {
+        self.handle.is_inter_process_capable()
+    }
+}
 
 impl<'a, T: Debug> Mutex<'a, T> {
-    /// Returns true if the mutex can be used in an inter-process context, otherwise false
-    pub fn is_interprocess_capable(&self) -> bool {
-        self.handle.is_interprocess_capable.load(Ordering::Relaxed)
-    }
-
     /// Blocks until the ownership of the lock could be acquired. If it was successful it returns a
     /// [`MutexGuard`] to allow access to the underlying value.
     /// If the previously owning thread has died and
@@ -603,7 +584,7 @@ impl<'a, T: Debug> Mutex<'a, T> {
     pub fn lock(&self) -> Result<MutexGuard<'_, '_, T>, MutexLockError<'_, '_, T>> {
         let msg = "Failed to lock";
         handle_errno!(MutexLockError, from self,
-            errno_source unsafe { posix::pthread_mutex_lock(self.handle.as_ptr()) }.into(),
+            errno_source unsafe { posix::pthread_mutex_lock(self.handle.handle.get()) }.into(),
             success Errno::ESUCCES => MutexGuard { mutex: self },
             Errno::EAGAIN => (ExceededMaximumNumberOfRecursiveLocks, "{} since the maximum number of recursive locks exceeded.", msg),
             Errno::EDEADLK => (DeadlockDetected, "{} since the operation would lead to a deadlock.", msg),
@@ -625,7 +606,7 @@ impl<'a, T: Debug> Mutex<'a, T> {
     pub fn try_lock(&self) -> Result<Option<MutexGuard<'_, '_, T>>, MutexLockError<'_, '_, T>> {
         let msg = "Try lock failed";
         handle_errno!(MutexLockError, from self,
-            errno_source unsafe { posix::pthread_mutex_trylock(self.handle.as_ptr()) }.into(),
+            errno_source unsafe { posix::pthread_mutex_trylock(self.handle.handle.get()) }.into(),
             success Errno::ESUCCES => Some(MutexGuard { mutex: self });
             success Errno::EDEADLK => None;
             success Errno::EBUSY => None,
@@ -657,7 +638,7 @@ impl<'a, T: Debug> Mutex<'a, T> {
                     "{} due to a failure while acquiring current system time.", msg);
                 let timeout = now.as_duration() + duration;
                 handle_errno!(MutexTimedLockError, from self,
-                    errno_source unsafe { posix::pthread_mutex_timedlock(self.handle.as_ptr(), &timeout.as_timespec()) }.into(),
+                    errno_source unsafe { posix::pthread_mutex_timedlock(self.handle.handle.get(), &timeout.as_timespec()) }.into(),
                     success Errno::ESUCCES => Some(MutexGuard { mutex: self });
                     success Errno::ETIMEDOUT => None,
                     Errno::EAGAIN => (MutexLockError(MutexLockError::ExceededMaximumNumberOfRecursiveLocks), "{} since the maximum number of recursive locks exceeded.", msg),
@@ -703,7 +684,7 @@ impl<'a, T: Debug> Mutex<'a, T> {
     /// call [`Mutex::make_consistent()`] when it is repaired or to undertake other measures when
     /// it is unrepairable.
     pub fn make_consistent(&self) {
-        if unsafe { posix::pthread_mutex_consistent(self.handle.as_ptr()) } != 0 {
+        if unsafe { posix::pthread_mutex_consistent(self.handle.handle.get()) } != 0 {
             warn!(from self, "pthread_mutex_consistent has no effect since either the mutex was not a robust mutex or the mutex was not in an inconsistent state.");
         }
     }
@@ -713,7 +694,7 @@ impl<'a, T: Debug> Mutex<'a, T> {
         let mut value: i32 = 0;
         let msg = "Unable to acquire priority ceiling";
         handle_errno!(MutexGetPrioCeilingError, from self,
-            errno_source unsafe { posix::pthread_mutex_getprioceiling(self.handle.as_ptr(), &mut value) }.into(),
+            errno_source unsafe { posix::pthread_mutex_getprioceiling(self.handle.handle.get(), &mut value) }.into(),
             success Errno::ESUCCES => value,
             Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
@@ -725,7 +706,7 @@ impl<'a, T: Debug> Mutex<'a, T> {
         let mut previous_value: i32 = 0;
         let msg = "Unable to set priority ceiling";
         handle_errno!(MutexSetPrioCeilingError, from self,
-            errno_source unsafe { posix::pthread_mutex_setprioceiling(self.handle.as_ptr(), value, &mut previous_value) }.into(),
+            errno_source unsafe { posix::pthread_mutex_setprioceiling(self.handle.handle.get(), value, &mut previous_value) }.into(),
             success Errno::ESUCCES => previous_value,
             Errno::EINVAL => (ValueOutOfRange, "{} since the new priority ceiling value {} is out of range.", msg, value),
             Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
@@ -736,7 +717,7 @@ impl<'a, T: Debug> Mutex<'a, T> {
     pub(crate) fn release(&self) -> Result<(), MutexUnlockError> {
         let msg = "Unable to release lock";
         handle_errno!(MutexUnlockError, from self,
-            errno_source unsafe { posix::pthread_mutex_unlock(self.handle.as_ptr()) }.into(),
+            errno_source unsafe { posix::pthread_mutex_unlock(self.handle.handle.get()) }.into(),
             success Errno::ESUCCES => (),
             Errno::EPERM => (OwnedByDifferentEntity, "{} since the current thread/process does not own the lock", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)

@@ -26,7 +26,7 @@ use iceoryx2_bb_container::queue::FixedSizeQueue;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::{
     condition_variable::{ConditionVariable, ConditionVariableBuilder, ConditionVariableData},
-    mutex::{Mutex, MutexBuilder, MutexHandle},
+    mutex::*,
 };
 pub use iceoryx2_bb_system_types::file_name::FileName;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
