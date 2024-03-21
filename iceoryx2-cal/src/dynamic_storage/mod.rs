@@ -145,19 +145,19 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
 pub trait DynamicStorage<T: Send + Sync>: Sized + Debug + NamedConceptMgmt + NamedConcept {
     type Builder<'builder>: DynamicStorageBuilder<'builder, T, Self>;
 
-    /// Returns if the dynamic storage supports persistency, meaning that the underlying OS
-    /// resource remain even when every dynamic storage instance in every process was removed.
+    /// Returns if the [`DynamicStorage`] supports persistency, meaning that the underlying OS
+    /// resource remain even when every [`DynamicStorage`] instance in every process was removed.
     fn does_support_persistency() -> bool;
 
     /// Returns true if the storage holds the ownership, otherwise false.
     fn has_ownership(&self) -> bool;
 
-    /// Releases the ownership of the storage. When the object goes out of scope it is no longer
-    /// removed.
+    /// Releases the ownership of the [`DynamicStorage`]. When the object goes out of scope it is
+    /// no longer removed.
     fn release_ownership(&self);
 
-    /// Acquires the ownership of the storage. When the object goes out of scope the underlying
-    /// resources will be removed.
+    /// Acquires the ownership of the [`DynamicStorage`]. When the object goes out of scope the
+    /// underlying resources will be removed.
     fn acquire_ownership(&self);
 
     /// Returns a const reference to the underlying object. It is const since the [`DynamicStorage`]

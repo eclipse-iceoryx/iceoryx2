@@ -99,6 +99,9 @@ pub struct ShmPointer {
 pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
     NamedConceptBuilder<Shm>
 {
+    /// Defines if a newly created [`SharedMemory`] owns the underlying resources
+    fn has_ownership(self, value: bool) -> Self;
+
     /// Sets the size of the [`SharedMemory`]
     fn size(self, value: usize) -> Self;
 
@@ -150,9 +153,20 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
     unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout);
 
+    /// Returns if the [`SharedMemory`] supports persistency, meaning that the underlying OS
+    /// resource remain even when every [`SharedMemory`] instance in every process was removed.
+    fn does_support_persistency() -> bool;
+
+    /// Returns true if the [`SharedMemory`] holds the ownership, otherwise false
+    fn has_ownership(&self) -> bool;
+
+    /// Acquires the ownership of the [`SharedMemory`]. When the object goes out of scope the
+    /// underlying resources will be removed.
+    fn acquire_ownership(&self);
+
     /// Releases the ownership of the [`SharedMemory`] meaning when it goes out of scope the
     /// underlying resource will not be removed.
-    fn release_ownership(&mut self);
+    fn release_ownership(&self);
 
     /// The default suffix of every shared memory
     fn default_suffix() -> FileName {

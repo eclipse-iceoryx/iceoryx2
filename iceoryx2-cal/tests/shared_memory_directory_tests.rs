@@ -18,7 +18,7 @@ mod shared_memory_directory {
     use iceoryx2_bb_elementary::math::ToB64;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::shared_memory::SharedMemoryCreateError;
     use iceoryx2_cal::shared_memory_directory::SharedMemoryDirectory;
     use iceoryx2_cal::shm_allocator::ShmAllocator;
@@ -92,6 +92,10 @@ mod shared_memory_directory {
 
     #[test]
     fn persistent_directory_is_not_removed() {
+        test_requires!(
+            SharedMemoryDirectory::<MgmtShm, Allocator, DataShm>::does_support_persistency()
+        );
+
         let name = generate_name();
         {
             let _sut = SharedMemoryDirectoryCreator::new(&name)
@@ -137,14 +141,12 @@ mod shared_memory_directory {
 
         assert_that!(unsafe { SharedMemoryDirectory::<MgmtShm, Allocator, DataShm>::remove(&name) }, eq Ok(false));
 
-        {
-            let _sut = SharedMemoryDirectoryCreator::new(&name)
-                .size(1024 * 1024)
-                .is_persistent(true)
-                .create::<MgmtShm, Allocator, DataShm>(
-                    &<Allocator as ShmAllocator>::Configuration::default(),
-                );
-        }
+        let _sut = SharedMemoryDirectoryCreator::new(&name)
+            .size(1024 * 1024)
+            .is_persistent(true)
+            .create::<MgmtShm, Allocator, DataShm>(
+                &<Allocator as ShmAllocator>::Configuration::default(),
+            );
 
         assert_that!(unsafe { SharedMemoryDirectory::<MgmtShm, Allocator, DataShm>::remove(&name) }, eq Ok(true));
         assert_that!(unsafe { SharedMemoryDirectory::<MgmtShm, Allocator, DataShm>::remove(&name) }, eq Ok(false));
