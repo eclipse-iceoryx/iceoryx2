@@ -55,6 +55,7 @@
  * Remove `UniqueIndex` returning method from `iceoryx2-bb-lock-free::mpmc::Container`, cannot be implemented correctly in our context [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
  * All `iceoryx2-cal::shared_memory` implementations use a `DynamicStorage` concept as base [#153](https://github.com/eclipse-iceoryx/iceoryx2/issues/153)
  * Hardening DynamicStorage, storages with distinct types cannot be opened [#160](https://github.com/eclipse-iceoryx/iceoryx2/issues/160)
+ * IpcCapable handles explicity destroy underlying object in drop, instead of ref counting [#162](https://github.com/eclipse-iceoryx/iceoryx2/issues/162)
 
 ### Workflow
 
