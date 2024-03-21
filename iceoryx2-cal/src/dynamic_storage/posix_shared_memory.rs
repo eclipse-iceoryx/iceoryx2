@@ -450,7 +450,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
                     e, std::any::type_name::<T>());
 
                 match iceoryx2_bb_posix::shared_memory::SharedMemory::remove(&full_name) {
-                    Ok(v) => return Ok(v),
+                    Ok(v) => Ok(v),
                     Err(
                         iceoryx2_bb_posix::shared_memory::SharedMemoryRemoveError::InsufficientPermissions,
                     ) => {

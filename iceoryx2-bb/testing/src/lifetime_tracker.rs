@@ -18,11 +18,17 @@ static DROP_COUNTER: AtomicUsize = AtomicUsize::new(0);
 #[derive(Debug)]
 pub struct LifetimeTracker {}
 
-impl LifetimeTracker {
-    pub fn new() -> Self {
+impl Default for LifetimeTracker {
+    fn default() -> Self {
         CREATION_COUNTER.fetch_add(1, Ordering::Relaxed);
 
         Self {}
+    }
+}
+
+impl LifetimeTracker {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn start_tracking() {
