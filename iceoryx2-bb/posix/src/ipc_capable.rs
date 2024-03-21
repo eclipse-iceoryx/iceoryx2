@@ -9,6 +9,7 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+
 use std::{
     cell::UnsafeCell,
     sync::atomic::{AtomicBool, Ordering},
@@ -80,7 +81,7 @@ pub(crate) mod internal {
             initializer: F,
         ) -> Result<(), E> {
             debug_assert!(
-                self.state.load(Ordering::Relaxed) == false,
+                !self.state.load(Ordering::Relaxed),
                 "The handle must be uninitialized before it can be initialized."
             );
 
@@ -104,7 +105,7 @@ pub(crate) mod internal {
         ///
         pub unsafe fn cleanup<F: FnOnce(&mut T)>(&self, cleanup: F) {
             debug_assert!(
-                self.state.load(Ordering::Relaxed) == true,
+                self.state.load(Ordering::Relaxed),
                 "The handle must be initialized before it can be cleaned up."
             );
 
@@ -117,9 +118,10 @@ pub(crate) mod internal {
         /// # Safety
         ///  * The handle must be initialized
         ///
+        #[allow(clippy::mut_from_ref)]
         pub unsafe fn get(&self) -> &mut T {
             debug_assert!(
-                self.state.load(Ordering::Relaxed) == true,
+                self.state.load(Ordering::Relaxed),
                 "The handle must be initialized before it can be acquired."
             );
 

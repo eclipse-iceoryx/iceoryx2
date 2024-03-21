@@ -42,14 +42,12 @@
 //!     });
 //! })
 //! ```
-
-use std::{fmt::Debug, marker::PhantomData, time::Duration};
+pub use iceoryx2_bb_posix::mutex::*;
+pub use iceoryx2_bb_posix::semaphore::*;
 
 use iceoryx2_bb_container::queue::FixedSizeQueue;
 use iceoryx2_bb_log::fatal_panic;
-pub use iceoryx2_bb_posix::mutex::MutexHandle;
-pub use iceoryx2_bb_posix::semaphore::UnnamedSemaphoreHandle;
-use iceoryx2_bb_posix::{mutex::*, semaphore::*};
+use std::{fmt::Debug, marker::PhantomData, time::Duration};
 
 const INTER_PROCESS_SUPPORT: bool = true;
 

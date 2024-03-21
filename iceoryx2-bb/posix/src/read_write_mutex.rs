@@ -192,7 +192,7 @@ impl ReadWriteMutexBuilder {
         self
     }
 
-    fn initialize_rw_mutex<T: Debug>(
+    fn initialize_rw_mutex(
         &self,
         mtx: *mut posix::pthread_rwlock_t,
     ) -> Result<Capability, ReadWriteMutexCreationError> {
@@ -264,7 +264,7 @@ impl ReadWriteMutexBuilder {
         unsafe {
             handle
                 .handle
-                .initialize(|mtx| self.initialize_rw_mutex::<T>(mtx))?
+                .initialize(|mtx| self.initialize_rw_mutex(mtx))?
         };
 
         unsafe { *handle.clock_type.get() = self.clock_type };
