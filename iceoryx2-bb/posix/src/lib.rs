@@ -71,7 +71,6 @@ pub mod system_configuration;
 pub mod thread;
 pub mod unique_system_id;
 pub mod unix_datagram_socket;
-pub mod unmovable_ipc_handle;
 pub mod user;
 
 #[cfg(feature = "acl")]
