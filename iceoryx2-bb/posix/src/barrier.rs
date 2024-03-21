@@ -36,23 +36,21 @@
 //!   println!("all systems ready!");
 //! });
 //! ```
-use std::cell::UnsafeCell;
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
+pub use crate::ipc_capable::{Handle, IpcCapable};
 
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 
 use crate::handle_errno;
-use crate::unmovable_ipc_handle::internal::UnmovableIpcHandle;
-use crate::unmovable_ipc_handle::IpcHandleState;
+use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
+use crate::ipc_capable::HandleState;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum BarrierCreationError {
     InsufficientMemory,
-    HandleAlreadyInitialized,
     SystemWideBarrierLimitReached,
     UnknownError(i32),
 }
@@ -80,23 +78,11 @@ impl BarrierBuilder {
         self
     }
 
-    /// Creates a new [`Barrier`]
-    pub fn create(self, handle: &BarrierHandle) -> Result<Barrier, BarrierCreationError> {
+    fn initialize_barrier(
+        &self,
+        barrier: *mut posix::pthread_barrier_t,
+    ) -> Result<Capability, BarrierCreationError> {
         let msg = "Unable to create barrier";
-
-        if handle
-            .reference_counter
-            .compare_exchange(
-                IpcHandleState::Uninitialized as _,
-                IpcHandleState::PerformingInitialization as _,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            )
-            .is_err()
-        {
-            fail!(from self, with BarrierCreationError::HandleAlreadyInitialized,
-                "{} since the handle is already initialized with another barrier.", msg);
-        }
 
         let mut attr =
             ScopeGuardBuilder::new( posix::pthread_barrierattr_t::new() )
@@ -130,14 +116,8 @@ impl BarrierBuilder {
             }
         }
 
-        handle
-            .is_interprocess_capable
-            .store(self.is_interprocess_capable, Ordering::Relaxed);
-
-        match unsafe {
-            posix::pthread_barrier_init(handle.handle_ptr(), attr.get(), self.number_of_waiters)
-        }
-        .into()
+        match unsafe { posix::pthread_barrier_init(barrier, attr.get(), self.number_of_waiters) }
+            .into()
         {
             Errno::ESUCCES => (),
             Errno::ENOMEM => {
@@ -153,11 +133,21 @@ impl BarrierBuilder {
                     "{} since an unknown error occurred ({}).", msg, v
                 );
             }
-        }
+        };
 
-        handle
-            .reference_counter
-            .store(IpcHandleState::Initialized as _, Ordering::Release);
+        match self.is_interprocess_capable {
+            true => Ok(Capability::InterProcess),
+            false => Ok(Capability::ProcessLocal),
+        }
+    }
+
+    /// Creates a new [`Barrier`]
+    pub fn create(self, handle: &BarrierHandle) -> Result<Barrier, BarrierCreationError> {
+        unsafe {
+            handle
+                .handle
+                .initialize(|barrier| self.initialize_barrier(barrier))?;
+        }
 
         Ok(Barrier::new(handle))
     }
@@ -165,42 +155,40 @@ impl BarrierBuilder {
 
 #[derive(Debug)]
 pub struct BarrierHandle {
-    handle: UnsafeCell<posix::pthread_barrier_t>,
-    reference_counter: AtomicI64,
-    is_interprocess_capable: AtomicBool,
+    handle: HandleStorage<posix::pthread_barrier_t>,
 }
 
 unsafe impl Send for BarrierHandle {}
 unsafe impl Sync for BarrierHandle {}
 
-impl UnmovableIpcHandle for BarrierHandle {
-    fn reference_counter(&self) -> &std::sync::atomic::AtomicI64 {
-        &self.reference_counter
-    }
-
-    fn is_interprocess_capable(&self) -> bool {
-        self.is_interprocess_capable
-            .load(std::sync::atomic::Ordering::Relaxed)
-    }
-}
-
-impl Default for BarrierHandle {
-    fn default() -> Self {
+impl Handle for BarrierHandle {
+    fn new() -> Self {
         Self {
-            handle: UnsafeCell::new(posix::pthread_barrier_t::new()),
-            reference_counter: AtomicI64::new(IpcHandleState::Uninitialized as _),
-            is_interprocess_capable: AtomicBool::new(false),
+            handle: HandleStorage::new(posix::pthread_barrier_t::new()),
         }
     }
-}
 
-impl BarrierHandle {
-    pub fn new() -> Self {
-        Self::default()
+    fn is_inter_process_capable(&self) -> bool {
+        self.handle.is_inter_process_capable()
     }
 
-    fn handle_ptr(&self) -> *mut posix::pthread_barrier_t {
-        self.handle.get()
+    fn state(&self) -> HandleState {
+        self.handle.state()
+    }
+}
+
+impl Drop for BarrierHandle {
+    fn drop(&mut self) {
+        if self.handle.state() == HandleState::Initialized {
+            unsafe {
+                self.handle.cleanup(|barrier| {
+                if posix::pthread_barrier_destroy(barrier) != 0 {
+                    warn!(from self,
+                        "Unable to destroy barrier. Was it already destroyed by another instance in another process?");
+                }
+            });
+            };
+        }
     }
 }
 
@@ -214,24 +202,9 @@ pub struct Barrier<'a> {
 unsafe impl Sync for Barrier<'_> {}
 unsafe impl Send for Barrier<'_> {}
 
-impl Drop for Barrier<'_> {
-    fn drop(&mut self) {
-        if self.handle.reference_counter.fetch_sub(1, Ordering::AcqRel) == 1 {
-            if unsafe { posix::pthread_barrier_destroy(self.handle.handle_ptr()) } != 0 {
-                fatal_panic!(from self, "This should never happen! Unable to remove resources.");
-            }
-            self.handle.reference_counter.store(-1, Ordering::Release);
-        }
-    }
-}
-
 impl<'a> Barrier<'a> {
-    fn new(handle: &'a BarrierHandle) -> Barrier {
-        Barrier { handle }
-    }
-
     pub fn wait(&self) {
-        match unsafe { posix::pthread_barrier_wait(self.handle.handle_ptr().as_mut().unwrap()) } {
+        match unsafe { posix::pthread_barrier_wait(self.handle.handle.get()) } {
             0 | posix::PTHREAD_BARRIER_SERIAL_THREAD => (),
             v => {
                 fatal_panic!(from self, "This should never happen! Unable to wait on barrier ({}).", v);
@@ -239,3 +212,11 @@ impl<'a> Barrier<'a> {
         }
     }
 }
+
+impl<'a> IpcConstructible<'a, BarrierHandle> for Barrier<'a> {
+    fn new(handle: &'a BarrierHandle) -> Barrier {
+        Barrier { handle }
+    }
+}
+
+impl<'a> IpcCapable<'a, BarrierHandle> for Barrier<'a> {}

@@ -19,10 +19,7 @@ use std::{
 };
 
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
-use iceoryx2_bb_posix::{
-    barrier::{BarrierBuilder, BarrierHandle},
-    system_configuration::SystemInfo,
-};
+use iceoryx2_bb_posix::{barrier::*, system_configuration::SystemInfo};
 use iceoryx2_bb_testing::assert_that;
 
 const NUMBER_OF_RUNS: usize = 100000;

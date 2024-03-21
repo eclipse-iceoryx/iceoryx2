@@ -15,10 +15,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use iceoryx2_bb_posix::{
-    barrier::{BarrierBuilder, BarrierHandle},
-    udp_socket::*,
-};
+use iceoryx2_bb_posix::{barrier::*, udp_socket::*};
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_testing::assert_that;
 

@@ -14,121 +14,154 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
+pub(crate) mod internal {
+    use std::fmt::Debug;
+
+    use super::*;
+
+    #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+    pub enum Capability {
+        InterProcess,
+        ProcessLocal,
+    }
+
+    /// Stores an OS handle to some resource that is also inter-process capable, like a unnamed
+    /// semaphore or mutex handle.
+    pub struct HandleStorage<T> {
+        handle: UnsafeCell<T>,
+        is_inter_process_capable: AtomicBool,
+        state: AtomicBool,
+    }
+
+    impl<T> Debug for HandleStorage<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "HandleStorage<{}> {{ state: {} }}",
+                std::any::type_name::<T>(),
+                self.state.load(Ordering::Relaxed),
+            )
+        }
+    }
+
+    impl<T> Drop for HandleStorage<T> {
+        fn drop(&mut self) {
+            self.state.store(false, Ordering::Relaxed);
+        }
+    }
+
+    impl<T> HandleStorage<T> {
+        /// Creates a new HandleStorage with a predefined handle that must be not initialized.
+        pub fn new(handle: T) -> Self {
+            Self {
+                handle: UnsafeCell::new(handle),
+                state: AtomicBool::new(false),
+                is_inter_process_capable: AtomicBool::new(false),
+            }
+        }
+
+        /// Returns the current state of the underlying handle
+        pub fn state(&self) -> HandleState {
+            match self.state.load(Ordering::Relaxed) {
+                false => HandleState::Uninitialized,
+                true => HandleState::Initialized,
+            }
+        }
+
+        /// Initializes the handle via a provided initializer callback. If the initializer returns
+        /// true the underlying handle is marked as initialized otherwise it is still uninitialized.
+        ///
+        /// # Safety
+        ///  * The handle must be uninitialized
+        ///
+        pub unsafe fn initialize<E, F: FnOnce(*mut T) -> Result<Capability, E>>(
+            &self,
+            initializer: F,
+        ) -> Result<(), E> {
+            debug_assert!(
+                self.state.load(Ordering::Relaxed) == false,
+                "The handle must be uninitialized before it can be initialized."
+            );
+
+            self.is_inter_process_capable.store(
+                initializer(self.handle.get())? == Capability::InterProcess,
+                Ordering::Relaxed,
+            );
+            self.state.store(true, Ordering::Relaxed);
+
+            Ok(())
+        }
+
+        pub fn is_inter_process_capable(&self) -> bool {
+            self.is_inter_process_capable.load(Ordering::Relaxed)
+        }
+
+        /// Releases the underlying resources of the handle via the cleanup callback.
+        ///
+        /// # Safety
+        ///  * The handle must be initialized
+        ///
+        pub unsafe fn cleanup<F: FnOnce(&mut T)>(&self, cleanup: F) {
+            debug_assert!(
+                self.state.load(Ordering::Relaxed) == true,
+                "The handle must be initialized before it can be cleaned up."
+            );
+
+            cleanup(self.get());
+            self.state.store(false, Ordering::Relaxed);
+        }
+
+        /// Returns a mutable reference to the underlying handle.
+        ///
+        /// # Safety
+        ///  * The handle must be initialized
+        ///
+        pub unsafe fn get(&self) -> &mut T {
+            debug_assert!(
+                self.state.load(Ordering::Relaxed) == true,
+                "The handle must be initialized before it can be acquired."
+            );
+
+            unsafe { &mut *self.handle.get() }
+        }
+    }
+
+    pub trait IpcConstructible<'a, T: Handle> {
+        fn new(handle: &'a T) -> Self;
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum StorageState {
+pub enum HandleState {
     Initialized,
     Uninitialized,
 }
 
 /// Represents a handle that is in general inter-process capable.
 pub trait Handle: Send + Sync {
+    fn new() -> Self;
     fn is_inter_process_capable(&self) -> bool;
-}
-
-/// Stores an OS handle to some resource that is also inter-process capable, like a unnamed
-/// semaphore or mutex handle.
-pub struct HandleStorage<T: Handle> {
-    handle: UnsafeCell<T>,
-    state: AtomicBool,
-}
-
-impl<T: Handle> HandleStorage<T> {
-    /// Creates a new HandleStorage with a predefined handle that must be not initialized.
-    pub fn new(handle: T) -> Self {
-        Self {
-            handle: UnsafeCell::new(handle),
-            state: AtomicBool::new(false),
-        }
-    }
-
-    /// Returns the current state of the underlying handle
-    pub fn state(&self) -> StorageState {
-        match self.state.load(Ordering::Relaxed) {
-            false => StorageState::Uninitialized,
-            true => StorageState::Initialized,
-        }
-    }
-
-    /// Initializes the handle via a provided initializer callback. If the initializer returns
-    /// true the underlying handle is marked as initialized otherwise it is still uninitialized.
-    ///
-    /// # Safety
-    ///  * The handle must be uninitialized
-    ///
-    pub unsafe fn initialize<F: FnOnce(*mut T) -> bool>(&self, initializer: F) {
-        debug_assert!(
-            self.state.load(Ordering::Relaxed) == false,
-            "The handle must be uninitialized before it can be initialized."
-        );
-
-        if initializer(self.handle.get()) {
-            self.state.store(true, Ordering::Relaxed);
-        }
-    }
-
-    /// Releases the underlying resources of the handle via the cleanup callback.
-    ///
-    /// # Safety
-    ///  * The handle must be initialized
-    ///
-    pub unsafe fn cleanup<F: FnOnce(&mut T)>(&self, cleanup: F) {
-        debug_assert!(
-            self.state.load(Ordering::Relaxed) == true,
-            "The handle must be initialized before it can be cleaned up."
-        );
-
-        cleanup(self.get());
-        self.state.store(false, Ordering::Relaxed);
-    }
-
-    /// Returns a mutable reference to the underlying handle.
-    ///
-    /// # Safety
-    ///  * The handle must be initialized
-    ///
-    pub unsafe fn get(&self) -> &mut T {
-        debug_assert!(
-            self.state.load(Ordering::Relaxed) == true,
-            "The handle must be initialized before it can be acquired."
-        );
-
-        unsafe { &mut *self.handle.get() }
-    }
-}
-
-pub(crate) mod internal {
-    use super::*;
-
-    pub trait IpcConstructible<'a, T: Handle> {
-        fn new(handle: &'a HandleStorage<T>) -> Self;
-    }
+    fn state(&self) -> HandleState;
 }
 
 /// Every struct that implements this trait is inter-process capable without any restriction,
 /// meaning there is no configuration/variation that is not inter-process capable.
-pub trait PocIpcCapable<'a, T: Handle>: internal::IpcConstructible<'a, T> + Sized {
-    /// Returns the ownership state of construct
-    fn has_ownership(&self) -> bool;
-
-    /// Acquires the ownership. When the object goes out of scope the resources stored inside
-    /// the handle will be cleaned up.
-    fn acquire_ownership(&self);
-
-    /// Releases the ownership. No resources stored inside the handle will be released.
-    fn release_ownership(&self);
-
+pub trait IpcCapable<'a, T: Handle>: internal::IpcConstructible<'a, T> + Sized {
+    /// Creates an IPC Capable object from its handle.
+    ///
     /// # Safety
     ///   * The handle must be initialized
     ///   * The handle must be ipc capable, see [`Handle::is_inter_process_capable()`].
-    ///   * The handle will not be cleaned up while it is used by the object
-    unsafe fn from_ipc_handle(handle: &'a HandleStorage<T>) -> Self {
+    ///   * The handle must not be cleaned up while it is used by the object
+    ///
+    unsafe fn from_ipc_handle(handle: &'a T) -> Self {
         debug_assert!(
-            handle.state() == StorageState::Initialized,
+            handle.state() == HandleState::Initialized,
             "The handle must be initialized before it can be used to construct an object."
         );
 
         debug_assert!(
-            handle.get().is_inter_process_capable(),
+            handle.is_inter_process_capable(),
             "The handle must be interprocess capable to be used for constructing an ipc capable object."
         );
 

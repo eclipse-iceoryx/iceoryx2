@@ -13,8 +13,8 @@
 use clap::Parser;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_log::set_log_level;
-use iceoryx2_bb_posix::barrier::BarrierHandle;
-use iceoryx2_bb_posix::{barrier::BarrierBuilder, clock::Time};
+use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_posix::clock::Time;
 
 const ITERATIONS: u64 = 10000000;
 

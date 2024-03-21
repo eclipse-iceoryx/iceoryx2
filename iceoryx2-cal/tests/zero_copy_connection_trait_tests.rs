@@ -17,7 +17,7 @@ mod zero_copy_connection {
 
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary::math::ToB64;
-    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
