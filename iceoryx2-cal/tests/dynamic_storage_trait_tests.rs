@@ -275,6 +275,8 @@ mod dynamic_storage {
 
     #[test]
     fn has_ownership_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
+        test_requires!(Sut::does_support_persistency());
+
         let storage_name = generate_name();
 
         let sut = Sut::Builder::new(&storage_name)
@@ -516,20 +518,20 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        if Sut::does_support_persistency() {
-            let storage_name = generate_name();
+        test_requires!(Sut::does_support_persistency());
 
-            LifetimeTracker::start_tracking();
+        let storage_name = generate_name();
 
-            let sut = Sut::Builder::new(&storage_name)
-                .create(TestData::new(123))
-                .unwrap();
-            sut.release_ownership();
-            drop(sut);
+        LifetimeTracker::start_tracking();
 
-            assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
-            assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
-        }
+        let sut = Sut::Builder::new(&storage_name)
+            .create(TestData::new(123))
+            .unwrap();
+        sut.release_ownership();
+        drop(sut);
+
+        assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
+        assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
     }
 
     #[test]
