@@ -73,7 +73,6 @@ pub enum MutexCreationError {
     UnableToSetProtocol,
     UnableToSetThreadTerminationBehavior,
     UnableToSetPriorityCeiling,
-    HandleAlreadyInitialized,
     UnknownError(i32),
 }
 

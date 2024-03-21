@@ -53,28 +53,22 @@
 //!     });
 //! });
 //! ```
+pub use crate::ipc_capable::{Handle, IpcCapable};
+
+use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
+use crate::ipc_capable::HandleState;
+use crate::{clock::AsTimespec, handle_errno};
+use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_pal_posix::posix::errno::Errno;
+use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::*;
 use std::{
     cell::UnsafeCell,
     fmt::Debug,
     ops::{Deref, DerefMut},
-    sync::atomic::{AtomicBool, AtomicI64, Ordering},
     time::Duration,
 };
-
-pub use crate::unmovable_ipc_handle::IpcCapable;
-use crate::{
-    clock::AsTimespec,
-    handle_errno,
-    unmovable_ipc_handle::{
-        internal::{CreateIpcConstruct, UnmovableIpcHandle},
-        IpcHandleState,
-    },
-};
-use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
-use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
-use iceoryx2_pal_posix::*;
 
 use crate::{
     adaptive_wait::*,
@@ -88,7 +82,6 @@ pub enum ReadWriteMutexCreationError {
     InsufficientPermissions,
     NoInterProcessSupport,
     NoMutexKindSupport,
-    HandleAlreadyInitialized,
     UnknownError(i32),
 }
 
@@ -199,28 +192,12 @@ impl ReadWriteMutexBuilder {
         self
     }
 
-    /// Creates a new [`ReadWriteMutex`]
-    pub fn create<T: Debug>(
-        self,
-        t: T,
-        handle: &ReadWriteMutexHandle<T>,
-    ) -> Result<ReadWriteMutex<'_, T>, ReadWriteMutexCreationError> {
+    fn initialize_rw_mutex<T: Debug>(
+        &self,
+        mtx: *mut posix::pthread_rwlock_t,
+    ) -> Result<Capability, ReadWriteMutexCreationError> {
         let msg = "Failed to create mutex";
         let origin = format!("{:?}", self);
-
-        if handle
-            .reference_counter
-            .compare_exchange(
-                IpcHandleState::Uninitialized as _,
-                IpcHandleState::PerformingInitialization as _,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            )
-            .is_err()
-        {
-            fail!(from origin, with ReadWriteMutexCreationError::HandleAlreadyInitialized,
-                "{} since the handle is already initialized with another read write lock.", msg);
-        }
 
         let mut attributes = ScopeGuardBuilder::new(posix::pthread_rwlockattr_t::new()).on_init(|attr| {
             handle_errno!(ReadWriteMutexCreationError, from self,
@@ -241,7 +218,6 @@ impl ReadWriteMutexBuilder {
         match unsafe { posix::pthread_rwlockattr_setpshared(attributes.get_mut(), 0) } {
             0 => (),
             v => {
-                handle.reference_counter.store(-1, Ordering::Relaxed);
                 fail!(from origin, with ReadWriteMutexCreationError::NoInterProcessSupport,
                         "{} due to an unknown error while setting interprocess capabilities ({}).", msg,v );
             }
@@ -252,41 +228,47 @@ impl ReadWriteMutexBuilder {
         } {
             0 => (),
             v => {
-                handle.reference_counter.store(-1, Ordering::Relaxed);
                 fail!(from origin, with ReadWriteMutexCreationError::NoMutexKindSupport,
                     "{} due to an unknown error while setting the mutex kind ({}).", msg, v);
             }
         }
 
-        match unsafe { posix::pthread_rwlock_init(handle.handle_ptr(), attributes.get()).into() } {
+        match unsafe { posix::pthread_rwlock_init(mtx, attributes.get()).into() } {
             Errno::ESUCCES => (),
             Errno::EAGAIN => {
-                handle.reference_counter.store(-1, Ordering::Relaxed);
                 fail!(from origin, with ReadWriteMutexCreationError::InsufficientResources, "{} due to insufficient resources.", msg);
             }
             Errno::ENOMEM => {
-                handle.reference_counter.store(-1, Ordering::Relaxed);
                 fail!(from origin, with ReadWriteMutexCreationError::InsufficientResources, "{} due to insufficient memory.", msg);
             }
             Errno::EPERM => {
-                handle.reference_counter.store(-1, Ordering::Relaxed);
                 fail!(from origin, with ReadWriteMutexCreationError::InsufficientPermissions, "{} due to insufficient permissions.", msg);
             }
             v => {
-                handle.reference_counter.store(-1, Ordering::Relaxed);
                 fail!(from origin, with ReadWriteMutexCreationError::UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v);
             }
         };
 
-        unsafe { *handle.clock_type.get() = self.clock_type };
-        handle
-            .is_interprocess_capable
-            .store(self.is_interprocess_capable, Ordering::Relaxed);
-        unsafe { *handle.value.get() = Some(t) };
+        match self.is_interprocess_capable {
+            true => Ok(Capability::InterProcess),
+            false => Ok(Capability::ProcessLocal),
+        }
+    }
 
-        handle
-            .reference_counter
-            .store(IpcHandleState::Initialized as _, Ordering::Release);
+    /// Creates a new [`ReadWriteMutex`]
+    pub fn create<T: Debug>(
+        self,
+        t: T,
+        handle: &ReadWriteMutexHandle<T>,
+    ) -> Result<ReadWriteMutex<'_, T>, ReadWriteMutexCreationError> {
+        unsafe {
+            handle
+                .handle
+                .initialize(|mtx| self.initialize_rw_mutex::<T>(mtx))?
+        };
+
+        unsafe { *handle.clock_type.get() = self.clock_type };
+        unsafe { *handle.value.get() = Some(t) };
 
         Ok(ReadWriteMutex::new(handle))
     }
@@ -358,56 +340,46 @@ impl<T: Debug> Drop for MutexWriteGuard<'_, '_, T> {
 /// by storing the underlying posix handle inside [`ReadWriteMutexHandle`]. When a [`ReadWriteMutex`]
 /// is initialized it stores a const reference to the [`ReadWriteMutexHandle`] and makes it by
 /// that inmovable.
+#[derive(Debug)]
 pub struct ReadWriteMutexHandle<T: Sized + Debug> {
-    handle: UnsafeCell<posix::pthread_rwlock_t>,
-    reference_counter: AtomicI64,
+    handle: HandleStorage<posix::pthread_rwlock_t>,
     clock_type: UnsafeCell<ClockType>,
-    is_interprocess_capable: AtomicBool,
     value: UnsafeCell<Option<T>>,
 }
 
 unsafe impl<T: Sized + Debug> Send for ReadWriteMutexHandle<T> {}
 unsafe impl<T: Sized + Debug> Sync for ReadWriteMutexHandle<T> {}
 
-impl<T: Sized + Debug> UnmovableIpcHandle for ReadWriteMutexHandle<T> {
-    fn reference_counter(&self) -> &AtomicI64 {
-        &self.reference_counter
-    }
-
-    fn is_interprocess_capable(&self) -> bool {
-        self.is_interprocess_capable.load(Ordering::Relaxed)
-    }
-}
-
-impl<T: Sized + Debug> Default for ReadWriteMutexHandle<T> {
-    fn default() -> Self {
+impl<T: Sized + Debug> Handle for ReadWriteMutexHandle<T> {
+    fn new() -> Self {
         Self {
-            handle: UnsafeCell::new(posix::pthread_rwlock_t::new()),
-            reference_counter: AtomicI64::new(IpcHandleState::Uninitialized as _),
+            handle: HandleStorage::new(posix::pthread_rwlock_t::new()),
             clock_type: UnsafeCell::new(ClockType::default()),
-            is_interprocess_capable: AtomicBool::new(false),
             value: UnsafeCell::new(None),
         }
     }
-}
 
-impl<T: Sized + Debug> ReadWriteMutexHandle<T> {
-    pub fn new() -> Self {
-        Self::default()
+    fn state(&self) -> HandleState {
+        self.handle.state()
     }
 
-    fn handle_ptr(&self) -> *mut posix::pthread_rwlock_t {
-        self.handle.get()
+    fn is_inter_process_capable(&self) -> bool {
+        self.handle.is_inter_process_capable()
     }
 }
 
-impl<T: Sized + Debug> Debug for ReadWriteMutexHandle<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "ReadWriteMutexHandle {{ reference_counter: {}, clock_type: {:?}, is_interprocess_capable: {}, value: {:?} }}",
-            self.reference_counter.load(Ordering::Relaxed), self.clock_type, self.is_interprocess_capable.load(Ordering::Relaxed), self.value
-        )
+impl<T: Sized + Debug> Drop for ReadWriteMutexHandle<T> {
+    fn drop(&mut self) {
+        if self.handle.state() == HandleState::Initialized {
+            unsafe {
+                self.handle.cleanup(|mtx|{
+                    if posix::pthread_rwlock_destroy(mtx) != 0 {
+                        warn!(from self,
+                            "Unable to destroy read write mutex. Was it already destroyed by another instance in another process?");
+                    }
+                });
+            }
+        }
     }
 }
 
@@ -422,36 +394,21 @@ pub struct ReadWriteMutex<'a, T: Sized + Debug> {
 unsafe impl<'a, T: Send + Debug> Send for ReadWriteMutex<'a, T> {}
 unsafe impl<'a, T: Sync + Debug> Sync for ReadWriteMutex<'a, T> {}
 
-impl<'a, T: Sized + Debug> Drop for ReadWriteMutex<'a, T> {
-    fn drop(&mut self) {
-        if self.handle.reference_counter.fetch_sub(1, Ordering::AcqRel) == 1 {
-            if unsafe { posix::pthread_rwlock_destroy(self.handle.handle_ptr()) } != 0 {
-                fatal_panic!(from self, "This should never happen! Unable to cleanup mutex in system.");
-            }
-            unsafe { *self.handle.value.get() = None };
-            self.handle.reference_counter.store(-1, Ordering::Release);
-        }
-    }
-}
-
-impl<'a, T: Sized + Debug> CreateIpcConstruct<'a, ReadWriteMutexHandle<T>>
-    for ReadWriteMutex<'a, T>
-{
+impl<'a, T: Sized + Debug> IpcConstructible<'a, ReadWriteMutexHandle<T>> for ReadWriteMutex<'a, T> {
     fn new(handle: &'a ReadWriteMutexHandle<T>) -> Self {
         Self { handle }
     }
 }
 
-impl<'a, T: Sized + Debug> IpcCapable<'a, ReadWriteMutexHandle<T>> for ReadWriteMutex<'a, T> {}
+impl<'a, T: Sized + Debug> IpcCapable<'a, ReadWriteMutexHandle<T>> for ReadWriteMutex<'a, T> {
+    fn is_interprocess_capable(&self) -> bool {
+        self.handle.is_inter_process_capable()
+    }
+}
 
 impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
     fn new(handle: &'a ReadWriteMutexHandle<T>) -> Self {
         Self { handle }
-    }
-
-    /// Returns true if the mutex can be used in an inter-process context, otherwise false
-    pub fn is_interprocess_capable(&self) -> bool {
-        self.handle.is_interprocess_capable.load(Ordering::Relaxed)
     }
 
     /// Returns the used clock type of the mutex
@@ -464,7 +421,7 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
     pub fn read_lock(&self) -> Result<MutexReadGuard<'_, '_, T>, ReadWriteMutexReadLockError> {
         let msg = "Failed to acquire read-lock";
         handle_errno!(ReadWriteMutexReadLockError, from self,
-            errno_source unsafe { posix::pthread_rwlock_rdlock(self.handle.handle_ptr()).into() },
+            errno_source unsafe { posix::pthread_rwlock_rdlock(self.handle.handle.get()).into() },
             success Errno::ESUCCES => MutexReadGuard { mutex: self },
             Errno::EAGAIN => (MaximumAmountOfReadLocksAcquired, "{} since the maximum amount of read-locks is already acquired.", msg),
             Errno::EDEADLK => (DeadlockConditionDetected, "{} since a deadlock condition was detected.", msg),
@@ -479,7 +436,7 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
     ) -> Result<Option<MutexReadGuard<'_, '_, T>>, ReadWriteMutexReadLockError> {
         let msg = "Failed to try to acquire read-lock";
         handle_errno!(ReadWriteMutexReadLockError, from self,
-            errno_source unsafe { posix::pthread_rwlock_tryrdlock(self.handle.handle_ptr()).into() },
+            errno_source unsafe { posix::pthread_rwlock_tryrdlock(self.handle.handle.get()).into() },
             success Errno::ESUCCES => Some(MutexReadGuard { mutex: self });
             success Errno::EBUSY => None,
             Errno::EAGAIN => (MaximumAmountOfReadLocksAcquired, "{} since the maximum amount of read-locks is already acquired.", msg),
@@ -502,7 +459,7 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
                     "{} due to a failure while acquiring current system time.", msg);
                 let timeout_adjusted = now.as_duration() + timeout;
                 handle_errno!(ReadWriteMutexReadTimedLockError, from self,
-                    errno_source unsafe { posix::pthread_rwlock_timedrdlock(self.handle.handle_ptr(), &timeout_adjusted.as_timespec()) }.into(),
+                    errno_source unsafe { posix::pthread_rwlock_timedrdlock(self.handle.handle.get(), &timeout_adjusted.as_timespec()) }.into(),
                     success Errno::ESUCCES => Some(MutexReadGuard { mutex: self });
                     success Errno::ETIMEDOUT => None,
                     Errno::EAGAIN => (ReadWriteMutexReadLockError(ReadWriteMutexReadLockError::MaximumAmountOfReadLocksAcquired), "{} since the maximum number of read locks were already acquired.", msg),
@@ -545,7 +502,7 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
     pub fn write_lock(&self) -> Result<MutexWriteGuard<'_, '_, T>, ReadWriteMutexWriteLockError> {
         let msg = "Failed to acquire write-lock";
         handle_errno!(ReadWriteMutexWriteLockError, from self,
-            errno_source unsafe { posix::pthread_rwlock_wrlock(self.handle.handle_ptr()).into() },
+            errno_source unsafe { posix::pthread_rwlock_wrlock(self.handle.handle.get()).into() },
             success Errno::ESUCCES => MutexWriteGuard { mutex: self },
             Errno::EDEADLK => (DeadlockConditionDetected, "{} since a deadlock condition was detected.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
@@ -559,7 +516,7 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
     ) -> Result<Option<MutexWriteGuard<'_, '_, T>>, ReadWriteMutexWriteLockError> {
         let msg = "Failed to try to acquire write-lock";
         handle_errno!(ReadWriteMutexWriteLockError, from self,
-            errno_source unsafe { posix::pthread_rwlock_trywrlock(self.handle.handle_ptr()).into() },
+            errno_source unsafe { posix::pthread_rwlock_trywrlock(self.handle.handle.get()).into() },
             success Errno::ESUCCES => Some(MutexWriteGuard { mutex: self });
             success Errno::EBUSY => None,
             Errno::EDEADLK => (DeadlockConditionDetected, "{} since a deadlock condition was detected.", msg),
@@ -581,7 +538,7 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
                     "{} due to a failure while acquiring current system time.", msg);
                 let timeout_adjusted = now.as_duration() + timeout;
                 handle_errno!(ReadWriteMutexWriteTimedLockError, from self,
-                    errno_source unsafe { posix::pthread_rwlock_timedwrlock(self.handle.handle_ptr(), &timeout_adjusted.as_timespec()) }.into(),
+                    errno_source unsafe { posix::pthread_rwlock_timedwrlock(self.handle.handle.get(), &timeout_adjusted.as_timespec()) }.into(),
                     success Errno::ESUCCES => Some(MutexWriteGuard { mutex: self });
                     success Errno::ETIMEDOUT => None,
                     Errno::EINVAL => (TimeoutExceedsMaximumSupportedDuration, "{} since the timeout of {:?} exceeds the maximum supported duration.", msg, timeout),
@@ -620,7 +577,7 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
 
     fn release(&self) -> Result<(), ReadWriteMutexUnlockError> {
         let msg = "Unable to release lock";
-        match unsafe { posix::pthread_rwlock_unlock(self.handle.handle_ptr()).into() } {
+        match unsafe { posix::pthread_rwlock_unlock(self.handle.handle.get()).into() } {
             Errno::ESUCCES => Ok(()),
             Errno::EPERM => {
                 fail!(from self, with ReadWriteMutexUnlockError::OwnedByDifferentEntity,

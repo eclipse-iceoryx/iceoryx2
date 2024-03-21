@@ -63,7 +63,6 @@ pub enum UnnamedSemaphoreCreationError {
     InitialValueTooLarge,
     ExceedsMaximumNumberOfSemaphores,
     InsufficientPermissions,
-    HandleAlreadyInitialized,
     UnknownError(i32),
 }
 

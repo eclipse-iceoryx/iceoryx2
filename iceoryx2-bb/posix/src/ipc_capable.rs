@@ -37,8 +37,9 @@ pub(crate) mod internal {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
-                "HandleStorage<{}> {{ state: {} }}",
+                "HandleStorage<{}> {{ is_interprocess_capable: {}, state: {} }}",
                 std::any::type_name::<T>(),
+                self.is_inter_process_capable.load(Ordering::Relaxed),
                 self.state.load(Ordering::Relaxed),
             )
         }

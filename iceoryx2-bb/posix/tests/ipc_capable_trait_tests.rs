@@ -15,6 +15,9 @@ mod ipc_capable {
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::ipc_capable::{Handle, HandleState, IpcCapable};
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
+    use iceoryx2_bb_posix::read_write_mutex::{
+        ReadWriteMutex, ReadWriteMutexBuilder, ReadWriteMutexHandle,
+    };
     use iceoryx2_bb_posix::semaphore::{
         UnnamedSemaphore, UnnamedSemaphoreBuilder, UnnamedSemaphoreHandle,
     };
@@ -167,4 +170,28 @@ mod ipc_capable {
 
     #[instantiate_tests(<MutexTest>)]
     mod mutex {}
+
+    struct ReadWriteMutexTest {}
+
+    impl TestSut for ReadWriteMutexTest {
+        type Handle = ReadWriteMutexHandle<u64>;
+        type Sut<'a> = ReadWriteMutex<'a, u64>;
+
+        fn init_process_local_handle(handle: &Self::Handle) {
+            ReadWriteMutexBuilder::new()
+                .is_interprocess_capable(false)
+                .create(0, handle)
+                .unwrap();
+        }
+
+        fn init_inter_process_handle(handle: &Self::Handle) {
+            ReadWriteMutexBuilder::new()
+                .is_interprocess_capable(true)
+                .create(0, handle)
+                .unwrap();
+        }
+    }
+
+    #[instantiate_tests(<ReadWriteMutexTest>)]
+    mod read_write_mutex {}
 }

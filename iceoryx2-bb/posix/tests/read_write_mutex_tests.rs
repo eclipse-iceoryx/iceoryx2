@@ -13,7 +13,6 @@
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::read_write_mutex::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
-use iceoryx2_bb_posix::unmovable_ipc_handle::AcquireIpcHandleError;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -244,9 +243,7 @@ fn read_write_mutex_multiple_ipc_mutex_are_working() {
         .create(781, &handle)
         .unwrap();
 
-    let sut2 = ReadWriteMutex::from_ipc_handle(&handle);
-    assert_that!(sut2, is_ok);
-    let sut2 = sut2.unwrap();
+    let sut2 = unsafe { ReadWriteMutex::from_ipc_handle(&handle) };
 
     thread::scope(|s| {
         s.spawn(|| {
@@ -262,49 +259,4 @@ fn read_write_mutex_multiple_ipc_mutex_are_working() {
     });
 
     assert_that!(*sut2.read_lock().unwrap(), eq 99501);
-}
-
-#[test]
-fn read_write_mutex_acquiring_uninitialized_ipc_mutex_fails() {
-    let handle = ReadWriteMutexHandle::<i32>::new();
-
-    let sut = ReadWriteMutex::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(sut.err().unwrap(), eq AcquireIpcHandleError::Uninitialized);
-
-    let sut1 = ReadWriteMutexBuilder::new()
-        .is_interprocess_capable(true)
-        .create(781, &handle)
-        .unwrap();
-
-    let sut2 = ReadWriteMutex::from_ipc_handle(&handle);
-    assert_that!(sut2, is_ok);
-
-    drop(sut1);
-
-    let sut3 = ReadWriteMutex::from_ipc_handle(&handle);
-    assert_that!(sut3, is_ok);
-
-    drop(sut2);
-    drop(sut3);
-
-    let sut = ReadWriteMutex::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(sut.err().unwrap(), eq AcquireIpcHandleError::Uninitialized);
-}
-
-#[test]
-fn read_write_mutex_acquiring_non_ipc_capable_handle_fails() {
-    let handle = ReadWriteMutexHandle::<i32>::new();
-    let _sut1 = ReadWriteMutexBuilder::new()
-        .is_interprocess_capable(false)
-        .create(781, &handle)
-        .unwrap();
-
-    let sut = ReadWriteMutex::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(
-        sut.err().unwrap(), eq
-        AcquireIpcHandleError::IsNotInterProcessCapable
-    );
 }
