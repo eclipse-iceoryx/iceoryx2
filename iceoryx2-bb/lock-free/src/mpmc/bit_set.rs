@@ -73,6 +73,7 @@ pub mod details {
         capacity: usize,
         array_capacity: usize,
         reset_position: AtomicUsize,
+        active_bits: AtomicUsize,
         is_memory_initialized: AtomicBool,
     }
 
@@ -100,6 +101,7 @@ pub mod details {
                 array_capacity,
                 is_memory_initialized: AtomicBool::new(true),
                 reset_position: AtomicUsize::new(0),
+                active_bits: AtomicUsize::new(0),
             }
         }
     }
@@ -112,6 +114,7 @@ pub mod details {
                 array_capacity: Self::array_capacity(capacity),
                 is_memory_initialized: AtomicBool::new(false),
                 reset_position: AtomicUsize::new(0),
+                active_bits: AtomicUsize::new(0),
             }
         }
 
@@ -159,6 +162,7 @@ pub mod details {
                 array_capacity: Self::array_capacity(capacity),
                 is_memory_initialized: AtomicBool::new(true),
                 reset_position: AtomicUsize::new(0),
+                active_bits: AtomicUsize::new(0),
             }
         }
     }
@@ -208,7 +212,10 @@ pub mod details {
                     Ordering::Relaxed,
                     Ordering::Relaxed,
                 ) {
-                    Ok(_) => return true,
+                    Ok(_) => {
+                        self.active_bits.fetch_add(1, Ordering::Relaxed);
+                        return true;
+                    }
                     Err(v) => current = v,
                 }
             }
@@ -235,7 +242,10 @@ pub mod details {
                     Ordering::Relaxed,
                     Ordering::Relaxed,
                 ) {
-                    Ok(_) => return true,
+                    Ok(_) => {
+                        self.active_bits.fetch_sub(1, Ordering::Relaxed);
+                        return true;
+                    }
                     Err(v) => current = v,
                 }
             }
@@ -258,6 +268,11 @@ pub mod details {
         /// Resets the next set bit and returns the bit index. If no bit was set it returns
         /// [`None`].
         pub fn reset_next(&self) -> Option<usize> {
+            self.verify_init("reset_next");
+            if self.active_bits.load(Ordering::Relaxed) == 0 {
+                return None;
+            }
+
             let mut current_position = self.reset_position.load(Ordering::Relaxed);
             for _ in 0..self.capacity {
                 current_position = (current_position + 1) % self.capacity;
@@ -275,14 +290,21 @@ pub mod details {
         /// Reset every set bit in the BitSet and call the provided callback for every bit that
         /// was set. This is the most efficient way to acquire all bits that were set.
         pub fn reset_all<F: FnMut(usize)>(&self, mut callback: F) {
-            self.verify_init("set");
+            self.verify_init("reset_all");
+
             for i in 0..self.array_capacity {
                 let value = unsafe { (*self.data_ptr.as_ptr().add(i)).swap(0, Ordering::Relaxed) };
+                let mut counter = 0;
                 for b in 0..BITSET_ELEMENT_BITSIZE {
+                    let main_index = i * BITSET_ELEMENT_BITSIZE;
                     if value & (1 << b) != 0 {
-                        let index = i * BITSET_ELEMENT_BITSIZE + b;
-                        callback(index);
+                        callback(main_index + b);
+                        counter += 1;
                     }
+                }
+
+                if self.active_bits.fetch_sub(counter, Ordering::Relaxed) == 1 {
+                    return;
                 }
             }
         }

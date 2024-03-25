@@ -151,7 +151,7 @@ fn bit_set_concurrent_set_and_reset_works() {
 
     let number_of_set_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
     let number_of_reset_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
-    const CAPACITY: usize = 1024;
+    const CAPACITY: usize = 10;
     const SUCCESS_LIMIT: usize = 100000;
 
     let sut = BitSet::new(CAPACITY);
