@@ -227,7 +227,7 @@ fn post_and_wait_work<T: SemaphoreInterface>(initial_value: u64, sut: &T) {
     }
 
     for _i in 0..initial_value {
-        assert_that!(sut.wait(), is_ok);
+        assert_that!(sut.blocking_wait(), is_ok);
     }
 }
 

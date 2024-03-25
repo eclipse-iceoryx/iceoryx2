@@ -150,7 +150,7 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
     /// Decrements the semaphore by one. If the semaphore is zero it waits until a
     /// [`SemaphoreInterface::post()`] call incremented the semaphore by one. A semaphores internal
     /// value is always greater or equal to zero.
-    fn wait(&self) -> Result<(), SemaphoreWaitError> {
+    fn blocking_wait(&self) -> Result<(), SemaphoreWaitError> {
         if unsafe { posix::sem_wait(self.handle()) } == 0 {
             return Ok(());
         }

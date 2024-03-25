@@ -55,6 +55,7 @@ impl std::error::Error for NotifierCreateError {}
 pub enum ListenerWaitError {
     ContractViolation,
     InternalFailure,
+    InterruptSignal,
 }
 
 impl std::fmt::Display for ListenerWaitError {

@@ -116,7 +116,7 @@ impl<'a, T: Debug, const CAPACITY: usize> TriggerQueue<'a, T, CAPACITY> {
 
     /// Blocks the process until the value could be pushed into the queue.
     pub fn blocking_push(&self, value: T) {
-        self.free_slots.wait().unwrap();
+        self.free_slots.blocking_wait().unwrap();
         self.push(value);
     }
 
@@ -140,7 +140,7 @@ impl<'a, T: Debug, const CAPACITY: usize> TriggerQueue<'a, T, CAPACITY> {
 
     /// Blocks until a value could be acquired from the queue.
     pub fn blocking_pop(&self) -> T {
-        self.used_slots.wait().unwrap();
+        self.used_slots.blocking_wait().unwrap();
         self.pop().unwrap()
     }
 
