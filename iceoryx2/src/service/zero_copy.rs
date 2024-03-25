@@ -52,7 +52,7 @@ impl crate::service::Service for Service {
     type ServiceNameHasher = hash::sha1::Sha1;
     type SharedMemory = shared_memory::posix::Memory<PoolAllocator>;
     type Connection = zero_copy_connection::posix_shared_memory::Connection;
-    type Event = event::unix_datagram_socket::EventImpl;
+    type Event = event::sem_bitset_posix_shared_memory::Event;
 
     fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self {
         Self { state }
