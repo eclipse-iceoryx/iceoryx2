@@ -100,6 +100,9 @@ impl TriggerId {
 }
 
 pub trait Notifier: NamedConcept + Debug {
+    fn trigger_id_max(&self) -> TriggerId {
+        TriggerId::new(u64::MAX)
+    }
     fn notify(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
 }
 

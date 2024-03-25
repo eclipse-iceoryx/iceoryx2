@@ -399,6 +399,26 @@ mod event {
     }
 
     #[test]
+    fn setting_trigger_id_limit_works<Sut: Event>() {
+        test_requires!(Sut::has_trigger_id_limit());
+
+        const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1234);
+        let name = generate_name();
+
+        let _sut_listener = Sut::ListenerBuilder::new(&name)
+            .trigger_id_max(TRIGGER_ID_MAX)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+
+        if Sut::has_trigger_id_limit() {
+            assert_that!(sut_notifier.trigger_id_max(), eq TRIGGER_ID_MAX);
+        } else {
+            assert_that!(sut_notifier.trigger_id_max(), eq TriggerId::new(u64::MAX));
+        }
+    }
+
+    #[test]
     fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
         test_requires!(Sut::has_trigger_id_limit());
 

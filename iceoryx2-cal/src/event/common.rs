@@ -31,7 +31,7 @@ pub mod details {
         },
     };
 
-    const TRIGGER_ID_DEFAULT_MAX: TriggerId = TriggerId::new(128);
+    const TRIGGER_ID_DEFAULT_MAX: TriggerId = TriggerId::new(u16::MAX as u64);
 
     #[derive(Debug)]
     pub struct Management<Tracker: IdTracker, WaitMechanism: SignalMechanism> {
@@ -248,6 +248,10 @@ pub mod details {
             Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
         > crate::event::Notifier for Notifier<Tracker, WaitMechanism, Storage>
     {
+        fn trigger_id_max(&self) -> TriggerId {
+            self.storage.get().id_tracker.trigger_id_max()
+        }
+
         fn notify(&self, id: crate::event::TriggerId) -> Result<(), NotifierNotifyError> {
             if self.storage.get().id_tracker.trigger_id_max() <= id {
                 fail!(from self, with NotifierNotifyError::TriggerIdOutOfBounds,
