@@ -20,9 +20,9 @@ mod event {
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use iceoryx2_cal::event::*;
+    use iceoryx2_bb_testing::{assert_that, test_requires};
+    use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
@@ -396,6 +396,42 @@ mod event {
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
+    }
+
+    #[test]
+    fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
+        test_requires!(Sut::has_trigger_id_limit());
+
+        const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1024);
+        let name = generate_name();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .trigger_id_max(TRIGGER_ID_MAX)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+
+        for i in 0..TRIGGER_ID_MAX.as_u64() {
+            assert_that!(sut_notifier.notify(TriggerId::new(i)), is_ok);
+        }
+
+        let result = sut_notifier.notify(TriggerId::new(TRIGGER_ID_MAX.as_u64() + 1));
+        assert_that!(result, is_err);
+        assert_that!(
+            result.err().unwrap(), eq
+            NotifierNotifyError::TriggerIdOutOfBounds
+        );
+
+        let mut ids = HashSet::new();
+        for _ in 0..TRIGGER_ID_MAX.as_u64() {
+            let event_id = sut_listener.try_wait().unwrap().unwrap();
+
+            assert_that!(event_id, lt TRIGGER_ID_MAX);
+            assert_that!(ids.insert(event_id), eq true);
+        }
+
+        let event_id = sut_listener.try_wait().unwrap();
+        assert_that!(event_id, is_none);
     }
 
     #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl>)]
