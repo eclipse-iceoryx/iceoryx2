@@ -10,8 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod common;
 pub mod id_tracker;
 pub mod process_local;
+pub mod sem_bitset_posix_shared_memory;
+pub mod sem_bitset_process_local;
 pub mod signal_mechanism;
 pub mod unix_datagram_socket;
 
@@ -40,6 +43,8 @@ impl std::error::Error for NotifierNotifyError {}
 pub enum NotifierCreateError {
     DoesNotExist,
     InsufficientPermissions,
+    VersionMismatch,
+    InitializationNotYetFinalized,
     InternalFailure,
 }
 
@@ -99,6 +104,7 @@ pub trait Notifier: NamedConcept + Debug {
 }
 
 pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
+    fn timeout(self, timeout: Duration) -> Self;
     fn open(self) -> Result<T::Notifier, NotifierCreateError>;
 }
 
@@ -109,6 +115,7 @@ pub trait Listener: NamedConcept + Debug {
 }
 
 pub trait ListenerBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
+    fn trigger_id_max(self, id: TriggerId) -> Self;
     fn create(self) -> Result<T::Listener, ListenerCreateError>;
 }
 
@@ -121,5 +128,9 @@ pub trait Event: Sized + NamedConceptMgmt + Debug {
     /// The default suffix of every event
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".event") }
+    }
+
+    fn has_trigger_id_limit() -> bool {
+        false
     }
 }

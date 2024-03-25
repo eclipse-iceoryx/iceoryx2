@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod event {
+    use std::collections::HashSet;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{Duration, Instant};
 
@@ -20,6 +21,7 @@ mod event {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_cal::event::*;
     use iceoryx2_cal::named_concept::*;
 
@@ -88,6 +90,7 @@ mod event {
     >(
         wait_call: F,
     ) {
+        let _watchdog = Watchdog::new(Duration::from_secs(1));
         const REPETITIONS: u64 = 32;
         let name = generate_name();
 
@@ -132,9 +135,13 @@ mod event {
             sut_notifier.notify(TriggerId::new(i)).unwrap();
         }
 
-        for i in 0..REPETITIONS {
+        let mut ids = HashSet::new();
+        for _ in 0..REPETITIONS {
             let result = wait_call(&sut_listener).unwrap();
-            assert_that!(result.unwrap(), eq TriggerId::new(i));
+            assert_that!(result, is_some);
+            let result = result.unwrap();
+            assert_that!(result.as_u64(), lt REPETITIONS);
+            assert_that!(ids.insert(result), eq true);
         }
     }
 
@@ -236,6 +243,7 @@ mod event {
 
     #[test]
     fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
+        let _watchdog = Watchdog::new(Duration::from_secs(1));
         let name = generate_name();
 
         let counter = AtomicU64::new(0);
@@ -249,14 +257,14 @@ mod event {
                 let result = sut_listener.blocking_wait().unwrap();
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
-                assert_that!(result.unwrap(), eq TriggerId::new(8912));
+                assert_that!(result.unwrap(), eq TriggerId::new(89));
             });
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::SeqCst);
-            sut_notifier.notify(TriggerId::new(8912)).unwrap();
+            sut_notifier.notify(TriggerId::new(89)).unwrap();
             t.join().unwrap();
 
             assert_that!(counter_old, eq 0);
@@ -268,6 +276,7 @@ mod event {
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
+        let _watchdog = Watchdog::new(Duration::from_secs(1));
         let name = generate_name();
 
         let counter = AtomicU64::new(0);
@@ -281,14 +290,14 @@ mod event {
                 let result = sut_listener.timed_wait(TIMEOUT * 1000).unwrap();
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
-                assert_that!(result.unwrap(), eq TriggerId::new(8912));
+                assert_that!(result.unwrap(), eq TriggerId::new(82));
             });
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::SeqCst);
-            sut_notifier.notify(TriggerId::new(8912)).unwrap();
+            sut_notifier.notify(TriggerId::new(82)).unwrap();
             t.join().unwrap();
 
             assert_that!(counter_old, eq 0);
@@ -394,4 +403,10 @@ mod event {
 
     #[instantiate_tests(<iceoryx2_cal::event::process_local::EventImpl>)]
     mod process_local {}
+
+    #[instantiate_tests(<iceoryx2_cal::event::sem_bitset_process_local::Event>)]
+    mod sem_bitset_process_local {}
+
+    #[instantiate_tests(<iceoryx2_cal::event::sem_bitset_posix_shared_memory::Event>)]
+    mod sem_bitset_posix_shared_memory {}
 }

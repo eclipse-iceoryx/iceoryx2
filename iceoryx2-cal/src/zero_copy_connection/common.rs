@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[doc(hidden)]
 pub mod details {
     use std::cell::UnsafeCell;
     use std::fmt::Debug;
@@ -644,33 +645,27 @@ pub mod details {
             name: &FileName,
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-            Ok(
-                fail!(from "posix_shared_memory::ZeroCopyConnection::does_exist_cfg()",
+            Ok(fail!(from "ZeroCopyConnection::does_exist_cfg()",
                     when Storage::does_exist_cfg(name, &cfg.convert()),
                     "Failed to check if ZeroCopyConnection \"{}\" exists.",
-                    name),
-            )
+                    name))
         }
 
         fn list_cfg(
             cfg: &Self::Configuration,
         ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
-            Ok(
-                fail!(from "posix_shared_memory::ZeroCopyConnection::list_cfg()",
+            Ok(fail!(from "ZeroCopyConnection::list_cfg()",
                     when Storage::list_cfg(&cfg.convert()),
-                    "Failed to list all ZeroCopyConnections."),
-            )
+                    "Failed to list all ZeroCopyConnections."))
         }
 
         unsafe fn remove_cfg(
             name: &FileName,
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-            Ok(
-                fail!(from "posix_shared_memory::ZeroCopyConnection::remove_cfg()",
+            Ok(fail!(from "ZeroCopyConnection::remove_cfg()",
                     when Storage::remove_cfg(name, &cfg.convert()),
-                    "Failed to remove ZeroCopyConnection \"{}\".", name),
-            )
+                    "Failed to remove ZeroCopyConnection \"{}\".", name))
         }
     }
 

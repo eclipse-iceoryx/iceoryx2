@@ -10,17 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod bit_set;
+use crate::dynamic_storage::posix_shared_memory::Storage;
+use crate::event::common::details::EventImpl;
+use crate::event::common::details::Management;
+use crate::event::signal_mechanism::semaphore::Semaphore;
+use iceoryx2_bb_lock_free::mpmc::bit_set::RelocatableBitSet;
 
-use std::fmt::Debug;
-
-use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-
-use super::{NotifierNotifyError, TriggerId};
-
-pub trait IdTracker: RelocatableContainer + Send + Sync + Debug {
-    fn trigger_id_max(&self) -> TriggerId;
-    fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
-    fn acquire(&self) -> Option<TriggerId>;
-    fn acquire_all<F: FnMut(TriggerId)>(&self, callback: F);
-}
+pub type Event =
+    EventImpl<RelocatableBitSet, Semaphore, Storage<Management<RelocatableBitSet, Semaphore>>>;

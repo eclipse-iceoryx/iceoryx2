@@ -223,6 +223,10 @@ impl NamedConceptBuilder<EventImpl> for Builder {
 }
 
 impl NotifierBuilder<EventImpl> for Builder {
+    fn timeout(self, _timeout: Duration) -> Self {
+        self
+    }
+
     fn open(self) -> Result<Duplex, NotifierCreateError> {
         let msg = "Failed to open event";
 
@@ -253,6 +257,10 @@ impl NotifierBuilder<EventImpl> for Builder {
 }
 
 impl ListenerBuilder<EventImpl> for Builder {
+    fn trigger_id_max(self, _id: TriggerId) -> Self {
+        self
+    }
+
     fn create(self) -> Result<Duplex, ListenerCreateError> {
         let msg = "Failed to create event";
 

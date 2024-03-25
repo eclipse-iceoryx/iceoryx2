@@ -168,8 +168,12 @@ impl NamedConceptBuilder<EventImpl> for NotifierBuilder {
 }
 
 impl crate::event::NotifierBuilder<EventImpl> for NotifierBuilder {
+    fn timeout(self, _timeout: Duration) -> Self {
+        self
+    }
+
     fn open(self) -> Result<Notifier, NotifierCreateError> {
-        let msg = "Failed to create event::unix_datagram_socket::Notifier";
+        let msg = "Failed to open event::unix_datagram_socket::Notifier";
 
         let full_name = self.config.path_for(&self.name);
         match UnixDatagramSenderBuilder::new(&full_name).create() {
@@ -293,6 +297,10 @@ impl NamedConceptBuilder<EventImpl> for ListenerBuilder {
 }
 
 impl crate::event::ListenerBuilder<EventImpl> for ListenerBuilder {
+    fn trigger_id_max(self, _id: TriggerId) -> Self {
+        self
+    }
+
     fn create(self) -> Result<Listener, ListenerCreateError> {
         let msg = "Failed to create event::unix_datagram_socket::Listener";
         let full_name = self.config.path_for(&self.name);

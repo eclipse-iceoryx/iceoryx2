@@ -10,13 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::time::Duration;
+use std::{fmt::Debug, time::Duration};
 
 use super::{ListenerCreateError, ListenerWaitError, NotifierNotifyError};
 
 pub mod semaphore;
 
-pub trait SignalMechanism: Send + Sync {
+pub trait SignalMechanism: Send + Sync + Debug {
     /// Creates a [`SignalMechanism`]. It cannot be used until
     /// [`SignalMechanism::init()`] was called.
     fn new() -> Self;
