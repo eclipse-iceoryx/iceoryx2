@@ -12,9 +12,13 @@
 
 #!/bin/bash
 
-sudo apt-get update
-sudo apt-get install -y clang curl git libacl1-dev
-sudo useradd testuser1
-sudo useradd testuser2
-sudo groupadd testgroup1
-sudo groupadd testgroup2
+pacman -Syu --noconfirm clang git rustup
+pacman -Scc --noconfirm 
+rustup toolchain add beta nightly stable 1.73.0
+rustup component add clippy llvm-tools-preview rustfmt
+rustup default stable
+groupadd users
+useradd testuser1 
+useradd testuser2 
+groupadd testgroup1 
+groupadd testgroup2

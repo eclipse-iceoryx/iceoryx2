@@ -47,10 +47,10 @@ jobs:
     needs: [preflight-check, static-code-analysis]
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [stable, 1.73.0, beta, nightly]
         mode: ["--release", ""]
-    timeout-minutes: 10
+    timeout-minutes: 30
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
@@ -63,13 +63,29 @@ jobs:
           components: rustfmt, clippy
 
       - name: Prepare system
-        run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' ) }}
+        run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ matrix.mode }}
 
       - name: Run cargo test
         run: cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+
+  aarch64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: uraimo/run-on-arch-action@v2
+        name: Run commands
+        with:
+          arch: aarch64
+          distro: archarm_latest
+          run: |
+            ./internal/scripts/ci_prepare_archlinux.sh
+            cargo fmt --all -- --check
+            cargo clippy -- -D warnings
+            cargo build --workspace --all-targets
+            cargo test --workspace --no-fail-fast
 
   grcov:
     needs: preflight-check

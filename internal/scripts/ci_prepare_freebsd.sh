@@ -12,9 +12,4 @@
 
 #!/bin/bash
 
-sudo apt-get update
-sudo apt-get install -y clang curl git libacl1-dev
-sudo useradd testuser1
-sudo useradd testuser2
-sudo groupadd testgroup1
-sudo groupadd testgroup2
+
