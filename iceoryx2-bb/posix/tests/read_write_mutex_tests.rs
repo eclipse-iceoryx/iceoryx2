@@ -15,7 +15,9 @@ use iceoryx2_bb_posix::read_write_mutex::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Barrier;
 use std::thread;
 use std::time::Duration;
 
@@ -65,27 +67,34 @@ fn read_write_mutex_timed_lock_works() {
 
 #[test]
 fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let counter = AtomicUsize::new(0);
+    let barrier = Barrier::new(3);
 
     thread::scope(|s| {
         let _guard = sut.write_lock().unwrap();
 
-        s.spawn(|| {
+        let t1 = s.spawn(|| {
+            barrier.wait();
             let _guard = sut.write_lock().unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
-        s.spawn(|| {
+        let t2 = s.spawn(|| {
+            barrier.wait();
             let _guard = sut.read_lock().unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
+        barrier.wait();
         nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         drop(_guard);
-        nanosleep(TIMEOUT).unwrap();
+
+        t1.join().unwrap();
+        t2.join().unwrap();
 
         assert_that!(counter_old, eq 0);
         assert_that!(counter.load(Ordering::Relaxed), eq 2);

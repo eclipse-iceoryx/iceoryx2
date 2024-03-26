@@ -11,7 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::{
-    sync::atomic::{AtomicU32, Ordering},
+    sync::{
+        atomic::{AtomicU32, Ordering},
+        Barrier,
+    },
     time::{Duration, Instant},
 };
 
@@ -48,15 +51,18 @@ fn mutex_lock_blocks() {
 fn mutex_lock_with_timeout_blocks() {
     let sut = Mutex::new();
     let counter = AtomicU32::new(0);
+    let barrier = Barrier::new(2);
 
     std::thread::scope(|s| {
         sut.try_lock();
 
         let t1 = s.spawn(|| {
+            barrier.wait();
+
             let lock_result = sut.lock(|atomic, value| {
                 let start = Instant::now();
                 while atomic.load(Ordering::Relaxed) == *value {
-                    if start.elapsed() > TIMEOUT * 2 {
+                    if start.elapsed() > TIMEOUT * 4 {
                         return WaitAction::Abort;
                     }
                 }
@@ -68,6 +74,7 @@ fn mutex_lock_with_timeout_blocks() {
             assert_that!(lock_result, eq WaitResult::Success);
         });
 
+        barrier.wait();
         std::thread::sleep(TIMEOUT);
         let counter_old = counter.load(Ordering::Relaxed);
         sut.unlock(|_| {});
