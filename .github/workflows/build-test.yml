@@ -20,8 +20,46 @@ jobs:
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
 
+  preflight-check-windows:
+    timeout-minutes: 10
+    runs-on: windows-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy -- -D warnings
+
+  preflight-check-linux:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy -- -D warnings
+
   windows-stable:
-    needs: preflight-check
+    needs: [preflight-check, preflight-check-windows]
     timeout-minutes: 10
     runs-on: windows-latest
     steps:
@@ -37,12 +75,6 @@ jobs:
       - name: Prepare system
         run: internal\scripts\ci_prepare_windows.bat
 
-      - name: Run cargo fmt
-        run: cargo fmt --all -- --check
-
-      - name: Run cargo clippy
-        run: cargo clippy -- -D warnings
-
       - name: Run cargo build
         run: cargo build --workspace --all-targets
 
@@ -50,7 +82,7 @@ jobs:
         run: cargo test --workspace --no-fail-fast
 
   windows-min-version:
-    needs: preflight-check
+    needs: [preflight-check, preflight-check-windows]
     timeout-minutes: 10
     runs-on: windows-latest
     steps:
@@ -73,7 +105,7 @@ jobs:
         run: cargo test --workspace --no-fail-fast
 
   ubuntu-stable-debug:
-    needs: preflight-check
+    needs: [preflight-check, preflight-check-linux]
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -140,12 +172,6 @@ jobs:
 
       - name: Prepare system
         run: ./internal/scripts/ci_prepare_ubuntu.sh
-
-      - name: Run cargo fmt
-        run: cargo fmt --all -- --check
-
-      - name: Run cargo clippy
-        run: cargo clippy -- -D warnings
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets
