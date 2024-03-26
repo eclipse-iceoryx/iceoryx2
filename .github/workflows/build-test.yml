@@ -36,10 +36,8 @@ jobs:
 
       - name: Prepare system
         run: |
-          mkdir "C:\Temp\iceoryx2\services"
-          mkdir "C:\Temp\iceoryx2\tests"
-          mkdir "C:\Temp\iceoryx2\shm"
-          icacls "C:\Temp" /t /c /grant Everyone:F
+          cd C:\Users\user\Documents\GitHub\internal\scripts
+          ci_prepare_windows.bat
 
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
@@ -68,11 +66,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Prepare system
-        run: |
-          mkdir "C:\Temp\iceoryx2\services"
-          mkdir "C:\Temp\iceoryx2\tests"
-          mkdir "C:\Temp\iceoryx2\shm"
-          icacls "C:\Temp" /t /c /grant Everyone:F
+        run: cmd /c "C:\Users\user\Documents\GitHub\internal\scripts"
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets
@@ -95,13 +89,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Prepare system
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang curl git libacl1-dev
-          sudo useradd testuser1
-          sudo useradd testuser2
-          sudo groupadd testgroup1
-          sudo groupadd testgroup2
+        run: ./internal/scripts/ci_prepare_ubuntu.sh
 
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
