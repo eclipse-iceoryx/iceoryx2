@@ -1,8 +1,5 @@
 name: Unit-Tests
 
-env:
-  MIN_RUST_VERION: 1.73.0
-
 on:
   push:
     branches: [ main ]
@@ -63,7 +60,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: $MIN_RUST_VERSION
+          toolchain: 1.73.0
           components: rustfmt, clippy
 
       - name: Prepare system
@@ -75,7 +72,7 @@ jobs:
       - name: Run cargo test
         run: cargo test --workspace --no-fail-fast
 
-  ubuntu-stable:
+  ubuntu-stable-debug:
     needs: preflight-check
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -103,6 +100,185 @@ jobs:
 
       - name: Run cargo test
         run: cargo test --workspace --no-fail-fast
+
+  ubuntu-stable-release:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Prepare system
+        run: ./internal/scripts/ci_prepare_ubuntu.sh
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets --release
+
+      - name: Run cargo test
+        run: cargo test --workspace --no-fail-fast --release
+
+  ubuntu-min-debug:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: 1.73.0
+          components: rustfmt, clippy
+
+      - name: Prepare system
+        run: ./internal/scripts/ci_prepare_ubuntu.sh
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets
+
+      - name: Run cargo test
+        run: cargo test --workspace --no-fail-fast
+
+  ubuntu-min-release:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: 1.73.0
+          components: rustfmt, clippy
+
+      - name: Prepare system
+        run: ./internal/scripts/ci_prepare_ubuntu.sh
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets --release
+
+      - name: Run cargo test
+        run: cargo test --workspace --no-fail-fast --release
+
+  ubuntu-beta-debug:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: beta
+          components: rustfmt, clippy
+
+      - name: Prepare system
+        run: ./internal/scripts/ci_prepare_ubuntu.sh
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets
+
+      - name: Run cargo test
+        run: cargo test --workspace --no-fail-fast
+
+  ubuntu-beta-release:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: beta
+          components: rustfmt, clippy
+
+      - name: Prepare system
+        run: ./internal/scripts/ci_prepare_ubuntu.sh
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets --release
+
+      - name: Run cargo test
+        run: cargo test --workspace --no-fail-fast --release
+
+  ubuntu-nightly-debug:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+
+      - name: Prepare system
+        run: ./internal/scripts/ci_prepare_ubuntu.sh
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets
+
+      - name: Run cargo test
+        run: cargo test --workspace --no-fail-fast
+
+  ubuntu-nightly-release:
+    needs: preflight-check
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+
+      - name: Prepare system
+        run: ./internal/scripts/ci_prepare_ubuntu.sh
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets --release
+
+      - name: Run cargo test
+        run: cargo test --workspace --no-fail-fast --release
 
   grcov:
     needs: preflight-check
