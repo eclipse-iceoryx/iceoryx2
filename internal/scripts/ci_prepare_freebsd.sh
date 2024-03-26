@@ -10,6 +10,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#!/bin/bash
+#!/bin/sh
 
+export ASSUME_ALWAYS_YES=yes
 
+sudo pkg update
+sudo pkg install -y curl git llvm
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
+export PATH=$PATH:$HOME/.cargo/bin
+rustup toolchain add beta nightly 1.73.0 stable
+rustup component add clippy rustfmt
+sudo pw useradd testuser1
+sudo pw useradd testuser2
+sudo pw groupadd testgroup1
+sudo pw groupadd testgroup2
+sudo kldload mqueuefs
+sudo mkdir -p /mnt/mqueue/
+sudo mount -t mqueuefs null /mnt/mqueue/

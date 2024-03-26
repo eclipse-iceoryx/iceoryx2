@@ -48,7 +48,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable, 1.73.0, beta, nightly]
+        toolchain: [ stable, 1.73.0 ] # [stable, 1.73.0, beta, nightly]
         mode: ["--release", ""]
     timeout-minutes: 30
     runs-on: ${{ matrix.os }}
@@ -71,21 +71,51 @@ jobs:
       - name: Run cargo test
         run: cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
-  aarch64:
+  arm:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: ["aarch64"] # ["aarch64", "armv7"]
+        toolchain: [ stable ] # [stable, 1.73.0, beta, nightly]
+        mode: ["--release", ""]
     steps:
       - uses: actions/checkout@v4
       - uses: uraimo/run-on-arch-action@v2
         name: Run commands
         with:
-          arch: aarch64
+          arch: ${{ matrix.architecture }}
           distro: archarm_latest
           run: |
             ./internal/scripts/ci_prepare_archlinux.sh
+            rustup default ${{ matrix.toolchain }}
             cargo fmt --all -- --check
             cargo clippy -- -D warnings
-            cargo build --workspace --all-targets
-            cargo test --workspace --no-fail-fast
+            cargo build --workspace --all-targets ${{ matrix.mode }}
+            cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+
+  freebsd:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        freebsd_version: ["14.0"] # ['14.0', '13.3']
+        architecture: ['x86_64', 'aarch64']
+        toolchain: [ stable ] # [stable, 1.73.0, beta, nightly]
+        mode: [""] # ["--release", ""]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cross-platform-actions/action@v0.23.0
+        with:
+          operating_system: freebsd
+          version: ${{ matrix.freebsd_version }}
+          run: |
+            ./internal/scripts/ci_prepare_freebsd.sh
+            export PATH=$PATH:$HOME/.cargo/bin
+            export LIBCLANG_PATH=/usr/local/llvm15/lib/
+            rustup default ${{ matrix.toolchain }}
+            cargo fmt --all -- --check
+            cargo clippy -- -D warnings
+            cargo build --workspace --all-targets ${{ matrix.mode }}
+            cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
   grcov:
     needs: preflight-check
