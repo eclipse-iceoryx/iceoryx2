@@ -46,7 +46,6 @@ use iceoryx2_pal_posix::*;
 
 use crate::handle_errno;
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
-use crate::ipc_capable::HandleState;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum BarrierCreationError {
@@ -172,14 +171,14 @@ impl Handle for BarrierHandle {
         self.handle.is_inter_process_capable()
     }
 
-    fn state(&self) -> HandleState {
-        self.handle.state()
+    fn is_initialized(&self) -> bool {
+        self.handle.is_initialized()
     }
 }
 
 impl Drop for BarrierHandle {
     fn drop(&mut self) {
-        if self.handle.state() == HandleState::Initialized {
+        if self.handle.is_initialized() {
             unsafe {
                 self.handle.cleanup(|barrier| {
                 if posix::pthread_barrier_destroy(barrier) != 0 {

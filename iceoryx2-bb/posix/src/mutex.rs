@@ -48,7 +48,6 @@
 pub use crate::ipc_capable::{Handle, IpcCapable};
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
-use crate::ipc_capable::HandleState;
 use iceoryx2_bb_elementary::scope_guard::*;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::*;
@@ -485,7 +484,7 @@ unsafe impl<T: Sized + Debug> Sync for MutexHandle<T> {}
 
 impl<T: Sized + Debug> Drop for MutexHandle<T> {
     fn drop(&mut self) {
-        if self.handle.state() == HandleState::Initialized {
+        if self.handle.is_initialized() {
             unsafe {
                 self.handle.cleanup(|mtx| {
                 if posix::pthread_mutex_destroy(mtx) != 0 {
@@ -507,8 +506,8 @@ impl<T: Sized + Debug> Handle for MutexHandle<T> {
         }
     }
 
-    fn state(&self) -> crate::ipc_capable::HandleState {
-        self.handle.state()
+    fn is_initialized(&self) -> bool {
+        self.handle.is_initialized()
     }
 
     fn is_inter_process_capable(&self) -> bool {

@@ -13,7 +13,7 @@
 #[generic_tests::define]
 mod ipc_capable {
     use iceoryx2_bb_posix::barrier::*;
-    use iceoryx2_bb_posix::ipc_capable::{Handle, HandleState, IpcCapable};
+    use iceoryx2_bb_posix::ipc_capable::{Handle, IpcCapable};
     use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexHandle};
     use iceoryx2_bb_posix::read_write_mutex::{
         ReadWriteMutex, ReadWriteMutexBuilder, ReadWriteMutexHandle,
@@ -34,7 +34,7 @@ mod ipc_capable {
     #[test]
     fn new_handle_is_not_initialized<Sut: TestSut>() {
         let sut_handle = Sut::Handle::new();
-        assert_that!(sut_handle.state(), eq HandleState::Uninitialized);
+        assert_that!(sut_handle.is_initialized(), eq false);
     }
 
     #[test]
@@ -77,14 +77,14 @@ mod ipc_capable {
         let sut_handle_1 = Sut::Handle::new();
         let sut_handle_2 = Sut::Handle::new();
 
-        assert_that!(sut_handle_1.state(), eq HandleState::Uninitialized);
-        assert_that!(sut_handle_2.state(), eq HandleState::Uninitialized);
+        assert_that!(sut_handle_1.is_initialized(), eq false);
+        assert_that!(sut_handle_2.is_initialized(), eq false);
 
         Sut::init_process_local_handle(&sut_handle_1);
         Sut::init_inter_process_handle(&sut_handle_2);
 
-        assert_that!(sut_handle_1.state(), eq HandleState::Initialized);
-        assert_that!(sut_handle_2.state(), eq HandleState::Initialized);
+        assert_that!(sut_handle_1.is_initialized(), eq true);
+        assert_that!(sut_handle_2.is_initialized(), eq true);
     }
 
     #[test]

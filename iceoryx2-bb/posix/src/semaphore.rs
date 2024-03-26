@@ -19,7 +19,6 @@ use std::cell::UnsafeCell;
 use std::fmt::Debug;
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
-use crate::ipc_capable::HandleState;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
@@ -676,14 +675,14 @@ impl Handle for UnnamedSemaphoreHandle {
         self.handle.is_inter_process_capable()
     }
 
-    fn state(&self) -> HandleState {
-        self.handle.state()
+    fn is_initialized(&self) -> bool {
+        self.handle.is_initialized()
     }
 }
 
 impl Drop for UnnamedSemaphoreHandle {
     fn drop(&mut self) {
-        if self.handle.state() == HandleState::Initialized {
+        if self.handle.is_initialized() {
             unsafe {
                 self.handle.cleanup(|sem| {
                     if posix::sem_destroy(sem) != 0 {

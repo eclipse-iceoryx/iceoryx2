@@ -31,24 +31,27 @@ pub(crate) mod internal {
     pub struct HandleStorage<T> {
         handle: UnsafeCell<T>,
         is_inter_process_capable: AtomicBool,
-        state: AtomicBool,
+        is_initialized: AtomicBool,
     }
+
+    unsafe impl<T> Send for HandleStorage<T> {}
+    unsafe impl<T> Sync for HandleStorage<T> {}
 
     impl<T> Debug for HandleStorage<T> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
-                "HandleStorage<{}> {{ is_interprocess_capable: {}, state: {} }}",
+                "HandleStorage<{}> {{ is_interprocess_capable: {}, is_initialized: {} }}",
                 std::any::type_name::<T>(),
                 self.is_inter_process_capable.load(Ordering::Relaxed),
-                self.state.load(Ordering::Relaxed),
+                self.is_initialized.load(Ordering::Relaxed),
             )
         }
     }
 
     impl<T> Drop for HandleStorage<T> {
         fn drop(&mut self) {
-            self.state.store(false, Ordering::Relaxed);
+            self.is_initialized.store(false, Ordering::Relaxed);
         }
     }
 
@@ -57,17 +60,14 @@ pub(crate) mod internal {
         pub fn new(handle: T) -> Self {
             Self {
                 handle: UnsafeCell::new(handle),
-                state: AtomicBool::new(false),
+                is_initialized: AtomicBool::new(false),
                 is_inter_process_capable: AtomicBool::new(false),
             }
         }
 
-        /// Returns the current state of the underlying handle
-        pub fn state(&self) -> HandleState {
-            match self.state.load(Ordering::Relaxed) {
-                false => HandleState::Uninitialized,
-                true => HandleState::Initialized,
-            }
+        /// Returns true if the [`Handle`] is initialized, otherwise false.
+        pub fn is_initialized(&self) -> bool {
+            self.is_initialized.load(Ordering::Relaxed)
         }
 
         /// Initializes the handle via a provided initializer callback. If the initializer returns
@@ -75,13 +75,14 @@ pub(crate) mod internal {
         ///
         /// # Safety
         ///  * The handle must be uninitialized
+        ///  * Must not be shared with other threads before calling [`IpcCapable::initialize()`]
         ///
         pub unsafe fn initialize<E, F: FnOnce(*mut T) -> Result<Capability, E>>(
             &self,
             initializer: F,
         ) -> Result<(), E> {
             debug_assert!(
-                !self.state.load(Ordering::Relaxed),
+                !self.is_initialized.load(Ordering::Relaxed),
                 "The handle must be uninitialized before it can be initialized."
             );
 
@@ -89,7 +90,11 @@ pub(crate) mod internal {
                 initializer(self.handle.get())? == Capability::InterProcess,
                 Ordering::Relaxed,
             );
-            self.state.store(true, Ordering::Relaxed);
+
+            // does not need to sync any memory since the construct is not allowed to
+            // be shared with any other thread before it is initialized
+            // -> Ordering::Relaxed
+            self.is_initialized.store(true, Ordering::Relaxed);
 
             Ok(())
         }
@@ -102,15 +107,21 @@ pub(crate) mod internal {
         ///
         /// # Safety
         ///  * The handle must be initialized
+        ///  * Must not be used concurrently. Only one thread - the one that calls
+        ///     [`IpcCapable::cleanup()`] - is allowed to operate on the [`IpcCapable`].
         ///
         pub unsafe fn cleanup<F: FnOnce(&mut T)>(&self, cleanup: F) {
             debug_assert!(
-                self.state.load(Ordering::Relaxed),
+                self.is_initialized.load(Ordering::Relaxed),
                 "The handle must be initialized before it can be cleaned up."
             );
 
             cleanup(self.get());
-            self.state.store(false, Ordering::Relaxed);
+
+            // does not need to sync any memory since the construct is not allowed to
+            // be shared with any other thread before it is initialized
+            // -> Ordering::Relaxed
+            self.is_initialized.store(false, Ordering::Relaxed);
         }
 
         /// Returns a mutable reference to the underlying handle.
@@ -121,7 +132,7 @@ pub(crate) mod internal {
         #[allow(clippy::mut_from_ref)]
         pub unsafe fn get(&self) -> &mut T {
             debug_assert!(
-                self.state.load(Ordering::Relaxed),
+                self.is_initialized.load(Ordering::Relaxed),
                 "The handle must be initialized before it can be acquired."
             );
 
@@ -144,7 +155,7 @@ pub enum HandleState {
 pub trait Handle: Send + Sync {
     fn new() -> Self;
     fn is_inter_process_capable(&self) -> bool;
-    fn state(&self) -> HandleState;
+    fn is_initialized(&self) -> bool;
 }
 
 /// Represents struct that can be configured for inter-process use.
@@ -161,7 +172,7 @@ pub trait IpcCapable<'a, T: Handle>: internal::IpcConstructible<'a, T> + Sized {
     ///
     unsafe fn from_ipc_handle(handle: &'a T) -> Self {
         debug_assert!(
-            handle.state() == HandleState::Initialized,
+            handle.is_initialized(),
             "The handle must be initialized before it can be used to construct an object."
         );
 

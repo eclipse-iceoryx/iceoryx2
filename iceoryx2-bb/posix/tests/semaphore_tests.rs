@@ -430,8 +430,7 @@ fn unnamed_semaphore_acquiring_non_ipc_capable_handle_fails() {
     let handle = UnnamedSemaphoreHandle::new();
     let _sut1 = UnnamedSemaphoreBuilder::new()
         .is_interprocess_capable(false)
-        .create(&handle)
-        .unwrap();
+        .create(&handle);
 
     unsafe { UnnamedSemaphore::from_ipc_handle(&handle) };
 }

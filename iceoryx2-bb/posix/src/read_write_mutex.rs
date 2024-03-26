@@ -56,7 +56,6 @@
 pub use crate::ipc_capable::{Handle, IpcCapable};
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
-use crate::ipc_capable::HandleState;
 use crate::{clock::AsTimespec, handle_errno};
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
@@ -359,8 +358,8 @@ impl<T: Sized + Debug> Handle for ReadWriteMutexHandle<T> {
         }
     }
 
-    fn state(&self) -> HandleState {
-        self.handle.state()
+    fn is_initialized(&self) -> bool {
+        self.handle.is_initialized()
     }
 
     fn is_inter_process_capable(&self) -> bool {
@@ -370,7 +369,7 @@ impl<T: Sized + Debug> Handle for ReadWriteMutexHandle<T> {
 
 impl<T: Sized + Debug> Drop for ReadWriteMutexHandle<T> {
     fn drop(&mut self) {
-        if self.handle.state() == HandleState::Initialized {
+        if self.handle.is_initialized() {
             unsafe {
                 self.handle.cleanup(|mtx|{
                     if posix::pthread_rwlock_destroy(mtx) != 0 {
