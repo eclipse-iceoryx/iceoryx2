@@ -15,7 +15,6 @@ use iceoryx2_bb_posix::config;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_lock::*;
 use iceoryx2_bb_posix::process::*;
-use iceoryx2_bb_posix::read_write_mutex::ReadWriteMutexHandle;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;

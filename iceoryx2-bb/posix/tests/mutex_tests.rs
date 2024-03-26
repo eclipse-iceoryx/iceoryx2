@@ -13,7 +13,6 @@
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
-use iceoryx2_bb_posix::unmovable_ipc_handle::AcquireIpcHandleError;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -211,7 +210,7 @@ fn mutex_multiple_ipc_mutex_are_working() {
         .create(123, &handle)
         .unwrap();
 
-    let sut2 = Mutex::from_ipc_handle(&handle).unwrap();
+    let sut2 = unsafe { Mutex::from_ipc_handle(&handle) };
 
     let guard1 = sut1.try_lock().unwrap();
     assert_that!(guard1, is_some);
@@ -225,51 +224,6 @@ fn mutex_multiple_ipc_mutex_are_working() {
 
     let guard1 = sut1.try_lock().unwrap();
     assert_that!(guard1, is_none);
-}
-
-#[test]
-fn mutex_acquire_uninitialized_ipc_handle_failes() {
-    let handle = MutexHandle::new();
-
-    let sut = Mutex::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(sut.err().unwrap(), eq AcquireIpcHandleError::Uninitialized);
-
-    let sut1 = MutexBuilder::new()
-        .is_interprocess_capable(true)
-        .create(55123, &handle)
-        .unwrap();
-
-    let sut2 = Mutex::from_ipc_handle(&handle);
-    assert_that!(sut2, is_ok);
-
-    drop(sut1);
-
-    let sut3 = Mutex::from_ipc_handle(&handle);
-    assert_that!(sut3, is_ok);
-
-    drop(sut2);
-    drop(sut3);
-
-    let sut = Mutex::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(sut.err().unwrap(), eq AcquireIpcHandleError::Uninitialized);
-}
-
-#[test]
-fn mutex_acquiring_non_ipc_capable_handle_fails() {
-    let handle = MutexHandle::new();
-    let _sut1 = MutexBuilder::new()
-        .is_interprocess_capable(false)
-        .create(5123, &handle)
-        .unwrap();
-
-    let sut = Mutex::from_ipc_handle(&handle);
-    assert_that!(sut, is_err);
-    assert_that!(
-        sut.err().unwrap(), eq
-        AcquireIpcHandleError::IsNotInterProcessCapable
-    );
 }
 
 #[test]

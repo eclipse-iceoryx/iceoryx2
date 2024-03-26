@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_lock_free::spsc::index_queue::*;
-use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_testing::assert_that;
 use std::sync::{Arc, Mutex};
 use std::thread;

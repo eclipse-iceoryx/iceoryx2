@@ -17,7 +17,7 @@ mod publisher {
     use iceoryx2::port::publisher::PublisherLoanError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::{service_name::ServiceName, Service};
-    use iceoryx2_bb_posix::barrier::{BarrierBuilder, BarrierHandle};
+    use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;

@@ -51,6 +51,7 @@ pub mod file_descriptor_set;
 pub mod file_lock;
 pub mod file_type;
 pub mod group;
+pub mod ipc_capable;
 pub mod memory;
 pub mod memory_lock;
 pub mod message_queue;
@@ -70,7 +71,6 @@ pub mod system_configuration;
 pub mod thread;
 pub mod unique_system_id;
 pub mod unix_datagram_socket;
-pub mod unmovable_ipc_handle;
 pub mod user;
 
 #[cfg(feature = "acl")]

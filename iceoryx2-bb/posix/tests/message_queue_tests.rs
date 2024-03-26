@@ -17,12 +17,8 @@ use std::{
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::{
-    barrier::{BarrierBuilder, BarrierHandle},
-    clock::Time,
-    message_queue::*,
-    semaphore::ClockType,
-    unique_system_id::UniqueSystemId,
-    unix_datagram_socket::CreationMode,
+    barrier::*, clock::Time, message_queue::*, semaphore::ClockType,
+    unique_system_id::UniqueSystemId, unix_datagram_socket::CreationMode,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::{assert_that, test_requires};

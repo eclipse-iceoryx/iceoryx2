@@ -37,11 +37,10 @@
 //! fileWithLock.read_lock().unwrap().read_to_string(&mut content);
 //! ```
 
-pub use crate::read_write_mutex::ReadWriteMutexHandle;
+pub use crate::read_write_mutex::*;
 
 use crate::file_descriptor::FileDescriptor;
 use crate::process::{Process, ProcessId};
-use crate::read_write_mutex::*;
 use crate::{clock::Time, file_descriptor::FileDescriptorBased};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;

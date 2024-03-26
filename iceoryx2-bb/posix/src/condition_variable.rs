@@ -18,10 +18,12 @@
 //!                                notify_one is not available
 //! * [`ConditionVariable`] - the condition has to be provided on construction but notify_one is
 //!                           available
+pub use crate::ipc_capable::{Handle, IpcCapable};
+pub use crate::mutex::*;
 
+use crate::clock::ClockType;
 use crate::clock::{AsTimespec, Time, TimeError};
 use crate::handle_errno;
-use crate::{clock::ClockType, mutex::*};
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::*};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -348,7 +350,7 @@ pub(super) mod internal {
             mutex: &Mutex<T>,
         ) -> Result<(), ConditionVariableWaitError<'_, '_, T>> {
             handle_errno!(ConditionVariableWaitError, from self,
-                errno_source unsafe { posix::pthread_cond_wait(self.handle.get(), mutex.handle.as_ptr()) }.into(),
+                errno_source unsafe { posix::pthread_cond_wait(self.handle.get(), mutex.handle.handle.get()) }.into(),
                 success Errno::ESUCCES => (),
                 v => (UnknownError(v as i32), "An unknown error occurred in wait ({}).", v)
             );
@@ -363,7 +365,7 @@ pub(super) mod internal {
                 + fail!(from self, when Time::now_with_clock(self.clock_type), "Failed to get current time in timed_wait.")
                     .as_duration();
             handle_errno!(ConditionVariableTimedWaitError, from self,
-                errno_source unsafe { posix::pthread_cond_timedwait(self.handle.get(), mutex.handle.as_ptr(), &wait_time.as_timespec()) }.into(),
+                errno_source unsafe { posix::pthread_cond_timedwait(self.handle.get(), mutex.handle.handle.get(), &wait_time.as_timespec()) }.into(),
                 success Errno::ESUCCES => WaitState::Success;
                 success Errno::ETIMEDOUT => WaitState::Timeout,
                 v => (UnknownError(v as i32), "An unknown error occured in timed_wait ({}).", v)

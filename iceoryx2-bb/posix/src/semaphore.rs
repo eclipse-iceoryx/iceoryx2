@@ -13,14 +13,15 @@
 //! Provides the [`NamedSemaphore`] and the [`UnnamedSemaphore`]. Both can be used in an
 //! inter-process context to signal events between processes.
 
-use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
-use std::{cell::UnsafeCell, fmt::Debug};
+pub use crate::ipc_capable::{Handle, IpcCapable};
 
-pub use crate::unmovable_ipc_handle::IpcCapable;
-use crate::unmovable_ipc_handle::{internal::*, IpcHandleState};
+use std::cell::UnsafeCell;
+use std::fmt::Debug;
+
+use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_log::{debug, fail, fatal_panic};
+use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
@@ -61,7 +62,6 @@ pub enum UnnamedSemaphoreCreationError {
     InitialValueTooLarge,
     ExceedsMaximumNumberOfSemaphores,
     InsufficientPermissions,
-    HandleAlreadyInitialized,
     UnknownError(i32),
 }
 
@@ -604,101 +604,94 @@ impl UnnamedSemaphoreBuilder {
         self
     }
 
-    /// Creates an [`UnnamedSemaphore`].
-    pub fn create(
-        self,
-        handle: &UnnamedSemaphoreHandle,
-    ) -> Result<UnnamedSemaphore, UnnamedSemaphoreCreationError> {
+    fn initialize_semaphore(
+        &self,
+        sem: *mut posix::sem_t,
+    ) -> Result<Capability, UnnamedSemaphoreCreationError> {
         let msg = "Unable to create semaphore";
 
-        if handle
-            .reference_counter
-            .compare_exchange(
-                IpcHandleState::Uninitialized as _,
-                IpcHandleState::PerformingInitialization as _,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            )
-            .is_err()
-        {
-            fail!(from self, with UnnamedSemaphoreCreationError::HandleAlreadyInitialized,
-                "{} since the handle is already initialized with another semaphore.", msg);
-        }
-
-        handle
-            .is_interprocess_capable
-            .store(self.is_interprocess_capable, Ordering::Relaxed);
-
-        unsafe { *handle.clock_type.get() = self.clock_type };
-
         if self.initial_value > MAX_INITIAL_SEMAPHORE_VALUE {
-            handle.reference_counter.store(-1, Ordering::Relaxed);
             fail!(from self, with UnnamedSemaphoreCreationError::InitialValueTooLarge,
                 "{} since the initial value {} is too large.", msg, self.initial_value);
         }
 
         if unsafe {
             posix::sem_init(
-                handle.as_ptr(),
+                sem,
                 if self.is_interprocess_capable { 1 } else { 0 },
                 self.initial_value,
             )
-        } != -1
+        } == -1
         {
-            handle
-                .reference_counter
-                .store(IpcHandleState::Initialized as _, Ordering::Release);
-            return Ok(UnnamedSemaphore::new(handle));
+            handle_errno!(UnnamedSemaphoreCreationError, from self,
+                Errno::EINVAL => (InitialValueTooLarge, "{} since the initial value {} is too large. Please verify posix configuration!", msg, self.initial_value),
+                Errno::ENOSPC => (ExceedsMaximumNumberOfSemaphores, "{} since it exceeds the maximum amount of semaphores {}.", msg, Limit::MaxNumberOfSemaphores.value()),
+                Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
+                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
+            );
         }
 
-        handle_errno!(UnnamedSemaphoreCreationError, from self,
-            Errno::EINVAL => (InitialValueTooLarge, "{} since the initial value {} is too large. Please verify posix configuration!", msg, self.initial_value),
-            Errno::ENOSPC => (ExceedsMaximumNumberOfSemaphores, "{} since it exceeds the maximum amount of semaphores {}.", msg, Limit::MaxNumberOfSemaphores.value()),
-            Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
-            v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-        );
+        match self.is_interprocess_capable {
+            true => Ok(Capability::InterProcess),
+            false => Ok(Capability::ProcessLocal),
+        }
+    }
+
+    /// Creates an [`UnnamedSemaphore`].
+    pub fn create(
+        self,
+        handle: &UnnamedSemaphoreHandle,
+    ) -> Result<UnnamedSemaphore, UnnamedSemaphoreCreationError> {
+        unsafe {
+            handle
+                .handle
+                .initialize(|sem| self.initialize_semaphore(sem))?;
+        }
+
+        unsafe { *handle.clock_type.get() = self.clock_type };
+
+        Ok(UnnamedSemaphore::new(handle))
     }
 }
 
 #[derive(Debug)]
 pub struct UnnamedSemaphoreHandle {
-    handle: UnsafeCell<posix::sem_t>,
+    handle: HandleStorage<posix::sem_t>,
     clock_type: UnsafeCell<ClockType>,
-    is_interprocess_capable: AtomicBool,
-    reference_counter: AtomicI64,
 }
 
 unsafe impl Send for UnnamedSemaphoreHandle {}
 unsafe impl Sync for UnnamedSemaphoreHandle {}
 
-impl crate::unmovable_ipc_handle::internal::UnmovableIpcHandle for UnnamedSemaphoreHandle {
-    fn reference_counter(&self) -> &AtomicI64 {
-        &self.reference_counter
-    }
-
-    fn is_interprocess_capable(&self) -> bool {
-        self.is_interprocess_capable.load(Ordering::Relaxed)
-    }
-}
-
-impl Default for UnnamedSemaphoreHandle {
-    fn default() -> Self {
+impl Handle for UnnamedSemaphoreHandle {
+    fn new() -> Self {
         Self {
-            handle: UnsafeCell::new(posix::sem_t::new()),
+            handle: HandleStorage::new(posix::sem_t::new()),
             clock_type: UnsafeCell::new(ClockType::default()),
-            is_interprocess_capable: AtomicBool::new(false),
-            reference_counter: AtomicI64::new(IpcHandleState::Uninitialized as _),
         }
     }
-}
 
-impl UnnamedSemaphoreHandle {
-    pub fn new() -> Self {
-        Self::default()
+    fn is_inter_process_capable(&self) -> bool {
+        self.handle.is_inter_process_capable()
     }
 
-    fn as_ptr(&self) -> *mut posix::sem_t {
-        self.handle.get()
+    fn is_initialized(&self) -> bool {
+        self.handle.is_initialized()
+    }
+}
+
+impl Drop for UnnamedSemaphoreHandle {
+    fn drop(&mut self) {
+        if self.handle.is_initialized() {
+            unsafe {
+                self.handle.cleanup(|sem| {
+                    if posix::sem_destroy(sem) != 0 {
+                        warn!(from self,
+                            "Unable to destroy unnamed semaphore. Was it already destroyed by another instance in another process?");
+                    }
+                });
+            };
+        }
     }
 }
 
@@ -739,36 +732,21 @@ pub struct UnnamedSemaphore<'a> {
 unsafe impl Send for UnnamedSemaphore<'_> {}
 unsafe impl Sync for UnnamedSemaphore<'_> {}
 
-impl Drop for UnnamedSemaphore<'_> {
-    fn drop(&mut self) {
-        if self.handle.reference_counter.fetch_sub(1, Ordering::AcqRel) == 1 {
-            if unsafe { posix::sem_destroy(self.handle.as_ptr()) } != 0 {
-                fatal_panic!(from self, "This should never happen! Unable to destroy semaphore since the file-descriptor was invalid.");
-            }
-
-            self.handle.reference_counter.store(-1, Ordering::Release);
-        }
-    }
-}
-
-impl<'a> CreateIpcConstruct<'a, UnnamedSemaphoreHandle> for UnnamedSemaphore<'a> {
+impl<'a> IpcConstructible<'a, UnnamedSemaphoreHandle> for UnnamedSemaphore<'a> {
     fn new(handle: &'a UnnamedSemaphoreHandle) -> Self {
         Self { handle }
     }
 }
 
-impl<'a> IpcCapable<'a, UnnamedSemaphoreHandle> for UnnamedSemaphore<'a> {}
-
-impl<'a> UnnamedSemaphore<'a> {
-    /// Returns true if the semaphore is interprocess capable, otherwise false
-    pub fn is_interprocess_capable(&self) -> bool {
-        self.handle.is_interprocess_capable.load(Ordering::Relaxed)
+impl<'a> IpcCapable<'a, UnnamedSemaphoreHandle> for UnnamedSemaphore<'a> {
+    fn is_interprocess_capable(&self) -> bool {
+        self.handle.is_inter_process_capable()
     }
 }
 
 impl internal::SemaphoreHandle for UnnamedSemaphore<'_> {
     fn handle(&self) -> *mut posix::sem_t {
-        self.handle.as_ptr()
+        unsafe { self.handle.handle.get() }
     }
 
     fn get_clock_type(&self) -> ClockType {

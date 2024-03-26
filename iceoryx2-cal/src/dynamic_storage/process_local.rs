@@ -40,7 +40,7 @@
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
-use iceoryx2_bb_posix::mutex::{Mutex, MutexBuilder, MutexGuard, MutexHandle};
+use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
