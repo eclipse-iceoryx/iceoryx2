@@ -142,6 +142,7 @@ pub mod details {
         size: usize,
         config: Configuration<Allocator, Storage>,
         timeout: Duration,
+        has_ownership: bool,
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
@@ -153,6 +154,7 @@ pub mod details {
                 config: Configuration::default(),
                 size: 0,
                 timeout: Duration::ZERO,
+                has_ownership: true,
             }
         }
 
@@ -202,6 +204,11 @@ pub mod details {
         crate::shared_memory::SharedMemoryBuilder<Allocator, Memory<Allocator, Storage>>
         for Builder<Allocator, Storage>
     {
+        fn has_ownership(mut self, value: bool) -> Self {
+            self.has_ownership = value;
+            self
+        }
+
         fn size(mut self, value: usize) -> Self {
             self.size = value;
             self
@@ -228,7 +235,7 @@ pub mod details {
             let storage = match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())
                 .supplementary_size(self.size + allocator_mgmt_size)
-                .has_ownership(true)
+                .has_ownership(self.has_ownership)
                 .initializer(|details, init_allocator| -> bool {
                     self.initialize(allocator_config, details, init_allocator)
                 })
@@ -379,6 +386,22 @@ pub mod details {
     {
         type Builder = Builder<Allocator, Storage>;
 
+        fn does_support_persistency() -> bool {
+            Storage::does_support_persistency()
+        }
+
+        fn has_ownership(&self) -> bool {
+            self.storage.has_ownership()
+        }
+
+        fn acquire_ownership(&self) {
+            self.storage.acquire_ownership()
+        }
+
+        fn release_ownership(&self) {
+            self.storage.release_ownership()
+        }
+
         fn size(&self) -> usize {
             self.storage.get().payload_size
         }
@@ -403,10 +426,6 @@ pub mod details {
                 .allocator
                 .assume_init_ref()
                 .deallocate(offset, layout);
-        }
-
-        fn release_ownership(&mut self) {
-            self.storage.release_ownership()
         }
 
         fn payload_start_address(&self) -> usize {

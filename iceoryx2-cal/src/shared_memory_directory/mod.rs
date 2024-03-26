@@ -71,7 +71,7 @@ impl SharedMemoryDirectoryCreator {
         allocator_config: &Allocator::Configuration,
     ) -> Result<SharedMemoryDirectory<MgmtShm, Allocator, DataShm>, SharedMemoryCreateError> {
         let msg = "Unable to create shared memory directory";
-        let mut mgmt_shm = fail!(from self,
+        let mgmt_shm = fail!(from self,
         when MgmtShm::Builder::new(&self.name)
             .config(
                 &MgmtShm::Configuration::default()
@@ -89,7 +89,7 @@ impl SharedMemoryDirectoryCreator {
         let files = shm_ptr.data_ptr as *mut FileReferenceSet;
         unsafe { files.write(FileReferenceSet::default()) };
 
-        let mut data_shm = fail!(from self,
+        let data_shm = fail!(from self,
             when DataShm::Builder::new(&self.name).config(
                 &DataShm::Configuration::default()
                     .suffix(unsafe{FileName::new_unchecked(DATA_SHM_SUFFIX)}),
@@ -208,6 +208,10 @@ impl<
 
     pub fn memory_capacity(&self) -> usize {
         self.data_shm.size()
+    }
+
+    pub fn does_support_persistency() -> bool {
+        MgmtShm::does_support_persistency()
     }
 
     pub fn does_exist(name: &FileName) -> Result<bool, NamedConceptDoesExistError> {

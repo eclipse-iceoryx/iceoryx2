@@ -18,7 +18,7 @@ mod shared_memory {
     use iceoryx2_bb_elementary::math::ToB64;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::{
         named_concept::NamedConceptBuilder,
@@ -279,7 +279,7 @@ mod shared_memory {
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 0);
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
 
-        let mut storage_guard_1 = Sut::Builder::new(&storage_name)
+        let storage_guard_1 = Sut::Builder::new(&storage_name)
             .size(DEFAULT_SIZE)
             .config(&config_1)
             .create(&SHM_CONFIG)
@@ -290,7 +290,7 @@ mod shared_memory {
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
 
-        let mut storage_guard_2 = Sut::Builder::new(&storage_name)
+        let storage_guard_2 = Sut::Builder::new(&storage_name)
             .size(DEFAULT_SIZE)
             .config(&config_2)
             .create(&SHM_CONFIG)
@@ -322,6 +322,59 @@ mod shared_memory {
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
+    }
+
+    #[test]
+    fn shm_does_not_remove_resources_without_ownership<Sut: SharedMemory<DefaultAllocator>>() {
+        test_requires!(Sut::does_support_persistency());
+
+        let name_1 = generate_name();
+        let name_2 = generate_name();
+
+        let sut_1 = Sut::Builder::new(&name_1)
+            .size(1024)
+            .has_ownership(true)
+            .create(&SHM_CONFIG)
+            .unwrap();
+        sut_1.release_ownership();
+
+        let sut_2 = Sut::Builder::new(&name_2)
+            .size(1024)
+            .has_ownership(false)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        assert_that!(sut_1.has_ownership(), eq false);
+        assert_that!(sut_2.has_ownership(), eq false);
+
+        drop(sut_1);
+        drop(sut_2);
+
+        assert_that!(Sut::does_exist(&name_1), eq Ok(true));
+        assert_that!(Sut::does_exist(&name_2), eq Ok(true));
+
+        assert_that!(unsafe { Sut::remove(&name_1) }, eq Ok(true));
+        assert_that!(unsafe { Sut::remove(&name_2) }, eq Ok(true));
+    }
+
+    #[test]
+    fn acquired_ownership_leads_to_cleaned_up_resources<Sut: SharedMemory<DefaultAllocator>>() {
+        test_requires!(Sut::does_support_persistency());
+
+        let name = generate_name();
+
+        let sut = Sut::Builder::new(&name)
+            .size(1024)
+            .has_ownership(false)
+            .create(&SHM_CONFIG)
+            .unwrap();
+
+        assert_that!(sut.has_ownership(), eq false);
+        sut.acquire_ownership();
+        assert_that!(sut.has_ownership(), eq true);
+
+        drop(sut);
+        assert_that!(Sut::does_exist(&name), eq Ok(false));
     }
 
     #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>)]

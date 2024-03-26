@@ -57,6 +57,8 @@ use std::sync::Arc;
 pub use crate::dynamic_storage::*;
 use crate::static_storage::file::NamedConceptConfiguration;
 
+use self::dynamic_storage_configuration::DynamicStorageConfiguration;
+
 #[derive(Debug)]
 struct StorageEntry {
     content: Arc<dyn Any + Send + Sync>,
@@ -68,24 +70,39 @@ struct StorageDetails<T> {
     layout: Layout,
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub struct Configuration {
+#[derive(PartialEq, Eq, Copy, Debug)]
+pub struct Configuration<T: Send + Sync + Debug> {
     suffix: FileName,
     prefix: FileName,
     path_hint: Path,
+    _data: PhantomData<T>,
 }
 
-impl Default for Configuration {
+impl<T: Send + Sync + Debug> Clone for Configuration<T> {
+    fn clone(&self) -> Self {
+        Self {
+            suffix: self.suffix,
+            prefix: self.prefix,
+            path_hint: self.path_hint,
+            _data: PhantomData,
+        }
+    }
+}
+
+impl<T: Send + Sync + Debug> Default for Configuration<T> {
     fn default() -> Self {
         Self {
             suffix: Storage::<()>::default_suffix(),
             prefix: Storage::<()>::default_prefix(),
             path_hint: Storage::<()>::default_path_hint(),
+            _data: PhantomData,
         }
     }
 }
 
-impl NamedConceptConfiguration for Configuration {
+impl<T: Send + Sync + Debug> DynamicStorageConfiguration<T> for Configuration<T> {}
+
+impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     fn prefix(mut self, value: FileName) -> Self {
         self.prefix = value;
         self
@@ -112,6 +129,14 @@ impl NamedConceptConfiguration for Configuration {
     fn get_path_hint(&self) -> &Path {
         &self.path_hint
     }
+
+    fn path_for(&self, value: &FileName) -> iceoryx2_bb_system_types::file_path::FilePath {
+        self.path_for_with_type(value)
+    }
+
+    fn extract_name_from_file(&self, value: &FileName) -> Option<FileName> {
+        self.extract_name_from_file_with_type(value)
+    }
 }
 
 impl<T> StorageDetails<T> {
@@ -132,8 +157,6 @@ impl<T> StorageDetails<T> {
 
 impl<T> Drop for StorageDetails<T> {
     fn drop(&mut self) {
-        unsafe { std::ptr::drop_in_place(self.data_ptr) };
-
         unsafe {
             HeapAllocator::new().deallocate(
                 NonNull::new_unchecked(self.data_ptr as *mut u8),
@@ -165,7 +188,7 @@ pub struct Storage<T: Send + Sync + Debug + 'static> {
     name: FileName,
     data: Arc<StorageDetails<T>>,
     has_ownership: AtomicBool,
-    config: Configuration,
+    config: Configuration<T>,
 }
 
 impl<T: Send + Sync + Debug + 'static> NamedConcept for Storage<T> {
@@ -175,7 +198,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConcept for Storage<T> {
 }
 
 impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
-    type Configuration = Configuration;
+    type Configuration = Configuration<T>;
 
     fn does_exist_cfg(
         name: &FileName,
@@ -223,12 +246,26 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
         let msg = "Unable to remove dynamic_storage::process_local";
         let origin = "dynamic_storage::process_local::Storage::remove_cfg()";
 
-        let guard = PROCESS_LOCAL_STORAGE.lock();
-        if guard.is_err() {
-            fatal_panic!(from origin, "{} since the lock could not be acquired.", msg);
+        let mut guard = fatal_panic!(from origin, when PROCESS_LOCAL_STORAGE.lock()
+                                , "{} since the lock could not be acquired.", msg);
+
+        let mut entry = guard.get_mut(&storage_name);
+        if entry.is_none() {
+            return Ok(false);
         }
 
-        Ok(guard.unwrap().remove(&storage_name).is_some())
+        std::ptr::drop_in_place(
+            entry
+                .as_mut()
+                .unwrap()
+                .content
+                .clone()
+                .downcast::<StorageDetails<T>>()
+                .unwrap()
+                .data_ptr,
+        );
+
+        Ok(guard.remove(&storage_name).is_some())
     }
 }
 
@@ -274,7 +311,7 @@ pub struct Builder<'builder, T: Send + Sync + Debug> {
     name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
-    config: Configuration,
+    config: Configuration<T>,
     initializer: Initializer<'builder, T>,
     _phantom_data: PhantomData<T>,
 }
@@ -293,8 +330,8 @@ impl<'builder, T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>>
         }
     }
 
-    fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+    fn config(mut self, config: &Configuration<T>) -> Self {
+        self.config = config.clone();
         self
     }
 }
@@ -323,7 +360,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
                 .downcast::<StorageDetails<T>>()
                 .unwrap(),
             has_ownership: AtomicBool::new(false),
-            config: self.config,
+            config: self.config.clone(),
         })
     }
 
@@ -381,7 +418,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
                 .downcast::<StorageDetails<T>>()
                 .unwrap(),
             has_ownership: AtomicBool::new(self.has_ownership),
-            config: self.config,
+            config: self.config.clone(),
         })
     }
 }
