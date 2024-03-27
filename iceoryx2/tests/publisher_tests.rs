@@ -185,11 +185,17 @@ mod publisher {
                     .unwrap();
 
                 let subscriber = service.subscriber().create().unwrap();
+                let receive_sample = || loop {
+                    if let Some(sample) = subscriber.receive().unwrap() {
+                        return sample;
+                    }
+                };
+
                 barrier.wait();
                 std::thread::sleep(TIMEOUT);
-                let sample_1 = subscriber.receive().unwrap().unwrap();
+                let sample_1 = receive_sample();
                 std::thread::sleep(TIMEOUT);
-                let sample_2 = subscriber.receive().unwrap().unwrap();
+                let sample_2 = receive_sample();
 
                 assert_that!(*sample_1, eq 8192);
                 assert_that!(*sample_2, eq 2);
