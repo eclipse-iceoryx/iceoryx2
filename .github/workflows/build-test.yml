@@ -66,10 +66,14 @@ jobs:
         run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ matrix.mode }}
+        run: |
+          ${{ matrix.os == 'windows-latest' && 'set' || 'export' }} RUSTFLAGS="-C debug-assertions" 
+          cargo build --workspace --all-targets ${{ matrix.mode }}
 
       - name: Run cargo test
-        run: cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+        run: |
+          ${{ matrix.os == 'windows-latest' && 'set' || 'export' }} RUSTFLAGS="-C debug-assertions" 
+          cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
   arm:
     runs-on: ubuntu-latest
@@ -90,6 +94,7 @@ jobs:
             rustup default ${{ matrix.toolchain }}
             cargo fmt --all -- --check
             cargo clippy -- -D warnings
+            export RUSTFLAGS="-C debug-assertions" 
             cargo build --workspace --all-targets ${{ matrix.mode }}
             cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
@@ -114,6 +119,7 @@ jobs:
             rustup default ${{ matrix.toolchain }}
             cargo fmt --all -- --check
             cargo clippy -- -D warnings
+            export RUSTFLAGS="-C debug-assertions" 
             cargo build --workspace --all-targets ${{ matrix.mode }}
             cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
