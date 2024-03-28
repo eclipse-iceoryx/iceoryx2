@@ -48,8 +48,12 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [ stable, 1.73.0 ] # [stable, 1.73.0, beta, nightly]
-        mode: ["--release", ""]
+        toolchain: [stable, 1.73.0, beta, nightly]
+        mode: 
+          - name: "release"
+            arg: "--release"
+          - name: "debug"
+            arg: ""
     timeout-minutes: 30
     runs-on: ${{ matrix.os }}
     steps:
@@ -67,39 +71,43 @@ jobs:
 
       - name: Run cargo build
         run: |
-          ${{ matrix.os == 'windows-latest' && 'set' || 'export' }} RUSTFLAGS="-C debug-assertions" 
-          cargo build --workspace --all-targets ${{ matrix.mode }}
+          ${{ matrix.os == 'windows-latest' && 'setx RUSTFLAGS "-C debug-assertions"' || 'export RUSTFLAGS="-C debug-assertions"' }}
+          cargo build --workspace --all-targets ${{ matrix.mode.arg }}
 
       - name: Run cargo test
         run: |
-          ${{ matrix.os == 'windows-latest' && 'set' || 'export' }} RUSTFLAGS="-C debug-assertions" 
-          cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+          ${{ matrix.os == 'windows-latest' && 'setx RUSTFLAGS "-C debug-assertions"' || 'export RUSTFLAGS="-C debug-assertions"' }}
+          cargo test --workspace --no-fail-fast ${{ matrix.mode.arg }}
 
-  arm:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        architecture: ["aarch64"] # ["aarch64", "armv7"]
-        toolchain: [ stable ] # [stable, 1.73.0, beta, nightly]
-        mode: ["--release", ""]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: uraimo/run-on-arch-action@v2
-        name: Run commands
-        with:
-          arch: ${{ matrix.architecture }}
-          distro: archarm_latest
-          run: |
-            ./internal/scripts/ci_prepare_archlinux.sh
-            rustup default ${{ matrix.toolchain }}
-            cargo fmt --all -- --check
-            cargo clippy -- -D warnings
-            export RUSTFLAGS="-C debug-assertions" 
-            cargo build --workspace --all-targets ${{ matrix.mode }}
-            cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+  ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
+  ###       current alternative is a cirrus.yml aarch64 target
+  # arm:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       architecture: ["aarch64"] # ["aarch64", "armv7"]
+  #       toolchain: [ stable ] # [stable, 1.73.0, beta, nightly]
+  #       mode: ["--release", ""]
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: uraimo/run-on-arch-action@v2
+  #       name: Run commands
+  #       with:
+  #         arch: ${{ matrix.architecture }}
+  #         distro: archarm_latest
+  #         run: |
+  #           ./internal/scripts/ci_prepare_archlinux.sh
+  #           rustup default ${{ matrix.toolchain }}
+  #           cargo fmt --all -- --check
+  #           cargo clippy -- -D warnings
+  #           export RUSTFLAGS="-C debug-assertions" 
+  #           cargo build --workspace --all-targets ${{ matrix.mode }}
+  #           cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
   freebsd:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         freebsd_version: ["14.0"] # ['14.0', '13.3']
