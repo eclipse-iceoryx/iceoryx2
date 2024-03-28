@@ -22,10 +22,7 @@ use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 use crate::posix::*;
 
-use super::{
-    open_with_mode,
-    settings::{MAX_PATH_LENGTH, SHM_STATE_DIRECTORY, SHM_STATE_SUFFIX},
-};
+use super::settings::{MAX_PATH_LENGTH, SHM_STATE_DIRECTORY, SHM_STATE_SUFFIX};
 
 const SHM_MAX_NAME_LEN: usize = 33;
 

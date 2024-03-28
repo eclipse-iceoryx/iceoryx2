@@ -501,14 +501,20 @@ mod zero_copy_connection {
                     .create_receiver(SAMPLE_SIZE)
                     .unwrap();
 
+                let receive_sample = || loop {
+                    if let Some(sample) = sut_receiver.receive().unwrap() {
+                        return sample;
+                    }
+                };
+
                 barrier.wait();
                 std::thread::sleep(TIMEOUT);
-                let sample_1 = sut_receiver.receive();
+                let sample_1 = receive_sample();
                 std::thread::sleep(TIMEOUT);
-                let sample_2 = sut_receiver.receive();
+                let sample_2 = receive_sample();
 
-                assert_that!(sample_1.unwrap().unwrap().value(), eq sample_offset_1);
-                assert_that!(sample_2.unwrap().unwrap().value(), eq sample_offset_2);
+                assert_that!(sample_1.value(), eq sample_offset_1);
+                assert_that!(sample_2.value(), eq sample_offset_2);
             });
 
             barrier.wait();
