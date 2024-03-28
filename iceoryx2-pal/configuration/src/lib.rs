@@ -24,7 +24,7 @@ pub mod settings {
     #[cfg(not(target_os = "macos"))]
     pub const AT_LEAST_TIMING_VARIANCE: f32 = 0.25;
     #[cfg(target_os = "macos")]
-    pub const AT_LEAST_TIMING_VARIANCE: f32 = 0.75;
+    pub const AT_LEAST_TIMING_VARIANCE: f32 = 1.0;
 }
 
 #[cfg(target_os = "windows")]
