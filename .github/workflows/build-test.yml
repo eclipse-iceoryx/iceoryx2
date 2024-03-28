@@ -113,19 +113,33 @@ jobs:
         mode: [""] # ["--release", ""]
     steps:
       - uses: actions/checkout@v4
-      - uses: cross-platform-actions/action@v0.23.0
+      - uses: vmactions/freebsd-vm@v1
         with:
-          operating_system: freebsd
-          version: ${{ matrix.freebsd_version }}
+          release: ${{ matrix.freebsd_version }}
           run: |
             ./internal/scripts/ci_prepare_freebsd.sh
             export PATH=$PATH:$HOME/.cargo/bin
             export LIBCLANG_PATH=/usr/local/llvm15/lib/
             rustup default ${{ matrix.toolchain }}
+            export RUSTFLAGS="-C debug-assertions"
             cargo fmt --all -- --check
             cargo clippy -- -D warnings
             cargo build --workspace --all-targets ${{ matrix.mode }}
             cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+
+        #- uses: cross-platform-actions/action@v0.23.0
+        #  with:
+        #    operating_system: freebsd
+        #    version: ${{ matrix.freebsd_version }}
+        #    run: |
+        #      ./internal/scripts/ci_prepare_freebsd.sh
+        #      export PATH=$PATH:$HOME/.cargo/bin
+        #      export LIBCLANG_PATH=/usr/local/llvm15/lib/
+        #      rustup default ${{ matrix.toolchain }}
+        #      cargo fmt --all -- --check
+        #      cargo clippy -- -D warnings
+        #      cargo build --workspace --all-targets ${{ matrix.mode }}
+        #      cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
   grcov:
     needs: preflight-check
