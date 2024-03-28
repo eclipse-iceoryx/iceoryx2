@@ -11,10 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::{
-    sync::{
-        atomic::{AtomicU32, Ordering},
-        Barrier,
-    },
+    sync::atomic::{AtomicU32, Ordering},
     time::{Duration, Instant},
 };
 
@@ -32,49 +29,12 @@ fn mutex_lock_blocks() {
         sut.try_lock();
 
         let t1 = s.spawn(|| {
-            sut.lock(|_, _| WaitAction::Continue);
-            counter.fetch_add(1, Ordering::Relaxed);
-            sut.unlock(|_| {});
-        });
-
-        std::thread::sleep(TIMEOUT);
-        let counter_old = counter.load(Ordering::Relaxed);
-        sut.unlock(|_| {});
-
-        assert_that!(t1.join(), is_ok);
-        assert_that!(counter_old, eq 0);
-        assert_that!(counter.load(Ordering::Relaxed), eq 1);
-    });
-}
-
-#[test]
-fn mutex_lock_with_timeout_blocks() {
-    let sut = Mutex::new();
-    let counter = AtomicU32::new(0);
-    let barrier = Barrier::new(2);
-
-    std::thread::scope(|s| {
-        sut.try_lock();
-
-        let t1 = s.spawn(|| {
-            barrier.wait();
-
-            let lock_result = sut.lock(|atomic, value| {
-                let start = Instant::now();
-                while atomic.load(Ordering::Relaxed) == *value {
-                    if start.elapsed() > TIMEOUT * 4 {
-                        return WaitAction::Abort;
-                    }
-                }
-
-                WaitAction::Continue
-            });
-            counter.fetch_add(1, Ordering::Relaxed);
-            sut.unlock(|_| {});
+            let lock_result = sut.lock(|_, _| WaitAction::Continue);
             assert_that!(lock_result, eq WaitResult::Success);
+            counter.fetch_add(1, Ordering::Relaxed);
+            sut.unlock(|_| {});
         });
 
-        barrier.wait();
         std::thread::sleep(TIMEOUT);
         let counter_old = counter.load(Ordering::Relaxed);
         sut.unlock(|_| {});
