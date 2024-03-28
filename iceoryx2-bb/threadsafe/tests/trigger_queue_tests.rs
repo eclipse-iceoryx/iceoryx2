@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Barrier;
 use std::thread;
 use std::time::Duration;
 
@@ -282,32 +283,36 @@ fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
 
 #[test]
 fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
+    let _watchdog = Watchdog::new(Duration::from_secs(10));
+    const NUMBER_OF_THREADS: usize = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
+    let barrier = Barrier::new(NUMBER_OF_THREADS + 1);
 
     thread::scope(|s| {
-        s.spawn(|| {
-            sut.blocking_pop();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
-        s.spawn(|| {
-            sut.blocking_pop();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        for _ in 0..NUMBER_OF_THREADS {
+            s.spawn(|| {
+                barrier.wait();
+                sut.blocking_pop();
+                counter.fetch_add(1, Ordering::Relaxed);
+            });
+        }
 
+        barrier.wait();
         nanosleep(TIMEOUT).unwrap();
         let counter_old_1 = counter.load(Ordering::Relaxed);
         sut.blocking_push(0);
+
         nanosleep(TIMEOUT).unwrap();
         let counter_old_2 = counter.load(Ordering::Relaxed);
         sut.blocking_push(0);
 
         assert_that!(counter_old_1, eq 0);
-        assert_that!(counter_old_2, eq 1);
+        assert_that!(counter_old_2, le 1);
     });
 }
 

@@ -17,8 +17,6 @@
 use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 
-use crate::posix::pthread::{wait, wake_one};
-use crate::posix::Errno;
 use crate::posix::*;
 
 pub unsafe fn sem_create(name: *const c_char, oflag: int, mode: mode_t, value: uint) -> *mut sem_t {
