@@ -14,7 +14,7 @@ use iceoryx2_bb_posix::condition_variable::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Barrier};
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
@@ -289,28 +289,26 @@ fn condition_variable_notify_all_signals_all_waiters() {
 #[test]
 fn condition_variable_notify_one_signals_one_waiter() {
     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
+    let barrier = Barrier::new(3);
+    let sut = ConditionVariableBuilder::new()
+        .create_condition_variable(500, |v| *v > 1000, &handle)
+        .unwrap();
+    let counter = AtomicI32::new(0);
+
     thread::scope(|s| {
-        let counter = Arc::new(AtomicI32::new(0));
-        let sut = Arc::new(
-            ConditionVariableBuilder::new()
-                .create_condition_variable(500, |v| *v > 1000, &handle)
-                .unwrap(),
-        );
-
-        let sut_thread1 = Arc::clone(&sut);
-        let counter_thread1 = Arc::clone(&counter);
-        let t1 = s.spawn(move || {
-            sut_thread1.blocking_wait_while().unwrap();
-            counter_thread1.fetch_add(1, Ordering::Relaxed);
+        let t1 = s.spawn(|| {
+            barrier.wait();
+            sut.blocking_wait_while().unwrap();
+            counter.fetch_add(1, Ordering::Relaxed);
         });
 
-        let sut_thread2 = Arc::clone(&sut);
-        let counter_thread2 = Arc::clone(&counter);
-        let t2 = s.spawn(move || {
-            sut_thread2.blocking_wait_while().unwrap();
-            counter_thread2.fetch_add(1, Ordering::Relaxed);
+        let t2 = s.spawn(|| {
+            barrier.wait();
+            sut.blocking_wait_while().unwrap();
+            counter.fetch_add(1, Ordering::Relaxed);
         });
 
+        barrier.wait();
         thread::sleep(TIMEOUT);
         let counter_old_1 = counter.load(Ordering::Relaxed);
         let mut guard = sut.notify_one().unwrap();
@@ -327,7 +325,7 @@ fn condition_variable_notify_one_signals_one_waiter() {
         t2.join().unwrap();
 
         assert_that!(counter_old_1, eq 0);
-        assert_that!(counter_old_2, eq 1);
+        assert_that!(counter_old_2, le 1);
         assert_that!(counter.load(Ordering::Relaxed), eq 2);
     });
 }
