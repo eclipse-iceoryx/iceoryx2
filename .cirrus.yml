@@ -220,8 +220,6 @@ ubuntu_22_04_aarch64_stable_release_task:
 # Pipeline 6
 
 arch_linux_x64_stable_debug_task:
-  # TODO commented out due to limited CI time
-  only_if: false
   depends_on: preflight_check
   <<: *IOX2_CONTAINER_ARCH_LINUX_X64
   set_toolchain_script: rustup default stable
@@ -229,8 +227,6 @@ arch_linux_x64_stable_debug_task:
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 arch_linux_x64_beta_debug_task:
-  # TODO commented out due to limited CI time
-  only_if: false
   depends_on: arch_linux_x64_stable_debug
   <<: *IOX2_CONTAINER_ARCH_LINUX_X64
   set_toolchain_script: rustup default beta
