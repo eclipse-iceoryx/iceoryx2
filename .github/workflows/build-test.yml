@@ -181,7 +181,7 @@ jobs:
         components: llvm-tools-preview
 
     - name: Download artifact grcov
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ runner.os }}-grcov
         path: ~/.cargo/bin
@@ -196,7 +196,7 @@ jobs:
       run: ./internal/scripts/generate-cov-report.sh --html
 
     - name: Archive coverage-html artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-html
         path: target/debug/coverage/html/*
