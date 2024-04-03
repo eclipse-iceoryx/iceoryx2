@@ -160,7 +160,7 @@ mod publisher {
 
     #[test]
     fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
-        let _watchdog = Watchdog::new(Duration::from_secs(10));
+        let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()
@@ -185,11 +185,17 @@ mod publisher {
                     .unwrap();
 
                 let subscriber = service.subscriber().create().unwrap();
+                let receive_sample = || loop {
+                    if let Some(sample) = subscriber.receive().unwrap() {
+                        return sample;
+                    }
+                };
+
                 barrier.wait();
                 std::thread::sleep(TIMEOUT);
-                let sample_1 = subscriber.receive().unwrap().unwrap();
+                let sample_1 = receive_sample();
                 std::thread::sleep(TIMEOUT);
-                let sample_2 = subscriber.receive().unwrap().unwrap();
+                let sample_2 = receive_sample();
 
                 assert_that!(*sample_1, eq 8192);
                 assert_that!(*sample_2, eq 2);

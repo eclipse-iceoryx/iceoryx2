@@ -18,8 +18,10 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_NAMED_SEMAPHORE;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Barrier;
 use std::thread;
 use std::time::Duration;
 
@@ -291,17 +293,22 @@ fn semaphore_unnamed_semaphore_post_and_timed_wait_work() {
 }
 
 fn wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
+    let _watchdog = Watchdog::new();
     let counter = AtomicUsize::new(0);
+    let barrier = Barrier::new(2);
+
     thread::scope(|s| {
-        s.spawn(|| {
+        let t = s.spawn(|| {
+            barrier.wait();
             sut1.wait().unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
+        barrier.wait();
         nanosleep(TIMEOUT).unwrap();
         let counter_old = counter.load(Ordering::Relaxed);
         sut2.post().unwrap();
-        nanosleep(TIMEOUT).unwrap();
+        t.join().unwrap();
 
         assert_that!(counter_old, eq 0);
         assert_that!(counter.load(Ordering::Relaxed), eq 1);

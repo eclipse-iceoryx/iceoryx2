@@ -50,10 +50,10 @@ impl TestFixture {
         COUNTER.fetch_add(1, Ordering::SeqCst);
     }
 
-    pub fn verify(&self, signal: FetchableSignal, counter: usize) {
+    pub fn verify(&self, signal: FetchableSignal, counter_value: usize) {
         assert_that!(
-            || { COUNTER.load(Ordering::SeqCst) == counter },
-            block_until_true
+            || { COUNTER.load(Ordering::SeqCst) },
+            block_until counter_value
         );
 
         assert_that!(SignalHandler::last_signal(), eq Some(signal));
@@ -191,8 +191,8 @@ fn signal_wait_for_signal_blocks() {
 
         assert_that!(counter_old, eq 0);
         assert_that!(
-            || { counter.load(Ordering::Relaxed) == 1 },
-            block_until_true
+            || { counter.load(Ordering::Relaxed) },
+            block_until 1
         );
     });
 }
@@ -226,8 +226,8 @@ fn signal_wait_twice_for_same_signal_blocks() {
         assert_that!(counter_old, eq 0);
         assert_that!(counter_old_2, le 1);
         assert_that!(
-            || { counter.load(Ordering::Relaxed) == 2 },
-            block_until_true
+            || { counter.load(Ordering::Relaxed) },
+            block_until 2
         );
     });
 }
@@ -263,8 +263,8 @@ fn signal_timed_wait_blocks_until_signal() {
 
         assert_that!(counter_old, eq 0);
         assert_that!(
-            || { counter.load(Ordering::Relaxed) == 1 },
-            block_until_true
+            || { counter.load(Ordering::Relaxed) },
+            block_until 1
         );
     });
 }
@@ -279,8 +279,8 @@ fn signal_termination_requested_with_terminate_works() {
     assert_that!(Process::from_self().send_signal(Signal::Terminate), is_ok);
 
     assert_that!(
-        || { SignalHandler::termination_requested() == true },
-        block_until_true
+        || { SignalHandler::termination_requested() },
+        block_until true
     );
     assert_that!(SignalHandler::termination_requested(), eq false);
 }
@@ -295,8 +295,8 @@ fn signal_termination_requested_with_interrupt_works() {
     assert_that!(Process::from_self().send_signal(Signal::Interrupt), is_ok);
 
     assert_that!(
-        || { SignalHandler::termination_requested() == true },
-        block_until_true
+        || { SignalHandler::termination_requested() },
+        block_until true
     );
     assert_that!(SignalHandler::termination_requested(), eq false);
 }

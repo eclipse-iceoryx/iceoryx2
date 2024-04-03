@@ -15,7 +15,6 @@ mod service_publish_subscribe {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::Barrier;
     use std::thread;
-    use std::time::Duration;
 
     use iceoryx2::config::Config;
     use iceoryx2::message::Message;
@@ -642,7 +641,7 @@ mod service_publish_subscribe {
 
     #[test]
     fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock<Sut: Service>() {
-        let _watch_dog = Watchdog::new(Duration::from_secs(10));
+        let _watch_dog = Watchdog::new();
 
         const NUMBER_OF_SUBSCRIBER_THREADS: usize = 2;
         const NUMBER_OF_RECONNECTIONS: usize = 50;
@@ -701,7 +700,7 @@ mod service_publish_subscribe {
 
     #[test]
     fn concurrent_communication_with_publisher_reconnects_does_not_deadlock<Sut: Service>() {
-        let _watch_dog = Watchdog::new(Duration::from_secs(10));
+        let _watch_dog = Watchdog::new();
 
         const NUMBER_OF_PUBLISHER_THREADS: usize = 2;
         const NUMBER_OF_RECONNECTIONS: usize = 50;

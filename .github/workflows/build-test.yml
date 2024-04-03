@@ -6,13 +6,16 @@ on:
   pull_request:
     branches: [ main, release* ]
 
+env:
+  RUSTFLAGS: "-C debug-assertions"
+
 jobs:
   preflight-check:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Check format of all commit messages
         run: ./internal/scripts/ci_test_commit_msg.sh
@@ -20,13 +23,16 @@ jobs:
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
 
-  windows-stable:
+  static-code-analysis:
     needs: preflight-check
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macOS-latest]
     timeout-minutes: 10
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
@@ -34,58 +40,99 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Prepare system
-        run: |
-          mkdir "C:\Temp\iceoryx2\services"
-          mkdir "C:\Temp\iceoryx2\tests"
-          mkdir "C:\Temp\iceoryx2\shm"
-          icacls "C:\Temp" /t /c /grant Everyone:F
-
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
         run: cargo clippy -- -D warnings
 
-      - name: Run cargo build
-        run: cargo build --workspace --all-targets
-
-      - name: Run cargo test
-        run: cargo test --workspace --no-fail-fast
-
-  windows-min-version:
-    needs: preflight-check
-    timeout-minutes: 10
-    runs-on: windows-latest
+  x86_64:
+    needs: [preflight-check, static-code-analysis]
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [stable, 1.73.0, beta, nightly]
+        mode: 
+          - name: "release"
+            arg: "--release"
+          - name: "debug"
+            arg: ""
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: 1.73.0
+          toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
       - name: Prepare system
-        run: |
-          mkdir "C:\Temp\iceoryx2\services"
-          mkdir "C:\Temp\iceoryx2\tests"
-          mkdir "C:\Temp\iceoryx2\shm"
-          icacls "C:\Temp" /t /c /grant Everyone:F
+        run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets
+        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
 
       - name: Run cargo test
-        run: cargo test --workspace --no-fail-fast
+        run: cargo test --workspace --no-fail-fast ${{ matrix.mode.arg }}
+
+  ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
+  ###       current alternative is a cirrus.yml aarch64 target
+  # arm:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       architecture: ["aarch64"] # ["aarch64", "armv7"]
+  #       toolchain: [ stable ] # [stable, 1.73.0, beta, nightly]
+  #       mode: ["--release", ""]
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: uraimo/run-on-arch-action@v2
+  #       name: Run commands
+  #       with:
+  #         arch: ${{ matrix.architecture }}
+  #         distro: archarm_latest
+  #         run: |
+  #           ./internal/scripts/ci_prepare_archlinux.sh
+  #           rustup default ${{ matrix.toolchain }}
+  #           cargo fmt --all -- --check
+  #           cargo clippy -- -D warnings
+  #           cargo build --workspace --all-targets ${{ matrix.mode }}
+  #           cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+
+  freebsd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        freebsd_version: [ "14.0" ] 
+        toolchain: [ "stable", "1.73.0" ] # [stable, 1.73.0, beta, nightly]
+        mode: [""] # ["--release", ""]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          release: ${{ matrix.freebsd_version }}
+          run: |
+            ./internal/scripts/ci_prepare_freebsd.sh
+            export PATH=$PATH:$HOME/.cargo/bin
+            export LIBCLANG_PATH=/usr/local/llvm15/lib/
+            rustup default ${{ matrix.toolchain }}
+            export RUSTFLAGS="-C debug-assertions"
+            cargo fmt --all -- --check
+            cargo clippy -- -D warnings
+            cargo build --workspace --all-targets ${{ matrix.mode }}
+            cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
   grcov:
     needs: preflight-check
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build and cache grcov
       uses: ./.github/actions/build-and-cache-rust-tool
       with:
@@ -101,7 +148,7 @@ jobs:
     needs: grcov
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install dependencies
       run: sudo apt-get -y install libacl1-dev llvm
@@ -120,7 +167,7 @@ jobs:
         components: llvm-tools-preview
 
     - name: Download artifact grcov
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ runner.os }}-grcov
         path: ~/.cargo/bin
@@ -135,7 +182,7 @@ jobs:
       run: ./internal/scripts/generate-cov-report.sh --html
 
     - name: Archive coverage-html artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-html
         path: target/debug/coverage/html/*
