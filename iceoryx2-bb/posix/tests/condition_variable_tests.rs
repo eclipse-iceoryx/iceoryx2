@@ -13,7 +13,7 @@
 use iceoryx2_bb_posix::condition_variable::*;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 use std::sync::{Arc, Barrier};
 use std::thread;
 use std::time::Duration;
@@ -288,46 +288,34 @@ fn condition_variable_notify_all_signals_all_waiters() {
 
 #[test]
 fn condition_variable_notify_one_signals_one_waiter() {
+    const NUMBER_OF_THREADS: u64 = 2;
     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
-    let barrier = Barrier::new(3);
+    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
     let sut = ConditionVariableBuilder::new()
         .create_condition_variable(500, |v| *v > 1000, &handle)
         .unwrap();
-    let counter = AtomicI32::new(0);
+    let counter = AtomicU64::new(0);
 
     thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            barrier.wait();
-            sut.blocking_wait_while().unwrap();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
-
-        let t2 = s.spawn(|| {
-            barrier.wait();
-            sut.blocking_wait_while().unwrap();
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        for _ in 0..NUMBER_OF_THREADS {
+            s.spawn(|| {
+                barrier.wait();
+                sut.blocking_wait_while().unwrap();
+                counter.fetch_add(1, Ordering::Relaxed);
+            });
+        }
 
         barrier.wait();
-        thread::sleep(TIMEOUT);
-        let counter_old_1 = counter.load(Ordering::Relaxed);
-        let mut guard = sut.notify_one().unwrap();
-        *guard = 1750;
-        drop(guard);
 
-        thread::sleep(TIMEOUT);
-        let counter_old_2 = counter.load(Ordering::Relaxed);
-        let mut guard = sut.notify_one().unwrap();
-        *guard = 1500;
-        drop(guard);
-
-        t1.join().unwrap();
-        t2.join().unwrap();
-
-        assert_that!(counter_old_1, eq 0);
-        assert_that!(counter_old_2, le 1);
-        assert_that!(counter.load(Ordering::Relaxed), eq 2);
+        for i in 0..NUMBER_OF_THREADS {
+            thread::sleep(TIMEOUT);
+            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
+            let mut guard = sut.notify_one().unwrap();
+            *guard = 1750;
+        }
     });
+
+    assert_that!(counter.load(Ordering::Relaxed), eq NUMBER_OF_THREADS);
 }
 
 #[test]

@@ -170,11 +170,11 @@ macro_rules! assert_that {
             }
         }
     };
-    ($call:expr, block_until_true) => {
+    ($call:expr, block_until $rhs:expr) => {
         {
             let watchdog = iceoryx2_bb_testing::watchdog::Watchdog::new();
 
-            while $call() == false {
+            while $call() != $rhs {
                 std::thread::yield_now();
                 std::thread::sleep(core::time::Duration::from_millis(10));
                 std::thread::yield_now();

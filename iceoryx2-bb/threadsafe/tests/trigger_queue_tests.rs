@@ -213,13 +213,13 @@ fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
 #[test]
 fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
     let _watchdog = Watchdog::new();
-    const NUMBER_OF_THREADS: usize = 2;
+    const NUMBER_OF_THREADS: u64 = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
-    let barrier = Barrier::new(NUMBER_OF_THREADS + 1);
+    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     let counter = AtomicU64::new(0);
     for _ in 0..SUT_CAPACITY {
@@ -236,16 +236,11 @@ fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
         }
 
         barrier.wait();
-        nanosleep(TIMEOUT).unwrap();
-        let counter_old_1 = counter.load(Ordering::Relaxed);
-        sut.blocking_pop();
-
-        nanosleep(TIMEOUT).unwrap();
-        let counter_old_2 = counter.load(Ordering::Relaxed);
-        sut.blocking_pop();
-
-        assert_that!(counter_old_1, eq 0);
-        assert_that!(counter_old_2, le 1);
+        for i in 0..NUMBER_OF_THREADS {
+            nanosleep(TIMEOUT).unwrap();
+            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
+            sut.blocking_pop();
+        }
     });
 }
 
@@ -277,7 +272,7 @@ fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
         barrier.wait();
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(counter.load(Ordering::Relaxed), le i);
+            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
             sut.blocking_pop();
         }
     });
@@ -308,7 +303,7 @@ fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
 
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(counter.load(Ordering::Relaxed), le i);
+            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
             sut.blocking_push(0);
         }
     });
@@ -338,7 +333,7 @@ fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
 
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(counter.load(Ordering::Relaxed), le i);
+            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
             sut.blocking_push(0);
         }
     });
