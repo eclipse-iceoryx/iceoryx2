@@ -30,8 +30,14 @@ impl Drop for Watchdog {
     }
 }
 
+impl Default for Watchdog {
+    fn default() -> Self {
+        Self::new_with_timeout(Duration::from_secs(60))
+    }
+}
+
 impl Watchdog {
-    pub fn new(timeout: Duration) -> Self {
+    pub fn new_with_timeout(timeout: Duration) -> Self {
         let keep_running = Arc::new(AtomicBool::new(true));
 
         Self {
@@ -50,5 +56,9 @@ impl Watchdog {
                 }
             })),
         }
+    }
+
+    pub fn new() -> Self {
+        Self::default()
     }
 }

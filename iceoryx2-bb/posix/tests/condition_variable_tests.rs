@@ -368,7 +368,7 @@ fn condition_variable_modify_notify_all_signals_all_waiters() {
 
 #[test]
 fn condition_variable_modify_notify_one_signals_one_waiter() {
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
+    let _watchdog = Watchdog::new();
     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
     thread::scope(|s| {
         let counter = Arc::new(AtomicI32::new(0));

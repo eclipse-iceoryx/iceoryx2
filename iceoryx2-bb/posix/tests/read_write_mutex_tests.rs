@@ -67,7 +67,7 @@ fn read_write_mutex_timed_lock_works() {
 
 #[test]
 fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
+    let _watchdog = Watchdog::new();
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
     let counter = AtomicUsize::new(0);

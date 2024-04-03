@@ -153,10 +153,10 @@ fn trigger_queue_timed_pop_blocks_at_least_until_timeout_has_passed() {
 
 #[test]
 fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
+    let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
 
@@ -184,10 +184,10 @@ fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
 
 #[test]
 fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
+    let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
 
@@ -212,7 +212,7 @@ fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
 
 #[test]
 fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
+    let _watchdog = Watchdog::new();
     const NUMBER_OF_THREADS: usize = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
@@ -251,9 +251,13 @@ fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
 
 #[test]
 fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
+    const NUMBER_OF_THREADS: u64 = 2;
+
+    let _watchdog = Watchdog::new();
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
+    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
@@ -262,39 +266,34 @@ fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
     }
 
     thread::scope(|s| {
-        s.spawn(|| {
-            sut.timed_push(0, TIMEOUT * 10);
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        for _ in 0..NUMBER_OF_THREADS {
+            s.spawn(|| {
+                barrier.wait();
+                sut.timed_push(0, TIMEOUT * 1000);
+                counter.fetch_add(1, Ordering::Relaxed);
+            });
+        }
 
-        s.spawn(|| {
-            sut.timed_push(0, TIMEOUT * 10);
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
-
-        nanosleep(TIMEOUT).unwrap();
-        let counter_old_1 = counter.load(Ordering::Relaxed);
-        sut.blocking_pop();
-        nanosleep(TIMEOUT).unwrap();
-        let counter_old_2 = counter.load(Ordering::Relaxed);
-        sut.blocking_pop();
-
-        assert_that!(counter_old_1, eq 0);
-        assert_that!(counter_old_2, eq 1);
+        barrier.wait();
+        for i in 0..NUMBER_OF_THREADS {
+            nanosleep(TIMEOUT).unwrap();
+            assert_that!(counter.load(Ordering::Relaxed), le i);
+            sut.blocking_pop();
+        }
     });
 }
 
 #[test]
 fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
-    const NUMBER_OF_THREADS: usize = 2;
+    let _watchdog = Watchdog::new();
+    const NUMBER_OF_THREADS: u64 = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
-    let barrier = Barrier::new(NUMBER_OF_THREADS + 1);
+    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     thread::scope(|s| {
         for _ in 0..NUMBER_OF_THREADS {
@@ -306,46 +305,41 @@ fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
         }
 
         barrier.wait();
-        nanosleep(TIMEOUT).unwrap();
-        let counter_old_1 = counter.load(Ordering::Relaxed);
-        sut.blocking_push(0);
 
-        nanosleep(TIMEOUT).unwrap();
-        let counter_old_2 = counter.load(Ordering::Relaxed);
-        sut.blocking_push(0);
-
-        assert_that!(counter_old_1, eq 0);
-        assert_that!(counter_old_2, le 1);
+        for i in 0..NUMBER_OF_THREADS {
+            nanosleep(TIMEOUT).unwrap();
+            assert_that!(counter.load(Ordering::Relaxed), le i);
+            sut.blocking_push(0);
+        }
     });
 }
 
 #[test]
 fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
+    const NUMBER_OF_THREADS: u64 = 2;
     let mtx_handle = MutexHandle::new();
     let free_handle = UnnamedSemaphoreHandle::new();
     let used_handle = UnnamedSemaphoreHandle::new();
 
     let sut = Sut::new(&mtx_handle, &free_handle, &used_handle);
     let counter = AtomicU64::new(0);
+    let barrier = Barrier::new(NUMBER_OF_THREADS as usize + 1);
 
     thread::scope(|s| {
-        s.spawn(|| {
-            sut.timed_pop(TIMEOUT * 10);
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
-        s.spawn(|| {
-            sut.timed_pop(TIMEOUT * 10);
-            counter.fetch_add(1, Ordering::Relaxed);
-        });
+        for _ in 0..NUMBER_OF_THREADS {
+            s.spawn(|| {
+                barrier.wait();
+                sut.timed_pop(TIMEOUT * 1000);
+                counter.fetch_add(1, Ordering::Relaxed);
+            });
+        }
 
-        nanosleep(TIMEOUT).unwrap();
-        let counter_old_1 = counter.load(Ordering::Relaxed);
-        sut.blocking_push(0);
-        nanosleep(TIMEOUT).unwrap();
-        let counter_old_2 = counter.load(Ordering::Relaxed);
-        sut.blocking_push(0);
+        barrier.wait();
 
-        assert_that!(counter_old_1, eq 0);
-        assert_that!(counter_old_2, eq 1);
+        for i in 0..NUMBER_OF_THREADS {
+            nanosleep(TIMEOUT).unwrap();
+            assert_that!(counter.load(Ordering::Relaxed), le i);
+            sut.blocking_push(0);
+        }
     });
 }

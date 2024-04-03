@@ -16,7 +16,6 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Barrier,
     },
-    time::Duration,
 };
 
 use iceoryx2_bb_lock_free::mpmc::bit_set::*;
@@ -115,7 +114,7 @@ fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
 
 #[test]
 fn bit_set_concurrent_set_and_reset_works() {
-    let _watchdog = Watchdog::new(Duration::from_secs(30));
+    let _watchdog = Watchdog::new();
 
     let number_of_set_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
     let number_of_reset_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);

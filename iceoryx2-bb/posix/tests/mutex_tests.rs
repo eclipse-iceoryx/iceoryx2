@@ -344,7 +344,7 @@ fn mutex_with_deadlock_detection_blocks() {
 
 #[test]
 fn mutex_can_be_recovered_when_thread_died() {
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
+    let _watchdog = Watchdog::new();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .thread_termination_behavior(MutexThreadTerminationBehavior::ReleaseWhenLocked)
@@ -388,7 +388,7 @@ fn mutex_can_be_recovered_when_thread_died() {
 #[test]
 #[cfg(not(target_os = "macos"))]
 fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
+    let _watchdog = Watchdog::new();
     let handle = MutexHandle::<i32>::new();
     let sut = MutexBuilder::new()
         .thread_termination_behavior(MutexThreadTerminationBehavior::ReleaseWhenLocked)

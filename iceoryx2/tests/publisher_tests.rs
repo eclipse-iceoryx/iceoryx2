@@ -160,7 +160,7 @@ mod publisher {
 
     #[test]
     fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
-        let _watchdog = Watchdog::new(Duration::from_secs(10));
+        let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()

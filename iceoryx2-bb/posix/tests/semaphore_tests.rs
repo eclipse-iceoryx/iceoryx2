@@ -293,7 +293,7 @@ fn semaphore_unnamed_semaphore_post_and_timed_wait_work() {
 }
 
 fn wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
-    let _watchdog = Watchdog::new(Duration::from_secs(10));
+    let _watchdog = Watchdog::new();
     let counter = AtomicUsize::new(0);
     let barrier = Barrier::new(2);
 

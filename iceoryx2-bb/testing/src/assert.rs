@@ -172,7 +172,7 @@ macro_rules! assert_that {
     };
     ($call:expr, block_until_true) => {
         {
-            let watchdog = iceoryx2_bb_testing::watchdog::Watchdog::new(core::time::Duration::from_secs(10));
+            let watchdog = iceoryx2_bb_testing::watchdog::Watchdog::new();
 
             while $call() == false {
                 std::thread::yield_now();

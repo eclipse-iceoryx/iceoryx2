@@ -14,7 +14,6 @@
 mod service_event {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Barrier;
-    use std::time::Duration;
 
     use iceoryx2::config::Config;
     use iceoryx2::prelude::*;
@@ -374,7 +373,7 @@ mod service_event {
     // TODO iox2-139, enable when bitset is integrated into events
     #[ignore]
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
-        let _watch_dog = Watchdog::new(Duration::from_secs(10));
+        let _watch_dog = Watchdog::new();
 
         const NUMBER_OF_LISTENER_THREADS: usize = 2;
         const NUMBER_OF_NOTIFIER_THREADS: usize = 2;
@@ -435,7 +434,7 @@ mod service_event {
     // TODO iox2-139, enable when bitset is integrated into events
     #[ignore]
     fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
-        let _watch_dog = Watchdog::new(Duration::from_secs(1));
+        let _watch_dog = Watchdog::new();
 
         const NUMBER_OF_LISTENER_THREADS: usize = 2;
         const NUMBER_OF_NOTIFIER_THREADS: usize = 2;
