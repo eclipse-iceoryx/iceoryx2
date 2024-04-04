@@ -1,5 +1,7 @@
 # How To Create An iceoryx2 Release
 
+## Technical Side
+
 Assume that the new version number is `X.Y.Z`.
 
  1. Use generic release issue ([#77]) and create a new branch `iox2-77-X.Y.Z-release`
@@ -31,6 +33,15 @@ Assume that the new version number is `X.Y.Z`.
  12. Verify that the release looks fine on `docs.rs`
     (click through the documentation to check if everything was generated
     correctly)
- 13. (Major release only) Announce new release on:
+
+## Announcement (Major release only)
+
+ 1. Write blog-article with some technical details, highlights etc.
+ 2. Announce blog-article on
     * https://www.reddit.com/r/rust/
     * https://www.linkedin.com/
+    * https://news.ycombinator.com/
+    * https://techhub.social/
+    * https://X.com/
+ 3. If there are interesting things to explore, play around with, post it on
+    * https://news.ycombinator.com/show
