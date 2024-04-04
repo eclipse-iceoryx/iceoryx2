@@ -259,7 +259,7 @@ pub mod details {
                     id, self.storage.get().id_tracker.trigger_id_max());
             }
 
-            self.storage.get().id_tracker.add(id)?;
+            unsafe { self.storage.get().id_tracker.add(id)? };
             Ok(unsafe { self.storage.get().signal_mechanism.notify()? })
         }
     }
@@ -382,7 +382,7 @@ pub mod details {
             &self,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
             while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
-            Ok(self.storage.get().id_tracker.acquire())
+            Ok(unsafe { self.storage.get().id_tracker.acquire() })
         }
 
         fn timed_wait(
@@ -394,7 +394,7 @@ pub mod details {
             }
 
             if unsafe { self.storage.get().signal_mechanism.timed_wait(timeout)? } {
-                return Ok(self.storage.get().id_tracker.acquire());
+                return Ok(unsafe { self.storage.get().id_tracker.acquire() });
             }
 
             Ok(None)
@@ -408,7 +408,7 @@ pub mod details {
             }
 
             unsafe { self.storage.get().signal_mechanism.blocking_wait()? };
-            Ok(self.storage.get().id_tracker.acquire())
+            Ok(unsafe { self.storage.get().id_tracker.acquire() })
         }
     }
 

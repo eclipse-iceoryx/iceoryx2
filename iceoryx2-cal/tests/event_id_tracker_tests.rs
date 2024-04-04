@@ -42,12 +42,12 @@ mod event_id_tracker {
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
 
-        assert_that!(sut.acquire(), eq None);
+        assert_that!(unsafe { sut.acquire() }, eq None);
         for i in 0..CAPACITY {
             let id = TriggerId::new(i as u64);
-            assert_that!(sut.add(id), is_ok);
-            assert_that!(sut.acquire(), eq Some(id));
-            assert_that!(sut.acquire(), is_none);
+            assert_that!(unsafe { sut.add(id) }, is_ok);
+            assert_that!(unsafe { sut.acquire() }, eq Some(id));
+            assert_that!(unsafe { sut.acquire() }, is_none);
         }
     }
 
@@ -61,17 +61,17 @@ mod event_id_tracker {
 
         for i in 0..CAPACITY {
             let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
-            assert_that!(sut.add(id), is_ok);
+            assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 
         let mut ids = HashSet::new();
         for _ in 0..CAPACITY {
-            let result = sut.acquire().unwrap();
+            let result = unsafe { sut.acquire().unwrap() };
             assert_that!(result, le sut.trigger_id_max());
             assert_that!(ids.insert(result), eq true);
         }
 
-        assert_that!(sut.acquire(), is_none);
+        assert_that!(unsafe { sut.acquire() }, is_none);
     }
 
     #[test]
@@ -84,17 +84,19 @@ mod event_id_tracker {
 
         for i in 0..CAPACITY {
             let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
-            assert_that!(sut.add(id), is_ok);
+            assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 
         let mut ids = HashSet::new();
-        sut.acquire_all(|id| {
-            assert_that!(id, le sut.trigger_id_max());
-            assert_that!(ids.insert(id), eq true);
-        });
+        unsafe {
+            sut.acquire_all(|id| {
+                assert_that!(id, le sut.trigger_id_max());
+                assert_that!(ids.insert(id), eq true);
+            })
+        };
 
         let mut callback_called = false;
-        sut.acquire_all(|_| callback_called = true);
+        unsafe { sut.acquire_all(|_| callback_called = true) };
         assert_that!(callback_called, eq false);
 
         assert_that!(ids, len CAPACITY);
@@ -110,20 +112,22 @@ mod event_id_tracker {
 
         for i in 0..CAPACITY {
             let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
-            assert_that!(sut.add(id), is_ok);
+            assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 
         let mut ids = HashSet::new();
         for _ in 0..CAPACITY / 2 {
-            let result = sut.acquire().unwrap();
+            let result = unsafe { sut.acquire().unwrap() };
             assert_that!(result, le sut.trigger_id_max());
             assert_that!(ids.insert(result), eq true);
         }
 
-        sut.acquire_all(|id| {
-            assert_that!(id, le sut.trigger_id_max());
-            assert_that!(ids.insert(id), eq true);
-        });
+        unsafe {
+            sut.acquire_all(|id| {
+                assert_that!(id, le sut.trigger_id_max());
+                assert_that!(ids.insert(id), eq true);
+            })
+        };
 
         assert_that!(ids, len CAPACITY);
     }

@@ -16,6 +16,9 @@ use super::{ListenerCreateError, ListenerWaitError, NotifierNotifyError};
 
 pub mod semaphore;
 
+/// The [`SignalMechanism`] is a building block for [`crate::event::Event`]
+/// concept. Its task is to
+/// wake up another process/thread with a signal.
 pub trait SignalMechanism: Send + Sync + Debug {
     /// Creates a [`SignalMechanism`]. It cannot be used until
     /// [`SignalMechanism::init()`] was called.

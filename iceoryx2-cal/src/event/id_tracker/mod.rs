@@ -18,9 +18,34 @@ use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 
 use super::{NotifierNotifyError, TriggerId};
 
+/// The [`SignalMechanism`] is a building block for [`crate::event::Event`]
+/// concept. Its task is to track the origin of the signal that was sent
+/// via the [`crate::event::signal_mechanism::SignalMechanism`].
 pub trait IdTracker: RelocatableContainer + Send + Sync + Debug {
+    /// Returns the max value of a [`TriggerId`] that can be tracked with the
+    /// [`IdTracker`].
     fn trigger_id_max(&self) -> TriggerId;
-    fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
-    fn acquire(&self) -> Option<TriggerId>;
-    fn acquire_all<F: FnMut(TriggerId)>(&self, callback: F);
+
+    /// Tracks the provided [`TriggerId`].
+    ///
+    /// # Safety
+    ///  * underlying container must be initialized with [`RelocatableContainer::init()`]
+    ///
+    unsafe fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
+
+    /// Acquires a tracked [`TriggerId`]. When no [`TriggerId`]s are tracked
+    /// or all tracked [`TriggerId`]s have been acquired it returns [`None`].
+    ///
+    /// # Safety
+    ///  * underlying container must be initialized with [`RelocatableContainer::init()`]
+    ///
+    unsafe fn acquire(&self) -> Option<TriggerId>;
+
+    /// Acquires all tracked [`TriggerId`]s and calls for everyone the user
+    /// provided callback with the [`TriggerId`] as input argument.
+    ///
+    /// # Safety
+    ///  * underlying container must be initialized with [`RelocatableContainer::init()`]
+    ///
+    unsafe fn acquire_all<F: FnMut(TriggerId)>(&self, callback: F);
 }

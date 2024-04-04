@@ -21,7 +21,7 @@ impl IdTracker for RelocatableBitSet {
         TriggerId::new(self.capacity() as u64)
     }
 
-    fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError> {
+    unsafe fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError> {
         if self.trigger_id_max() <= id {
             fail!(from self, with NotifierNotifyError::TriggerIdOutOfBounds,
                 "Unable to set bit {:?} since it is out of bounds (max = {:?}).",
@@ -32,11 +32,11 @@ impl IdTracker for RelocatableBitSet {
         Ok(())
     }
 
-    fn acquire_all<F: FnMut(TriggerId)>(&self, mut callback: F) {
+    unsafe fn acquire_all<F: FnMut(TriggerId)>(&self, mut callback: F) {
         self.reset_all(|bit_index| callback(TriggerId::new(bit_index as u64)))
     }
 
-    fn acquire(&self) -> Option<TriggerId> {
+    unsafe fn acquire(&self) -> Option<TriggerId> {
         match self.reset_next() {
             Some(id) => Some(TriggerId::new(id as u64)),
             None => None,
