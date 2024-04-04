@@ -24,7 +24,7 @@ mod signal_mechanism {
 
     #[test]
     fn notified_signal_does_not_block<Sut: SignalMechanism>() {
-        let _watchdog = Watchdog::new(Duration::from_secs(1));
+        let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         unsafe {
             assert_that!(sut.init(), is_ok);
@@ -54,7 +54,7 @@ mod signal_mechanism {
     }
 
     fn wait_blocks<Sut: SignalMechanism, F: FnOnce(&Sut) -> bool + Send>(wait_call: F) {
-        let _watchdog = Watchdog::new(Duration::from_secs(1));
+        let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         let barrier = Barrier::new(2);
         let counter = AtomicU64::new(0);
@@ -95,7 +95,7 @@ mod signal_mechanism {
 
     #[test]
     fn timed_wait_blocks_at_least_for_timeout<Sut: SignalMechanism>() {
-        let _watchdog = Watchdog::new(Duration::from_secs(1));
+        let _watchdog = Watchdog::new();
         let mut sut = Sut::new();
         unsafe {
             assert_that!(sut.init(), is_ok);

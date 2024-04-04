@@ -300,7 +300,7 @@ fn wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
     thread::scope(|s| {
         let t = s.spawn(|| {
             barrier.wait();
-            sut1.wait().unwrap();
+            sut1.blocking_wait().unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 

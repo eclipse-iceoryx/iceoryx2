@@ -90,7 +90,7 @@ mod event {
     >(
         wait_call: F,
     ) {
-        let _watchdog = Watchdog::new(Duration::from_secs(1));
+        let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 32;
         let name = generate_name();
 
@@ -243,7 +243,7 @@ mod event {
 
     #[test]
     fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
-        let _watchdog = Watchdog::new(Duration::from_secs(1));
+        let _watchdog = Watchdog::new();
         let name = generate_name();
 
         let counter = AtomicU64::new(0);
@@ -276,7 +276,7 @@ mod event {
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
-        let _watchdog = Watchdog::new(Duration::from_secs(1));
+        let _watchdog = Watchdog::new();
         let name = generate_name();
 
         let counter = AtomicU64::new(0);
