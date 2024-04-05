@@ -10,7 +10,23 @@ env:
   RUSTFLAGS: "-C debug-assertions"
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      source-code: ${{ steps.filter.outputs.source-code }}
+    steps:
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          source-code:
+            - '!**/*.md'
+
   preflight-check:
+    needs: changes
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -25,6 +41,7 @@ jobs:
 
   static-code-analysis:
     needs: preflight-check
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macOS-latest]
@@ -48,6 +65,7 @@ jobs:
 
   x86_64:
     needs: [preflight-check, static-code-analysis]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -82,6 +100,7 @@ jobs:
   ###       current alternative is a cirrus.yml aarch64 target
   # arm:
   #   runs-on: ubuntu-latest
+  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
   #   strategy:
   #     matrix:
   #       architecture: ["aarch64"] # ["aarch64", "armv7"]
@@ -104,6 +123,8 @@ jobs:
   #           cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
   freebsd:
+    needs: changes
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -129,6 +150,7 @@ jobs:
 
   grcov:
     needs: preflight-check
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -146,6 +168,7 @@ jobs:
 
   coverage:
     needs: grcov
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
