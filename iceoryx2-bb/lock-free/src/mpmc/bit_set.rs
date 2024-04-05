@@ -66,6 +66,20 @@ pub mod details {
     pub type BitsetElement = AtomicU8;
     const BITSET_ELEMENT_BITSIZE: usize = core::mem::size_of::<BitsetElement>() * 8;
 
+    struct Id {
+        index: usize,
+        bit: u8,
+    }
+
+    impl Id {
+        fn new(value: usize) -> Id {
+            Self {
+                index: value / BITSET_ELEMENT_BITSIZE,
+                bit: (value % BITSET_ELEMENT_BITSIZE) as u8,
+            }
+        }
+    }
+
     #[derive(Debug)]
     #[repr(C)]
     pub struct BitSet<PointerType: PointerTrait<BitsetElement>> {
@@ -191,20 +205,17 @@ pub mod details {
             );
         }
 
-        fn set_bit(&self, id: usize) -> bool {
-            let index = id / BITSET_ELEMENT_BITSIZE;
-            let bit = id % BITSET_ELEMENT_BITSIZE;
-
-            let data_ref = unsafe { &(*self.data_ptr.as_ptr().add(index)) };
+        fn set_bit(&self, id: Id) -> bool {
+            let data_ref = unsafe { &(*self.data_ptr.as_ptr().add(id.index)) };
             let mut current = data_ref.load(Ordering::Relaxed);
-            let bit = 1 << bit;
+            let mask = 1 << id.bit;
 
             loop {
-                if current & bit != 0 {
+                if current & mask != 0 {
                     return false;
                 }
 
-                let current_with_bit = current | bit;
+                let current_with_bit = current | mask;
 
                 match data_ref.compare_exchange(
                     current,
@@ -221,24 +232,21 @@ pub mod details {
             }
         }
 
-        fn clear_bit(&self, id: usize) -> bool {
-            let index = id / BITSET_ELEMENT_BITSIZE;
-            let bit = id % BITSET_ELEMENT_BITSIZE;
-
-            let data_ref = unsafe { &(*self.data_ptr.as_ptr().add(index)) };
+        fn clear_bit(&self, id: Id) -> bool {
+            let data_ref = unsafe { &(*self.data_ptr.as_ptr().add(id.index)) };
             let mut current = data_ref.load(Ordering::Relaxed);
-            let bit = 1 << bit;
+            let mask = 1 << id.bit;
 
             loop {
-                if current & bit == 0 {
+                if current & mask == 0 {
                     return false;
                 }
 
-                let current_with_bit = current & !bit;
+                let current_with_cleared_bit = current & !mask;
 
                 match data_ref.compare_exchange(
                     current,
-                    current_with_bit,
+                    current_with_cleared_bit,
                     Ordering::Relaxed,
                     Ordering::Relaxed,
                 ) {
@@ -262,7 +270,7 @@ pub mod details {
                 id
             );
 
-            self.set_bit(id)
+            self.set_bit(Id::new(id))
         }
 
         /// Resets the next set bit and returns the bit index. If no bit was set it returns
@@ -273,14 +281,11 @@ pub mod details {
                 return None;
             }
 
-            let mut current_position = self.reset_position.load(Ordering::Relaxed);
-            for _ in 0..self.capacity {
-                current_position = (current_position + 1) % self.capacity;
-
-                if self.clear_bit(current_position) {
-                    self.reset_position
-                        .store(current_position, Ordering::Relaxed);
-                    return Some(current_position);
+            let current_position = self.reset_position.load(Ordering::Relaxed);
+            for pos in (current_position..self.capacity).chain(0..current_position) {
+                if self.clear_bit(Id::new(pos)) {
+                    self.reset_position.store(pos + 1, Ordering::Relaxed);
+                    return Some(pos);
                 }
             }
 
@@ -295,15 +300,15 @@ pub mod details {
             for i in 0..self.array_capacity {
                 let value = unsafe { (*self.data_ptr.as_ptr().add(i)).swap(0, Ordering::Relaxed) };
                 let mut counter = 0;
+                let main_index = i * BITSET_ELEMENT_BITSIZE;
                 for b in 0..BITSET_ELEMENT_BITSIZE {
-                    let main_index = i * BITSET_ELEMENT_BITSIZE;
                     if value & (1 << b) != 0 {
                         callback(main_index + b);
                         counter += 1;
                     }
                 }
 
-                if self.active_bits.fetch_sub(counter, Ordering::Relaxed) == 1 {
+                if self.active_bits.fetch_sub(counter, Ordering::Relaxed) == counter {
                     return;
                 }
             }

@@ -18,7 +18,7 @@ use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 
 use super::{NotifierNotifyError, TriggerId};
 
-/// The [`SignalMechanism`] is a building block for [`crate::event::Event`]
+/// The [`IdTracker`] is a building block for [`crate::event::Event`]
 /// concept. Its task is to track the origin of the signal that was sent
 /// via the [`crate::event::signal_mechanism::SignalMechanism`].
 pub trait IdTracker: RelocatableContainer + Send + Sync + Debug {

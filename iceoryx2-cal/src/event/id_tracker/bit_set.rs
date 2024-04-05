@@ -37,9 +37,6 @@ impl IdTracker for RelocatableBitSet {
     }
 
     unsafe fn acquire(&self) -> Option<TriggerId> {
-        match self.reset_next() {
-            Some(id) => Some(TriggerId::new(id as u64)),
-            None => None,
-        }
+        self.reset_next().map(|id| TriggerId::new(id as u64))
     }
 }

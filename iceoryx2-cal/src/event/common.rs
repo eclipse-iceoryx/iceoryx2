@@ -15,6 +15,7 @@ pub mod details {
     use std::{fmt::Debug, marker::PhantomData, time::Duration};
 
     use iceoryx2_bb_log::fail;
+    use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 
     use crate::{
@@ -260,7 +261,8 @@ pub mod details {
             }
 
             unsafe { self.storage.get().id_tracker.add(id)? };
-            Ok(unsafe { self.storage.get().signal_mechanism.notify()? })
+            unsafe { self.storage.get().signal_mechanism.notify()? };
+            Ok(())
         }
     }
 
@@ -451,6 +453,27 @@ pub mod details {
             Tracker: IdTracker,
             WaitMechanism: SignalMechanism,
             Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+        > ListenerBuilder<Tracker, WaitMechanism, Storage>
+    {
+        fn init(
+            mgmt: &mut Management<Tracker, WaitMechanism>,
+            allocator: &mut BumpAllocator,
+        ) -> bool {
+            if unsafe { mgmt.id_tracker.init(allocator).is_err() } {
+                return false;
+            }
+            if unsafe { mgmt.signal_mechanism.init().is_err() } {
+                return false;
+            }
+
+            true
+        }
+    }
+
+    impl<
+            Tracker: IdTracker,
+            WaitMechanism: SignalMechanism,
+            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
         > crate::event::ListenerBuilder<EventImpl<Tracker, WaitMechanism, Storage>>
         for ListenerBuilder<Tracker, WaitMechanism, Storage>
     {
@@ -471,16 +494,7 @@ pub mod details {
             match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())
                 .supplementary_size(Tracker::memory_size(id_tracker_capacity))
-                .initializer(|mgmt, allocator| {
-                    if unsafe { mgmt.id_tracker.init(allocator).is_err() } {
-                        return false;
-                    }
-                    if unsafe { mgmt.signal_mechanism.init().is_err() } {
-                        return false;
-                    }
-
-                    true
-                })
+                .initializer(Self::init)
                 .has_ownership(true)
                 .create(Management {
                     id_tracker: unsafe { Tracker::new_uninit(id_tracker_capacity) },
