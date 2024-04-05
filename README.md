@@ -7,6 +7,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Roadmap](https://img.shields.io/badge/Roadmap-gray)](ROADMAP.md)
 
+<p align="center">
+<img src="https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/3230a125-19e5-4e98-a752-da026a086782" width="50%">
+</p>
+
 # iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust
 
  1. [Introduction](#introduction)
@@ -17,7 +21,8 @@
     3. [Custom Configuration](#custom-configuration)
  4. [Supported Platforms](#supported-platforms)
  5. [Language Bindings](#language-bindings)
- 6. [Thanks To All Contributors](#thanks-to-all-contributors)
+ 6. [Commercial Support](#commercial-support)
+ 7. [Thanks To All Contributors](#thanks-to-all-contributors)
 
 ## Introduction
 
@@ -278,6 +283,36 @@ The support levels can be adjusted when required.
 | Lua      | planned  |
 | Python   | planned  |
 | Zig      | planned  |
+
+## Commercial Support
+
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<table width="100%">
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="33%">
+        <a href="https://ekxide.io">
+        <img src="https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/c3ce8370-6cef-4c31-8259-93ddaa61c43e" alt="ekxide IO GmbH"/><br />
+        </a>
+        <a href="mailto:info@ekxide.io">info@ekxide.io</a>
+      </td>
+      <td>
+        <ul>
+          <li>commercial extensions and tooling</li>
+          <li>custom feature development</li>
+          <li>training and consulting</li>
+          <li>integration support</li>
+          <li>engineering services around the iceoryx ecosystem</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
 
 ## Thanks To All Contributors
 
