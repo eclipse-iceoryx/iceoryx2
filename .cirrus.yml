@@ -187,14 +187,14 @@ ubuntu_22_04_x64_stable_release_task:
 
 ubuntu_22_04_aarch64_min_version_debug_task:
   depends_on: preflight_check
-  skip: "changesIncludeOnly('**.md')"
+  skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
   set_toolchain_script: rustup default 1.73.0
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 ubuntu_22_04_aarch64_stable_debug_task:
   depends_on: preflight_check
-  skip: "changesIncludeOnly('**.md')"
+  skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
   set_toolchain_script: rustup default stable
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
@@ -202,7 +202,7 @@ ubuntu_22_04_aarch64_stable_debug_task:
 
 ubuntu_22_04_aarch64_beta_debug_task:
   depends_on: ubuntu_22_04_aarch64_stable_debug
-  skip: "changesIncludeOnly('**.md')"
+  skip: "changesIncludeOnly('.github/**', '**.md')"
   allow_failures: true
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
   set_toolchain_script: rustup default beta
@@ -212,7 +212,7 @@ ubuntu_22_04_aarch64_beta_debug_task:
 
 ubuntu_22_04_aarch64_stable_release_task:
   depends_on: preflight_check
-  skip: "changesIncludeOnly('**.md')"
+  skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
   set_toolchain_script: rustup default stable
   <<: *IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
@@ -225,7 +225,7 @@ ubuntu_22_04_aarch64_stable_release_task:
 
 arch_linux_x64_stable_debug_task:
   depends_on: preflight_check
-  skip: "changesIncludeOnly('**.md')"
+  skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_ARCH_LINUX_X64
   set_toolchain_script: rustup default stable
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
@@ -233,7 +233,7 @@ arch_linux_x64_stable_debug_task:
 
 arch_linux_x64_beta_debug_task:
   depends_on: arch_linux_x64_stable_debug
-  skip: "changesIncludeOnly('**.md')"
+  skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_ARCH_LINUX_X64
   set_toolchain_script: rustup default beta
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG

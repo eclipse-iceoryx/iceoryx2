@@ -17,12 +17,15 @@ jobs:
     outputs:
       source-code: ${{ steps.filter.outputs.source-code }}
     steps:
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: |
-          source-code:
-            - '!**/*.md'
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Check for source-code changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            source-code:
+              - '!**/*.md'
 
   preflight-check:
     needs: changes
@@ -54,7 +57,10 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: stable
+          # TODO iox2-172: cargo clippy receives a SIGABRT with macOS-latest x64 but
+          # works in this version
+          # toolchain: stable
+          toolchain: 1.76.0
           components: rustfmt, clippy
 
       - name: Run cargo fmt
