@@ -16,9 +16,14 @@ mod static_storage {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_cal::named_concept::*;
+    use iceoryx2_cal::static_storage::StaticStorageCreateError;
     use iceoryx2_cal::static_storage::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::Barrier;
     use std::sync::Mutex;
+    use std::time::Duration;
 
     /// The list all storage tests requires that all other tests are not interfering and therefore
     /// we cannot let them run concurrently.
@@ -258,6 +263,48 @@ mod static_storage {
         }
 
         assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+    }
+
+    #[test]
+    fn concurrent_create_same_locked_storage_multiple_times_fails_for_all_but_one<
+        Sut: StaticStorage,
+    >() {
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(5));
+        const NUMBER_OF_THREADS: usize = 4;
+        const NUMBER_OF_ITERATIONS: usize = 1000;
+
+        let success_counter = AtomicU64::new(0);
+        let barrier_enter = Barrier::new(NUMBER_OF_THREADS);
+        let barrier_exit = Barrier::new(NUMBER_OF_THREADS);
+        let storage_name = generate_name();
+
+        std::thread::scope(|s| {
+            let mut threads = vec![];
+            for _ in 0..NUMBER_OF_THREADS {
+                threads.push(s.spawn(|| {
+                    for _ in 0..NUMBER_OF_ITERATIONS {
+                        barrier_enter.wait();
+
+                        let sut = Sut::Builder::new(&storage_name).create_locked();
+                        match sut {
+                            Ok(_) => {
+                                success_counter.fetch_add(1, Ordering::Relaxed);
+                            }
+                            Err(e) => {
+                                assert_that!(e, eq StaticStorageCreateError::AlreadyExists);
+                            }
+                        }
+
+                        barrier_exit.wait();
+                    }
+                }));
+            }
+
+            for thread in threads {
+                thread.join().unwrap();
+            }
+            assert_that!(success_counter.load(Ordering::Relaxed), eq NUMBER_OF_ITERATIONS as u64)
+        });
     }
 
     #[test]
