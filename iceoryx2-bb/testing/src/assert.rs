@@ -145,6 +145,20 @@ macro_rules! assert_that {
             }
         }
     };
+    ($lhs:expr, any_of $rhs:expr) => {
+        {
+            let mut found = false;
+            for value in &$rhs {
+                if *value == $lhs {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                assert_that!(message_any_of $lhs, $rhs);
+            }
+        }
+    };
     ($lhs:expr, contains $rhs:expr) => {
         {
             let mut does_contain = false;
@@ -200,6 +214,17 @@ macro_rules! assert_that {
                 ""
             }
         }
+    };
+    [message_any_of $lhs:expr, $rhs:expr] => {
+        core::panic!(
+            "assertion failed: {}expr: {} any_of {} ({:?});  contents: {:?}{}",
+                     assert_that![color_start],
+                     core::stringify!($lhs),
+                     core::stringify!($rhs),
+                     $rhs,
+                     $lhs,
+                     assert_that![color_end]
+        );
     };
     [message_contains $lhs:expr, $rhs:expr] => {
         core::panic!(
