@@ -19,7 +19,7 @@ struct Config {
     iterations: usize,
 }
 
-fn perform_benchmark(config: Config) {
+fn perform_benchmark_reset_all(config: Config) {
     let sut_a_b = BitSet::new(config.capacity);
     let sut_b_a = BitSet::new(config.capacity);
     // worst case bit - iterate over all bitset to see if its set
@@ -64,7 +64,50 @@ fn perform_benchmark(config: Config) {
 
         let stop = start.elapsed();
         println!(
-            "Capacity: {}, Iterations: {}, Time: {}, Latency: {} ns",
+            "Bitset::reset_all()  ::: Capacity: {}, Iterations: {}, Time: {}, Latency: {} ns",
+            config.capacity,
+            config.iterations,
+            stop.as_secs_f64(),
+            stop.as_nanos() / (config.iterations as u128 * 2)
+        );
+    });
+}
+
+fn perform_benchmark_reset_next(config: Config) {
+    let sut_a_b = BitSet::new(config.capacity);
+    let sut_b_a = BitSet::new(config.capacity);
+    let bit = 0;
+    let barrier = Barrier::new(3);
+
+    std::thread::scope(|s| {
+        let t1 = s.spawn(|| {
+            barrier.wait();
+            sut_a_b.set(bit);
+
+            for _ in 0..config.iterations {
+                while sut_b_a.reset_next().is_none() {}
+                sut_a_b.set(bit);
+            }
+        });
+
+        let t2 = s.spawn(|| {
+            barrier.wait();
+            for _ in 0..config.iterations {
+                while sut_a_b.reset_next().is_none() {}
+                sut_b_a.set(bit);
+            }
+        });
+
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let start = Instant::now();
+        barrier.wait();
+
+        t1.join().expect("thread failure");
+        t2.join().expect("thread failure");
+
+        let stop = start.elapsed();
+        println!(
+            "Bitset::reset_next() ::: Capacity: {}, Iterations: {}, Time: {}, Latency: {} ns",
             config.capacity,
             config.iterations,
             stop.as_secs_f64(),
@@ -74,8 +117,13 @@ fn perform_benchmark(config: Config) {
 }
 
 fn main() {
-    perform_benchmark(Config {
+    perform_benchmark_reset_all(Config {
         capacity: 256,
-        iterations: 1000000,
-    })
+        iterations: 2000000,
+    });
+
+    perform_benchmark_reset_next(Config {
+        capacity: 256,
+        iterations: 2000000,
+    });
 }

@@ -39,7 +39,7 @@
 use std::{
     alloc::Layout,
     fmt::Debug,
-    sync::atomic::{AtomicBool, AtomicU8, Ordering},
+    sync::atomic::{AtomicBool, AtomicIsize, AtomicU8, AtomicUsize, Ordering},
 };
 
 use iceoryx2_bb_elementary::{
@@ -59,7 +59,6 @@ pub type RelocatableBitSet = details::BitSet<RelocatablePointer<details::BitsetE
 
 #[doc(hidden)]
 pub mod details {
-    use std::sync::atomic::AtomicUsize;
 
     use super::*;
 
@@ -87,7 +86,7 @@ pub mod details {
         capacity: usize,
         array_capacity: usize,
         reset_position: AtomicUsize,
-        active_bits: AtomicUsize,
+        active_bits: AtomicIsize,
         is_memory_initialized: AtomicBool,
     }
 
@@ -115,7 +114,7 @@ pub mod details {
                 array_capacity,
                 is_memory_initialized: AtomicBool::new(true),
                 reset_position: AtomicUsize::new(0),
-                active_bits: AtomicUsize::new(0),
+                active_bits: AtomicIsize::new(0),
             }
         }
     }
@@ -128,7 +127,7 @@ pub mod details {
                 array_capacity: Self::array_capacity(capacity),
                 is_memory_initialized: AtomicBool::new(false),
                 reset_position: AtomicUsize::new(0),
-                active_bits: AtomicUsize::new(0),
+                active_bits: AtomicIsize::new(0),
             }
         }
 
@@ -176,7 +175,7 @@ pub mod details {
                 array_capacity: Self::array_capacity(capacity),
                 is_memory_initialized: AtomicBool::new(true),
                 reset_position: AtomicUsize::new(0),
-                active_bits: AtomicUsize::new(0),
+                active_bits: AtomicIsize::new(0),
             }
         }
     }
@@ -277,14 +276,17 @@ pub mod details {
         /// [`None`].
         pub fn reset_next(&self) -> Option<usize> {
             self.verify_init("reset_next");
-            if self.active_bits.load(Ordering::Relaxed) == 0 {
+            let active_bits = self.active_bits.load(Ordering::Relaxed);
+            if active_bits <= 0 {
                 return None;
             }
 
             let current_position = self.reset_position.load(Ordering::Relaxed);
             for pos in (current_position..self.capacity).chain(0..current_position) {
                 if self.clear_bit(Id::new(pos)) {
-                    self.reset_position.store(pos + 1, Ordering::Relaxed);
+                    if active_bits != 1 {
+                        self.reset_position.store(pos + 1, Ordering::Relaxed);
+                    }
                     return Some(pos);
                 }
             }
@@ -308,7 +310,7 @@ pub mod details {
                     }
                 }
 
-                if self.active_bits.fetch_sub(counter, Ordering::Relaxed) == counter {
+                if self.active_bits.fetch_sub(counter, Ordering::Relaxed) <= counter {
                     return;
                 }
             }
