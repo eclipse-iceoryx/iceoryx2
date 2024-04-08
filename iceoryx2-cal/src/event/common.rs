@@ -436,39 +436,16 @@ pub mod details {
             callback: F,
             timeout: Duration,
         ) -> Result<(), crate::event::ListenerWaitError> {
-            let mut try_wait_did_run_at_least_once = false;
-            while unsafe { self.storage.get().signal_mechanism.try_wait()? } {
-                try_wait_did_run_at_least_once = true;
-            }
-
-            if try_wait_did_run_at_least_once {
-                unsafe { self.storage.get().id_tracker.acquire_all(callback) };
-            } else if unsafe { self.storage.get().signal_mechanism.timed_wait(timeout)? } {
-                while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
-                unsafe { self.storage.get().id_tracker.acquire_all(callback) };
-            }
-
-            Ok(())
+            unsafe { self.storage.get().signal_mechanism.timed_wait(timeout)? };
+            self.try_wait_all(callback)
         }
 
         fn blocking_wait_all<F: FnMut(TriggerId)>(
             &self,
             callback: F,
         ) -> Result<(), crate::event::ListenerWaitError> {
-            let mut try_wait_did_run_at_least_once = false;
-            while unsafe { self.storage.get().signal_mechanism.try_wait()? } {
-                try_wait_did_run_at_least_once = true;
-            }
-
-            if try_wait_did_run_at_least_once {
-                unsafe { self.storage.get().id_tracker.acquire_all(callback) };
-            } else {
-                unsafe { self.storage.get().signal_mechanism.blocking_wait()? };
-                while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
-                unsafe { self.storage.get().id_tracker.acquire_all(callback) };
-            }
-
-            Ok(())
+            unsafe { self.storage.get().signal_mechanism.blocking_wait()? };
+            self.try_wait_all(callback)
         }
     }
 

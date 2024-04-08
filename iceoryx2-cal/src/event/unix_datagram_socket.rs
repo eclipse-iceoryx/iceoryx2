@@ -21,6 +21,8 @@ use iceoryx2_bb_posix::{
 };
 pub use iceoryx2_bb_system_types::file_name::FileName;
 
+const MAX_BATCH_SIZE: usize = 512;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Configuration {
     suffix: FileName,
@@ -275,8 +277,18 @@ impl crate::event::Listener for Listener {
         )
     }
 
-    fn try_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
-        todo!()
+    fn try_wait_all<F: FnMut(TriggerId)>(&self, mut callback: F) -> Result<(), ListenerWaitError> {
+        let mut counter = 0;
+        while let Some(id) = self.try_wait()? {
+            callback(id);
+
+            counter += 1;
+            if counter == MAX_BATCH_SIZE {
+                break;
+            }
+        }
+
+        Ok(())
     }
 
     fn timed_wait_all<F: FnMut(TriggerId)>(
@@ -284,11 +296,13 @@ impl crate::event::Listener for Listener {
         callback: F,
         timeout: Duration,
     ) -> Result<(), ListenerWaitError> {
-        todo!()
+        self.timed_wait(timeout)?;
+        self.try_wait_all(callback)
     }
 
     fn blocking_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
-        todo!()
+        self.blocking_wait()?;
+        self.try_wait_all(callback)
     }
 }
 
