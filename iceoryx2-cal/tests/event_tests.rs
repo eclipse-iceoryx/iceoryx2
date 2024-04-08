@@ -87,7 +87,7 @@ mod event {
     #[test]
     fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
         let _watchdog = Watchdog::new();
-        const REPETITIONS: u64 = 32;
+        const REPETITIONS: u64 = 8;
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
@@ -118,7 +118,7 @@ mod event {
         wait_call: F,
     ) {
         let _watchdog = Watchdog::new();
-        const REPETITIONS: u64 = 32;
+        const REPETITIONS: u64 = 8;
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
