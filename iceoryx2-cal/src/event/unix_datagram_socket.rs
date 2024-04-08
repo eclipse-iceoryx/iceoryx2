@@ -293,15 +293,22 @@ impl crate::event::Listener for Listener {
 
     fn timed_wait_all<F: FnMut(TriggerId)>(
         &self,
-        callback: F,
+        mut callback: F,
         timeout: Duration,
     ) -> Result<(), ListenerWaitError> {
-        self.timed_wait(timeout)?;
+        if let Some(id) = self.timed_wait(timeout)? {
+            callback(id);
+        }
         self.try_wait_all(callback)
     }
 
-    fn blocking_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
-        self.blocking_wait()?;
+    fn blocking_wait_all<F: FnMut(TriggerId)>(
+        &self,
+        mut callback: F,
+    ) -> Result<(), ListenerWaitError> {
+        if let Some(id) = self.blocking_wait()? {
+            callback(id);
+        }
         self.try_wait_all(callback)
     }
 }

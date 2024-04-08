@@ -14,6 +14,7 @@
 mod event {
     use std::collections::HashSet;
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::Barrier;
     use std::time::{Duration, Instant};
 
     use iceoryx2_bb_container::semantic_string::*;
@@ -479,6 +480,134 @@ mod event {
 
         let event_id = sut_listener.try_wait().unwrap();
         assert_that!(event_id, is_none);
+    }
+
+    fn wait_all_collects_all_triggers<Sut: Event, F: FnMut(&mut Vec<TriggerId>, &Sut::Listener)>(
+        mut wait_call: F,
+    ) {
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: u64 = 8;
+        let name = generate_name();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .trigger_id_max(TriggerId::new(REPETITIONS + 1))
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+
+        for i in 1..REPETITIONS {
+            for n in 0..i {
+                sut_notifier.notify(TriggerId::new(n as _)).unwrap();
+            }
+
+            let mut vec_of_ids = vec![];
+            wait_call(&mut vec_of_ids, &sut_listener);
+
+            assert_that!(vec_of_ids, len i as usize);
+            for n in 0..i {
+                assert_that!(vec_of_ids, contains TriggerId::new(n));
+            }
+        }
+    }
+
+    #[test]
+    fn try_wait_all_collects_all_triggers<Sut: Event>() {
+        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+            sut.try_wait_all(|id| v.push(id)).unwrap();
+        });
+    }
+
+    #[test]
+    fn timed_wait_all_collects_all_triggers<Sut: Event>() {
+        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+            sut.timed_wait_all(|id| v.push(id), TIMEOUT * 1000).unwrap();
+        });
+    }
+
+    #[test]
+    fn blocking_wait_all_collects_all_triggers<Sut: Event>() {
+        wait_all_collects_all_triggers::<Sut, _>(|v, sut: &Sut::Listener| {
+            sut.blocking_wait_all(|id| v.push(id)).unwrap();
+        });
+    }
+
+    #[test]
+    fn try_wait_all_does_not_block<Sut: Event>() {
+        let _watchdog = Watchdog::new();
+        let name = generate_name();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+
+        let mut callback_called = false;
+        sut_listener
+            .try_wait_all(|_| callback_called = true)
+            .unwrap();
+        assert_that!(callback_called, eq false);
+    }
+
+    #[test]
+    fn timed_wait_all_does_block_for_at_least_timeout<Sut: Event>() {
+        let _watchdog = Watchdog::new();
+        let name = generate_name();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+
+        let mut callback_called = false;
+        let now = Instant::now();
+        sut_listener
+            .timed_wait_all(|_| callback_called = true, TIMEOUT)
+            .unwrap();
+        assert_that!(callback_called, eq false);
+        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+    }
+
+    fn wait_all_wakes_up_on_notify<
+        Sut: Event,
+        F: FnMut(&mut Vec<TriggerId>, &Sut::Listener) + Send,
+    >(
+        mut wait_call: F,
+    ) {
+        let _watchdog = Watchdog::new();
+        let name = generate_name();
+        let barrier = Barrier::new(2);
+        let counter = AtomicU64::new(0);
+        let id = TriggerId::new(5);
+
+        std::thread::scope(|s| {
+            let t1 = s.spawn(|| {
+                let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+                barrier.wait();
+
+                let mut id_vec = vec![];
+                wait_call(&mut id_vec, &sut_listener);
+                counter.fetch_add(1, Ordering::Relaxed);
+
+                assert_that!(id_vec, len 1);
+                assert_that!(id_vec[0], eq id);
+            });
+
+            barrier.wait();
+            let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+            std::thread::sleep(TIMEOUT);
+            assert_that!(counter.load(Ordering::Relaxed), eq 0);
+            sut_notifier.notify(id).unwrap();
+            t1.join().unwrap();
+            assert_that!(counter.load(Ordering::Relaxed), eq 1);
+        });
+    }
+
+    #[test]
+    fn timed_wait_all_wakes_up_on_notify<Sut: Event>() {
+        wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
+            sut.timed_wait_all(|id| v.push(id), TIMEOUT * 1000).unwrap();
+        });
+    }
+
+    #[test]
+    fn blocking_wait_all_wakes_up_on_notify<Sut: Event>() {
+        wait_all_wakes_up_on_notify::<Sut, _>(|v, sut: &Sut::Listener| {
+            sut.blocking_wait_all(|id| v.push(id)).unwrap();
+        });
     }
 
     #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl>)]
