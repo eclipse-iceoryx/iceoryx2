@@ -84,6 +84,33 @@ mod event {
         assert_that!(sut.err().unwrap(), eq NotifierCreateError::DoesNotExist);
     }
 
+    #[test]
+    fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: u64 = 32;
+        let name = generate_name();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+
+        let trigger_id = TriggerId::new(0);
+
+        for _ in 0..REPETITIONS {
+            sut_notifier.notify(trigger_id).unwrap();
+        }
+
+        assert_that!(sut_listener.try_wait().unwrap(), is_some);
+
+        let now = Instant::now();
+        let result = sut_listener.timed_wait(TIMEOUT).unwrap();
+
+        if result.is_some() {
+            assert_that!(result, eq Some(trigger_id));
+        } else {
+            assert_that!(now.elapsed(), time_at_least TIMEOUT );
+        }
+    }
+
     fn sending_notification_works<
         Sut: Event,
         F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,

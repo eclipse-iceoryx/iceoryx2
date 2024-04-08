@@ -31,7 +31,7 @@ mod event_id_tracker {
 
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
-        assert_that!(sut.trigger_id_max().as_u64(), ge CAPACITY as u64);
+        assert_that!(sut.trigger_id_max().as_u64(), lt CAPACITY as u64);
     }
 
     #[test]
@@ -130,6 +130,21 @@ mod event_id_tracker {
         };
 
         assert_that!(ids, len CAPACITY);
+    }
+
+    #[test]
+    fn add_max_trigger_id_and_acquire_works<Sut: IdTracker>() {
+        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
+        const CAPACITY: usize = 1234;
+
+        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+
+        assert_that!(unsafe { sut.acquire() }, eq None);
+        let id = sut.trigger_id_max();
+        assert_that!(unsafe { sut.add(id) }, is_ok);
+        assert_that!(unsafe { sut.acquire() }, eq Some(id));
+        assert_that!(unsafe { sut.acquire() }, is_none);
     }
 
     #[instantiate_tests(<RelocatableBitSet>)]

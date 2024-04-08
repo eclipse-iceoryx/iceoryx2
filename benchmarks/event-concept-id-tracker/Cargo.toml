@@ -1,6 +1,6 @@
 [package]
-name = "mpmc-bitset-benchmark"
-description = "iceoryx2: [internal] benchmark for the mpmc::bitset"
+name = "event-concept-id-tracker-benchmark"
+description = "iceoryx2: [internal] benchmark for the iceoryx2-cal::event::id_tracker"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -12,3 +12,9 @@ version = { workspace = true }
 
 [dependencies]
 iceoryx2-bb-lock-free = { workspace = true }
+iceoryx2-cal = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-memory = { workspace = true }
+
+pin-init = { workspace = true }
+clap = { workspace = true }

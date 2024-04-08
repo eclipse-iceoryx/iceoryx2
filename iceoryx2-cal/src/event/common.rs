@@ -14,7 +14,7 @@
 pub mod details {
     use std::{fmt::Debug, marker::PhantomData, time::Duration};
 
-    use iceoryx2_bb_log::fail;
+    use iceoryx2_bb_log::{debug, fail};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 
@@ -32,7 +32,7 @@ pub mod details {
         },
     };
 
-    const TRIGGER_ID_DEFAULT_MAX: TriggerId = TriggerId::new(u16::MAX as u64);
+    const TRIGGER_ID_DEFAULT_MAX: TriggerId = TriggerId::new(u16::MAX as _);
 
     #[derive(Debug)]
     pub struct Management<Tracker: IdTracker, WaitMechanism: SignalMechanism> {
@@ -383,6 +383,7 @@ pub mod details {
         fn try_wait(
             &self,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
+            // collect all notifications until no more are available
             while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
             Ok(unsafe { self.storage.get().id_tracker.acquire() })
         }
@@ -395,11 +396,14 @@ pub mod details {
                 return Ok(Some(id));
             }
 
-            if unsafe { self.storage.get().signal_mechanism.timed_wait(timeout)? } {
-                return Ok(unsafe { self.storage.get().id_tracker.acquire() });
-            }
-
-            Ok(None)
+            Ok(unsafe {
+                self.storage
+                    .get()
+                    .signal_mechanism
+                    .timed_wait(timeout)?
+                    .then_some(self.storage.get().id_tracker.acquire())
+                    .flatten()
+            })
         }
 
         fn blocking_wait(
@@ -459,10 +463,13 @@ pub mod details {
             mgmt: &mut Management<Tracker, WaitMechanism>,
             allocator: &mut BumpAllocator,
         ) -> bool {
+            let origin = "init()";
             if unsafe { mgmt.id_tracker.init(allocator).is_err() } {
+                debug!(from origin, "Unable to initialize IdTracker.");
                 return false;
             }
             if unsafe { mgmt.signal_mechanism.init().is_err() } {
+                debug!(from origin, "Unable to initialize SignalMechanism.");
                 return false;
             }
 
@@ -489,7 +496,7 @@ pub mod details {
             ListenerCreateError,
         > {
             let msg = "Failed to create Listener";
-            let id_tracker_capacity = self.trigger_id_max.as_u64() as usize;
+            let id_tracker_capacity = self.trigger_id_max.as_u64() as usize + 1;
 
             match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())
