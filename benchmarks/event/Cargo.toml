@@ -1,5 +1,5 @@
 [package]
-name = "event-benchmark"
+name = "benchmark-event"
 description = "iceoryx2: [internal] benchmark for the iceoryx2 event services"
 categories = { workspace = true }
 edition = { workspace = true }
