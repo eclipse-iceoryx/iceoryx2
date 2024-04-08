@@ -378,7 +378,7 @@ impl NamedSemaphoreCreationBuilder {
 ///                     .expect("failed to open semaphore");
 ///
 /// loop {
-///     semaphore.wait().expect("failed to wait on semaphore");
+///     semaphore.blocking_wait().expect("failed to wait on semaphore");
 ///     println!("process 1 has triggered me");
 /// }
 /// ```
@@ -712,7 +712,7 @@ impl Drop for UnnamedSemaphoreHandle {
 /// thread::scope(|s| {
 ///     s.spawn(|| {
 ///         loop {
-///             semaphore.wait().expect("failed to wait on semaphore");
+///             semaphore.blocking_wait().expect("failed to wait on semaphore");
 ///             println!("the thread was triggered");
 ///         }
 ///     });

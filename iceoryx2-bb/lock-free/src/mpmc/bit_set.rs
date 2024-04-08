@@ -31,7 +31,7 @@
 //!  bitset.set(5);
 //!
 //!  // resets the bitset and calls the callback for every bit that was set
-//!  bitset.reset(|id| {
+//!  bitset.reset_all(|id| {
 //!     println!("bit {} was set", id );
 //!  });
 //!  ```
