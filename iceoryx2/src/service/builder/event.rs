@@ -36,6 +36,7 @@ pub enum EventOpenError {
     HangsInCreation,
     DoesNotSupportRequestedAmountOfNotifiers,
     DoesNotSupportRequestedAmountOfListeners,
+    DoesNotSupportRequestedMaxEventId,
     UnableToOpenDynamicServiceInformation,
 }
 
@@ -94,6 +95,7 @@ pub struct Builder<ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_notifiers: bool,
     verify_max_listeners: bool,
+    verify_max_event_id: bool,
 }
 
 impl<ServiceType: service::Service> Builder<ServiceType> {
@@ -102,6 +104,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             base,
             verify_max_notifiers: false,
             verify_max_listeners: false,
+            verify_max_event_id: false,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Event(
@@ -118,6 +121,15 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 fatal_panic!(from self, "This should never happen! Accessing wrong messaging pattern in Event builder!");
             }
         }
+    }
+
+    /// If the [`Service`] is created it defines how many [`crate::port::notifier::Notifier`] shall
+    /// be supported at most. If an existing [`Service`] is opened it defines how many
+    /// [`crate::port::notifier::Notifier`] must be at least supported.
+    pub fn max_event_id(mut self, value: u64) -> Self {
+        self.config_details().max_event_id = value;
+        self.verify_max_event_id = true;
+        self
     }
 
     /// If the [`Service`] is created it defines how many [`crate::port::notifier::Notifier`] shall
@@ -365,7 +377,15 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         {
             fail!(from self, with EventOpenError::DoesNotSupportRequestedAmountOfListeners,
                 "{} since the event supports only {} listeners but a support of {} listeners was requested.",
-                msg, existing_settings.max_notifiers, existing_settings.max_listeners);
+                msg, existing_settings.max_notifiers, required_settings.max_listeners);
+        }
+
+        if self.verify_max_event_id
+            && existing_settings.max_event_id < required_settings.max_event_id
+        {
+            fail!(from self, with EventOpenError::DoesNotSupportRequestedMaxEventId,
+                "{} since the event supports only EventIds with a value of at most {} a support of {} was requested.",
+                msg, existing_settings.max_event_id, required_settings.max_event_id);
         }
 
         Ok(*existing_settings)

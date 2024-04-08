@@ -274,6 +274,22 @@ impl crate::event::Listener for Listener {
             |this, buffer| this.receiver.blocking_receive(buffer),
         )
     }
+
+    fn try_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
+        todo!()
+    }
+
+    fn timed_wait_all<F: FnMut(TriggerId)>(
+        &self,
+        callback: F,
+        timeout: Duration,
+    ) -> Result<(), ListenerWaitError> {
+        todo!()
+    }
+
+    fn blocking_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
+        todo!()
+    }
 }
 
 #[derive(Debug)]
