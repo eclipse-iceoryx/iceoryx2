@@ -45,7 +45,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
             notifier_a2b.notify().expect("failed to notify");
 
             for _ in 0..args.iterations {
-                while listener_b2a.blocking_wait().unwrap().is_empty() {}
+                while listener_b2a.blocking_wait().unwrap().is_none() {}
                 notifier_a2b.notify().expect("failed to notify");
             }
         });
@@ -56,7 +56,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
 
             barrier.wait();
             for _ in 0..args.iterations {
-                while listener_a2b.blocking_wait().unwrap().is_empty() {}
+                while listener_a2b.blocking_wait().unwrap().is_none() {}
                 notifier_b2a.notify().expect("failed to notify");
             }
         });

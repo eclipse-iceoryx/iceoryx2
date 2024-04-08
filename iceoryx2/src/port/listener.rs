@@ -67,7 +67,6 @@ impl std::error::Error for ListenerCreateError {}
 pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
     listener: <Service::Event as iceoryx2_cal::event::Event>::Listener,
-    cache: Vec<EventId>,
     dynamic_storage: Rc<Service::DynamicStorage>,
     port_id: UniqueListenerId,
 }
@@ -101,7 +100,6 @@ impl<Service: service::Service> Listener<Service> {
             dynamic_storage,
             dynamic_listener_handle: None,
             listener,
-            cache: vec![],
             port_id,
         };
 
@@ -129,72 +127,33 @@ impl<Service: service::Service> Listener<Service> {
         Ok(new_self)
     }
 
-    fn fill_cache(&mut self) -> Result<(), ListenerWaitError> {
-        use iceoryx2_cal::event::Listener;
-        while let Some(id) = fail!(from self,
-                when self.listener.try_wait(),
-                "Failed to try_wait on Listener port since the underlying Listener concept failed.")
-        {
-            self.cache.push(id);
-        }
-
-        Ok(())
-    }
-
-    /// Returns the cached [`EventId`]s. Whenever [`Listener::try_wait()`],
-    /// [`Listener::timed_wait()`] or [`Listener::blocking_wait()`] is called the cache is reset
-    /// and filled with the events that where signaled since the last call. This cache can be
-    /// accessed until a new wait call resets and fills it again.
-    pub fn cache(&self) -> &[EventId] {
-        &self.cache
-    }
-
     /// Non-blocking wait for new [`EventId`]s. If no [`EventId`]s were notified the returned slice
     /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    pub fn try_wait(&mut self) -> Result<&[EventId], ListenerWaitError> {
-        self.cache.clear();
-        self.fill_cache()?;
-
-        Ok(self.cache())
+    pub fn try_wait(&mut self) -> Result<Option<EventId>, ListenerWaitError> {
+        use iceoryx2_cal::event::Listener;
+        Ok(fail!(from self, when self.listener.try_wait(),
+            "Failed to while calling try_wait on underlying event::Listener"))
     }
 
     /// Blocking wait for new [`EventId`]s until either an [`EventId`] was received or the timeout
     /// has passed. If no [`EventId`]s were notified the returned slice
     /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    pub fn timed_wait(&mut self, timeout: Duration) -> Result<&[EventId], ListenerWaitError> {
+    pub fn timed_wait(&mut self, timeout: Duration) -> Result<Option<EventId>, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        self.cache.clear();
-
-        if let Some(id) = fail!(from self,
-            when self.listener.timed_wait(timeout),
-            "Failed to timed_wait with timeout {:?} on Listener port since the underlying Listener concept failed.", timeout)
-        {
-            self.cache.push(id);
-            self.fill_cache()?;
-        }
-
-        Ok(self.cache())
+        Ok(fail!(from self, when self.listener.timed_wait(timeout),
+            "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout))
     }
 
     /// Blocking wait for new [`EventId`]s until either an [`EventId`].
     /// Sporadic wakeups can occur and if no [`EventId`]s were notified the returned slice
     /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    pub fn blocking_wait(&mut self) -> Result<&[EventId], ListenerWaitError> {
+    pub fn blocking_wait(&mut self) -> Result<Option<EventId>, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        self.cache.clear();
-
-        if let Some(id) = fail!(from self,
-            when self.listener.blocking_wait(),
-            "Failed to blocking_wait on Listener port since the underlying Listener concept failed.")
-        {
-            self.cache.push(id);
-            self.fill_cache()?;
-        }
-
-        Ok(self.cache())
+        Ok(fail!(from self, when self.listener.blocking_wait(),
+            "Failed to while calling blocking_wait on underlying event::Listener"))
     }
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]
