@@ -21,7 +21,7 @@ members = [
     "examples",
 
     "benchmarks/publish-subscribe",
-    "benchmarks/event-concept-id-tracker"
+    "benchmarks/event"
 ]
 
 [workspace.package]
