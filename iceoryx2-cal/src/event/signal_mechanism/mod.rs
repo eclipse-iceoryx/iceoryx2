@@ -27,7 +27,7 @@ pub trait SignalMechanism: Send + Sync + Debug {
     /// Initializes the [`SignalMechanism`] in place.
     ///
     /// # Safety
-    ///   * [`SignalMechanism::init()`] must not be called before
+    ///   * [`SignalMechanism::init()`] must called exactly once before all other methods
     unsafe fn init(&mut self) -> Result<(), ListenerCreateError>;
 
     /// Notifies the counter-part of the [`SignalMechanism`] meaning
@@ -35,14 +35,14 @@ pub trait SignalMechanism: Send + Sync + Debug {
     /// or [`SignalMechanism::blocking_wait()`] call wakes up and returns true.
     ///
     /// # Safety
-    ///   * [`SignalMechanism::init()`] must be called before
+    ///   * [`SignalMechanism::init()`] must have been called exactly once
     ///   * Must not be dropped while in use from another process
     unsafe fn notify(&self) -> Result<(), NotifierNotifyError>;
 
     /// When a signal was received it returns true, otherwise false.
     ///
     /// # Safety
-    ///   * [`SignalMechanism::init()`] must be called before
+    ///   * [`SignalMechanism::init()`] must have been called exactly once
     ///   * Must not be dropped while in use from another process
     unsafe fn try_wait(&self) -> Result<bool, ListenerWaitError>;
 
@@ -54,7 +54,7 @@ pub trait SignalMechanism: Send + Sync + Debug {
     /// it returns [`ListenerWaitError::InterruptSignal`].
     ///
     /// # Safety
-    ///   * [`SignalMechanism::init()`] must be called before
+    ///   * [`SignalMechanism::init()`] must have been called exactly once
     ///   * Must not be dropped while in use from another process
     unsafe fn timed_wait(&self, timeout: Duration) -> Result<bool, ListenerWaitError>;
 
@@ -64,7 +64,7 @@ pub trait SignalMechanism: Send + Sync + Debug {
     /// it returns [`ListenerWaitError::InterruptSignal`].
     ///
     /// # Safety
-    ///   * [`SignalMechanism::init()`] must called before
+    ///   * [`SignalMechanism::init()`] must have been called exactly once
     ///   * Must not be dropped while in use from another process
     unsafe fn blocking_wait(&self) -> Result<(), ListenerWaitError>;
 }

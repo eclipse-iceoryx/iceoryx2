@@ -383,7 +383,13 @@ pub mod details {
         fn try_wait(
             &self,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
-            // collect all notifications until no more are available
+            // collect all notifications until no more are available, otherwise it is possible
+            // that blocking_wait and timed_wait are becoming non-blocking when the same id is
+            // triggered multiple times in combination with a bitset id_tracker since the bit is
+            // set only once but the signal is triggered whenever the user sets the bit.
+            //
+            // of course one could check if the id_tracker has already set the bit, but this is
+            // not possible on every implemenation. a bitset can check it a mpmc::queue maybe not.
             while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
             Ok(unsafe { self.storage.get().id_tracker.acquire() })
         }
