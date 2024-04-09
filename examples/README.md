@@ -16,22 +16,21 @@ messaging patterns, including:
     of data to one or more subscribers, enabling real-time data dissemination.
 
 * **Request-Response:** (planned) This pattern enables clients to send requests
-    to a server, which in turn responds with the requested data or action,
+    to a server, which responds with the requested data or action,
     making it suitable for interactive, transactional communication.
 
 * **Pipeline:** (planned) Borrowed from the Unix command line, this pattern
     involves a data source that produces data and transfers ownership to a
     sink, where it can be modified or processed in a pipeline-like fashion.
 
-The service itself acts as a factory, creating service participants, often
-referred to as "ports." These ports establish communication links between
+The service acts as a factory, creating service participants, often called
+"ports." These ports establish communication links between
 different components of your application. Each service can be customized with
-a specific quality of service to meet the unique requirements of your
-application.
+specific settings to meet your application's requirements.
 
 Within the service builder, you can configure various service-specific
 quality of service parameters, ensuring that your communication behaves
-exactly as you intend. The service port factory allows you to fine-tune the
+precisely as you intend. The service port factory allows you to fine-tune the
 settings and behavior of individual ports, giving you precise control over how
 they interact and exchange data.
 
@@ -39,6 +38,7 @@ they interact and exchange data.
 
 | Name | Description |
 |------|-------------|
+| [complex_data_types](examples/complex_data_types) | Send zero-copy compatible versions of `Vec`, `String`, .... |
 | [discovery](examples/discovery) | List all available services in a system. |
 | [docker](examples/docker) | Communicate between different docker containers and the host. |
 | [event](examples/event) | Exchanging event signals between multiple processes.|

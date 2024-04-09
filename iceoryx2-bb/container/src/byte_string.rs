@@ -62,6 +62,14 @@ pub enum FixedSizeByteStringModificationError {
     InsertWouldExceedCapacity,
 }
 
+impl std::fmt::Display for FixedSizeByteStringModificationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+    }
+}
+
+impl std::error::Error for FixedSizeByteStringModificationError {}
+
 /// Relocatable string with compile time fixed size capacity.
 #[derive(Clone, Copy)]
 #[repr(C)]

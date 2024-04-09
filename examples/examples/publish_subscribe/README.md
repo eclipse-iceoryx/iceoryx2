@@ -2,15 +2,12 @@
 
 ## Running The Example
 
-Here's an improved description for the publish-subscribe example of Iceoryx2:
-
-"This example vividly illustrates a robust publisher-subscriber communication
+This example vividly illustrates a robust publisher-subscriber communication
 pattern between two separate processes. The publisher diligently sends two
 messages every second, each containing essential [`TransmissionData`]. On the
-receiving end, the subscriber diligently checks for new data every second.
+receiving end, the subscriber checks for new data every second.
 
-Whenever new data arrives, the subscriber swiftly acknowledges it by printing
-the received information to the console.
+The subscriber is printing the sample on the console whenever new data arrives.
 
 To observe this dynamic communication in action, open two separate terminals
 and execute the following commands:
