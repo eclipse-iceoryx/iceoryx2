@@ -52,10 +52,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         // acquire and send out sample
         let mut sample = publisher.loan()?;
-        sample.payload_mut().plain_old_data = counter;
-        sample.payload_mut().text = FixedSizeByteString::from_bytes(b"hello")?;
-        sample.payload_mut().vec_of_data.push(counter);
-        sample.payload_mut().vec_of_complex_data.push(ComplexData {
+        let payload = sample.payload_mut();
+
+        payload.plain_old_data = counter;
+        payload.text = FixedSizeByteString::from_bytes(b"hello")?;
+        payload.vec_of_data.push(counter);
+        payload.vec_of_complex_data.push(ComplexData {
             name: FixedSizeByteString::from_bytes(b"bla")?,
             data: {
                 let mut v = FixedSizeVec::new();
@@ -63,8 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 v
             },
         });
-        sample
-            .payload_mut()
+        payload
             .a_queue_of_things
             .push(FixedSizeByteString::from_bytes(b"buh")?);
 
