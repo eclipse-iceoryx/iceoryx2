@@ -201,41 +201,37 @@ fn condition_variable_trigger_all_signals_all_waiters() {
 
 #[test]
 fn condition_variable_trigger_one_signals_one_waiter() {
+    const NUMBER_OF_THREADS: usize = 2;
+
     let handle = MutexHandle::<ConditionVariableData<i32>>::new();
+    let counter = AtomicI32::new(0);
+    let sut = ConditionVariableBuilder::new()
+        .create_condition_variable(500, |v| *v > 1000, &handle)
+        .unwrap();
+    let barrier = Barrier::new(3);
+
     thread::scope(|s| {
-        let counter = Arc::new(AtomicI32::new(0));
-        let sut = Arc::new(
-            ConditionVariableBuilder::new()
-                .create_condition_variable(500, |v| *v > 1000, &handle)
-                .unwrap(),
-        );
+        let mut threads = vec![];
+        for _ in 0..NUMBER_OF_THREADS {
+            threads.push(s.spawn(|| {
+                barrier.wait();
 
-        let sut_thread1 = Arc::clone(&sut);
-        let counter_thread1 = Arc::clone(&counter);
-        let t1 = s.spawn(move || {
-            sut_thread1.wait().unwrap();
-            counter_thread1.fetch_add(1, Ordering::Relaxed);
-        });
+                sut.wait().unwrap();
+                counter.fetch_add(1, Ordering::Relaxed);
+            }));
+        }
 
-        let sut_thread2 = Arc::clone(&sut);
-        let counter_thread2 = Arc::clone(&counter);
-        let t2 = s.spawn(move || {
-            sut_thread2.wait().unwrap();
-            counter_thread2.fetch_add(1, Ordering::Relaxed);
-        });
-
+        barrier.wait();
         thread::sleep(TIMEOUT);
-        let counter_old_1 = counter.load(Ordering::Relaxed);
+        assert_that!(counter.load(Ordering::Relaxed), eq 0);
         sut.trigger_one();
-        thread::sleep(TIMEOUT);
-        let counter_old_2 = counter.load(Ordering::Relaxed);
+        assert_that!(|| counter.load(Ordering::Relaxed), block_until 1);
         sut.trigger_one();
 
-        t1.join().unwrap();
-        t2.join().unwrap();
+        for t in threads {
+            t.join().unwrap();
+        }
 
-        assert_that!(counter_old_1, eq 0);
-        assert_that!(counter_old_2, eq 1);
         assert_that!(counter.load(Ordering::Relaxed), eq 2);
     });
 }
