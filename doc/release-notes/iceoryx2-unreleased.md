@@ -8,72 +8,73 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Add docker example [#83](https://github.com/eclipse-iceoryx/iceoryx2/issues/83)
- * Introduce `iceoryx2-bb-posix::process_state` for process monitoring [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
- * Introduce concept `iceoryx2-cal::monitoring` [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
- * New constructs from [#123](https://github.com/eclipse-iceoryx/iceoryx2/issues/123)
-    * Introduce semantic string `iceoryx2-bb-system-types::base64url`
-    * Introduce `iceoryx2-cal::hash::HashValue` that contains the result of a hash
- * Port `UsedChunkList` from iceoryx1 [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
- * From [#133](https://github.com/eclipse-iceoryx/iceoryx2/issues/133)
-    * Add `Notifier|Listener|Publisher|Subscriber::id()` method to acquire unique port id
-    * Add `Sample::origin()` to determine the `UniquePublisherId` of the sender
- * Performance improvements, especially for AMD CPUs [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
- * Introduce lock-free mpmc BitSet [#139](https://github.com/eclipse-iceoryx/iceoryx2/issues/139)
+* Add docker example [#83](https://github.com/eclipse-iceoryx/iceoryx2/issues/83)
+* Introduce `iceoryx2-bb-posix::process_state` for process monitoring [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
+* Introduce concept `iceoryx2-cal::monitoring` [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
+* New constructs from [#123](https://github.com/eclipse-iceoryx/iceoryx2/issues/123)
+  * Introduce semantic string `iceoryx2-bb-system-types::base64url`
+  * Introduce `iceoryx2-cal::hash::HashValue` that contains the result of a hash
+* Port `UsedChunkList` from iceoryx1 [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
+* From [#133](https://github.com/eclipse-iceoryx/iceoryx2/issues/133)
+  * Add `Notifier|Listener|Publisher|Subscriber::id()` method to acquire unique port id
+  * Add `Sample::origin()` to determine the `UniquePublisherId` of the sender
+* Performance improvements, especially for AMD CPUs [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
+* Introduce lock-free mpmc BitSet [#139](https://github.com/eclipse-iceoryx/iceoryx2/issues/139)
+* Example for complex data types [#175](https://github.com/eclipse-iceoryx/iceoryx2/issues/175)
 
 ### Bugfixes
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Fix undefined behavior in `spsc::{queue|index_queue}` [#87](https://github.com/eclipse-iceoryx/iceoryx2/issues/87)
- * Fix `open_or_create` race [#108](https://github.com/eclipse-iceoryx/iceoryx2/issues/108)
- * Fixes for [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
-    * Fix retrieve channel overflow caused by big publisher loans
-    * Fix `CreationMode::OpenOrCreate` in `iceoryx2-bb-posix::SharedMemory`
-    * Add missing memory synchronization to posix shm zero copy connection
-    * Remove retrieve buffer full check from zero copy connection - sender had insufficient infos available
-    * Fix data race in `iceoryx2-bb-lock-free::mpmc::Container`
- * Fix insufficient memory reordering protection in `spsc::Queue::push` and `spsc::Queue::pop` [#119](https://github.com/eclipse-iceoryx/iceoryx2/issues/119)
- * Fix data race due to operation reordering in `spmc::UnrestrictedAtomic::load` [#125](https://github.com/eclipse-iceoryx/iceoryx2/issues/125)
- * Fix broken `Publisher|Subscriber::populate_{subscriber|publisher}_channels()` [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
- * Fix failing reacquire of delivered samples in the zero copy receive channel [#130](https://github.com/eclipse-iceoryx/iceoryx2/issues/130)
- * Fix receiving of invalid samples when subscriber is connected [#131](https://github.com/eclipse-iceoryx/iceoryx2/issues/131)
- * Fix problem where sample is released to the wrong publisher [#133](https://github.com/eclipse-iceoryx/iceoryx2/issues/133)
- * Fixes for FreeBSD 14.0 [#140](https://github.com/eclipse-iceoryx/iceoryx2/issues/140)
-    * Fix segfault in `iceoryx2-pal-posix;:shm_list()` caused by `sysctl`
-    * Adjust test to handle unordered event notifications
- * Fix non UTF-8 windows platform error messages [#145](https://github.com/eclipse-iceoryx/iceoryx2/issues/145)
- * Correct inconsistent default config entries for windows [#149](https://github.com/eclipse-iceoryx/iceoryx2/issues/149)
- * Fix that drop is not called when DynamicStorage is destroyed [#160](https://github.com/eclipse-iceoryx/iceoryx2/issues/160)
+* Fix undefined behavior in `spsc::{queue|index_queue}` [#87](https://github.com/eclipse-iceoryx/iceoryx2/issues/87)
+* Fix `open_or_create` race [#108](https://github.com/eclipse-iceoryx/iceoryx2/issues/108)
+* Fixes for [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
+  * Fix retrieve channel overflow caused by big publisher loans
+  * Fix `CreationMode::OpenOrCreate` in `iceoryx2-bb-posix::SharedMemory`
+  * Add missing memory synchronization to posix shm zero copy connection
+  * Remove retrieve buffer full check from zero copy connection - sender had insufficient infos available
+  * Fix data race in `iceoryx2-bb-lock-free::mpmc::Container`
+* Fix insufficient memory reordering protection in `spsc::Queue::push` and `spsc::Queue::pop` [#119](https://github.com/eclipse-iceoryx/iceoryx2/issues/119)
+* Fix data race due to operation reordering in `spmc::UnrestrictedAtomic::load` [#125](https://github.com/eclipse-iceoryx/iceoryx2/issues/125)
+* Fix broken `Publisher|Subscriber::populate_{subscriber|publisher}_channels()` [#129](https://github.com/eclipse-iceoryx/iceoryx2/issues/129)
+* Fix failing reacquire of delivered samples in the zero copy receive channel [#130](https://github.com/eclipse-iceoryx/iceoryx2/issues/130)
+* Fix receiving of invalid samples when subscriber is connected [#131](https://github.com/eclipse-iceoryx/iceoryx2/issues/131)
+* Fix problem where sample is released to the wrong publisher [#133](https://github.com/eclipse-iceoryx/iceoryx2/issues/133)
+* Fixes for FreeBSD 14.0 [#140](https://github.com/eclipse-iceoryx/iceoryx2/issues/140)
+  * Fix segfault in `iceoryx2-pal-posix;:shm_list()` caused by `sysctl`
+  * Adjust test to handle unordered event notifications
+* Fix non UTF-8 windows platform error messages [#145](https://github.com/eclipse-iceoryx/iceoryx2/issues/145)
+* Correct inconsistent default config entries for windows [#149](https://github.com/eclipse-iceoryx/iceoryx2/issues/149)
+* Fix that drop is not called when DynamicStorage is destroyed [#160](https://github.com/eclipse-iceoryx/iceoryx2/issues/160)
 
 ### Refactoring
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Replace `iceoryx2::service::Service` with `iceoryx2::service::Details` [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
- * Remove `'config` lifetime from all structs  [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
- * Remove `UniqueIndex` returning method from `iceoryx2-bb-lock-free::mpmc::Container`, cannot be implemented correctly in our context [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
- * All `iceoryx2-cal::shared_memory` implementations use a `DynamicStorage` concept as base [#153](https://github.com/eclipse-iceoryx/iceoryx2/issues/153)
- * Hardening DynamicStorage, storages with distinct types cannot be opened [#160](https://github.com/eclipse-iceoryx/iceoryx2/issues/160)
- * IpcCapable handles explicity destroy underlying object in drop, instead of ref counting [#162](https://github.com/eclipse-iceoryx/iceoryx2/issues/162)
+* Replace `iceoryx2::service::Service` with `iceoryx2::service::Details` [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
+* Remove `'config` lifetime from all structs  [#100](https://github.com/eclipse-iceoryx/iceoryx2/issues/100)
+* Remove `UniqueIndex` returning method from `iceoryx2-bb-lock-free::mpmc::Container`, cannot be implemented correctly in our context [#116](https://github.com/eclipse-iceoryx/iceoryx2/issues/116)
+* All `iceoryx2-cal::shared_memory` implementations use a `DynamicStorage` concept as base [#153](https://github.com/eclipse-iceoryx/iceoryx2/issues/153)
+* Hardening DynamicStorage, storages with distinct types cannot be opened [#160](https://github.com/eclipse-iceoryx/iceoryx2/issues/160)
+* IpcCapable handles explicity destroy underlying object in drop, instead of ref counting [#162](https://github.com/eclipse-iceoryx/iceoryx2/issues/162)
 
 ### Workflow
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
 
 ### New API features
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Add `FixedSizeByteString::from_bytes_truncated` [#56](https://github.com/eclipse-iceoryx/iceoryx2/issues/56)
- * Add `Deref`, `DerefMut`, `Clone`, `Eq`, `PartialEq` and `extend_from_slice` to (FixedSize)Vec [#58](https://github.com/eclipse-iceoryx/iceoryx2/issues/58)
- * `MessagingPattern` implements `Display` [#64](https://github.com/eclipse-iceoryx/iceoryx2/issues/64)
- * Introduce traits for all ports (`Listen`, `Notify`, `Publish`, `DefaultLoan`, `UninitLoan`, `Subscribe`)
+* Add `FixedSizeByteString::from_bytes_truncated` [#56](https://github.com/eclipse-iceoryx/iceoryx2/issues/56)
+* Add `Deref`, `DerefMut`, `Clone`, `Eq`, `PartialEq` and `extend_from_slice` to (FixedSize)Vec [#58](https://github.com/eclipse-iceoryx/iceoryx2/issues/58)
+* `MessagingPattern` implements `Display` [#64](https://github.com/eclipse-iceoryx/iceoryx2/issues/64)
+* Introduce traits for all ports (`Listen`, `Notify`, `Publish`, `DefaultLoan`, `UninitLoan`, `Subscribe`)
    and for samples (`PayloadMut`, `Payload`) [#69](https://github.com/eclipse-iceoryx/iceoryx2/issues/69)
- * Implement `Ord` and `PartialOrd` for `FixedSizeByteString` and `ServiceName` [#110](https://github.com/eclipse-iceoryx/iceoryx2/issues/110)
- * Remove `publish_subscribe::Header::time_stamp()` due to ordering and performance problems [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
+* Implement `Ord` and `PartialOrd` for `FixedSizeByteString` and `ServiceName` [#110](https://github.com/eclipse-iceoryx/iceoryx2/issues/110)
+* Remove `publish_subscribe::Header::time_stamp()` due to ordering and performance problems [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
 
 ### API Breaking Changes
 
@@ -195,5 +196,3 @@
     let subscriber = service.subscriber().create()?;
     println!("sample timestamp: {:?}", sample.unwrap().time_stamp);
     ```
-
-
