@@ -41,6 +41,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service = zero_copy::Service::new(&service_name)
         .publish_subscribe()
+        .max_publishers(16)
+        .max_subscribers(16)
         .open_or_create::<ComplexDataType>()?;
 
     let publisher = service.publisher().create()?;
