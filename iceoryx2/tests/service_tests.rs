@@ -46,7 +46,7 @@ mod service {
         let received_sample = sut_subscriber.receive().unwrap().unwrap();
         assert_that!(*received_sample, eq SAMPLE_VALUE);
 
-        const EVENT_ID: EventId = EventId::new(10123101301);
+        const EVENT_ID: EventId = EventId::new(31);
         sut_notifier.notify_with_custom_event_id(EVENT_ID).unwrap();
         let received_event = sut_listener.try_wait().unwrap();
         assert_that!(received_event, len 1);

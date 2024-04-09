@@ -227,7 +227,7 @@ fn post_and_wait_work<T: SemaphoreInterface>(initial_value: u64, sut: &T) {
     }
 
     for _i in 0..initial_value {
-        assert_that!(sut.wait(), is_ok);
+        assert_that!(sut.blocking_wait(), is_ok);
     }
 }
 
@@ -300,7 +300,7 @@ fn wait_blocks<T: SemaphoreInterface + Send + Sync>(sut1: &T, sut2: &T) {
     thread::scope(|s| {
         let t = s.spawn(|| {
             barrier.wait();
-            sut1.wait().unwrap();
+            sut1.blocking_wait().unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 

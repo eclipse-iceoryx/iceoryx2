@@ -13,7 +13,6 @@
 use std::{
     any::Any,
     collections::HashMap,
-    marker::PhantomData,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -37,11 +36,11 @@ const DEFAULT_CAPACITY: usize = 2048;
 
 #[self_referencing]
 #[derive(Debug)]
-struct Management<T: TriggerId + 'static> {
-    mtx_handle: MutexHandle<ConditionVariableData<FixedSizeQueue<T, DEFAULT_CAPACITY>>>,
+struct Management {
+    mtx_handle: MutexHandle<ConditionVariableData<FixedSizeQueue<TriggerId, DEFAULT_CAPACITY>>>,
     #[borrows(mtx_handle)]
     #[covariant]
-    cvar: ConditionVariable<'this, FixedSizeQueue<T, DEFAULT_CAPACITY>>,
+    cvar: ConditionVariable<'this, FixedSizeQueue<TriggerId, DEFAULT_CAPACITY>>,
 }
 
 #[derive(Debug)]
@@ -64,25 +63,23 @@ static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashMap<FilePath, StorageEntry>>> = Laz
 });
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Configuration<Id: crate::event::TriggerId + Copy> {
+pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
     path: Path,
-    _phantom: PhantomData<Id>,
 }
 
-impl<Id: crate::event::TriggerId + Copy + 'static> Default for Configuration<Id> {
+impl Default for Configuration {
     fn default() -> Self {
         Self {
-            path: EventImpl::<Id>::default_path_hint(),
-            suffix: EventImpl::<Id>::default_suffix(),
-            prefix: EventImpl::<Id>::default_prefix(),
-            _phantom: PhantomData,
+            path: EventImpl::default_path_hint(),
+            suffix: EventImpl::default_suffix(),
+            prefix: EventImpl::default_prefix(),
         }
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy + 'static> NamedConceptConfiguration for Configuration<Id> {
+impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: FileName) -> Self {
         self.prefix = value;
         self
@@ -112,21 +109,21 @@ impl<Id: crate::event::TriggerId + Copy + 'static> NamedConceptConfiguration for
 }
 
 #[derive(Debug)]
-pub struct Duplex<Id: crate::event::TriggerId + 'static> {
+pub struct Duplex {
     name: FileName,
-    management: Arc<Management<Id>>,
+    management: Arc<Management>,
     has_ownership: bool,
-    config: Configuration<Id>,
+    config: Configuration,
 }
 
-impl<Id: crate::event::TriggerId + 'static> NamedConcept for Duplex<Id> {
+impl NamedConcept for Duplex {
     fn name(&self) -> &FileName {
         &self.name
     }
 }
 
-impl<Id: crate::event::TriggerId + 'static> Notifier<Id> for Duplex<Id> {
-    fn notify(&self, id: Id) -> Result<(), NotifierNotifyError> {
+impl Notifier for Duplex {
+    fn notify(&self, id: TriggerId) -> Result<(), NotifierNotifyError> {
         let msg = "Unable to notify event::process_local::Listener";
         let push_successful = AtomicBool::new(false);
 
@@ -149,17 +146,17 @@ impl<Id: crate::event::TriggerId + 'static> Notifier<Id> for Duplex<Id> {
     }
 }
 
-impl<Id: crate::event::TriggerId + 'static> Drop for Duplex<Id> {
+impl Drop for Duplex {
     fn drop(&mut self) {
         if self.has_ownership {
-            fatal_panic!(from self, when unsafe { EventImpl::<Id>::remove_cfg(&self.name, &self.config) },
+            fatal_panic!(from self, when unsafe { EventImpl::remove_cfg(&self.name, &self.config) },
                 "This should never happen! Unable to remove resources.");
         }
     }
 }
 
-impl<Id: crate::event::TriggerId + 'static> Listener<Id> for Duplex<Id> {
-    fn try_wait(&self) -> Result<Option<Id>, ListenerWaitError> {
+impl Listener for Duplex {
+    fn try_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         let msg = "Failed to try_wait";
         match self
             .management
@@ -176,7 +173,7 @@ impl<Id: crate::event::TriggerId + 'static> Listener<Id> for Duplex<Id> {
         }
     }
 
-    fn timed_wait(&self, timeout: Duration) -> Result<Option<Id>, ListenerWaitError> {
+    fn timed_wait(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError> {
         let msg = "Failed to timed_wait";
         match self
             .management
@@ -193,7 +190,7 @@ impl<Id: crate::event::TriggerId + 'static> Listener<Id> for Duplex<Id> {
         }
     }
 
-    fn blocking_wait(&self) -> Result<Option<Id>, ListenerWaitError> {
+    fn blocking_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         let msg = "Failed to blocking_wait";
         match self.management.as_ref().borrow_cvar().blocking_wait_while() {
             Err(v) => {
@@ -206,33 +203,31 @@ impl<Id: crate::event::TriggerId + 'static> Listener<Id> for Duplex<Id> {
 }
 
 #[derive(Debug)]
-pub struct Builder<Id: crate::event::TriggerId> {
+pub struct Builder {
     name: FileName,
-    config: Configuration<Id>,
-    _data: PhantomData<Id>,
+    config: Configuration,
 }
 
-impl<Id: crate::event::TriggerId + Copy + 'static> NamedConceptBuilder<EventImpl<Id>>
-    for Builder<Id>
-{
+impl NamedConceptBuilder<EventImpl> for Builder {
     fn new(name: &FileName) -> Self {
         Self {
             name: *name,
             config: Configuration::default(),
-            _data: PhantomData,
         }
     }
 
-    fn config(mut self, config: &Configuration<Id>) -> Self {
+    fn config(mut self, config: &Configuration) -> Self {
         self.config = *config;
         self
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy + 'static> NotifierBuilder<Id, EventImpl<Id>>
-    for Builder<Id>
-{
-    fn open(self) -> Result<Duplex<Id>, NotifierCreateError> {
+impl NotifierBuilder<EventImpl> for Builder {
+    fn timeout(self, _timeout: Duration) -> Self {
+        self
+    }
+
+    fn open(self) -> Result<Duplex, NotifierCreateError> {
         let msg = "Failed to open event";
 
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
@@ -253,7 +248,7 @@ impl<Id: crate::event::TriggerId + Copy + 'static> NotifierBuilder<Id, EventImpl
                 .unwrap()
                 .content
                 .clone()
-                .downcast::<Management<Id>>()
+                .downcast::<Management>()
                 .unwrap(),
             has_ownership: false,
             config: self.config,
@@ -261,10 +256,12 @@ impl<Id: crate::event::TriggerId + Copy + 'static> NotifierBuilder<Id, EventImpl
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy + 'static> ListenerBuilder<Id, EventImpl<Id>>
-    for Builder<Id>
-{
-    fn create(self) -> Result<Duplex<Id>, ListenerCreateError> {
+impl ListenerBuilder<EventImpl> for Builder {
+    fn trigger_id_max(self, _id: TriggerId) -> Self {
+        self
+    }
+
+    fn create(self) -> Result<Duplex, ListenerCreateError> {
         let msg = "Failed to create event";
 
         let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
@@ -283,7 +280,7 @@ impl<Id: crate::event::TriggerId + Copy + 'static> ListenerBuilder<Id, EventImpl
             ManagementBuilder {
                 mtx_handle: MutexHandle::new(),
                 cvar_builder: |mtx_handle: &MutexHandle<
-                    ConditionVariableData<FixedSizeQueue<Id, DEFAULT_CAPACITY>>,
+                    ConditionVariableData<FixedSizeQueue<TriggerId, DEFAULT_CAPACITY>>,
                 >| {
                     ConditionVariableBuilder::new()
                         .is_interprocess_capable(false)
@@ -311,7 +308,7 @@ impl<Id: crate::event::TriggerId + Copy + 'static> ListenerBuilder<Id, EventImpl
             .unwrap()
             .content
             .clone()
-            .downcast::<Management<Id>>()
+            .downcast::<Management>()
             .unwrap();
 
         Ok(Duplex {
@@ -321,7 +318,7 @@ impl<Id: crate::event::TriggerId + Copy + 'static> ListenerBuilder<Id, EventImpl
                 .unwrap()
                 .content
                 .clone()
-                .downcast::<Management<Id>>()
+                .downcast::<Management>()
                 .unwrap(),
             has_ownership: true,
             config: self.config,
@@ -330,19 +327,17 @@ impl<Id: crate::event::TriggerId + Copy + 'static> ListenerBuilder<Id, EventImpl
 }
 
 #[derive(Debug)]
-pub struct EventImpl<Id: crate::event::TriggerId> {
-    _data: PhantomData<Id>,
+pub struct EventImpl {}
+
+impl crate::event::Event for EventImpl {
+    type Notifier = Duplex;
+    type Listener = Duplex;
+    type NotifierBuilder = Builder;
+    type ListenerBuilder = Builder;
 }
 
-impl<Id: crate::event::TriggerId + Copy + 'static> crate::event::Event<Id> for EventImpl<Id> {
-    type Notifier = Duplex<Id>;
-    type Listener = Duplex<Id>;
-    type NotifierBuilder = Builder<Id>;
-    type ListenerBuilder = Builder<Id>;
-}
-
-impl<Id: crate::event::TriggerId + Copy + 'static> NamedConceptMgmt for EventImpl<Id> {
-    type Configuration = Configuration<Id>;
+impl NamedConceptMgmt for EventImpl {
+    type Configuration = Configuration;
 
     fn does_exist_cfg(
         name: &FileName,

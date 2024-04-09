@@ -65,23 +65,23 @@ impl std::error::Error for NotifierCreateError {}
 
 /// Defines the failures that can occur while a [`Notifier::notify()`] call.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum NotifierConnectionUpdateFailure {
+pub enum NotifierNotifyError {
     OnlyPartialUpdate,
+    EventIdOutOfBounds,
 }
 
-impl std::fmt::Display for NotifierConnectionUpdateFailure {
+impl std::fmt::Display for NotifierNotifyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
 
-impl std::error::Error for NotifierConnectionUpdateFailure {}
+impl std::error::Error for NotifierNotifyError {}
 
 #[derive(Debug, Default)]
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
-    connections:
-        Vec<UnsafeCell<Option<<Service::Event as iceoryx2_cal::event::Event<EventId>>::Notifier>>>,
+    connections: Vec<UnsafeCell<Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier>>>,
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
@@ -101,7 +101,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn create(&self, index: usize, listener_id: UniqueListenerId) -> Result<(), ()> {
         let event_name = event_concept_name(&listener_id);
         if self.get(index).is_none() {
-            let notifier = fail!(from self, when <Service::Event as iceoryx2_cal::event::Event<EventId>>::NotifierBuilder::new(&event_name).open(),
+            let notifier = fail!(from self, when <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name).open(),
                                     with (),
                                     "Unable to establish a connection to Listener port {:?}.", listener_id);
             *self.get_mut(index) = Some(notifier);
@@ -113,7 +113,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn get(
         &self,
         index: usize,
-    ) -> &Option<<Service::Event as iceoryx2_cal::event::Event<EventId>>::Notifier> {
+    ) -> &Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier> {
         unsafe { &(*self.connections[index].get()) }
     }
 
@@ -121,7 +121,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn get_mut(
         &self,
         index: usize,
-    ) -> &mut Option<<Service::Event as iceoryx2_cal::event::Event<EventId>>::Notifier> {
+    ) -> &mut Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier> {
         unsafe { &mut (*self.connections[index].get()) }
     }
 
@@ -203,7 +203,7 @@ impl<Service: service::Service> Notifier<Service> {
         Ok(new_self)
     }
 
-    fn update_connections(&self) -> Result<(), NotifierConnectionUpdateFailure> {
+    fn update_connections(&self) -> Result<(), NotifierNotifyError> {
         if unsafe {
             self.dynamic_storage
                 .get()
@@ -212,7 +212,7 @@ impl<Service: service::Service> Notifier<Service> {
                 .update_state(&mut *self.listener_list_state.get())
         } {
             fail!(from self, when self.populate_listener_channels(),
-                with NotifierConnectionUpdateFailure::OnlyPartialUpdate,
+                with NotifierNotifyError::OnlyPartialUpdate,
                 "Connections were updated only partially since at least one connection to a Listener port failed.");
         }
 
@@ -254,8 +254,8 @@ impl<Service: service::Service> Notifier<Service> {
     /// event id provided on creation.
     /// On success the number of
     /// [`crate::port::listener::Listener`]s that were notified otherwise it returns
-    /// [`NotifierConnectionUpdateFailure`].
-    pub fn notify(&self) -> Result<usize, NotifierConnectionUpdateFailure> {
+    /// [`NotifierNotifyError`].
+    pub fn notify(&self) -> Result<usize, NotifierNotifyError> {
         self.notify_with_custom_event_id(self.default_event_id)
     }
 
@@ -263,13 +263,15 @@ impl<Service: service::Service> Notifier<Service> {
     /// [`EventId`].
     /// On success the number of
     /// [`crate::port::listener::Listener`]s that were notified otherwise it returns
-    /// [`NotifierConnectionUpdateFailure`].
+    /// [`NotifierNotifyError`].
     pub fn notify_with_custom_event_id(
         &self,
         value: EventId,
-    ) -> Result<usize, NotifierConnectionUpdateFailure> {
+    ) -> Result<usize, NotifierNotifyError> {
+        let msg = "Unable to notify event";
         fail!(from self, when self.update_connections(),
-            "Unable to notify event since the connections could not be updated.");
+            "{} with id {:?} since the underlying connections could not be updated.",
+            msg, value);
 
         use iceoryx2_cal::event::Notifier;
         let mut number_of_triggered_listeners = 0;
@@ -277,8 +279,14 @@ impl<Service: service::Service> Notifier<Service> {
         for i in 0..self.listener_connections.len() {
             match self.listener_connections.get(i) {
                 Some(ref connection) => match connection.notify(value) {
+                    Err(iceoryx2_cal::event::NotifierNotifyError::TriggerIdOutOfBounds) => {
+                        fail!(from self, with NotifierNotifyError::EventIdOutOfBounds,
+                            "{} since the EventId {:?} exceeds the maximum supported EventId.",
+                            msg, value);
+                    }
                     Err(e) => {
-                        warn!(from self, "Unable to send notification via connection {:?} due to {:?}.", connection, e)
+                        warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
+                            connection, e)
                     }
                     Ok(_) => {
                         number_of_triggered_listeners += 1;

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{marker::PhantomData, mem::MaybeUninit};
+use std::mem::MaybeUninit;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;
@@ -22,25 +22,23 @@ use iceoryx2_bb_posix::{
 pub use iceoryx2_bb_system_types::file_name::FileName;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Configuration<Id: TriggerId + Copy> {
+pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
     path: Path,
-    _phantom: PhantomData<Id>,
 }
 
-impl<Id: TriggerId + Copy> Default for Configuration<Id> {
+impl Default for Configuration {
     fn default() -> Self {
         Self {
-            path: EventImpl::<Id>::default_path_hint(),
-            suffix: EventImpl::<Id>::default_suffix(),
-            prefix: EventImpl::<Id>::default_prefix(),
-            _phantom: PhantomData,
+            path: EventImpl::default_path_hint(),
+            suffix: EventImpl::default_suffix(),
+            prefix: EventImpl::default_prefix(),
         }
     }
 }
 
-impl<Id: TriggerId + Copy> NamedConceptConfiguration for Configuration<Id> {
+impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: FileName) -> Self {
         self.prefix = value;
         self
@@ -69,27 +67,23 @@ impl<Id: TriggerId + Copy> NamedConceptConfiguration for Configuration<Id> {
     }
 }
 
-impl<Id: TriggerId + Copy> From<Configuration<Id>>
-    for crate::communication_channel::unix_datagram::Configuration
-{
-    fn from(value: Configuration<Id>) -> Self {
+impl From<Configuration> for crate::communication_channel::unix_datagram::Configuration {
+    fn from(value: Configuration) -> Self {
         Self::default().suffix(value.suffix).path_hint(value.path)
     }
 }
 
 #[derive(Debug)]
-pub struct EventImpl<Id: crate::event::TriggerId> {
-    _data: PhantomData<Id>,
-}
+pub struct EventImpl {}
 
-impl<Id: crate::event::TriggerId + Copy> NamedConceptMgmt for EventImpl<Id> {
-    type Configuration = Configuration<Id>;
+impl NamedConceptMgmt for EventImpl {
+    type Configuration = Configuration;
 
     fn does_exist_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-        crate::communication_channel::unix_datagram::Channel::<Id>::does_exist_cfg(
+        crate::communication_channel::unix_datagram::Channel::<TriggerId>::does_exist_cfg(
             name,
             &(*cfg).into(),
         )
@@ -98,42 +92,47 @@ impl<Id: crate::event::TriggerId + Copy> NamedConceptMgmt for EventImpl<Id> {
     fn list_cfg(
         cfg: &Self::Configuration,
     ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
-        crate::communication_channel::unix_datagram::Channel::<Id>::list_cfg(&(*cfg).into())
+        crate::communication_channel::unix_datagram::Channel::<TriggerId>::list_cfg(&(*cfg).into())
     }
 
     unsafe fn remove_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        crate::communication_channel::unix_datagram::Channel::<Id>::remove_cfg(name, &(*cfg).into())
+        crate::communication_channel::unix_datagram::Channel::<TriggerId>::remove_cfg(
+            name,
+            &(*cfg).into(),
+        )
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> crate::event::Event<Id> for EventImpl<Id> {
-    type Notifier = Notifier<Id>;
-    type Listener = Listener<Id>;
-    type NotifierBuilder = NotifierBuilder<Id>;
-    type ListenerBuilder = ListenerBuilder<Id>;
+impl crate::event::Event for EventImpl {
+    type Notifier = Notifier;
+    type Listener = Listener;
+    type NotifierBuilder = NotifierBuilder;
+    type ListenerBuilder = ListenerBuilder;
 }
 
 #[derive(Debug)]
-pub struct Notifier<Id: crate::event::TriggerId + Copy> {
+pub struct Notifier {
     sender: UnixDatagramSender,
     name: FileName,
-    _data: PhantomData<Id>,
 }
 
-impl<Id: crate::event::TriggerId + Copy> NamedConcept for Notifier<Id> {
+impl NamedConcept for Notifier {
     fn name(&self) -> &FileName {
         &self.name
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> crate::event::Notifier<Id> for Notifier<Id> {
-    fn notify(&self, id: Id) -> Result<(), NotifierNotifyError> {
+impl crate::event::Notifier for Notifier {
+    fn notify(&self, id: TriggerId) -> Result<(), NotifierNotifyError> {
         let msg = "Failed to notify event::unix_datagram_socket::Listener";
         match self.sender.try_send(unsafe {
-            core::slice::from_raw_parts((&id as *const Id).cast(), core::mem::size_of::<Id>())
+            core::slice::from_raw_parts(
+                (&id as *const TriggerId).cast(),
+                core::mem::size_of::<TriggerId>(),
+            )
         }) {
             Ok(true) => Ok(()),
             Ok(false) | Err(UnixDatagramSendError::MessagePartiallySend(_)) => {
@@ -149,41 +148,38 @@ impl<Id: crate::event::TriggerId + Copy> crate::event::Notifier<Id> for Notifier
 }
 
 #[derive(Debug)]
-pub struct NotifierBuilder<Id: crate::event::TriggerId> {
+pub struct NotifierBuilder {
     name: FileName,
-    config: Configuration<Id>,
-    _data: PhantomData<Id>,
+    config: Configuration,
 }
 
-impl<Id: crate::event::TriggerId + Copy> NamedConceptBuilder<EventImpl<Id>>
-    for NotifierBuilder<Id>
-{
+impl NamedConceptBuilder<EventImpl> for NotifierBuilder {
     fn new(name: &FileName) -> Self {
         Self {
             name: *name,
             config: Configuration::default(),
-            _data: PhantomData,
         }
     }
 
-    fn config(mut self, config: &Configuration<Id>) -> Self {
+    fn config(mut self, config: &Configuration) -> Self {
         self.config = *config;
         self
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> crate::event::NotifierBuilder<Id, EventImpl<Id>>
-    for NotifierBuilder<Id>
-{
-    fn open(self) -> Result<Notifier<Id>, NotifierCreateError> {
-        let msg = "Failed to create event::unix_datagram_socket::Notifier";
+impl crate::event::NotifierBuilder<EventImpl> for NotifierBuilder {
+    fn timeout(self, _timeout: Duration) -> Self {
+        self
+    }
+
+    fn open(self) -> Result<Notifier, NotifierCreateError> {
+        let msg = "Failed to open event::unix_datagram_socket::Notifier";
 
         let full_name = self.config.path_for(&self.name);
         match UnixDatagramSenderBuilder::new(&full_name).create() {
             Ok(sender) => Ok(Notifier {
                 sender,
                 name: self.name,
-                _data: PhantomData,
             }),
             Err(UnixDatagramSenderCreationError::DoesNotExist) => {
                 fail!(from self, with NotifierCreateError::DoesNotExist,
@@ -202,37 +198,36 @@ impl<Id: crate::event::TriggerId + Copy> crate::event::NotifierBuilder<Id, Event
 }
 
 #[derive(Debug)]
-pub struct Listener<Id: crate::event::TriggerId + Copy> {
+pub struct Listener {
     receiver: UnixDatagramReceiver,
     name: FileName,
-    _data: PhantomData<Id>,
 }
 
-impl<Id: crate::event::TriggerId + Copy> FileDescriptorBased for Listener<Id> {
+impl FileDescriptorBased for Listener {
     fn file_descriptor(&self) -> &iceoryx2_bb_posix::file_descriptor::FileDescriptor {
         self.receiver.file_descriptor()
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> SynchronousMultiplexing for Listener<Id> {}
+impl SynchronousMultiplexing for Listener {}
 
-impl<Id: crate::event::TriggerId + Copy> NamedConcept for Listener<Id> {
+impl NamedConcept for Listener {
     fn name(&self) -> &FileName {
         &self.name
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> Listener<Id> {
+impl Listener {
     fn wait<F: FnMut(&Self, &mut [u8]) -> Result<u64, UnixDatagramReceiveError>>(
         &self,
         error_msg: &str,
         mut wait_call: F,
-    ) -> Result<Option<Id>, ListenerWaitError> {
+    ) -> Result<Option<TriggerId>, ListenerWaitError> {
         let mut id_buffer = MaybeUninit::uninit();
         match wait_call(self, unsafe {
             core::slice::from_raw_parts_mut(
                 id_buffer.as_mut_ptr() as *mut u8,
-                core::mem::size_of::<Id>(),
+                core::mem::size_of::<TriggerId>(),
             )
         }) {
             Ok(v) => {
@@ -240,10 +235,10 @@ impl<Id: crate::event::TriggerId + Copy> Listener<Id> {
                     return Ok(None);
                 }
 
-                if v as usize != core::mem::size_of::<Id>() {
+                if v as usize != core::mem::size_of::<TriggerId>() {
                     fail!(from self, with ListenerWaitError::ContractViolation,
                         "{} since the expected amount of received bytes {} does not match the expected amount of bytes {}.",
-                        error_msg, v, core::mem::size_of::<Id>());
+                        error_msg, v, core::mem::size_of::<TriggerId>());
                 }
                 Ok(Some(unsafe { id_buffer.assume_init() }))
             }
@@ -255,22 +250,25 @@ impl<Id: crate::event::TriggerId + Copy> Listener<Id> {
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> crate::event::Listener<Id> for Listener<Id> {
-    fn try_wait(&self) -> Result<Option<Id>, ListenerWaitError> {
+impl crate::event::Listener for Listener {
+    fn try_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         self.wait(
             "Unable to try wait for signal on event::unix_datagram_socket::Listener",
             |this, buffer| this.receiver.try_receive(buffer),
         )
     }
 
-    fn timed_wait(&self, timeout: std::time::Duration) -> Result<Option<Id>, ListenerWaitError> {
+    fn timed_wait(
+        &self,
+        timeout: std::time::Duration,
+    ) -> Result<Option<TriggerId>, ListenerWaitError> {
         self.wait(
            &format!("Unable to wait for signal with timeout {:?} on event::unix_datagram_socket::Listener", timeout),
             |this, buffer| this.receiver.timed_receive(buffer, timeout),
         )
     }
 
-    fn blocking_wait(&self) -> Result<Option<Id>, ListenerWaitError> {
+    fn blocking_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         self.wait(
             "Unable to blocking wait for signal on event::unix_datagram_socket::Listener",
             |this, buffer| this.receiver.blocking_receive(buffer),
@@ -279,33 +277,31 @@ impl<Id: crate::event::TriggerId + Copy> crate::event::Listener<Id> for Listener
 }
 
 #[derive(Debug)]
-pub struct ListenerBuilder<Id: crate::event::TriggerId> {
+pub struct ListenerBuilder {
     name: FileName,
-    config: Configuration<Id>,
-    _data: PhantomData<Id>,
+    config: Configuration,
 }
 
-impl<Id: crate::event::TriggerId + Copy> NamedConceptBuilder<EventImpl<Id>>
-    for ListenerBuilder<Id>
-{
+impl NamedConceptBuilder<EventImpl> for ListenerBuilder {
     fn new(name: &FileName) -> Self {
         Self {
             name: *name,
             config: Configuration::default(),
-            _data: PhantomData,
         }
     }
 
-    fn config(mut self, config: &Configuration<Id>) -> Self {
+    fn config(mut self, config: &Configuration) -> Self {
         self.config = *config;
         self
     }
 }
 
-impl<Id: crate::event::TriggerId + Copy> crate::event::ListenerBuilder<Id, EventImpl<Id>>
-    for ListenerBuilder<Id>
-{
-    fn create(self) -> Result<Listener<Id>, ListenerCreateError> {
+impl crate::event::ListenerBuilder<EventImpl> for ListenerBuilder {
+    fn trigger_id_max(self, _id: TriggerId) -> Self {
+        self
+    }
+
+    fn create(self) -> Result<Listener, ListenerCreateError> {
         let msg = "Failed to create event::unix_datagram_socket::Listener";
         let full_name = self.config.path_for(&self.name);
         match UnixDatagramReceiverBuilder::new(&full_name)
@@ -315,7 +311,6 @@ impl<Id: crate::event::TriggerId + Copy> crate::event::ListenerBuilder<Id, Event
             Ok(r) => Ok(Listener {
                 receiver: r,
                 name: self.name,
-                _data: PhantomData,
             }),
             Err(UnixDatagramReceiverCreationError::SocketFileAlreadyExists) => {
                 fail!(from self, with ListenerCreateError::AlreadyExists,

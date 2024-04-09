@@ -10,7 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod common;
+pub mod id_tracker;
 pub mod process_local;
+pub mod sem_bitset_posix_shared_memory;
+pub mod sem_bitset_process_local;
+pub mod signal_mechanism;
 pub mod unix_datagram_socket;
 
 use std::{fmt::Debug, time::Duration};
@@ -22,6 +27,7 @@ pub use iceoryx2_bb_system_types::path::Path;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierNotifyError {
     FailedToDeliverSignal,
+    TriggerIdOutOfBounds,
     InternalFailure,
 }
 
@@ -37,6 +43,8 @@ impl std::error::Error for NotifierNotifyError {}
 pub enum NotifierCreateError {
     DoesNotExist,
     InsufficientPermissions,
+    VersionMismatch,
+    InitializationNotYetFinalized,
     InternalFailure,
 }
 
@@ -52,6 +60,7 @@ impl std::error::Error for NotifierCreateError {}
 pub enum ListenerWaitError {
     ContractViolation,
     InternalFailure,
+    InterruptSignal,
 }
 
 impl std::fmt::Display for ListenerWaitError {
@@ -77,39 +86,54 @@ impl std::fmt::Display for ListenerCreateError {
 
 impl std::error::Error for ListenerCreateError {}
 
-pub trait TriggerId: Debug + Copy {}
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TriggerId(u64);
 
-impl TriggerId for u64 {}
-impl TriggerId for u32 {}
-impl TriggerId for u16 {}
-impl TriggerId for u8 {}
+impl TriggerId {
+    pub const fn new(value: u64) -> Self {
+        Self(value)
+    }
 
-pub trait Notifier<Id: TriggerId>: NamedConcept + Debug {
-    fn notify(&self, id: Id) -> Result<(), NotifierNotifyError>;
+    pub const fn as_u64(&self) -> u64 {
+        self.0
+    }
 }
 
-pub trait NotifierBuilder<Id: TriggerId, T: Event<Id>>: NamedConceptBuilder<T> + Debug {
+pub trait Notifier: NamedConcept + Debug {
+    fn trigger_id_max(&self) -> TriggerId {
+        TriggerId::new(u64::MAX)
+    }
+    fn notify(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
+}
+
+pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
+    fn timeout(self, timeout: Duration) -> Self;
     fn open(self) -> Result<T::Notifier, NotifierCreateError>;
 }
 
-pub trait Listener<Id: TriggerId>: NamedConcept + Debug {
-    fn try_wait(&self) -> Result<Option<Id>, ListenerWaitError>;
-    fn timed_wait(&self, timeout: Duration) -> Result<Option<Id>, ListenerWaitError>;
-    fn blocking_wait(&self) -> Result<Option<Id>, ListenerWaitError>;
+pub trait Listener: NamedConcept + Debug {
+    fn try_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
+    fn timed_wait(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError>;
+    fn blocking_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
 }
 
-pub trait ListenerBuilder<Id: TriggerId, T: Event<Id>>: NamedConceptBuilder<T> + Debug {
+pub trait ListenerBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
+    fn trigger_id_max(self, id: TriggerId) -> Self;
     fn create(self) -> Result<T::Listener, ListenerCreateError>;
 }
 
-pub trait Event<Id: TriggerId>: Sized + NamedConceptMgmt + Debug {
-    type Notifier: Notifier<Id>;
-    type NotifierBuilder: NotifierBuilder<Id, Self>;
-    type Listener: Listener<Id>;
-    type ListenerBuilder: ListenerBuilder<Id, Self>;
+pub trait Event: Sized + NamedConceptMgmt + Debug {
+    type Notifier: Notifier;
+    type NotifierBuilder: NotifierBuilder<Self>;
+    type Listener: Listener;
+    type ListenerBuilder: ListenerBuilder<Self>;
 
     /// The default suffix of every event
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".event") }
+    }
+
+    fn has_trigger_id_limit() -> bool {
+        false
     }
 }

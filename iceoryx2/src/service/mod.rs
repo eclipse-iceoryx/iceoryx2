@@ -142,7 +142,6 @@ use std::fmt::Debug;
 use std::rc::Rc;
 
 use crate::config;
-use crate::port::event_id::EventId;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -268,7 +267,7 @@ pub trait Service: Debug + Sized {
     type Connection: ZeroCopyConnection;
 
     /// The mechanism used to signal events between endpoints.
-    type Event: Event<EventId>;
+    type Event: Event;
 
     #[doc(hidden)]
     fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self;

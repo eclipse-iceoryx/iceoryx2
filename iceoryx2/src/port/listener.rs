@@ -66,7 +66,7 @@ impl std::error::Error for ListenerCreateError {}
 #[derive(Debug)]
 pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
-    listener: <Service::Event as iceoryx2_cal::event::Event<EventId>>::Listener,
+    listener: <Service::Event as iceoryx2_cal::event::Event>::Listener,
     cache: Vec<EventId>,
     dynamic_storage: Rc<Service::DynamicStorage>,
     port_id: UniqueListenerId,
@@ -93,7 +93,7 @@ impl<Service: service::Service> Listener<Service> {
         let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
 
         let listener = fail!(from origin,
-                             when <Service::Event as iceoryx2_cal::event::Event<EventId>>::ListenerBuilder::new(&event_name).create(),
+                             when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
 

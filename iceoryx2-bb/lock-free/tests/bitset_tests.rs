@@ -36,7 +36,7 @@ fn bit_set_create_fill_and_reset_works() {
 
     let mut id_set = HashSet::new();
     let mut counter = 0;
-    sut.reset(|id| {
+    sut.reset_all(|id| {
         assert_that!(id, lt CAPACITY);
         assert_that!(id_set.insert(id), eq true);
         counter += 1;
@@ -45,7 +45,7 @@ fn bit_set_create_fill_and_reset_works() {
     assert_that!(counter, eq CAPACITY);
 
     let mut counter = 0;
-    sut.reset(|_| {
+    sut.reset_all(|_| {
         counter += 1;
     });
 
@@ -66,7 +66,7 @@ fn fixed_size_bit_set_create_fill_and_reset_works() {
 
     let mut id_set = HashSet::new();
     let mut counter = 0;
-    sut.reset(|id| {
+    sut.reset_all(|id| {
         assert_that!(id % 2 == 0, eq true);
         assert_that!(id, lt CAPACITY);
         assert_that!(id_set.insert(id), eq true);
@@ -76,7 +76,7 @@ fn fixed_size_bit_set_create_fill_and_reset_works() {
     assert_that!(counter, eq CAPACITY / 2);
 
     let mut counter = 0;
-    sut.reset(|_| {
+    sut.reset_all(|_| {
         counter += 1;
     });
 
@@ -91,12 +91,12 @@ fn bit_set_set_single_bit_works() {
     assert_that!(sut.set(55), eq true);
     assert_that!(sut.set(55), eq false);
 
-    sut.reset(|id| {
+    sut.reset_all(|id| {
         assert_that!(id, eq 55);
     });
 
     let mut counter = 0;
-    sut.reset(|_| {
+    sut.reset_all(|_| {
         counter += 1;
     });
 
@@ -113,12 +113,45 @@ fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
 }
 
 #[test]
+fn bit_set_set_and_reset_next_works() {
+    const CAPACITY: usize = 1551;
+    let sut = BitSet::new(CAPACITY);
+
+    assert_that!(sut.reset_next(), eq None);
+    for i in 0..CAPACITY {
+        assert_that!(sut.set(i), eq true);
+        assert_that!(sut.reset_next(), eq Some(i));
+    }
+    assert_that!(sut.reset_next(), eq None);
+}
+
+#[test]
+fn bit_set_reset_next_is_fair() {
+    const CAPACITY: usize = 1551;
+    let sut = BitSet::new(CAPACITY);
+
+    assert_that!(sut.set(0), eq true);
+    assert_that!(sut.reset_next(), eq Some(0));
+
+    for i in 1..CAPACITY {
+        assert_that!(sut.set(i - 1), eq true);
+        assert_that!(sut.set(i), eq true);
+        assert_that!(sut.reset_next(), eq Some(i));
+    }
+
+    for i in 0..CAPACITY - 1 {
+        assert_that!(sut.reset_next(), eq Some(i));
+    }
+    assert_that!(sut.reset_next(), eq None);
+}
+
+#[test]
 fn bit_set_concurrent_set_and_reset_works() {
     let _watchdog = Watchdog::new();
 
     let number_of_set_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
     let number_of_reset_threads = (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
-    const CAPACITY: usize = 1024;
+    const CAPACITY: usize = 10;
     const SUCCESS_LIMIT: usize = 100000;
 
     let sut = BitSet::new(CAPACITY);
@@ -153,12 +186,12 @@ fn bit_set_concurrent_set_and_reset_works() {
 
                 barrier.wait();
                 while keep_running.load(Ordering::Relaxed) {
-                    sut.reset(|id| {
+                    sut.reset_all(|id| {
                         id_counter[id] += 1;
                     });
                 }
 
-                sut.reset(|id| {
+                sut.reset_all(|id| {
                     id_counter[id] += 1;
                 });
 

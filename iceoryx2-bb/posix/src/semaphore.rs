@@ -150,7 +150,7 @@ pub trait SemaphoreInterface: internal::SemaphoreHandle + Debug {
     /// Decrements the semaphore by one. If the semaphore is zero it waits until a
     /// [`SemaphoreInterface::post()`] call incremented the semaphore by one. A semaphores internal
     /// value is always greater or equal to zero.
-    fn wait(&self) -> Result<(), SemaphoreWaitError> {
+    fn blocking_wait(&self) -> Result<(), SemaphoreWaitError> {
         if unsafe { posix::sem_wait(self.handle()) } == 0 {
             return Ok(());
         }
@@ -378,7 +378,7 @@ impl NamedSemaphoreCreationBuilder {
 ///                     .expect("failed to open semaphore");
 ///
 /// loop {
-///     semaphore.wait().expect("failed to wait on semaphore");
+///     semaphore.blocking_wait().expect("failed to wait on semaphore");
 ///     println!("process 1 has triggered me");
 /// }
 /// ```
@@ -712,7 +712,7 @@ impl Drop for UnnamedSemaphoreHandle {
 /// thread::scope(|s| {
 ///     s.spawn(|| {
 ///         loop {
-///             semaphore.wait().expect("failed to wait on semaphore");
+///             semaphore.blocking_wait().expect("failed to wait on semaphore");
 ///             println!("the thread was triggered");
 ///         }
 ///     });

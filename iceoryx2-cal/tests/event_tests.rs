@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod event {
+    use std::collections::HashSet;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{Duration, Instant};
 
@@ -19,8 +20,9 @@ mod event {
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_cal::event::*;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing::{assert_that, test_requires};
+    use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
@@ -39,7 +41,7 @@ mod event {
     }
 
     #[test]
-    fn create_works<Sut: Event<u64>>() {
+    fn create_works<Sut: Event>() {
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
@@ -50,7 +52,7 @@ mod event {
     }
 
     #[test]
-    fn listener_cleans_up_when_out_of_scope<Sut: Event<u64>>() {
+    fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
         let name = generate_name();
 
         assert_that!(Sut::does_exist(&name).unwrap(), eq false);
@@ -62,7 +64,7 @@ mod event {
     }
 
     #[test]
-    fn cannot_be_created_twice<Sut: Event<u64>>() {
+    fn cannot_be_created_twice<Sut: Event>() {
         let name = generate_name();
 
         let _sut = Sut::ListenerBuilder::new(&name).create().unwrap();
@@ -73,7 +75,7 @@ mod event {
     }
 
     #[test]
-    fn cannot_open_non_existing<Sut: Event<u64>>() {
+    fn cannot_open_non_existing<Sut: Event>() {
         let name = generate_name();
 
         let sut = Sut::NotifierBuilder::new(&name).open();
@@ -82,43 +84,71 @@ mod event {
         assert_that!(sut.err().unwrap(), eq NotifierCreateError::DoesNotExist);
     }
 
+    #[test]
+    fn notify_with_same_id_does_not_lead_to_non_blocking_timed_wait<Sut: Event>() {
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: u64 = 8;
+        let name = generate_name();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+
+        let trigger_id = TriggerId::new(0);
+
+        for _ in 0..REPETITIONS {
+            sut_notifier.notify(trigger_id).unwrap();
+        }
+
+        assert_that!(sut_listener.try_wait().unwrap(), is_some);
+
+        let now = Instant::now();
+        let result = sut_listener.timed_wait(TIMEOUT).unwrap();
+
+        if result.is_some() {
+            assert_that!(result, eq Some(trigger_id));
+        } else {
+            assert_that!(now.elapsed(), time_at_least TIMEOUT );
+        }
+    }
+
     fn sending_notification_works<
-        Sut: Event<u64>,
-        F: Fn(&Sut::Listener) -> Result<Option<u64>, ListenerWaitError>,
+        Sut: Event,
+        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
     >(
         wait_call: F,
     ) {
-        const REPETITIONS: u64 = 32;
+        let _watchdog = Watchdog::new();
+        const REPETITIONS: u64 = 8;
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
 
         for i in 0..REPETITIONS {
-            sut_notifier.notify(i).unwrap();
+            sut_notifier.notify(TriggerId::new(i)).unwrap();
             let result = wait_call(&sut_listener).unwrap();
-            assert_that!(result, eq Some(i));
+            assert_that!(result.unwrap(), eq TriggerId::new(i));
         }
     }
 
     #[test]
-    fn sending_notification_and_try_wait_works<Sut: Event<u64>>() {
+    fn sending_notification_and_try_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| sut.try_wait());
     }
 
     #[test]
-    fn sending_notification_and_timed_wait_works<Sut: Event<u64>>() {
+    fn sending_notification_and_timed_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| sut.timed_wait(TIMEOUT));
     }
 
     #[test]
-    fn sending_notification_and_blocking_wait_works<Sut: Event<u64>>() {
+    fn sending_notification_and_blocking_wait_works<Sut: Event>() {
         sending_notification_works::<Sut, _>(|sut| sut.blocking_wait());
     }
 
     fn sending_multiple_notifications_before_wait_works<
-        Sut: Event<u64>,
-        F: Fn(&Sut::Listener) -> Result<Option<u64>, ListenerWaitError>,
+        Sut: Event,
+        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
     >(
         wait_call: F,
     ) {
@@ -129,33 +159,37 @@ mod event {
         let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
 
         for i in 0..REPETITIONS {
-            sut_notifier.notify(i).unwrap();
+            sut_notifier.notify(TriggerId::new(i)).unwrap();
         }
 
-        for i in 0..REPETITIONS {
+        let mut ids = HashSet::new();
+        for _ in 0..REPETITIONS {
             let result = wait_call(&sut_listener).unwrap();
-            assert_that!(result, eq Some(i));
+            assert_that!(result, is_some);
+            let result = result.unwrap();
+            assert_that!(result.as_u64(), lt REPETITIONS);
+            assert_that!(ids.insert(result), eq true);
         }
     }
 
     #[test]
-    fn sending_multiple_notifications_before_try_wait_works<Sut: Event<u64>>() {
+    fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.try_wait());
     }
 
     #[test]
-    fn sending_multiple_notifications_before_timed_wait_works<Sut: Event<u64>>() {
+    fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.timed_wait(TIMEOUT));
     }
 
     #[test]
-    fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event<u64>>() {
+    fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
         sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.blocking_wait());
     }
 
     fn sending_multiple_notifications_from_multiple_sources_before_wait_works<
-        Sut: Event<u64>,
-        F: Fn(&Sut::Listener) -> Result<Option<u64>, ListenerWaitError>,
+        Sut: Event,
+        F: Fn(&Sut::Listener) -> Result<Option<TriggerId>, ListenerWaitError>,
     >(
         wait_call: F,
     ) {
@@ -173,7 +207,7 @@ mod event {
         for i in 0..REPETITIONS {
             for (n, notifier) in sources.iter().enumerate() {
                 let event_id = n as u64 * (SOURCES + REPETITIONS + 1) + i;
-                assert_that!(notifier.notify(event_id), is_ok);
+                assert_that!(notifier.notify(TriggerId::new(event_id)), is_ok);
                 event_ids.push(event_id);
             }
         }
@@ -182,24 +216,20 @@ mod event {
             for _ in 0..SOURCES {
                 let result = wait_call(&sut_listener).unwrap();
                 assert_that!(result, is_some);
-                assert_that!(event_ids, contains result.unwrap());
+                assert_that!(event_ids, contains result.unwrap().as_u64());
             }
         }
     }
 
     #[test]
-    fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<
-        Sut: Event<u64>,
-    >() {
+    fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<Sut: Event>() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
             sut.try_wait()
         });
     }
 
     #[test]
-    fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<
-        Sut: Event<u64>,
-    >() {
+    fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<Sut: Event>() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
             sut.timed_wait(TIMEOUT)
         });
@@ -207,7 +237,7 @@ mod event {
 
     #[test]
     fn sending_multiple_notifications_from_multiple_sources_before_blocking_wait_works<
-        Sut: Event<u64>,
+        Sut: Event,
     >() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
             sut.blocking_wait()
@@ -215,7 +245,7 @@ mod event {
     }
 
     #[test]
-    fn try_wait_does_not_block<Sut: Event<u64>>() {
+    fn try_wait_does_not_block<Sut: Event>() {
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
@@ -226,7 +256,7 @@ mod event {
     }
 
     #[test]
-    fn timed_wait_does_block_for_at_least_timeout<Sut: Event<u64>>() {
+    fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
@@ -239,7 +269,8 @@ mod event {
     }
 
     #[test]
-    fn blocking_wait_blocks_until_notification_arrives<Sut: Event<u64>>() {
+    fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
+        let _watchdog = Watchdog::new();
         let name = generate_name();
 
         let counter = AtomicU64::new(0);
@@ -253,14 +284,14 @@ mod event {
                 let result = sut_listener.blocking_wait().unwrap();
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
-                assert_that!(result.unwrap(), eq 8912);
+                assert_that!(result.unwrap(), eq TriggerId::new(89));
             });
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::SeqCst);
-            sut_notifier.notify(8912).unwrap();
+            sut_notifier.notify(TriggerId::new(89)).unwrap();
             t.join().unwrap();
 
             assert_that!(counter_old, eq 0);
@@ -271,7 +302,8 @@ mod event {
     /// windows sporadically instantly wakes up in a timed receive operation
     #[cfg(not(target_os = "windows"))]
     #[test]
-    fn timed_wait_blocks_until_notification_arrives<Sut: Event<u64>>() {
+    fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
+        let _watchdog = Watchdog::new();
         let name = generate_name();
 
         let counter = AtomicU64::new(0);
@@ -285,14 +317,14 @@ mod event {
                 let result = sut_listener.timed_wait(TIMEOUT * 1000).unwrap();
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
-                assert_that!(result.unwrap(), eq 8912);
+                assert_that!(result.unwrap(), eq TriggerId::new(82));
             });
 
             barrier.wait();
             let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::SeqCst);
-            sut_notifier.notify(8912).unwrap();
+            sut_notifier.notify(TriggerId::new(82)).unwrap();
             t.join().unwrap();
 
             assert_that!(counter_old, eq 0);
@@ -301,7 +333,7 @@ mod event {
     }
 
     #[test]
-    fn list_events_works<Sut: Event<u64>>() {
+    fn list_events_works<Sut: Event>() {
         let mut sut_names = vec![];
         const LIMIT: usize = 10;
 
@@ -337,7 +369,7 @@ mod event {
     }
 
     #[test]
-    fn custom_suffix_keeps_events_separated<Sut: Event<u64>>() {
+    fn custom_suffix_keeps_events_separated<Sut: Event>() {
         let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
             .suffix(unsafe { FileName::new_unchecked(b".suffix_1") });
         let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
@@ -386,16 +418,79 @@ mod event {
     }
 
     #[test]
-    fn defaults_for_configuration_are_set_correctly<Sut: Event<u64>>() {
+    fn defaults_for_configuration_are_set_correctly<Sut: Event>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
         assert_that!(*config.get_prefix(), eq Sut::default_prefix());
     }
 
-    #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl<u64>>)]
+    #[test]
+    fn setting_trigger_id_limit_works<Sut: Event>() {
+        test_requires!(Sut::has_trigger_id_limit());
+
+        const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1234);
+        let name = generate_name();
+
+        let _sut_listener = Sut::ListenerBuilder::new(&name)
+            .trigger_id_max(TRIGGER_ID_MAX)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+
+        if Sut::has_trigger_id_limit() {
+            assert_that!(sut_notifier.trigger_id_max(), eq TRIGGER_ID_MAX);
+        } else {
+            assert_that!(sut_notifier.trigger_id_max(), eq TriggerId::new(u64::MAX));
+        }
+    }
+
+    #[test]
+    fn triggering_up_to_trigger_id_max_works<Sut: Event>() {
+        test_requires!(Sut::has_trigger_id_limit());
+
+        const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1024);
+        let name = generate_name();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .trigger_id_max(TRIGGER_ID_MAX)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+
+        for i in 0..TRIGGER_ID_MAX.as_u64() {
+            assert_that!(sut_notifier.notify(TriggerId::new(i)), is_ok);
+        }
+
+        let result = sut_notifier.notify(TriggerId::new(TRIGGER_ID_MAX.as_u64() + 1));
+        assert_that!(result, is_err);
+        assert_that!(
+            result.err().unwrap(), eq
+            NotifierNotifyError::TriggerIdOutOfBounds
+        );
+
+        let mut ids = HashSet::new();
+        for _ in 0..TRIGGER_ID_MAX.as_u64() {
+            let event_id = sut_listener.try_wait().unwrap().unwrap();
+
+            assert_that!(event_id, lt TRIGGER_ID_MAX);
+            assert_that!(ids.insert(event_id), eq true);
+        }
+
+        let event_id = sut_listener.try_wait().unwrap();
+        assert_that!(event_id, is_none);
+    }
+
+    #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl>)]
     mod unix_datagram {}
 
-    #[instantiate_tests(<iceoryx2_cal::event::process_local::EventImpl<u64>>)]
+    #[instantiate_tests(<iceoryx2_cal::event::process_local::EventImpl>)]
     mod process_local {}
+
+    #[instantiate_tests(<iceoryx2_cal::event::sem_bitset_process_local::Event>)]
+    mod sem_bitset_process_local {}
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    #[instantiate_tests(<iceoryx2_cal::event::sem_bitset_posix_shared_memory::Event>)]
+    mod sem_bitset_posix_shared_memory {}
 }

@@ -29,17 +29,17 @@ mod reactor {
     const NUMBER_OF_ATTACHMENTS: usize = 64;
 
     struct NotifierListenerPair {
-        notifier: unix_datagram_socket::Notifier<u64>,
-        listener: unix_datagram_socket::Listener<u64>,
+        notifier: unix_datagram_socket::Notifier,
+        listener: unix_datagram_socket::Listener,
     }
 
     impl NotifierListenerPair {
         fn new() -> Self {
             let name = generate_name();
-            let listener = unix_datagram_socket::ListenerBuilder::<u64>::new(&name)
+            let listener = unix_datagram_socket::ListenerBuilder::new(&name)
                 .create()
                 .unwrap();
-            let notifier = unix_datagram_socket::NotifierBuilder::<u64>::new(&name)
+            let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
                 .open()
                 .unwrap();
 
@@ -69,7 +69,7 @@ mod reactor {
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let name = generate_name();
             listeners.push(
-                unix_datagram_socket::ListenerBuilder::<u64>::new(&name)
+                unix_datagram_socket::ListenerBuilder::new(&name)
                     .create()
                     .unwrap(),
             );
@@ -96,7 +96,7 @@ mod reactor {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(123).unwrap();
+        attachment.notifier.notify(TriggerId::new(123)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -115,7 +115,7 @@ mod reactor {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(123).unwrap();
+        attachment.notifier.notify(TriggerId::new(123)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -137,7 +137,7 @@ mod reactor {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(123).unwrap();
+        attachment.notifier.notify(TriggerId::new(123)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -156,7 +156,7 @@ mod reactor {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(123).unwrap();
+        attachment.notifier.notify(TriggerId::new(123)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -186,7 +186,7 @@ mod reactor {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(123).unwrap();
+        attachment.notifier.notify(TriggerId::new(123)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -219,7 +219,7 @@ mod reactor {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
         let attachment = NotifierListenerPair::new();
-        attachment.notifier.notify(123).unwrap();
+        attachment.notifier.notify(TriggerId::new(123)).unwrap();
 
         let _guard = sut.attach(&attachment.listener);
 
@@ -251,7 +251,7 @@ mod reactor {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(123).unwrap();
+            attachment.notifier.notify(TriggerId::new(123)).unwrap();
             attachments.push(attachment);
         }
 
@@ -279,7 +279,7 @@ mod reactor {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(123).unwrap();
+            attachment.notifier.notify(TriggerId::new(123)).unwrap();
             attachments.push(attachment);
         }
 
@@ -310,7 +310,7 @@ mod reactor {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(123).unwrap();
+            attachment.notifier.notify(TriggerId::new(123)).unwrap();
             attachments.push(attachment);
         }
 
@@ -360,7 +360,7 @@ mod reactor {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(123).unwrap();
+            attachment.notifier.notify(TriggerId::new(123)).unwrap();
             attachments.push(attachment);
         }
 
@@ -400,7 +400,7 @@ mod reactor {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(123).unwrap();
+            attachment.notifier.notify(TriggerId::new(123)).unwrap();
             attachments.push(attachment);
         }
 
@@ -443,7 +443,7 @@ mod reactor {
         let mut attachments = vec![];
         for _ in 0..NUMBER_OF_ATTACHMENTS {
             let attachment = NotifierListenerPair::new();
-            attachment.notifier.notify(123).unwrap();
+            attachment.notifier.notify(TriggerId::new(123)).unwrap();
             attachments.push(attachment);
         }
 
@@ -485,7 +485,7 @@ mod reactor {
         std::thread::scope(|s| {
             let t = s.spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-                let listener = unix_datagram_socket::ListenerBuilder::<u64>::new(&name)
+                let listener = unix_datagram_socket::ListenerBuilder::new(&name)
                     .create()
                     .unwrap();
                 let _guard = sut.attach(&listener);
@@ -507,10 +507,10 @@ mod reactor {
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::Relaxed);
 
-            let notifier = unix_datagram_socket::NotifierBuilder::<u64>::new(&name)
+            let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
                 .open()
                 .unwrap();
-            notifier.notify(123).unwrap();
+            notifier.notify(TriggerId::new(123)).unwrap();
             t.join().unwrap();
 
             assert_that!(counter_old, eq 0);
@@ -526,7 +526,7 @@ mod reactor {
         std::thread::scope(|s| {
             let t = s.spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
-                let listener = unix_datagram_socket::ListenerBuilder::<u64>::new(&name)
+                let listener = unix_datagram_socket::ListenerBuilder::new(&name)
                     .create()
                     .unwrap();
                 let _guard = sut.attach(&listener);
@@ -546,10 +546,10 @@ mod reactor {
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::Relaxed);
 
-            let notifier = unix_datagram_socket::NotifierBuilder::<u64>::new(&name)
+            let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
                 .open()
                 .unwrap();
-            notifier.notify(123).unwrap();
+            notifier.notify(TriggerId::new(123)).unwrap();
             t.join().unwrap();
 
             assert_that!(counter_old, eq 0);

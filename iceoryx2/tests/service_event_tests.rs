@@ -161,7 +161,7 @@ mod service_event {
     #[test]
     fn simple_communication_works_listener_created_first<Sut: Service>() {
         let service_name = generate_name();
-        let event_id = EventId::new(432);
+        let event_id = EventId::new(32);
 
         let sut = Sut::new(&service_name).event().create().unwrap();
 
@@ -183,7 +183,7 @@ mod service_event {
     #[test]
     fn simple_communication_works_notifier_created_first<Sut: Service>() {
         let service_name = generate_name();
-        let event_id = EventId::new(43212);
+        let event_id = EventId::new(43);
 
         let sut = Sut::new(&service_name).event().create().unwrap();
 
@@ -495,7 +495,7 @@ mod service_event {
     #[test]
     fn communication_persists_when_service_is_dropped<Sut: Service>() {
         let service_name = generate_name();
-        let event_id = EventId::new(43212);
+        let event_id = EventId::new(12);
 
         let sut = Sut::new(&service_name).event().create().unwrap();
 
