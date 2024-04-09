@@ -51,10 +51,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // acquire and send out sample
         let mut sample = publisher.loan()?;
         sample.payload_mut().plain_old_data = counter;
-        sample.payload_mut().text = FixedSizeByteString::from_bytes(b"hello").unwrap();
+        sample.payload_mut().text = FixedSizeByteString::from_bytes(b"hello")?;
         sample.payload_mut().vec_of_data.push(counter);
         sample.payload_mut().vec_of_complex_data.push(ComplexData {
-            name: FixedSizeByteString::from_bytes(b"bla").unwrap(),
+            name: FixedSizeByteString::from_bytes(b"bla")?,
             data: {
                 let mut v = FixedSizeVec::new();
                 v.fill(counter);
@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         sample
             .payload_mut()
             .a_queue_of_things
-            .push(FixedSizeByteString::from_bytes(b"buh").unwrap());
+            .push(FixedSizeByteString::from_bytes(b"buh")?);
 
         sample.send()?;
         println!("{} :: send", counter);
