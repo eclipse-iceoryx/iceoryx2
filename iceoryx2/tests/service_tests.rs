@@ -74,6 +74,7 @@ mod service {
                 any_of([
                     PublishSubscribeOpenError::DoesNotExist,
                     PublishSubscribeOpenError::PermissionDenied,
+                    PublishSubscribeOpenError::ServiceInCorruptedState,
                     PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
                 ])
             );
@@ -108,6 +109,7 @@ mod service {
                 any_of([
                     EventOpenError::DoesNotExist,
                     EventOpenError::PermissionDenied,
+                    EventOpenError::EventInCorruptedState,
                     EventOpenError::UnableToOpenDynamicServiceInformation,
                 ])
             );
@@ -232,16 +234,18 @@ mod service {
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024) * 2;
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
-        const NUMBER_OF_ITERATIONS: usize = 50;
 
         let barrier_enter = Barrier::new(number_of_threads);
         let barrier_exit = Barrier::new(number_of_threads);
-        let service_name = generate_name();
+
+        const NUMBER_OF_ITERATIONS: usize = 50;
+        let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS).map(|_| generate_name()).collect();
+        let service_names = &service_names;
 
         std::thread::scope(|s| {
             let mut threads = vec![];
             threads.push(s.spawn(|| {
-                for _ in 0..NUMBER_OF_ITERATIONS {
+                for service_name in service_names {
                     let sut = Factory::create(&service_name).unwrap();
                     barrier_enter.wait();
 
@@ -253,7 +257,7 @@ mod service {
 
             for _ in 0..number_of_open_threads {
                 threads.push(s.spawn(|| {
-                    for _ in 0..NUMBER_OF_ITERATIONS {
+                    for service_name in service_names {
                         barrier_enter.wait();
 
                         let sut = Factory::open(&service_name);
