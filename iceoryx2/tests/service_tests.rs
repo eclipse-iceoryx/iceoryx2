@@ -34,8 +34,72 @@ mod service {
         .unwrap()
     }
 
+    trait SutFactory {
+        type Factory;
+        type CreateError: std::fmt::Debug;
+        type OpenError: std::fmt::Debug;
+
+        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError>;
+        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError>;
+
+        fn assert_create_error(error: Self::CreateError);
+        fn assert_open_error(error: Self::OpenError);
+    }
+
+    impl<Sut: Service> SutFactory for publish_subscribe::PortFactory<Sut, u64> {
+        type Factory = publish_subscribe::PortFactory<Sut, u64>;
+        type CreateError = PublishSubscribeCreateError;
+        type OpenError = PublishSubscribeOpenError;
+
+        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
+            Sut::new(&service_name).publish_subscribe().create::<u64>()
+        }
+
+        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
+            Sut::new(&service_name).publish_subscribe().open::<u64>()
+        }
+
+        fn assert_create_error(error: Self::CreateError) {
+            assert_that!(error, any_of [PublishSubscribeCreateError::AlreadyExists,
+                PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
+            ]);
+        }
+        fn assert_open_error(error: Self::OpenError) {
+            assert_that!(error, any_of [PublishSubscribeOpenError::DoesNotExist,
+                                        PublishSubscribeOpenError::PermissionDenied,
+                                        PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
+            ]);
+        }
+    }
+
+    impl<Sut: Service> SutFactory for event::PortFactory<Sut> {
+        type Factory = event::PortFactory<Sut>;
+        type CreateError = EventCreateError;
+        type OpenError = EventOpenError;
+
+        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
+            Sut::new(&service_name).event().create()
+        }
+
+        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
+            Sut::new(&service_name).event().open()
+        }
+
+        fn assert_create_error(error: Self::CreateError) {
+            assert_that!(error, any_of [EventCreateError::AlreadyExists,
+                                        EventCreateError::IsBeingCreatedByAnotherInstance,
+            ]);
+        }
+        fn assert_open_error(error: Self::OpenError) {
+            assert_that!(error, any_of [EventOpenError::DoesNotExist,
+                                        EventOpenError::PermissionDenied,
+                                        EventOpenError::UnableToOpenDynamicServiceInformation,
+            ]);
+        }
+    }
+
     #[test]
-    fn same_name_with_different_messaging_pattern_is_allowed<Sut: Service>() {
+    fn same_name_with_different_messaging_pattern_is_allowed<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
         let sut_pub_sub = Sut::new(&service_name).publish_subscribe().create::<u64>();
         assert_that!(sut_pub_sub, is_ok);
@@ -63,45 +127,12 @@ mod service {
         assert_that!(received_event[0], eq EVENT_ID);
     }
 
-    trait SutFactory {
-        type Factory;
-        type CreateError: std::fmt::Debug;
-        type OpenError: std::fmt::Debug;
-
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError>;
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError>;
-    }
-
-    impl<Sut: Service> SutFactory for publish_subscribe::PortFactory<Sut, u64> {
-        type Factory = publish_subscribe::PortFactory<Sut, u64>;
-        type CreateError = PublishSubscribeCreateError;
-        type OpenError = PublishSubscribeOpenError;
-
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
-            Sut::new(&service_name).publish_subscribe().create::<u64>()
-        }
-
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
-            Sut::new(&service_name).publish_subscribe().open::<u64>()
-        }
-    }
-
-    impl<Sut: Service> SutFactory for event::PortFactory<Sut> {
-        type Factory = event::PortFactory<Sut>;
-        type CreateError = EventCreateError;
-        type OpenError = EventOpenError;
-
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
-            Sut::new(&service_name).event().create()
-        }
-
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
-            Sut::new(&service_name).event().open()
-        }
-    }
-
-    fn concurent_creating_services_with_unique_names_is_successful_impl<Factory: SutFactory>() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(30));
+    #[test]
+    fn concurent_creating_services_with_unique_names_is_successful<
+        Sut: Service,
+        Factory: SutFactory,
+    >() {
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(5));
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 50;
 
@@ -130,24 +161,11 @@ mod service {
     }
 
     #[test]
-    fn concurrent_creating_services_with_unique_names_is_successful<Sut: Service>() {
-        concurent_creating_services_with_unique_names_is_successful_impl::<
-            publish_subscribe::PortFactory<Sut, u64>,
-        >();
-
-        concurent_creating_services_with_unique_names_is_successful_impl::<event::PortFactory<Sut>>(
-        );
-    }
-
-    fn concurrent_creating_services_with_same_name_fails_for_all_but_one_impl<
+    fn concurrent_creating_services_with_same_name_fails_for_all_but_one<
+        Sut: Service,
         Factory: SutFactory,
-        F: Sync,
-    >(
-        error_check: F,
-    ) where
-        F: Fn(Factory::CreateError),
-    {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(30));
+    >() {
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(5));
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 50;
 
@@ -169,7 +187,7 @@ mod service {
                                 success_counter.fetch_add(1, Ordering::Relaxed);
                             }
                             Err(e) => {
-                                error_check(e);
+                                Factory::assert_create_error(e);
                             }
                         }
 
@@ -182,40 +200,19 @@ mod service {
                 thread.join().unwrap();
             }
 
-            assert_that!(success_counter.load(Ordering::Relaxed), eq NUMBER_OF_ITERATIONS as u64)
+            assert_that!(
+                success_counter.load(Ordering::Relaxed),
+                eq(NUMBER_OF_ITERATIONS as u64)
+            )
         });
     }
 
     #[test]
-    fn concurrent_creating_services_with_same_name_fails_for_all_but_one<Sut: Service>() {
-        concurrent_creating_services_with_same_name_fails_for_all_but_one_impl::<
-            publish_subscribe::PortFactory<Sut, u64>,
-            _,
-        >(|error| {
-            assert_that!(error, any_of [PublishSubscribeCreateError::AlreadyExists,
-                         PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
-            ]);
-        });
-
-        concurrent_creating_services_with_same_name_fails_for_all_but_one_impl::<
-            event::PortFactory<Sut>,
-            _,
-        >(|error| {
-            assert_that!(error, any_of [EventCreateError::AlreadyExists,
-                         EventCreateError::IsBeingCreatedByAnotherInstance,
-            ]);
-        });
-    }
-
-    fn concurrent_opening_and_closing_services_with_same_name_is_handled_gracefully_impl<
+    fn concurrent_opening_and_closing_services_with_same_name_is_handled_gracefully<
+        Sut: Service,
         Factory: SutFactory,
-        F: Sync,
-    >(
-        error_check: F,
-    ) where
-        F: Fn(Factory::OpenError),
-    {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(30));
+    >() {
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(5));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         const NUMBER_OF_OPEN_THREADS: usize = 4;
         const NUMBER_OF_THREADS: usize = NUMBER_OF_CLOSE_THREADS + NUMBER_OF_OPEN_THREADS;
@@ -247,7 +244,7 @@ mod service {
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
-                                error_check(e);
+                                Factory::assert_open_error(e);
                             }
                         }
 
@@ -262,34 +259,25 @@ mod service {
         });
     }
 
-    #[test]
-    fn concurrent_opening_and_closing_services_with_same_name_is_handled_gracefully<
-        Sut: Service,
-    >() {
-        concurrent_opening_and_closing_services_with_same_name_is_handled_gracefully_impl::<
-            publish_subscribe::PortFactory<Sut, u64>,
-            _,
-        >(|error| {
-            assert_that!(error, any_of [PublishSubscribeOpenError::DoesNotExist,
-                             PublishSubscribeOpenError::PermissionDenied,
-                             PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
-            ]);
-        });
+    mod zero_copy {
+        use iceoryx2::service::port_factory::event::PortFactory as EventPortFactory;
+        use iceoryx2::service::port_factory::publish_subscribe::PortFactory as PubSubPortFactory;
+        use iceoryx2::service::zero_copy::Service;
 
-        concurrent_opening_and_closing_services_with_same_name_is_handled_gracefully_impl::<
-            event::PortFactory<Sut>,
-            _,
-        >(|error| {
-            assert_that!(error, any_of [EventOpenError::DoesNotExist,
-                         EventOpenError::PermissionDenied,
-                         EventOpenError::UnableToOpenDynamicServiceInformation,
-            ]);
-        });
+        #[instantiate_tests(<Service, EventPortFactory::<Service>>)]
+        mod event {}
+        #[instantiate_tests(<Service, PubSubPortFactory::<Service, u64>>)]
+        mod publish_subscribe {}
     }
 
-    #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
-    mod zero_copy {}
+    mod process_local {
+        use iceoryx2::service::port_factory::event::PortFactory as EventPortFactory;
+        use iceoryx2::service::port_factory::publish_subscribe::PortFactory as PubSubPortFactory;
+        use iceoryx2::service::process_local::Service;
 
-    #[instantiate_tests(<iceoryx2::service::process_local::Service>)]
-    mod process_local {}
+        #[instantiate_tests(<Service, EventPortFactory::<Service>>)]
+        mod event {}
+        #[instantiate_tests(<Service, PubSubPortFactory::<Service, u64>>)]
+        mod publish_subscribe {}
+    }
 }
