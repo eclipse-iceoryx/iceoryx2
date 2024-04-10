@@ -41,7 +41,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
     std::thread::scope(|s| {
         let t1 = s.spawn(|| {
             let notifier_a2b = service_a2b.notifier().create().unwrap();
-            let mut listener_b2a = service_b2a.listener().create().unwrap();
+            let listener_b2a = service_b2a.listener().create().unwrap();
 
             barrier.wait();
             notifier_a2b.notify().expect("failed to notify");
@@ -54,7 +54,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
 
         let t2 = s.spawn(|| {
             let notifier_b2a = service_b2a.notifier().create().unwrap();
-            let mut listener_a2b = service_a2b.listener().create().unwrap();
+            let listener_a2b = service_a2b.listener().create().unwrap();
 
             barrier.wait();
             for _ in 0..args.iterations {

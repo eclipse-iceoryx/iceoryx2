@@ -130,7 +130,7 @@ mod service {
         let sut_subscriber = sut_pub_sub.subscriber().create().unwrap();
         let sut_publisher = sut_pub_sub.publisher().create().unwrap();
 
-        let mut sut_listener = sut_event.listener().create().unwrap();
+        let sut_listener = sut_event.listener().create().unwrap();
         let sut_notifier = sut_event.notifier().create().unwrap();
 
         const SAMPLE_VALUE: u64 = 891231211;

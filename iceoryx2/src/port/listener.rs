@@ -129,17 +129,14 @@ impl<Service: service::Service> Listener<Service> {
         Ok(new_self)
     }
 
-    pub fn try_wait_all<F: FnMut(EventId)>(
-        &mut self,
-        callback: F,
-    ) -> Result<(), ListenerWaitError> {
+    pub fn try_wait_all<F: FnMut(EventId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         Ok(fail!(from self, when self.listener.try_wait_all(callback),
             "Failed to while calling try_wait on underlying event::Listener"))
     }
 
     pub fn timed_wait_all<F: FnMut(EventId)>(
-        &mut self,
+        &self,
         callback: F,
         timeout: Duration,
     ) -> Result<(), ListenerWaitError> {
@@ -151,7 +148,7 @@ impl<Service: service::Service> Listener<Service> {
     }
 
     pub fn blocking_wait_all<F: FnMut(EventId)>(
-        &mut self,
+        &self,
         callback: F,
     ) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
@@ -164,7 +161,7 @@ impl<Service: service::Service> Listener<Service> {
     /// Non-blocking wait for new [`EventId`]s. If no [`EventId`]s were notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    pub fn try_wait(&mut self) -> Result<Option<EventId>, ListenerWaitError> {
+    pub fn try_wait(&self) -> Result<Option<EventId>, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         Ok(fail!(from self, when self.listener.try_wait(),
             "Failed to while calling try_wait on underlying event::Listener"))
@@ -174,7 +171,7 @@ impl<Service: service::Service> Listener<Service> {
     /// has passed. If no [`EventId`]s were notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    pub fn timed_wait(&mut self, timeout: Duration) -> Result<Option<EventId>, ListenerWaitError> {
+    pub fn timed_wait(&self, timeout: Duration) -> Result<Option<EventId>, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         Ok(fail!(from self, when self.listener.timed_wait(timeout),
             "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout))
@@ -184,7 +181,7 @@ impl<Service: service::Service> Listener<Service> {
     /// Sporadic wakeups can occur and if no [`EventId`]s were notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    pub fn blocking_wait(&mut self) -> Result<Option<EventId>, ListenerWaitError> {
+    pub fn blocking_wait(&self) -> Result<Option<EventId>, ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         Ok(fail!(from self, when self.listener.blocking_wait(),
             "Failed to while calling blocking_wait on underlying event::Listener"))

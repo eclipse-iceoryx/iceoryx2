@@ -16,6 +16,7 @@ mod service_event {
     use std::sync::Barrier;
 
     use iceoryx2::config::Config;
+    use iceoryx2::port::notifier::NotifierNotifyError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -85,16 +86,11 @@ mod service_event {
     }
 
     #[test]
-    fn open_fails_when_service_does_not_fulfill_opener_requirements<Sut: Service>() {
+    fn open_fails_when_service_does_not_satisfy_opener_notifier_requirements<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
-            .event()
-            .max_notifiers(2)
-            .max_listeners(2)
-            .create();
+        let sut = Sut::new(&service_name).event().max_notifiers(2).create();
         assert_that!(sut, is_ok);
 
-        // notifier
         let sut2 = Sut::new(&service_name).event().max_notifiers(3).open();
 
         assert_that!(sut2, is_err);
@@ -105,8 +101,14 @@ mod service_event {
 
         let sut2 = Sut::new(&service_name).event().max_notifiers(1).open();
         assert_that!(sut2, is_ok);
+    }
 
-        // listener
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_opener_listener_requirements<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name).event().max_listeners(2).create();
+        assert_that!(sut, is_ok);
+
         let sut2 = Sut::new(&service_name).event().max_listeners(3).open();
 
         assert_that!(sut2, is_err);
@@ -116,6 +118,32 @@ mod service_event {
         );
 
         let sut2 = Sut::new(&service_name).event().max_listeners(1).open();
+        assert_that!(sut2, is_ok);
+    }
+
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_event_id_requirements<Sut: Service>() {
+        let service_name = generate_name();
+        const EVENT_ID_MAX_VALUE: usize = 78;
+
+        let _sut = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX_VALUE)
+            .create();
+
+        let sut2 = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX_VALUE + 1)
+            .open();
+
+        assert_that!(sut2, is_err);
+        assert_that!(sut2.err().unwrap(), eq EventOpenError::DoesNotSupportRequestedMaxEventId);
+
+        let sut2 = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX_VALUE)
+            .open();
+
         assert_that!(sut2, is_ok);
     }
 
@@ -167,7 +195,7 @@ mod service_event {
 
         let sut2 = Sut::new(&service_name).event().open().unwrap();
 
-        let mut listener = sut.listener().create().unwrap();
+        let listener = sut.listener().create().unwrap();
         let notifier = sut2.notifier().default_event_id(event_id).create().unwrap();
 
         assert_that!(notifier.notify(), is_ok);
@@ -190,7 +218,7 @@ mod service_event {
         let sut2 = Sut::new(&service_name).event().open().unwrap();
 
         let notifier = sut2.notifier().default_event_id(event_id).create().unwrap();
-        let mut listener = sut.listener().create().unwrap();
+        let listener = sut.listener().create().unwrap();
 
         assert_that!(notifier.notify(), is_ok);
 
@@ -371,28 +399,30 @@ mod service_event {
 
     #[test]
     fn max_event_id_works<Sut: Service>() {
-        //let service_name = generate_name();
-        //let max_event_id = EventId::new(32);
+        let service_name = generate_name();
+        const EVENT_ID_MAX_VALUE: usize = 78;
 
-        //let sut = Sut::new(&service_name)
-        //    .event()
-        //    .max_event_id(max_event_id)
-        //    .create()
-        //    .unwrap();
+        let sut = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX_VALUE)
+            .create()
+            .unwrap();
 
-        //let sut2 = Sut::new(&service_name).event().open().unwrap();
+        let sut2 = Sut::new(&service_name).event().open().unwrap();
 
-        //let mut listener = sut.listener().create().unwrap();
-        //let notifier = sut2.notifier().create().unwrap();
+        let listener = sut.listener().create().unwrap();
+        let notifier = sut2.notifier().create().unwrap();
 
-        //assert_that!(notifier.notify(), is_ok);
+        for i in 0..=EVENT_ID_MAX_VALUE {
+            assert_that!(notifier
+                .notify_with_custom_event_id(EventId::new(i))
+                .unwrap(), eq 1);
+            assert_that!(listener.try_wait().unwrap(), eq Some(EventId::new(i)));
+        }
 
-        //let mut received_events = 0;
-        //for event in listener.try_wait().unwrap().iter() {
-        //    assert_that!(*event, eq event_id);
-        //    received_events += 1;
-        //}
-        //assert_that!(received_events, eq 1);
+        let result = notifier.notify_with_custom_event_id(EventId::new(EVENT_ID_MAX_VALUE + 1));
+        assert_that!(result, is_err);
+        assert_that!(result.err().unwrap(), eq NotifierNotifyError::EventIdOutOfBounds);
     }
 
     #[test]
@@ -421,7 +451,7 @@ mod service_event {
             let mut listener_threads = vec![];
             for _ in 0..NUMBER_OF_LISTENER_THREADS {
                 listener_threads.push(s.spawn(|| {
-                    let mut listener = sut.listener().create().unwrap();
+                    let listener = sut.listener().create().unwrap();
                     barrier.wait();
 
                     let mut counter = 0;
@@ -522,7 +552,7 @@ mod service_event {
         let sut = Sut::new(&service_name).event().create().unwrap();
 
         let notifier = sut.notifier().default_event_id(event_id).create().unwrap();
-        let mut listener = sut.listener().create().unwrap();
+        let listener = sut.listener().create().unwrap();
 
         assert_that!(Sut::does_exist(&service_name), eq Ok(true));
         drop(sut);
