@@ -14,7 +14,6 @@
 mod service {
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Barrier;
-    use std::time::Duration;
 
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
@@ -22,6 +21,7 @@ mod service {
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
     use iceoryx2::service::port_factory::{event, publish_subscribe};
+    use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -60,15 +60,23 @@ mod service {
         }
 
         fn assert_create_error(error: Self::CreateError) {
-            assert_that!(error, any_of [PublishSubscribeCreateError::AlreadyExists,
-                PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
-            ]);
+            assert_that!(
+                error,
+                any_of([
+                    PublishSubscribeCreateError::AlreadyExists,
+                    PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
+                ])
+            );
         }
         fn assert_open_error(error: Self::OpenError) {
-            assert_that!(error, any_of [PublishSubscribeOpenError::DoesNotExist,
-                                        PublishSubscribeOpenError::PermissionDenied,
-                                        PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
-            ]);
+            assert_that!(
+                error,
+                any_of([
+                    PublishSubscribeOpenError::DoesNotExist,
+                    PublishSubscribeOpenError::PermissionDenied,
+                    PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
+                ])
+            );
         }
     }
 
@@ -86,15 +94,23 @@ mod service {
         }
 
         fn assert_create_error(error: Self::CreateError) {
-            assert_that!(error, any_of [EventCreateError::AlreadyExists,
-                                        EventCreateError::IsBeingCreatedByAnotherInstance,
-            ]);
+            assert_that!(
+                error,
+                any_of([
+                    EventCreateError::AlreadyExists,
+                    EventCreateError::IsBeingCreatedByAnotherInstance,
+                ])
+            );
         }
         fn assert_open_error(error: Self::OpenError) {
-            assert_that!(error, any_of [EventOpenError::DoesNotExist,
-                                        EventOpenError::PermissionDenied,
-                                        EventOpenError::UnableToOpenDynamicServiceInformation,
-            ]);
+            assert_that!(
+                error,
+                any_of([
+                    EventOpenError::DoesNotExist,
+                    EventOpenError::PermissionDenied,
+                    EventOpenError::UnableToOpenDynamicServiceInformation,
+                ])
+            );
         }
     }
 
@@ -118,13 +134,13 @@ mod service {
         const SAMPLE_VALUE: u64 = 891231211;
         sut_publisher.send_copy(SAMPLE_VALUE).unwrap();
         let received_sample = sut_subscriber.receive().unwrap().unwrap();
-        assert_that!(*received_sample, eq SAMPLE_VALUE);
+        assert_that!(*received_sample, eq(SAMPLE_VALUE));
 
         const EVENT_ID: EventId = EventId::new(31);
         sut_notifier.notify_with_custom_event_id(EVENT_ID).unwrap();
         let received_event = sut_listener.try_wait().unwrap();
-        assert_that!(received_event, len 1);
-        assert_that!(received_event[0], eq EVENT_ID);
+        assert_that!(received_event, len(1));
+        assert_that!(received_event[0], eq(EVENT_ID));
     }
 
     #[test]
@@ -133,15 +149,15 @@ mod service {
         Factory: SutFactory,
     >() {
         let _watch_dog = Watchdog::new();
-        const NUMBER_OF_THREADS: usize = 4;
+        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024) * 2;
         const NUMBER_OF_ITERATIONS: usize = 50;
 
-        let barrier_enter = Barrier::new(NUMBER_OF_THREADS);
-        let barrier_exit = Barrier::new(NUMBER_OF_THREADS);
+        let barrier_enter = Barrier::new(number_of_threads);
+        let barrier_exit = Barrier::new(number_of_threads);
 
         std::thread::scope(|s| {
             let mut threads = vec![];
-            for _ in 0..NUMBER_OF_THREADS {
+            for _ in 0..number_of_threads {
                 threads.push(s.spawn(|| {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
@@ -166,17 +182,17 @@ mod service {
         Factory: SutFactory,
     >() {
         let _watch_dog = Watchdog::new();
-        const NUMBER_OF_THREADS: usize = 4;
+        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024) * 2;
         const NUMBER_OF_ITERATIONS: usize = 50;
 
         let success_counter = AtomicU64::new(0);
-        let barrier_enter = Barrier::new(NUMBER_OF_THREADS);
-        let barrier_exit = Barrier::new(NUMBER_OF_THREADS);
+        let barrier_enter = Barrier::new(number_of_threads);
+        let barrier_exit = Barrier::new(number_of_threads);
         let service_name = generate_name();
 
         std::thread::scope(|s| {
             let mut threads = vec![];
-            for _ in 0..NUMBER_OF_THREADS {
+            for _ in 0..number_of_threads {
                 threads.push(s.spawn(|| {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
@@ -203,7 +219,7 @@ mod service {
             assert_that!(
                 success_counter.load(Ordering::Relaxed),
                 eq(NUMBER_OF_ITERATIONS as u64)
-            )
+            );
         });
     }
 
@@ -214,12 +230,12 @@ mod service {
     >() {
         let _watch_dog = Watchdog::new();
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
-        const NUMBER_OF_OPEN_THREADS: usize = 4;
-        const NUMBER_OF_THREADS: usize = NUMBER_OF_CLOSE_THREADS + NUMBER_OF_OPEN_THREADS;
+        let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024) * 2;
+        let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
         const NUMBER_OF_ITERATIONS: usize = 50;
 
-        let barrier_enter = Barrier::new(NUMBER_OF_THREADS);
-        let barrier_exit = Barrier::new(NUMBER_OF_THREADS);
+        let barrier_enter = Barrier::new(number_of_threads);
+        let barrier_exit = Barrier::new(number_of_threads);
         let service_name = generate_name();
 
         std::thread::scope(|s| {
@@ -235,7 +251,7 @@ mod service {
                 }
             }));
 
-            for _ in 0..NUMBER_OF_OPEN_THREADS {
+            for _ in 0..number_of_open_threads {
                 threads.push(s.spawn(|| {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
