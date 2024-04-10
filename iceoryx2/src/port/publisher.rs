@@ -52,8 +52,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! See also, [`crate::port::publisher::Publisher`]
 
 use std::cell::UnsafeCell;
 use std::fmt::Debug;

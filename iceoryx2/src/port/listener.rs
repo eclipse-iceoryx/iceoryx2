@@ -12,6 +12,14 @@
 
 //! # Example
 //!
+//! ## Process Directly
+//!
+//! **Note:**
+//! This approach may lead to an infinite loop when one notifier sends [`EventId`]s in a busy
+//! loop and the [`Listener`] tries to collect all of them before continuing with other operations.
+//! If the listening algorithm consists only of one loop taking care of [`EventId`]s without any
+//! other operations outside of the loop, this problem can be ignored.
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,7 +38,25 @@
 //! # }
 //! ```
 //!
-//! See also [`crate::port::listener::Listener`]
+//! ## Process Batch Of Events
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let event_name = ServiceName::new("MyEventName")?;
+//! let event = zero_copy::Service::new(&event_name)
+//!     .event()
+//!     .open_or_create()?;
+//!
+//! let mut listener = event.listener().create()?;
+//!
+//! listener.try_wait_all(|id| {
+//!     println!("event was triggered with id: {:?}", event_id);
+//! })?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::fail;
@@ -129,12 +155,23 @@ impl<Service: service::Service> Listener<Service> {
         Ok(new_self)
     }
 
+    /// Non-blocking wait for new [`EventId`]s. Collects either all [`EventId`]s that were received
+    /// until the call of [`Listener::try_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
     pub fn try_wait_all<F: FnMut(EventId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         Ok(fail!(from self, when self.listener.try_wait_all(callback),
             "Failed to while calling try_wait on underlying event::Listener"))
     }
 
+    /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
+    /// all [`EventId`]s that were received
+    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
     pub fn timed_wait_all<F: FnMut(EventId)>(
         &self,
         callback: F,
@@ -147,6 +184,12 @@ impl<Service: service::Service> Listener<Service> {
         )
     }
 
+    /// Blocking wait for new [`EventId`]s. Collects either
+    /// all [`EventId`]s that were received
+    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
     pub fn blocking_wait_all<F: FnMut(EventId)>(
         &self,
         callback: F,
@@ -158,7 +201,7 @@ impl<Service: service::Service> Listener<Service> {
         )
     }
 
-    /// Non-blocking wait for new [`EventId`]s. If no [`EventId`]s were notified it returns [`None`].
+    /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
     pub fn try_wait(&self) -> Result<Option<EventId>, ListenerWaitError> {
@@ -167,8 +210,8 @@ impl<Service: service::Service> Listener<Service> {
             "Failed to while calling try_wait on underlying event::Listener"))
     }
 
-    /// Blocking wait for new [`EventId`]s until either an [`EventId`] was received or the timeout
-    /// has passed. If no [`EventId`]s were notified it returns [`None`].
+    /// Blocking wait for a new [`EventId`] until either an [`EventId`] was received or the timeout
+    /// has passed. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
     pub fn timed_wait(&self, timeout: Duration) -> Result<Option<EventId>, ListenerWaitError> {
@@ -177,8 +220,8 @@ impl<Service: service::Service> Listener<Service> {
             "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout))
     }
 
-    /// Blocking wait for new [`EventId`]s until either an [`EventId`].
-    /// Sporadic wakeups can occur and if no [`EventId`]s were notified it returns [`None`].
+    /// Blocking wait for a new [`EventId`].
+    /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
     pub fn blocking_wait(&self) -> Result<Option<EventId>, ListenerWaitError> {

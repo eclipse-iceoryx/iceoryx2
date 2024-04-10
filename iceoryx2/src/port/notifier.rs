@@ -34,8 +34,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! See also [`crate::port::notifier::Notifier`]
 
 use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 use crate::{
