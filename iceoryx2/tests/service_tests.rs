@@ -132,7 +132,7 @@ mod service {
         Sut: Service,
         Factory: SutFactory,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(5));
+        let _watch_dog = Watchdog::new();
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 50;
 
@@ -165,7 +165,7 @@ mod service {
         Sut: Service,
         Factory: SutFactory,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(5));
+        let _watch_dog = Watchdog::new();
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 50;
 
@@ -212,7 +212,7 @@ mod service {
         Sut: Service,
         Factory: SutFactory,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(5));
+        let _watch_dog = Watchdog::new();
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         const NUMBER_OF_OPEN_THREADS: usize = 4;
         const NUMBER_OF_THREADS: usize = NUMBER_OF_CLOSE_THREADS + NUMBER_OF_OPEN_THREADS;
