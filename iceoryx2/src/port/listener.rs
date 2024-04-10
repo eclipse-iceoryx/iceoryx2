@@ -93,7 +93,7 @@ impl<Service: service::Service> Listener<Service> {
 
         let listener = fail!(from origin,
                              when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name)
-                                .trigger_id_max(TriggerId::new(service.state().static_config.event().max_event_id))
+                                .trigger_id_max(TriggerId::new(service.state().static_config.event().event_id_max_value))
                                 .create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);

@@ -254,7 +254,7 @@ pub mod details {
         }
 
         fn notify(&self, id: crate::event::TriggerId) -> Result<(), NotifierNotifyError> {
-            if self.storage.get().id_tracker.trigger_id_max() <= id {
+            if self.storage.get().id_tracker.trigger_id_max() < id {
                 fail!(from self, with NotifierNotifyError::TriggerIdOutOfBounds,
                     "Failed to notify since the TriggerId {:?} is greater than the max supported TriggerId {:?}.",
                     id, self.storage.get().id_tracker.trigger_id_max());
@@ -527,7 +527,7 @@ pub mod details {
             ListenerCreateError,
         > {
             let msg = "Failed to create Listener";
-            let id_tracker_capacity = self.trigger_id_max.as_u64() as usize + 1;
+            let id_tracker_capacity = self.trigger_id_max.as_value() + 1;
 
             match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())

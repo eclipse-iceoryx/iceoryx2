@@ -183,7 +183,7 @@ mod service_event {
     #[test]
     fn simple_communication_works_notifier_created_first<Sut: Service>() {
         let service_name = generate_name();
-        let event_id = EventId::new(43);
+        let event_id = EventId::new(23);
 
         let sut = Sut::new(&service_name).event().create().unwrap();
 
@@ -226,7 +226,7 @@ mod service_event {
         for i in 0..MAX_NOTIFIERS {
             notifiers.push(
                 sut.notifier()
-                    .default_event_id(EventId::new((4 * i + 3) as u64))
+                    .default_event_id(EventId::new(i + 3))
                     .create()
                     .unwrap(),
             );
@@ -239,7 +239,7 @@ mod service_event {
                 for listener in &mut listeners {
                     let mut received_events = 0;
                     for event in listener.try_wait().unwrap().iter() {
-                        assert_that!(*event, eq EventId::new((4*i + 3) as u64));
+                        assert_that!(*event, eq EventId::new(i + 3));
                         received_events += 1;
                     }
                     assert_that!(received_events, eq 1);
@@ -272,7 +272,7 @@ mod service_event {
         for i in 0..MAX_NOTIFIERS {
             notifiers.push(
                 sut.notifier()
-                    .default_event_id(EventId::new((i) as u64))
+                    .default_event_id(EventId::new(i))
                     .create()
                     .unwrap(),
             );
@@ -287,9 +287,9 @@ mod service_event {
                 let mut received_events = 0;
 
                 let mut received_event_ids = [false; MAX_NOTIFIERS];
-                for event in listener.try_wait().unwrap().iter() {
-                    assert_that!(received_event_ids[event.as_u64() as usize], eq false);
-                    received_event_ids[event.as_u64() as usize] = true;
+                while let Some(event) = listener.try_wait().unwrap() {
+                    assert_that!(received_event_ids[event.as_value()], eq false);
+                    received_event_ids[event.as_value()] = true;
                     received_events += 1;
                 }
                 assert_that!(received_events, eq MAX_NOTIFIERS);
@@ -370,6 +370,32 @@ mod service_event {
     }
 
     #[test]
+    fn max_event_id_works<Sut: Service>() {
+        //let service_name = generate_name();
+        //let max_event_id = EventId::new(32);
+
+        //let sut = Sut::new(&service_name)
+        //    .event()
+        //    .max_event_id(max_event_id)
+        //    .create()
+        //    .unwrap();
+
+        //let sut2 = Sut::new(&service_name).event().open().unwrap();
+
+        //let mut listener = sut.listener().create().unwrap();
+        //let notifier = sut2.notifier().create().unwrap();
+
+        //assert_that!(notifier.notify(), is_ok);
+
+        //let mut received_events = 0;
+        //for event in listener.try_wait().unwrap().iter() {
+        //    assert_that!(*event, eq event_id);
+        //    received_events += 1;
+        //}
+        //assert_that!(received_events, eq 1);
+    }
+
+    #[test]
     // TODO iox2-139, enable when bitset is integrated into events
     #[ignore]
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
@@ -401,11 +427,9 @@ mod service_event {
                     let mut counter = 0;
                     while counter < NUMBER_OF_ITERATIONS {
                         let event_ids = listener.blocking_wait().unwrap();
-                        if !event_ids.is_empty() {
+                        if let Some(id) = event_ids {
                             counter += 1;
-                            for id in event_ids {
-                                assert_that!(*id, eq EVENT_ID);
-                            }
+                            assert_that!(id, eq EVENT_ID);
                         }
                     }
                 }));
@@ -462,11 +486,9 @@ mod service_event {
                     let mut listener = sut.listener().create().unwrap();
                     while counter < NUMBER_OF_ITERATIONS {
                         let event_ids = listener.blocking_wait().unwrap();
-                        if !event_ids.is_empty() {
+                        if let Some(id) = event_ids {
                             counter += 1;
-                            for id in event_ids {
-                                assert_that!(*id, eq EVENT_ID);
-                            }
+                            assert_that!(id, eq EVENT_ID);
                             listener = sut.listener().create().unwrap();
                         }
                     }

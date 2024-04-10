@@ -25,4 +25,4 @@ unable_to_deliver_strategy                  = 'block' # or 'discard_sample'
 [defaults.event]
 max_listeners                               = 2
 max_notifiers                               = 16
-max_event_id                                = 32
+event_id_max_value                          = 32

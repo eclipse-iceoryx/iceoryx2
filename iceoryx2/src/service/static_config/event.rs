@@ -28,7 +28,6 @@
 //! # }
 //! ```
 use crate::config;
-use crate::port::event_id::EventId;
 use serde::{Deserialize, Serialize};
 
 /// The static configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
@@ -38,7 +37,7 @@ use serde::{Deserialize, Serialize};
 pub struct StaticConfig {
     pub(crate) max_notifiers: usize,
     pub(crate) max_listeners: usize,
-    pub(crate) max_event_id: u64,
+    pub(crate) event_id_max_value: usize,
 }
 
 impl StaticConfig {
@@ -46,7 +45,7 @@ impl StaticConfig {
         Self {
             max_notifiers: config.defaults.event.max_notifiers,
             max_listeners: config.defaults.event.max_listeners,
-            max_event_id: config.defaults.event.max_event_id,
+            event_id_max_value: config.defaults.event.event_id_max_value,
         }
     }
 
@@ -61,7 +60,7 @@ impl StaticConfig {
     }
 
     /// Returns the largest event_id that is supported by the service
-    pub fn max_event_id(&self) -> EventId {
-        EventId::new(self.max_event_id as _)
+    pub fn event_id_max_value(&self) -> usize {
+        self.event_id_max_value
     }
 }

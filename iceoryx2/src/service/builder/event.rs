@@ -14,6 +14,7 @@
 //!
 //! See [`crate::service`]
 //!
+pub use crate::port::event_id::EventId;
 use crate::service::messaging_pattern::MessagingPattern;
 use crate::service::port_factory::event;
 use crate::service::*;
@@ -95,7 +96,7 @@ pub struct Builder<ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_notifiers: bool,
     verify_max_listeners: bool,
-    verify_max_event_id: bool,
+    verify_event_id_max_value: bool,
 }
 
 impl<ServiceType: service::Service> Builder<ServiceType> {
@@ -104,7 +105,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             base,
             verify_max_notifiers: false,
             verify_max_listeners: false,
-            verify_max_event_id: false,
+            verify_event_id_max_value: false,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Event(
@@ -126,9 +127,9 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it defines how many [`crate::port::notifier::Notifier`] shall
     /// be supported at most. If an existing [`Service`] is opened it defines how many
     /// [`crate::port::notifier::Notifier`] must be at least supported.
-    pub fn max_event_id(mut self, value: u64) -> Self {
-        self.config_details().max_event_id = value;
-        self.verify_max_event_id = true;
+    pub fn event_id_max_value(mut self, value: usize) -> Self {
+        self.config_details().event_id_max_value = value;
+        self.verify_event_id_max_value = true;
         self
     }
 
@@ -380,12 +381,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 msg, existing_settings.max_notifiers, required_settings.max_listeners);
         }
 
-        if self.verify_max_event_id
-            && existing_settings.max_event_id < required_settings.max_event_id
+        if self.verify_event_id_max_value
+            && existing_settings.event_id_max_value < required_settings.event_id_max_value
         {
             fail!(from self, with EventOpenError::DoesNotSupportRequestedMaxEventId,
                 "{} since the event supports only EventIds with a value of at most {} a support of {} was requested.",
-                msg, existing_settings.max_event_id, required_settings.max_event_id);
+                msg, existing_settings.event_id_max_value, required_settings.event_id_max_value);
         }
 
         Ok(*existing_settings)

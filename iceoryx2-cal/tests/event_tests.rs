@@ -119,7 +119,7 @@ mod event {
         wait_call: F,
     ) {
         let _watchdog = Watchdog::new();
-        const REPETITIONS: u64 = 8;
+        const REPETITIONS: usize = 8;
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
@@ -153,7 +153,7 @@ mod event {
     >(
         wait_call: F,
     ) {
-        const REPETITIONS: u64 = 8;
+        const REPETITIONS: usize = 8;
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
@@ -168,7 +168,7 @@ mod event {
             let result = wait_call(&sut_listener).unwrap();
             assert_that!(result, is_some);
             let result = result.unwrap();
-            assert_that!(result.as_u64(), lt REPETITIONS);
+            assert_that!(result.as_value(), lt REPETITIONS);
             assert_that!(ids.insert(result), eq true);
         }
     }
@@ -194,8 +194,8 @@ mod event {
     >(
         wait_call: F,
     ) {
-        const REPETITIONS: u64 = 2;
-        const SOURCES: u64 = 4;
+        const REPETITIONS: usize = 2;
+        const SOURCES: usize = 4;
         let name = generate_name();
         let mut sources = vec![];
 
@@ -207,7 +207,7 @@ mod event {
         let mut event_ids = vec![];
         for i in 0..REPETITIONS {
             for (n, notifier) in sources.iter().enumerate() {
-                let event_id = n as u64 * (SOURCES + REPETITIONS + 1) + i;
+                let event_id = n * (SOURCES + REPETITIONS + 1) + i;
                 assert_that!(notifier.notify(TriggerId::new(event_id)), is_ok);
                 event_ids.push(event_id);
             }
@@ -217,7 +217,7 @@ mod event {
             for _ in 0..SOURCES {
                 let result = wait_call(&sut_listener).unwrap();
                 assert_that!(result, is_some);
-                assert_that!(event_ids, contains result.unwrap().as_u64());
+                assert_that!(event_ids, contains result.unwrap().as_value());
             }
         }
     }
@@ -442,7 +442,7 @@ mod event {
         if Sut::has_trigger_id_limit() {
             assert_that!(sut_notifier.trigger_id_max(), eq TRIGGER_ID_MAX);
         } else {
-            assert_that!(sut_notifier.trigger_id_max(), eq TriggerId::new(u64::MAX));
+            assert_that!(sut_notifier.trigger_id_max(), eq TriggerId::new(usize::MAX));
         }
     }
 
@@ -459,11 +459,11 @@ mod event {
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
 
-        for i in 0..TRIGGER_ID_MAX.as_u64() {
+        for i in 0..TRIGGER_ID_MAX.as_value() {
             assert_that!(sut_notifier.notify(TriggerId::new(i)), is_ok);
         }
 
-        let result = sut_notifier.notify(TriggerId::new(TRIGGER_ID_MAX.as_u64() + 1));
+        let result = sut_notifier.notify(TriggerId::new(TRIGGER_ID_MAX.as_value() + 1));
         assert_that!(result, is_err);
         assert_that!(
             result.err().unwrap(), eq
@@ -471,7 +471,7 @@ mod event {
         );
 
         let mut ids = HashSet::new();
-        for _ in 0..TRIGGER_ID_MAX.as_u64() {
+        for _ in 0..TRIGGER_ID_MAX.as_value() {
             let event_id = sut_listener.try_wait().unwrap().unwrap();
 
             assert_that!(event_id, lt TRIGGER_ID_MAX);
@@ -486,7 +486,7 @@ mod event {
         mut wait_call: F,
     ) {
         let _watchdog = Watchdog::new();
-        const REPETITIONS: u64 = 8;
+        const REPETITIONS: usize = 8;
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)

@@ -141,8 +141,7 @@ mod service {
         const EVENT_ID: EventId = EventId::new(31);
         sut_notifier.notify_with_custom_event_id(EVENT_ID).unwrap();
         let received_event = sut_listener.try_wait().unwrap();
-        assert_that!(received_event, len(1));
-        assert_that!(received_event[0], eq(EVENT_ID));
+        assert_that!(received_event, eq Some(EVENT_ID));
     }
 
     #[test]

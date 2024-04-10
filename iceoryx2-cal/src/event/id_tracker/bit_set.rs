@@ -18,7 +18,7 @@ use crate::event::{NotifierNotifyError, TriggerId};
 
 impl IdTracker for RelocatableBitSet {
     fn trigger_id_max(&self) -> TriggerId {
-        TriggerId::new(self.capacity() as u64 - 1)
+        TriggerId::new(self.capacity() - 1)
     }
 
     unsafe fn add(&self, id: TriggerId) -> Result<(), NotifierNotifyError> {
@@ -27,16 +27,16 @@ impl IdTracker for RelocatableBitSet {
                 "Unable to set bit {:?} since it is out of bounds (max = {:?}).",
                 id, self.trigger_id_max());
         }
-        self.set(id.as_u64() as usize);
+        self.set(id.as_value());
 
         Ok(())
     }
 
     unsafe fn acquire_all<F: FnMut(TriggerId)>(&self, mut callback: F) {
-        self.reset_all(|bit_index| callback(TriggerId::new(bit_index as u64)))
+        self.reset_all(|bit_index| callback(TriggerId::new(bit_index)))
     }
 
     unsafe fn acquire(&self) -> Option<TriggerId> {
-        self.reset_next().map(|id| TriggerId::new(id as u64))
+        self.reset_next().map(|id| TriggerId::new(id))
     }
 }
