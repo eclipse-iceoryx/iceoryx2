@@ -428,7 +428,8 @@ pub mod details {
             callback: F,
         ) -> Result<(), crate::event::ListenerWaitError> {
             while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
-            Ok(unsafe { self.storage.get().id_tracker.acquire_all(callback) })
+            unsafe { self.storage.get().id_tracker.acquire_all(callback) };
+            Ok(())
         }
 
         fn timed_wait_all<F: FnMut(TriggerId)>(

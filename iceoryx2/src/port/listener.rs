@@ -51,7 +51,7 @@
 //! let mut listener = event.listener().create()?;
 //!
 //! listener.try_wait_all(|id| {
-//!     println!("event was triggered with id: {:?}", event_id);
+//!     println!("event was triggered with id: {:?}", id);
 //! })?;
 //!
 //! # Ok(())

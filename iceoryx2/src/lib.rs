@@ -158,7 +158,7 @@
 //!
 //! let notifier = event.notifier().create()?;
 //!
-//! let mut counter: u64 = 0;
+//! let mut counter: usize = 0;
 //! while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
 //!     counter += 1;
 //!     notifier.notify_with_custom_event_id(EventId::new(counter))?;
