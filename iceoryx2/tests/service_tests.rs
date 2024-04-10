@@ -160,9 +160,9 @@ mod service {
             for _ in 0..number_of_threads {
                 threads.push(s.spawn(|| {
                     for _ in 0..NUMBER_OF_ITERATIONS {
+                        let service_name = generate_name();
                         barrier_enter.wait();
 
-                        let service_name = generate_name();
                         let _sut = Factory::create(&service_name).unwrap();
 
                         barrier_exit.wait();
