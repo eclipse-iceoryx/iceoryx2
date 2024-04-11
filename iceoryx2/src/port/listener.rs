@@ -15,9 +15,9 @@
 //! ## Process Directly
 //!
 //! **Note:**
-//! This approach may lead to an infinite loop when one notifier sends [`EventId`]s in a busy
-//! loop and the [`Listener`] tries to collect all of them before continuing with other operations.
-//! If the listening algorithm consists only of one loop taking care of [`EventId`]s without any
+//! This approach may lead to an infinite loop when one notifier sends [`EventId`](crate::port::event_id::EventId)s in a busy
+//! loop and the [`Listener`](crate::port::listener::Listener) tries to collect all of them before continuing with other operations.
+//! If the listening algorithm consists only of one loop taking care of [`EventId`](crate::port::event_id::EventId)s without any
 //! other operations outside of the loop, this problem can be ignored.
 //!
 //! ```

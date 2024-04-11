@@ -69,6 +69,12 @@ jobs:
       - name: Run cargo clippy
         run: cargo clippy -- -D warnings
 
+      - name: Run code examples in documentation
+        run: cargo test --workspace --doc
+
+      - name: Build documentation
+        run: cargo doc
+
   cargo-nextest:
     needs: preflight-check
     strategy:
@@ -153,7 +159,7 @@ jobs:
   #           cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
   freebsd:
-    needs: changes
+    needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -180,7 +186,7 @@ jobs:
             cargo nextest run --workspace --no-fail-fast ${{ matrix.mode }}
 
   grcov:
-    needs: preflight-check
+    needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 10
     runs-on: ubuntu-latest

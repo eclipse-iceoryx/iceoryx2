@@ -22,14 +22,14 @@
 //!
 //! let notifier = event
 //!     .notifier()
-//!     .default_event_id(EventId::new(123))
+//!     .default_event_id(EventId::new(12))
 //!     .create()?;
 //!
 //! // notify with default event id 123
 //! notifier.notify()?;
 //!
 //! // notify with some custom event id
-//! notifier.notify_with_custom_event_id(EventId::new(456))?;
+//! notifier.notify_with_custom_event_id(EventId::new(6))?;
 //!
 //! # Ok(())
 //! # }
