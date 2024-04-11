@@ -20,6 +20,10 @@
   * Add `Sample::origin()` to determine the `UniquePublisherId` of the sender
 * Performance improvements, especially for AMD CPUs [#136](https://github.com/eclipse-iceoryx/iceoryx2/issues/136)
 * Introduce lock-free mpmc BitSet [#139](https://github.com/eclipse-iceoryx/iceoryx2/issues/139)
+* Refactor Event API [#175](https://github.com/eclipse-iceoryx/iceoryx2/issues/175)
+  * Add `event_id_max_value()` setting to `Event` service builder
+  * Add `defaults.event.event_id_max_value` to config file (`iceoryx2.toml`)
+  * Add `Listener::{try|timed|blocking}_wait_all` to grab a batch of `EventIds` to avoid infinite busy loop
 * Example for complex data types [#175](https://github.com/eclipse-iceoryx/iceoryx2/issues/175)
 
 ### Bugfixes
@@ -197,3 +201,62 @@
     let subscriber = service.subscriber().create()?;
     println!("sample timestamp: {:?}", sample.unwrap().time_stamp);
     ```
+
+6. `Listener::{try|timed|blocking}_wait()` returns `Optional` instead of
+    `EventId` slice.
+
+    ```rust
+    // old
+    if let Ok(events) = listener.try_wait() {
+        for event_id in events {
+            println!("event was triggered with id: {:?}", event_id);
+        }
+    }
+
+    // new, iterative approach
+    while let Ok(Some(event_id)) = listener.try_wait() {
+        println!("event was triggered with id: {:?}", event_id);
+    }
+
+    // new, functional approach to grap a batch of id's
+    listener.try_wait_all(|id| {
+        println!("event was triggered with id: {:?}", event_id);
+    });
+    ```
+
+7. Renamed method `EventId::as_u64()` to `EventId::as_value()`.
+
+    ```rust
+    // old
+    println!("event id value {}", my_event_id.as_u64());
+
+    // new
+    println!("event id value {}", my_event_id.as_value());
+    ```
+
+8. `EventId`s have a max default value of `32`.
+
+    ```rust
+    // old
+    let name = ServiceName::new("EventName")?;
+    let event = zero_copy::Service::new(&name)
+                    .event()
+                    .open_or_create()?;
+    let notifier = event.notifier().create()?;
+    // leads now to `NotifierNotifyError::EventIdOutOfBounds`
+    notifier.notify_with_custom_event_id(EventId::new(1234));
+
+    // new
+    let name = ServiceName::new("EventName")?;
+    let event = zero_copy::Service::new(&name)
+                    .event()
+                    // supports event id values up to 2048
+                    // be aware, the greater the max value the slower the
+                    // event mechanism is
+                    .event_id_max_value(2048)
+                    .open_or_create()?;
+    let notifier = event.notifier().create()?;
+    notifier.notify_with_custom_event_id(EventId::new(1234));
+    ```
+
+
