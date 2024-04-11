@@ -138,6 +138,7 @@ pub struct Notifier<Service: service::Service> {
     listener_connections: ListenerConnections<Service>,
     listener_list_state: UnsafeCell<ContainerState<UniqueListenerId>>,
     default_event_id: EventId,
+    event_id_max_value: usize,
     dynamic_storage: Rc<Service::DynamicStorage>,
     dynamic_notifier_handle: Option<ContainerHandle>,
     port_id: UniqueNotifierId,
@@ -171,6 +172,7 @@ impl<Service: service::Service> Notifier<Service> {
             default_event_id,
             listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
             dynamic_storage,
+            event_id_max_value: service.state().static_config.event().event_id_max_value,
             dynamic_notifier_handle: None,
             port_id,
         };
@@ -274,14 +276,15 @@ impl<Service: service::Service> Notifier<Service> {
         use iceoryx2_cal::event::Notifier;
         let mut number_of_triggered_listeners = 0;
 
+        if self.event_id_max_value < value.as_value() {
+            fail!(from self, with NotifierNotifyError::EventIdOutOfBounds,
+                            "{} since the EventId {:?} exceeds the maximum supported EventId value of {}.",
+                            msg, value, self.event_id_max_value);
+        }
+
         for i in 0..self.listener_connections.len() {
             match self.listener_connections.get(i) {
                 Some(ref connection) => match connection.notify(value) {
-                    Err(iceoryx2_cal::event::NotifierNotifyError::TriggerIdOutOfBounds) => {
-                        fail!(from self, with NotifierNotifyError::EventIdOutOfBounds,
-                            "{} since the EventId {:?} exceeds the maximum supported EventId.",
-                            msg, value);
-                    }
                     Err(e) => {
                         warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
                             connection, e)
