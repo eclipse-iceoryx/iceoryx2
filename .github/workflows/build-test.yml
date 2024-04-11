@@ -69,8 +69,26 @@ jobs:
       - name: Run cargo clippy
         run: cargo clippy -- -D warnings
 
+  cargo-nextest:
+    needs: preflight-check
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and cache cargo-nextest
+      uses: ./.github/actions/build-and-cache-rust-tool
+      with:
+        rust-toolchain: stable
+        check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
+        print-version-cmd: cargo-nextest --version
+        cache-key: cache-1-${{ runner.os }}-cargo-nextest
+        artifact-path: ~/.cargo/bin/cargo-nextest
+        artifact-name: ${{ runner.os }}-cargo-nextest
+
   x86_64:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -99,8 +117,8 @@ jobs:
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
 
-      - name: Run cargo test
-        run: cargo test --workspace --no-fail-fast ${{ matrix.mode.arg }}
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
 
   ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
   ###       current alternative is a cirrus.yml aarch64 target
