@@ -242,7 +242,7 @@ jobs:
       run: ./internal/scripts/generate-cov-report.sh --lcov
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: target/debug/coverage/lcov.info
         fail_ci_if_error: true
