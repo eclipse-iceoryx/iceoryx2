@@ -15,6 +15,7 @@
 #![allow(unused_variables)]
 
 use std::cell::OnceCell;
+use std::time::{Duration, Instant};
 
 use windows_sys::Win32::Networking::WinSock::WSAEWOULDBLOCK;
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
@@ -306,20 +307,43 @@ pub unsafe fn recvfrom(
         }
         Some(FdHandleEntry::UdsDatagramSocket(s)) => {
             if let Some(mut timeout) = s.recv_timeout {
-                let mut read_set = fd_set::new();
-                read_set.fd_count = 1;
-                read_set.fd_array[0] = s.fd;
+                let mut remaining_time = Duration::from_secs(timeout.tv_sec as _)
+                    + Duration::from_micros(timeout.tv_usec as _);
+                let now = Instant::now();
 
-                win32call! {select(
-                    (s.fd + 1) as _,
-                    &mut read_set,
-                    core::ptr::null_mut::<fd_set>(),
-                    core::ptr::null_mut::<fd_set>(),
-                    &mut timeout,
-                ) };
+                loop {
+                    let mut read_set = fd_set::new();
+                    read_set.fd_count = 1;
+                    read_set.fd_array[0] = s.fd;
 
-                (win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK })
-                    as _
+                    let number_of_triggered_fds = win32call! {select(
+                        (s.fd + 1) as _,
+                        &mut read_set,
+                        core::ptr::null_mut::<fd_set>(),
+                        core::ptr::null_mut::<fd_set>(),
+                        &mut timeout,
+                    ) };
+
+                    if number_of_triggered_fds == SOCKET_ERROR {
+                        Errno::set(Errno::EINVAL);
+                        return -1;
+                    }
+
+                    let elapsed_time = now.elapsed();
+                    if remaining_time < elapsed_time {
+                        return 0;
+                    }
+
+                    if 0 < number_of_triggered_fds {
+                        let received_bytes = (win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK })
+                            as _;
+                        if 0 < received_bytes {
+                            return received_bytes;
+                        }
+                    }
+
+                    remaining_time -= elapsed_time;
+                }
             } else {
                 let bytes_received = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK };
 
