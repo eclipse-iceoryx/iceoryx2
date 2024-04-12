@@ -17,10 +17,10 @@ inputs:
   cache-key:
     description: 'Unique key for the caching of the builds, e.g. "cache-1-linux-foo"'
     required: true
-  artifact-path:
-    description: 'The path to the artifact to upload, e.g. "~/.cargo/bin/foo"'
+  artifact-bin-name:
+    description: 'The name to the binary artifact to upload from "~/.cargo/bin/", e.g. "foo"'
     required: true
-  artifact-name:
+  artifact-upload-name:
     description: 'The name of the artifact to be downloaded in a follow up CI runner, e.g. "linux-foo"'
     required: true
 runs:
@@ -38,6 +38,7 @@ runs:
         cat version_info
       shell: bash
     - name: Setup cache
+      if: runner.os != 'Windows'
       uses: actions/cache@v4
       with:
         path: |
@@ -46,6 +47,16 @@ runs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
         key: ${{ inputs.cache-key }}-${{ hashFiles('version_info') }}
+    - name: Setup cache
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: |
+          C:/Users/runneradmin/.cargo/bin/
+          C:/Users/runneradmin/.cargo/registry/index/
+          C:/Users/runneradmin/.cargo/registry/cache/
+          C:/Users/runneradmin/.cargo/git/db/
+        key: ${{ inputs.cache-key }}-${{ hashFiles('version_info') }}
     - name: Install if not available
       run: ${{ inputs.check-and-install-cmd }}
       shell: bash
@@ -53,9 +64,18 @@ runs:
       run: ${{ inputs.print-version-cmd }}
       shell: bash
     - name: Upload artifact
+      if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.artifact-name }}
-        path: ${{ inputs.artifact-path }}
+        name: ${{ inputs.artifact-upload-name }}
+        path: ~/.cargo/bin/${{ inputs.artifact-artifact-bin-name }}
+        retention-days: 1
+        if-no-files-found: error
+    - name: Upload artifact
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-upload-name }}
+        path: C:/Users/runneradmin/.cargo/bin/${{ inputs.artifact-bin-name }}.exe
         retention-days: 1
         if-no-files-found: error

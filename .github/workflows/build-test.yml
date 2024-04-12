@@ -84,8 +84,8 @@ jobs:
         check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
         print-version-cmd: cargo-nextest --version
         cache-key: cache-1-${{ runner.os }}-cargo-nextest
-        artifact-path: ~/.cargo/bin/cargo-nextest
-        artifact-name: ${{ runner.os }}-cargo-nextest
+        artifact-bin-name: cargo-nextest
+        artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
   x86_64:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
@@ -187,8 +187,8 @@ jobs:
         check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
         print-version-cmd: grcov --version
         cache-key: cache-1-${{ runner.os }}-grcov
-        artifact-path: ~/.cargo/bin/grcov
-        artifact-name: ${{ runner.os }}-grcov
+        artifact-bin-name: grcov
+        artifact-upload-name: ${{ runner.os }}-grcov
 
   coverage:
     needs: grcov
