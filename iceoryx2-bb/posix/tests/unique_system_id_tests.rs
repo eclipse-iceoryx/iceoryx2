@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::time::Duration;
+use std::{collections::HashSet, sync::Barrier, time::Duration};
 
-use iceoryx2_bb_posix::{process::Process, unique_system_id::*};
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_posix::{process::Process, system_configuration::SystemInfo, unique_system_id::*};
+use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
 
 #[test]
 fn unique_system_id_is_unique() {
@@ -34,4 +34,37 @@ fn unique_system_id_is_unique() {
     assert_that!(sut3.creation_time().seconds(), gt sut2.creation_time().seconds());
     assert_that!(sut1.creation_time().seconds() + 2, ge sut2.creation_time().seconds());
     assert_that!(sut1.creation_time().seconds() + 3, ge sut3.creation_time().seconds());
+}
+
+#[test]
+fn unique_system_id_concurrently_created_ids_are_unique() {
+    let _watchdog = Watchdog::new();
+    const NUMBER_OF_ITERATIONS: usize = 1000;
+    let number_of_threads = SystemInfo::NumberOfCpuCores.value() * 2;
+    let barrier = Barrier::new(number_of_threads);
+
+    std::thread::scope(|s| {
+        let mut threads = vec![];
+        for _ in 0..number_of_threads {
+            threads.push(s.spawn(|| {
+                let mut ids = Vec::new();
+                ids.reserve(NUMBER_OF_ITERATIONS);
+
+                barrier.wait();
+                for _ in 0..NUMBER_OF_ITERATIONS {
+                    ids.push(UniqueSystemId::new().unwrap().value());
+                }
+
+                ids
+            }));
+        }
+
+        let mut id_set = HashSet::new();
+        for t in threads {
+            let ids = t.join().unwrap();
+            for id in ids {
+                assert_that!(id_set.insert(id), eq true);
+            }
+        }
+    });
 }
