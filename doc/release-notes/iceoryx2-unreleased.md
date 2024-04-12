@@ -46,6 +46,7 @@
 * Fix non UTF-8 windows platform error messages [#145](https://github.com/eclipse-iceoryx/iceoryx2/issues/145)
 * Correct inconsistent default config entries for windows [#149](https://github.com/eclipse-iceoryx/iceoryx2/issues/149)
 * Fix that drop is not called when DynamicStorage is destroyed [#160](https://github.com/eclipse-iceoryx/iceoryx2/issues/160)
+* Fix race in `UniqueSystemId` that leads to non-unique unique ids [#181](https://github.com/eclipse-iceoryx/iceoryx2/issues/181)
 
 ### Refactoring
 
