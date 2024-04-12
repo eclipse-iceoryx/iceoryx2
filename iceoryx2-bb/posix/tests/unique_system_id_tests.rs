@@ -62,6 +62,7 @@ fn unique_system_id_concurrently_created_ids_are_unique() {
         let mut id_set = HashSet::new();
         for t in threads {
             let ids = t.join().unwrap();
+            assert_that!(ids, len NUMBER_OF_ITERATIONS);
             for id in ids {
                 assert_that!(id_set.insert(id), eq true);
             }

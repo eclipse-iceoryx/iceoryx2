@@ -75,38 +75,19 @@ impl Display for UniqueSystemId {
 impl UniqueSystemId {
     /// Creates a new system wide unique id
     pub fn new() -> Result<Self, UniqueSystemIdCreationError> {
-        static LAST_NANOSECONDS: AtomicU32 = AtomicU32::new(0);
-
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
         let msg = "Failed to create UniqueSystemId";
         let pid = Process::from_self().id().value() as u128;
-        let mut now;
-        let mut previous_nanoseconds = LAST_NANOSECONDS.load(Ordering::Relaxed);
-
-        // It is possible to create the same UniqueSystemId when in the same process concurrently
-        // at the same time a UniqueSystemId is created. To prevent this we reacquire the current
-        // time when the nanoseconds refraction is equal and only update LAST_NANOSECONDS
-        // when no other updated it in between.
-        loop {
-            now = fail!(from "UniqueSystemId::new()",
+        let now = fail!(from "UniqueSystemId::new()",
                         when Time::now_with_clock(ClockType::default()),
                         with UniqueSystemIdCreationError::FailedToAcquireTime,
                         "{} since the current time could not be acquired.", msg);
 
-            if now.nanoseconds() != previous_nanoseconds {
-                match LAST_NANOSECONDS.compare_exchange(
-                    previous_nanoseconds,
-                    now.nanoseconds(),
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => break,
-                    Err(v) => previous_nanoseconds = v,
-                }
-            }
-        }
-
         Ok(UniqueSystemId {
-            value: (pid << 96) | ((now.seconds() as u128) << 32) | now.nanoseconds() as u128,
+            value: (pid << 96)
+                | (((now.seconds() as u32) as u128) << 64)
+                | (now.nanoseconds() as u128) << 32
+                | COUNTER.fetch_add(1, Ordering::Relaxed) as u128,
         })
     }
 
@@ -122,8 +103,8 @@ impl UniqueSystemId {
 
     /// Returns the [`Time`] when the [`UniqueSystemId`] was created
     pub fn creation_time(&self) -> Time {
-        let seconds = ((self.value << 32) >> 64) as u64;
-        let nanoseconds = ((self.value << 96) >> 96) as u32;
+        let seconds = ((self.value << 32) >> 96) as u64;
+        let nanoseconds = ((self.value << 64) >> 96) as u32;
 
         Time {
             clock_type: ClockType::default(),
