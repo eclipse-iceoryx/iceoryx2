@@ -111,6 +111,12 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
       - name: Prepare system
         run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
 
@@ -214,13 +220,10 @@ jobs:
         components: llvm-tools-preview
 
     - name: Download artifact grcov
-      uses: actions/download-artifact@v4
+      uses: ./.github/actions/download-cached-rust-tool
       with:
-        name: ${{ runner.os }}-grcov
-        path: ~/.cargo/bin
-
-    - name: Make grcov artifacts executable
-      run: chmod +x ~/.cargo/bin/grcov
+        artifact-bin-name: grcov
+        artifact-upload-name: ${{ runner.os }}-grcov
 
     - name: Generate raw coverage results
       run: ./internal/scripts/generate-cov-report.sh --generate

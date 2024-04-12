@@ -1,0 +1,36 @@
+name: 'Download cached Rust tools'
+description: 'Download cached Rust tools like cargo-nextest'
+inputs:
+  artifact-bin-name:
+    description: 'The name to the binary artifact to download to "~/.cargo/bin/", e.g. "foo"'
+    required: true
+  artifact-upload-name:
+    description: 'The name of the artifact to be downloaded, e.g. "linux-foo"'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Download artifact
+      if: runner.os != 'Windows'
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact-upload-name }}
+        path: ~/.cargo/bin/
+    - name: Download artifact
+      if: runner.os == 'Windows'
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact-upload-name }}
+        path: C:/Users/runneradmin/.cargo/bin/
+    - name: Make artifact executable
+      if: runner.os != 'Windows'
+      run: chmod +x ~/.cargo/bin/${{ inputs.artifact-bin-name }}
+      shell: bash
+    - name: Print version
+      if: runner.os != 'Windows'
+      run: ~/.cargo/bin/${{ inputs.artifact-bin-name }} --version
+      shell: bash
+    - name: Print version
+      if: runner.os == 'Windows'
+      run: C:/Users/runneradmin/.cargo/bin/${{ inputs.artifact-bin-name }}.exe --version
+      shell: powershell
