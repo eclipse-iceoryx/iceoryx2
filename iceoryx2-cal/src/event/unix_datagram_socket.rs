@@ -253,14 +253,14 @@ impl Listener {
 }
 
 impl crate::event::Listener for Listener {
-    fn try_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
+    fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         self.wait(
             "Unable to try wait for signal on event::unix_datagram_socket::Listener",
             |this, buffer| this.receiver.try_receive(buffer),
         )
     }
 
-    fn timed_wait(
+    fn timed_wait_one(
         &self,
         timeout: std::time::Duration,
     ) -> Result<Option<TriggerId>, ListenerWaitError> {
@@ -270,7 +270,7 @@ impl crate::event::Listener for Listener {
         )
     }
 
-    fn blocking_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
+    fn blocking_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         self.wait(
             "Unable to blocking wait for signal on event::unix_datagram_socket::Listener",
             |this, buffer| this.receiver.blocking_receive(buffer),
@@ -279,7 +279,7 @@ impl crate::event::Listener for Listener {
 
     fn try_wait_all<F: FnMut(TriggerId)>(&self, mut callback: F) -> Result<(), ListenerWaitError> {
         let mut counter = 0;
-        while let Some(id) = self.try_wait()? {
+        while let Some(id) = self.try_wait_one()? {
             callback(id);
 
             counter += 1;
@@ -296,7 +296,7 @@ impl crate::event::Listener for Listener {
         mut callback: F,
         timeout: Duration,
     ) -> Result<(), ListenerWaitError> {
-        if let Some(id) = self.timed_wait(timeout)? {
+        if let Some(id) = self.timed_wait_one(timeout)? {
             callback(id);
         }
         self.try_wait_all(callback)
@@ -306,7 +306,7 @@ impl crate::event::Listener for Listener {
         &self,
         mut callback: F,
     ) -> Result<(), ListenerWaitError> {
-        if let Some(id) = self.blocking_wait()? {
+        if let Some(id) = self.blocking_wait_one()? {
             callback(id);
         }
         self.try_wait_all(callback)

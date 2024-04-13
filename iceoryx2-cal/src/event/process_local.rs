@@ -156,11 +156,11 @@ impl Drop for Duplex {
 }
 
 impl Listener for Duplex {
-    fn try_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
-        self.timed_wait(Duration::ZERO)
+    fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
+        self.timed_wait_one(Duration::ZERO)
     }
 
-    fn timed_wait(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError> {
+    fn timed_wait_one(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError> {
         let msg = "Failed to timed_wait";
         match self
             .management
@@ -177,7 +177,7 @@ impl Listener for Duplex {
         }
     }
 
-    fn blocking_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
+    fn blocking_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         let msg = "Failed to blocking_wait";
         match self.management.as_ref().borrow_cvar().blocking_wait_while() {
             Err(v) => {

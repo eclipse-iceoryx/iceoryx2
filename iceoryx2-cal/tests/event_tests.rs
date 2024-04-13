@@ -100,10 +100,10 @@ mod event {
             sut_notifier.notify(trigger_id).unwrap();
         }
 
-        assert_that!(sut_listener.try_wait().unwrap(), is_some);
+        assert_that!(sut_listener.try_wait_one().unwrap(), is_some);
 
         let now = Instant::now();
-        let result = sut_listener.timed_wait(TIMEOUT).unwrap();
+        let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
 
         if result.is_some() {
             assert_that!(result, eq Some(trigger_id));
@@ -134,17 +134,17 @@ mod event {
 
     #[test]
     fn sending_notification_and_try_wait_works<Sut: Event>() {
-        sending_notification_works::<Sut, _>(|sut| sut.try_wait());
+        sending_notification_works::<Sut, _>(|sut| sut.try_wait_one());
     }
 
     #[test]
     fn sending_notification_and_timed_wait_works<Sut: Event>() {
-        sending_notification_works::<Sut, _>(|sut| sut.timed_wait(TIMEOUT));
+        sending_notification_works::<Sut, _>(|sut| sut.timed_wait_one(TIMEOUT));
     }
 
     #[test]
     fn sending_notification_and_blocking_wait_works<Sut: Event>() {
-        sending_notification_works::<Sut, _>(|sut| sut.blocking_wait());
+        sending_notification_works::<Sut, _>(|sut| sut.blocking_wait_one());
     }
 
     fn sending_multiple_notifications_before_wait_works<
@@ -175,17 +175,19 @@ mod event {
 
     #[test]
     fn sending_multiple_notifications_before_try_wait_works<Sut: Event>() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.try_wait());
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.try_wait_one());
     }
 
     #[test]
     fn sending_multiple_notifications_before_timed_wait_works<Sut: Event>() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.timed_wait(TIMEOUT));
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| {
+            sut.timed_wait_one(TIMEOUT)
+        });
     }
 
     #[test]
     fn sending_multiple_notifications_before_blocking_wait_works<Sut: Event>() {
-        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.blocking_wait());
+        sending_multiple_notifications_before_wait_works::<Sut, _>(|sut| sut.blocking_wait_one());
     }
 
     fn sending_multiple_notifications_from_multiple_sources_before_wait_works<
@@ -225,14 +227,14 @@ mod event {
     #[test]
     fn sending_multiple_notifications_from_multiple_sources_before_try_wait_works<Sut: Event>() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            sut.try_wait()
+            sut.try_wait_one()
         });
     }
 
     #[test]
     fn sending_multiple_notifications_from_multiple_sources_before_timed_wait_works<Sut: Event>() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            sut.timed_wait(TIMEOUT)
+            sut.timed_wait_one(TIMEOUT)
         });
     }
 
@@ -241,7 +243,7 @@ mod event {
         Sut: Event,
     >() {
         sending_multiple_notifications_from_multiple_sources_before_wait_works::<Sut, _>(|sut| {
-            sut.blocking_wait()
+            sut.blocking_wait_one()
         });
     }
 
@@ -252,7 +254,7 @@ mod event {
         let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
         let _sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
 
-        let result = sut_listener.try_wait().unwrap();
+        let result = sut_listener.try_wait_one().unwrap();
         assert_that!(result, is_none);
     }
 
@@ -264,7 +266,7 @@ mod event {
         let _sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
 
         let start = Instant::now();
-        let result = sut_listener.timed_wait(TIMEOUT).unwrap();
+        let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
         assert_that!(result, is_none);
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
@@ -282,7 +284,7 @@ mod event {
             let t = s.spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
                 barrier.wait();
-                let result = sut_listener.blocking_wait().unwrap();
+                let result = sut_listener.blocking_wait_one().unwrap();
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
                 assert_that!(result.unwrap(), eq TriggerId::new(89));
@@ -315,7 +317,7 @@ mod event {
             let t = s.spawn(|| {
                 let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
                 barrier.wait();
-                let result = sut_listener.timed_wait(TIMEOUT * 1000).unwrap();
+                let result = sut_listener.timed_wait_one(TIMEOUT * 1000).unwrap();
                 counter.store(1, Ordering::SeqCst);
                 assert_that!(result, is_some);
                 assert_that!(result.unwrap(), eq TriggerId::new(82));
@@ -472,13 +474,13 @@ mod event {
 
         let mut ids = HashSet::new();
         for _ in 0..TRIGGER_ID_MAX.as_value() {
-            let event_id = sut_listener.try_wait().unwrap().unwrap();
+            let event_id = sut_listener.try_wait_one().unwrap().unwrap();
 
             assert_that!(event_id, lt TRIGGER_ID_MAX);
             assert_that!(ids.insert(event_id), eq true);
         }
 
-        let event_id = sut_listener.try_wait().unwrap();
+        let event_id = sut_listener.try_wait_one().unwrap();
         assert_that!(event_id, is_none);
     }
 
@@ -495,7 +497,7 @@ mod event {
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
 
-        for i in 1..REPETITIONS {
+        for i in 1..=REPETITIONS {
             for n in 0..i {
                 sut_notifier.notify(TriggerId::new(n as _)).unwrap();
             }

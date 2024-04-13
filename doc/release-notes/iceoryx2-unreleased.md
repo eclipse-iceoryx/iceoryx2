@@ -202,8 +202,9 @@
     println!("sample timestamp: {:?}", sample.unwrap().time_stamp);
     ```
 
-6. `Listener::{try|timed|blocking}_wait()` returns `Optional` instead of
-    `EventId` slice.
+6. `Listener::{try|timed|blocking}_wait_one()` replace
+    `Listener::{try|timed|blocking}_wait()` and return an `Option<EventId>`
+    instead of a slice of `EventId`s.
 
     ```rust
     // old
@@ -214,7 +215,7 @@
     }
 
     // new, iterative approach
-    while let Ok(Some(event_id)) = listener.try_wait() {
+    while let Ok(Some(event_id)) = listener.try_wait_one() {
         println!("event was triggered with id: {:?}", event_id);
     }
 
@@ -258,5 +259,3 @@
     let notifier = event.notifier().create()?;
     notifier.notify_with_custom_event_id(EventId::new(1234));
     ```
-
-

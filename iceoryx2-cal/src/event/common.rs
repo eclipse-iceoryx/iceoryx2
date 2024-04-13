@@ -380,7 +380,7 @@ pub mod details {
             Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
         > crate::event::Listener for Listener<Tracker, WaitMechanism, Storage>
     {
-        fn try_wait(
+        fn try_wait_one(
             &self,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
             // collect all notifications until no more are available, otherwise it is possible
@@ -394,11 +394,11 @@ pub mod details {
             Ok(unsafe { self.storage.get().id_tracker.acquire() })
         }
 
-        fn timed_wait(
+        fn timed_wait_one(
             &self,
             timeout: Duration,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
-            if let Some(id) = self.try_wait()? {
+            if let Some(id) = self.try_wait_one()? {
                 return Ok(Some(id));
             }
 
@@ -412,10 +412,10 @@ pub mod details {
             })
         }
 
-        fn blocking_wait(
+        fn blocking_wait_one(
             &self,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
-            if let Some(id) = self.try_wait()? {
+            if let Some(id) = self.try_wait_one()? {
                 return Ok(Some(id));
             }
 
@@ -427,6 +427,12 @@ pub mod details {
             &self,
             callback: F,
         ) -> Result<(), crate::event::ListenerWaitError> {
+            // We have to collect all signals first since we collect
+            // all trigger notifications afterwards. It is also important that
+            // the signals are collected first so that timed or blocking wait
+            // do not miss signal notifications despite a signal was already
+            // delivered.
+            // But this may lead to spurious wakeups.
             while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
             unsafe { self.storage.get().id_tracker.acquire_all(callback) };
             Ok(())

@@ -47,7 +47,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
             notifier_a2b.notify().expect("failed to notify");
 
             for _ in 0..args.iterations {
-                while listener_b2a.blocking_wait().unwrap().is_none() {}
+                while listener_b2a.blocking_wait_one().unwrap().is_none() {}
                 notifier_a2b.notify().expect("failed to notify");
             }
         });
@@ -58,7 +58,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
 
             barrier.wait();
             for _ in 0..args.iterations {
-                while listener_a2b.blocking_wait().unwrap().is_none() {}
+                while listener_a2b.blocking_wait_one().unwrap().is_none() {}
                 notifier_b2a.notify().expect("failed to notify");
             }
         });
@@ -83,7 +83,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
 }
 
 const ITERATIONS: usize = 1000000;
-const MAX_EVENT_ID: usize = 128;
+const EVENT_ID_MAX_VALUE: usize = 128;
 
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
@@ -92,7 +92,7 @@ struct Args {
     #[clap(short, long, default_value_t = ITERATIONS)]
     iterations: usize,
     /// The greatest supported EventId
-    #[clap(short, long, default_value_t = MAX_EVENT_ID)]
+    #[clap(short, long, default_value_t = EVENT_ID_MAX_VALUE)]
     max_event_id: usize,
 }
 

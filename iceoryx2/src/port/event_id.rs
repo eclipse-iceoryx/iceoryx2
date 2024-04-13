@@ -30,7 +30,7 @@
 //!
 //! notifier.notify_with_custom_event_id(EventId::new(5));
 //!
-//! while let Some(event_id) = listener.try_wait()? {
+//! while let Some(event_id) = listener.try_wait_one()? {
 //!     println!("event was triggered with id: {:?}", event_id);
 //! }
 //!

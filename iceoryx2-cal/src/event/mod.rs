@@ -112,9 +112,9 @@ pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
 }
 
 pub trait Listener: NamedConcept + Debug {
-    fn try_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
-    fn timed_wait(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError>;
-    fn blocking_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
+    fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
+    fn timed_wait_one(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError>;
+    fn blocking_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
 
     fn try_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError>;
     fn timed_wait_all<F: FnMut(TriggerId)>(
