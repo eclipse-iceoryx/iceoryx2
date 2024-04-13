@@ -32,7 +32,7 @@ impl Drop for Watchdog {
 
 impl Default for Watchdog {
     fn default() -> Self {
-        Self::new_with_timeout(Duration::from_secs(60))
+        Self::new_with_timeout(Duration::from_secs(10))
     }
 }
 

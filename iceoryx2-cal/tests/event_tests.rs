@@ -492,7 +492,7 @@ mod event {
         let name = generate_name();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
-            .trigger_id_max(TriggerId::new(REPETITIONS + 1))
+            .trigger_id_max(TriggerId::new(REPETITIONS))
             .create()
             .unwrap();
         let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
