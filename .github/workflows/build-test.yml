@@ -69,8 +69,26 @@ jobs:
       - name: Run cargo clippy
         run: cargo clippy -- -D warnings
 
+  cargo-nextest:
+    needs: preflight-check
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and cache cargo-nextest
+      uses: ./.github/actions/build-and-cache-rust-tool
+      with:
+        rust-toolchain: stable
+        check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
+        print-version-cmd: cargo-nextest --version
+        cache-key: cache-1-${{ runner.os }}-cargo-nextest
+        artifact-bin-name: cargo-nextest
+        artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
   x86_64:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -93,14 +111,20 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
       - name: Prepare system
         run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
 
-      - name: Run cargo test
-        run: cargo test --workspace --no-fail-fast ${{ matrix.mode.arg }}
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
 
   ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
   ###       current alternative is a cirrus.yml aarch64 target
@@ -152,7 +176,8 @@ jobs:
             cargo fmt --all -- --check
             cargo clippy -- -D warnings
             cargo build --workspace --all-targets ${{ matrix.mode }}
-            cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+            cargo install cargo-nextest --locked
+            cargo nextest run --workspace --no-fail-fast ${{ matrix.mode }}
 
   grcov:
     needs: preflight-check
@@ -169,8 +194,8 @@ jobs:
         check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
         print-version-cmd: grcov --version
         cache-key: cache-1-${{ runner.os }}-grcov
-        artifact-path: ~/.cargo/bin/grcov
-        artifact-name: ${{ runner.os }}-grcov
+        artifact-bin-name: grcov
+        artifact-upload-name: ${{ runner.os }}-grcov
 
   coverage:
     needs: grcov
@@ -196,13 +221,10 @@ jobs:
         components: llvm-tools-preview
 
     - name: Download artifact grcov
-      uses: actions/download-artifact@v4
+      uses: ./.github/actions/download-cached-rust-tool
       with:
-        name: ${{ runner.os }}-grcov
-        path: ~/.cargo/bin
-
-    - name: Make grcov artifacts executable
-      run: chmod +x ~/.cargo/bin/grcov
+        artifact-bin-name: grcov
+        artifact-upload-name: ${{ runner.os }}-grcov
 
     - name: Generate raw coverage results
       run: ./internal/scripts/generate-cov-report.sh --generate
@@ -221,7 +243,7 @@ jobs:
       run: ./internal/scripts/generate-cov-report.sh --lcov
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: target/debug/coverage/lcov.info
         fail_ci_if_error: true
