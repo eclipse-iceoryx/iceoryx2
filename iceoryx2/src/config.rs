@@ -229,6 +229,8 @@ pub struct Event {
     pub max_listeners: usize,
     /// The maximum amount of supported [`crate::port::notifier::Notifier`]
     pub max_notifiers: usize,
+    /// The largest event id supported by the event service
+    pub event_id_max_value: usize,
 }
 
 /// Represents the configuration that Iceoryx2 will utilize. It is divided into two sections:
@@ -276,6 +278,7 @@ impl Default for Config {
                 event: Event {
                     max_listeners: 1,
                     max_notifiers: 16,
+                    event_id_max_value: 32,
                 },
             },
         }

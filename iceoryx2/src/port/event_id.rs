@@ -22,15 +22,15 @@
 //!
 //! let mut listener = event.listener().create()?;
 //! let mut notifier = event.notifier()
-//!     .default_event_id(EventId::new(123))
+//!     .default_event_id(EventId::new(12))
 //!     .create()?;
 //!
-//! // notify the listener with default event id 123
+//! // notify the listener with default event id 12
 //! notifier.notify()?;
 //!
-//! notifier.notify_with_custom_event_id(EventId::new(456));
+//! notifier.notify_with_custom_event_id(EventId::new(5));
 //!
-//! for event_id in listener.try_wait()? {
+//! while let Some(event_id) = listener.try_wait_one()? {
 //!     println!("event was triggered with id: {:?}", event_id);
 //! }
 //!

@@ -87,21 +87,21 @@ impl std::fmt::Display for ListenerCreateError {
 impl std::error::Error for ListenerCreateError {}
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TriggerId(u64);
+pub struct TriggerId(usize);
 
 impl TriggerId {
-    pub const fn new(value: u64) -> Self {
+    pub const fn new(value: usize) -> Self {
         Self(value)
     }
 
-    pub const fn as_u64(&self) -> u64 {
+    pub const fn as_value(&self) -> usize {
         self.0
     }
 }
 
 pub trait Notifier: NamedConcept + Debug {
     fn trigger_id_max(&self) -> TriggerId {
-        TriggerId::new(u64::MAX)
+        TriggerId::new(usize::MAX)
     }
     fn notify(&self, id: TriggerId) -> Result<(), NotifierNotifyError>;
 }
@@ -112,9 +112,17 @@ pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
 }
 
 pub trait Listener: NamedConcept + Debug {
-    fn try_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
-    fn timed_wait(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError>;
-    fn blocking_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
+    fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
+    fn timed_wait_one(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError>;
+    fn blocking_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
+
+    fn try_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError>;
+    fn timed_wait_all<F: FnMut(TriggerId)>(
+        &self,
+        callback: F,
+        timeout: Duration,
+    ) -> Result<(), ListenerWaitError>;
+    fn blocking_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError>;
 }
 
 pub trait ListenerBuilder<T: Event>: NamedConceptBuilder<T> + Debug {

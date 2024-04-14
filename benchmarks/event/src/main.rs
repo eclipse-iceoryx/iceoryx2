@@ -24,6 +24,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
         .event()
         .max_notifiers(1)
         .max_listeners(1)
+        .event_id_max_value(args.max_event_id)
         .create()
         .unwrap();
 
@@ -31,6 +32,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
         .event()
         .max_notifiers(1)
         .max_listeners(1)
+        .event_id_max_value(args.max_event_id)
         .create()
         .unwrap();
 
@@ -39,24 +41,24 @@ fn perform_benchmark<T: Service>(args: &Args) {
     std::thread::scope(|s| {
         let t1 = s.spawn(|| {
             let notifier_a2b = service_a2b.notifier().create().unwrap();
-            let mut listener_b2a = service_b2a.listener().create().unwrap();
+            let listener_b2a = service_b2a.listener().create().unwrap();
 
             barrier.wait();
             notifier_a2b.notify().expect("failed to notify");
 
             for _ in 0..args.iterations {
-                while listener_b2a.blocking_wait().unwrap().is_empty() {}
+                while listener_b2a.blocking_wait_one().unwrap().is_none() {}
                 notifier_a2b.notify().expect("failed to notify");
             }
         });
 
         let t2 = s.spawn(|| {
             let notifier_b2a = service_b2a.notifier().create().unwrap();
-            let mut listener_a2b = service_a2b.listener().create().unwrap();
+            let listener_a2b = service_a2b.listener().create().unwrap();
 
             barrier.wait();
             for _ in 0..args.iterations {
-                while listener_a2b.blocking_wait().unwrap().is_empty() {}
+                while listener_a2b.blocking_wait_one().unwrap().is_none() {}
                 notifier_b2a.notify().expect("failed to notify");
             }
         });
@@ -70,8 +72,9 @@ fn perform_benchmark<T: Service>(args: &Args) {
 
         let stop = start.elapsed();
         println!(
-            "{} ::: Iterations: {}, Time: {}, Latency: {} ns",
+            "{} ::: MaxEventId: {}, Iterations: {}, Time: {}, Latency: {} ns",
             std::any::type_name::<T>(),
+            args.max_event_id,
             args.iterations,
             stop.as_secs_f64(),
             stop.as_nanos() / (args.iterations as u128 * 2)
@@ -80,7 +83,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
 }
 
 const ITERATIONS: usize = 1000000;
-const CAPACITY: usize = 128;
+const EVENT_ID_MAX_VALUE: usize = 128;
 
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
@@ -88,9 +91,9 @@ struct Args {
     /// Number of iterations the A --> B --> A communication is repeated
     #[clap(short, long, default_value_t = ITERATIONS)]
     iterations: usize,
-    /// Capacity of the bitset
-    #[clap(short, long, default_value_t = CAPACITY)]
-    capacity: usize,
+    /// The greatest supported EventId
+    #[clap(short, long, default_value_t = EVENT_ID_MAX_VALUE)]
+    max_event_id: usize,
 }
 
 fn main() {

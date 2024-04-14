@@ -31,7 +31,7 @@ mod event_id_tracker {
 
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
-        assert_that!(sut.trigger_id_max().as_u64(), lt CAPACITY as u64);
+        assert_that!(sut.trigger_id_max().as_value(), lt CAPACITY);
     }
 
     #[test]
@@ -44,7 +44,7 @@ mod event_id_tracker {
 
         assert_that!(unsafe { sut.acquire() }, eq None);
         for i in 0..CAPACITY {
-            let id = TriggerId::new(i as u64);
+            let id = TriggerId::new(i);
             assert_that!(unsafe { sut.add(id) }, is_ok);
             assert_that!(unsafe { sut.acquire() }, eq Some(id));
             assert_that!(unsafe { sut.acquire() }, is_none);
@@ -60,7 +60,7 @@ mod event_id_tracker {
         assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
 
         for i in 0..CAPACITY {
-            let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
+            let id = TriggerId::new((i).min(sut.trigger_id_max().as_value()));
             assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 
@@ -83,7 +83,7 @@ mod event_id_tracker {
         assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
 
         for i in 0..CAPACITY {
-            let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
+            let id = TriggerId::new((i).min(sut.trigger_id_max().as_value()));
             assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 
@@ -111,7 +111,7 @@ mod event_id_tracker {
         assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
 
         for i in 0..CAPACITY {
-            let id = TriggerId::new((i as u64).min(sut.trigger_id_max().as_u64()));
+            let id = TriggerId::new(i.min(sut.trigger_id_max().as_value()));
             assert_that!(unsafe { sut.add(id) }, is_ok);
         }
 

@@ -254,7 +254,7 @@ pub mod details {
         }
 
         fn notify(&self, id: crate::event::TriggerId) -> Result<(), NotifierNotifyError> {
-            if self.storage.get().id_tracker.trigger_id_max() <= id {
+            if self.storage.get().id_tracker.trigger_id_max() < id {
                 fail!(from self, with NotifierNotifyError::TriggerIdOutOfBounds,
                     "Failed to notify since the TriggerId {:?} is greater than the max supported TriggerId {:?}.",
                     id, self.storage.get().id_tracker.trigger_id_max());
@@ -380,7 +380,7 @@ pub mod details {
             Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
         > crate::event::Listener for Listener<Tracker, WaitMechanism, Storage>
     {
-        fn try_wait(
+        fn try_wait_one(
             &self,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
             // collect all notifications until no more are available, otherwise it is possible
@@ -394,11 +394,11 @@ pub mod details {
             Ok(unsafe { self.storage.get().id_tracker.acquire() })
         }
 
-        fn timed_wait(
+        fn timed_wait_one(
             &self,
             timeout: Duration,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
-            if let Some(id) = self.try_wait()? {
+            if let Some(id) = self.try_wait_one()? {
                 return Ok(Some(id));
             }
 
@@ -412,15 +412,47 @@ pub mod details {
             })
         }
 
-        fn blocking_wait(
+        fn blocking_wait_one(
             &self,
         ) -> Result<Option<crate::event::TriggerId>, crate::event::ListenerWaitError> {
-            if let Some(id) = self.try_wait()? {
+            if let Some(id) = self.try_wait_one()? {
                 return Ok(Some(id));
             }
 
             unsafe { self.storage.get().signal_mechanism.blocking_wait()? };
             Ok(unsafe { self.storage.get().id_tracker.acquire() })
+        }
+
+        fn try_wait_all<F: FnMut(TriggerId)>(
+            &self,
+            callback: F,
+        ) -> Result<(), crate::event::ListenerWaitError> {
+            // We have to collect all signals first since we collect
+            // all trigger notifications afterwards. It is also important that
+            // the signals are collected first so that timed or blocking wait
+            // do not miss signal notifications despite a signal was already
+            // delivered.
+            // But this may lead to spurious wakeups.
+            while unsafe { self.storage.get().signal_mechanism.try_wait()? } {}
+            unsafe { self.storage.get().id_tracker.acquire_all(callback) };
+            Ok(())
+        }
+
+        fn timed_wait_all<F: FnMut(TriggerId)>(
+            &self,
+            callback: F,
+            timeout: Duration,
+        ) -> Result<(), crate::event::ListenerWaitError> {
+            unsafe { self.storage.get().signal_mechanism.timed_wait(timeout)? };
+            self.try_wait_all(callback)
+        }
+
+        fn blocking_wait_all<F: FnMut(TriggerId)>(
+            &self,
+            callback: F,
+        ) -> Result<(), crate::event::ListenerWaitError> {
+            unsafe { self.storage.get().signal_mechanism.blocking_wait()? };
+            self.try_wait_all(callback)
         }
     }
 
@@ -502,7 +534,7 @@ pub mod details {
             ListenerCreateError,
         > {
             let msg = "Failed to create Listener";
-            let id_tracker_capacity = self.trigger_id_max.as_u64() as usize + 1;
+            let id_tracker_capacity = self.trigger_id_max.as_value() + 1;
 
             match Storage::Builder::new(&self.name)
                 .config(&self.config.convert())

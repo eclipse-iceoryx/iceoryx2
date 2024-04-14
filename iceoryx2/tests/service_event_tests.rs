@@ -12,15 +12,21 @@
 
 #[generic_tests::define]
 mod service_event {
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::collections::HashSet;
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use std::sync::Barrier;
+    use std::time::{Duration, Instant};
 
     use iceoryx2::config::Config;
+    use iceoryx2::port::listener::Listener;
+    use iceoryx2::port::notifier::NotifierNotifyError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+
+    const TIMEOUT: Duration = Duration::from_millis(50);
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -85,16 +91,11 @@ mod service_event {
     }
 
     #[test]
-    fn open_fails_when_service_does_not_fulfill_opener_requirements<Sut: Service>() {
+    fn open_fails_when_service_does_not_satisfy_opener_notifier_requirements<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
-            .event()
-            .max_notifiers(2)
-            .max_listeners(2)
-            .create();
+        let sut = Sut::new(&service_name).event().max_notifiers(2).create();
         assert_that!(sut, is_ok);
 
-        // notifier
         let sut2 = Sut::new(&service_name).event().max_notifiers(3).open();
 
         assert_that!(sut2, is_err);
@@ -105,8 +106,14 @@ mod service_event {
 
         let sut2 = Sut::new(&service_name).event().max_notifiers(1).open();
         assert_that!(sut2, is_ok);
+    }
 
-        // listener
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_opener_listener_requirements<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name).event().max_listeners(2).create();
+        assert_that!(sut, is_ok);
+
         let sut2 = Sut::new(&service_name).event().max_listeners(3).open();
 
         assert_that!(sut2, is_err);
@@ -116,6 +123,32 @@ mod service_event {
         );
 
         let sut2 = Sut::new(&service_name).event().max_listeners(1).open();
+        assert_that!(sut2, is_ok);
+    }
+
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_event_id_requirements<Sut: Service>() {
+        let service_name = generate_name();
+        const EVENT_ID_MAX_VALUE: usize = 78;
+
+        let _sut = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX_VALUE)
+            .create();
+
+        let sut2 = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX_VALUE + 1)
+            .open();
+
+        assert_that!(sut2, is_err);
+        assert_that!(sut2.err().unwrap(), eq EventOpenError::DoesNotSupportRequestedMaxEventId);
+
+        let sut2 = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX_VALUE)
+            .open();
+
         assert_that!(sut2, is_ok);
     }
 
@@ -167,13 +200,13 @@ mod service_event {
 
         let sut2 = Sut::new(&service_name).event().open().unwrap();
 
-        let mut listener = sut.listener().create().unwrap();
+        let listener = sut.listener().create().unwrap();
         let notifier = sut2.notifier().default_event_id(event_id).create().unwrap();
 
         assert_that!(notifier.notify(), is_ok);
 
         let mut received_events = 0;
-        for event in listener.try_wait().unwrap().iter() {
+        for event in listener.try_wait_one().unwrap().iter() {
             assert_that!(*event, eq event_id);
             received_events += 1;
         }
@@ -183,19 +216,19 @@ mod service_event {
     #[test]
     fn simple_communication_works_notifier_created_first<Sut: Service>() {
         let service_name = generate_name();
-        let event_id = EventId::new(43);
+        let event_id = EventId::new(23);
 
         let sut = Sut::new(&service_name).event().create().unwrap();
 
         let sut2 = Sut::new(&service_name).event().open().unwrap();
 
         let notifier = sut2.notifier().default_event_id(event_id).create().unwrap();
-        let mut listener = sut.listener().create().unwrap();
+        let listener = sut.listener().create().unwrap();
 
         assert_that!(notifier.notify(), is_ok);
 
         let mut received_events = 0;
-        for event in listener.try_wait().unwrap().iter() {
+        for event in listener.try_wait_one().unwrap().iter() {
             assert_that!(*event, eq event_id);
             received_events += 1;
         }
@@ -226,7 +259,7 @@ mod service_event {
         for i in 0..MAX_NOTIFIERS {
             notifiers.push(
                 sut.notifier()
-                    .default_event_id(EventId::new((4 * i + 3) as u64))
+                    .default_event_id(EventId::new(i + 3))
                     .create()
                     .unwrap(),
             );
@@ -238,8 +271,8 @@ mod service_event {
 
                 for listener in &mut listeners {
                     let mut received_events = 0;
-                    for event in listener.try_wait().unwrap().iter() {
-                        assert_that!(*event, eq EventId::new((4*i + 3) as u64));
+                    for event in listener.try_wait_one().unwrap().iter() {
+                        assert_that!(*event, eq EventId::new(i + 3));
                         received_events += 1;
                     }
                     assert_that!(received_events, eq 1);
@@ -272,7 +305,7 @@ mod service_event {
         for i in 0..MAX_NOTIFIERS {
             notifiers.push(
                 sut.notifier()
-                    .default_event_id(EventId::new((i) as u64))
+                    .default_event_id(EventId::new(i))
                     .create()
                     .unwrap(),
             );
@@ -287,9 +320,9 @@ mod service_event {
                 let mut received_events = 0;
 
                 let mut received_event_ids = [false; MAX_NOTIFIERS];
-                for event in listener.try_wait().unwrap().iter() {
-                    assert_that!(received_event_ids[event.as_u64() as usize], eq false);
-                    received_event_ids[event.as_u64() as usize] = true;
+                while let Some(event) = listener.try_wait_one().unwrap() {
+                    assert_that!(received_event_ids[event.as_value()], eq false);
+                    received_event_ids[event.as_value()] = true;
                     received_events += 1;
                 }
                 assert_that!(received_events, eq MAX_NOTIFIERS);
@@ -370,6 +403,34 @@ mod service_event {
     }
 
     #[test]
+    fn max_event_id_works<Sut: Service>() {
+        let service_name = generate_name();
+        const EVENT_ID_MAX_VALUE: usize = 78;
+
+        let sut = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(EVENT_ID_MAX_VALUE)
+            .create()
+            .unwrap();
+
+        let sut2 = Sut::new(&service_name).event().open().unwrap();
+
+        let listener = sut.listener().create().unwrap();
+        let notifier = sut2.notifier().create().unwrap();
+
+        for i in 0..=EVENT_ID_MAX_VALUE {
+            assert_that!(notifier
+                .notify_with_custom_event_id(EventId::new(i))
+                .unwrap(), eq 1);
+            assert_that!(listener.try_wait_one().unwrap(), eq Some(EventId::new(i)));
+        }
+
+        let result = notifier.notify_with_custom_event_id(EventId::new(EVENT_ID_MAX_VALUE + 1));
+        assert_that!(result, is_err);
+        assert_that!(result.err().unwrap(), eq NotifierNotifyError::EventIdOutOfBounds);
+    }
+
+    #[test]
     // TODO iox2-139, enable when bitset is integrated into events
     #[ignore]
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
@@ -395,17 +456,15 @@ mod service_event {
             let mut listener_threads = vec![];
             for _ in 0..NUMBER_OF_LISTENER_THREADS {
                 listener_threads.push(s.spawn(|| {
-                    let mut listener = sut.listener().create().unwrap();
+                    let listener = sut.listener().create().unwrap();
                     barrier.wait();
 
                     let mut counter = 0;
                     while counter < NUMBER_OF_ITERATIONS {
-                        let event_ids = listener.blocking_wait().unwrap();
-                        if !event_ids.is_empty() {
+                        let event_ids = listener.blocking_wait_one().unwrap();
+                        if let Some(id) = event_ids {
                             counter += 1;
-                            for id in event_ids {
-                                assert_that!(*id, eq EVENT_ID);
-                            }
+                            assert_that!(id, eq EVENT_ID);
                         }
                     }
                 }));
@@ -461,12 +520,10 @@ mod service_event {
                     let mut counter = 0;
                     let mut listener = sut.listener().create().unwrap();
                     while counter < NUMBER_OF_ITERATIONS {
-                        let event_ids = listener.blocking_wait().unwrap();
-                        if !event_ids.is_empty() {
+                        let event_ids = listener.blocking_wait_one().unwrap();
+                        if let Some(id) = event_ids {
                             counter += 1;
-                            for id in event_ids {
-                                assert_that!(*id, eq EVENT_ID);
-                            }
+                            assert_that!(id, eq EVENT_ID);
                             listener = sut.listener().create().unwrap();
                         }
                     }
@@ -500,7 +557,7 @@ mod service_event {
         let sut = Sut::new(&service_name).event().create().unwrap();
 
         let notifier = sut.notifier().default_event_id(event_id).create().unwrap();
-        let mut listener = sut.listener().create().unwrap();
+        let listener = sut.listener().create().unwrap();
 
         assert_that!(Sut::does_exist(&service_name), eq Ok(true));
         drop(sut);
@@ -509,7 +566,7 @@ mod service_event {
         assert_that!(notifier.notify(), eq Ok(1));
 
         let mut received_events = 0;
-        for event in listener.try_wait().unwrap().iter() {
+        for event in listener.try_wait_one().unwrap().iter() {
             assert_that!(*event, eq event_id);
             received_events += 1;
         }
@@ -543,6 +600,227 @@ mod service_event {
         drop(notifier);
 
         assert_that!(Sut::new(&service_name).event().create(), is_ok);
+    }
+
+    #[test]
+    fn try_wait_does_not_block<Sut: Service>() {
+        let _watch_dog = Watchdog::new();
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name).event().create().unwrap();
+        let listener = sut.listener().create().unwrap();
+
+        assert_that!(listener.try_wait_one(), is_ok);
+    }
+
+    #[test]
+    fn timed_wait_blocks_for_at_least_timeout<Sut: Service>() {
+        let _watch_dog = Watchdog::new();
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name).event().create().unwrap();
+
+        let listener = sut.listener().create().unwrap();
+
+        let now = Instant::now();
+        assert_that!(listener.timed_wait_one(TIMEOUT), is_ok);
+        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+    }
+
+    fn wait_blocks_until_notification<Sut: Service, F: FnMut(&Listener<Sut>) + Send>(
+        mut wait_call: F,
+    ) {
+        let _watch_dog = Watchdog::new();
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name).event().create().unwrap();
+        let notifier = sut.notifier().create().unwrap();
+        let counter = AtomicU64::new(0);
+        let barrier = Barrier::new(2);
+
+        std::thread::scope(|s| {
+            let t = s.spawn(|| {
+                let listener = sut.listener().create().unwrap();
+                barrier.wait();
+                wait_call(&listener);
+                counter.fetch_add(1, Ordering::Relaxed);
+            });
+
+            barrier.wait();
+            std::thread::sleep(TIMEOUT);
+            assert_that!(counter.load(Ordering::Relaxed), eq 0);
+
+            assert_that!(notifier.notify_with_custom_event_id(EventId::new(13)).unwrap(), eq 1);
+            t.join().unwrap();
+            assert_that!(counter.load(Ordering::Relaxed), eq 1);
+        });
+    }
+
+    #[test]
+    fn timed_wait_blocks_until_notification<Sut: Service>() {
+        wait_blocks_until_notification(|l: &Listener<Sut>| {
+            let id = l.timed_wait_one(TIMEOUT * 1000).unwrap();
+            assert_that!(id, eq Some(EventId::new(13)));
+        })
+    }
+
+    #[test]
+    fn blocking_wait_blocks_until_notification<Sut: Service>() {
+        wait_blocks_until_notification(|l: &Listener<Sut>| {
+            let id = l.blocking_wait_one().unwrap();
+            assert_that!(id, eq Some(EventId::new(13)));
+        })
+    }
+
+    #[test]
+    fn try_wait_collects_all_notifications<Sut: Service>() {
+        const NUMBER_OF_NOTIFICATIONS: usize = 8;
+        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
+            while let Some(id) = l.try_wait_one().unwrap() {
+                assert_that!(ids.insert(id), eq true);
+            }
+        });
+    }
+
+    #[test]
+    fn timed_wait_collects_all_notifications<Sut: Service>() {
+        const NUMBER_OF_NOTIFICATIONS: usize = 8;
+        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
+            for _ in 0..NUMBER_OF_NOTIFICATIONS {
+                let id = l.timed_wait_one(TIMEOUT).unwrap().unwrap();
+                assert_that!(ids.insert(id), eq true);
+            }
+        });
+    }
+
+    #[test]
+    fn blocking_wait_collects_all_notifications<Sut: Service>() {
+        const NUMBER_OF_NOTIFICATIONS: usize = 8;
+        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
+            for _ in 0..NUMBER_OF_NOTIFICATIONS {
+                let id = l.blocking_wait_one().unwrap().unwrap();
+                assert_that!(ids.insert(id), eq true);
+            }
+        });
+    }
+
+    #[test]
+    fn try_wait_all_does_not_block<Sut: Service>() {
+        let _watch_dog = Watchdog::new();
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name).event().create().unwrap();
+
+        let listener = sut.listener().create().unwrap();
+
+        let mut callback_called = false;
+        assert_that!(listener.try_wait_all(|_| callback_called = true), is_ok);
+        assert_that!(callback_called, eq false);
+    }
+
+    #[test]
+    fn timed_wait_all_blocks_for_at_least_timeout<Sut: Service>() {
+        let _watch_dog = Watchdog::new();
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name).event().create().unwrap();
+
+        let listener = sut.listener().create().unwrap();
+
+        let now = Instant::now();
+        let mut callback_called = false;
+        assert_that!(
+            listener.timed_wait_all(|_| callback_called = true, TIMEOUT),
+            is_ok
+        );
+        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+        assert_that!(callback_called, eq false);
+    }
+
+    #[test]
+    fn timed_wait_all_blocks_until_notification<Sut: Service>() {
+        let mut callback_was_called = false;
+        wait_blocks_until_notification(|l: &Listener<Sut>| {
+            assert_that!(
+                l.timed_wait_all(
+                    |id| {
+                        assert_that!(id, eq EventId::new(13));
+                        callback_was_called = true;
+                    },
+                    TIMEOUT * 1000
+                ),
+                is_ok
+            );
+        });
+        assert_that!(callback_was_called, eq true);
+    }
+
+    #[test]
+    fn blocking_wait_all_blocks_until_notification<Sut: Service>() {
+        let mut callback_was_called = false;
+        wait_blocks_until_notification(|l: &Listener<Sut>| {
+            assert_that!(
+                l.blocking_wait_all(|id| {
+                    assert_that!(id, eq EventId::new(13));
+                    callback_was_called = true;
+                }),
+                is_ok
+            );
+        });
+        assert_that!(callback_was_called, eq true);
+    }
+
+    fn wait_collects_all_notifications<
+        Sut: Service,
+        F: FnMut(&Listener<Sut>, &mut HashSet<EventId>),
+    >(
+        number_of_notifications: usize,
+        mut wait_call: F,
+    ) {
+        let _watch_dog = Watchdog::new();
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name)
+            .event()
+            .event_id_max_value(number_of_notifications)
+            .create()
+            .unwrap();
+        let listener = sut.listener().create().unwrap();
+        let notifier = sut.notifier().create().unwrap();
+
+        for i in 0..number_of_notifications {
+            assert_that!(notifier.notify_with_custom_event_id(EventId::new(i)).unwrap(), eq 1);
+        }
+
+        let mut id_set = HashSet::new();
+        wait_call(&listener, &mut id_set);
+    }
+
+    #[test]
+    fn try_wait_all_collects_all_notifications<Sut: Service>() {
+        const NUMBER_OF_NOTIFICATIONS: usize = 8;
+        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
+            let result = l.try_wait_all(|id| assert_that!(ids.insert(id), eq true));
+            assert_that!(result, is_ok);
+        });
+    }
+
+    #[test]
+    fn timed_wait_all_collects_all_notifications<Sut: Service>() {
+        const NUMBER_OF_NOTIFICATIONS: usize = 8;
+        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
+            let result = l.timed_wait_all(|id| assert_that!(ids.insert(id), eq true), TIMEOUT);
+            assert_that!(result, is_ok);
+        });
+    }
+
+    #[test]
+    fn blocking_wait_all_collects_all_notifications<Sut: Service>() {
+        const NUMBER_OF_NOTIFICATIONS: usize = 8;
+        wait_collects_all_notifications(NUMBER_OF_NOTIFICATIONS, |l: &Listener<Sut>, ids| {
+            let result = l.blocking_wait_all(|id| assert_that!(ids.insert(id), eq true));
+            assert_that!(result, is_ok);
+        });
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

@@ -156,24 +156,11 @@ impl Drop for Duplex {
 }
 
 impl Listener for Duplex {
-    fn try_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
-        let msg = "Failed to try_wait";
-        match self
-            .management
-            .as_ref()
-            .borrow_cvar()
-            .timed_wait_while(Duration::ZERO)
-        {
-            Err(v) => {
-                fail!(from self, with ListenerWaitError::InternalFailure,
-                        "{} due to an internal failure in the underlying condition variable ({:?}).", msg, v);
-            }
-            Ok(None) => Ok(None),
-            Ok(Some(mut guard)) => Ok(guard.value.pop()),
-        }
+    fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
+        self.timed_wait_one(Duration::ZERO)
     }
 
-    fn timed_wait(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError> {
+    fn timed_wait_one(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError> {
         let msg = "Failed to timed_wait";
         match self
             .management
@@ -190,7 +177,7 @@ impl Listener for Duplex {
         }
     }
 
-    fn blocking_wait(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
+    fn blocking_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         let msg = "Failed to blocking_wait";
         match self.management.as_ref().borrow_cvar().blocking_wait_while() {
             Err(v) => {
@@ -198,6 +185,55 @@ impl Listener for Duplex {
                         "{} due to an internal failure in the underlying condition variable ({:?}).", msg, v);
             }
             Ok(mut guard) => Ok(guard.value.pop()),
+        }
+    }
+
+    fn try_wait_all<F: FnMut(TriggerId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
+        self.timed_wait_all(callback, Duration::ZERO)
+    }
+
+    fn timed_wait_all<F: FnMut(TriggerId)>(
+        &self,
+        mut callback: F,
+        timeout: Duration,
+    ) -> Result<(), ListenerWaitError> {
+        let msg = "Failed to try_wait";
+        match self
+            .management
+            .as_ref()
+            .borrow_cvar()
+            .timed_wait_while(timeout)
+        {
+            Err(v) => {
+                fail!(from self, with ListenerWaitError::InternalFailure,
+                        "{} due to an internal failure in the underlying condition variable ({:?}).", msg, v);
+            }
+            Ok(None) => Ok(()),
+            Ok(Some(mut guard)) => {
+                while let Some(id) = guard.value.pop() {
+                    callback(id)
+                }
+                Ok(())
+            }
+        }
+    }
+
+    fn blocking_wait_all<F: FnMut(TriggerId)>(
+        &self,
+        mut callback: F,
+    ) -> Result<(), ListenerWaitError> {
+        let msg = "Failed to blocking_wait";
+        match self.management.as_ref().borrow_cvar().blocking_wait_while() {
+            Err(v) => {
+                fail!(from self, with ListenerWaitError::InternalFailure,
+                        "{} due to an internal failure in the underlying condition variable ({:?}).", msg, v);
+            }
+            Ok(mut guard) => {
+                while let Some(id) = guard.value.pop() {
+                    callback(id)
+                }
+                Ok(())
+            }
         }
     }
 }

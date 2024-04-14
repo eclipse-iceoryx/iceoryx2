@@ -171,7 +171,7 @@ mod reactor {
             assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
         }
 
-        attachment.listener.try_wait().unwrap();
+        attachment.listener.try_wait_one().unwrap();
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
@@ -204,7 +204,7 @@ mod reactor {
             assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
         }
 
-        attachment.listener.try_wait().unwrap();
+        attachment.listener.try_wait_one().unwrap();
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
@@ -234,7 +234,7 @@ mod reactor {
             assert_that!(triggered_fds[0], eq unsafe { attachment. listener.file_descriptor().native_handle() });
         }
 
-        attachment.listener.try_wait().unwrap();
+        attachment.listener.try_wait_one().unwrap();
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
@@ -381,7 +381,7 @@ mod reactor {
                 assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
             }
 
-            attachments[n].listener.try_wait().unwrap();
+            attachments[n].listener.try_wait_one().unwrap();
         }
 
         let mut triggered_fds = vec![];
@@ -424,7 +424,7 @@ mod reactor {
                 assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
             }
 
-            attachments[n].listener.try_wait().unwrap();
+            attachments[n].listener.try_wait_one().unwrap();
         }
 
         let mut triggered_fds = vec![];
@@ -464,7 +464,7 @@ mod reactor {
                 assert_that!(triggered_fds, contains unsafe { attachments[i].listener.file_descriptor().native_handle() } );
             }
 
-            attachments[n].listener.try_wait().unwrap();
+            attachments[n].listener.try_wait_one().unwrap();
         }
 
         let mut triggered_fds = vec![];

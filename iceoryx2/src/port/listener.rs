@@ -12,6 +12,14 @@
 
 //! # Example
 //!
+//! ## Process Directly
+//!
+//! **Note:**
+//! This approach may lead to an infinite loop when one notifier sends [`EventId`](crate::port::event_id::EventId)s in a busy
+//! loop and the [`Listener`](crate::port::listener::Listener) tries to collect all of them before continuing with other operations.
+//! If the listening algorithm consists only of one loop taking care of [`EventId`](crate::port::event_id::EventId)s without any
+//! other operations outside of the loop, this problem can be ignored.
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -22,7 +30,7 @@
 //!
 //! let mut listener = event.listener().create()?;
 //!
-//! for event_id in listener.try_wait()? {
+//! for event_id in listener.try_wait_one()? {
 //!     println!("event was triggered with id: {:?}", event_id);
 //! }
 //!
@@ -30,12 +38,30 @@
 //! # }
 //! ```
 //!
-//! See also [`crate::port::listener::Listener`]
+//! ## Process Batch Of Events
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let event_name = ServiceName::new("MyEventName")?;
+//! let event = zero_copy::Service::new(&event_name)
+//!     .event()
+//!     .open_or_create()?;
+//!
+//! let mut listener = event.listener().create()?;
+//!
+//! listener.try_wait_all(|id| {
+//!     println!("event was triggered with id: {:?}", id);
+//! })?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError};
+use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError, TriggerId};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 
 use crate::service::naming_scheme::event_concept_name;
@@ -67,7 +93,6 @@ impl std::error::Error for ListenerCreateError {}
 pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
     listener: <Service::Event as iceoryx2_cal::event::Event>::Listener,
-    cache: Vec<EventId>,
     dynamic_storage: Rc<Service::DynamicStorage>,
     port_id: UniqueListenerId,
 }
@@ -93,7 +118,9 @@ impl<Service: service::Service> Listener<Service> {
         let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
 
         let listener = fail!(from origin,
-                             when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).create(),
+                             when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name)
+                                .trigger_id_max(TriggerId::new(service.state().static_config.event().event_id_max_value))
+                                .create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
 
@@ -101,7 +128,6 @@ impl<Service: service::Service> Listener<Service> {
             dynamic_storage,
             dynamic_listener_handle: None,
             listener,
-            cache: vec![],
             port_id,
         };
 
@@ -129,72 +155,79 @@ impl<Service: service::Service> Listener<Service> {
         Ok(new_self)
     }
 
-    fn fill_cache(&mut self) -> Result<(), ListenerWaitError> {
+    /// Non-blocking wait for new [`EventId`]s. Collects either all [`EventId`]s that were received
+    /// until the call of [`Listener::try_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
+    pub fn try_wait_all<F: FnMut(EventId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        while let Some(id) = fail!(from self,
-                when self.listener.try_wait(),
-                "Failed to try_wait on Listener port since the underlying Listener concept failed.")
-        {
-            self.cache.push(id);
-        }
-
-        Ok(())
+        Ok(fail!(from self, when self.listener.try_wait_all(callback),
+            "Failed to while calling try_wait on underlying event::Listener"))
     }
 
-    /// Returns the cached [`EventId`]s. Whenever [`Listener::try_wait()`],
-    /// [`Listener::timed_wait()`] or [`Listener::blocking_wait()`] is called the cache is reset
-    /// and filled with the events that where signaled since the last call. This cache can be
-    /// accessed until a new wait call resets and fills it again.
-    pub fn cache(&self) -> &[EventId] {
-        &self.cache
-    }
-
-    /// Non-blocking wait for new [`EventId`]s. If no [`EventId`]s were notified the returned slice
-    /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn try_wait(&mut self) -> Result<&[EventId], ListenerWaitError> {
-        self.cache.clear();
-        self.fill_cache()?;
-
-        Ok(self.cache())
-    }
-
-    /// Blocking wait for new [`EventId`]s until either an [`EventId`] was received or the timeout
-    /// has passed. If no [`EventId`]s were notified the returned slice
-    /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn timed_wait(&mut self, timeout: Duration) -> Result<&[EventId], ListenerWaitError> {
+    /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
+    /// all [`EventId`]s that were received
+    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
+    pub fn timed_wait_all<F: FnMut(EventId)>(
+        &self,
+        callback: F,
+        timeout: Duration,
+    ) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        self.cache.clear();
-
-        if let Some(id) = fail!(from self,
-            when self.listener.timed_wait(timeout),
-            "Failed to timed_wait with timeout {:?} on Listener port since the underlying Listener concept failed.", timeout)
-        {
-            self.cache.push(id);
-            self.fill_cache()?;
-        }
-
-        Ok(self.cache())
+        Ok(
+            fail!(from self, when self.listener.timed_wait_all(callback, timeout),
+            "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout),
+        )
     }
 
-    /// Blocking wait for new [`EventId`]s until either an [`EventId`].
-    /// Sporadic wakeups can occur and if no [`EventId`]s were notified the returned slice
-    /// is empty. On error it returns [`ListenerWaitError`] is returned which describes the error
-    /// in detail.
-    pub fn blocking_wait(&mut self) -> Result<&[EventId], ListenerWaitError> {
+    /// Blocking wait for new [`EventId`]s. Collects either
+    /// all [`EventId`]s that were received
+    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
+    pub fn blocking_wait_all<F: FnMut(EventId)>(
+        &self,
+        callback: F,
+    ) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        self.cache.clear();
+        Ok(
+            fail!(from self, when self.listener.blocking_wait_all(callback),
+            "Failed to while calling blocking_wait on underlying event::Listener"),
+        )
+    }
 
-        if let Some(id) = fail!(from self,
-            when self.listener.blocking_wait(),
-            "Failed to blocking_wait on Listener port since the underlying Listener concept failed.")
-        {
-            self.cache.push(id);
-            self.fill_cache()?;
-        }
+    /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
+    /// On error it returns [`ListenerWaitError`] is returned which describes the error
+    /// in detail.
+    pub fn try_wait_one(&self) -> Result<Option<EventId>, ListenerWaitError> {
+        use iceoryx2_cal::event::Listener;
+        Ok(fail!(from self, when self.listener.try_wait_one(),
+            "Failed to while calling try_wait on underlying event::Listener"))
+    }
 
-        Ok(self.cache())
+    /// Blocking wait for a new [`EventId`] until either an [`EventId`] was received or the timeout
+    /// has passed. If no [`EventId`] was notified it returns [`None`].
+    /// On error it returns [`ListenerWaitError`] is returned which describes the error
+    /// in detail.
+    pub fn timed_wait_one(&self, timeout: Duration) -> Result<Option<EventId>, ListenerWaitError> {
+        use iceoryx2_cal::event::Listener;
+        Ok(fail!(from self, when self.listener.timed_wait_one(timeout),
+            "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout))
+    }
+
+    /// Blocking wait for a new [`EventId`].
+    /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
+    /// On error it returns [`ListenerWaitError`] is returned which describes the error
+    /// in detail.
+    pub fn blocking_wait_one(&self) -> Result<Option<EventId>, ListenerWaitError> {
+        use iceoryx2_cal::event::Listener;
+        Ok(fail!(from self, when self.listener.blocking_wait_one(),
+            "Failed to while calling blocking_wait on underlying event::Listener"))
     }
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]

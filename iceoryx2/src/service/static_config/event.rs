@@ -37,6 +37,7 @@ use serde::{Deserialize, Serialize};
 pub struct StaticConfig {
     pub(crate) max_notifiers: usize,
     pub(crate) max_listeners: usize,
+    pub(crate) event_id_max_value: usize,
 }
 
 impl StaticConfig {
@@ -44,6 +45,7 @@ impl StaticConfig {
         Self {
             max_notifiers: config.defaults.event.max_notifiers,
             max_listeners: config.defaults.event.max_listeners,
+            event_id_max_value: config.defaults.event.event_id_max_value,
         }
     }
 
@@ -55,5 +57,10 @@ impl StaticConfig {
     /// Returns the maximum supported amount of [`crate::port::listener::Listener`] ports
     pub fn max_supported_listeners(&self) -> usize {
         self.max_listeners
+    }
+
+    /// Returns the largest event_id that is supported by the service
+    pub fn event_id_max_value(&self) -> usize {
+        self.event_id_max_value
     }
 }
