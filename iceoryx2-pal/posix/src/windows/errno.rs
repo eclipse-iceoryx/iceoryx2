@@ -14,11 +14,7 @@
 #![allow(unused_variables)]
 
 use crate::posix::types::*;
-use std::{
-    ffi::CStr,
-    fmt::Display,
-    sync::atomic::{AtomicU32, Ordering},
-};
+use std::{cell::Cell, ffi::CStr, fmt::Display};
 
 macro_rules! ErrnoEnumGenerator {
     (assign $($entry:ident = $value:expr),*; map $($map_entry:ident),*) => {
@@ -196,19 +192,21 @@ ErrnoEnumGenerator!(
     // EHWPOISON,
 );
 
-static GLOBAL_ERRNO_VALUE: AtomicU32 = AtomicU32::new(Errno::ESUCCES as _);
+thread_local! {
+    pub static GLOBAL_ERRNO_VALUE: Cell<u32> = Cell::new(Errno::ESUCCES as _);
+}
 
 impl Errno {
     pub fn get() -> Errno {
-        GLOBAL_ERRNO_VALUE.load(Ordering::Relaxed).into()
+        GLOBAL_ERRNO_VALUE.get().into()
     }
 
     pub fn reset() {
-        GLOBAL_ERRNO_VALUE.store(Errno::ESUCCES as _, Ordering::Relaxed);
+        Errno::set(Errno::ESUCCES);
     }
 
     pub(crate) fn set(value: Errno) {
-        GLOBAL_ERRNO_VALUE.store(value as _, Ordering::Relaxed);
+        GLOBAL_ERRNO_VALUE.set(value as _);
     }
 }
 
