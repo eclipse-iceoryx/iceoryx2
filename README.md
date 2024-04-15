@@ -191,12 +191,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let notifier = event.notifier().create()?;
 
-    let mut counter: u64 = 0;
+    let id = EventId::new(12);
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
-        counter += 1;
-        notifier.notify_with_custom_event_id(EventId::new(counter))?;
+        notifier.notify_with_custom_event_id(id)?;
 
-        println!("Trigger event with id {} ...", counter);
+        println!("Trigger event with id {} ...", id);
     }
 
     Ok(())
@@ -221,11 +220,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut listener = event.listener().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
-        if let Ok(events) = listener.timed_wait(CYCLE_TIME) {
-            for event_id in events {
-                println!("event was triggered with id: {:?}", event_id);
-            }
+        if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
+            println!("event was triggered with id: {:?}", event_id);
         }
+    }
+
+    Ok(())
+}
+```
+
+**listener.rs** grabbing all events at once
+
+```rust
+use core::time::Duration;
+use iceoryx2::prelude::*;
+
+const CYCLE_TIME: Duration = Duration::from_secs(1);
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let event_name = ServiceName::new("MyEventName")?;
+
+    let event = zero_copy::Service::new(&event_name)
+        .event()
+        .open_or_create()?;
+
+    let mut listener = event.listener().create()?;
+
+    while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
+        listener.timed_wait_all(CYCLE_TIME, |event_id| {
+            println!("event was triggered with id: {:?}", event_id);
+        });
     }
 
     Ok(())

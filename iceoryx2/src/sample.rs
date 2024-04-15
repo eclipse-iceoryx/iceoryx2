@@ -29,8 +29,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! See also [`crate::sample::Sample`].
 
 use std::sync::Arc;
 use std::{fmt::Debug, ops::Deref};
@@ -43,9 +41,9 @@ use crate::port::port_identifiers::UniquePublisherId;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
 
-/// It stores the payload and is acquired by the [`crate::port::subscriber::Subscriber`] whenever
-/// it receives new data from a [`crate::port::publisher::Publisher`] via
-/// [`crate::port::subscriber::Subscriber::receive()`].
+/// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
+/// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
+/// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
 #[derive(Debug)]
 pub struct Sample<MessageType: Debug, Service: crate::service::Service> {
     pub(crate) publisher_connections: Arc<PublisherConnections<Service>>,
@@ -83,17 +81,17 @@ impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<Messa
 }
 
 impl<MessageType: Debug, Service: crate::service::Service> Sample<MessageType, Service> {
-    /// Returns a reference to the payload of the sample
+    /// Returns a reference to the payload of the [`Sample`]
     pub fn payload(&self) -> &MessageType {
         self.ptr.as_data_ref()
     }
 
-    /// Returns a reference to the header of the sample.
+    /// Returns a reference to the [`Header`] of the [`Sample`].
     pub fn header(&self) -> &Header {
         self.ptr.as_header_ref()
     }
 
-    /// Returns the [`UniquePublisherId`] of the sender
+    /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     pub fn origin(&self) -> UniquePublisherId {
         self.origin
     }

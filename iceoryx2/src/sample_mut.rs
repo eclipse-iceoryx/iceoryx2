@@ -32,8 +32,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! See also, [`crate::sample_mut::SampleMut`].
 
 use crate::{
     port::publisher::{DataSegment, PublisherSendError},
