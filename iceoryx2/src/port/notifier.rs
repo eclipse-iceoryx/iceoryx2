@@ -67,7 +67,6 @@ impl std::error::Error for NotifierCreateError {}
 /// Defines the failures that can occur while a [`Notifier::notify()`] call.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum NotifierNotifyError {
-    OnlyPartialUpdate,
     EventIdOutOfBounds,
 }
 
