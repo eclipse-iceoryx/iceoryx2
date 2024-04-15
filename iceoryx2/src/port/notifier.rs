@@ -44,7 +44,10 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, fail, warn};
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
 use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
-use std::{cell::UnsafeCell, rc::Rc, sync::atomic::Ordering};
+use std::{
+    cell::UnsafeCell,
+    sync::{atomic::Ordering, Arc},
+};
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].
@@ -159,7 +162,7 @@ pub struct Notifier<Service: service::Service> {
     listener_list_state: UnsafeCell<ContainerState<UniqueListenerId>>,
     default_event_id: EventId,
     event_id_max_value: usize,
-    dynamic_storage: Rc<Service::DynamicStorage>,
+    dynamic_storage: Arc<Service::DynamicStorage>,
     dynamic_notifier_handle: Option<ContainerHandle>,
     port_id: UniqueNotifierId,
 }
@@ -185,7 +188,7 @@ impl<Service: service::Service> Notifier<Service> {
         let port_id = UniqueNotifierId::new();
 
         let listener_list = &service.state().dynamic_storage.get().event().listeners;
-        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
+        let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
 
         let mut new_self = Self {
             listener_connections: ListenerConnections::new(listener_list.capacity()),

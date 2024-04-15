@@ -22,6 +22,7 @@ mod service_event {
     use iceoryx2::port::notifier::NotifierNotifyError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
+    use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -434,25 +435,27 @@ mod service_event {
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let _watch_dog = Watchdog::new();
 
-        const NUMBER_OF_LISTENER_THREADS: usize = 4;
-        const NUMBER_OF_NOTIFIER_THREADS: usize = 4;
+        let number_of_listener_threads =
+            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
+        let number_of_notifier_threads =
+            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
         const NUMBER_OF_ITERATIONS: usize = 1000;
         const EVENT_ID: EventId = EventId::new(8);
 
         let keep_running = AtomicBool::new(true);
         let service_name = generate_name();
-        let barrier = Barrier::new(NUMBER_OF_LISTENER_THREADS + NUMBER_OF_NOTIFIER_THREADS);
+        let barrier = Barrier::new(number_of_notifier_threads + number_of_listener_threads);
 
         let sut = Sut::new(&service_name)
             .event()
-            .max_listeners(NUMBER_OF_LISTENER_THREADS)
-            .max_notifiers(NUMBER_OF_NOTIFIER_THREADS)
+            .max_listeners(number_of_listener_threads)
+            .max_notifiers(number_of_notifier_threads)
             .create()
             .unwrap();
 
         std::thread::scope(|s| {
             let mut listener_threads = vec![];
-            for _ in 0..NUMBER_OF_LISTENER_THREADS {
+            for _ in 0..number_of_listener_threads {
                 listener_threads.push(s.spawn(|| {
                     let listener = sut.listener().create().unwrap();
                     barrier.wait();
@@ -468,7 +471,7 @@ mod service_event {
                 }));
             }
 
-            for _ in 0..NUMBER_OF_NOTIFIER_THREADS {
+            for _ in 0..number_of_notifier_threads {
                 s.spawn(|| {
                     barrier.wait();
 
@@ -488,15 +491,13 @@ mod service_event {
     }
 
     #[test]
-    // TODO iox2-139, enable when bitset is integrated into events
-    #[ignore]
     fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
         let _watch_dog = Watchdog::new();
 
-        const NUMBER_OF_LISTENER_THREADS: usize = 2;
-        const NUMBER_OF_NOTIFIER_THREADS: usize = 2;
-        const NUMBER_OF_ITERATIONS: usize = 50;
-        const EVENT_ID: EventId = EventId::new(558);
+        const NUMBER_OF_LISTENER_THREADS: usize = 8;
+        const NUMBER_OF_NOTIFIER_THREADS: usize = 8;
+        const NUMBER_OF_ITERATIONS: usize = 4000;
+        const EVENT_ID: EventId = EventId::new(8);
 
         let keep_running = AtomicBool::new(true);
         let service_name = generate_name();

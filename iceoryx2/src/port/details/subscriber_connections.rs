@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::cell::UnsafeCell;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
@@ -61,7 +61,7 @@ impl<Service: service::Service> Connection<Service> {
 pub(crate) struct SubscriberConnections<Service: service::Service> {
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     port_id: UniquePublisherId,
-    config: Rc<config::Config>,
+    config: Arc<config::Config>,
     static_config: StaticConfig,
     number_of_samples: usize,
 }
@@ -69,14 +69,14 @@ pub(crate) struct SubscriberConnections<Service: service::Service> {
 impl<Service: service::Service> SubscriberConnections<Service> {
     pub(crate) fn new(
         capacity: usize,
-        config: &Rc<config::Config>,
+        config: &Arc<config::Config>,
         port_id: UniquePublisherId,
         static_config: &StaticConfig,
         number_of_samples: usize,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
-            config: Rc::clone(config),
+            config: Arc::clone(config),
             port_id,
             static_config: static_config.clone(),
             number_of_samples,

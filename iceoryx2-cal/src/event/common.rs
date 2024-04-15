@@ -360,15 +360,23 @@ pub mod details {
                 .open()
             {
                 Ok(storage) => {
-                    if !storage.get().has_listener.load(Ordering::Relaxed)
-                        || storage
-                            .get()
-                            .reference_counter
-                            .fetch_add(1, Ordering::Relaxed)
-                            == 0
-                    {
-                        fail!(from self, with NotifierCreateError::DoesNotExist,
+                    let mut ref_count = storage.get().reference_counter.load(Ordering::Relaxed);
+
+                    loop {
+                        if !storage.get().has_listener.load(Ordering::Relaxed) || ref_count == 0 {
+                            fail!(from self, with NotifierCreateError::DoesNotExist,
                             "{} since it has no listener and will no longer exist.", msg);
+                        }
+
+                        match storage.get().reference_counter.compare_exchange(
+                            ref_count,
+                            ref_count + 1,
+                            Ordering::Relaxed,
+                            Ordering::Relaxed,
+                        ) {
+                            Ok(_) => break,
+                            Err(v) => ref_count = v,
+                        };
                     }
 
                     Ok(Notifier {

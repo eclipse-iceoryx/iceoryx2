@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{cell::UnsafeCell, rc::Rc};
+use std::{cell::UnsafeCell, sync::Arc};
 
 use crate::{
     config,
@@ -80,7 +80,7 @@ impl<Service: service::Service> Connection<Service> {
 pub(crate) struct PublisherConnections<Service: service::Service> {
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     subscriber_id: UniqueSubscriberId,
-    config: Rc<config::Config>,
+    config: Arc<config::Config>,
     static_config: StaticConfig,
 }
 
@@ -88,13 +88,13 @@ impl<Service: service::Service> PublisherConnections<Service> {
     pub(crate) fn new(
         capacity: usize,
         subscriber_id: UniqueSubscriberId,
-        config: &Rc<config::Config>,
+        config: &Arc<config::Config>,
         static_config: &StaticConfig,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
             subscriber_id,
-            config: Rc::clone(config),
+            config: Arc::clone(config),
             static_config: static_config.clone(),
         }
     }

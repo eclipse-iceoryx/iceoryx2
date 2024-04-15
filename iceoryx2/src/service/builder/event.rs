@@ -199,7 +199,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 Ok(Some((static_config, static_storage))) => {
                     let static_config = self.verify_service_properties(&static_config)?;
 
-                    let dynamic_config = Rc::new(
+                    let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
                             with EventOpenError::UnableToOpenDynamicServiceInformation,
                             "{} since the dynamic service informations could not be opened.", msg),
@@ -280,7 +280,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     ),
                     dynamic_config::event::DynamicConfig::memory_size(&dynamic_config_setting),
                 ) {
-                    Ok(c) => Rc::new(c),
+                    Ok(c) => Arc::new(c),
                     Err(DynamicStorageCreateError::AlreadyExists) => {
                         fail!(from self, with EventCreateError::OldConnectionsStillActive,
                             "{} since there are still active Listeners or Notifiers.", msg);

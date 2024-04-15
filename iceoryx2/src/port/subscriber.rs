@@ -34,8 +34,8 @@
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::rc::Rc;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -97,8 +97,8 @@ pub(crate) mod internal {
 #[derive(Debug)]
 pub struct Subscriber<Service: service::Service, MessageType: Debug> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    publisher_connections: Rc<PublisherConnections<Service>>,
-    dynamic_storage: Rc<Service::DynamicStorage>,
+    publisher_connections: Arc<PublisherConnections<Service>>,
+    dynamic_storage: Arc<Service::DynamicStorage>,
     static_config: crate::service::static_config::StaticConfig,
     config: SubscriberConfig,
 
@@ -134,9 +134,9 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             .publish_subscribe()
             .publishers;
 
-        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
+        let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
 
-        let publisher_connections = Rc::new(PublisherConnections::new(
+        let publisher_connections = Arc::new(PublisherConnections::new(
             publisher_list.capacity(),
             port_id,
             &service.state().global_config,
@@ -252,7 +252,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                     let absolute_address =
                         offset.value() + connection.data_segment.payload_start_address();
                     Ok(Some(Sample {
-                        publisher_connections: Rc::clone(&self.publisher_connections),
+                        publisher_connections: Arc::clone(&self.publisher_connections),
                         channel_id,
                         ptr: unsafe {
                             RawSample::new_unchecked(

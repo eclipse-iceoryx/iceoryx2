@@ -139,7 +139,7 @@ pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 
 use std::fmt::Debug;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::config;
 use crate::service::dynamic_config::DynamicConfig;
@@ -197,16 +197,16 @@ impl std::error::Error for ServiceListError {}
 #[derive(Debug)]
 pub struct ServiceState<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> {
     pub(crate) static_config: StaticConfig,
-    pub(crate) global_config: Rc<config::Config>,
-    pub(crate) dynamic_storage: Rc<Dynamic>,
+    pub(crate) global_config: Arc<config::Config>,
+    pub(crate) dynamic_storage: Arc<Dynamic>,
     pub(crate) static_storage: Static,
 }
 
 impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> ServiceState<Static, Dynamic> {
     pub(crate) fn new(
         static_config: StaticConfig,
-        global_config: Rc<config::Config>,
-        dynamic_storage: Rc<Dynamic>,
+        global_config: Arc<config::Config>,
+        dynamic_storage: Arc<Dynamic>,
         static_storage: Static,
     ) -> Self {
         let new_self = Self {
