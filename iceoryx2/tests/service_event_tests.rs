@@ -431,7 +431,6 @@ mod service_event {
     }
 
     #[test]
-    #[ignore]
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let _watch_dog = Watchdog::new();
 
