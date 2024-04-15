@@ -622,8 +622,11 @@ mod event {
         drop(sut_listener);
 
         let result = sut_notifier.notify(TriggerId::new(0));
-        assert_that!(result, is_err);
-        assert_that!(result.err().unwrap(), eq NotifierNotifyError::Disconnected);
+        // either present a disconnect error when available or continue sending without counterpart, for
+        // instance when the event is network socket based
+        if result.is_err() {
+            assert_that!(result.err().unwrap(), eq NotifierNotifyError::Disconnected);
+        }
     }
 
     #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl>)]
