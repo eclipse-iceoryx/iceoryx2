@@ -37,6 +37,7 @@ const DEFAULT_CAPACITY: usize = 2048;
 #[self_referencing]
 #[derive(Debug)]
 struct Management {
+    has_listener: AtomicBool,
     mtx_handle: MutexHandle<ConditionVariableData<FixedSizeQueue<TriggerId, DEFAULT_CAPACITY>>>,
     #[borrows(mtx_handle)]
     #[covariant]
@@ -112,7 +113,7 @@ impl NamedConceptConfiguration for Configuration {
 pub struct Duplex {
     name: FileName,
     management: Arc<Management>,
-    has_ownership: bool,
+    is_listener: bool,
     config: Configuration,
 }
 
@@ -125,6 +126,15 @@ impl NamedConcept for Duplex {
 impl Notifier for Duplex {
     fn notify(&self, id: TriggerId) -> Result<(), NotifierNotifyError> {
         let msg = "Unable to notify event::process_local::Listener";
+        if !self
+            .management
+            .borrow_has_listener()
+            .load(Ordering::Relaxed)
+        {
+            fail!(from self, with NotifierNotifyError::Disconnected,
+                "{} since the listener is no longer connected.", msg);
+        }
+
         let push_successful = AtomicBool::new(false);
 
         if self
@@ -148,7 +158,11 @@ impl Notifier for Duplex {
 
 impl Drop for Duplex {
     fn drop(&mut self) {
-        if self.has_ownership {
+        if self.is_listener {
+            self.management
+                .as_ref()
+                .borrow_has_listener()
+                .store(false, Ordering::Relaxed);
             fatal_panic!(from self, when unsafe { EventImpl::remove_cfg(&self.name, &self.config) },
                 "This should never happen! Unable to remove resources.");
         }
@@ -286,7 +300,7 @@ impl NotifierBuilder<EventImpl> for Builder {
                 .clone()
                 .downcast::<Management>()
                 .unwrap(),
-            has_ownership: false,
+            is_listener: false,
             config: self.config,
         })
     }
@@ -314,6 +328,7 @@ impl ListenerBuilder<EventImpl> for Builder {
 
         let storage_details = Arc::new(
             ManagementBuilder {
+                has_listener: AtomicBool::new(true),
                 mtx_handle: MutexHandle::new(),
                 cvar_builder: |mtx_handle: &MutexHandle<
                     ConditionVariableData<FixedSizeQueue<TriggerId, DEFAULT_CAPACITY>>,
@@ -356,7 +371,7 @@ impl ListenerBuilder<EventImpl> for Builder {
                 .clone()
                 .downcast::<Management>()
                 .unwrap(),
-            has_ownership: true,
+            is_listener: true,
             config: self.config,
         })
     }

@@ -12,7 +12,12 @@
 
 #[doc(hidden)]
 pub mod details {
-    use std::{fmt::Debug, marker::PhantomData, time::Duration};
+    use std::{
+        fmt::Debug,
+        marker::PhantomData,
+        sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+        time::Duration,
+    };
 
     use iceoryx2_bb_log::{debug, fail};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -35,9 +40,12 @@ pub mod details {
     const TRIGGER_ID_DEFAULT_MAX: TriggerId = TriggerId::new(u16::MAX as _);
 
     #[derive(Debug)]
+    #[repr(C)]
     pub struct Management<Tracker: IdTracker, WaitMechanism: SignalMechanism> {
         id_tracker: Tracker,
         signal_mechanism: WaitMechanism,
+        reference_counter: AtomicUsize,
+        has_listener: AtomicBool,
     }
 
     #[derive(Copy, PartialEq, Eq)]
@@ -236,6 +244,25 @@ pub mod details {
             Tracker: IdTracker,
             WaitMechanism: SignalMechanism,
             Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+        > Drop for Notifier<Tracker, WaitMechanism, Storage>
+    {
+        fn drop(&mut self) {
+            if self
+                .storage
+                .get()
+                .reference_counter
+                .fetch_sub(1, Ordering::Relaxed)
+                == 1
+            {
+                self.storage.acquire_ownership();
+            }
+        }
+    }
+
+    impl<
+            Tracker: IdTracker,
+            WaitMechanism: SignalMechanism,
+            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
         > NamedConcept for Notifier<Tracker, WaitMechanism, Storage>
     {
         fn name(&self) -> &FileName {
@@ -254,10 +281,16 @@ pub mod details {
         }
 
         fn notify(&self, id: crate::event::TriggerId) -> Result<(), NotifierNotifyError> {
+            let msg = "Failed to notify listener";
+            if !self.storage.get().has_listener.load(Ordering::Relaxed) {
+                fail!(from self, with NotifierNotifyError::Disconnected,
+                    "{} since the listener is no longer connected.", msg);
+            }
+
             if self.storage.get().id_tracker.trigger_id_max() < id {
                 fail!(from self, with NotifierNotifyError::TriggerIdOutOfBounds,
-                    "Failed to notify since the TriggerId {:?} is greater than the max supported TriggerId {:?}.",
-                    id, self.storage.get().id_tracker.trigger_id_max());
+                    "{} since the TriggerId {:?} is greater than the max supported TriggerId {:?}.",
+                    msg, id, self.storage.get().id_tracker.trigger_id_max());
             }
 
             unsafe { self.storage.get().id_tracker.add(id)? };
@@ -326,11 +359,24 @@ pub mod details {
                 .timeout(self.creation_timeout)
                 .open()
             {
-                Ok(storage) => Ok(Notifier {
-                    storage,
-                    _tracker: PhantomData,
-                    _wait_mechanism: PhantomData,
-                }),
+                Ok(storage) => {
+                    if !storage.get().has_listener.load(Ordering::Relaxed)
+                        || storage
+                            .get()
+                            .reference_counter
+                            .fetch_add(1, Ordering::Relaxed)
+                            == 0
+                    {
+                        fail!(from self, with NotifierCreateError::DoesNotExist,
+                            "{} since it has no listener and will no longer exist.", msg);
+                    }
+
+                    Ok(Notifier {
+                        storage,
+                        _tracker: PhantomData,
+                        _wait_mechanism: PhantomData,
+                    })
+                }
                 Err(DynamicStorageOpenError::DoesNotExist) => {
                     fail!(from self, with NotifierCreateError::DoesNotExist,
                         "{} since it does not exist.", msg);
@@ -361,6 +407,30 @@ pub mod details {
         storage: Storage,
         _tracker: PhantomData<Tracker>,
         _wait_mechanism: PhantomData<WaitMechanism>,
+    }
+
+    impl<
+            Tracker: IdTracker,
+            WaitMechanism: SignalMechanism,
+            Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
+        > Drop for Listener<Tracker, WaitMechanism, Storage>
+    {
+        fn drop(&mut self) {
+            self.storage
+                .get()
+                .has_listener
+                .store(false, Ordering::Relaxed);
+
+            if self
+                .storage
+                .get()
+                .reference_counter
+                .fetch_sub(1, Ordering::Relaxed)
+                == 1
+            {
+                self.storage.acquire_ownership();
+            }
+        }
     }
 
     impl<
@@ -540,10 +610,12 @@ pub mod details {
                 .config(&self.config.convert())
                 .supplementary_size(Tracker::memory_size(id_tracker_capacity))
                 .initializer(Self::init)
-                .has_ownership(true)
+                .has_ownership(false)
                 .create(Management {
                     id_tracker: unsafe { Tracker::new_uninit(id_tracker_capacity) },
                     signal_mechanism: WaitMechanism::new(),
+                    reference_counter: AtomicUsize::new(1),
+                    has_listener: AtomicBool::new(true),
                 }) {
                 Ok(storage) => Ok(Listener {
                     storage,
