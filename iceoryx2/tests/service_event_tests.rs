@@ -435,10 +435,8 @@ mod service_event {
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let _watch_dog = Watchdog::new();
 
-        let number_of_listener_threads =
-            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
-        let number_of_notifier_threads =
-            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
+        let number_of_listener_threads = (SystemInfo::NumberOfCpuCores.value() * 2).clamp(2, 16);
+        let number_of_notifier_threads = (SystemInfo::NumberOfCpuCores.value() * 2).clamp(2, 16);
         const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
@@ -494,10 +492,8 @@ mod service_event {
     fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
         let _watch_dog = Watchdog::new();
 
-        let number_of_listener_threads =
-            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
-        let number_of_notifier_threads =
-            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
+        let number_of_listener_threads = (SystemInfo::NumberOfCpuCores.value() * 2).clamp(2, 16);
+        let number_of_notifier_threads = (SystemInfo::NumberOfCpuCores.value() * 2).clamp(2, 16);
         const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 

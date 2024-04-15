@@ -253,3 +253,4 @@ jobs:
       with:
         file: target/debug/coverage/lcov.info
         fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
