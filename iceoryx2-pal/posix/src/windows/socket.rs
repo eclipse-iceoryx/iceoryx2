@@ -15,6 +15,7 @@
 #![allow(unused_variables)]
 
 use std::cell::OnceCell;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::{Duration, Instant};
 
 use windows_sys::Win32::Networking::WinSock::WSAEWOULDBLOCK;
@@ -42,12 +43,20 @@ impl Struct for WSADATA {}
 impl GlobalWsaInitializer {
     unsafe fn init() {
         static mut WSA_INSTANCE: OnceCell<GlobalWsaInitializer> = OnceCell::new();
+        static mut INITIALIZATION_STATE: AtomicU8 = AtomicU8::new(0);
 
-        WSA_INSTANCE.get_or_init(||{
-            let mut _wsa_data = WSADATA::new();
-            win32call! {winsock windows_sys::Win32::Networking::WinSock::WSAStartup(2, &mut _wsa_data)};
-            GlobalWsaInitializer { _wsa_data }
-        });
+        match INITIALIZATION_STATE.compare_exchange(0, 1, Ordering::Relaxed, Ordering::Relaxed) {
+            Ok(_) => {
+                WSA_INSTANCE.get_or_init(||{
+                    let mut _wsa_data = WSADATA::new();
+                    win32call! {winsock windows_sys::Win32::Networking::WinSock::WSAStartup(2, &mut _wsa_data)};
+                    GlobalWsaInitializer { _wsa_data }
+                });
+                INITIALIZATION_STATE.store(2, Ordering::Relaxed);
+            }
+            Err(1) => while INITIALIZATION_STATE.load(Ordering::Relaxed) == 1 {},
+            Err(_) => (),
+        }
     }
 }
 

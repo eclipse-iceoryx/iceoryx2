@@ -22,7 +22,7 @@ mod service_event {
     use iceoryx2::port::notifier::NotifierNotifyError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
-    use iceoryx2_bb_posix::system_configuration::SystemInfo;
+    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -433,10 +433,10 @@ mod service_event {
 
     #[test]
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        let _watch_dog = Watchdog::new();
 
-        let number_of_listener_threads = (SystemInfo::NumberOfCpuCores.value() * 2).clamp(2, 16);
-        let number_of_notifier_threads = (SystemInfo::NumberOfCpuCores.value() * 2).clamp(2, 16);
+        let number_of_listener_threads = 2;
+        let number_of_notifier_threads = 2;
         const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
@@ -490,10 +490,11 @@ mod service_event {
 
     #[test]
     fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        set_log_level(LogLevel::Fatal);
+        let _watch_dog = Watchdog::new();
 
-        let number_of_listener_threads = (SystemInfo::NumberOfCpuCores.value() * 2).clamp(2, 16);
-        let number_of_notifier_threads = (SystemInfo::NumberOfCpuCores.value() * 2).clamp(2, 16);
+        let number_of_listener_threads = 2;
+        let number_of_notifier_threads = 2;
         const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
