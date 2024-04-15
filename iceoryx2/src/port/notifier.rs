@@ -42,8 +42,8 @@ use crate::{
 };
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
-use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
+use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 use std::{cell::UnsafeCell, rc::Rc, sync::atomic::Ordering};
 
 /// Failures that can occur when a new [`Notifier`] is created with the
@@ -76,10 +76,16 @@ impl std::fmt::Display for NotifierNotifyError {
 
 impl std::error::Error for NotifierNotifyError {}
 
+#[derive(Debug)]
+struct Connection<Service: service::Service> {
+    notifier: <Service::Event as Event>::Notifier,
+    listener_id: UniqueListenerId,
+}
+
 #[derive(Debug, Default)]
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
-    connections: Vec<UnsafeCell<Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier>>>,
+    connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
@@ -102,24 +108,21 @@ impl<Service: service::Service> ListenerConnections<Service> {
             let notifier = fail!(from self, when <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name).open(),
                                     with (),
                                     "Unable to establish a connection to Listener port {:?}.", listener_id);
-            *self.get_mut(index) = Some(notifier);
+            *self.get_mut(index) = Some(Connection {
+                notifier,
+                listener_id,
+            });
         }
 
         Ok(())
     }
 
-    fn get(
-        &self,
-        index: usize,
-    ) -> &Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier> {
+    fn get(&self, index: usize) -> &Option<Connection<Service>> {
         unsafe { &(*self.connections[index].get()) }
     }
 
     #[allow(clippy::mut_from_ref)]
-    fn get_mut(
-        &self,
-        index: usize,
-    ) -> &mut Option<<Service::Event as iceoryx2_cal::event::Event>::Notifier> {
+    fn get_mut(&self, index: usize) -> &mut Option<Connection<Service>> {
         unsafe { &mut (*self.connections[index].get()) }
     }
 
@@ -231,13 +234,29 @@ impl<Service: service::Service> Notifier<Service> {
 
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
-                Some(listener_id) => match self.listener_connections.create(i, *listener_id) {
-                    Ok(()) => (),
-                    Err(()) => {
-                        fail!(from self, with (),
-                            "Unable to establish connection to Listener port {:?}.", *listener_id);
+                Some(listener_id) => {
+                    let create_connection = match self.listener_connections.get(i) {
+                        None => true,
+                        Some(connection) => {
+                            let is_connected = connection.listener_id != *listener_id;
+                            if is_connected {
+                                self.listener_connections.remove(i);
+                            }
+                            is_connected
+                        }
+                    };
+
+                    if create_connection {
+                        match self.listener_connections.create(i, *listener_id) {
+                            Ok(()) => (),
+                            Err(()) => {
+                                fail!(from self, with (),
+                                    "Unable to establish connection to Listener port {:?}.",
+                                    *listener_id);
+                            }
+                        };
                     }
-                },
+                }
                 None => self.listener_connections.remove(i),
             }
         }
@@ -284,7 +303,7 @@ impl<Service: service::Service> Notifier<Service> {
 
         for i in 0..self.listener_connections.len() {
             match self.listener_connections.get(i) {
-                Some(ref connection) => match connection.notify(value) {
+                Some(ref connection) => match connection.notifier.notify(value) {
                     Err(e) => {
                         warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
                             connection, e)

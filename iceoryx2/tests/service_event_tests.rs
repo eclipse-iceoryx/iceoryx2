@@ -432,14 +432,13 @@ mod service_event {
 
     #[test]
     // TODO iox2-139, enable when bitset is integrated into events
-    #[ignore]
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
         let _watch_dog = Watchdog::new();
 
-        const NUMBER_OF_LISTENER_THREADS: usize = 2;
-        const NUMBER_OF_NOTIFIER_THREADS: usize = 2;
-        const NUMBER_OF_ITERATIONS: usize = 50;
-        const EVENT_ID: EventId = EventId::new(558);
+        const NUMBER_OF_LISTENER_THREADS: usize = 4;
+        const NUMBER_OF_NOTIFIER_THREADS: usize = 4;
+        const NUMBER_OF_ITERATIONS: usize = 1000;
+        const EVENT_ID: EventId = EventId::new(8);
 
         let keep_running = AtomicBool::new(true);
         let service_name = generate_name();
