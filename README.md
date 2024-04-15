@@ -195,7 +195,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         notifier.notify_with_custom_event_id(id)?;
 
-        println!("Trigger event with id {} ...", id);
+        println!("Trigger event with id {:?} ...", id);
     }
 
     Ok(())
@@ -217,7 +217,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event()
         .open_or_create()?;
 
-    let mut listener = event.listener().create()?;
+    let listener = event.listener().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
@@ -244,12 +244,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event()
         .open_or_create()?;
 
-    let mut listener = event.listener().create()?;
+    let listener = event.listener().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
-        listener.timed_wait_all(CYCLE_TIME, |event_id| {
-            println!("event was triggered with id: {:?}", event_id);
-        });
+        listener.timed_wait_all(
+            |event_id| {
+                println!("event was triggered with id: {:?}", event_id);
+            },
+            CYCLE_TIME,
+        )?;
     }
 
     Ok(())
