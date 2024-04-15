@@ -17,6 +17,7 @@ mod communication_channel {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_cal::communication_channel;
     use iceoryx2_cal::communication_channel::*;
     use iceoryx2_cal::named_concept::*;
@@ -366,6 +367,8 @@ mod communication_channel {
 
     #[test]
     fn custom_suffix_keeps_channels_separated<Sut: CommunicationChannel<usize>>() {
+        let _watch_dog = Watchdog::new();
+
         let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
             .suffix(unsafe { FileName::new_unchecked(b".s1") });
         let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
