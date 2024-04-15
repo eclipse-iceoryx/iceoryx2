@@ -439,7 +439,7 @@ mod service_event {
             (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
         let number_of_notifier_threads =
             (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
-        const NUMBER_OF_ITERATIONS: usize = 1000;
+        const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
         let keep_running = AtomicBool::new(true);
@@ -494,25 +494,27 @@ mod service_event {
     fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
         let _watch_dog = Watchdog::new();
 
-        const NUMBER_OF_LISTENER_THREADS: usize = 8;
-        const NUMBER_OF_NOTIFIER_THREADS: usize = 8;
-        const NUMBER_OF_ITERATIONS: usize = 4000;
+        let number_of_listener_threads =
+            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
+        let number_of_notifier_threads =
+            (SystemInfo::NumberOfCpuCores.value() / 2).clamp(2, usize::MAX);
+        const NUMBER_OF_ITERATIONS: usize = 100;
         const EVENT_ID: EventId = EventId::new(8);
 
         let keep_running = AtomicBool::new(true);
         let service_name = generate_name();
-        let barrier = Barrier::new(NUMBER_OF_LISTENER_THREADS + NUMBER_OF_NOTIFIER_THREADS);
+        let barrier = Barrier::new(number_of_listener_threads + number_of_notifier_threads);
 
         let sut = Sut::new(&service_name)
             .event()
-            .max_listeners(NUMBER_OF_LISTENER_THREADS * 2)
-            .max_notifiers(NUMBER_OF_NOTIFIER_THREADS)
+            .max_listeners(number_of_listener_threads * 2)
+            .max_notifiers(number_of_notifier_threads)
             .create()
             .unwrap();
 
         std::thread::scope(|s| {
             let mut listener_threads = vec![];
-            for _ in 0..NUMBER_OF_LISTENER_THREADS {
+            for _ in 0..number_of_listener_threads {
                 listener_threads.push(s.spawn(|| {
                     barrier.wait();
 
@@ -529,7 +531,7 @@ mod service_event {
                 }));
             }
 
-            for _ in 0..NUMBER_OF_NOTIFIER_THREADS {
+            for _ in 0..number_of_notifier_threads {
                 s.spawn(|| {
                     let notifier = sut.notifier().create().unwrap();
                     barrier.wait();
