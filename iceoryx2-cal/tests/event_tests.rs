@@ -612,6 +612,20 @@ mod event {
         });
     }
 
+    #[test]
+    fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
+        let name = generate_name();
+
+        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+
+        drop(sut_listener);
+
+        let result = sut_notifier.notify(TriggerId::new(0));
+        assert_that!(result, is_err);
+        assert_that!(result.err().unwrap(), eq NotifierNotifyError::Disconnected);
+    }
+
     #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl>)]
     mod unix_datagram {}
 

@@ -28,6 +28,7 @@ pub use iceoryx2_bb_system_types::path::Path;
 pub enum NotifierNotifyError {
     FailedToDeliverSignal,
     TriggerIdOutOfBounds,
+    Disconnected,
     InternalFailure,
 }
 

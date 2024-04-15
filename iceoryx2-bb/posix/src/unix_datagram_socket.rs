@@ -189,6 +189,7 @@ enum_gen! {
   entry:
     MessageTooLarge,
     ConnectionReset,
+    ConnectionRefused,
     Interrupt,
     IOerror,
     InsufficientPermissions,
@@ -694,6 +695,7 @@ impl UnixDatagramSender {
             handle_errno!(UnixDatagramSendError, from self,
                 success Errno::EAGAIN => false,
                 Errno::ECONNRESET => (ConnectionReset, "{} since the connection was reset by peer.", msg),
+                Errno::ECONNREFUSED => (ConnectionRefused, "{} since the connection was refused by peer.", msg),
                 Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
                 Errno::EMSGSIZE => (MessageTooLarge, "{} since the message size of {} bytes is too large to be send in one package.", msg, data.len()),
                 Errno::EIO => (IOerror, "{} since an I/O error occurred while writing to the file system.", msg),
