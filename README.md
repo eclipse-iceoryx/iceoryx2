@@ -53,37 +53,9 @@ performance or modularity, Iceoryx2 is your answer.
 
 ## Performance
 
-```mermaid
-gantt
-    title Latency (in ns) - 64b payload
-    dateFormat X
-    axisFormat %s
+### Comparision Of Mechanisms
 
-    section iceoryx2
-    240 : 0, 240
-    section iceoryx
-    1000 : 0, 1000
-    section MQueue
-    700 : 0, 700
-    section UDS
-    1500 : 0, 1500
-```
-
-```mermaid
-gantt
-    title Latency (in ns) - 64kb payload
-    dateFormat X
-    axisFormat %s
-
-    section iceoryx2
-    240 : 0, 240
-    section iceoryx
-    1000 : 0, 1000
-    section MQueue
-    14000 : 0, 14000
-    section UDS
-    23000 : 0, 23000
-```
+![benchmark of different mechanism](https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/9eb6e829-7f45-4c4a-85fc-81a15163349c)
 
 **Benchmark-System**
 
@@ -92,6 +64,10 @@ gantt
 - **Compiler:**
   - rustc 1.72.1
   - gcc 13.2.1 20230801
+
+### Comparision Of Architectures
+
+![benchmark on different systems](https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/4b094729-7867-4c94-b1b9-f9abae7538de)
 
 ## Getting Started
 

@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-container"
-description = "Iceoryx2: [internal] IPC shared memory compatible containers"
+description = "Iceoryx2: IPC shared memory compatible containers"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

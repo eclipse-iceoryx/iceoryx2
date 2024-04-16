@@ -1,6 +1,6 @@
 # System                        OS          Latency
   "AMD Ryzen 9 5950X"           "Linux"     675
-  "AMD Ryzen 9 5950X"           "Windows"   0
+  "AMD Ryzen 9 5950X"           "Windows"   205
   "AMD Ryzen 7 7840S"           "Linux"     217
   "Intel i7-7500U"              "Linux"     276
   "Intel i7-8565U"              "Linux"     238
