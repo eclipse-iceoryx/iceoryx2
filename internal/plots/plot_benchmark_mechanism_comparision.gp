@@ -16,7 +16,7 @@ set xrange [0:4096]
 set yrange [0:3100]
 set key left
 set term png transparent truecolor size 1200,300
-set output 'benchmark.png'
+set output 'benchmark_mechanism.png'
 
 set style line 1 \
     linecolor rgb '#97de26' \
@@ -35,7 +35,9 @@ set style line 4 \
     linetype 5 linewidth 2 \
     pointtype 0 pointsize 1
 
-plot 'benchmark_results.dat' index 0 with linespoints linestyle 1 title "iceoryx2", \
+plot 'benchmark_mechanism_comparision.dat' index 0 with linespoints linestyle 1 title "iceoryx2", \
      ''                      index 1 with linespoints linestyle 2 title "iceoryx", \
      ''                      index 2 with linespoints linestyle 3 title "message queue", \
      ''                      index 3 with linespoints linestyle 4 title "unix domain socket" \
+
+system("convert benchmark_mechanism.png -trim +repage benchmark_mechanism.png")
