@@ -10,10 +10,85 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Contains standard container which are compatible with an inter-process shared memory usage.
+//! # Iceoryx2 Building Blocks (BB) Container
+//!
+//! This is a support library for iceoryx2 which comes with containers that are
+//! compatible with shared memory and can be used to construct custom payload types for
+//! inter-process communication.
+//!
+//! Most containers come in 3 variations:
+//!  1. `FixedSize***`, compile-time fixed size version. The capacity must be known at compile
+//!     time.
+//!  2. `Relocatable***`, run-time fixed size version that is shared memory compatible. The
+//!     capacity must be known when the object is created. **This object is not movable!**
+//!  3. `***`, run-time fixed size version that is **not** shared memory compatible but can be
+//!     moved.
+//!
+//! # Example
+//!
+//! ## 1. Compile-Time FixedSize Containers
+//!
+//! We create a struct consisting of compile-time fixed size containers that can be used for
+//! zero copy inter-process communication.
+//!
+//! ```
+//! use iceoryx2_bb_container::byte_string::*;
+//! use iceoryx2_bb_container::vec::*;
+//!
+//! const TEXT_CAPACITY: usize = 123;
+//! const DATA_CAPACITY: usize = 456;
+//!
+//! #[repr(C)]
+//! struct MyMessageType {
+//!     some_text: FixedSizeByteString<TEXT_CAPACITY>,
+//!     some_data: FixedSizeVec<u64, DATA_CAPACITY>,
+//! }
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let my_message = MyMessageType {
+//!     some_text: FixedSizeByteString::from_bytes(b"Hello World")?,
+//!     some_data: FixedSizeVec::new(),
+//! };
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## 2. Shared Memory Compatible Run-Time FixedSize Containers
+//!
+//! Despite that the containers are already implemented, iceoryx2 itself does not yet support
+//! run-time fixed size types. It is planned and will come.
+//!
+//! ## 3. Run-Time FixedSize Containers
+//!
+//! We create a struct consisting of run-time fixed size containers. This can be interesting when
+//! it shall be used in a safety-critical environment where everything must be pre-allocated to
+//! ensure that required memory is always available.
+//!
+//! ```
+//! use iceoryx2_bb_container::queue::*;
+//!
+//! const QUEUE_CAPACITY: usize = 123;
+//!
+//! #[repr(C)]
+//! struct MyType {
+//!     some_queue: Queue<u64>,
+//! }
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let my_thing = MyType {
+//!     some_queue: Queue::new(QUEUE_CAPACITY),
+//! };
+//! # Ok(())
+//! # }
+//! ```
 
+/// A byte string similar to [`std::string::String`] but it does not support UTF-8
 pub mod byte_string;
+/// A queue similar to [`std::collections::VecDeque`]
 pub mod queue;
+/// Extends the [ByteString](crate::byte_string) so that custom string types with a semantic
+/// ruleset on their content can be realized.
 #[macro_use]
 pub mod semantic_string;
+/// A vector similar to [`std::vec::Vec`]
 pub mod vec;

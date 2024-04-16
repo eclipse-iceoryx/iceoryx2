@@ -12,13 +12,13 @@
 
 //! Two relocatable (inter process shared memory compatible) queues.
 //!
-//! The [`Queue`] which has a
-//! fixed capacity defined at runtime and the [`FixedSizeQueue`] which has a fixed capacity at
-//! compile time.
+//! The [`Queue`](crate::queue::Queue) which has a
+//! fixed capacity defined at runtime and the [`FixedSizeQueue`](crate::queue::FixedSizeQueue)
+//! which has a fixed capacity at compile time.
 //!
 //! # Examples
 //!
-//! ## Create [`Queue`] inside constructs which provides memory
+//! ## Create [`Queue`](crate::queue::Queue) inside constructs which provides memory
 //!
 //! ```
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
@@ -42,7 +42,7 @@
 //! }
 //! ```
 //!
-//! ## Create [`Queue`] with allocator
+//! ## Create [`Queue`](crate::queue::Queue) with allocator
 //!
 //! ```
 //! use iceoryx2_bb_container::queue::RelocatableQueue;

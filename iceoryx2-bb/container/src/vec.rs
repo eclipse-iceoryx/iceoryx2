@@ -13,13 +13,13 @@
 //! Two relocatable (inter-process shared memory compatible) vector implementations.
 //!
 //!
-//! The [`Vec`] which has a
-//! fixed capacity defined at runtime and the [`FixedSizeVec`] which has a fixed capacity at
-//! compile time.
+//! The [`Vec`](crate::vec::Vec) which has a
+//! fixed capacity defined at runtime and the [`FixedSizeVec`](crate::vec::FixedSizeVec)
+//! which has a fixed capacity at compile time.
 //!
 //! # Examples
 //!
-//! ## Create [`Vec`] inside constructs which provides memory
+//! ## Create [`Vec`](crate::vec::Vec) inside constructs which provides memory
 //!
 //! ```
 //! use iceoryx2_bb_container::vec::Vec;
@@ -43,7 +43,7 @@
 //! }
 //! ```
 //!
-//! ## Create [`Vec`] with allocator
+//! ## Create [`Vec`](crate::vec::Vec) with allocator
 //!
 //! ```
 //! use iceoryx2_bb_container::vec::Vec;
@@ -88,7 +88,6 @@ pub struct Vec<T> {
 }
 
 unsafe impl<T: Send> Send for Vec<T> {}
-unsafe impl<T: Sync> Sync for Vec<T> {}
 
 impl<T> Drop for Vec<T> {
     fn drop(&mut self) {
@@ -367,7 +366,6 @@ impl<T: Clone, const CAPACITY: usize> Clone for FixedSizeVec<T, CAPACITY> {
 }
 
 unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeVec<T, CAPACITY> {}
-unsafe impl<T: Sync, const CAPACITY: usize> Sync for FixedSizeVec<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
     /// Creates a new vector.
