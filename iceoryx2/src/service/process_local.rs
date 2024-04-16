@@ -29,6 +29,8 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! See [`Service`](crate::service) for more detailed examples.
 
 use crate::service::dynamic_config::DynamicConfig;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;

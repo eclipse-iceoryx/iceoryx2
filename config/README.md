@@ -39,3 +39,4 @@ Adjusting `global` settings ensures a non-interfering setup.
  * `defaults.publish_subscribe.unable_to_deliver_strategy` - [`block`|`discard_sample`]: Default strategy for non-overflowing setups when delivery fails.
  * `defaults.event.max_listeners` - [int]: Maximum number of listeners.
  * `defaults.event.max_notifiers` - [int]: Maximum number of notifiers.
+ * `defaults.event.event_id_max_value` - [int]: Greatest value an [`EventId`] can have.

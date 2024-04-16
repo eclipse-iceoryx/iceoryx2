@@ -15,10 +15,10 @@
 /// communication and to acquire static and dynamic service information
 pub mod event;
 
-/// Factory to create a [`crate::port::listener::Listener`]
+/// Factory to create a [`Listener`](crate::port::listener::Listener)
 pub mod listener;
 
-/// Factory to create a [`crate::port::notifier::Notifier`]
+/// Factory to create a [`Notifier`](crate::port::notifier::Notifier)
 pub mod notifier;
 
 /// Factory to create the endpoints of
@@ -26,8 +26,8 @@ pub mod notifier;
 /// communication and to acquire static and dynamic service information
 pub mod publish_subscribe;
 
-/// Factory to create a [`crate::port::publisher::Publisher`]
+/// Factory to create a [`Publisher`](crate::port::publisher::Publisher)
 pub mod publisher;
 
-/// Factory to create a [`crate::port::subscriber::Subscriber`]
+/// Factory to create a [`Subscriber`](crate::port::subscriber::Subscriber)
 pub mod subscriber;
