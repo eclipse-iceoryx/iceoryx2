@@ -41,7 +41,7 @@ use crate::{
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_cal::shared_memory::*;
-use std::{fmt::Debug, mem::MaybeUninit, rc::Rc};
+use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 /// [`crate::port::publisher::Publisher::loan()`] or
@@ -58,7 +58,7 @@ use std::{fmt::Debug, mem::MaybeUninit, rc::Rc};
 /// which API is used to obtain the sample.
 #[derive(Debug)]
 pub struct SampleMut<MessageType: Debug, Service: crate::service::Service> {
-    data_segment: Rc<DataSegment<Service>>,
+    data_segment: Arc<DataSegment<Service>>,
     ptr: RawSampleMut<Header, MessageType>,
     pub(crate) offset_to_chunk: PointerOffset,
 }
@@ -75,12 +75,12 @@ impl<MessageType: Debug, Service: crate::service::Service>
     SampleMut<MaybeUninit<MessageType>, Service>
 {
     pub(crate) fn new(
-        data_segment: &Rc<DataSegment<Service>>,
+        data_segment: &Arc<DataSegment<Service>>,
         ptr: RawSampleMut<Header, MaybeUninit<MessageType>>,
         offset_to_chunk: PointerOffset,
     ) -> Self {
         Self {
-            data_segment: Rc::clone(data_segment),
+            data_segment: Arc::clone(data_segment),
             ptr,
             offset_to_chunk,
         }

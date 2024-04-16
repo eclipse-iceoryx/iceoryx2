@@ -139,7 +139,13 @@ impl crate::event::Notifier for Notifier {
             Ok(true) => Ok(()),
             Ok(false) | Err(UnixDatagramSendError::MessagePartiallySend(_)) => {
                 fail!(from self, with NotifierNotifyError::FailedToDeliverSignal,
-                        "{} since the signal could not be delivered", msg);
+                        "{} since the signal could not be delivered.", msg);
+            }
+            Err(
+                UnixDatagramSendError::ConnectionReset | UnixDatagramSendError::ConnectionRefused,
+            ) => {
+                fail!(from self, with NotifierNotifyError::Disconnected,
+                        "{} since the notifier is no longer connected to the listener.", msg);
             }
             Err(v) => {
                 fail!(from self, with NotifierNotifyError::InternalFailure,

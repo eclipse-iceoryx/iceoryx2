@@ -44,6 +44,7 @@
 * Fix failing reacquire of delivered samples in the zero copy receive channel [#130](https://github.com/eclipse-iceoryx/iceoryx2/issues/130)
 * Fix receiving of invalid samples when subscriber is connected [#131](https://github.com/eclipse-iceoryx/iceoryx2/issues/131)
 * Fix problem where sample is released to the wrong publisher [#133](https://github.com/eclipse-iceoryx/iceoryx2/issues/133)
+* Fix event notifier deadlock with reconnecting listeners [#139](https://github.com/eclipse-iceoryx/iceoryx2/issues/139)
 * Fixes for FreeBSD 14.0 [#140](https://github.com/eclipse-iceoryx/iceoryx2/issues/140)
   * Fix segfault in `iceoryx2-pal-posix;:shm_list()` caused by `sysctl`
   * Adjust test to handle unordered event notifications

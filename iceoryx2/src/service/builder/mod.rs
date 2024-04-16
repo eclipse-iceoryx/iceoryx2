@@ -39,7 +39,7 @@ use iceoryx2_cal::named_concept::NamedConceptMgmt;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
 use std::marker::PhantomData;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::config_scheme::dynamic_config_storage_config;
 use super::config_scheme::static_config_storage_config;
@@ -123,7 +123,7 @@ impl<S: Service> Builder<S> {
     ) -> publish_subscribe::Builder<S> {
         BuilderWithServiceType::new(
             StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(&self.name, config),
-            Rc::new(config.clone()),
+            Arc::new(config.clone()),
         )
         .publish_subscribe()
     }
@@ -140,7 +140,7 @@ impl<S: Service> Builder<S> {
     pub fn event_with_custom_config(self, config: &config::Config) -> event::Builder<S> {
         BuilderWithServiceType::new(
             StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config),
-            Rc::new(config.clone()),
+            Arc::new(config.clone()),
         )
         .event()
     }
@@ -150,12 +150,12 @@ impl<S: Service> Builder<S> {
 #[derive(Debug)]
 pub struct BuilderWithServiceType<ServiceType: service::Service> {
     service_config: StaticConfig,
-    global_config: Rc<config::Config>,
+    global_config: Arc<config::Config>,
     _phantom_data: PhantomData<ServiceType>,
 }
 
 impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
-    fn new(service_config: StaticConfig, global_config: Rc<config::Config>) -> Self {
+    fn new(service_config: StaticConfig, global_config: Arc<config::Config>) -> Self {
         Self {
             service_config,
             global_config,

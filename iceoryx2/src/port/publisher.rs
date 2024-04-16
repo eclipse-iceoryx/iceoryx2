@@ -55,8 +55,8 @@
 
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
-use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
@@ -149,7 +149,7 @@ pub(crate) struct DataSegment<Service: service::Service> {
     message_type_layout: Layout,
     port_id: UniquePublisherId,
     config: LocalPublisherConfig,
-    dynamic_storage: Rc<Service::DynamicStorage>,
+    dynamic_storage: Arc<Service::DynamicStorage>,
 
     subscriber_connections: SubscriberConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<UniqueSubscriberId>>,
@@ -428,7 +428,7 @@ impl<Service: service::Service> DataSegment<Service> {
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
 pub struct Publisher<Service: service::Service, MessageType: Debug> {
-    pub(crate) data_segment: Rc<DataSegment<Service>>,
+    pub(crate) data_segment: Arc<DataSegment<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
     _phantom_message_type: PhantomData<MessageType>,
 }
@@ -461,7 +461,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             .publish_subscribe()
             .subscribers;
 
-        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
+        let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
         let number_of_samples = service
             .state()
             .static_config
@@ -472,7 +472,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
-        let data_segment = Rc::new(DataSegment {
+        let data_segment = Arc::new(DataSegment {
             is_active: AtomicBool::new(true),
             memory: data_segment,
             message_size: std::mem::size_of::<Message<Header, MessageType>>(),

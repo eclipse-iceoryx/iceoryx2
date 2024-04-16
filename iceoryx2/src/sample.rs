@@ -32,7 +32,7 @@
 //!
 //! See also [`crate::sample::Sample`].
 
-use std::rc::Rc;
+use std::sync::Arc;
 use std::{fmt::Debug, ops::Deref};
 
 use iceoryx2_bb_log::{fatal_panic, warn};
@@ -48,7 +48,7 @@ use crate::service::header::publish_subscribe::Header;
 /// [`crate::port::subscriber::Subscriber::receive()`].
 #[derive(Debug)]
 pub struct Sample<MessageType: Debug, Service: crate::service::Service> {
-    pub(crate) publisher_connections: Rc<PublisherConnections<Service>>,
+    pub(crate) publisher_connections: Arc<PublisherConnections<Service>>,
     pub(crate) ptr: RawSample<Header, MessageType>,
     pub(crate) channel_id: usize,
     pub(crate) offset: PointerOffset,

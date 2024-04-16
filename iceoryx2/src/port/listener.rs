@@ -66,8 +66,8 @@ use iceoryx2_cal::named_concept::NamedConceptBuilder;
 
 use crate::service::naming_scheme::event_concept_name;
 use crate::{port::port_identifiers::UniqueListenerId, service};
-use std::rc::Rc;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::time::Duration;
 
 use super::event_id::EventId;
@@ -93,7 +93,7 @@ impl std::error::Error for ListenerCreateError {}
 pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
     listener: <Service::Event as iceoryx2_cal::event::Event>::Listener,
-    dynamic_storage: Rc<Service::DynamicStorage>,
+    dynamic_storage: Arc<Service::DynamicStorage>,
     port_id: UniqueListenerId,
 }
 
@@ -115,7 +115,7 @@ impl<Service: service::Service> Listener<Service> {
         let port_id = UniqueListenerId::new();
 
         let event_name = event_concept_name(&port_id);
-        let dynamic_storage = Rc::clone(&service.state().dynamic_storage);
+        let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
 
         let listener = fail!(from origin,
                              when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name)
