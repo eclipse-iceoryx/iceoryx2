@@ -1,14 +1,14 @@
 #!/usr/bin/gnuplot -p
 
-set style line 101 lc rgb '#808080' lt 1 lw 1
+set style line 101 lc rgb '#000000' lt 1 lw 1
 set border 3 front ls 101
 set tics nomirror out scale 0.75
 
 set style line 102 lc rgb '#d6d7d9' lt 0 lw 1
 set grid back ls 102
 
-set xlabel "payload size in kb"
-set ylabel "latency in us"
+set xlabel "payload size in kilobyte"
+set ylabel "latency in microseconds"
 set title "benchmark"
 set logscale x 2
 set logscale y 2

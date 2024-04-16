@@ -1,13 +1,20 @@
 #!/usr/bin/gnuplot -p
 
+set style line 101 lc rgb '#000000' lt 1 lw 1
+set border 3 front ls 101
+set tics nomirror out scale 0.75
+
+set style line 102 lc rgb '#d6d7d9' lt 0 lw 1
+set grid back ls 102
+
 set xtic rotate by 90 scale 0
 set ytics rotate by 90
 set ylabel "iceoryx2 Latency On Different Platforms"
-set y2label 'Latency in us (less is better)' offset 2.5
+set y2label 'latency in nanoseconds (less is better)' offset 2.5
 set xlabel ' '
 set size 0.6, 1
-set xtics left offset 0,-6 font ", 7"
-set bmargin 7
+set xtics left offset 0,-7 font ", 8"
+set bmargin 8
 unset key
 
 set term png transparent truecolor size 700,1200
