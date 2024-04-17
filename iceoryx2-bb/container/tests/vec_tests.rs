@@ -14,6 +14,7 @@ use iceoryx2_bb_container::vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 
 const SUT_CAPACITY: usize = 128;
 type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
@@ -196,4 +197,49 @@ fn fixed_size_vec_clone_works() {
 
     assert_that!(Sut::new() == sut1, eq true);
     assert_that!(sut == sut2, eq true);
+}
+
+#[test]
+fn fixed_size_vec_drops_all_objects_when_out_of_scope() {
+    LifetimeTracker::start_tracking();
+    let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for _ in 0..SUT_CAPACITY {
+        assert_that!(sut.push(LifetimeTracker::new()), eq true);
+    }
+
+    assert_that!(LifetimeTracker::number_of_living_instances(), eq SUT_CAPACITY);
+    drop(sut);
+    assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+}
+
+#[test]
+fn fixed_size_vec_drops_all_objects_with_clear() {
+    LifetimeTracker::start_tracking();
+    let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for _ in 0..SUT_CAPACITY {
+        assert_that!(sut.push(LifetimeTracker::new()), eq true);
+    }
+
+    assert_that!(LifetimeTracker::number_of_living_instances(), eq SUT_CAPACITY);
+    sut.clear();
+    assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+}
+
+#[test]
+fn fixed_size_vec_pop_releases_ownership() {
+    LifetimeTracker::start_tracking();
+    let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for _ in 0..SUT_CAPACITY {
+        assert_that!(sut.push(LifetimeTracker::new()), eq true);
+    }
+
+    for i in (0..SUT_CAPACITY).rev() {
+        let result = sut.pop();
+        assert_that!(result, is_some);
+        drop(result);
+        assert_that!(LifetimeTracker::number_of_living_instances(), eq i);
+    }
 }
