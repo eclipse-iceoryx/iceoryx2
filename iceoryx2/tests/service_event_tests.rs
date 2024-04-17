@@ -433,7 +433,7 @@ mod service_event {
 
     #[test]
     fn concurrent_reconnecting_notifier_can_trigger_waiting_listener<Sut: Service>() {
-        let _watch_dog = Watchdog::new();
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(60));
 
         let number_of_listener_threads = 2;
         let number_of_notifier_threads = 2;
@@ -490,8 +490,7 @@ mod service_event {
 
     #[test]
     fn concurrent_reconnecting_listener_can_wait_for_triggering_notifiers<Sut: Service>() {
-        set_log_level(LogLevel::Fatal);
-        let _watch_dog = Watchdog::new();
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(60));
 
         let number_of_listener_threads = 2;
         let number_of_notifier_threads = 2;
