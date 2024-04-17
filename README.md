@@ -59,10 +59,10 @@ performance or modularity, Iceoryx2 is your answer.
 
 **Benchmark-System**
 
-- **CPU:** Intel(R) Core(TM) i7-10875H CPU @ 2.30GHz
-- **OS:** Linux 6.5.9-arch2-1 #1 SMP PREEMPT_DYNAMIC GNU/Linux
+- **CPU:** AMD Ryzen 7 7840S with Radeon 780M Graphics
+- **OS:** Linux 6.8.5-arch1-1 #1 SMP PREEMPT_DYNAMIC GNU/Linux
 - **Compiler:**
-  - rustc 1.72.1
+  - rustc 1.77.1
   - gcc 13.2.1 20230801
 
 ### Comparision Of Architectures
