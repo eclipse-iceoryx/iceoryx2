@@ -16,53 +16,10 @@
 //!     is self-contained.
 //!  * [`RelocatableQueue`](crate::queue::RelocatableQueue), run-time fixed size queue that
 //!     acquires the required memory from a custom user-provided allocator.
-//!  * [`Queue`](crate::queue::Queue), run-time fixed size queue and uses by default
+//!  * [`Queue`](crate::queue::Queue), run-time fixed size queue that uses by default
 //!     heap memory.
 //!
-//! # Examples
-//!
-//! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) inside constructs which provides memory
-//!
-//! ```
-//! use iceoryx2_bb_container::queue::RelocatableQueue;
-//! use iceoryx2_bb_elementary::math::align_to;
-//! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-//! use core::mem::MaybeUninit;
-//!
-//! const QUEUE_CAPACITY:usize = 12;
-//! struct MyConstruct {
-//!     queue: RelocatableQueue<u128>,
-//!     queue_memory: [MaybeUninit<u128>; QUEUE_CAPACITY],
-//! }
-//!
-//! impl MyConstruct {
-//!     pub fn new() -> Self {
-//!         Self {
-//!             queue: unsafe { RelocatableQueue::new(QUEUE_CAPACITY,
-//!                             align_to::<MaybeUninit<u128>>(std::mem::size_of::<RelocatableQueue<u128>>()) as isize) },
-//!             queue_memory: [MaybeUninit::uninit(); QUEUE_CAPACITY]
-//!         }
-//!     }
-//! }
-//! ```
-//!
-//! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) with allocator
-//!
-//! ```
-//! use iceoryx2_bb_container::queue::RelocatableQueue;
-//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-//! use std::ptr::NonNull;
-//!
-//! const QUEUE_CAPACITY:usize = 12;
-//! const MEM_SIZE: usize = RelocatableQueue::<u128>::const_memory_size(QUEUE_CAPACITY);
-//! let mut memory = [0u8; MEM_SIZE];
-//!
-//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
-//!
-//! let queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
-//! unsafe { queue.init(&bump_allocator).expect("queue init failed") };
-//! ```
+//! # User Examples
 //!
 //! ## Use the [`FixedSizeQueue`](crate::queue::FixedSizeQueue)
 //!
@@ -92,7 +49,52 @@
 //!
 //! println!("pop from queue {}", queue.pop().unwrap());
 //! ```
-
+//!
+//! # Expert Examples
+//!
+//! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) inside constructs which provides memory
+//!
+//! ```
+//! use iceoryx2_bb_container::queue::RelocatableQueue;
+//! use iceoryx2_bb_elementary::math::align_to;
+//! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+//! use core::mem::MaybeUninit;
+//!
+//! const QUEUE_CAPACITY:usize = 12;
+//! struct MyConstruct {
+//!     queue: RelocatableQueue<u128>,
+//!     queue_memory: [MaybeUninit<u128>; QUEUE_CAPACITY],
+//! }
+//!
+//! impl MyConstruct {
+//!     pub fn new() -> Self {
+//!         Self {
+//!             queue: unsafe { RelocatableQueue::new(QUEUE_CAPACITY,
+//!                             align_to::<MaybeUninit<u128>>(std::mem::size_of::<RelocatableQueue<u128>>()) as isize) },
+//!             queue_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) with allocator
+//!
+//! ```
+//! use iceoryx2_bb_container::queue::RelocatableQueue;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+//! use std::ptr::NonNull;
+//!
+//! const QUEUE_CAPACITY:usize = 12;
+//! const MEM_SIZE: usize = RelocatableQueue::<u128>::const_memory_size(QUEUE_CAPACITY);
+//! let mut memory = [0u8; MEM_SIZE];
+//!
+//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+//!
+//! let queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
+//! unsafe { queue.init(&bump_allocator).expect("queue init failed") };
+//! ```
+//!
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;

@@ -10,54 +10,68 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Two relocatable (inter-process shared memory compatible) vector implementations.
+//! Contains two vector variations that are similar to [`std::vec::Vec`].
 //!
+//!  * [`FixedSizeVec`](crate::vec::FixedSizeVec), compile-time fixed size vector that is
+//!     self-contained.
+//!  * [`RelocatableVec`](crate::vec::RelocatableVec), run-time fixed size vector that uses by default heap memory.
 //!
-//! The [`Vec`](crate::vec::Vec) which has a
-//! fixed capacity defined at runtime and the [`FixedSizeVec`](crate::vec::FixedSizeVec)
-//! which has a fixed capacity at compile time.
-//!
-//! # Examples
-//!
-//! ## Create [`Vec`](crate::vec::Vec) inside constructs which provides memory
+//! # User Examples
 //!
 //! ```
-//! use iceoryx2_bb_container::vec::Vec;
+//! use iceoryx2_bb_container::vec::FixedSizeVec;
+//!
+//! const VEC_CAPACITY: usize = 123;
+//! let mut my_vec = FixedSizeVec::<u64, VEC_CAPACITY>::new();
+//!
+//! my_vec.push(283);
+//! my_vec.push(787);
+//!
+//! println!("vec contents {:?}", my_vec);
+//! ```
+//!
+//! # Expert Examples
+//!
+//! ## Create [`RelocatableVec`](crate::vec::RelocatableVec) inside constructs which provides memory
+//!
+//! ```
+//! use iceoryx2_bb_container::vec::RelocatableVec;
 //! use iceoryx2_bb_elementary::math::align_to;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+//! use core::mem::MaybeUninit;
 //!
 //! const VEC_CAPACITY:usize = 12;
 //! struct MyConstruct {
-//!     vec: Vec<u128>,
-//!     data: [u128; VEC_CAPACITY],
+//!     vec: RelocatableVec<u128>,
+//!     vec_memory: [MaybeUninit<u128>; VEC_CAPACITY],
 //! }
 //!
 //! impl MyConstruct {
 //!     pub fn new() -> Self {
 //!         Self {
-//!             vec: unsafe { Vec::new(VEC_CAPACITY,
-//!                             align_to::<u128>(std::mem::size_of::<u128>()) as isize) },
-//!             data: [0; VEC_CAPACITY]
+//!             vec: unsafe { RelocatableVec::new(VEC_CAPACITY,
+//!                             align_to::<MaybeUninit<u128>>(std::mem::size_of::<Vec<u128>>()) as isize) },
+//!             vec_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
 //!         }
 //!     }
 //! }
 //! ```
 //!
-//! ## Create [`Vec`](crate::vec::Vec) with allocator
+//! ## Create [`RelocatableVec`](crate::vec::RelocatableVec) with allocator
 //!
 //! ```
-//! use iceoryx2_bb_container::vec::Vec;
+//! use iceoryx2_bb_container::vec::RelocatableVec;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 //! use std::ptr::NonNull;
 //!
 //! const VEC_CAPACITY:usize = 12;
-//! const MEM_SIZE: usize = Vec::<u128>::const_memory_size(VEC_CAPACITY);
+//! const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(VEC_CAPACITY);
 //! let mut memory = [0u8; MEM_SIZE];
 //!
 //! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 //!
-//! let vec = unsafe { Vec::<u128>::new_uninit(VEC_CAPACITY) };
+//! let vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 
@@ -80,22 +94,22 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 /// **Non-movable** relocatable vector with runtime fixed size capacity.
 #[repr(C)]
 #[derive(Debug)]
-pub struct Vec<T> {
+pub struct RelocatableVec<T> {
     data_ptr: RelocatablePointer<MaybeUninit<T>>,
     capacity: usize,
     len: usize,
     is_initialized: AtomicBool,
 }
 
-unsafe impl<T: Send> Send for Vec<T> {}
+unsafe impl<T: Send> Send for RelocatableVec<T> {}
 
-impl<T> Drop for Vec<T> {
+impl<T> Drop for RelocatableVec<T> {
     fn drop(&mut self) {
         unsafe { self.clear() };
     }
 }
 
-impl<T> RelocatableContainer for Vec<T> {
+impl<T> RelocatableContainer for RelocatableVec<T> {
     unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
         Self {
             data_ptr: RelocatablePointer::new(distance_to_data),
@@ -139,7 +153,7 @@ impl<T> RelocatableContainer for Vec<T> {
     }
 }
 
-impl<T> Deref for Vec<T> {
+impl<T> Deref for RelocatableVec<T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -148,7 +162,7 @@ impl<T> Deref for Vec<T> {
     }
 }
 
-impl<T> DerefMut for Vec<T> {
+impl<T> DerefMut for RelocatableVec<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
         unsafe {
@@ -157,7 +171,7 @@ impl<T> DerefMut for Vec<T> {
     }
 }
 
-impl<T: PartialEq> PartialEq for Vec<T> {
+impl<T: PartialEq> PartialEq for RelocatableVec<T> {
     fn eq(&self, other: &Self) -> bool {
         if other.len() != self.len() {
             return false;
@@ -173,9 +187,9 @@ impl<T: PartialEq> PartialEq for Vec<T> {
     }
 }
 
-impl<T: Eq> Eq for Vec<T> {}
+impl<T: Eq> Eq for RelocatableVec<T> {}
 
-impl<T> Vec<T> {
+impl<T> RelocatableVec<T> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
@@ -216,7 +230,7 @@ impl<T> Vec<T> {
     ///
     /// # Safety
     ///
-    ///  * Only use this method when [`Vec::init()`] was called before
+    ///  * [`RelocatableVec::init()`] must be called once before
     ///
     pub unsafe fn push(&mut self, value: T) -> bool {
         if self.is_full() {
@@ -232,7 +246,7 @@ impl<T> Vec<T> {
     ///
     /// # Safety
     ///
-    ///  * Only use this method when [`Vec::init()`] was called before
+    ///  * [`RelocatableVec::init()`] must be called once before
     ///
     pub unsafe fn fill(&mut self, value: T)
     where
@@ -256,7 +270,7 @@ impl<T> Vec<T> {
     ///
     /// # Safety
     ///
-    ///  * Only use this method when [`Vec::init()`] was called before
+    ///  * [`RelocatableVec::init()`] must be called once before
     ///
     pub unsafe fn extend_from_slice(&mut self, other: &[T]) -> bool
     where
@@ -278,7 +292,7 @@ impl<T> Vec<T> {
     ///
     /// # Safety
     ///
-    ///  * Only use this method when [`Vec::init()`] was called before
+    ///  * [`RelocatableVec::init()`] must be called once before
     ///
     pub unsafe fn pop(&mut self) -> Option<T> {
         if self.is_empty() {
@@ -293,7 +307,7 @@ impl<T> Vec<T> {
     ///
     /// # Safety
     ///
-    ///  * Only use this method when [`Vec::init()`] was called before
+    ///  * [`RelocatableVec::init()`] must be called once before
     ///
     pub unsafe fn clear(&mut self) {
         for _ in 0..self.len {
@@ -313,11 +327,11 @@ impl<T> Vec<T> {
 }
 
 /// Relocatable vector with compile time fixed size capacity. In contrast to its counterpart the
-/// [`Vec`] it is movable.
+/// [`RelocatableVec`] it is movable.
 #[repr(C)]
 #[derive(Debug)]
 pub struct FixedSizeVec<T, const CAPACITY: usize> {
-    state: Vec<T>,
+    state: RelocatableVec<T>,
     _data: [MaybeUninit<T>; CAPACITY],
 }
 
@@ -325,12 +339,12 @@ impl<T, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
     fn default() -> Self {
         Self {
             state: unsafe {
-                Vec::new(
+                RelocatableVec::new(
                     CAPACITY,
                     align_to::<MaybeUninit<T>>(std::mem::size_of::<Vec<T>>()) as isize,
                 )
             },
-            _data: unsafe { MaybeUninit::uninit().assume_init() },
+            _data: core::array::from_fn(|_| MaybeUninit::uninit()),
         }
     }
 }
