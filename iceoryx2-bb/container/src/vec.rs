@@ -341,7 +341,7 @@ impl<T, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
             state: unsafe {
                 RelocatableVec::new(
                     CAPACITY,
-                    align_to::<MaybeUninit<T>>(std::mem::size_of::<Vec<T>>()) as isize,
+                    align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableVec<T>>()) as isize,
                 )
             },
             _data: core::array::from_fn(|_| MaybeUninit::uninit()),
