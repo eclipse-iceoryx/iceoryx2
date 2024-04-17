@@ -241,7 +241,7 @@ impl<Service: service::Service> DataSegment<Service> {
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
                 self.borrow_sample(address_to_chunk);
-                match unsafe { history.push_with_overflow(address_to_chunk) } {
+                match history.push_with_overflow(address_to_chunk) {
                     None => (),
                     Some(old) => self.release_sample(PointerOffset::new(old)),
                 }

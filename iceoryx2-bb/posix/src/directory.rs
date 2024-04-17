@@ -35,7 +35,6 @@
 //! ```
 use iceoryx2_bb_container::byte_string::strlen;
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_container::semantic_string::SemanticStringAccessor;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};

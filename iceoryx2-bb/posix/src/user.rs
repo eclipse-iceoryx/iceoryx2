@@ -106,9 +106,10 @@ pub struct User {
     password: String,
 }
 
+#[derive(Debug)]
 enum Source {
-    Uid,
-    UserName,
+    Uid(u32),
+    UserName(UserName),
 }
 
 impl User {
@@ -120,36 +121,13 @@ impl User {
     /// Create an user object from a given uid. If the uid does not exist an error will be
     /// returned.
     pub fn from_uid(uid: u32) -> Result<User, UserError> {
-        let mut new_user = User {
-            uid,
-            gid: u32::MAX,
-            name: unsafe { UserName::new_empty() },
-            info: String::new(),
-            home_dir: String::new(),
-            shell: String::new(),
-            password: String::new(),
-        };
-
-        new_user.populate_entries_from(Source::Uid)?;
-        Ok(new_user)
+        Self::from(Source::Uid(uid))
     }
 
     /// Create an user object from a given user-name. If the user-name does not exist an error will
     /// be returned
     pub fn from_name(user_name: &UserName) -> Result<User, UserError> {
-        let mut new_user = User {
-            uid: u32::MAX,
-            gid: u32::MAX,
-            name: *user_name,
-            info: String::new(),
-            home_dir: String::new(),
-            shell: String::new(),
-            password: String::new(),
-        };
-
-        new_user.populate_entries_from(Source::UserName)?;
-
-        Ok(new_user)
+        Self::from(Source::UserName(*user_name))
     }
 
     /// Return the user id
@@ -188,50 +166,49 @@ impl User {
         self.password.as_str()
     }
 
-    fn extract_entry(&self, field: *mut posix::c_char, name: &str) -> Result<String, UserError> {
+    fn extract_entry(
+        error_origin: &str,
+        field: *mut posix::c_char,
+        name: &str,
+    ) -> Result<String, UserError> {
         Ok(
-            fail!(from self, when unsafe { CStr::from_ptr(field) }.to_str(),
+            fail!(from error_origin, when unsafe { CStr::from_ptr(field) }.to_str(),
                 with UserError::InvalidUTF8SymbolsInEntry,
                 "The {} contains invalid UTF-8 symbols.", name)
             .to_string(),
         )
     }
 
-    fn populate_entries_from(&mut self, source: Source) -> Result<(), UserError> {
+    fn from(source: Source) -> Result<Self, UserError> {
         let mut passwd = posix::passwd::new();
         let mut passwd_ptr: *mut posix::passwd = &mut passwd;
         let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
 
-        let msg;
+        let msg = "Unable to acquire user entry";
+        let origin = format!("User::from({:?})", source);
         let errno_value = match source {
-            Source::UserName => {
-                msg = "Unable to acquire user entry from username";
-                unsafe {
-                    posix::getpwnam_r(
-                        self.name.as_c_str(),
-                        &mut passwd,
-                        buffer.as_mut_ptr(),
-                        PASSWD_BUFFER_SIZE,
-                        &mut passwd_ptr,
-                    )
-                }
-            }
-            Source::Uid => {
-                msg = "Unable to acquire user entry from uid";
-                unsafe {
-                    posix::getpwuid_r(
-                        self.uid,
-                        &mut passwd,
-                        buffer.as_mut_ptr(),
-                        PASSWD_BUFFER_SIZE,
-                        &mut passwd_ptr,
-                    )
-                }
-            }
+            Source::UserName(name) => unsafe {
+                posix::getpwnam_r(
+                    name.as_c_str(),
+                    &mut passwd,
+                    buffer.as_mut_ptr(),
+                    PASSWD_BUFFER_SIZE,
+                    &mut passwd_ptr,
+                )
+            },
+            Source::Uid(uid) => unsafe {
+                posix::getpwuid_r(
+                    uid,
+                    &mut passwd,
+                    buffer.as_mut_ptr(),
+                    PASSWD_BUFFER_SIZE,
+                    &mut passwd_ptr,
+                )
+            },
         }
         .into();
 
-        handle_errno!(UserError, from self,
+        handle_errno!(UserError, from origin,
             errno_source errno_value,
             continue_on_success,
             success Errno::ESUCCES => (),
@@ -244,20 +221,28 @@ impl User {
         );
 
         if passwd_ptr.is_null() {
-            fail!(from self, with UserError::UserNotFound, "{} since the user does not exist.", msg);
+            fail!(from origin, with UserError::UserNotFound, "{} since the user does not exist.", msg);
         }
 
-        self.uid = passwd.pw_uid;
-        self.gid = passwd.pw_gid;
-        self.name = fail!(from self, when unsafe { UserName::from_c_str(passwd.pw_name) },
+        let uid = passwd.pw_uid;
+        let gid = passwd.pw_gid;
+        let name = fail!(from origin, when unsafe { UserName::from_c_str(passwd.pw_name) },
                             with UserError::SystemUserNameLengthLongerThanSupportedLength,
                             "{} since the user name on the system is longer than the supported length of {}.",
                             msg, UserName::max_len());
-        self.info = self.extract_entry(passwd.pw_gecos, "gecos entry")?;
-        self.home_dir = self.extract_entry(passwd.pw_dir, "home directory")?;
-        self.shell = self.extract_entry(passwd.pw_shell, "shell")?;
-        self.password = self.extract_entry(passwd.pw_passwd, "password")?;
+        let info = Self::extract_entry(&origin, passwd.pw_gecos, "gecos entry")?;
+        let home_dir = Self::extract_entry(&origin, passwd.pw_dir, "home directory")?;
+        let shell = Self::extract_entry(&origin, passwd.pw_shell, "shell")?;
+        let password = Self::extract_entry(&origin, passwd.pw_passwd, "password")?;
 
-        Ok(())
+        Ok(User {
+            uid,
+            gid,
+            name,
+            info,
+            home_dir,
+            shell,
+            password,
+        })
     }
 }

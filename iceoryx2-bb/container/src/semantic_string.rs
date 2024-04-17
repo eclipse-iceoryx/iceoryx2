@@ -18,7 +18,9 @@ use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::ops::Deref;
 
-enum_gen! {SemanticStringError
+enum_gen! {
+    /// Failures that can occur when a [`SemanticString`] is created or modified
+    SemanticStringError
   entry:
     InvalidName
 
@@ -34,32 +36,21 @@ impl std::fmt::Display for SemanticStringError {
 
 impl std::error::Error for SemanticStringError {}
 
-pub trait SemanticStringAccessor<const CAPACITY: usize> {
-    /// Creates a new empty SemanticStringAccessor which may violates the content contract.
-    ///
-    /// # Safety
-    ///
-    ///  * The user must set the value to a valid value before starting to work with the
-    ///    [`SemanticString`].
-    ///
-    unsafe fn new_empty() -> Self;
+pub mod internal {
+    use super::*;
 
-    ///
-    /// # Safety
-    ///
-    ///  * Ensure that the modification result is not violating the content contract
-    ///
-    unsafe fn get_mut_string(&mut self) -> &mut FixedSizeByteString<CAPACITY>;
-
-    fn as_string(&self) -> &FixedSizeByteString<CAPACITY>;
-
-    fn is_invalid_content(string: &[u8]) -> bool;
-    fn does_contain_invalid_characters(string: &[u8]) -> bool;
+    #[doc(hidden)]
+    pub trait SemanticStringAccessor<const CAPACITY: usize> {
+        unsafe fn new_empty() -> Self;
+        unsafe fn get_mut_string(&mut self) -> &mut FixedSizeByteString<CAPACITY>;
+        fn is_invalid_content(string: &[u8]) -> bool;
+        fn does_contain_invalid_characters(string: &[u8]) -> bool;
+    }
 }
 
 /// Lists the operations all path representing strings share
 pub trait SemanticString<const CAPACITY: usize>:
-    SemanticStringAccessor<CAPACITY>
+    internal::SemanticStringAccessor<CAPACITY>
     + Debug
     + Display
     + Sized
@@ -68,13 +59,16 @@ pub trait SemanticString<const CAPACITY: usize>:
     + Eq
     + Hash
 {
+    fn as_string(&self) -> &FixedSizeByteString<CAPACITY>;
+
     /// Creates a new name. If it contains invalid characters or exceeds the maximum supported
     /// length of the system or contains illegal strings it fails.
     fn new(value: &[u8]) -> Result<Self, SemanticStringError> {
         let msg = "Unable to create SemanticString";
         let origin = "SemanticString::new()";
 
-        let mut new_self = unsafe { <Self as SemanticStringAccessor<CAPACITY>>::new_empty() };
+        let mut new_self =
+            unsafe { <Self as internal::SemanticStringAccessor<CAPACITY>>::new_empty() };
         fail!(from origin, when new_self.push_bytes(value),
             "{} due to an invalid value \"{}\".", msg, as_escaped_string(value));
 
@@ -318,6 +312,10 @@ macro_rules! semantic_string {
         }
 
         impl iceoryx2_bb_container::semantic_string::SemanticString<$capacity> for $string_name {
+            fn as_string(&self) -> &iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity> {
+                &self.value
+            }
+
             fn normalize(&self) -> Self {
                 $normalize(self)
             }
@@ -423,15 +421,11 @@ macro_rules! semantic_string {
             }
         }
 
-        impl iceoryx2_bb_container::semantic_string::SemanticStringAccessor<$capacity> for $string_name {
+        impl iceoryx2_bb_container::semantic_string::internal::SemanticStringAccessor<$capacity> for $string_name {
             unsafe fn new_empty() -> Self {
                 Self {
                     value: iceoryx2_bb_container::byte_string::FixedSizeByteString::new(),
                 }
-            }
-
-            fn as_string(&self) -> &iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity> {
-                &self.value
             }
 
             unsafe fn get_mut_string(&mut self) -> &mut iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity> {

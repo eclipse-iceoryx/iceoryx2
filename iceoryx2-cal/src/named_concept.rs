@@ -13,7 +13,6 @@
 use std::fmt::Debug;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_container::semantic_string::SemanticStringAccessor;
 use iceoryx2_bb_log::fatal_panic;
 pub use iceoryx2_bb_system_types::file_name::FileName;
 pub use iceoryx2_bb_system_types::file_path::FilePath;

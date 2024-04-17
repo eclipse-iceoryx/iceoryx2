@@ -55,7 +55,6 @@ pub use iceoryx2_bb_system_types::file_name::FileName;
 use crate::adaptive_wait::*;
 use crate::clock::{AsTimespec, Time};
 use crate::clock::{NanosleepError, TimeError};
-use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{error, fail, fatal_panic};
 use iceoryx2_bb_system_types::file_path::*;
