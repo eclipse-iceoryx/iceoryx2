@@ -10,6 +10,56 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! The [`SemanticString`](crate::semantic_string::SemanticString) is a trait for
+//! [`FixedSizeByteString`](crate::byte_string::FixedSizeByteString) to create
+//! strong string types with semantic content contracts. They can be created
+//! with the help of the [`semantic_string`](crate::semantic_string!) macro.
+//!
+//! # Example, create a string that can contain a posix group name
+//!
+//! ```
+//! pub use iceoryx2_bb_container::semantic_string::SemanticString;
+//!
+//! use core::hash::{Hash, Hasher};
+//! use iceoryx2_bb_container::semantic_string;
+//!
+//! const GROUP_NAME_LENGTH: usize = 31;
+//! semantic_string! {
+//!   // Name of the type
+//!   name: GroupName,
+//!   // The underlying capacity of the FixedSizeByteString
+//!   capacity: GROUP_NAME_LENGTH,
+//!   // Callable that shall return true when the provided string contains invalid content
+//!   invalid_content: |string: &[u8]| {
+//!     if string.is_empty() {
+//!         // group names are not allowed to be empty
+//!         return true;
+//!     }
+//!
+//!     // group names are not allowed to start with a number or -
+//!     matches!(string[0], b'-' | b'0'..=b'9')
+//!   },
+//!   // Callable that shall return true when the provided string contains invalid characters
+//!   invalid_characters: |string: &[u8]| {
+//!     for value in string {
+//!         match value {
+//!             // only non-capital letters, numbers and - is allowed
+//!             b'a'..=b'z' | b'0'..=b'9' | b'-' => (),
+//!             _ => return true,
+//!         }
+//!     }
+//!
+//!     false
+//!   },
+//!   // When a SemanticString has multiple representations of the same semantic content, this
+//!   // callable shall convert the content to a uniform representation.
+//!   // Example: The path to `/tmp` can be also expressed as `/tmp/` or `////tmp////`
+//!   normalize: |this: &GroupName| {
+//!       *this
+//!   }
+//! }
+//! ```
+
 use crate::byte_string::FixedSizeByteStringModificationError;
 use crate::byte_string::{as_escaped_string, strlen, FixedSizeByteString};
 use iceoryx2_bb_elementary::enum_gen;
@@ -22,7 +72,7 @@ enum_gen! {
     /// Failures that can occur when a [`SemanticString`] is created or modified
     SemanticStringError
   entry:
-    InvalidName
+    InvalidContent
 
   generalization:
     ExceedsMaximumLength <= FixedSizeByteStringModificationError
@@ -36,10 +86,10 @@ impl std::fmt::Display for SemanticStringError {
 
 impl std::error::Error for SemanticStringError {}
 
+#[doc(hidden)]
 pub mod internal {
     use super::*;
 
-    #[doc(hidden)]
     pub trait SemanticStringAccessor<const CAPACITY: usize> {
         unsafe fn new_empty() -> Self;
         unsafe fn get_mut_string(&mut self) -> &mut FixedSizeByteString<CAPACITY>;
@@ -48,7 +98,9 @@ pub mod internal {
     }
 }
 
-/// Lists the operations all path representing strings share
+/// Trait that defines the methods a [`FixedSizeByteString`] with context semantics, a
+/// [`SemanticString`] shares. A new [`SemanticString`] can be created with the [`crate::semantic_string!`]
+/// macro. For the usage, see [`mod@crate::semantic_string`].
 pub trait SemanticString<const CAPACITY: usize>:
     internal::SemanticStringAccessor<CAPACITY>
     + Debug
@@ -59,9 +111,10 @@ pub trait SemanticString<const CAPACITY: usize>:
     + Eq
     + Hash
 {
+    /// Returns a reference to the underlying [`FixedSizeByteString`]
     fn as_string(&self) -> &FixedSizeByteString<CAPACITY>;
 
-    /// Creates a new name. If it contains invalid characters or exceeds the maximum supported
+    /// Creates a new content. If it contains invalid characters or exceeds the maximum supported
     /// length of the system or contains illegal strings it fails.
     fn new(value: &[u8]) -> Result<Self, SemanticStringError> {
         let msg = "Unable to create SemanticString";
@@ -75,7 +128,7 @@ pub trait SemanticString<const CAPACITY: usize>:
         Ok(new_self)
     }
 
-    /// Creates a new name but does not verify that it does not contain invalid characters.
+    /// Creates a new content but does not verify that it does not contain invalid characters.
     ///
     /// # Safety
     ///
@@ -85,7 +138,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///
     unsafe fn new_unchecked(bytes: &[u8]) -> Self;
 
-    /// Creates a new name from a given ptr. The user has to ensure that it is null-terminated.
+    /// Creates a new content from a given ptr. The user has to ensure that it is null-terminated.
     ///
     /// # Safety
     ///
@@ -129,13 +182,13 @@ pub trait SemanticString<const CAPACITY: usize>:
     }
 
     /// Inserts a single byte at a specific position. When the capacity is exceeded, the byte is an
-    /// illegal character or the content would result in an illegal name it fails.
+    /// illegal character or the content would result in an illegal content it fails.
     fn insert(&mut self, idx: usize, byte: u8) -> Result<(), SemanticStringError> {
         self.insert_bytes(idx, &[byte; 1])
     }
 
     /// Inserts a byte slice at a specific position. When the capacity is exceeded, the byte slice contains
-    /// illegal characters or the content would result in an illegal name it fails.
+    /// illegal characters or the content would result in an illegal content it fails.
     fn insert_bytes(&mut self, idx: usize, bytes: &[u8]) -> Result<(), SemanticStringError> {
         let msg = "Unable to insert byte string";
         fail!(from self, when unsafe { self.get_mut_string().insert_bytes(idx, bytes) },
@@ -145,8 +198,8 @@ pub trait SemanticString<const CAPACITY: usize>:
 
         if Self::is_invalid_content(self.as_bytes()) {
             unsafe { self.get_mut_string().remove_range(idx, bytes.len()) };
-            fail!(from self, with SemanticStringError::InvalidName,
-                "{} \"{}\" since it would result in an illegal name.",
+            fail!(from self, with SemanticStringError::InvalidContent,
+                "{} \"{}\" since it would result in an illegal content.",
                 msg, as_escaped_string(bytes));
         }
 
@@ -172,7 +225,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     fn normalize(&self) -> Self;
 
     /// Removes the last character. If the string is empty it returns [`None`].
-    /// If the removal would create an illegal name it fails.
+    /// If the removal would create an illegal content it fails.
     fn pop(&mut self) -> Result<Option<u8>, SemanticStringError> {
         if self.len() == 0 {
             return Ok(None);
@@ -182,26 +235,26 @@ pub trait SemanticString<const CAPACITY: usize>:
     }
 
     /// Adds a single byte at the end. When the capacity is exceeded, the byte is an
-    /// illegal character or the content would result in an illegal name it fails.
+    /// illegal character or the content would result in an illegal content it fails.
     fn push(&mut self, byte: u8) -> Result<(), SemanticStringError> {
         self.insert(self.len(), byte)
     }
 
     /// Adds a byte slice at the end. When the capacity is exceeded, the byte slice contains
-    /// illegal characters or the content would result in an illegal name it fails.
+    /// illegal characters or the content would result in an illegal content it fails.
     fn push_bytes(&mut self, bytes: &[u8]) -> Result<(), SemanticStringError> {
         self.insert_bytes(self.len(), bytes)
     }
 
     /// Removes a byte at a specific position and returns it.
-    /// If the removal would create an illegal name it fails.
+    /// If the removal would create an illegal content it fails.
     fn remove(&mut self, idx: usize) -> Result<u8, SemanticStringError> {
         let value = unsafe { self.get_mut_string().remove(idx) };
 
         if Self::is_invalid_content(self.as_bytes()) {
             unsafe { self.get_mut_string().insert(idx, value).unwrap() };
-            fail!(from self, with SemanticStringError::InvalidName,
-                "Unable to remove character at position {} since it would result in an illegal name.",
+            fail!(from self, with SemanticStringError::InvalidContent,
+                "Unable to remove character at position {} since it would result in an illegal content.",
                 idx);
         }
 
@@ -209,13 +262,13 @@ pub trait SemanticString<const CAPACITY: usize>:
     }
 
     /// Removes a range.
-    /// If the removal would create an illegal name it fails.
+    /// If the removal would create an illegal content it fails.
     fn remove_range(&mut self, idx: usize, len: usize) -> Result<(), SemanticStringError> {
         let mut temp = *self.as_string();
         temp.remove_range(idx, len);
         if Self::is_invalid_content(temp.as_bytes()) {
-            fail!(from self, with SemanticStringError::InvalidName,
-                "Unable to remove range from {} with lenght {} since it would result in the illegal name \"{}\".",
+            fail!(from self, with SemanticStringError::InvalidContent,
+                "Unable to remove range from {} with lenght {} since it would result in the illegal content \"{}\".",
                     idx, len, temp);
         }
 
@@ -224,14 +277,14 @@ pub trait SemanticString<const CAPACITY: usize>:
     }
 
     /// Removes all bytes which satisfy the provided clojure f.
-    /// If the removal would create an illegal name it fails.
+    /// If the removal would create an illegal content it fails.
     fn retain<F: FnMut(u8) -> bool>(&mut self, f: F) -> Result<(), SemanticStringError> {
         let mut temp = *self.as_string();
         let f = temp.retain_impl(f);
 
         if Self::is_invalid_content(temp.as_bytes()) {
-            fail!(from self, with SemanticStringError::InvalidName,
-                "Unable to retain characters from string since it would result in the illegal name \"{}\".",
+            fail!(from self, with SemanticStringError::InvalidContent,
+                "Unable to retain characters from string since it would result in the illegal content \"{}\".",
                 temp);
         }
 
@@ -240,7 +293,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     }
 
     /// Removes a prefix. If the prefix does not exist it returns false. If the removal would lead
-    /// to an invalid string content it fails and returns [`SemanticStringError::InvalidName`].
+    /// to an invalid string content it fails and returns [`SemanticStringError::InvalidContent`].
     /// After a successful removal it returns true.
     fn strip_prefix(&mut self, bytes: &[u8]) -> Result<bool, SemanticStringError> {
         let mut temp = *self.as_string();
@@ -251,8 +304,8 @@ pub trait SemanticString<const CAPACITY: usize>:
         if Self::is_invalid_content(temp.as_bytes()) {
             let mut prefix = FixedSizeByteString::<123>::new();
             unsafe { prefix.insert_bytes_unchecked(0, bytes) };
-            fail!(from self, with SemanticStringError::InvalidName,
-                "Unable to strip prefix \"{}\" from string since it would result in the illegal name \"{}\".",
+            fail!(from self, with SemanticStringError::InvalidContent,
+                "Unable to strip prefix \"{}\" from string since it would result in the illegal content \"{}\".",
                 prefix, temp);
         }
 
@@ -262,7 +315,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     }
 
     /// Removes a suffix. If the suffix does not exist it returns false. If the removal would lead
-    /// to an invalid string content it fails and returns [`SemanticStringError::InvalidName`].
+    /// to an invalid string content it fails and returns [`SemanticStringError::InvalidContent`].
     /// After a successful removal it returns true.
     fn strip_suffix(&mut self, bytes: &[u8]) -> Result<bool, SemanticStringError> {
         let mut temp = *self.as_string();
@@ -273,8 +326,8 @@ pub trait SemanticString<const CAPACITY: usize>:
         if Self::is_invalid_content(temp.as_bytes()) {
             let mut prefix = FixedSizeByteString::<123>::new();
             unsafe { prefix.insert_bytes_unchecked(0, bytes) };
-            fail!(from self, with SemanticStringError::InvalidName,
-                "Unable to strip prefix \"{}\" from string since it would result in the illegal name \"{}\".",
+            fail!(from self, with SemanticStringError::InvalidContent,
+                "Unable to strip prefix \"{}\" from string since it would result in the illegal content \"{}\".",
                 prefix, temp);
         }
 
@@ -289,8 +342,8 @@ pub trait SemanticString<const CAPACITY: usize>:
         temp.truncate(new_len);
 
         if Self::is_invalid_content(temp.as_bytes()) {
-            fail!(from self, with SemanticStringError::InvalidName,
-                "Unable to truncate characters to {} since it would result in the illegal name \"{}\".",
+            fail!(from self, with SemanticStringError::InvalidContent,
+                "Unable to truncate characters to {} since it would result in the illegal content \"{}\".",
                 new_len, temp);
         }
 
@@ -299,11 +352,23 @@ pub trait SemanticString<const CAPACITY: usize>:
     }
 }
 
+/// Helper macro to create a new [`SemanticString`]. Usage example can be found here:
+/// [`mod@crate::semantic_string`].
 #[macro_export(local_inner_macros)]
 macro_rules! semantic_string {
     {$(#[$documentation:meta])*
-     name: $string_name:ident, capacity: $capacity:expr,
-     invalid_content: $invalid_content:expr, invalid_characters: $invalid_characters:expr,
+     /// Name of the struct
+     name: $string_name:ident,
+     /// Capacity of the underlying FixedSizeByteString
+     capacity: $capacity:expr,
+     /// Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
+     /// invalid content.
+     invalid_content: $invalid_content:expr,
+     /// Callable that gets a [`&[u8]`] as input and shall return true when the slice contains
+     /// invalid characters.
+     invalid_characters: $invalid_characters:expr,
+     /// Normalizes the content. Required when the same semantical content has multiple
+     /// representations like paths for instance (`/tmp` == `/tmp/`)
      normalize: $normalize:expr} => {
         $(#[$documentation])*
         #[derive(Debug, Clone, Copy, Eq)]
@@ -332,6 +397,7 @@ macro_rules! semantic_string {
         }
 
         impl $string_name {
+            /// Returns the maximum length of [`$string`]
             pub const fn max_len() -> usize {
                 $capacity
             }
