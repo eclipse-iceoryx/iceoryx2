@@ -45,6 +45,7 @@ iceoryx2-bb-log = { version = "0.3.0", path = "iceoryx2-bb/log/" }
 iceoryx2-bb-memory = { version = "0.3.0", path = "iceoryx2-bb/memory/" }
 iceoryx2-bb-posix = { version = "0.3.0", path = "iceoryx2-bb/posix/" }
 iceoryx2-bb-system-types = { version = "0.3.0", path = "iceoryx2-bb/system-types/" }
+iceoryx2-bb-trait-tests = { version = "0.3.0", path = "iceoryx2-bb/trait-tests/" }
 iceoryx2-bb-testing = { version = "0.3.0", path = "iceoryx2-bb/testing/" }
 
 iceoryx2-pal-concurrency-sync = { version = "0.3.0", path = "iceoryx2-pal/concurrency-sync/" }
