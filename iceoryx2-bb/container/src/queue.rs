@@ -10,39 +10,74 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Two relocatable (inter process shared memory compatible) queues.
+//! Three queue variations that are similar to [`std::collections::VecDeque`].
 //!
-//! The [`Queue`] which has a
-//! fixed capacity defined at runtime and the [`FixedSizeQueue`] which has a fixed capacity at
-//! compile time.
+//!  * [`FixedSizeQueue`](crate::queue::FixedSizeQueue), compile-time fixed size queue that
+//!     is self-contained.
+//!  * [`RelocatableQueue`](crate::queue::RelocatableQueue), run-time fixed size queue that
+//!     acquires the required memory from a custom user-provided allocator.
+//!  * [`Queue`](crate::queue::Queue), run-time fixed size queue that uses by default
+//!     heap memory.
 //!
-//! # Examples
+//! # Basic Examples
 //!
-//! ## Create [`Queue`] inside constructs which provides memory
+//! ## Use the [`FixedSizeQueue`](crate::queue::FixedSizeQueue)
+//!
+//! ```
+//! use iceoryx2_bb_container::queue::FixedSizeQueue;
+//!
+//! const QUEUE_CAPACITY: usize = 1;
+//! let mut queue = FixedSizeQueue::<u64, QUEUE_CAPACITY>::new();
+//!
+//! queue.push(123);
+//!
+//! // queue is full, we override the oldest element (123) with the new number (456)
+//! queue.push_with_overflow(456);
+//!
+//! println!("pop from queue {}", queue.pop().unwrap());
+//! ```
+//!
+//! ## Use the [`Queue`](crate::queue::Queue)
+//!
+//! ```
+//! use iceoryx2_bb_container::queue::Queue;
+//!
+//! let queue_capacity = 1234;
+//! let mut queue = Queue::<u64>::new(queue_capacity);
+//!
+//! queue.push(123);
+//!
+//! println!("pop from queue {}", queue.pop().unwrap());
+//! ```
+//!
+//! # Advanced Examples
+//!
+//! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) inside constructs which provides memory
 //!
 //! ```
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::math::align_to;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+//! use core::mem::MaybeUninit;
 //!
 //! const QUEUE_CAPACITY:usize = 12;
 //! struct MyConstruct {
 //!     queue: RelocatableQueue<u128>,
-//!     data: [u128; QUEUE_CAPACITY],
+//!     queue_memory: [MaybeUninit<u128>; QUEUE_CAPACITY],
 //! }
 //!
 //! impl MyConstruct {
 //!     pub fn new() -> Self {
 //!         Self {
 //!             queue: unsafe { RelocatableQueue::new(QUEUE_CAPACITY,
-//!                             align_to::<u128>(std::mem::size_of::<u128>()) as isize) },
-//!             data: [0; QUEUE_CAPACITY]
+//!                             align_to::<MaybeUninit<u128>>(std::mem::size_of::<RelocatableQueue<u128>>()) as isize) },
+//!             queue_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
 //!         }
 //!     }
 //! }
 //! ```
 //!
-//! ## Create [`Queue`] with allocator
+//! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) with allocator
 //!
 //! ```
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
@@ -59,7 +94,7 @@
 //! let queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
 //! unsafe { queue.init(&bump_allocator).expect("queue init failed") };
 //! ```
-
+//!
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
@@ -69,16 +104,14 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use std::sync::atomic::AtomicBool;
 use std::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
 
+use iceoryx2_bb_elementary::math::unaligned_mem_size;
 pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+use std::marker::PhantomData;
 
 pub type Queue<T> = details::Queue<T, OwningPointer<MaybeUninit<T>>>;
 pub type RelocatableQueue<T> = details::Queue<T, RelocatablePointer<MaybeUninit<T>>>;
 
 mod details {
-    use std::marker::PhantomData;
-
-    use iceoryx2_bb_elementary::math::unaligned_mem_size;
-
     use super::*;
     /// **Non-movable** relocatable queue with runtime fixed size capacity.
     #[repr(C)]
@@ -95,6 +128,7 @@ mod details {
     unsafe impl<T: Send, PointerType: PointerTrait<MaybeUninit<T>>> Send for Queue<T, PointerType> {}
 
     impl<T> Queue<T, OwningPointer<MaybeUninit<T>>> {
+        /// Creates a new [`Queue`] with the provided capacity
         pub fn new(capacity: usize) -> Self {
             Self {
                 data_ptr: OwningPointer::<MaybeUninit<T>>::new_with_alloc(capacity),
@@ -104,6 +138,27 @@ mod details {
                 is_initialized: AtomicBool::new(true),
                 _phantom_data: PhantomData,
             }
+        }
+
+        /// Removes all elements from the queue
+        pub fn clear(&mut self) {
+            unsafe { self.clear_impl() }
+        }
+
+        /// Acquire an element from the queue. If the queue is empty it returns [`None`].
+        pub fn pop(&mut self) -> Option<T> {
+            unsafe { self.pop_impl() }
+        }
+
+        /// Adds an element to the queue. If the queue is full it returns false, otherwise true.
+        pub fn push(&mut self, value: T) -> bool {
+            unsafe { self.push_impl(value) }
+        }
+
+        /// Adds an element to the queue. If the queue is full it returns the oldest element,
+        /// otherwise [`None`].
+        pub fn push_with_overflow(&mut self, value: T) -> Option<T> {
+            unsafe { self.push_with_overflow_impl(value) }
         }
     }
 
@@ -121,7 +176,7 @@ mod details {
         }
 
         /// Returns a copy of the element stored at index. The index is starting by 0 for the first
-        /// element until [`Queue::len()`].
+        /// element until [`Queue::len()`]queue_memory
         pub fn get(&self, index: usize) -> T {
             if self.len() <= index {
                 fatal_panic!(from self, "Unable to copy content since the index {} is out of range.", index);
@@ -185,6 +240,49 @@ mod details {
         }
     }
 
+    impl<T> Queue<T, RelocatablePointer<MaybeUninit<T>>> {
+        /// Removes all elements from the queue
+        ///
+        /// # Safety
+        ///
+        ///  * [`Queue::init()`] must have been called once before
+        ///
+        pub unsafe fn clear(&mut self) {
+            self.clear_impl()
+        }
+
+        /// Acquire an element from the queue. If the queue is empty it returns [`None`].
+        ///
+        /// # Safety
+        ///
+        ///  * [`Queue::init()`] must have been called once before
+        ///
+        pub unsafe fn pop(&mut self) -> Option<T> {
+            self.pop_impl()
+        }
+
+        /// Adds an element to the queue. If the queue is full it returns false, otherwise true.
+        ///
+        /// # Safety
+        ///
+        ///  * [`Queue::init()`] must have been called once before
+        ///
+        pub unsafe fn push(&mut self, value: T) -> bool {
+            self.push_impl(value)
+        }
+
+        /// Adds an element to the queue. If the queue is full it returns the oldest element,
+        /// otherwise [`None`].
+        ///
+        /// # Safety
+        ///
+        ///  * [`Queue::init()`] must have been called once before
+        ///
+        pub unsafe fn push_with_overflow(&mut self, value: T) -> Option<T> {
+            self.push_with_overflow_impl(value)
+        }
+    }
+
     impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Queue<T, PointerType> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
@@ -206,16 +304,6 @@ mod details {
             self.len == 0
         }
 
-        /// Removes all elements from the queue
-        ///
-        /// # Safety
-        ///
-        ///  * Only use this method when [`Queue::init()`] was called before
-        ///
-        pub unsafe fn clear(&mut self) {
-            while self.pop().is_some() {}
-        }
-
         /// Returns the capacity of the queue
         pub fn capacity(&self) -> usize {
             self.capacity
@@ -231,8 +319,11 @@ mod details {
             self.len() == self.capacity()
         }
 
-        /// Acquire an element from the queue. If the queue is empty it returns [`None`].
-        pub unsafe fn pop(&mut self) -> Option<T> {
+        pub(crate) unsafe fn clear_impl(&mut self) {
+            while self.pop_impl().is_some() {}
+        }
+
+        pub(crate) unsafe fn pop_impl(&mut self) -> Option<T> {
             if self.is_empty() {
                 return None;
             }
@@ -247,8 +338,7 @@ mod details {
             Some(value.assume_init())
         }
 
-        /// Adds an element to the queue. If the queue is full it returns false, otherwise true.
-        pub unsafe fn push(&mut self, value: T) -> bool {
+        pub(crate) unsafe fn push_impl(&mut self, value: T) -> bool {
             if self.len == self.capacity {
                 return false;
             }
@@ -259,11 +349,9 @@ mod details {
             true
         }
 
-        /// Adds an element to the queue. If the queue is full it returns the oldest element,
-        /// otherwise [`None`].
-        pub unsafe fn push_with_overflow(&mut self, value: T) -> Option<T> {
+        pub(crate) unsafe fn push_with_overflow_impl(&mut self, value: T) -> Option<T> {
             let overridden_value = if self.len() == self.capacity() {
-                self.pop()
+                self.pop_impl()
             } else {
                 None
             };
@@ -289,7 +377,7 @@ mod details {
 
     impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Drop for Queue<T, PointerType> {
         fn drop(&mut self) {
-            unsafe { self.clear() }
+            unsafe { self.clear_impl() }
         }
     }
 }
@@ -331,11 +419,6 @@ impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
         self.state.is_empty()
     }
 
-    /// Removes all elements from the queue
-    pub fn clear(&mut self) {
-        unsafe { self.state.clear() }
-    }
-
     /// Returns the capacity of the queue
     pub fn capacity(&self) -> usize {
         self.state.capacity()
@@ -351,20 +434,25 @@ impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
         self.state.is_full()
     }
 
+    /// Removes all elements from the queue
+    pub fn clear(&mut self) {
+        unsafe { self.state.clear_impl() }
+    }
+
     /// Acquire an element from the queue. If the queue is empty it returns [`None`].
     pub fn pop(&mut self) -> Option<T> {
-        unsafe { self.state.pop() }
+        unsafe { self.state.pop_impl() }
     }
 
     /// Adds an element to the queue. If the queue is full it returns false, otherwise true.
     pub fn push(&mut self, value: T) -> bool {
-        unsafe { self.state.push(value) }
+        unsafe { self.state.push_impl(value) }
     }
 
     /// Adds an element to the queue. If the queue is full it returns the oldest element,
     /// otherwise [`None`].
     pub fn push_with_overflow(&mut self, value: T) -> Option<T> {
-        unsafe { self.state.push_with_overflow(value) }
+        unsafe { self.state.push_with_overflow_impl(value) }
     }
 }
 

@@ -42,7 +42,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "messaging_pattern")]
 pub enum MessagingPattern {
+    /// Unidirectional communication pattern where the
+    /// [`Publisher`](crate::port::publisher::Publisher) sends arbitrary data to the
+    /// [`Subscriber`](crate::port::subscriber::Subscriber)
     PublishSubscribe(publish_subscribe::StaticConfig),
+
+    /// Unidirectional communication pattern where the [`Notifier`](crate::port::notifier::Notifier)
+    /// sends signals/events to the [`Listener`](crate::port::listener::Listener) which has the
+    /// ability to sleep until a signal/event arrives.
+    /// Building block to realize push-notifications.
     Event(event::StaticConfig),
 }
 

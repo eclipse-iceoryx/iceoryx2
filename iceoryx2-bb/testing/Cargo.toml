@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-testing"
-description = "Iceoryx2: [internal] simple testing primitives"
+description = "iceoryx2: [internal] simple testing primitives"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

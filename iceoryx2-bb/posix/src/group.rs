@@ -122,9 +122,10 @@ pub struct Group {
     members: Vec<UserName>,
 }
 
+#[derive(Debug)]
 enum Source {
-    Gid,
-    GroupName,
+    Gid(u32),
+    GroupName(GroupName),
 }
 
 impl Group {
@@ -136,31 +137,13 @@ impl Group {
     /// Create an group object from a given gid. If the gid does not exist an error will be
     /// returned.
     pub fn from_gid(gid: u32) -> Result<Group, GroupError> {
-        let mut new_group = Group {
-            gid,
-            name: unsafe { GroupName::new_empty() },
-            password: String::new(),
-            members: vec![],
-        };
-
-        new_group.populate_entries(Source::Gid)?;
-
-        Ok(new_group)
+        Group::from(Source::Gid(gid))
     }
 
     /// Create an group object from a given group-name. If the group-name does not exist an error will
     /// be returned
     pub fn from_name(group_name: &GroupName) -> Result<Group, GroupError> {
-        let mut new_group = Group {
-            gid: u32::MAX,
-            name: *group_name,
-            password: String::new(),
-            members: vec![],
-        };
-
-        new_group.populate_entries(Source::GroupName)?;
-
-        Ok(new_group)
+        Group::from(Source::GroupName(*group_name))
     }
 
     /// Return the group id
@@ -184,50 +167,49 @@ impl Group {
         self.members.clone()
     }
 
-    fn extract_entry(&self, field: *mut posix::c_char, name: &str) -> Result<String, GroupError> {
+    fn extract_entry(
+        error_origin: &str,
+        field: *mut posix::c_char,
+        name: &str,
+    ) -> Result<String, GroupError> {
         Ok(
-            fail!(from self, when unsafe { CStr::from_ptr(field) }.to_str(),
+            fail!(from error_origin, when unsafe { CStr::from_ptr(field) }.to_str(),
                 with GroupError::InvalidGroupName,
                 "The {} contains invalid UTF-8 symbols.", name)
             .to_string(),
         )
     }
 
-    fn populate_entries(&mut self, source: Source) -> Result<(), GroupError> {
+    fn from(source: Source) -> Result<Group, GroupError> {
         let mut group = posix::group::new();
         let mut group_ptr: *mut posix::group = &mut group;
         let mut buffer: [posix::c_char; GROUP_BUFFER_SIZE] = [0; GROUP_BUFFER_SIZE];
 
-        let msg;
+        let origin = format!("Group::from({:?})", source);
+        let msg = "Unable to acquire group entry";
         let errno_value = match source {
-            Source::GroupName => {
-                msg = "Unable to acquire group entry from groupname";
-                unsafe {
-                    posix::getgrnam_r(
-                        self.name.as_c_str(),
-                        &mut group,
-                        buffer.as_mut_ptr(),
-                        GROUP_BUFFER_SIZE,
-                        &mut group_ptr,
-                    )
-                }
-            }
-            Source::Gid => {
-                msg = "Unable to acquire group entry from gid";
-                unsafe {
-                    posix::getgrgid_r(
-                        self.gid,
-                        &mut group,
-                        buffer.as_mut_ptr(),
-                        GROUP_BUFFER_SIZE,
-                        &mut group_ptr,
-                    )
-                }
-            }
+            Source::GroupName(name) => unsafe {
+                posix::getgrnam_r(
+                    name.as_c_str(),
+                    &mut group,
+                    buffer.as_mut_ptr(),
+                    GROUP_BUFFER_SIZE,
+                    &mut group_ptr,
+                )
+            },
+            Source::Gid(gid) => unsafe {
+                posix::getgrgid_r(
+                    gid,
+                    &mut group,
+                    buffer.as_mut_ptr(),
+                    GROUP_BUFFER_SIZE,
+                    &mut group_ptr,
+                )
+            },
         }
         .into();
 
-        handle_errno!(GroupError, from self,
+        handle_errno!(GroupError, from origin,
             errno_source errno_value, continue_on_success,
             success Errno::ESUCCES => (),
             Errno::EINTR => (Interrupt, "{} since an interrupt signal was received", msg ),
@@ -239,31 +221,37 @@ impl Group {
         );
 
         if group_ptr.is_null() {
-            fail!(from self, with GroupError::GroupNotFound, "{} since the group does not exist.", msg);
+            fail!(from origin, with GroupError::GroupNotFound, "{} since the group does not exist.", msg);
         }
 
-        self.gid = group.gr_gid;
-        self.name = fail!(from self, when unsafe{ GroupName::from_c_str(group.gr_name) },
+        let gid = group.gr_gid;
+        let name = fail!(from origin, when unsafe{ GroupName::from_c_str(group.gr_name) },
                             with GroupError::SystemGroupNameLengthLongerThanSupportedLength,
                             "{} since the group name length ({}) is greater than the supported group name length of {}.",
                             msg, unsafe { strlen(group.gr_name) }, GroupName::max_len() );
-        self.password = self.extract_entry(group.gr_passwd, "password")?;
+        let password = Self::extract_entry(&origin, group.gr_passwd, "password")?;
 
         let mut counter: isize = 0;
+        let mut members = vec![];
         loop {
             let group_member = unsafe { *group.gr_mem.offset(counter) };
             if group_member.is_null() {
                 break;
             }
 
-            self.members
-                .push(fail!(from self, when unsafe { UserName::from_c_str(group_member) },
+            members
+                .push(fail!(from origin, when unsafe { UserName::from_c_str(group_member) },
                         with GroupError::SystemUserNameLengthLongerThanSupportedLength,
                         "{} since the user name length ({}) is greater than the support user name length of {}.",
                         msg, unsafe { strlen(group_member) }, UserName::max_len() ));
             counter += 1;
         }
 
-        Ok(())
+        Ok(Group {
+            gid,
+            name,
+            password,
+            members,
+        })
     }
 }

@@ -14,7 +14,9 @@ use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 
 macro_rules! generate_id {
-    { $id_name:ident } => {
+    { $(#[$documentation:meta])*
+        $id_name:ident } => {
+        $(#[$documentation])*
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
         pub struct $id_name(pub(crate) UniqueSystemId);
 
@@ -35,7 +37,19 @@ macro_rules! generate_id {
     };
 }
 
-generate_id! { UniquePublisherId }
-generate_id! { UniqueSubscriberId }
-generate_id! { UniqueNotifierId }
-generate_id! { UniqueListenerId }
+generate_id! {
+    /// The system-wide unique id of a [`Publisher`](crate::port::publisher::Publisher).
+    UniquePublisherId
+}
+generate_id! {
+    /// The system-wide unique id of a [`Subscriber`](crate::port::subscriber::Subscriber).
+    UniqueSubscriberId
+}
+generate_id! {
+    /// The system-wide unique id of a [`Notifier`](crate::port::notifier::Notifier).
+    UniqueNotifierId
+}
+generate_id! {
+    /// The system-wide unique id of a [`Listener`](crate::port::listener::Listener).
+    UniqueListenerId
+}

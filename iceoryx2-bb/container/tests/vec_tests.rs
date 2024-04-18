@@ -71,7 +71,7 @@ fn fixed_size_vec_push_pop_works() {
 fn vec_push_pop_works_with_uninitialized_memory() {
     let mut memory = [0u8; 1024];
     let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
-    let mut sut = unsafe { Vec::<usize>::new_uninit(SUT_CAPACITY) };
+    let mut sut = unsafe { RelocatableVec::<usize>::new_uninit(SUT_CAPACITY) };
     unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
     for i in 0..sut.capacity() {

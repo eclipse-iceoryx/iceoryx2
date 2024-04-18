@@ -1,6 +1,6 @@
 [package]
 name = "benchmark-publish-subscribe"
-description = "Iceoryx2: [internal] benchmark for publish-subscribe messaging pattern"
+description = "iceoryx2: [internal] benchmark for publish-subscribe messaging pattern"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

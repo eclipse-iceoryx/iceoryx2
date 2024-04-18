@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-threadsafe"
-description = "Iceoryx2: [internal] threadsafe non-lock-free containers and constructs"
+description = "iceoryx2: [internal] threadsafe non-lock-free containers and constructs"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

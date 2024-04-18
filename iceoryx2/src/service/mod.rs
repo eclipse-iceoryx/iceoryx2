@@ -51,6 +51,7 @@
 //!     // various QoS
 //!     .max_notifiers(12)
 //!     .max_listeners(2)
+//!     .event_id_max_value(32)
 //!     // if the service already exists, open it, otherwise create it
 //!     .open_or_create()?;
 //!

@@ -1,10 +1,13 @@
 # Roadmap
 
-# Q1.2024
+# Q2.2024
 
+* [ ] untyped API
 * [ ] C binding
-* [ ] Pipeline (optional Request/Response)
 * [ ] derive macro for SHM transferable types
+* [ ] Node as basis for monitoring and resource cleanup
+* [ ] serde based shm serialization to transmit arbitrary types
+* [ ] Pipeline (optional Request/Response)
 
 ## Moonshots
 

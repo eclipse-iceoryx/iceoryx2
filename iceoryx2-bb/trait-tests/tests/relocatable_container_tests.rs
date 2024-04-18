@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod relocatable_container {
-    use iceoryx2_bb_container::{queue::RelocatableQueue, vec::Vec};
+    use iceoryx2_bb_container::{queue::RelocatableQueue, vec::RelocatableVec};
     use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::{
         mpmc::{container::Container, unique_index_set::UniqueIndexSet},
@@ -60,13 +60,13 @@ mod relocatable_container {
         }
     }
 
-    #[instantiate_tests(<Vec<u64>>)]
+    #[instantiate_tests(<RelocatableVec<u64>>)]
     mod vec_u64 {}
 
-    #[instantiate_tests(<Vec<u128>>)]
+    #[instantiate_tests(<RelocatableVec<u128>>)]
     mod vec_u128 {}
 
-    #[instantiate_tests(<Vec<[u8; 123]>>)]
+    #[instantiate_tests(<RelocatableVec<[u8; 123]>>)]
     mod vec_special {}
 
     #[instantiate_tests(<RelocatableQueue<u64>>)]

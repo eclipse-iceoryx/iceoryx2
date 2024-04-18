@@ -131,10 +131,8 @@
 //! let mut listener = event.listener().create()?;
 //!
 //! while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
-//!     if let Ok(events) = listener.timed_wait_one(CYCLE_TIME) {
-//!         for event_id in events {
-//!             println!("event was triggered with id: {:?}", event_id);
-//!         }
+//!     if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
+//!         println!("event was triggered with id: {:?}", event_id);
 //!     }
 //! }
 //!
@@ -220,6 +218,10 @@
 //!     .max_notifiers(2)
 //!     // the maximum amount of listeners of this service
 //!     .max_listeners(2)
+//!     // defines the maximum supported event id value
+//!     // WARNING: an increased value can have a significant performance impact on some
+//!     //          configurations that use a bitset as event tracking mechanism
+//!     .event_id_max_value(256)
 //!     .create()?;
 //! # Ok(())
 //! # }
@@ -288,10 +290,10 @@ pub mod port;
 
 pub(crate) mod raw_sample;
 
-/// The payload that is received by a [`crate::port::subscriber::Subscriber`].
+/// The payload that is received by a [`Subscriber`](crate::port::subscriber::Subscriber).
 pub mod sample;
 
-/// The payload that is sent by a [`crate::port::publisher::Publisher`].
+/// The payload that is sent by a [`Publisher`](crate::port::publisher::Publisher).
 pub mod sample_mut;
 
 /// The foundation of communication the service with its

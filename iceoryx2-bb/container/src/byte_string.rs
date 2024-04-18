@@ -12,7 +12,7 @@
 
 //! Relocatable (inter-process shared memory compatible) string implementations.
 //!
-//! The [`FixedSizeByteString`] has a fixed capacity defined at compile time.
+//! The [`FixedSizeByteString`](crate::byte_string::FixedSizeByteString) has a fixed capacity defined at compile time.
 //!
 //! # Example
 //!
@@ -80,7 +80,6 @@ pub struct FixedSizeByteString<const CAPACITY: usize> {
 }
 
 unsafe impl<const CAPACITY: usize> Send for FixedSizeByteString<CAPACITY> {}
-unsafe impl<const CAPACITY: usize> Sync for FixedSizeByteString<CAPACITY> {}
 
 impl<const CAPACITY: usize, const CAPACITY_OTHER: usize>
     PartialOrd<FixedSizeByteString<CAPACITY_OTHER>> for FixedSizeByteString<CAPACITY>
@@ -191,6 +190,7 @@ impl<const CAPACITY: usize> Default for FixedSizeByteString<CAPACITY> {
     }
 }
 
+// Adds escape characters to the string so that it can be used for console output.
 pub fn as_escaped_string(bytes: &[u8]) -> String {
     String::from_utf8(
         bytes
@@ -403,6 +403,7 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
     ///  * The 'idx' must by less than [`FixedSizeByteString::len()`].
     ///  * The 'bytes.len()' must be less or equal than [`FixedSizeByteString::capacity()`] -
     ///    [`FixedSizeByteString::len()`]
+    ///
     pub unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
         unsafe {
             std::ptr::copy(

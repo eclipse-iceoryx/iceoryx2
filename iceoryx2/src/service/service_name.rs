@@ -36,7 +36,7 @@ impl ServiceName {
     /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
         if name.is_empty() {
-            return Err(SemanticStringError::InvalidName);
+            return Err(SemanticStringError::InvalidContent);
         }
 
         Ok(Self {

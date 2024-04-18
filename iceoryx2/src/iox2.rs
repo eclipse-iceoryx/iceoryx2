@@ -100,9 +100,8 @@ impl Iox2 {
         }
     }
 
-    /// Waits until an event has received. It returns
-    /// [`Iox2Event::Tick`] when the `cycle_time` has passed, otherwise the other event that
-    /// can occur.
+    /// Waits until an event was received. It returns
+    /// [`Iox2Event::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
     pub fn wait(cycle_time: Duration) -> Iox2Event {
         Self::get_instance().wait_impl(cycle_time)
     }

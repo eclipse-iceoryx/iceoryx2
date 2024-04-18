@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-pal-posix"
-description = "Iceoryx2: [internal] A posix layer that ensures uniform posix behavior on all platforms according to https://posix.opengroup.org"
+description = "iceoryx2: [internal] A posix layer that ensures uniform posix behavior on all platforms according to https://posix.opengroup.org"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

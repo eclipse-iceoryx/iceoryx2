@@ -23,6 +23,7 @@
 //!
 //! println!("max listeners:                {:?}", event.static_config().max_supported_listeners());
 //! println!("max notifiers:                {:?}", event.static_config().max_supported_notifiers());
+//! println!("event id max value:           {:?}", event.static_config().event_id_max_value());
 //!
 //! # Ok(())
 //! # }
@@ -30,9 +31,9 @@
 use crate::config;
 use serde::{Deserialize, Serialize};
 
-/// The static configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
+/// The static configuration of an [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)
 /// based service. Contains all parameters that do not change during the lifetime of a
-/// [`crate::service::Service`].
+/// [`Service`](crate::service::Service).
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct StaticConfig {
     pub(crate) max_notifiers: usize,

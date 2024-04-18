@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2"
-description = "Iceoryx2: Lock-Free Zero-Copy Interprocess Communication"
+description = "iceoryx2: Lock-Free Zero-Copy Interprocess Communication"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

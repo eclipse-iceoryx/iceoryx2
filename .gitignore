@@ -5,3 +5,4 @@ Cargo.lock
 **/*.rs.bk
 *.pdb
 **/rusty-tags.vi
+**/*.png

@@ -53,45 +53,21 @@ performance or modularity, Iceoryx2 is your answer.
 
 ## Performance
 
-```mermaid
-gantt
-    title Latency (in ns) - 64b payload
-    dateFormat X
-    axisFormat %s
+### Comparision Of Mechanisms
 
-    section iceoryx2
-    240 : 0, 240
-    section iceoryx
-    1000 : 0, 1000
-    section MQueue
-    700 : 0, 700
-    section UDS
-    1500 : 0, 1500
-```
-
-```mermaid
-gantt
-    title Latency (in ns) - 64kb payload
-    dateFormat X
-    axisFormat %s
-
-    section iceoryx2
-    240 : 0, 240
-    section iceoryx
-    1000 : 0, 1000
-    section MQueue
-    14000 : 0, 14000
-    section UDS
-    23000 : 0, 23000
-```
+![benchmark of different mechanism](https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/bf42f95d-c129-4eef-aaa6-4210e41cca24)
 
 **Benchmark-System**
 
-- **CPU:** Intel(R) Core(TM) i7-10875H CPU @ 2.30GHz
-- **OS:** Linux 6.5.9-arch2-1 #1 SMP PREEMPT_DYNAMIC GNU/Linux
+- **CPU:** AMD Ryzen 7 7840S with Radeon 780M Graphics
+- **OS:** Linux 6.8.5-arch1-1 #1 SMP PREEMPT_DYNAMIC GNU/Linux
 - **Compiler:**
-  - rustc 1.72.1
+  - rustc 1.77.1
   - gcc 13.2.1 20230801
+
+### Comparision Of Architectures
+
+![benchmark on different systems](https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/bd3729a6-41f7-4ac0-8202-151fca8199dc)
 
 ## Getting Started
 
@@ -191,12 +167,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let notifier = event.notifier().create()?;
 
-    let mut counter: u64 = 0;
+    let id = EventId::new(12);
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
-        counter += 1;
-        notifier.notify_with_custom_event_id(EventId::new(counter))?;
+        notifier.notify_with_custom_event_id(id)?;
 
-        println!("Trigger event with id {} ...", counter);
+        println!("Trigger event with id {:?} ...", id);
     }
 
     Ok(())
@@ -218,14 +193,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event()
         .open_or_create()?;
 
-    let mut listener = event.listener().create()?;
+    let listener = event.listener().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
-        if let Ok(events) = listener.timed_wait(CYCLE_TIME) {
-            for event_id in events {
-                println!("event was triggered with id: {:?}", event_id);
-            }
+        if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
+            println!("event was triggered with id: {:?}", event_id);
         }
+    }
+
+    Ok(())
+}
+```
+
+**listener.rs** grabbing all events at once
+
+```rust
+use core::time::Duration;
+use iceoryx2::prelude::*;
+
+const CYCLE_TIME: Duration = Duration::from_secs(1);
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let event_name = ServiceName::new("MyEventName")?;
+
+    let event = zero_copy::Service::new(&event_name)
+        .event()
+        .open_or_create()?;
+
+    let listener = event.listener().create()?;
+
+    while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
+        listener.timed_wait_all(
+            |event_id| {
+                println!("event was triggered with id: {:?}", event_id);
+            },
+            CYCLE_TIME,
+        )?;
     }
 
     Ok(())

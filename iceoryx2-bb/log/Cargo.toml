@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-log"
-description = "Iceoryx2: the internal logger"
+description = "iceoryx2: [internal] the logger"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
