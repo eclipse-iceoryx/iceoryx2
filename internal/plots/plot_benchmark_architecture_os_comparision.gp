@@ -1,44 +1,38 @@
 #!/usr/bin/gnuplot -p
 
-color_graph_caption='#000000'
+color_graph_caption='#595959'
 color_graph_grid='#d6d7d9'
 color_graph_box='#528c19'
-output_height=600 # this is the width before rotating
-output_width=1400 # this is the height before rotating
+output_height=650
+output_width=1400
 
 set style line 101 lc rgb color_graph_caption lt 1 lw 1
-set border 3 front ls 101
-set tics center nomirror out scale 1 font ",18"
+set tics center nomirror out scale 1 font ",20"
 
 set style line 102 lc rgb color_graph_grid lt 0 lw 1
 set grid back ls 102
 
-set tmargin 3
-set lmargin 10
-set rmargin 6
-set bmargin 14
+set tmargin 5
+set lmargin 25
+set rmargin 5
+set bmargin 5
 
-set xtic rotate by 90 scale 0
-set ytics rotate by 90
-set ylabel "iceoryx2 Latency On Different Platforms" font ",24"
-set y2label 'latency [ns] (less is better)' offset 2.5 font ",18"
-set xlabel ' '
+set xtics in offset 0,-0.5 scale 0.5
+set ytics right scale 0
+set x2label "iceoryx2 Latency On Different Platforms" offset 0,-0.5 font ",36"
+set xlabel 'latency [ns] (less is better)' offset 0,-1 font ",24"
+set ylabel offset -10,0
 
-# set xlabel "payload size [kb]" font ",18" offset 0,-1.5
-# set ylabel "latency [µs]" font ",18" offset -1.5,0
-# set title "iceoryx2 Latency On Different Platforms" font ",24"
+set yrange [0:*]      # start at zero, find max from the data
+set style fill solid  # solid color boxes
 
-set xtics left offset 0,-12 font ",14"
 unset key
 
-set term png transparent truecolor size output_height,output_width
-set output 'benchmark_architecture.png'
+set object rectangle from screen -0.1,-0.1 to screen 1.1,1.1 fs noborder solid 0.7 fc rgb "#FFFFFF" behind
+set term svg enhanced font "sans" size output_width,output_height
+set output 'benchmark_architecture.svg'
 
-set boxwidth 0.6
-set style fill solid noborder
-set yrange[0:1000]
+myBoxWidth = 0.7
+set offsets 0,0,0.5-myBoxWidth/2.,0.5
 
-plot 'benchmark_architecture_os_comparision.dat' using 0:3:xtic(sprintf("%s\n    %s", stringcolumn(1), stringcolumn(2))) with boxes lc rgb color_graph_box
-
-system("convert -rotate 90 benchmark_architecture.png benchmark_architecture.png")
-system("convert benchmark_architecture.png -background '#FFFFFFAA' -flatten benchmark_architecture.png")
+plot 'benchmark_architecture_os_comparision.dat' using (0.5*$3):0:(0.5*$3):(myBoxWidth/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2))) with boxxy lc rgb color_graph_box
