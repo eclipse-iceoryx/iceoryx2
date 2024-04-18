@@ -12,7 +12,7 @@
 
 use iceoryx2_bb_container::queue::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
 
 const SUT_CAPACITY: usize = 128;
 type Sut = FixedSizeQueue<usize, SUT_CAPACITY>;
@@ -174,5 +174,50 @@ fn fixed_size_queue_iterate_with_get() {
 
     for i in 0..sut.len() {
         assert_that!(sut.get(i), eq 2 * i + 25);
+    }
+}
+
+#[test]
+fn fixed_size_queue_drops_all_objects_when_out_of_scope() {
+    LifetimeTracker::start_tracking();
+    let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for _ in 0..sut.capacity() {
+        sut.push(LifetimeTracker::new());
+    }
+
+    assert_that!(LifetimeTracker::number_of_living_instances(), eq SUT_CAPACITY);
+    drop(sut);
+    assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+}
+
+#[test]
+fn fixed_size_queue_drops_all_objects_with_clear() {
+    LifetimeTracker::start_tracking();
+    let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for _ in 0..sut.capacity() {
+        sut.push(LifetimeTracker::new());
+    }
+
+    assert_that!(LifetimeTracker::number_of_living_instances(), eq SUT_CAPACITY);
+    sut.clear();
+    assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+}
+
+#[test]
+fn fixed_size_queue_pop_releases_object() {
+    LifetimeTracker::start_tracking();
+    let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for _ in 0..sut.capacity() {
+        sut.push(LifetimeTracker::new());
+    }
+
+    for i in (0..sut.capacity()).rev() {
+        let result = sut.pop();
+        assert_that!(result, is_some);
+        drop(result);
+        assert_that!(LifetimeTracker::number_of_living_instances(), eq i);
     }
 }
