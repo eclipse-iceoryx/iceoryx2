@@ -108,10 +108,13 @@ use iceoryx2_bb_elementary::math::unaligned_mem_size;
 pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use std::marker::PhantomData;
 
+/// Queue with run-time fixed size capacity. In contrast to its counterpart the
+/// [`RelocatableQueue`] it is movable but is not shared memory compatible.
 pub type Queue<T> = details::Queue<T, OwningPointer<MaybeUninit<T>>>;
+/// **Non-movable** relocatable queue with runtime fixed size capacity.
 pub type RelocatableQueue<T> = details::Queue<T, RelocatablePointer<MaybeUninit<T>>>;
 
-mod details {
+pub mod details {
     use super::*;
     /// **Non-movable** relocatable queue with runtime fixed size capacity.
     #[repr(C)]
@@ -165,6 +168,10 @@ mod details {
     impl<T: Copy + Debug, PointerType: PointerTrait<MaybeUninit<T>> + Debug> Queue<T, PointerType> {
         /// Returns a copy of the element stored at index. The index is starting by 0 for the first
         /// element until [`Queue::len()`].
+        ///
+        /// # Safety
+        ///
+        ///   * Must satisfy `index` < [`Queue::len()`]
         pub unsafe fn get_unchecked(&self, index: usize) -> T {
             unsafe {
                 (*self

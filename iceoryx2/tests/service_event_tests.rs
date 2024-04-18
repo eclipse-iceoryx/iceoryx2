@@ -22,7 +22,6 @@ mod service_event {
     use iceoryx2::port::notifier::NotifierNotifyError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
-    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;

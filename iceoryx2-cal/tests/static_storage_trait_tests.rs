@@ -23,7 +23,6 @@ mod static_storage {
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Barrier;
     use std::sync::Mutex;
-    use std::time::Duration;
 
     /// The list all storage tests requires that all other tests are not interfering and therefore
     /// we cannot let them run concurrently.
