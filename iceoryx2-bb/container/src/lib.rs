@@ -17,12 +17,12 @@
 //! inter-process communication.
 //!
 //! Most containers come in 3 variations:
-//!  1. `FixedSize***`, compile-time fixed size version. The capacity must be known at compile
+//!  1. `FixedSize*Container*`, compile-time fixed size version. The capacity must be known at compile
 //!     time. Those fixed-size constructs are always self-contained, meaning that the required
 //!     memory is part of the constructs and usually stored in some kind of array.
-//!  2. `Relocatable***`, run-time fixed size version that is shared memory compatible. The
+//!  2. `Relocatable*Container*`, run-time fixed size version that is shared memory compatible. The
 //!     capacity must be known when the object is created. **This object is not movable!**
-//!  3. `***`, run-time fixed size version that is **not** shared memory compatible but can be
+//!  3. `*Container*`, run-time fixed size version that is **not** shared memory compatible but can be
 //!     moved. The memory is by default stored on the heap.
 //!
 //! # Example

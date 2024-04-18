@@ -269,7 +269,7 @@ mod static_storage {
     fn concurrent_create_same_locked_storage_multiple_times_fails_for_all_but_one<
         Sut: StaticStorage,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(5));
+        let _watch_dog = Watchdog::new();
         const NUMBER_OF_THREADS: usize = 4;
         const NUMBER_OF_ITERATIONS: usize = 1000;
 
