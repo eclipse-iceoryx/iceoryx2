@@ -55,7 +55,7 @@ performance or modularity, Iceoryx2 is your answer.
 
 ### Comparision Of Mechanisms
 
-![benchmark of different mechanism](https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/bf42f95d-c129-4eef-aaa6-4210e41cca24)
+![benchmark of different mechanism](https://github.com/eclipse-iceoryx/iceoryx2/assets/56729607/636361b6-f60a-4d20-a527-4c85bcf5d0bb)
 
 **Benchmark-System**
 
@@ -67,7 +67,7 @@ performance or modularity, Iceoryx2 is your answer.
 
 ### Comparision Of Architectures
 
-![benchmark on different systems](https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/bd3729a6-41f7-4ac0-8202-151fca8199dc)
+![benchmark on different systems](https://github.com/eclipse-iceoryx/iceoryx2/assets/56729607/24319520-8b8e-402c-b77d-6f580c201a09)
 
 ## Getting Started
 
