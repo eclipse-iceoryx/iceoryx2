@@ -190,7 +190,7 @@ impl<const CAPACITY: usize> Default for FixedSizeByteString<CAPACITY> {
     }
 }
 
-// Adds escape characters to the string so that it can be used for console output.
+/// Adds escape characters to the string so that it can be used for console output.
 pub fn as_escaped_string(bytes: &[u8]) -> String {
     String::from_utf8(
         bytes
