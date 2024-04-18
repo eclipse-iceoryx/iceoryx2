@@ -1,6 +1,6 @@
 [package]
 name = "example"
-description = "Iceoryx2 examples"
+description = "iceoryx2: examples"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

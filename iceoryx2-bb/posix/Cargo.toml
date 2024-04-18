@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-posix"
-description = "Iceoryx2: [internal] high level safe abstractions for low level unsafe posix constructs"
+description = "iceoryx2: [internal] high level safe abstractions for low level unsafe posix constructs"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

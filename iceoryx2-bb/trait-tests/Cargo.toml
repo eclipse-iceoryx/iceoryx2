@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-trait-tests"
-description = "Iceoryx2: [internal] tests for implementations of iceoryx2-bb traits"
+description = "iceoryx2: [internal] tests for implementations of iceoryx2-bb traits"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

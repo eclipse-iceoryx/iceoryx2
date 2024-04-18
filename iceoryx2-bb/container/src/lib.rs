@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! # Iceoryx2 Building Blocks (BB) Container
+//! # iceoryx2 Building Blocks (BB) Container
 //!
 //! This is a support library for iceoryx2 which comes with containers that are
 //! compatible with shared memory and can be used to construct custom payload types for
@@ -57,7 +57,7 @@
 //! ## 2. Shared Memory Compatible Run-Time FixedSize Containers
 //!
 //! Despite that the containers are already implemented, iceoryx2 itself does not yet support
-//! run-time fixed size types. It is planned and will come.
+//! run-time fixed size types. It is planned and will be part of an upcoming release.
 //!
 //! ## 3. Run-Time FixedSize Containers
 //!

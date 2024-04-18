@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-elementary"
-description = "Iceoryx2: [internal] elementary constructs that have no dependencies at all"
+description = "iceoryx2: [internal] elementary constructs that have no dependencies at all"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

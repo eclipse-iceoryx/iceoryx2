@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-system-types"
-description = "Iceoryx2: [internal] strong types that represents low level constructs like file, path, ip address, etc..."
+description = "iceoryx2: [internal] strong types that represents low level constructs like file, path, ip address, etc..."
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

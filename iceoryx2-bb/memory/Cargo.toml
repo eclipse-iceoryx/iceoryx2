@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-memory"
-description = "Iceoryx2: [internal] allocators and tools for memory management"
+description = "iceoryx2: [internal] allocators and tools for memory management"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

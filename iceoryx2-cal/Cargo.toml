@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-cal"
-description = "Iceoryx2: [internal] high-level traits and implementations that represents OS primitives in an exchangeable fashion"
+description = "iceoryx2: [internal] high-level traits and implementations that represents OS primitives in an exchangeable fashion"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

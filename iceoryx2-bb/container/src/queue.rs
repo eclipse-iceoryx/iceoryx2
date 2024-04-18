@@ -19,7 +19,7 @@
 //!  * [`Queue`](crate::queue::Queue), run-time fixed size queue that uses by default
 //!     heap memory.
 //!
-//! # User Examples
+//! # Basic Examples
 //!
 //! ## Use the [`FixedSizeQueue`](crate::queue::FixedSizeQueue)
 //!
@@ -50,7 +50,7 @@
 //! println!("pop from queue {}", queue.pop().unwrap());
 //! ```
 //!
-//! # Expert Examples
+//! # Advanced Examples
 //!
 //! ## Create [`RelocatableQueue`](crate::queue::RelocatableQueue) inside constructs which provides memory
 //!
