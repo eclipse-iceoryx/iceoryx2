@@ -41,3 +41,11 @@ path = "examples/publish_subscribe/publisher.rs"
 [[example]]
 name = "publish_subscribe_subscriber"
 path = "examples/publish_subscribe/subscriber.rs"
+
+[[example]]
+name = "untyped_publish_subscribe_publisher"
+path = "examples/untyped_publish_subscribe/publisher.rs"
+
+[[example]]
+name = "untyped_publish_subscribe_subscriber"
+path = "examples/untyped_publish_subscribe/subscriber.rs"

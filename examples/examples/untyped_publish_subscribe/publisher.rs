@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -13,7 +13,6 @@
 use core::time::Duration;
 use iceoryx2::prelude::*;
 use std::alloc::Layout;
-use transmission_data::TransmissionData;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -22,7 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service = zero_copy::Service::new(&service_name)
         .publish_subscribe()
-        .open_or_create::<TransmissionData>()?;
+        .untyped::<&[u8]>()
+        .open_or_create(Layout::from_size_align(256, 32)?)?;
 
     let publisher = service.publisher().create()?;
 
@@ -30,14 +30,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         counter += 1;
-        let sample = publisher.loan_uninit()?;
+        let mut sample = publisher
+            .loan_uninit_with_layout(unsafe { Layout::from_size_align_unchecked(128, 8) })?;
 
-        let sample = sample.write_payload(TransmissionData {
-            x: counter as i32,
-            y: counter as i32 * 3,
-            funky: counter as f64 * 812.12,
-        });
+        // ** when this line is skipped
+        sample.payload_mut().as_mut_ptr();
+        let sample = unsafe { sample.assume_init() };
 
+        // ** this line does not compile
         sample.send()?;
 
         println!("Send sample {} ...", counter);

@@ -41,6 +41,9 @@ use crate::{
 use iceoryx2_cal::shared_memory::*;
 use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
 
+pub(crate) const SAMPLE_MUT_UNINITIALIZED: u8 = 0;
+pub(crate) const SAMPLE_MUT_INITIALIZED: u8 = 1;
+
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 /// [`crate::port::publisher::Publisher::loan()`] or
 /// [`crate::port::publisher::Publisher::loan_uninit()`]. It stores the payload that will be sent
@@ -55,14 +58,14 @@ use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
 /// The generic parameter `M` is either a `MessageType` or a [`core::mem::MaybeUninit<MessageType>`], depending
 /// which API is used to obtain the sample.
 #[derive(Debug)]
-pub struct SampleMut<MessageType: Debug, Service: crate::service::Service> {
+pub struct SampleMut<MessageType: Debug, Service: crate::service::Service, const STATE: u8> {
     data_segment: Arc<DataSegment<Service>>,
     ptr: RawSampleMut<Header, MessageType>,
     pub(crate) offset_to_chunk: PointerOffset,
 }
 
-impl<MessageType: Debug, Service: crate::service::Service> Drop
-    for SampleMut<MessageType, Service>
+impl<MessageType: Debug, Service: crate::service::Service, const STATE: u8> Drop
+    for SampleMut<MessageType, Service, STATE>
 {
     fn drop(&mut self) {
         self.data_segment.return_loaned_sample(self.offset_to_chunk);
@@ -70,7 +73,7 @@ impl<MessageType: Debug, Service: crate::service::Service> Drop
 }
 
 impl<MessageType: Debug, Service: crate::service::Service>
-    SampleMut<MaybeUninit<MessageType>, Service>
+    SampleMut<MaybeUninit<MessageType>, Service, SAMPLE_MUT_UNINITIALIZED>
 {
     pub(crate) fn new(
         data_segment: &Arc<DataSegment<Service>>,
@@ -86,7 +89,7 @@ impl<MessageType: Debug, Service: crate::service::Service>
 }
 
 impl<MessageType: Debug, Service: crate::service::Service>
-    SampleMut<MaybeUninit<MessageType>, Service>
+    SampleMut<MaybeUninit<MessageType>, Service, SAMPLE_MUT_UNINITIALIZED>
 {
     /// Writes the payload to the sample and labels the sample as initialized
     ///
@@ -111,7 +114,10 @@ impl<MessageType: Debug, Service: crate::service::Service>
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write_payload(mut self, value: MessageType) -> SampleMut<MessageType, Service> {
+    pub fn write_payload(
+        mut self,
+        value: MessageType,
+    ) -> SampleMut<MessageType, Service, SAMPLE_MUT_INITIALIZED> {
         self.payload_mut().write(value);
         // SAFETY: this is safe since the payload was initialized on the line above
         unsafe { self.assume_init() }
@@ -146,7 +152,7 @@ impl<MessageType: Debug, Service: crate::service::Service>
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn assume_init(self) -> SampleMut<MessageType, Service> {
+    pub unsafe fn assume_init(self) -> SampleMut<MessageType, Service, SAMPLE_MUT_INITIALIZED> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
     }
@@ -155,7 +161,8 @@ impl<MessageType: Debug, Service: crate::service::Service>
 impl<
         M: Debug, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
         Service: crate::service::Service,
-    > SampleMut<M, Service>
+        const STATE: u8,
+    > SampleMut<M, Service, STATE>
 {
     /// Returns a reference to the header of the sample.
     ///
@@ -241,7 +248,13 @@ impl<
     pub fn payload_mut(&mut self) -> &mut M {
         self.ptr.as_data_mut()
     }
+}
 
+impl<
+        M: Debug, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
+        Service: crate::service::Service,
+    > SampleMut<M, Service, SAMPLE_MUT_INITIALIZED>
+{
     /// Send a previously loaned [`crate::port::publisher::Publisher::loan_uninit()`] or
     /// [`crate::port::publisher::Publisher::loan()`] [`SampleMut`] to all connected
     /// [`crate::port::subscriber::Subscriber`]s of the service.

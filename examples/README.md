@@ -43,3 +43,4 @@ they interact and exchange data.
 | [docker](examples/docker) | Communicate between different docker containers and the host. |
 | [event](examples/event) | Exchanging event signals between multiple processes.|
 | [publish subscribe](examples/publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |
+| [untyped_publish subscribe](examples/untyped_publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern) based on untyped services.|

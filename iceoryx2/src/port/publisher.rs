@@ -633,7 +633,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     /// ```
     pub fn loan_uninit(
         &self,
-    ) -> Result<SampleMut<MaybeUninit<MessageType>, Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<MaybeUninit<MessageType>, Service, 0>, PublisherLoanError> {
         let msg = "Unable to loan Sample";
 
         if self.data_segment.loan_counter.load(Ordering::Relaxed)
@@ -711,8 +711,17 @@ impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service,
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<SampleMut<MessageType, Service>, PublisherLoanError> {
+    pub fn loan(&self) -> Result<SampleMut<MessageType, Service, 1>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
+    }
+}
+
+impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service, &[MessageType]> {
+    pub fn loan_uninit_with_layout(
+        &self,
+        _layout: Layout,
+    ) -> Result<SampleMut<MaybeUninit<&mut [MessageType]>, Service, 0>, PublisherLoanError> {
+        todo!()
     }
 }
 
