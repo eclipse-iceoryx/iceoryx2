@@ -1,5 +1,51 @@
 # How To Create An iceoryx2 Release
 
+## Start Always With Writing The Articles
+
+ 1. Write release announcement blog article
+ 2. Write LinkedIn post
+ 3. Write reddit/hacker news post
+
+### Article Templates
+
+ 1. First link in new release announcement shall always be the link to the release blog-article.
+
+**Blog Article - Add The Following Links**
+
+```
+[Add it at the top]
+
+ * Discuss on Reddit
+ * Discuss on Hacker News
+ * Project on GitHub
+ * Project on crates.io
+```
+
+**Social Media Post - Add The Following Links**
+
+```
+[Add it at the top]
+ * Release Announcement: https://ekxide.io/blog/****************
+
+[Add it at the bottom]
+ * repo: https://github.com/eclipse-iceoryx/iceoryx2
+ * roadmap: https://github.com/eclipse-iceoryx/iceoryx2/blob/main/ROADMAP.md
+ * crates.io: https://crates.io/crates/iceoryx2
+ * docs.rs: https://docs.rs/iceoryx2/latest/iceoryx2
+```
+
+### Announcement (Major release only)
+
+ 1. Write blog-article with some technical details, highlights etc.
+ 2. Announce blog-article on
+    * https://www.reddit.com/r/rust/
+    * https://www.linkedin.com/
+    * https://news.ycombinator.com/
+    * https://techhub.social/
+    * https://X.com/
+ 3. If there are interesting things to explore, play around with, post it on
+    * https://news.ycombinator.com/show
+
 ## Technical Side
 
 Assume that the new version number is `X.Y.Z`.
@@ -33,15 +79,3 @@ Assume that the new version number is `X.Y.Z`.
  12. Verify that the release looks fine on `docs.rs`
     (click through the documentation to check if everything was generated
     correctly)
-
-## Announcement (Major release only)
-
- 1. Write blog-article with some technical details, highlights etc.
- 2. Announce blog-article on
-    * https://www.reddit.com/r/rust/
-    * https://www.linkedin.com/
-    * https://news.ycombinator.com/
-    * https://techhub.social/
-    * https://X.com/
- 3. If there are interesting things to explore, play around with, post it on
-    * https://news.ycombinator.com/show
