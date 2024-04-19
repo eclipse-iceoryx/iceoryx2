@@ -59,7 +59,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
-use super::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
+use super::port_identifiers::UniquePublisherId;
 use crate::message::Message;
 use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
@@ -67,7 +67,7 @@ use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
 use crate::service;
 use crate::service::config_scheme::data_segment_config;
-use crate::service::dynamic_config::publish_subscribe::PublisherDetails;
+use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
@@ -152,7 +152,7 @@ pub(crate) struct DataSegment<Service: service::Service> {
     dynamic_storage: Arc<Service::DynamicStorage>,
 
     subscriber_connections: SubscriberConnections<Service>,
-    subscriber_list_state: UnsafeCell<ContainerState<UniqueSubscriberId>>,
+    subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<usize>>>,
     static_config: crate::service::static_config::StaticConfig,
     loan_counter: AtomicUsize,
@@ -327,11 +327,12 @@ impl<Service: service::Service> DataSegment<Service> {
 
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
-                Some(subscriber_id) => {
+                Some(subscriber_details) => {
                     let create_connection = match self.subscriber_connections.get(i) {
                         None => true,
                         Some(connection) => {
-                            let is_connected = connection.subscriber_id != *subscriber_id;
+                            let is_connected =
+                                connection.subscriber_id != subscriber_details.port_id;
                             if is_connected {
                                 self.remove_connection(i);
                             }
@@ -340,7 +341,7 @@ impl<Service: service::Service> DataSegment<Service> {
                     };
 
                     if create_connection {
-                        match self.subscriber_connections.create(i, *subscriber_id) {
+                        match self.subscriber_connections.create(i, *subscriber_details) {
                             Ok(()) => match &self.subscriber_connections.get(i) {
                                 Some(connection) => self.deliver_sample_history(connection),
                                 None => {
@@ -351,19 +352,24 @@ impl<Service: service::Service> DataSegment<Service> {
                                 Some(c) => match c.call(
                                     self.static_config.clone(),
                                     self.port_id,
-                                    *subscriber_id,
+                                    subscriber_details.port_id,
                                 ) {
                                     DegrationAction::Ignore => (),
                                     DegrationAction::Warn => {
-                                        warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
+                                        warn!(from self,
+                                            "Unable to establish connection to new subscriber {:?}.",
+                                            subscriber_details.port_id )
                                     }
                                     DegrationAction::Fail => {
                                         fail!(from self, with e,
-                                           "Unable to establish connection to new subscriber {:?}.", subscriber_id );
+                                           "Unable to establish connection to new subscriber {:?}.",
+                                           subscriber_details.port_id );
                                     }
                                 },
                                 None => {
-                                    warn!(from self, "Unable to establish connection to new subscriber {:?}.", subscriber_id )
+                                    warn!(from self,
+                                        "Unable to establish connection to new subscriber {:?}.",
+                                        subscriber_details.port_id )
                                 }
                             },
                         }

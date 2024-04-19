@@ -46,6 +46,7 @@ use super::publish_subscribe::PortFactory;
 
 #[derive(Debug)]
 pub(crate) struct SubscriberConfig {
+    pub(crate) buffer_size: Option<usize>,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
 }
 
@@ -64,10 +65,16 @@ impl<'factory, Service: service::Service, MessageType: Debug>
     pub(crate) fn new(factory: &'factory PortFactory<Service, MessageType>) -> Self {
         Self {
             config: SubscriberConfig {
+                buffer_size: None,
                 degration_callback: None,
             },
             factory,
         }
+    }
+
+    pub fn buffer_size(mut self, value: usize) -> Self {
+        self.config.buffer_size = Some(value);
+        self
     }
 
     /// Sets the [`DegrationCallback`] of the [`Subscriber`]. Whenever a connection to a

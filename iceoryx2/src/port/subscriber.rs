@@ -43,7 +43,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
 
 use crate::port::DegrationAction;
-use crate::service::dynamic_config::publish_subscribe::PublisherDetails;
+use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{
@@ -136,11 +136,17 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
 
         let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
 
+        let buffer_size = match config.buffer_size {
+            Some(buffer_size) => buffer_size,
+            None => static_config.subscriber_max_buffer_size,
+        };
+
         let publisher_connections = Arc::new(PublisherConnections::new(
             publisher_list.capacity(),
             port_id,
             &service.state().global_config,
             static_config,
+            buffer_size,
         ));
 
         let mut new_self = Self {
@@ -166,8 +172,10 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             .dynamic_storage
             .get()
             .publish_subscribe()
-            .add_subscriber_id(port_id)
-        {
+            .add_subscriber_id(SubscriberDetails {
+                port_id,
+                buffer_size,
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,

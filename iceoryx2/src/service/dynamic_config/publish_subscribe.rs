@@ -45,11 +45,17 @@ pub(crate) struct PublisherDetails {
     pub(crate) number_of_samples: usize,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct SubscriberDetails {
+    pub(crate) port_id: UniqueSubscriberId,
+    pub(crate) buffer_size: usize,
+}
+
 /// The dynamic configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[derive(Debug)]
 pub struct DynamicConfig {
-    pub(crate) subscribers: Container<UniqueSubscriberId>,
+    pub(crate) subscribers: Container<SubscriberDetails>,
     pub(crate) publishers: Container<PublisherDetails>,
 }
 
@@ -71,7 +77,7 @@ impl DynamicConfig {
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
-        Container::<UniqueSubscriberId>::memory_size(config.number_of_subscribers)
+        Container::<SubscriberDetails>::memory_size(config.number_of_subscribers)
             + Container::<PublisherDetails>::memory_size(config.number_of_publishers)
     }
 
@@ -85,8 +91,8 @@ impl DynamicConfig {
         self.subscribers.len()
     }
 
-    pub(crate) fn add_subscriber_id(&self, id: UniqueSubscriberId) -> Option<ContainerHandle> {
-        unsafe { self.subscribers.add(id) }
+    pub(crate) fn add_subscriber_id(&self, details: SubscriberDetails) -> Option<ContainerHandle> {
+        unsafe { self.subscribers.add(details) }
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {

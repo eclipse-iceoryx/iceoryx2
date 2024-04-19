@@ -20,6 +20,7 @@ use iceoryx2_cal::zero_copy_connection::{
 };
 
 use crate::service::config_scheme::connection_config;
+use crate::service::dynamic_config::publish_subscribe::SubscriberDetails;
 use crate::{
     config,
     port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},
@@ -36,23 +37,23 @@ pub(crate) struct Connection<Service: service::Service> {
 impl<Service: service::Service> Connection<Service> {
     fn new(
         this: &SubscriberConnections<Service>,
-        subscriber_id: UniqueSubscriberId,
+        subscriber_details: SubscriberDetails,
         number_of_samples: usize,
     ) -> Result<Self, ZeroCopyCreationError> {
         let sender = fail!(from this, when <Service::Connection as ZeroCopyConnection>::
-                        Builder::new( &connection_name(this.port_id, subscriber_id))
+                        Builder::new( &connection_name(this.port_id, subscriber_details.port_id))
                                 .config(&connection_config::<Service>(this.config.as_ref()))
-                                .buffer_size(this.static_config.subscriber_max_buffer_size)
+                                .buffer_size(subscriber_details.buffer_size)
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                 .number_of_samples(number_of_samples)
                                 .create_sender(this.static_config.type_size),
                         "Unable to establish connection to subscriber {:?} from publisher {:?}.",
-                        subscriber_id, this.port_id);
+                        subscriber_details.port_id, this.port_id);
 
         Ok(Self {
             sender,
-            subscriber_id,
+            subscriber_id: subscriber_details.port_id,
         })
     }
 }
@@ -103,11 +104,11 @@ impl<Service: service::Service> SubscriberConnections<Service> {
     pub(crate) fn create(
         &self,
         index: usize,
-        subscriber_id: UniqueSubscriberId,
+        subscriber_details: SubscriberDetails,
     ) -> Result<(), ZeroCopyCreationError> {
         *self.get_mut(index) = Some(Connection::new(
             self,
-            subscriber_id,
+            subscriber_details,
             self.number_of_samples,
         )?);
 
