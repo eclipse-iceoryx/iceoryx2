@@ -82,7 +82,7 @@ pub(crate) struct PublisherConnections<Service: service::Service> {
     subscriber_id: UniqueSubscriberId,
     config: Arc<config::Config>,
     static_config: StaticConfig,
-    buffer_size: usize,
+    pub(crate) buffer_size: usize,
 }
 
 impl<Service: service::Service> PublisherConnections<Service> {

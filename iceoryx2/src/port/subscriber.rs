@@ -54,6 +54,7 @@ use crate::{
 use super::details::publisher_connections::{Connection, PublisherConnections};
 use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::ConnectionFailure;
+use super::DegrationCallback;
 
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -75,6 +76,7 @@ impl std::error::Error for SubscriberReceiveError {}
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SubscriberCreateError {
     ExceedsMaxSupportedSubscribers,
+    BufferSizeExceedsMaxSupportedBufferSizeOfService,
 }
 
 impl std::fmt::Display for SubscriberCreateError {
@@ -100,7 +102,7 @@ pub struct Subscriber<Service: service::Service, MessageType: Debug> {
     publisher_connections: Arc<PublisherConnections<Service>>,
     dynamic_storage: Arc<Service::DynamicStorage>,
     static_config: crate::service::static_config::StaticConfig,
-    config: SubscriberConfig,
+    degration_callback: Option<DegrationCallback<'static>>,
 
     publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     _phantom_message_type: PhantomData<MessageType>,
@@ -137,7 +139,14 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
 
         let buffer_size = match config.buffer_size {
-            Some(buffer_size) => buffer_size,
+            Some(buffer_size) => {
+                if static_config.subscriber_max_buffer_size < buffer_size {
+                    fail!(from origin, with SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService,
+                        "{} since the requested buffer size {} exceeds the maximum supported buffer size {} of the service.",
+                        msg, buffer_size, static_config.subscriber_max_buffer_size);
+                }
+                buffer_size
+            }
             None => static_config.subscriber_max_buffer_size,
         };
 
@@ -150,7 +159,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         ));
 
         let mut new_self = Self {
-            config,
+            degration_callback: config.degration_callback,
             publisher_connections,
             dynamic_storage,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
@@ -178,7 +187,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             }) {
             Some(unique_index) => unique_index,
             None => {
-                fail!(from origin, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
+                fail!(from new_self, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
                                 "{} since it would exceed the maximum supported amount of subscribers of {}.",
                                 msg, service.state().static_config.publish_subscribe().max_subscribers);
             }
@@ -215,7 +224,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                             details.number_of_samples,
                         ) {
                             Ok(()) => (),
-                            Err(e) => match &self.config.degration_callback {
+                            Err(e) => match &self.degration_callback {
                                 None => {
                                     warn!(from self, "Unable to establish connection to new publisher {:?}.", details.publisher_id)
                                 }
@@ -306,6 +315,11 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         }
 
         Ok(None)
+    }
+
+    /// Returns the internal buffer size of the [`Subscriber`].
+    pub fn buffer_size(&self) -> usize {
+        self.publisher_connections.buffer_size
     }
 
     /// Explicitly updates all connections to the [`crate::port::publisher::Publisher`]s. This is

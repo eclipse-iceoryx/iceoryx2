@@ -40,6 +40,16 @@ impl<Service: service::Service> Connection<Service> {
         subscriber_details: SubscriberDetails,
         number_of_samples: usize,
     ) -> Result<Self, ZeroCopyCreationError> {
+        let msg = format!(
+            "Unable to establish connection to subscriber {:?} from publisher {:?}",
+            subscriber_details.port_id, this.port_id
+        );
+        if this.static_config.subscriber_max_buffer_size < subscriber_details.buffer_size {
+            fail!(from this, with ZeroCopyCreationError::IncompatibleBufferSize,
+                "{} since the subscribers buffer size {} exceeds the services max subscriber buffer size of {}.",
+                msg, subscriber_details.buffer_size, this.static_config.subscriber_max_buffer_size);
+        }
+
         let sender = fail!(from this, when <Service::Connection as ZeroCopyConnection>::
                         Builder::new( &connection_name(this.port_id, subscriber_details.port_id))
                                 .config(&connection_config::<Service>(this.config.as_ref()))
@@ -48,8 +58,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                 .number_of_samples(number_of_samples)
                                 .create_sender(this.static_config.type_size),
-                        "Unable to establish connection to subscriber {:?} from publisher {:?}.",
-                        subscriber_details.port_id, this.port_id);
+                        "{}.", msg);
 
         Ok(Self {
             sender,

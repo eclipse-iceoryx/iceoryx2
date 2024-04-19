@@ -73,7 +73,7 @@ impl<'factory, Service: service::Service, MessageType: Debug>
     }
 
     pub fn buffer_size(mut self, value: usize) -> Self {
-        self.config.buffer_size = Some(value);
+        self.config.buffer_size = Some(value.max(1));
         self
     }
 
