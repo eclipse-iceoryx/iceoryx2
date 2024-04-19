@@ -1585,6 +1585,88 @@ mod service_publish_subscribe {
         );
     }
 
+    #[test]
+    fn subscriber_can_decrease_buffer_size<Sut: Service>() {
+        const BUFFER_SIZE: usize = 16;
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .subscriber_max_buffer_size(BUFFER_SIZE)
+            .create::<usize>()
+            .unwrap();
+
+        let sut2 = Sut::new(&service_name)
+            .publish_subscribe()
+            .open::<usize>()
+            .unwrap();
+
+        for i in 1..=BUFFER_SIZE {
+            let publisher_before_sub = sut2.publisher().create().unwrap();
+            let subscriber = sut.subscriber().buffer_size(i).create().unwrap();
+            let publisher_after_sub = sut2.publisher().create().unwrap();
+
+            assert_that!(subscriber.buffer_size(), eq i);
+
+            for n in 0..i * 2 {
+                assert_that!(publisher_before_sub.send_copy(n), is_ok);
+            }
+
+            for n in 0..i {
+                let sample = subscriber.receive().unwrap().unwrap();
+                assert_that!(*sample, eq i + n);
+            }
+
+            let sample = subscriber.receive().unwrap();
+            assert_that!(sample, is_none);
+
+            for n in 0..i * 2 {
+                assert_that!(publisher_after_sub.send_copy(n as _), is_ok);
+            }
+
+            for n in 0..i {
+                let sample = subscriber.receive().unwrap().unwrap();
+                assert_that!(*sample, eq i + n);
+            }
+
+            let sample = subscriber.receive().unwrap();
+            assert_that!(sample, is_none);
+        }
+    }
+
+    #[test]
+    fn subscriber_creation_fails_when_buffer_size_exceeds_service_max<Sut: Service>() {
+        const BUFFER_SIZE: usize = 16;
+        let service_name = generate_name();
+
+        let _sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .subscriber_max_buffer_size(BUFFER_SIZE)
+            .create::<u64>()
+            .unwrap();
+
+        let sut2 = Sut::new(&service_name)
+            .publish_subscribe()
+            .open::<u64>()
+            .unwrap();
+
+        let subscriber = sut2.subscriber().buffer_size(BUFFER_SIZE + 1).create();
+        assert_that!(subscriber, is_err);
+        assert_that!(subscriber.err().unwrap(), eq SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService);
+    }
+
+    #[test]
+    fn subscriber_buffer_size_is_at_least_one<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .create::<u64>()
+            .unwrap();
+
+        let subscriber = sut.subscriber().buffer_size(0).create().unwrap();
+        assert_that!(subscriber.buffer_size(), eq 1);
+    }
+
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
     mod zero_copy {}
 

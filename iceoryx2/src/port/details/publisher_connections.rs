@@ -55,7 +55,7 @@ impl<Service: service::Service> Connection<Service> {
                         when <Service::Connection as ZeroCopyConnection>::
                             Builder::new( &connection_name(publisher_id, this.subscriber_id))
                                     .config(&connection_config::<Service>(this.config.as_ref()))
-                                    .buffer_size(this.static_config.subscriber_max_buffer_size)
+                                    .buffer_size(this.buffer_size)
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                     .number_of_samples(number_of_samples)
@@ -82,6 +82,7 @@ pub(crate) struct PublisherConnections<Service: service::Service> {
     subscriber_id: UniqueSubscriberId,
     config: Arc<config::Config>,
     static_config: StaticConfig,
+    pub(crate) buffer_size: usize,
 }
 
 impl<Service: service::Service> PublisherConnections<Service> {
@@ -90,12 +91,14 @@ impl<Service: service::Service> PublisherConnections<Service> {
         subscriber_id: UniqueSubscriberId,
         config: &Arc<config::Config>,
         static_config: &StaticConfig,
+        buffer_size: usize,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
             subscriber_id,
             config: Arc::clone(config),
             static_config: static_config.clone(),
+            buffer_size,
         }
     }
 
