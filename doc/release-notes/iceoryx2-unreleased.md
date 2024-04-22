@@ -20,7 +20,7 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * `open`, `open_or_create` and `create` are untyped in pubsub-builder [#195](https://github.com/eclipse-iceoryx/iceoryx2/issues/195)
 
 ### Workflow
 
@@ -36,12 +36,19 @@
 
 ### API Breaking Changes
 
-1. Example
+1. `open`, `open_or_create` and `create` are untyped for publish-subscribe services
 
     ```rust
     // old
-    let fuu = hello().is_it_me_you_re_looking_for()
+    let service = zero_copy::Service::new(&service_name)
+        .publish_subscribe()
+        .create::<u64>() // or open::<u64>(), or open_or_create::<u64>()
+        .unwrap();
 
     // new
-    let fuu = hypnotoad().all_glory_to_the_hypnotoad()
+    let service = zero_copy::Service::new(&service_name)
+        .publish_subscribe()
+        .typed::<u64>()
+        .create() // or open(), or open_or_create()
+        .unwrap();
     ```
