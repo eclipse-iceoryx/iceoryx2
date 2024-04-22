@@ -27,7 +27,8 @@
 //!
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe_with_custom_config(&custom_config)
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! # Ok(())
 //! # }

@@ -19,7 +19,8 @@
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let pubsub = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe()
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! println!("type name:                        {:?}", pubsub.static_config().type_name());
 //! println!("max publishers:                   {:?}", pubsub.static_config().max_supported_publishers());

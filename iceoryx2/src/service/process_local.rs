@@ -21,7 +21,8 @@
 //! // use `process_local` as communication variant
 //! let service = process_local::Service::new(&service_name)
 //!     .publish_subscribe()
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! let publisher = service.publisher().create()?;
 //! let subscriber = service.subscriber().create()?;
