@@ -12,7 +12,7 @@
 
 use core::{
     cell::UnsafeCell,
-    ops::{AddAssign, SubAssign},
+    ops::{AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, Not, SubAssign},
     sync::atomic::Ordering,
 };
 
@@ -48,7 +48,19 @@ pub struct IceAtomic<T: Copy + Send> {
     lock: LockType,
 }
 
-impl<T: Copy + Send + Eq + AddAssign + SubAssign> IceAtomic<T> {
+impl<
+        T: Copy
+            + Send
+            + Eq
+            + AddAssign
+            + SubAssign
+            + BitAndAssign
+            + BitOrAssign
+            + BitXorAssign
+            + Ord
+            + Not<Output = T>,
+    > IceAtomic<T>
+{
     pub fn new(v: T) -> Self {
         Self {
             data: UnsafeCell::new(v),
@@ -67,6 +79,10 @@ impl<T: Copy + Send + Eq + AddAssign + SubAssign> IceAtomic<T> {
 
     fn unlock(&self) {
         self.lock.unlock(|_| {}, |_| {});
+    }
+
+    pub const fn as_ptr(&self) -> *mut T {
+        self.data.get()
     }
 
     pub fn compare_exchange(
@@ -100,22 +116,65 @@ impl<T: Copy + Send + Eq + AddAssign + SubAssign> IceAtomic<T> {
         self.compare_exchange(current, new, success, failure)
     }
 
-    pub fn fetch_add(&self, value: T, order: Ordering) -> T {
+    fn fetch_op<F: FnOnce()>(&self, op: F, order: Ordering) -> T {
         self.write_lock();
         let data = unsafe { *self.data.get() };
-        unsafe { *self.data.get() += value };
+        op();
         core::sync::atomic::fence(order);
         self.unlock();
         data
     }
 
+    pub fn fetch_add(&self, value: T, order: Ordering) -> T {
+        self.fetch_op(|| unsafe { *self.data.get() += value }, order)
+    }
+
+    pub fn fetch_and(&self, value: T, order: Ordering) -> T {
+        self.fetch_op(|| unsafe { *self.data.get() &= value }, order)
+    }
+
+    pub fn fetch_max(&self, value: T, order: Ordering) -> T {
+        self.fetch_op(
+            || {
+                let data = unsafe { *self.data.get() };
+                unsafe { *self.data.get() = data.max(value) }
+            },
+            order,
+        )
+    }
+
+    pub fn fetch_min(&self, value: T, order: Ordering) -> T {
+        self.fetch_op(
+            || {
+                let data = unsafe { *self.data.get() };
+                unsafe { *self.data.get() = data.min(value) }
+            },
+            order,
+        )
+    }
+
+    pub fn fetch_nand(&self, value: T, order: Ordering) -> T {
+        self.fetch_op(|| unsafe { *self.data.get() &= !value }, order)
+    }
+
+    pub fn fetch_or(&self, value: T, order: Ordering) -> T {
+        self.fetch_op(|| unsafe { *self.data.get() |= value }, order)
+    }
+
     pub fn fetch_sub(&self, value: T, order: Ordering) -> T {
-        self.write_lock();
-        let data = unsafe { *self.data.get() };
-        unsafe { *self.data.get() -= value };
-        core::sync::atomic::fence(order);
-        self.unlock();
-        data
+        self.fetch_op(|| unsafe { *self.data.get() -= value }, order)
+    }
+
+    pub fn fetch_update(&self, value: T, order: Ordering) -> T {
+        self.fetch_op(|| unsafe { *self.data.get() = value }, order)
+    }
+
+    pub fn fetch_xor(&self, value: T, order: Ordering) -> T {
+        self.fetch_op(|| unsafe { *self.data.get() ^= value }, order)
+    }
+
+    pub fn into_innter(self) -> T {
+        unsafe { *self.data.get() }
     }
 
     pub fn load(&self, order: Ordering) -> T {
