@@ -38,7 +38,8 @@ mod publisher {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()
-            .create::<u64>()?;
+            .typed::<u64>()
+            .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
 
@@ -54,7 +55,8 @@ mod publisher {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()
-            .create::<u64>()?;
+            .typed::<u64>()
+            .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
 
@@ -70,7 +72,8 @@ mod publisher {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()
-            .create::<u64>()?;
+            .typed::<u64>()
+            .create()?;
 
         let sut = service.publisher().max_loaned_samples(4).create()?;
 
@@ -100,7 +103,8 @@ mod publisher {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()
-            .create::<u64>()?;
+            .typed::<u64>()
+            .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
 
@@ -119,7 +123,8 @@ mod publisher {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()
-            .create::<u64>()?;
+            .typed::<u64>()
+            .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
 
@@ -141,7 +146,8 @@ mod publisher {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
             .publish_subscribe()
-            .create::<u64>()?;
+            .typed::<u64>()
+            .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
 
@@ -166,7 +172,8 @@ mod publisher {
             .publish_subscribe()
             .subscriber_max_buffer_size(1)
             .enable_safe_overflow(false)
-            .create::<u64>()?;
+            .typed::<u64>()
+            .create()?;
 
         let sut = service
             .publisher()
@@ -181,7 +188,8 @@ mod publisher {
                 let service = Sut::new(&service_name)
                     .publish_subscribe()
                     .subscriber_max_buffer_size(1)
-                    .open::<u64>()
+                    .typed::<u64>()
+                    .open()
                     .unwrap();
 
                 let subscriber = service.subscriber().create().unwrap();

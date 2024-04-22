@@ -43,7 +43,8 @@ mod sample {
                 .publish_subscribe()
                 .max_publishers(2)
                 .max_subscribers(1)
-                .create::<u64>()
+                .typed::<u64>()
+                .create()
                 .unwrap();
 
             let publisher_1 = service.publisher().create().unwrap();
@@ -88,7 +89,10 @@ mod sample {
         drop(test_context);
 
         assert_that!(
-            Sut::new(&service_name).publish_subscribe().create::<u64>(),
+            Sut::new(&service_name)
+                .publish_subscribe()
+                .typed::<u64>()
+                .create(),
             is_ok
         );
     }

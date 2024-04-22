@@ -52,11 +52,17 @@ mod service {
         type OpenError = PublishSubscribeOpenError;
 
         fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
-            Sut::new(&service_name).publish_subscribe().create::<u64>()
+            Sut::new(&service_name)
+                .publish_subscribe()
+                .typed::<u64>()
+                .create()
         }
 
         fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
-            Sut::new(&service_name).publish_subscribe().open::<u64>()
+            Sut::new(&service_name)
+                .publish_subscribe()
+                .typed::<u64>()
+                .open()
         }
 
         fn assert_create_error(error: Self::CreateError) {
@@ -119,7 +125,10 @@ mod service {
     #[test]
     fn same_name_with_different_messaging_pattern_is_allowed<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let sut_pub_sub = Sut::new(&service_name).publish_subscribe().create::<u64>();
+        let sut_pub_sub = Sut::new(&service_name)
+            .publish_subscribe()
+            .typed::<u64>()
+            .create();
         assert_that!(sut_pub_sub, is_ok);
         let sut_pub_sub = sut_pub_sub.unwrap();
 

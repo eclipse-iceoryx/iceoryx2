@@ -29,7 +29,8 @@ fn perform_benchmark<T: Service>(iterations: u64) {
         .history_size(0)
         .subscriber_max_buffer_size(1)
         .enable_safe_overflow(true)
-        .create::<u64>()
+        .typed::<u64>()
+        .create()
         .unwrap();
 
     let service_b2a = T::new(&service_name_b2a)
@@ -39,7 +40,8 @@ fn perform_benchmark<T: Service>(iterations: u64) {
         .history_size(0)
         .subscriber_max_buffer_size(1)
         .enable_safe_overflow(true)
-        .create::<u64>()
+        .typed::<u64>()
+        .create()
         .unwrap();
 
     let barrier_handle = BarrierHandle::new();
