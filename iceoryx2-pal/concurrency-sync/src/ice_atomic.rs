@@ -18,31 +18,52 @@ use core::{
 
 use crate::{rwlock::RwLockWriterPreference, WaitAction};
 
+/// Behaves like [`core::sync::atomic::AtomicBool`]
 pub type IceAtomicBool = core::sync::atomic::AtomicBool;
+
+/// Behaves like [`core::sync::atomic::AtomicUsize`]
 pub type IceAtomicUsize = core::sync::atomic::AtomicUsize;
 
+/// Behaves like [`core::sync::atomic::AtomicU8`]
 pub type IceAtomicU8 = core::sync::atomic::AtomicU8;
+
+/// Behaves like [`core::sync::atomic::AtomicU16`]
 pub type IceAtomicU16 = core::sync::atomic::AtomicU16;
+
+/// Behaves like [`core::sync::atomic::AtomicU32`]
 pub type IceAtomicU32 = core::sync::atomic::AtomicU32;
+
+/// Behaves like [`core::sync::atomic::AtomicI8`]
 pub type IceAtomicI8 = core::sync::atomic::AtomicI8;
+
+/// Behaves like [`core::sync::atomic::AtomicI16`]
 pub type IceAtomicI16 = core::sync::atomic::AtomicI16;
+
+/// Behaves like [`core::sync::atomic::AtomicI32`]
 pub type IceAtomicI32 = core::sync::atomic::AtomicI32;
 
 #[cfg(target_pointer_width = "64")]
+/// Behaves like [`core::sync::atomic::AtomicI64`]
 pub type IceAtomicI64 = core::sync::atomic::AtomicI64;
 
 #[cfg(target_pointer_width = "64")]
+/// Behaves like [`core::sync::atomic::AtomicU64`]
 pub type IceAtomicU64 = core::sync::atomic::AtomicU64;
 
 #[cfg(target_pointer_width = "32")]
+/// Non lock-free implementation that behaves like [`core::sync::atomic::AtomicI64`]
 pub type IceAtomicI64 = IceAtomic<i64>;
 
 #[cfg(target_pointer_width = "32")]
+/// Non lock-free implementation that behaves like [`core::sync::atomic::AtomicU64`]
 pub type IceAtomicU64 = IceAtomic<u64>;
 
 type LockType = RwLockWriterPreference;
 
+#[doc(hidden)]
 pub mod internal {
+    use core::ops::BitAnd;
+
     use super::*;
 
     pub trait AtomicInteger:
@@ -54,6 +75,7 @@ pub mod internal {
         + BitAndAssign
         + BitOrAssign
         + BitXorAssign
+        + BitAnd<Output = Self>
         + Ord
         + Not<Output = Self>
     {
@@ -102,6 +124,9 @@ pub mod internal {
     }
 }
 
+/// iceoryx2 implementation of an atomic that has an internal [`RwLockWriterPreference`].
+/// It enables atomic operations on platforms that do not support them with the restriction that
+/// those operations are no longer lock-free.
 #[repr(C)]
 pub struct IceAtomic<T: internal::AtomicInteger> {
     data: UnsafeCell<T>,
@@ -109,6 +134,7 @@ pub struct IceAtomic<T: internal::AtomicInteger> {
 }
 
 impl<T: internal::AtomicInteger> IceAtomic<T> {
+    /// See [`core::sync::atomic::AtomicU64::new()`]
     pub fn new(v: T) -> Self {
         Self {
             data: UnsafeCell::new(v),
@@ -129,10 +155,12 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         self.lock.unlock(|_| {}, |_| {});
     }
 
+    /// See [`core::sync::atomic::AtomicU64::as_ptr()`]
     pub const fn as_ptr(&self) -> *mut T {
         self.data.get()
     }
 
+    /// See [`core::sync::atomic::AtomicU64::compare_exchange()`]
     pub fn compare_exchange(
         &self,
         current: T,
@@ -154,6 +182,7 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         Ok(data)
     }
 
+    /// See [`core::sync::atomic::AtomicU64::compare_exchange_weak()`]
     pub fn compare_exchange_weak(
         &self,
         current: T,
@@ -172,6 +201,7 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         data
     }
 
+    /// See [`core::sync::atomic::AtomicU64::fetch_add()`]
     pub fn fetch_add(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
@@ -183,6 +213,7 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         )
     }
 
+    /// See [`core::sync::atomic::AtomicU64::fetch_and()`]
     pub fn fetch_and(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
@@ -194,6 +225,7 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         )
     }
 
+    /// See [`core::sync::atomic::AtomicU64::fetch_max()`]
     pub fn fetch_max(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
@@ -205,6 +237,7 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         )
     }
 
+    /// See [`core::sync::atomic::AtomicU64::fetch_min()`]
     pub fn fetch_min(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
@@ -216,17 +249,19 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         )
     }
 
+    /// See [`core::sync::atomic::AtomicU64::fetch_nand()`]
     pub fn fetch_nand(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
                 let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() &= !value };
+                unsafe { *self.data.get() = !(old & value) };
                 old
             },
             order,
         )
     }
 
+    /// See [`core::sync::atomic::AtomicU64::fetch_or()`]
     pub fn fetch_or(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
@@ -238,6 +273,7 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         )
     }
 
+    /// See [`core::sync::atomic::AtomicU64::fetch_sub()`]
     pub fn fetch_sub(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
@@ -249,17 +285,32 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         )
     }
 
-    pub fn fetch_update(&self, value: T, order: Ordering) -> T {
-        self.fetch_op(
-            || {
-                let old = unsafe { *self.data.get() };
-                unsafe { *self.data.get() = value };
-                old
-            },
-            order,
-        )
+    /// See [`core::sync::atomic::AtomicU64::fetch_update()`]
+    pub fn fetch_update<F: FnMut(T) -> Option<T>>(
+        &self,
+        _set_order: Ordering,
+        _fetch_order: Ordering,
+        mut f: F,
+    ) -> Result<T, T> {
+        self.write_lock();
+        let data = unsafe { *self.data.get() };
+
+        match f(data) {
+            Some(v) => {
+                unsafe { *self.data.get() = v };
+                core::sync::atomic::fence(Ordering::SeqCst);
+                self.unlock();
+                Ok(data)
+            }
+            None => {
+                core::sync::atomic::fence(Ordering::SeqCst);
+                self.unlock();
+                Err(data)
+            }
+        }
     }
 
+    /// See [`core::sync::atomic::AtomicU64::fetch_xor()`]
     pub fn fetch_xor(&self, value: T, order: Ordering) -> T {
         self.fetch_op(
             || {
@@ -271,10 +322,12 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         )
     }
 
+    /// See [`core::sync::atomic::AtomicU64::into_inner()`]
     pub fn into_inner(self) -> T {
         unsafe { *self.data.get() }
     }
 
+    /// See [`core::sync::atomic::AtomicU64::load()`]
     pub fn load(&self, _order: Ordering) -> T {
         self.read_lock();
         let data = unsafe { *self.data.get() };
@@ -283,6 +336,7 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         data
     }
 
+    /// See [`core::sync::atomic::AtomicU64::store()`]
     pub fn store(&self, value: T, _order: Ordering) {
         self.write_lock();
         unsafe { *self.data.get() = value };
@@ -290,6 +344,7 @@ impl<T: internal::AtomicInteger> IceAtomic<T> {
         self.unlock();
     }
 
+    /// See [`core::sync::atomic::AtomicU64::swap()`]
     pub fn swap(&self, value: T, _order: Ordering) -> T {
         self.write_lock();
         let data = unsafe { *self.data.get() };

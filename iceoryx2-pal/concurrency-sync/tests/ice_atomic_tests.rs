@@ -22,37 +22,71 @@ mod ice_atomic {
     use iceoryx2_pal_concurrency_sync::ice_atomic::{internal::AtomicInteger, IceAtomic};
     use std::{
         fmt::Debug,
-        ops::{BitAnd, BitOr},
+        ops::{AddAssign, BitAnd, BitOr},
         sync::atomic::Ordering,
     };
 
     trait Req: AtomicInteger + Debug + BitOr + BitAnd {
         fn generate_value() -> Self;
+        fn generate_compatibility_value() -> Self;
+        fn to_u32(&self) -> u32;
     }
 
     impl Req for u64 {
+        fn to_u32(&self) -> u32 {
+            *self as u32
+        }
+
         fn generate_value() -> Self {
             0x0000f0f0f0f0 + COUNTER.fetch_add(1, Ordering::Relaxed) as u64
+        }
+
+        fn generate_compatibility_value() -> Self {
+            0x00000000f0f0 + COUNTER.fetch_add(1, Ordering::Relaxed) as u64
         }
     }
 
     impl Req for u128 {
+        fn to_u32(&self) -> u32 {
+            *self as u32
+        }
+
         fn generate_value() -> Self {
             0x00000f0f0f0f0f0f0f0f0f0f + COUNTER.fetch_add(1, Ordering::Relaxed) as u128
+        }
+
+        fn generate_compatibility_value() -> Self {
+            0x000000000000000000000f0f + COUNTER.fetch_add(1, Ordering::Relaxed) as u128
         }
     }
 
     impl Req for i64 {
+        fn to_u32(&self) -> u32 {
+            *self as u32
+        }
+
         fn generate_value() -> Self {
             (0x0000abcdabcdabcd + COUNTER.fetch_add(1, Ordering::Relaxed) as i64)
                 * (-1 as i64).pow(COUNTER.load(Ordering::Relaxed))
         }
+
+        fn generate_compatibility_value() -> Self {
+            0x000000000000abcd + COUNTER.fetch_add(1, Ordering::Relaxed) as i64
+        }
     }
 
     impl Req for i128 {
+        fn to_u32(&self) -> u32 {
+            *self as u32
+        }
+
         fn generate_value() -> Self {
             (0x0000abcdabcdabcddeadbeef + COUNTER.fetch_add(1, Ordering::Relaxed) as i128)
                 * (-1 as i128).pow(COUNTER.load(Ordering::Relaxed))
+        }
+
+        fn generate_compatibility_value() -> Self {
+            0x00000000000000000000beef + COUNTER.fetch_add(1, Ordering::Relaxed) as i128
         }
     }
 
@@ -188,8 +222,7 @@ mod ice_atomic {
         let result = sut.fetch_nand(n2, Ordering::Relaxed);
 
         assert_that!(result, eq n1);
-        let mut bit_nand = n1;
-        bit_nand &= !n2;
+        let bit_nand = !(n1 & n2);
         assert_that!(sut.load(Ordering::Relaxed), eq bit_nand);
     }
 
@@ -221,17 +254,42 @@ mod ice_atomic {
         assert_that!(sut.load(Ordering::Relaxed), eq n1.overflowing_sub(n2).0);
     }
 
+    fn ok_fetch_update<T: AddAssign + Copy>(value: T) -> Option<T> {
+        let mut temp = value;
+        temp += value;
+        Some(temp)
+    }
+
+    fn err_fetch_update<T: AddAssign + Copy>(_value: T) -> Option<T> {
+        None
+    }
+
     #[test]
-    fn fetch_update_works<T: Req>() {
+    fn fetch_update_success_works<T: Req>() {
         let n1 = T::generate_value();
-        let n2 = T::generate_value();
 
         let sut = IceAtomic::<T>::new(n1);
 
-        let result = sut.fetch_update(n2, Ordering::Relaxed);
+        let result = sut.fetch_update(Ordering::Relaxed, Ordering::Relaxed, ok_fetch_update::<T>);
 
-        assert_that!(result, eq n1);
-        assert_that!(sut.load(Ordering::Relaxed), eq n2);
+        assert_that!(result, is_ok);
+        assert_that!(result.unwrap(), eq n1);
+        let mut n = n1;
+        n += n1;
+        assert_that!(sut.load(Ordering::Relaxed), eq n);
+    }
+
+    #[test]
+    fn fetch_update_failure_works<T: Req>() {
+        let n1 = T::generate_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+
+        let result = sut.fetch_update(Ordering::Relaxed, Ordering::Relaxed, err_fetch_update::<T>);
+
+        assert_that!(result, is_err);
+        assert_that!(result.err().unwrap(), eq n1);
+        assert_that!(sut.load(Ordering::Relaxed), eq n1);
     }
 
     #[test]
@@ -278,6 +336,273 @@ mod ice_atomic {
 
         assert_that!(result, eq n1);
         assert_that!(sut.load(Ordering::Relaxed), eq n2);
+    }
+
+    #[test]
+    fn compatibility_new_works<T: Req>() {
+        let n = T::generate_compatibility_value();
+        let sut = IceAtomic::<T>::new(n);
+        let compat = AtomicU32::new(n.to_u32());
+
+        assert_that!(compat.load(Ordering::Relaxed), eq sut.load(Ordering::Relaxed).to_u32());
+    }
+
+    #[test]
+    fn compatibility_as_ptr_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(unsafe {*compat.as_ptr()}, eq unsafe{*sut.as_ptr()}.to_u32() );
+
+        unsafe { *sut.as_ptr() = n2 };
+        unsafe { *compat.as_ptr() = n2.to_u32() };
+
+        assert_that!(unsafe {*compat.as_ptr()}, eq unsafe{*sut.as_ptr()}.to_u32() );
+        assert_that!(unsafe {*compat.as_ptr()}, eq n2.to_u32() );
+    }
+
+    #[test]
+    fn compatibility_compare_exchange_success_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        let result_sut = sut.compare_exchange(n1, n2, Ordering::Relaxed, Ordering::Relaxed);
+        let result_compat = compat.compare_exchange(
+            n1.to_u32(),
+            n2.to_u32(),
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        );
+
+        assert_that!(result_sut, is_ok);
+        assert_that!(result_compat, is_ok);
+
+        assert_that!(result_sut.unwrap(), eq n1);
+        assert_that!(result_compat.unwrap(), eq n1.to_u32());
+    }
+
+    #[test]
+    fn compatibility_compare_exchange_weak_success_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        let result_sut = sut.compare_exchange_weak(n1, n2, Ordering::Relaxed, Ordering::Relaxed);
+        let result_compat = compat.compare_exchange_weak(
+            n1.to_u32(),
+            n2.to_u32(),
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        );
+
+        assert_that!(result_sut, is_ok);
+        assert_that!(result_compat, is_ok);
+
+        assert_that!(result_sut.unwrap(), eq n1);
+        assert_that!(result_compat.unwrap(), eq n1.to_u32());
+    }
+
+    #[test]
+    fn compatibility_compare_exchange_failure_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        let result_sut = sut.compare_exchange(n2, n1, Ordering::Relaxed, Ordering::Relaxed);
+        let result_compat = compat.compare_exchange(
+            n2.to_u32(),
+            n1.to_u32(),
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        );
+
+        assert_that!(result_sut, is_err);
+        assert_that!(result_compat, is_err);
+
+        assert_that!(result_sut.err().unwrap(), eq n1);
+        assert_that!(result_compat.err().unwrap(), eq n1.to_u32());
+    }
+
+    #[test]
+    fn compatibility_compare_exchange_weak_failure_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        let result_sut = sut.compare_exchange_weak(n2, n1, Ordering::Relaxed, Ordering::Relaxed);
+        let result_compat = compat.compare_exchange_weak(
+            n2.to_u32(),
+            n1.to_u32(),
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        );
+
+        assert_that!(result_sut, is_err);
+        assert_that!(result_compat, is_err);
+
+        assert_that!(result_sut.err().unwrap(), eq n1);
+        assert_that!(result_compat.err().unwrap(), eq n1.to_u32());
+    }
+
+    #[test]
+    fn compatibility_fetch_add_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.fetch_add(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_add(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_and_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.fetch_and(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_and(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_max_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.fetch_max(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_max(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_min_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.fetch_min(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_min(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_nand_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.fetch_nand(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_nand(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_or_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.fetch_or(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_or(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_sub_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.fetch_sub(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_sub(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_update_success_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        let result_sut =
+            sut.fetch_update(Ordering::Relaxed, Ordering::Relaxed, ok_fetch_update::<T>);
+        let result_compat =
+            compat.fetch_update(Ordering::Relaxed, Ordering::Relaxed, ok_fetch_update::<u32>);
+
+        assert_that!(result_sut, is_ok);
+        assert_that!(result_compat, is_ok);
+
+        assert_that!(result_sut.unwrap().to_u32(), eq result_compat.unwrap());
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_update_failure_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        let result_sut =
+            sut.fetch_update(Ordering::Relaxed, Ordering::Relaxed, err_fetch_update::<T>);
+        let result_compat = compat.fetch_update(
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+            err_fetch_update::<u32>,
+        );
+
+        assert_that!(result_sut, is_err);
+        assert_that!(result_compat, is_err);
+
+        assert_that!(result_sut.err().unwrap().to_u32(), eq result_compat.err().unwrap());
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_fetch_xor_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.fetch_xor(n2, Ordering::Relaxed).to_u32(), eq compat.fetch_xor(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn compatibility_swap_works<T: Req>() {
+        let n1 = T::generate_compatibility_value();
+        let n2 = T::generate_compatibility_value();
+
+        let sut = IceAtomic::<T>::new(n1);
+        let compat = AtomicU32::new(n1.to_u32());
+
+        assert_that!(sut.swap(n2, Ordering::Relaxed).to_u32(), eq compat.swap(n2.to_u32(), Ordering::Relaxed));
+        assert_that!(sut.load(Ordering::Relaxed).to_u32(), eq compat.load(Ordering::Relaxed));
     }
 
     #[instantiate_tests(<u64>)]
