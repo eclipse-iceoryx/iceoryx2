@@ -1803,6 +1803,7 @@ mod service_publish_subscribe {
         let subscriber = sut.subscriber().create().unwrap();
 
         let sample = publisher.loan_slice(123).unwrap();
+        let sample = publisher.loan_slice_uninit(123).unwrap();
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

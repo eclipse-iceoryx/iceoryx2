@@ -576,7 +576,7 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
 ////////////////////////
 // BEGIN: typed API
 ////////////////////////
-impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug + Sized> Publisher<Service, MessageType> {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
@@ -732,9 +732,7 @@ impl<Service: service::Service, MessageType: Default + Debug + Sized>
 ////////////////////////
 // BEGIN: sliced API
 ////////////////////////
-impl<Service: service::Service, MessageType: Default + Debug + ?Sized>
-    Publisher<Service, [MessageType]>
-{
+impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service, [MessageType]> {
     pub fn loan_slice(
         &self,
         number_of_elements: usize,
@@ -743,6 +741,14 @@ impl<Service: service::Service, MessageType: Default + Debug + ?Sized>
     }
 }
 
+impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageType]> {
+    pub fn loan_slice_uninit(
+        &self,
+        number_of_elements: usize,
+    ) -> Result<SampleMut<[MessageType], Service>, PublisherLoanError> {
+        todo!()
+    }
+}
 ////////////////////////
 // END: sliced API
 ////////////////////////
