@@ -43,7 +43,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .publish_subscribe()
         .max_publishers(16)
         .max_subscribers(16)
-        .open_or_create::<ComplexDataType>()?;
+        .typed::<ComplexDataType>()
+        .open_or_create()?;
 
     let publisher = service.publisher().create()?;
     let subscriber = service.subscriber().create()?;

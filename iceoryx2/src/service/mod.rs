@@ -30,8 +30,9 @@
 //!     .subscriber_max_buffer_size(3)
 //!     .max_subscribers(4)
 //!     .max_publishers(5)
+//!     .typed::<u64>()
 //!     // if the service already exists, open it, otherwise create it
-//!     .open_or_create::<u64>()?;
+//!     .open_or_create()?;
 //!
 //! # Ok(())
 //! # }
@@ -74,7 +75,8 @@
 //!
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe_with_custom_config(&custom_config)
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! # Ok(())
 //! # }

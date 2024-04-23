@@ -19,7 +19,8 @@
 //! #
 //! # let service = zero_copy::Service::new(&service_name)
 //! #     .publish_subscribe()
-//! #     .open_or_create::<u64>()?;
+//! #     .typed::<u64>()
+//! #     .open_or_create()?;
 //! #
 //! # let publisher = service.publisher().create()?;
 //!
@@ -99,7 +100,8 @@ impl<MessageType: Debug, Service: crate::service::Service>
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
     ///
@@ -133,7 +135,8 @@ impl<MessageType: Debug, Service: crate::service::Service>
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
     ///
@@ -169,7 +172,8 @@ impl<
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
     ///
     /// let sample = publisher.loan()?;
@@ -199,7 +203,8 @@ impl<
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
     ///
     /// let sample = publisher.loan()?;
@@ -229,7 +234,8 @@ impl<
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
     ///
     /// let mut sample = publisher.loan()?;

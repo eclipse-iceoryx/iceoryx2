@@ -68,7 +68,8 @@
 //! // create our port factory by creating or opening the service
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe()
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! let subscriber = service.subscriber().create()?;
 //!
@@ -94,7 +95,8 @@
 //! // create our port factory by creating or opening the service
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe()
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! let publisher = service.publisher().create()?;
 //!
@@ -198,7 +200,8 @@
 //!     .max_subscribers(5)
 //!     // the maximum amount of publishers of this service
 //!     .max_publishers(2)
-//!     .create::<u64>()?;
+//!     .typed::<u64>()
+//!     .create()?;
 //!
 //! # Ok(())
 //! # }
@@ -245,7 +248,8 @@
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe()
 //!     .enable_safe_overflow(false)
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! let publisher = service.publisher()
 //!     // the maximum amount of samples this publisher can loan in parallel

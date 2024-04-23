@@ -19,7 +19,8 @@
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe()
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! let publisher = service
 //!     .publisher()
@@ -591,7 +592,8 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
     ///
@@ -625,7 +627,8 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
     ///
@@ -705,7 +708,8 @@ impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service,
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
     ///

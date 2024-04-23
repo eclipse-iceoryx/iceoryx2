@@ -19,7 +19,8 @@
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let pubsub = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe()
-//!     .open_or_create::<u64>()?;
+//!     .typed::<u64>()
+//!     .open_or_create()?;
 //!
 //! println!("name:                             {:?}", pubsub.name());
 //! println!("uuid:                             {:?}", pubsub.uuid());
@@ -115,7 +116,8 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// let service_name = ServiceName::new("My/Funk/ServiceName")?;
     /// let pubsub = zero_copy::Service::new(&service_name)
     ///     .publish_subscribe()
-    ///     .open_or_create::<u64>()?;
+    ///     .typed::<u64>()
+    ///     .open_or_create()?;
     ///
     /// let subscriber = pubsub.subscriber().create()?;
     ///
@@ -139,7 +141,8 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// let service_name = ServiceName::new("My/Funk/ServiceName")?;
     /// let pubsub = zero_copy::Service::new(&service_name)
     ///     .publish_subscribe()
-    ///     .open_or_create::<u64>()?;
+    ///     .typed::<u64>()
+    ///     .open_or_create()?;
     ///
     /// let publisher = pubsub.publisher()
     ///                     .max_loaned_samples(6)

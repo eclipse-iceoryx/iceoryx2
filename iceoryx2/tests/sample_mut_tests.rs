@@ -44,7 +44,8 @@ mod sample_mut {
             let service = Sut::new(&service_name)
                 .publish_subscribe()
                 .max_publishers(1)
-                .create::<u64>()
+                .typed::<u64>()
+                .create()
                 .unwrap();
 
             let publisher = service
@@ -144,7 +145,10 @@ mod sample_mut {
 
         drop(test_context);
 
-        let result = Sut::new(&service_name).publish_subscribe().create::<u64>();
+        let result = Sut::new(&service_name)
+            .publish_subscribe()
+            .typed::<u64>()
+            .create();
         assert_that!(result, is_err);
         assert_that!(result.err().unwrap(), eq PublishSubscribeCreateError::OldConnectionsStillActive);
     }

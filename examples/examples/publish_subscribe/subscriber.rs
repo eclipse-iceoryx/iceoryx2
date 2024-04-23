@@ -21,7 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service = zero_copy::Service::new(&service_name)
         .publish_subscribe()
-        .open_or_create::<TransmissionData>()?;
+        .typed::<TransmissionData>()
+        .open_or_create()?;
 
     let subscriber = service.subscriber().create()?;
 

@@ -49,7 +49,8 @@ pub trait UpdateConnections {
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
     /// #     .publish_subscribe()
-    /// #     .open_or_create::<u64>()?;
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
     ///
