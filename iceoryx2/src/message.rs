@@ -14,7 +14,7 @@ use core::fmt;
 
 #[doc(hidden)]
 #[repr(C)]
-pub struct Message<Header, Data> {
+pub struct Message<Header, Data: ?Sized> {
     pub(crate) header: Header,
     pub(crate) data: Data,
 }

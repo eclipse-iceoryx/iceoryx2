@@ -100,11 +100,11 @@ impl<Header, Data> fmt::Pointer for RawSample<Header, Data> {
 
 /// A `*mut Message<Header, Data>` non-zero sample pointer to the message.
 #[repr(transparent)]
-pub(crate) struct RawSampleMut<Header, Data> {
+pub(crate) struct RawSampleMut<Header, Data: ?Sized> {
     message: *mut Message<Header, Data>,
 }
 
-impl<Header, Data> RawSampleMut<Header, Data> {
+impl<Header, Data: ?Sized> RawSampleMut<Header, Data> {
     /// Creates a new `RawSampleMut`.
     ///
     /// # Safety
@@ -138,27 +138,18 @@ impl<Header, Data> RawSampleMut<Header, Data> {
         self.message
     }
 
-    /// Acquires the underlying message as `*mut` pointer.
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn as_mut_ptr(self) -> *mut Message<Header, Data> {
-        self.message
-    }
-
     /// Acquires the underlying message as reference.
     #[must_use]
     #[inline(always)]
     pub(crate) fn as_ref(&self) -> &Message<Header, Data> {
-        // SAFETY: `self.as_ptr()` returns a non-null ptr and `Data` is either the actual message type or wrapped by a `MaybeUninit` which makes a reference to `Message::data` safe
-        unsafe { &(*self.as_ptr()) }
+        unsafe { &*self.message }
     }
 
     /// Acquires the underlying message as mut reference.
     #[must_use]
     #[inline(always)]
     pub(crate) fn as_mut(&mut self) -> &mut Message<Header, Data> {
-        // SAFETY: `self.as_ptr()` returns a non-null ptr and `Data` is either the actual message type or wrapped by a `MaybeUninit` which makes a reference to `Message::data` safe
-        unsafe { &mut (*self.as_mut_ptr()) }
+        unsafe { &mut *self.message }
     }
 
     /// Acquires the underlying header as reference.

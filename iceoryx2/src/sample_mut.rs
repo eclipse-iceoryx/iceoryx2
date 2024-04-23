@@ -40,7 +40,11 @@ use crate::{
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_cal::shared_memory::*;
-use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
+use std::{
+    fmt::{Debug, Formatter},
+    mem::MaybeUninit,
+    sync::Arc,
+};
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 /// [`crate::port::publisher::Publisher::loan()`] or
@@ -55,14 +59,28 @@ use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
 ///
 /// The generic parameter `M` is either a `MessageType` or a [`core::mem::MaybeUninit<MessageType>`], depending
 /// which API is used to obtain the sample.
-#[derive(Debug)]
-pub struct SampleMut<MessageType: Debug, Service: crate::service::Service> {
+pub struct SampleMut<MessageType: Debug + ?Sized, Service: crate::service::Service> {
     data_segment: Arc<DataSegment<Service>>,
     ptr: RawSampleMut<Header, MessageType>,
     pub(crate) offset_to_chunk: PointerOffset,
 }
 
-impl<MessageType: Debug, Service: crate::service::Service> Drop
+impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Debug
+    for SampleMut<MessageType, Service>
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "SampleMut<{}, {}> {{ data_segment: {:?}, offset_to_chunk: {:?} }}",
+            core::any::type_name::<MessageType>(),
+            core::any::type_name::<Service>(),
+            self.data_segment,
+            self.offset_to_chunk
+        )
+    }
+}
+
+impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Drop
     for SampleMut<MessageType, Service>
 {
     fn drop(&mut self) {
@@ -156,7 +174,7 @@ impl<MessageType: Debug, Service: crate::service::Service>
 }
 
 impl<
-        M: Debug, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
+        M: Debug + ?Sized, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
         Service: crate::service::Service,
     > SampleMut<M, Service>
 {

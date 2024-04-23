@@ -566,14 +566,17 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
                 .create(&allocator_config),
             "Unable to create the data segment."))
     }
-}
 
-impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageType> {
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]
     pub fn id(&self) -> UniquePublisherId {
         self.data_segment.port_id
     }
+}
 
+////////////////////////
+// BEGIN: typed API
+////////////////////////
+impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageType> {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
@@ -722,14 +725,27 @@ impl<Service: service::Service, MessageType: Default + Debug + Sized>
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
     }
 }
+////////////////////////
+// END: typed API
+////////////////////////
 
+////////////////////////
+// BEGIN: sliced API
+////////////////////////
 impl<Service: service::Service, MessageType: Default + Debug + ?Sized>
     Publisher<Service, [MessageType]>
 {
-    pub fn loan(&self) -> Result<SampleMut<[MessageType], Service>, PublisherLoanError> {
+    pub fn loan_slice(
+        &self,
+        number_of_elements: usize,
+    ) -> Result<SampleMut<[MaybeUninit<MessageType>], Service>, PublisherLoanError> {
         todo!()
     }
 }
+
+////////////////////////
+// END: sliced API
+////////////////////////
 
 impl<Service: service::Service, MessageType: Debug> UpdateConnections
     for Publisher<Service, MessageType>
