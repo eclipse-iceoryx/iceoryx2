@@ -571,6 +571,39 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
     pub fn id(&self) -> UniquePublisherId {
         self.data_segment.port_id
     }
+
+    fn allocate(&self, layout: Layout) -> Result<ShmPointer, PublisherLoanError> {
+        let msg = "Unable to allocate Sample with";
+
+        if self.data_segment.loan_counter.load(Ordering::Relaxed)
+            >= self.data_segment.config.max_loaned_samples
+        {
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
+                "{} {:?} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
+                msg, layout, self.data_segment.loan_counter.load(Ordering::Relaxed), self.data_segment.config.max_loaned_samples);
+        }
+
+        match self.data_segment.allocate(layout) {
+            Ok(chunk) => {
+                self.data_segment
+                    .loan_counter
+                    .fetch_add(1, Ordering::Relaxed);
+                Ok(chunk)
+            }
+            Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
+                fail!(from self, with PublisherLoanError::OutOfMemory,
+                    "{} {:?} since the underlying shared memory is out of memory.", msg, layout);
+            }
+            Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
+            | Err(ShmAllocationError::AllocationError(AllocationError::AlignmentFailure)) => {
+                fatal_panic!(from self, "{} {:?} since the system seems to be corrupted.", msg, layout);
+            }
+            Err(v) => {
+                fail!(from self, with PublisherLoanError::InternalFailure,
+                    "{} {:?} since an internal failure occurred ({:?}).", msg, layout, v);
+            }
+        }
+    }
 }
 
 ////////////////////////
@@ -641,52 +674,19 @@ impl<Service: service::Service, MessageType: Debug + Sized> Publisher<Service, M
     pub fn loan_uninit(
         &self,
     ) -> Result<SampleMut<MaybeUninit<MessageType>, Service>, PublisherLoanError> {
-        let msg = "Unable to loan Sample";
+        let chunk = self.allocate(Layout::new::<Message<Header, MessageType>>())?;
 
-        if self.data_segment.loan_counter.load(Ordering::Relaxed)
-            >= self.data_segment.config.max_loaned_samples
-        {
-            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
-                "{} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
-                msg, self.data_segment.loan_counter.load(Ordering::Relaxed), self.data_segment.config.max_loaned_samples);
-        }
+        let message = chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
 
-        match self
-            .data_segment
-            .allocate(Layout::new::<Message<Header, MessageType>>())
-        {
-            Ok(chunk) => {
-                let message =
-                    chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
+        let sample = unsafe {
+            (*message).write(Message {
+                header: Header::new(self.data_segment.port_id),
+                data: MaybeUninit::uninit(),
+            });
+            RawSampleMut::new_unchecked(message as *mut Message<Header, MaybeUninit<MessageType>>)
+        };
 
-                let sample = unsafe {
-                    (*message).write(Message {
-                        header: Header::new(self.data_segment.port_id),
-                        data: MaybeUninit::uninit(),
-                    });
-                    RawSampleMut::new_unchecked(
-                        message as *mut Message<Header, MaybeUninit<MessageType>>,
-                    )
-                };
-
-                self.data_segment
-                    .loan_counter
-                    .fetch_add(1, Ordering::Relaxed);
-                Ok(SampleMut::new(&self.data_segment, sample, chunk.offset))
-            }
-            Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
-                fail!(from self, with PublisherLoanError::OutOfMemory,
-                    "{} since the underlying shared memory is out of memory.", msg);
-            }
-            Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
-            | Err(ShmAllocationError::AllocationError(AllocationError::AlignmentFailure)) => {
-                fatal_panic!(from self, "{} since the system seems to be corrupted.", msg);
-            }
-            Err(v) => {
-                fail!(from self, with PublisherLoanError::InternalFailure,
-                    "{} since an internal failure occurred ({:?}).", msg, v);
-            }
-        }
+        Ok(SampleMut::new(&self.data_segment, sample, chunk.offset))
     }
 }
 
@@ -736,7 +736,7 @@ impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service,
     pub fn loan_slice(
         &self,
         number_of_elements: usize,
-    ) -> Result<SampleMut<[MaybeUninit<MessageType>], Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<[MessageType], Service>, PublisherLoanError> {
         todo!()
     }
 }
@@ -745,7 +745,27 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
     pub fn loan_slice_uninit(
         &self,
         number_of_elements: usize,
-    ) -> Result<SampleMut<[MessageType], Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<[MaybeUninit<MessageType>], Service>, PublisherLoanError> {
+        let layout = Layout::new::<Message<Header, MessageType>>();
+        let layout = unsafe {
+            Layout::from_size_align_unchecked(
+                layout.size() + number_of_elements * core::mem::size_of::<MessageType>(),
+                layout.align(),
+            )
+        };
+        let chunk = self.allocate(layout)?;
+
+        let message = chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
+
+        //let sample = unsafe {
+        //    (*message).write(Message {
+        //        header: Header::new(self.data_segment.port_id),
+        //        data: MaybeUninit::uninit(),
+        //    });
+        //    RawSampleMut::new_unchecked(message as *mut Message<Header, [MaybeUninit<MessageType>]>)
+        //};
+
+        //Ok(SampleMut::new(&self.data_segment, sample, chunk.offset))
         todo!()
     }
 }
