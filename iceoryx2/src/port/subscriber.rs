@@ -98,7 +98,7 @@ pub(crate) mod internal {
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
-pub struct Subscriber<Service: service::Service, MessageType: Debug> {
+pub struct Subscriber<Service: service::Service, MessageType: Debug + ?Sized> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: Arc<PublisherConnections<Service>>,
     dynamic_storage: Arc<Service::DynamicStorage>,
@@ -109,7 +109,9 @@ pub struct Subscriber<Service: service::Service, MessageType: Debug> {
     _phantom_message_type: PhantomData<MessageType>,
 }
 
-impl<Service: service::Service, MessageType: Debug> Drop for Subscriber<Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug + ?Sized> Drop
+    for Subscriber<Service, MessageType>
+{
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
             self.dynamic_storage
@@ -120,7 +122,7 @@ impl<Service: service::Service, MessageType: Debug> Drop for Subscriber<Service,
     }
 }
 
-impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug + ?Sized> Subscriber<Service, MessageType> {
     pub(crate) fn new(
         service: &Service,
         static_config: &StaticConfig,
@@ -256,7 +258,9 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
 
         Ok(())
     }
+}
 
+impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageType> {
     fn receive_from_connection(
         &self,
         channel_id: usize,

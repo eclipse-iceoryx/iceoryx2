@@ -57,14 +57,27 @@ pub struct StaticConfig {
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Typed {
     pub type_name: String,
+    pub msg_size: usize,
+    pub msg_alignment: usize,
     pub type_size: usize,
     pub type_alignment: usize,
+}
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+pub struct Sliced {
+    pub type_name: String,
+    pub msg_size: usize,
+    pub msg_alignment: usize,
+    pub type_size: usize,
+    pub type_alignment: usize,
+    pub max_elements: usize,
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TypeDetails {
     Typed { typed: Typed },
+    Sliced { sliced: Sliced },
 }
 
 impl TypeDetails {
@@ -72,17 +85,72 @@ impl TypeDetails {
         Self::Typed {
             typed: Typed {
                 type_name: core::any::type_name::<MessageType>().to_string(),
-                type_size: core::mem::size_of::<Message<Header, MessageType>>(),
-                type_alignment: core::mem::align_of::<Message<Header, MessageType>>(),
+                msg_size: core::mem::size_of::<Message<Header, MessageType>>(),
+                msg_alignment: core::mem::align_of::<Message<Header, MessageType>>(),
+                type_size: core::mem::size_of::<MessageType>(),
+                type_alignment: core::mem::align_of::<MessageType>(),
             },
         }
     }
 
-    pub fn layout(&self) -> Layout {
+    pub fn from_slice<MessageType, Header>(max_elements: usize) -> Self {
+        Self::Sliced {
+            sliced: Sliced {
+                type_name: core::any::type_name::<MessageType>().to_string(),
+                msg_size: core::mem::size_of::<Message<Header, MessageType>>()
+                    + core::mem::size_of::<MessageType>() * max_elements,
+                msg_alignment: core::mem::align_of::<Message<Header, MessageType>>(),
+                type_size: core::mem::size_of::<MessageType>() * max_elements,
+                type_alignment: core::mem::align_of::<MessageType>(),
+                max_elements,
+            },
+        }
+    }
+
+    pub fn msg_layout(&self) -> Layout {
+        match self {
+            Self::Typed { typed: d } => unsafe {
+                Layout::from_size_align_unchecked(d.msg_size, d.msg_alignment)
+            },
+            Self::Sliced { sliced: d } => unsafe {
+                Layout::from_size_align_unchecked(d.msg_size, d.msg_alignment)
+            },
+        }
+    }
+
+    pub fn type_layout(&self) -> Layout {
         match self {
             Self::Typed { typed: d } => unsafe {
                 Layout::from_size_align_unchecked(d.type_size, d.type_alignment)
             },
+            Self::Sliced { sliced: d } => unsafe {
+                Layout::from_size_align_unchecked(d.type_size, d.type_alignment)
+            },
+        }
+    }
+
+    pub fn is_compatible(&self, rhs: &Self) -> bool {
+        match self {
+            TypeDetails::Typed { typed: lhs } => {
+                if let TypeDetails::Typed { typed: rhs } = rhs {
+                    lhs == rhs
+                } else {
+                    false
+                }
+            }
+            TypeDetails::Sliced { sliced: lhs } => {
+                if let TypeDetails::Sliced { sliced: rhs } = rhs {
+                    // everything must be equal except max_elements, this can be detected at
+                    // runtime
+                    lhs.type_name == rhs.type_name
+                        && lhs.type_size == rhs.type_size
+                        && lhs.type_alignment == rhs.type_alignment
+                        && lhs.msg_size == rhs.msg_size
+                        && lhs.msg_alignment == rhs.msg_alignment
+                } else {
+                    false
+                }
+            }
         }
     }
 }
@@ -107,6 +175,8 @@ impl StaticConfig {
                     type_name: String::new(),
                     type_size: 0,
                     type_alignment: 0,
+                    msg_size: 0,
+                    msg_alignment: 0,
                 },
             },
         }

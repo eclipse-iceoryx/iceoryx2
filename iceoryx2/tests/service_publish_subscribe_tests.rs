@@ -502,8 +502,10 @@ mod service_publish_subscribe {
 
         if let TypeDetails::Typed { typed: d } = sut.static_config().type_details() {
             assert_that!(d.type_name, eq "u64");
-            assert_that!(d.type_size, eq std::mem::size_of::<MessageType>());
-            assert_that!(d.type_alignment, eq std::mem::align_of::<MessageType>());
+            assert_that!(d.msg_size, eq std::mem::size_of::<MessageType>());
+            assert_that!(d.msg_alignment, eq std::mem::align_of::<MessageType>());
+            assert_that!(d.type_size, eq std::mem::size_of::<u64>());
+            assert_that!(d.type_alignment, eq std::mem::align_of::<u64>());
         } else {
             assert_that!(true, eq false);
         }
@@ -1785,6 +1787,22 @@ mod service_publish_subscribe {
 
         let subscriber = sut.subscriber().buffer_size(0).create().unwrap();
         assert_that!(subscriber.buffer_size(), eq 1);
+    }
+
+    #[test]
+    fn sliced_service_works<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe()
+            .sliced::<u64>()
+            .max_elements(12)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher().create().unwrap();
+        let subscriber = sut.subscriber().create().unwrap();
+
+        //let sample = publisher.loan_uninit();
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

@@ -113,12 +113,12 @@ pub(crate) struct LocalPublisherConfig {
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactoryPublisher<'factory, Service: service::Service, MessageType: Debug> {
+pub struct PortFactoryPublisher<'factory, Service: service::Service, MessageType: Debug + ?Sized> {
     config: LocalPublisherConfig,
     pub(crate) factory: &'factory PortFactory<Service, MessageType>,
 }
 
-impl<'factory, Service: service::Service, MessageType: Debug>
+impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
     PortFactoryPublisher<'factory, Service, MessageType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, MessageType>) -> Self {

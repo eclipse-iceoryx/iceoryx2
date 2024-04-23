@@ -434,13 +434,15 @@ impl<Service: service::Service> DataSegment<Service> {
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct Publisher<Service: service::Service, MessageType: Debug> {
+pub struct Publisher<Service: service::Service, MessageType: Debug + ?Sized> {
     pub(crate) data_segment: Arc<DataSegment<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
-impl<Service: service::Service, MessageType: Debug> Drop for Publisher<Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug + ?Sized> Drop
+    for Publisher<Service, MessageType>
+{
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_publisher_handle {
             self.data_segment
@@ -452,7 +454,7 @@ impl<Service: service::Service, MessageType: Debug> Drop for Publisher<Service, 
     }
 }
 
-impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, MessageType> {
     pub(crate) fn new(
         service: &Service,
         static_config: &publish_subscribe::StaticConfig,
@@ -482,8 +484,8 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         let data_segment = Arc::new(DataSegment {
             is_active: AtomicBool::new(true),
             memory: data_segment,
-            message_size: std::mem::size_of::<Message<Header, MessageType>>(),
-            message_type_layout: Layout::new::<MessageType>(),
+            message_size: static_config.type_details().msg_layout().size(),
+            message_type_layout: static_config.type_details().type_layout(),
             sample_reference_counter: {
                 let mut v = Vec::with_capacity(number_of_samples);
                 for _ in 0..number_of_samples {
@@ -552,7 +554,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         number_of_samples: usize,
         static_config: &publish_subscribe::StaticConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
-        let l = static_config.type_details.layout();
+        let l = static_config.type_details.msg_layout();
         let allocator_config = shm_allocator::pool_allocator::Config { bucket_layout: l };
 
         Ok(fail!(from "Publisher::create_data_segment()",
@@ -564,7 +566,9 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
                 .create(&allocator_config),
             "Unable to create the data segment."))
     }
+}
 
+impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageType> {
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]
     pub fn id(&self) -> UniquePublisherId {
         self.data_segment.port_id
@@ -683,7 +687,9 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     }
 }
 
-impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service, MessageType> {
+impl<Service: service::Service, MessageType: Default + Debug + Sized>
+    Publisher<Service, MessageType>
+{
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
     /// can be used to loan a [`core::mem::MaybeUninit<MessageType>`].
@@ -714,6 +720,14 @@ impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service,
     /// ```
     pub fn loan(&self) -> Result<SampleMut<MessageType, Service>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(MessageType::default()))
+    }
+}
+
+impl<Service: service::Service, MessageType: Default + Debug + ?Sized>
+    Publisher<Service, [MessageType]>
+{
+    pub fn loan(&self) -> Result<SampleMut<[MessageType], Service>, PublisherLoanError> {
+        todo!()
     }
 }
 

@@ -56,21 +56,21 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 /// [`crate::port::publisher::Publisher`]
 /// or [`crate::port::subscriber::Subscriber`] ports.
 #[derive(Debug)]
-pub struct PortFactory<Service: service::Service, MessageType: Debug> {
+pub struct PortFactory<Service: service::Service, MessageType: Debug + ?Sized> {
     pub(crate) service: Service,
     _phantom_message_type: PhantomData<MessageType>,
 }
 
-unsafe impl<Service: service::Service, MessageType: Debug> Send
+unsafe impl<Service: service::Service, MessageType: Debug + ?Sized> Send
     for PortFactory<Service, MessageType>
 {
 }
-unsafe impl<Service: service::Service, MessageType: Debug> Sync
+unsafe impl<Service: service::Service, MessageType: Debug + ?Sized> Sync
     for PortFactory<Service, MessageType>
 {
 }
 
-impl<Service: service::Service, MessageType: Debug> PortFactory<Service, MessageType> {
+impl<Service: service::Service, MessageType: Debug + ?Sized> PortFactory<Service, MessageType> {
     pub(crate) fn new(service: Service) -> Self {
         Self {
             service,

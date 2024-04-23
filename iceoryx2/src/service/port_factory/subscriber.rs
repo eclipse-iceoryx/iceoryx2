@@ -55,12 +55,12 @@ pub(crate) struct SubscriberConfig {
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactorySubscriber<'factory, Service: service::Service, MessageType: Debug> {
+pub struct PortFactorySubscriber<'factory, Service: service::Service, MessageType: Debug + ?Sized> {
     config: SubscriberConfig,
     pub(crate) factory: &'factory PortFactory<Service, MessageType>,
 }
 
-impl<'factory, Service: service::Service, MessageType: Debug>
+impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
     PortFactorySubscriber<'factory, Service, MessageType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, MessageType>) -> Self {
