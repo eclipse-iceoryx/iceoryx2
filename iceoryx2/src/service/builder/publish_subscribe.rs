@@ -16,7 +16,6 @@
 //!
 use std::marker::PhantomData;
 
-use crate::message::Message;
 use crate::service;
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
@@ -29,6 +28,8 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
+
+use self::static_config::publish_subscribe::TypeDetails;
 
 use super::ServiceState;
 
@@ -165,10 +166,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceAvailabilityState> {
         match self.base.is_service_available() {
             Ok(Some((config, storage))) => {
-                if config.publish_subscribe().type_name != self.config_details().type_name {
+                if config.publish_subscribe().type_details != self.config_details().type_details {
                     fail!(from self, with ServiceAvailabilityState::IncompatibleTypes,
-                        "{} since the service offers the type \"{}\" but the requested type is \"{}\".",
-                        error_msg, &config.publish_subscribe().type_name , self.config_details().type_name);
+                        "{} since the service offers the type \"{:?}\" but the requested type is \"{:?}\".",
+                        error_msg, &config.publish_subscribe().type_details , self.config_details().type_details);
                 }
 
                 Ok(Some((config, storage)))
@@ -176,13 +177,6 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             Ok(None) => Ok(None),
             Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
         }
-    }
-
-    fn finalize_config<MessageType: Debug>(&mut self) {
-        self.config_details_mut().type_name = std::any::type_name::<MessageType>().to_string();
-        self.config_details_mut().type_size = core::mem::size_of::<Message<Header, MessageType>>();
-        self.config_details_mut().type_alignment =
-            core::mem::align_of::<Message<Header, MessageType>>();
     }
 
     /// If the [`Service`] is created, defines the overflow behavior of the service. If an existing
@@ -359,7 +353,8 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
         PublishSubscribeOpenOrCreateError,
     > {
         let msg = "Unable to open or create publish subscribe service";
-        self.builder.finalize_config::<MessageType>();
+        self.builder.config_details_mut().type_details =
+            TypeDetails::from_type::<MessageType, Header>();
 
         match self.builder.is_service_available(msg) {
             Ok(Some(_)) => Ok(self.open()?),
@@ -401,7 +396,8 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
     ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeOpenError>
     {
         let msg = "Unable to open publish subscribe service";
-        self.builder.finalize_config::<MessageType>();
+        self.builder.config_details_mut().type_details =
+            TypeDetails::from_type::<MessageType, Header>();
 
         let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
                                         with PublishSubscribeOpenError::InternalFailure,
@@ -484,7 +480,8 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
         self.builder.adjust_properties_to_meaningful_values();
 
         let msg = "Unable to create publish subscribe service";
-        self.builder.finalize_config::<MessageType>();
+        self.builder.config_details_mut().type_details =
+            TypeDetails::from_type::<MessageType, Header>();
 
         if !self.builder.config_details().enable_safe_overflow
             && (self.builder.config_details().subscriber_max_buffer_size

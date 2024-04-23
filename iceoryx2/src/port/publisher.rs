@@ -552,24 +552,15 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         number_of_samples: usize,
         static_config: &publish_subscribe::StaticConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
-        let allocator_config = shm_allocator::pool_allocator::Config {
-            bucket_layout:
-                // # SAFETY: type_size and type_alignment are acquired via
-                //           core::mem::{size_of|align_of}
-                unsafe {
-                Layout::from_size_align_unchecked(
-                    static_config.type_size,
-                    static_config.type_alignment,
-                )
-            },
-        };
+        let l = static_config.type_details.layout();
+        let allocator_config = shm_allocator::pool_allocator::Config { bucket_layout: l };
 
         Ok(fail!(from "Publisher::create_data_segment()",
             when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
             Service::SharedMemory,
                 >>::new(&data_segment_name(port_id))
                 .config(&data_segment_config::<Service>(global_config))
-                .size(static_config.type_size * number_of_samples + static_config.type_alignment - 1)
+                .size(l.size() * number_of_samples + l.align() - 1)
                 .create(&allocator_config),
             "Unable to create the data segment."))
     }

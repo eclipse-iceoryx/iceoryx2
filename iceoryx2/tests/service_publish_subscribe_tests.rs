@@ -25,6 +25,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
+    use iceoryx2::service::static_config::publish_subscribe::TypeDetails;
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -499,9 +500,13 @@ mod service_publish_subscribe {
 
         type MessageType = Message<iceoryx2::service::header::publish_subscribe::Header, u64>;
 
-        assert_that!(sut.static_config().type_name(), eq "u64");
-        assert_that!(sut.static_config().type_size(), eq std::mem::size_of::<MessageType>());
-        assert_that!(sut.static_config().type_alignment(), eq std::mem::align_of::<MessageType>());
+        if let TypeDetails::Typed { typed: d } = sut.static_config().type_details() {
+            assert_that!(d.type_name, eq "u64");
+            assert_that!(d.type_size, eq std::mem::size_of::<MessageType>());
+            assert_that!(d.type_alignment, eq std::mem::align_of::<MessageType>());
+        } else {
+            assert_that!(true, eq false);
+        }
     }
 
     #[test]

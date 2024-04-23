@@ -34,7 +34,9 @@
 //! # }
 //! ```
 
-use crate::config;
+use std::alloc::Layout;
+
+use crate::{config, message::Message};
 use serde::{Deserialize, Serialize};
 
 /// The static configuration of an
@@ -49,9 +51,40 @@ pub struct StaticConfig {
     pub(crate) subscriber_max_buffer_size: usize,
     pub(crate) subscriber_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
-    pub(crate) type_name: String,
-    pub(crate) type_size: usize,
-    pub(crate) type_alignment: usize,
+    pub(crate) type_details: TypeDetails,
+}
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+pub struct Typed {
+    pub type_name: String,
+    pub type_size: usize,
+    pub type_alignment: usize,
+}
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum TypeDetails {
+    Typed { typed: Typed },
+}
+
+impl TypeDetails {
+    pub fn from_type<MessageType, Header>() -> Self {
+        Self::Typed {
+            typed: Typed {
+                type_name: core::any::type_name::<MessageType>().to_string(),
+                type_size: core::mem::size_of::<Message<Header, MessageType>>(),
+                type_alignment: core::mem::align_of::<Message<Header, MessageType>>(),
+            },
+        }
+    }
+
+    pub fn layout(&self) -> Layout {
+        match self {
+            Self::Typed { typed: d } => unsafe {
+                Layout::from_size_align_unchecked(d.type_size, d.type_alignment)
+            },
+        }
+    }
 }
 
 impl StaticConfig {
@@ -69,9 +102,13 @@ impl StaticConfig {
                 .publish_subscribe
                 .subscriber_max_borrowed_samples,
             enable_safe_overflow: config.defaults.publish_subscribe.enable_safe_overflow,
-            type_name: String::new(),
-            type_size: 0,
-            type_alignment: 0,
+            type_details: TypeDetails::Typed {
+                typed: Typed {
+                    type_name: String::new(),
+                    type_size: 0,
+                    type_alignment: 0,
+                },
+            },
         }
     }
 
@@ -109,16 +146,8 @@ impl StaticConfig {
         self.enable_safe_overflow
     }
 
-    /// Returns the type name of the [`crate::service::Service`].
-    pub fn type_name(&self) -> &str {
-        &self.type_name
-    }
-
-    pub fn type_size(&self) -> usize {
-        self.type_size
-    }
-
-    pub fn type_alignment(&self) -> usize {
-        self.type_alignment
+    /// Returns the type details of the [`crate::service::Service`].
+    pub fn type_details(&self) -> &TypeDetails {
+        &self.type_details
     }
 }
