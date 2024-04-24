@@ -484,8 +484,8 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
         let data_segment = Arc::new(DataSegment {
             is_active: AtomicBool::new(true),
             memory: data_segment,
-            message_size: static_config.type_details().msg_layout().size(),
-            message_type_layout: static_config.type_details().type_layout(),
+            message_size: static_config.type_details().sample_layout().size(),
+            message_type_layout: static_config.type_details().message_layout(),
             sample_reference_counter: {
                 let mut v = Vec::with_capacity(number_of_samples);
                 for _ in 0..number_of_samples {
@@ -554,7 +554,7 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
         number_of_samples: usize,
         static_config: &publish_subscribe::StaticConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
-        let l = static_config.type_details.msg_layout();
+        let l = static_config.type_details.sample_layout();
         let allocator_config = shm_allocator::pool_allocator::Config { bucket_layout: l };
 
         Ok(fail!(from "Publisher::create_data_segment()",

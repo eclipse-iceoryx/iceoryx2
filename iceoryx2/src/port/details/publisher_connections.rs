@@ -59,7 +59,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                     .number_of_samples(number_of_samples)
-                                    .create_receiver(this.static_config.type_details().msg_layout().size()),
+                                    .create_receiver(this.static_config.type_details().sample_layout().size()),
                         "{} since the zero copy connection could not be established.", msg);
 
         let data_segment = fail!(from this,

@@ -115,7 +115,7 @@ impl TypeDetails {
         }
     }
 
-    pub fn msg_layout(&self) -> Layout {
+    pub fn sample_layout(&self) -> Layout {
         match self {
             Self::Typed { typed: d } => unsafe {
                 Layout::from_size_align_unchecked(d.msg_size, d.msg_alignment)
@@ -126,7 +126,7 @@ impl TypeDetails {
         }
     }
 
-    pub fn type_layout(&self) -> Layout {
+    pub fn message_layout(&self) -> Layout {
         match self {
             Self::Typed { typed: d } => unsafe {
                 Layout::from_size_align_unchecked(d.message_size, d.message_alignment)
