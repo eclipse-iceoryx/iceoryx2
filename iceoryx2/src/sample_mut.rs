@@ -105,6 +105,22 @@ impl<MessageType: Debug, Service: crate::service::Service>
 }
 
 impl<MessageType: Debug, Service: crate::service::Service>
+    SampleMut<[MaybeUninit<MessageType>], Service>
+{
+    pub(crate) fn new(
+        data_segment: &Arc<DataSegment<Service>>,
+        ptr: RawSampleMut<Header, [MaybeUninit<MessageType>]>,
+        offset_to_chunk: PointerOffset,
+    ) -> Self {
+        Self {
+            data_segment: Arc::clone(data_segment),
+            ptr,
+            offset_to_chunk,
+        }
+    }
+}
+
+impl<MessageType: Debug, Service: crate::service::Service>
     SampleMut<MaybeUninit<MessageType>, Service>
 {
     /// Writes the payload to the sample and labels the sample as initialized

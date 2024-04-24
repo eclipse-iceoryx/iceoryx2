@@ -127,8 +127,19 @@ impl<Header, MessageType> RawSampleMut<Header, MessageType> {
 }
 
 impl<Header, MessageType> RawSampleMut<Header, [MessageType]> {
-    pub(crate) fn layout(number_of_elements: usize) -> Layout {
+    pub(crate) fn layout_slice(number_of_elements: usize) -> Layout {
         get_layout::<Header, MessageType>(number_of_elements)
+    }
+
+    pub(crate) fn header_slice_message_ptr(
+        raw_ptr: *mut u8,
+        number_of_elements: usize,
+    ) -> (*mut Header, *mut [MaybeUninit<MessageType>]) {
+        let (h, m) = header_message_ptr::<Header, MessageType>(raw_ptr);
+
+        (h as *mut Header, unsafe {
+            core::slice::from_raw_parts_mut(m as *mut MaybeUninit<MessageType>, number_of_elements)
+        })
     }
 }
 

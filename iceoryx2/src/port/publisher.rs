@@ -682,7 +682,11 @@ impl<Service: service::Service, MessageType: Debug + Sized> Publisher<Service, M
         unsafe { message_ptr.write(MaybeUninit::uninit()) };
 
         let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
-        Ok(SampleMut::new(&self.data_segment, sample, chunk.offset))
+        Ok(SampleMut::<MaybeUninit<MessageType>, Service>::new(
+            &self.data_segment,
+            sample,
+            chunk.offset,
+        ))
     }
 }
 
@@ -742,21 +746,25 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
         &self,
         number_of_elements: usize,
     ) -> Result<SampleMut<[MaybeUninit<MessageType>], Service>, PublisherLoanError> {
-        let layout = RawSampleMut::<Header, [MessageType]>::layout(number_of_elements);
+        let layout = RawSampleMut::<Header, [MessageType]>::layout_slice(number_of_elements);
         let chunk = self.allocate(layout)?;
 
-        //let message = chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
+        let (header_ptr, message_ptr) =
+            RawSampleMut::<Header, [MessageType]>::header_slice_message_ptr(
+                chunk.data_ptr,
+                number_of_elements,
+            );
 
-        //let sample = unsafe {
-        //    (*message).write(Message {
-        //        header: Header::new(self.data_segment.port_id),
-        //        data: MaybeUninit::uninit(),
-        //    });
-        //    RawSampleMut::new_unchecked(message as *mut Message<Header, [MaybeUninit<MessageType>]>)
-        //};
+        unsafe { header_ptr.write(Header::new(self.data_segment.port_id)) };
+        //unsafe { (*message_ptr) };
 
-        //Ok(SampleMut::new(&self.data_segment, sample, chunk.offset))
-        todo!()
+        let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
+
+        Ok(SampleMut::<[MaybeUninit<MessageType>], Service>::new(
+            &self.data_segment,
+            sample,
+            chunk.offset,
+        ))
     }
 }
 ////////////////////////
