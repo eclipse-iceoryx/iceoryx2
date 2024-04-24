@@ -59,8 +59,10 @@ pub struct Typed {
     pub type_name: String,
     pub msg_size: usize,
     pub msg_alignment: usize,
-    pub type_size: usize,
-    pub type_alignment: usize,
+    pub header_size: usize,
+    pub header_alignment: usize,
+    pub message_size: usize,
+    pub message_alignment: usize,
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -68,8 +70,10 @@ pub struct Sliced {
     pub type_name: String,
     pub msg_size: usize,
     pub msg_alignment: usize,
-    pub type_size: usize,
-    pub type_alignment: usize,
+    pub header_size: usize,
+    pub header_alignment: usize,
+    pub message_size: usize,
+    pub message_alignment: usize,
     pub max_elements: usize,
 }
 
@@ -87,8 +91,10 @@ impl TypeDetails {
                 type_name: core::any::type_name::<MessageType>().to_string(),
                 msg_size: core::mem::size_of::<Message<Header, MessageType>>(),
                 msg_alignment: core::mem::align_of::<Message<Header, MessageType>>(),
-                type_size: core::mem::size_of::<MessageType>(),
-                type_alignment: core::mem::align_of::<MessageType>(),
+                header_size: core::mem::size_of::<Header>(),
+                header_alignment: core::mem::align_of::<Header>(),
+                message_size: core::mem::size_of::<MessageType>(),
+                message_alignment: core::mem::align_of::<MessageType>(),
             },
         }
     }
@@ -100,8 +106,10 @@ impl TypeDetails {
                 msg_size: core::mem::size_of::<Message<Header, MessageType>>()
                     + core::mem::size_of::<MessageType>() * max_elements,
                 msg_alignment: core::mem::align_of::<Message<Header, MessageType>>(),
-                type_size: core::mem::size_of::<MessageType>() * max_elements,
-                type_alignment: core::mem::align_of::<MessageType>(),
+                header_size: core::mem::size_of::<Header>(),
+                header_alignment: core::mem::align_of::<Header>(),
+                message_size: core::mem::size_of::<MessageType>(),
+                message_alignment: core::mem::align_of::<MessageType>(),
                 max_elements,
             },
         }
@@ -121,10 +129,13 @@ impl TypeDetails {
     pub fn type_layout(&self) -> Layout {
         match self {
             Self::Typed { typed: d } => unsafe {
-                Layout::from_size_align_unchecked(d.type_size, d.type_alignment)
+                Layout::from_size_align_unchecked(d.message_size, d.message_alignment)
             },
             Self::Sliced { sliced: d } => unsafe {
-                Layout::from_size_align_unchecked(d.type_size, d.type_alignment)
+                Layout::from_size_align_unchecked(
+                    d.message_size * d.max_elements,
+                    d.message_alignment,
+                )
             },
         }
     }
@@ -143,10 +154,10 @@ impl TypeDetails {
                     // everything must be equal except max_elements, this can be detected at
                     // runtime
                     lhs.type_name == rhs.type_name
-                        && lhs.type_size == rhs.type_size
-                        && lhs.type_alignment == rhs.type_alignment
-                        && lhs.msg_size == rhs.msg_size
-                        && lhs.msg_alignment == rhs.msg_alignment
+                        && lhs.header_size == rhs.header_size
+                        && lhs.header_alignment == rhs.header_alignment
+                        && lhs.message_size == rhs.message_size
+                        && lhs.message_alignment == rhs.message_alignment
                 } else {
                     false
                 }
@@ -173,8 +184,10 @@ impl StaticConfig {
             type_details: TypeDetails::Typed {
                 typed: Typed {
                     type_name: String::new(),
-                    type_size: 0,
-                    type_alignment: 0,
+                    header_size: 0,
+                    header_alignment: 0,
+                    message_size: 0,
+                    message_alignment: 0,
                     msg_size: 0,
                     msg_alignment: 0,
                 },

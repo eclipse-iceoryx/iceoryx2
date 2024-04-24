@@ -490,22 +490,23 @@ mod service_publish_subscribe {
 
     #[test]
     fn type_informations_are_correct<Sut: Service>() {
+        type Header = iceoryx2::service::header::publish_subscribe::Header;
+        type MessageType = u64;
+
         let service_name = generate_name();
 
         let sut = Sut::new(&service_name)
             .publish_subscribe()
-            .typed::<u64>()
+            .typed::<MessageType>()
             .create()
             .unwrap();
 
-        type MessageType = Message<iceoryx2::service::header::publish_subscribe::Header, u64>;
-
         if let TypeDetails::Typed { typed: d } = sut.static_config().type_details() {
             assert_that!(d.type_name, eq "u64");
-            assert_that!(d.msg_size, eq std::mem::size_of::<MessageType>());
-            assert_that!(d.msg_alignment, eq std::mem::align_of::<MessageType>());
-            assert_that!(d.type_size, eq std::mem::size_of::<u64>());
-            assert_that!(d.type_alignment, eq std::mem::align_of::<u64>());
+            assert_that!(d.header_size, eq std::mem::size_of::<Header>());
+            assert_that!(d.header_alignment, eq std::mem::align_of::<Header>());
+            assert_that!(d.message_size, eq std::mem::size_of::<MessageType>());
+            assert_that!(d.message_alignment, eq std::mem::align_of::<MessageType>());
         } else {
             assert_that!(true, eq false);
         }
