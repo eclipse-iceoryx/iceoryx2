@@ -247,7 +247,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// Returns the [`SlicedBuilder`] to create a slice typed [`Service`].
-    pub fn sliced<MessageType: Debug>(mut self) -> SlicedBuilder<MessageType, ServiceType> {
+    pub fn slice<MessageType: Debug>(mut self) -> SlicedBuilder<MessageType, ServiceType> {
         self.config_details_mut().type_details = TypeDetails::from_slice::<MessageType, Header>(1);
 
         SlicedBuilder {

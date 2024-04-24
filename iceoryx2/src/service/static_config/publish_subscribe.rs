@@ -36,7 +36,8 @@
 
 use std::alloc::Layout;
 
-use crate::{config, message::Message};
+use crate::config;
+use iceoryx2_bb_elementary::math::align;
 use serde::{Deserialize, Serialize};
 
 /// The static configuration of an
@@ -57,8 +58,6 @@ pub struct StaticConfig {
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Typed {
     pub type_name: String,
-    pub msg_size: usize,
-    pub msg_alignment: usize,
     pub header_size: usize,
     pub header_alignment: usize,
     pub message_size: usize,
@@ -68,8 +67,6 @@ pub struct Typed {
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Sliced {
     pub type_name: String,
-    pub msg_size: usize,
-    pub msg_alignment: usize,
     pub header_size: usize,
     pub header_alignment: usize,
     pub message_size: usize,
@@ -89,8 +86,6 @@ impl TypeDetails {
         Self::Typed {
             typed: Typed {
                 type_name: core::any::type_name::<MessageType>().to_string(),
-                msg_size: core::mem::size_of::<Message<Header, MessageType>>(),
-                msg_alignment: core::mem::align_of::<Message<Header, MessageType>>(),
                 header_size: core::mem::size_of::<Header>(),
                 header_alignment: core::mem::align_of::<Header>(),
                 message_size: core::mem::size_of::<MessageType>(),
@@ -103,9 +98,6 @@ impl TypeDetails {
         Self::Sliced {
             sliced: Sliced {
                 type_name: core::any::type_name::<MessageType>().to_string(),
-                msg_size: core::mem::size_of::<Message<Header, MessageType>>()
-                    + core::mem::size_of::<MessageType>() * max_elements,
-                msg_alignment: core::mem::align_of::<Message<Header, MessageType>>(),
                 header_size: core::mem::size_of::<Header>(),
                 header_alignment: core::mem::align_of::<Header>(),
                 message_size: core::mem::size_of::<MessageType>(),
@@ -118,10 +110,21 @@ impl TypeDetails {
     pub fn sample_layout(&self) -> Layout {
         match self {
             Self::Typed { typed: d } => unsafe {
-                Layout::from_size_align_unchecked(d.msg_size, d.msg_alignment)
+                let aligned_header_size = align(d.header_size, d.message_alignment);
+                Layout::from_size_align_unchecked(
+                    align(aligned_header_size + d.message_size, d.header_alignment),
+                    d.header_alignment,
+                )
             },
             Self::Sliced { sliced: d } => unsafe {
-                Layout::from_size_align_unchecked(d.msg_size, d.msg_alignment)
+                let aligned_header_size = align(d.header_size, d.message_alignment);
+                Layout::from_size_align_unchecked(
+                    align(
+                        aligned_header_size + d.message_size * d.max_elements,
+                        d.header_alignment,
+                    ),
+                    d.header_alignment,
+                )
             },
         }
     }
@@ -188,8 +191,6 @@ impl StaticConfig {
                     header_alignment: 0,
                     message_size: 0,
                     message_alignment: 0,
-                    msg_size: 0,
-                    msg_alignment: 0,
                 },
             },
         }

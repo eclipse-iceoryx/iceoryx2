@@ -1795,7 +1795,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let sut = Sut::new(&service_name)
             .publish_subscribe()
-            .sliced::<u64>()
+            .slice::<u64>()
             .max_elements(12)
             .create()
             .unwrap();
