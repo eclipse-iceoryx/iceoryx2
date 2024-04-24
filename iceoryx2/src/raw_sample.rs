@@ -44,7 +44,7 @@ fn header_message_ptr<Header, MessageType>(raw_ptr: *const u8) -> (*const Header
 
 /// A `*const Message<Header, MessageType>` non-zero sample pointer to the message.
 #[repr(C)]
-pub(crate) struct RawSample<Header, MessageType: ?Sized> {
+pub(crate) struct RawSample<Header, MessageType> {
     header: *const Header,
     message: *const MessageType,
 }

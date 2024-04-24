@@ -42,16 +42,21 @@ use crate::port::port_identifiers::UniquePublisherId;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
 
+#[derive(Debug)]
+pub(crate) struct SampleDetails<Service: crate::service::Service> {
+    pub(crate) publisher_connections: Arc<PublisherConnections<Service>>,
+    pub(crate) channel_id: usize,
+    pub(crate) offset: PointerOffset,
+    pub(crate) origin: UniquePublisherId,
+}
+
 /// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
 /// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
 /// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
 #[derive(Debug)]
 pub struct Sample<MessageType: Debug, Service: crate::service::Service> {
-    pub(crate) publisher_connections: Arc<PublisherConnections<Service>>,
     pub(crate) ptr: RawSample<Header, MessageType>,
-    pub(crate) channel_id: usize,
-    pub(crate) offset: PointerOffset,
-    pub(crate) origin: UniquePublisherId,
+    pub(crate) details: SampleDetails<Service>,
 }
 
 impl<MessageType: Debug, Service: crate::service::Service> Deref for Sample<MessageType, Service> {
@@ -63,10 +68,14 @@ impl<MessageType: Debug, Service: crate::service::Service> Deref for Sample<Mess
 
 impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<MessageType, Service> {
     fn drop(&mut self) {
-        match self.publisher_connections.get(self.channel_id) {
+        match self
+            .details
+            .publisher_connections
+            .get(self.details.channel_id)
+        {
             Some(c) => {
-                if c.publisher_id == self.origin {
-                    match c.receiver.release(self.offset) {
+                if c.publisher_id == self.details.origin {
+                    match c.receiver.release(self.details.offset) {
                         Ok(()) => (),
                         Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
                             fatal_panic!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
@@ -94,6 +103,6 @@ impl<MessageType: Debug, Service: crate::service::Service> Sample<MessageType, S
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     pub fn origin(&self) -> UniquePublisherId {
-        self.origin
+        self.details.origin
     }
 }

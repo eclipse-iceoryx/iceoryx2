@@ -44,6 +44,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
 
 use crate::port::DegrationAction;
+use crate::sample::SampleDetails;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
@@ -255,14 +256,12 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Subscriber<Service,
 
         Ok(())
     }
-}
 
-impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageType> {
     fn receive_from_connection(
         &self,
         channel_id: usize,
         connection: &mut Connection<Service>,
-    ) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {
+    ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
         let msg = "Unable to receive another sample";
         match connection.receiver.receive() {
             Ok(data) => match data {
@@ -270,13 +269,15 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                 Some(offset) => {
                     let absolute_address =
                         offset.value() + connection.data_segment.payload_start_address();
-                    Ok(Some(Sample {
+
+                    let details = SampleDetails {
                         publisher_connections: Arc::clone(&self.publisher_connections),
                         channel_id,
-                        ptr: unsafe { RawSample::new_unchecked(absolute_address as *const u8) },
                         offset,
                         origin: connection.publisher_id,
-                    }))
+                    };
+
+                    Ok(Some((details, absolute_address)))
                 }
             },
             Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
@@ -290,29 +291,6 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     pub fn id(&self) -> UniqueSubscriberId {
         self.publisher_connections.subscriber_id()
-    }
-
-    /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
-    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive(&self) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {
-        if let Err(e) = self.update_connections() {
-            fail!(from self,
-                with SubscriberReceiveError::ConnectionFailure(e),
-                "Some samples are not being received since not all connections to publishers could be established.");
-        }
-
-        for id in 0..self.publisher_connections.len() {
-            match &mut self.publisher_connections.get_mut(id) {
-                Some(ref mut connection) => {
-                    if let Some(sample) = self.receive_from_connection(id, connection)? {
-                        return Ok(Some(sample));
-                    }
-                }
-                None => (),
-            }
-        }
-
-        Ok(None)
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].
@@ -338,4 +316,57 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
 
         Ok(())
     }
+
+    fn receive_impl(
+        &self,
+    ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
+        if let Err(e) = self.update_connections() {
+            fail!(from self,
+                with SubscriberReceiveError::ConnectionFailure(e),
+                "Some samples are not being received since not all connections to publishers could be established.");
+        }
+
+        for id in 0..self.publisher_connections.len() {
+            match &mut self.publisher_connections.get_mut(id) {
+                Some(ref mut connection) => {
+                    if let Some((details, absolute_address)) =
+                        self.receive_from_connection(id, connection)?
+                    {
+                        return Ok(Some((details, absolute_address)));
+                    }
+                }
+                None => (),
+            }
+        }
+
+        Ok(None)
+    }
+}
+
+impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageType> {
+    /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
+    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
+    pub fn receive(&self) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {
+        Ok(self
+            .receive_impl()?
+            .map(|(details, absolute_address)| Sample {
+                details,
+                ptr: unsafe { RawSample::new_unchecked(absolute_address as *const u8) },
+            }))
+    }
+}
+
+impl<Service: service::Service, MessageType: Debug> Subscriber<Service, [MessageType]> {
+    // Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
+    // received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
+    //pub fn receive(
+    //    &self,
+    //) -> Result<Option<Sample<[MessageType], Service>>, SubscriberReceiveError> {
+    //    Ok(self
+    //        .receive_impl()?
+    //        .map(|(details, absolute_address)| Sample {
+    //            details,
+    //            ptr: unsafe { RawSample::new_unchecked(absolute_address as *const u8) },
+    //        }))
+    //}
 }
