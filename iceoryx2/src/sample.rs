@@ -53,10 +53,23 @@ pub(crate) struct SampleDetails<Service: crate::service::Service> {
 /// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
 /// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
 /// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
-#[derive(Debug)]
-pub struct Sample<MessageType: Debug, Service: crate::service::Service> {
+pub struct Sample<MessageType: Debug + ?Sized, Service: crate::service::Service> {
     pub(crate) ptr: RawSample<Header, MessageType>,
     pub(crate) details: SampleDetails<Service>,
+}
+
+impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Debug
+    for Sample<MessageType, Service>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Sample<{}, {}> {{ details: {:?} }}",
+            core::any::type_name::<MessageType>(),
+            core::any::type_name::<Service>(),
+            self.details
+        )
+    }
 }
 
 impl<MessageType: Debug, Service: crate::service::Service> Deref for Sample<MessageType, Service> {
@@ -66,7 +79,9 @@ impl<MessageType: Debug, Service: crate::service::Service> Deref for Sample<Mess
     }
 }
 
-impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<MessageType, Service> {
+impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Drop
+    for Sample<MessageType, Service>
+{
     fn drop(&mut self) {
         match self
             .details
@@ -90,7 +105,7 @@ impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<Messa
     }
 }
 
-impl<MessageType: Debug, Service: crate::service::Service> Sample<MessageType, Service> {
+impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Sample<MessageType, Service> {
     /// Returns a reference to the payload of the [`Sample`]
     pub fn payload(&self) -> &MessageType {
         self.ptr.as_message_ref()

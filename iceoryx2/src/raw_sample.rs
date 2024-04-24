@@ -35,7 +35,9 @@ fn get_layout<Header, MessageType>(number_of_elements: usize) -> Layout {
     }
 }
 
-fn header_message_ptr<Header, MessageType>(raw_ptr: *const u8) -> (*const Header, *const u8) {
+pub(crate) fn header_message_ptr<Header, MessageType>(
+    raw_ptr: *const u8,
+) -> (*const Header, *const u8) {
     let header_ptr = raw_ptr as *mut Header;
     let message_ptr = unsafe { raw_ptr.add(aligned_header_size::<Header, MessageType>()) };
 
@@ -44,31 +46,32 @@ fn header_message_ptr<Header, MessageType>(raw_ptr: *const u8) -> (*const Header
 
 /// A `*const Message<Header, MessageType>` non-zero sample pointer to the message.
 #[repr(C)]
-pub(crate) struct RawSample<Header, MessageType> {
+pub(crate) struct RawSample<Header, MessageType: ?Sized> {
     header: *const Header,
     message: *const MessageType,
 }
 
-impl<Header, MessageType> RawSample<Header, MessageType> {
+impl<Header, MessageType> RawSample<Header, [MessageType]> {
     /// Creates a new `RawSample`.
     ///
     /// # Safety
     ///
     /// `message` must be non-null.
     #[inline]
-    pub(crate) unsafe fn new_unchecked(raw_ptr: *const u8) -> Self {
+    pub(crate) unsafe fn new_slice_unchecked(
+        header: *const Header,
+        message: *const [MessageType],
+    ) -> Self {
         debug_assert!(
-            !raw_ptr.is_null(),
+            !header.is_null() && !message.is_null(),
             "RawSample::new_unchecked requires that the header- and message-pointer is non-null"
         );
 
-        let (header, message) = header_message_ptr::<Header, MessageType>(raw_ptr);
-        Self {
-            header,
-            message: message as *const MessageType,
-        }
+        Self { header, message }
     }
+}
 
+impl<Header, MessageType: ?Sized> RawSample<Header, MessageType> {
     /// Acquires the underlying header as reference.
     #[must_use]
     #[inline(always)]
@@ -81,6 +84,27 @@ impl<Header, MessageType> RawSample<Header, MessageType> {
     #[inline(always)]
     pub(crate) fn as_message_ref(&self) -> &MessageType {
         unsafe { &*self.message }
+    }
+}
+
+impl<Header, MessageType> RawSample<Header, MessageType> {
+    /// Creates a new `RawSample`.
+    ///
+    /// # Safety
+    ///
+    /// `raw_ptr` must be non-null.
+    #[inline]
+    pub(crate) unsafe fn new_unchecked(raw_ptr: *const u8) -> Self {
+        debug_assert!(
+            !raw_ptr.is_null(),
+            "RawSample::new_unchecked requires that the raw-pointer is non-null"
+        );
+
+        let (header, message) = header_message_ptr::<Header, MessageType>(raw_ptr);
+        Self {
+            header,
+            message: message as *const MessageType,
+        }
     }
 }
 

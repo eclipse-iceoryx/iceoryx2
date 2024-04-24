@@ -44,8 +44,10 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
 
 use crate::port::DegrationAction;
+use crate::raw_sample::header_message_ptr;
 use crate::sample::SampleDetails;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
+use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{raw_sample::RawSample, sample::Sample, service};
@@ -357,16 +359,29 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
 }
 
 impl<Service: service::Service, MessageType: Debug> Subscriber<Service, [MessageType]> {
-    // Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
-    // received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    //pub fn receive(
-    //    &self,
-    //) -> Result<Option<Sample<[MessageType], Service>>, SubscriberReceiveError> {
-    //    Ok(self
-    //        .receive_impl()?
-    //        .map(|(details, absolute_address)| Sample {
-    //            details,
-    //            ptr: unsafe { RawSample::new_unchecked(absolute_address as *const u8) },
-    //        }))
-    //}
+    /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
+    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
+    pub fn receive(
+        &self,
+    ) -> Result<Option<Sample<[MessageType], Service>>, SubscriberReceiveError> {
+        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
+            let (header_ptr, message_ptr) =
+                header_message_ptr::<Header, MessageType>(absolute_address as *const u8);
+            let msg_layout = unsafe { (*header_ptr).message_type_layout() };
+            let number_of_elements = msg_layout.size() / core::mem::size_of::<MessageType>();
+
+            Sample {
+                details,
+                ptr: unsafe {
+                    RawSample::<Header, [MessageType]>::new_slice_unchecked(
+                        header_ptr,
+                        core::slice::from_raw_parts(
+                            message_ptr as *const MessageType,
+                            number_of_elements,
+                        ),
+                    )
+                },
+            }
+        }))
+    }
 }

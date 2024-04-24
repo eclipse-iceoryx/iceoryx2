@@ -1802,8 +1802,15 @@ mod service_publish_subscribe {
         let publisher = sut.publisher().create().unwrap();
         let subscriber = sut.subscriber().create().unwrap();
 
-        let sample = publisher.loan_slice(11).unwrap();
-        //let recv_sample = subscriber.receive().unwrap();
+        let sample = publisher.loan_slice_uninit(11).unwrap();
+        sample.write_from_fn(|i| i as u64 * 25).send().unwrap();
+
+        let recv_sample = subscriber.receive().unwrap().unwrap();
+
+        assert_that!(recv_sample.payload(), len 11);
+        for (i, element) in recv_sample.payload().iter().enumerate() {
+            assert_that!(*element, eq i as u64 * 25);
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

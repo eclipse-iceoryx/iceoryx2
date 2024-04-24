@@ -678,7 +678,12 @@ impl<Service: service::Service, MessageType: Debug + Sized> Publisher<Service, M
         let (header_ptr, message_ptr) =
             RawSampleMut::<Header, MessageType>::header_message_ptr(chunk.data_ptr);
 
-        unsafe { header_ptr.write(Header::new(self.data_segment.port_id)) };
+        unsafe {
+            header_ptr.write(Header::new(
+                self.data_segment.port_id,
+                Layout::new::<MessageType>(),
+            ))
+        };
 
         let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
         Ok(SampleMut::<MaybeUninit<MessageType>, Service>::new(
@@ -776,7 +781,13 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
                 number_of_elements,
             );
 
-        unsafe { header_ptr.write(Header::new(self.data_segment.port_id)) };
+        let message_type_layout = unsafe {
+            Layout::from_size_align_unchecked(
+                core::mem::size_of::<MessageType>() * number_of_elements,
+                core::mem::align_of::<MessageType>(),
+            )
+        };
+        unsafe { header_ptr.write(Header::new(self.data_segment.port_id, message_type_layout)) };
         let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
 
         Ok(SampleMut::<[MaybeUninit<MessageType>], Service>::new(
