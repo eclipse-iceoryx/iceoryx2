@@ -57,7 +57,7 @@ pub struct Sample<MessageType: Debug, Service: crate::service::Service> {
 impl<MessageType: Debug, Service: crate::service::Service> Deref for Sample<MessageType, Service> {
     type Target = MessageType;
     fn deref(&self) -> &Self::Target {
-        self.ptr.as_data_ref()
+        self.ptr.as_message_ref()
     }
 }
 
@@ -84,7 +84,7 @@ impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<Messa
 impl<MessageType: Debug, Service: crate::service::Service> Sample<MessageType, Service> {
     /// Returns a reference to the payload of the [`Sample`]
     pub fn payload(&self) -> &MessageType {
-        self.ptr.as_data_ref()
+        self.ptr.as_message_ref()
     }
 
     /// Returns a reference to the [`Header`] of the [`Sample`].

@@ -47,10 +47,7 @@ use crate::port::DegrationAction;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
-use crate::{
-    message::Message, raw_sample::RawSample, sample::Sample, service,
-    service::header::publish_subscribe::Header,
-};
+use crate::{raw_sample::RawSample, sample::Sample, service};
 
 use super::details::publisher_connections::{Connection, PublisherConnections};
 use super::port_identifiers::UniqueSubscriberId;
@@ -276,11 +273,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                     Ok(Some(Sample {
                         publisher_connections: Arc::clone(&self.publisher_connections),
                         channel_id,
-                        ptr: unsafe {
-                            RawSample::new_unchecked(
-                                absolute_address as *mut Message<Header, MessageType>,
-                            )
-                        },
+                        ptr: unsafe { RawSample::new_unchecked(absolute_address as *const u8) },
                         offset,
                         origin: connection.publisher_id,
                     }))

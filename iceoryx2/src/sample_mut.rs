@@ -204,6 +204,10 @@ impl<
         self.ptr.as_header_ref()
     }
 
+    pub fn header_mut(&self) -> &mut Header {
+        self.ptr.as_header_mut()
+    }
+
     /// Returns a reference to the payload of the sample.
     ///
     /// # Notes
@@ -232,7 +236,7 @@ impl<
     /// # }
     /// ```
     pub fn payload(&self) -> &M {
-        self.ptr.as_data_ref()
+        self.ptr.as_message_ref()
     }
 
     /// Returns a mutable reference to the payload of the sample.
@@ -263,7 +267,7 @@ impl<
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut M {
-        self.ptr.as_data_mut()
+        self.ptr.as_message_mut()
     }
 
     /// Send a previously loaned [`crate::port::publisher::Publisher::loan_uninit()`] or

@@ -17,7 +17,6 @@ mod service_publish_subscribe {
     use std::thread;
 
     use iceoryx2::config::Config;
-    use iceoryx2::message::Message;
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;

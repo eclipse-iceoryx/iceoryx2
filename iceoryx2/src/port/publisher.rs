@@ -61,7 +61,6 @@ use std::sync::Arc;
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 use super::port_identifiers::UniquePublisherId;
-use crate::message::Message;
 use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
@@ -674,18 +673,15 @@ impl<Service: service::Service, MessageType: Debug + Sized> Publisher<Service, M
     pub fn loan_uninit(
         &self,
     ) -> Result<SampleMut<MaybeUninit<MessageType>, Service>, PublisherLoanError> {
-        let chunk = self.allocate(Layout::new::<Message<Header, MessageType>>())?;
+        let chunk = self.allocate(RawSampleMut::<Header, MessageType>::layout())?;
 
-        let message = chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
+        let (header_ptr, message_ptr) =
+            RawSampleMut::<Header, MessageType>::header_message_ptr(chunk.data_ptr);
 
-        let sample = unsafe {
-            (*message).write(Message {
-                header: Header::new(self.data_segment.port_id),
-                data: MaybeUninit::uninit(),
-            });
-            RawSampleMut::new_unchecked(message as *mut Message<Header, MaybeUninit<MessageType>>)
-        };
+        unsafe { header_ptr.write(Header::new(self.data_segment.port_id)) };
+        unsafe { message_ptr.write(MaybeUninit::uninit()) };
 
+        let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
         Ok(SampleMut::new(&self.data_segment, sample, chunk.offset))
     }
 }
@@ -746,16 +742,10 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
         &self,
         number_of_elements: usize,
     ) -> Result<SampleMut<[MaybeUninit<MessageType>], Service>, PublisherLoanError> {
-        let layout = Layout::new::<Message<Header, MessageType>>();
-        let layout = unsafe {
-            Layout::from_size_align_unchecked(
-                layout.size() + number_of_elements * core::mem::size_of::<MessageType>(),
-                layout.align(),
-            )
-        };
+        let layout = RawSampleMut::<Header, [MessageType]>::layout(number_of_elements);
         let chunk = self.allocate(layout)?;
 
-        let message = chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
+        //let message = chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
 
         //let sample = unsafe {
         //    (*message).write(Message {
