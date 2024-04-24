@@ -189,6 +189,27 @@ impl<MessageType: Debug, Service: crate::service::Service>
     }
 }
 
+impl<MessageType: Debug, Service: crate::service::Service>
+    SampleMut<[MaybeUninit<MessageType>], Service>
+{
+    pub unsafe fn assume_init(self) -> SampleMut<[MessageType], Service> {
+        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
+        std::mem::transmute(self)
+    }
+
+    pub fn write_from_fn<F: FnMut(usize) -> MessageType>(
+        mut self,
+        mut initializer: F,
+    ) -> SampleMut<[MessageType], Service> {
+        for (i, element) in self.payload_mut().iter_mut().enumerate() {
+            element.write(initializer(i));
+        }
+
+        // SAFETY: this is safe since the payload was initialized on the line above
+        unsafe { self.assume_init() }
+    }
+}
+
 impl<
         M: Debug + ?Sized, // `M` is either a `MessageType` or a `MaybeUninit<MessageType>`
         Service: crate::service::Service,

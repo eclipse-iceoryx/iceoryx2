@@ -71,7 +71,7 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
-use crate::service::static_config::publish_subscribe;
+use crate::service::static_config::publish_subscribe::{self, TypeDetails};
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
@@ -111,6 +111,7 @@ impl std::error::Error for PublisherCreateError {}
 pub enum PublisherLoanError {
     OutOfMemory,
     ExceedsMaxLoanedChunks,
+    ExceedsMaxLoanSize,
     InternalFailure,
 }
 
@@ -674,12 +675,10 @@ impl<Service: service::Service, MessageType: Debug + Sized> Publisher<Service, M
         &self,
     ) -> Result<SampleMut<MaybeUninit<MessageType>, Service>, PublisherLoanError> {
         let chunk = self.allocate(RawSampleMut::<Header, MessageType>::layout())?;
-
         let (header_ptr, message_ptr) =
             RawSampleMut::<Header, MessageType>::header_message_ptr(chunk.data_ptr);
 
         unsafe { header_ptr.write(Header::new(self.data_segment.port_id)) };
-        unsafe { message_ptr.write(MaybeUninit::uninit()) };
 
         let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
         Ok(SampleMut::<MaybeUninit<MessageType>, Service>::new(
@@ -737,7 +736,8 @@ impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service,
         &self,
         number_of_elements: usize,
     ) -> Result<SampleMut<[MessageType], Service>, PublisherLoanError> {
-        todo!()
+        let sample = self.loan_slice_uninit(number_of_elements)?;
+        Ok(sample.write_from_fn(|_| MessageType::default()))
     }
 }
 
@@ -746,6 +746,27 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
         &self,
         number_of_elements: usize,
     ) -> Result<SampleMut<[MaybeUninit<MessageType>], Service>, PublisherLoanError> {
+        let max_elements = if let TypeDetails::Sliced { sliced: d } = self
+            .data_segment
+            .static_config
+            .publish_subscribe()
+            .type_details()
+        {
+            d.max_elements
+        } else {
+            debug_assert!(
+                false,
+                "This should never happen! The Publisher Type is not a slice."
+            );
+            0
+        };
+
+        if max_elements < number_of_elements {
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
+                "Unable to loan slice with {} elements since it would exceed the max supported number of elements of {}.",
+                number_of_elements, max_elements);
+        }
+
         let layout = RawSampleMut::<Header, [MessageType]>::layout_slice(number_of_elements);
         let chunk = self.allocate(layout)?;
 
@@ -756,8 +777,6 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
             );
 
         unsafe { header_ptr.write(Header::new(self.data_segment.port_id)) };
-        //unsafe { (*message_ptr) };
-
         let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
 
         Ok(SampleMut::<[MaybeUninit<MessageType>], Service>::new(
