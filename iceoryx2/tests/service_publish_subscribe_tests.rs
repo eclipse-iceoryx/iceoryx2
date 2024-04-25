@@ -1832,6 +1832,48 @@ mod service_publish_subscribe {
         }
     }
 
+    #[test]
+    fn sliced_aligned_service_works<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 91;
+        const ALIGNMENT: usize = 64;
+        let service_name = generate_name();
+        let service_pub = Sut::new(&service_name)
+            .publish_subscribe::<[u64]>()
+            .subscriber_max_buffer_size(MAX_ELEMENTS)
+            .subscriber_max_borrowed_samples(MAX_ELEMENTS)
+            .payload_alignment(Alignment::new(ALIGNMENT).unwrap())
+            .create()
+            .unwrap();
+
+        let service_sub = Sut::new(&service_name)
+            .publish_subscribe::<[u64]>()
+            .open()
+            .unwrap();
+
+        let publisher = service_pub
+            .publisher()
+            .max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
+        let subscriber = service_sub.subscriber().create().unwrap();
+
+        let mut samples = vec![];
+        for n in 0..MAX_ELEMENTS {
+            let sample = publisher.loan_slice_uninit(n).unwrap();
+            assert_that!((sample.payload().as_ptr() as usize) % ALIGNMENT, eq 0);
+            sample.write_from_fn(|i| i as u64 * 25).send().unwrap();
+
+            let recv_sample = subscriber.receive().unwrap().unwrap();
+
+            assert_that!((recv_sample.payload().as_ptr() as usize) % ALIGNMENT, eq 0);
+            assert_that!(recv_sample.payload(), len n);
+            for (i, element) in recv_sample.payload().iter().enumerate() {
+                assert_that!(*element, eq i as u64 * 25);
+            }
+            samples.push(recv_sample);
+        }
+    }
+
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
     mod zero_copy {}
 
