@@ -45,12 +45,20 @@ impl TypeDetails {
         }
     }
 
+    pub fn message_ptr_from_header(&self, header: *const u8) -> *const u8 {
+        let header = header as usize;
+        let message_start = align(header + self.header_size, self.message_alignment);
+        message_start as *const u8
+    }
+
     pub fn sample_layout(&self, number_of_elements: usize) -> Layout {
-        let aligned_header_size = align(self.header_size, self.message_alignment);
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
-                    aligned_header_size + self.message_size * number_of_elements,
+                    self.header_size
+                        + self.message_size * number_of_elements
+                        + self.message_alignment
+                        - 1,
                     self.header_alignment,
                 ),
                 self.header_alignment,

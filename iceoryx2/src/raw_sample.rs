@@ -11,25 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt;
-use std::mem::MaybeUninit;
-
-use iceoryx2_bb_elementary::math::align;
-
-fn aligned_header_size<Header, MessageType>() -> usize {
-    align(
-        core::mem::size_of::<Header>(),
-        core::mem::align_of::<MessageType>(),
-    )
-}
-
-pub(crate) fn header_message_ptr<Header, MessageType>(
-    raw_ptr: *const u8,
-) -> (*const Header, *const u8) {
-    let header_ptr = raw_ptr as *mut Header;
-    let message_ptr = unsafe { raw_ptr.add(aligned_header_size::<Header, MessageType>()) };
-
-    (header_ptr, message_ptr)
-}
 
 /// Contains the pointer to the underlying header and payload of a sample.
 #[repr(C)]
@@ -84,17 +65,13 @@ impl<Header, MessageType> RawSample<Header, MessageType> {
     /// * `raw_ptr` must be non-null.
     ///
     #[inline]
-    pub(crate) unsafe fn new_unchecked(raw_ptr: *const u8) -> Self {
+    pub(crate) unsafe fn new_unchecked(header: *const Header, message: *const MessageType) -> Self {
         debug_assert!(
-            !raw_ptr.is_null(),
-            "RawSample::new_unchecked requires that the raw-pointer is non-null"
+            !header.is_null() && !message.is_null(),
+            "RawSample::new_unchecked requires that the header- and message-pointer is non-null"
         );
 
-        let (header, message) = header_message_ptr::<Header, MessageType>(raw_ptr);
-        Self {
-            header,
-            message: message as *const MessageType,
-        }
+        Self { header, message }
     }
 }
 
@@ -124,29 +101,6 @@ impl<Header, MessageType> fmt::Pointer for RawSample<Header, MessageType> {
 pub(crate) struct RawSampleMut<Header, MessageType: ?Sized> {
     header: *mut Header,
     message: *mut MessageType,
-}
-
-impl<Header, MessageType> RawSampleMut<Header, MessageType> {
-    pub(crate) fn header_message_ptr(
-        raw_ptr: *mut u8,
-    ) -> (*mut Header, *mut MaybeUninit<MessageType>) {
-        let (h, m) = header_message_ptr::<Header, MessageType>(raw_ptr);
-
-        (h as *mut Header, m as *mut MaybeUninit<MessageType>)
-    }
-}
-
-impl<Header, MessageType> RawSampleMut<Header, [MessageType]> {
-    pub(crate) fn header_slice_message_ptr(
-        raw_ptr: *mut u8,
-        number_of_elements: usize,
-    ) -> (*mut Header, *mut [MaybeUninit<MessageType>]) {
-        let (h, m) = header_message_ptr::<Header, MessageType>(raw_ptr);
-
-        (h as *mut Header, unsafe {
-            core::slice::from_raw_parts_mut(m as *mut MaybeUninit<MessageType>, number_of_elements)
-        })
-    }
 }
 
 impl<Header, MessageType: ?Sized> RawSampleMut<Header, MessageType> {

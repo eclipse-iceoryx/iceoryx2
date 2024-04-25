@@ -639,29 +639,34 @@ mod service_publish_subscribe {
         let service_name = generate_name();
 
         let service_pub = Sut::new(&service_name)
-            .publish_subscribe::<u64>()
+            .publish_subscribe::<usize>()
             .subscriber_max_buffer_size(BUFFER_SIZE)
+            .subscriber_max_borrowed_samples(BUFFER_SIZE)
             .payload_alignment(Alignment::new(ALIGNMENT).unwrap())
             .create()
             .unwrap();
 
         let service_sub = Sut::new(&service_name)
-            .publish_subscribe::<u64>()
+            .publish_subscribe::<usize>()
             .open()
             .unwrap();
 
-        let publisher = service_pub.publisher().create().unwrap();
         let subscriber = service_sub.subscriber().create().unwrap();
+        let publisher = service_pub.publisher().create().unwrap();
 
         let mut samples = vec![];
-        for _ in 0..BUFFER_SIZE {
-            let sample = publisher.loan().unwrap();
-            let payload_address = (sample.payload() as *const u64) as usize;
+        for n in 0..BUFFER_SIZE {
+            let mut sample = publisher.loan().unwrap();
+            *sample.payload_mut() = n * 1920;
+
+            let payload_address = (sample.payload() as *const usize) as usize;
             assert_that!(payload_address % ALIGNMENT, eq 0);
+            sample.send().unwrap();
 
             let recv_sample = subscriber.receive().unwrap().unwrap();
-            let recv_payload_address = (recv_sample.payload() as *const u64) as usize;
+            let recv_payload_address = (recv_sample.payload() as *const usize) as usize;
             assert_that!(recv_payload_address % ALIGNMENT, eq 0);
+            assert_that!(*recv_sample, eq n * 1920);
 
             samples.push(recv_sample);
         }

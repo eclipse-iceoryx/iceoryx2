@@ -686,6 +686,15 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
             .type_details
             .message_layout(number_of_elements)
     }
+
+    fn payload_ptr(&self, header: *const Header) -> *const u8 {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .type_details
+            .message_ptr_from_header(header.cast())
+            .cast()
+    }
 }
 
 ////////////////////////
@@ -757,8 +766,8 @@ impl<Service: service::Service, MessageType: Debug + Sized> Publisher<Service, M
         &self,
     ) -> Result<SampleMut<MaybeUninit<MessageType>, Service>, PublisherLoanError> {
         let chunk = self.allocate(self.sample_layout(1))?;
-        let (header_ptr, message_ptr) =
-            RawSampleMut::<Header, MessageType>::header_message_ptr(chunk.data_ptr);
+        let header_ptr = chunk.data_ptr as *mut Header;
+        let message_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<MessageType>;
 
         unsafe {
             header_ptr.write(Header::new(
@@ -901,12 +910,8 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
         }
 
         let chunk = self.allocate(self.sample_layout(slice_len))?;
-
-        let (header_ptr, message_ptr) =
-            RawSampleMut::<Header, [MessageType]>::header_slice_message_ptr(
-                chunk.data_ptr,
-                slice_len,
-            );
+        let header_ptr = chunk.data_ptr as *mut Header;
+        let message_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<MessageType>;
 
         unsafe {
             header_ptr.write(Header::new(
@@ -914,7 +919,13 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
                 self.payload_layout(slice_len),
             ))
         };
-        let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
+
+        let sample = unsafe {
+            RawSampleMut::new_unchecked(
+                header_ptr,
+                core::slice::from_raw_parts_mut(message_ptr, slice_len),
+            )
+        };
 
         Ok(SampleMut::<[MaybeUninit<MessageType>], Service>::new(
             &self.data_segment,
