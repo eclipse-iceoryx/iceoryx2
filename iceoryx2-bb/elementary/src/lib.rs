@@ -14,6 +14,7 @@
 
 #[macro_use]
 pub mod enum_gen;
+pub mod alignment;
 pub mod allocator;
 pub mod bump_allocator;
 pub mod lazy_singleton;

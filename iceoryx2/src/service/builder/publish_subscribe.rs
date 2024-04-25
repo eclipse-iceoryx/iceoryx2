@@ -113,6 +113,7 @@ impl std::error::Error for PublishSubscribeOpenOrCreateError {}
 #[derive(Debug)]
 pub struct Builder<MessageType: Debug + ?Sized, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
+    override_message_alignment: Option<usize>,
     verify_number_of_subscribers: bool,
     verify_number_of_publishers: bool,
     verify_subscriber_max_buffer_size: bool,
@@ -132,6 +133,7 @@ impl<MessageType: Debug + ?Sized, ServiceType: service::Service> Builder<Message
             verify_publisher_history_size: false,
             verify_subscriber_max_borrowed_samples: false,
             verify_enable_safe_overflow: false,
+            override_message_alignment: None,
             _data: PhantomData,
         };
 

@@ -31,6 +31,15 @@ pub const fn align_to<T>(value: usize) -> usize {
     align(value, std::mem::align_of::<T>())
 }
 
+/// Returns true if a given number is power of 2
+pub fn is_power_of_2(value: u64) -> bool {
+    if value == 0 {
+        return true;
+    }
+
+    (value & (value - 1)) == 0
+}
+
 /// Calculates log2 of a number which is a power of 2
 pub fn log2_of_power_of_2(value: u64) -> u8 {
     let mut bits = value;

@@ -24,6 +24,17 @@ fn math_align_returns_input_to_next_greater_value() {
 }
 
 #[test]
+fn is_power_of_2_works() {
+    for i in 0..100 {
+        if i == 0 || i == 1 || i == 2 || i == 4 || i == 8 || i == 16 || i == 32 || i == 64 {
+            assert_that!(is_power_of_2(i), eq true);
+        } else {
+            assert_that!(is_power_of_2(i), eq false);
+        }
+    }
+}
+
+#[test]
 fn math_log2_of_power_of_2_works() {
     assert_that!(0, eq log2_of_power_of_2(0));
     for i in 0..64 {
