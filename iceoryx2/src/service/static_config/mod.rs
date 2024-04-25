@@ -20,6 +20,8 @@ pub mod event;
 /// based service.
 pub mod publish_subscribe;
 
+pub mod type_details;
+
 use crate::service::messaging_pattern::MessagingPattern;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;

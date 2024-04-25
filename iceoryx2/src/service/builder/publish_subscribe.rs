@@ -29,7 +29,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 
-use self::static_config::publish_subscribe::{TypeDetails, TypeVariantBuilder};
+use self::type_details::{TypeDetails, TypeVariantBuilder};
 
 use super::ServiceState;
 

@@ -24,7 +24,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
-    use iceoryx2::service::static_config::publish_subscribe::TypeVariant;
+    use iceoryx2::service::static_config::type_details::TypeVariant;
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
