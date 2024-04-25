@@ -490,12 +490,12 @@ mod service_publish_subscribe {
     #[test]
     fn type_informations_are_correct<Sut: Service>() {
         type Header = iceoryx2::service::header::publish_subscribe::Header;
-        type MessageType = u64;
+        type PayloadType = u64;
 
         let service_name = generate_name();
 
         let sut = Sut::new(&service_name)
-            .publish_subscribe::<MessageType>()
+            .publish_subscribe::<PayloadType>()
             .create()
             .unwrap();
 
@@ -503,20 +503,20 @@ mod service_publish_subscribe {
         assert_that!(d.variant, eq TypeVariant::FixedSize);
         assert_that!(d.header_size, eq std::mem::size_of::<Header>());
         assert_that!(d.header_alignment, eq std::mem::align_of::<Header>());
-        assert_that!(d.message_type_name, eq core::any::type_name::<MessageType>());
-        assert_that!(d.message_size, eq std::mem::size_of::<MessageType>());
-        assert_that!(d.message_alignment, eq std::mem::align_of::<MessageType>());
+        assert_that!(d.payload_type_name, eq core::any::type_name::<PayloadType>());
+        assert_that!(d.payload_size, eq std::mem::size_of::<PayloadType>());
+        assert_that!(d.payload_alignment, eq std::mem::align_of::<PayloadType>());
     }
 
     #[test]
     fn slice_type_informations_are_correct<Sut: Service>() {
         type Header = iceoryx2::service::header::publish_subscribe::Header;
-        type MessageType = u64;
+        type PayloadType = u64;
 
         let service_name = generate_name();
 
         let sut = Sut::new(&service_name)
-            .publish_subscribe::<[MessageType]>()
+            .publish_subscribe::<[PayloadType]>()
             .create()
             .unwrap();
 
@@ -524,9 +524,9 @@ mod service_publish_subscribe {
         assert_that!(d.variant, eq TypeVariant::Dynamic);
         assert_that!(d.header_size, eq std::mem::size_of::<Header>());
         assert_that!(d.header_alignment, eq std::mem::align_of::<Header>());
-        assert_that!(d.message_type_name, eq core::any::type_name::<MessageType>());
-        assert_that!(d.message_size, eq std::mem::size_of::<MessageType>());
-        assert_that!(d.message_alignment, eq std::mem::align_of::<MessageType>());
+        assert_that!(d.payload_type_name, eq core::any::type_name::<PayloadType>());
+        assert_that!(d.payload_size, eq std::mem::size_of::<PayloadType>());
+        assert_that!(d.payload_alignment, eq std::mem::align_of::<PayloadType>());
     }
 
     #[test]

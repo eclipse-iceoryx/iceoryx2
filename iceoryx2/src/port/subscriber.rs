@@ -98,7 +98,7 @@ pub(crate) mod internal {
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
-pub struct Subscriber<Service: service::Service, MessageType: Debug + ?Sized> {
+pub struct Subscriber<Service: service::Service, PayloadType: Debug + ?Sized> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: Arc<PublisherConnections<Service>>,
     dynamic_storage: Arc<Service::DynamicStorage>,
@@ -106,11 +106,11 @@ pub struct Subscriber<Service: service::Service, MessageType: Debug + ?Sized> {
     degration_callback: Option<DegrationCallback<'static>>,
 
     publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
-    _phantom_message_type: PhantomData<MessageType>,
+    _phantom_payload_type: PhantomData<PayloadType>,
 }
 
-impl<Service: service::Service, MessageType: Debug + ?Sized> Drop
-    for Subscriber<Service, MessageType>
+impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
+    for Subscriber<Service, PayloadType>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
@@ -122,7 +122,7 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Drop
     }
 }
 
-impl<Service: service::Service, MessageType: Debug + ?Sized> Subscriber<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service, PayloadType> {
     pub(crate) fn new(
         service: &Service,
         static_config: &StaticConfig,
@@ -168,7 +168,7 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Subscriber<Service,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
             static_config: service.state().static_config.clone(),
-            _phantom_message_type: PhantomData,
+            _phantom_payload_type: PhantomData,
         };
 
         if let Err(e) = new_self.populate_publisher_channels() {
@@ -344,46 +344,46 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Subscriber<Service,
         self.publisher_connections
             .static_config
             .type_details
-            .message_ptr_from_header(header.cast())
+            .payload_ptr_from_header(header.cast())
             .cast()
     }
 }
 
-impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Debug> Subscriber<Service, PayloadType> {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive(&self) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {
+    pub fn receive(&self) -> Result<Option<Sample<PayloadType, Service>>, SubscriberReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
-            let message_ptr = self.payload_ptr(header_ptr).cast();
+            let payload_ptr = self.payload_ptr(header_ptr).cast();
             Sample {
                 details,
-                ptr: unsafe { RawSample::new_unchecked(header_ptr, message_ptr) },
+                ptr: unsafe { RawSample::new_unchecked(header_ptr, payload_ptr) },
             }
         }))
     }
 }
 
-impl<Service: service::Service, MessageType: Debug> Subscriber<Service, [MessageType]> {
+impl<Service: service::Service, PayloadType: Debug> Subscriber<Service, [PayloadType]> {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
     pub fn receive(
         &self,
-    ) -> Result<Option<Sample<[MessageType], Service>>, SubscriberReceiveError> {
+    ) -> Result<Option<Sample<[PayloadType], Service>>, SubscriberReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
-            let message_ptr = self.payload_ptr(header_ptr).cast();
+            let payload_ptr = self.payload_ptr(header_ptr).cast();
 
-            let msg_layout = unsafe { (*header_ptr).message_type_layout() };
-            let number_of_elements = msg_layout.size() / core::mem::size_of::<MessageType>();
+            let msg_layout = unsafe { (*header_ptr).payload_type_layout() };
+            let number_of_elements = msg_layout.size() / core::mem::size_of::<PayloadType>();
 
             Sample {
                 details,
                 ptr: unsafe {
-                    RawSample::<Header, [MessageType]>::new_slice_unchecked(
+                    RawSample::<Header, [PayloadType]>::new_slice_unchecked(
                         header_ptr,
                         core::slice::from_raw_parts(
-                            message_ptr as *const MessageType,
+                            payload_ptr as *const PayloadType,
                             number_of_elements,
                         ),
                     )

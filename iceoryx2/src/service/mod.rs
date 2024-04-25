@@ -109,7 +109,7 @@ pub mod builder;
 /// The dynamic configuration of a [`Service`]
 pub mod dynamic_config;
 
-/// Defines the message headers for various
+/// Defines the sample headers for various
 /// [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern)s
 pub mod header;
 

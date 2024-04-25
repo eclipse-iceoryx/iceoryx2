@@ -35,20 +35,20 @@ use std::alloc::Layout;
 
 use crate::port::port_identifiers::UniquePublisherId;
 
-/// Message header used by
+/// Sample header used by
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 #[derive(Debug)]
 #[repr(C)]
 pub struct Header {
     publisher_port_id: UniquePublisherId,
-    message_type_layout: Layout,
+    payload_type_layout: Layout,
 }
 
 impl Header {
-    pub(crate) fn new(publisher_port_id: UniquePublisherId, message_type_layout: Layout) -> Self {
+    pub(crate) fn new(publisher_port_id: UniquePublisherId, payload_type_layout: Layout) -> Self {
         Self {
             publisher_port_id,
-            message_type_layout,
+            payload_type_layout,
         }
     }
 
@@ -57,7 +57,7 @@ impl Header {
         self.publisher_port_id
     }
 
-    pub fn message_type_layout(&self) -> Layout {
-        self.message_type_layout
+    pub fn payload_type_layout(&self) -> Layout {
+        self.payload_type_layout
     }
 }

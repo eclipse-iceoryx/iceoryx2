@@ -55,15 +55,15 @@ pub(crate) struct SubscriberConfig {
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactorySubscriber<'factory, Service: service::Service, MessageType: Debug + ?Sized> {
+pub struct PortFactorySubscriber<'factory, Service: service::Service, PayloadType: Debug + ?Sized> {
     config: SubscriberConfig,
-    pub(crate) factory: &'factory PortFactory<Service, MessageType>,
+    pub(crate) factory: &'factory PortFactory<Service, PayloadType>,
 }
 
-impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
-    PortFactorySubscriber<'factory, Service, MessageType>
+impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized>
+    PortFactorySubscriber<'factory, Service, PayloadType>
 {
-    pub(crate) fn new(factory: &'factory PortFactory<Service, MessageType>) -> Self {
+    pub(crate) fn new(factory: &'factory PortFactory<Service, PayloadType>) -> Self {
         Self {
             config: SubscriberConfig {
                 buffer_size: None,
@@ -101,7 +101,7 @@ impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
     }
 
     /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
-    pub fn create(self) -> Result<Subscriber<Service, MessageType>, SubscriberCreateError> {
+    pub fn create(self) -> Result<Subscriber<Service, PayloadType>, SubscriberCreateError> {
         let origin = format!("{:?}", self);
         Ok(
             fail!(from origin, when Subscriber::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),

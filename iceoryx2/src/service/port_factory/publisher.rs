@@ -114,15 +114,15 @@ pub(crate) struct LocalPublisherConfig {
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactoryPublisher<'factory, Service: service::Service, MessageType: Debug + ?Sized> {
+pub struct PortFactoryPublisher<'factory, Service: service::Service, PayloadType: Debug + ?Sized> {
     config: LocalPublisherConfig,
-    pub(crate) factory: &'factory PortFactory<Service, MessageType>,
+    pub(crate) factory: &'factory PortFactory<Service, PayloadType>,
 }
 
-impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
-    PortFactoryPublisher<'factory, Service, MessageType>
+impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized>
+    PortFactoryPublisher<'factory, Service, PayloadType>
 {
-    pub(crate) fn new(factory: &'factory PortFactory<Service, MessageType>) -> Self {
+    pub(crate) fn new(factory: &'factory PortFactory<Service, PayloadType>) -> Self {
         Self {
             config: LocalPublisherConfig {
                 degration_callback: None,
@@ -183,7 +183,7 @@ impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
     }
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
-    pub fn create(self) -> Result<Publisher<Service, MessageType>, PublisherCreateError> {
+    pub fn create(self) -> Result<Publisher<Service, PayloadType>, PublisherCreateError> {
         let origin = format!("{:?}", self);
         Ok(
             fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),
@@ -192,8 +192,8 @@ impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
     }
 }
 
-impl<'factory, Service: service::Service, MessageType: Debug>
-    PortFactoryPublisher<'factory, Service, [MessageType]>
+impl<'factory, Service: service::Service, PayloadType: Debug>
+    PortFactoryPublisher<'factory, Service, [PayloadType]>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].

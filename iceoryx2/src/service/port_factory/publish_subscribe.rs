@@ -56,25 +56,25 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 /// [`crate::port::publisher::Publisher`]
 /// or [`crate::port::subscriber::Subscriber`] ports.
 #[derive(Debug)]
-pub struct PortFactory<Service: service::Service, MessageType: Debug + ?Sized> {
+pub struct PortFactory<Service: service::Service, PayloadType: Debug + ?Sized> {
     pub(crate) service: Service,
-    _phantom_message_type: PhantomData<MessageType>,
+    _phantom_payload_type: PhantomData<PayloadType>,
 }
 
-unsafe impl<Service: service::Service, MessageType: Debug + ?Sized> Send
-    for PortFactory<Service, MessageType>
+unsafe impl<Service: service::Service, PayloadType: Debug + ?Sized> Send
+    for PortFactory<Service, PayloadType>
 {
 }
-unsafe impl<Service: service::Service, MessageType: Debug + ?Sized> Sync
-    for PortFactory<Service, MessageType>
+unsafe impl<Service: service::Service, PayloadType: Debug + ?Sized> Sync
+    for PortFactory<Service, PayloadType>
 {
 }
 
-impl<Service: service::Service, MessageType: Debug + ?Sized> PortFactory<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service, PayloadType> {
     pub(crate) fn new(service: Service) -> Self {
         Self {
             service,
-            _phantom_message_type: PhantomData,
+            _phantom_payload_type: PhantomData,
         }
     }
 
@@ -124,7 +124,7 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> PortFactory<Service
     /// # Ok(())
     /// # }
     /// ```
-    pub fn subscriber(&self) -> PortFactorySubscriber<Service, MessageType> {
+    pub fn subscriber(&self) -> PortFactorySubscriber<Service, PayloadType> {
         PortFactorySubscriber::new(self)
     }
 
@@ -152,7 +152,7 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> PortFactory<Service
     /// # Ok(())
     /// # }
     /// ```
-    pub fn publisher(&self) -> PortFactoryPublisher<Service, MessageType> {
+    pub fn publisher(&self) -> PortFactoryPublisher<Service, PayloadType> {
         PortFactoryPublisher::new(self)
     }
 }

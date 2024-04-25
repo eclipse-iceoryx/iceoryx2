@@ -53,36 +53,36 @@ pub(crate) struct SampleDetails<Service: crate::service::Service> {
 /// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
 /// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
 /// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
-pub struct Sample<MessageType: Debug + ?Sized, Service: crate::service::Service> {
-    pub(crate) ptr: RawSample<Header, MessageType>,
+pub struct Sample<PayloadType: Debug + ?Sized, Service: crate::service::Service> {
+    pub(crate) ptr: RawSample<Header, PayloadType>,
     pub(crate) details: SampleDetails<Service>,
 }
 
-impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Debug
-    for Sample<MessageType, Service>
+impl<PayloadType: Debug + ?Sized, Service: crate::service::Service> Debug
+    for Sample<PayloadType, Service>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "Sample<{}, {}> {{ details: {:?} }}",
-            core::any::type_name::<MessageType>(),
+            core::any::type_name::<PayloadType>(),
             core::any::type_name::<Service>(),
             self.details
         )
     }
 }
 
-impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Deref
-    for Sample<MessageType, Service>
+impl<PayloadType: Debug + ?Sized, Service: crate::service::Service> Deref
+    for Sample<PayloadType, Service>
 {
-    type Target = MessageType;
+    type Target = PayloadType;
     fn deref(&self) -> &Self::Target {
-        self.ptr.as_message_ref()
+        self.ptr.as_payload_ref()
     }
 }
 
-impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Drop
-    for Sample<MessageType, Service>
+impl<PayloadType: Debug + ?Sized, Service: crate::service::Service> Drop
+    for Sample<PayloadType, Service>
 {
     fn drop(&mut self) {
         match self
@@ -107,10 +107,10 @@ impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Drop
     }
 }
 
-impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Sample<MessageType, Service> {
+impl<PayloadType: Debug + ?Sized, Service: crate::service::Service> Sample<PayloadType, Service> {
     /// Returns a reference to the payload of the [`Sample`]
-    pub fn payload(&self) -> &MessageType {
-        self.ptr.as_message_ref()
+    pub fn payload(&self) -> &PayloadType {
+        self.ptr.as_payload_ref()
     }
 
     /// Returns a reference to the [`Header`] of the [`Sample`].

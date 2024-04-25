@@ -27,28 +27,28 @@ pub struct TypeDetails {
     pub header_type_name: String,
     pub header_size: usize,
     pub header_alignment: usize,
-    pub message_type_name: String,
-    pub message_size: usize,
-    pub message_alignment: usize,
+    pub payload_type_name: String,
+    pub payload_size: usize,
+    pub payload_alignment: usize,
 }
 
 impl TypeDetails {
-    pub fn from<MessageType, Header>(variant: TypeVariant) -> Self {
+    pub fn from<PayloadType, Header>(variant: TypeVariant) -> Self {
         Self {
             variant,
             header_type_name: core::any::type_name::<Header>().to_string(),
             header_size: core::mem::size_of::<Header>(),
             header_alignment: core::mem::align_of::<Header>(),
-            message_type_name: core::any::type_name::<MessageType>().to_string(),
-            message_size: core::mem::size_of::<MessageType>(),
-            message_alignment: core::mem::align_of::<MessageType>(),
+            payload_type_name: core::any::type_name::<PayloadType>().to_string(),
+            payload_size: core::mem::size_of::<PayloadType>(),
+            payload_alignment: core::mem::align_of::<PayloadType>(),
         }
     }
 
-    pub fn message_ptr_from_header(&self, header: *const u8) -> *const u8 {
+    pub fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
         let header = header as usize;
-        let message_start = align(header + self.header_size, self.message_alignment);
-        message_start as *const u8
+        let payload_start = align(header + self.header_size, self.payload_alignment);
+        payload_start as *const u8
     }
 
     pub fn sample_layout(&self, number_of_elements: usize) -> Layout {
@@ -56,8 +56,8 @@ impl TypeDetails {
             Layout::from_size_align_unchecked(
                 align(
                     self.header_size
-                        + self.message_size * number_of_elements
-                        + self.message_alignment
+                        + self.payload_size * number_of_elements
+                        + self.payload_alignment
                         - 1,
                     self.header_alignment,
                 ),
@@ -66,11 +66,11 @@ impl TypeDetails {
         }
     }
 
-    pub fn message_layout(&self, number_of_elements: usize) -> Layout {
+    pub fn payload_layout(&self, number_of_elements: usize) -> Layout {
         unsafe {
             Layout::from_size_align_unchecked(
-                self.message_size * number_of_elements,
-                self.message_alignment,
+                self.payload_size * number_of_elements,
+                self.payload_alignment,
             )
         }
     }
@@ -80,8 +80,8 @@ impl TypeDetails {
             && self.header_type_name == rhs.header_type_name
             && self.header_size == rhs.header_size
             && self.header_alignment == rhs.header_alignment
-            && self.message_type_name == rhs.message_type_name
-            && self.message_size == rhs.message_size
-            && self.message_alignment <= rhs.message_alignment
+            && self.payload_type_name == rhs.payload_type_name
+            && self.payload_size == rhs.payload_size
+            && self.payload_alignment <= rhs.payload_alignment
     }
 }

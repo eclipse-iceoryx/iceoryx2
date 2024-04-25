@@ -73,9 +73,9 @@ impl StaticConfig {
                 header_type_name: String::new(),
                 header_size: 0,
                 header_alignment: 0,
-                message_type_name: String::new(),
-                message_size: 0,
-                message_alignment: 0,
+                payload_type_name: String::new(),
+                payload_size: 0,
+                payload_alignment: 0,
             },
         }
     }

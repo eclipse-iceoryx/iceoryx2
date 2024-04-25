@@ -111,19 +111,19 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
-    pub fn publish_subscribe<MessageType: Debug + ?Sized>(
+    pub fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
-    ) -> publish_subscribe::Builder<MessageType, S> {
+    ) -> publish_subscribe::Builder<PayloadType, S> {
         self.publish_subscribe_with_custom_config(config::Config::get_global_config())
     }
 
     /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
     /// with a custom [`config::Config`]
-    pub fn publish_subscribe_with_custom_config<MessageType: Debug + ?Sized>(
+    pub fn publish_subscribe_with_custom_config<PayloadType: Debug + ?Sized>(
         self,
         config: &config::Config,
-    ) -> publish_subscribe::Builder<MessageType, S> {
+    ) -> publish_subscribe::Builder<PayloadType, S> {
         BuilderWithServiceType::new(
             StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(&self.name, config),
             Arc::new(config.clone()),
@@ -166,9 +166,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         }
     }
 
-    fn publish_subscribe<MessageType: Debug + ?Sized>(
+    fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
-    ) -> publish_subscribe::Builder<MessageType, ServiceType> {
+    ) -> publish_subscribe::Builder<PayloadType, ServiceType> {
         publish_subscribe::Builder::new(self)
     }
 
