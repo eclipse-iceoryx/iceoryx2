@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::fmt;
-use std::{alloc::Layout, mem::MaybeUninit};
+use std::mem::MaybeUninit;
 
 use iceoryx2_bb_elementary::math::align;
 
@@ -20,19 +20,6 @@ fn aligned_header_size<Header, MessageType>() -> usize {
         core::mem::size_of::<Header>(),
         core::mem::align_of::<MessageType>(),
     )
-}
-
-fn get_layout<Header, MessageType>(number_of_elements: usize) -> Layout {
-    unsafe {
-        Layout::from_size_align_unchecked(
-            align(
-                aligned_header_size::<Header, MessageType>()
-                    + core::mem::size_of::<MessageType>() * number_of_elements,
-                core::mem::align_of::<Header>(),
-            ),
-            core::mem::align_of::<Header>(),
-        )
-    }
 }
 
 pub(crate) fn header_message_ptr<Header, MessageType>(
@@ -140,10 +127,6 @@ pub(crate) struct RawSampleMut<Header, MessageType: ?Sized> {
 }
 
 impl<Header, MessageType> RawSampleMut<Header, MessageType> {
-    pub(crate) fn layout() -> Layout {
-        get_layout::<Header, MessageType>(1)
-    }
-
     pub(crate) fn header_message_ptr(
         raw_ptr: *mut u8,
     ) -> (*mut Header, *mut MaybeUninit<MessageType>) {
@@ -154,10 +137,6 @@ impl<Header, MessageType> RawSampleMut<Header, MessageType> {
 }
 
 impl<Header, MessageType> RawSampleMut<Header, [MessageType]> {
-    pub(crate) fn layout_slice(number_of_elements: usize) -> Layout {
-        get_layout::<Header, MessageType>(number_of_elements)
-    }
-
     pub(crate) fn header_slice_message_ptr(
         raw_ptr: *mut u8,
         number_of_elements: usize,

@@ -79,7 +79,7 @@ pub(crate) struct PublisherConnections<Service: service::Service> {
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     subscriber_id: UniqueSubscriberId,
     config: Arc<config::Config>,
-    static_config: StaticConfig,
+    pub(crate) static_config: StaticConfig,
     pub(crate) buffer_size: usize,
 }
 

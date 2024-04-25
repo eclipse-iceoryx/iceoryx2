@@ -670,6 +670,22 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
             }
         }
     }
+
+    fn sample_layout(&self, number_of_elements: usize) -> Layout {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .type_details
+            .sample_layout(number_of_elements)
+    }
+
+    fn payload_layout(&self, number_of_elements: usize) -> Layout {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .type_details
+            .message_layout(number_of_elements)
+    }
 }
 
 ////////////////////////
@@ -740,7 +756,7 @@ impl<Service: service::Service, MessageType: Debug + Sized> Publisher<Service, M
     pub fn loan_uninit(
         &self,
     ) -> Result<SampleMut<MaybeUninit<MessageType>, Service>, PublisherLoanError> {
-        let chunk = self.allocate(RawSampleMut::<Header, MessageType>::layout())?;
+        let chunk = self.allocate(self.sample_layout(1))?;
         let (header_ptr, message_ptr) =
             RawSampleMut::<Header, MessageType>::header_message_ptr(chunk.data_ptr);
 
@@ -884,8 +900,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
                 slice_len, max_slice_len);
         }
 
-        let layout = RawSampleMut::<Header, [MessageType]>::layout_slice(slice_len);
-        let chunk = self.allocate(layout)?;
+        let chunk = self.allocate(self.sample_layout(slice_len))?;
 
         let (header_ptr, message_ptr) =
             RawSampleMut::<Header, [MessageType]>::header_slice_message_ptr(
@@ -893,13 +908,12 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
                 slice_len,
             );
 
-        let message_type_layout = unsafe {
-            Layout::from_size_align_unchecked(
-                core::mem::size_of::<MessageType>() * slice_len,
-                core::mem::align_of::<MessageType>(),
-            )
+        unsafe {
+            header_ptr.write(Header::new(
+                self.data_segment.port_id,
+                self.payload_layout(slice_len),
+            ))
         };
-        unsafe { header_ptr.write(Header::new(self.data_segment.port_id, message_type_layout)) };
         let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, message_ptr) };
 
         Ok(SampleMut::<[MaybeUninit<MessageType>], Service>::new(
