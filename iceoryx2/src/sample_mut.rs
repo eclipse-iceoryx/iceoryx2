@@ -20,8 +20,7 @@
 //! # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
 //! #
 //! # let service = zero_copy::Service::new(&service_name)
-//! #     .publish_subscribe()
-//! #     .typed::<u64>()
+//! #     .publish_subscribe::<u64>()
 //! #     .open_or_create()?;
 //! #
 //! # let publisher = service.publisher().create()?;
@@ -47,12 +46,10 @@
 //! # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
 //! #
 //! # let service = zero_copy::Service::new(&service_name)
-//! #     .publish_subscribe()
-//! #     .sliced::<usize>()
-//! #     .max_elements(128)
+//! #     .publish_subscribe::<[usize]>()
 //! #     .create()?;
 //! #
-//! # let publisher = service.publisher().create()?;
+//! # let publisher = service.publisher().max_slice_len(16).create()?;
 //!
 //! let slice_length = 12;
 //! let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -171,8 +168,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
@@ -206,8 +202,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
@@ -241,22 +236,22 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     ///
     /// ```
     /// use iceoryx2::prelude::*;
+    /// use core::mem::MaybeUninit;
+    ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .sliced::<usize>()
-    /// #     .max_elements(120)
+    /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher().max_slice_len(32).create()?;
     ///
     /// let slice_length = 10;
-    /// let mut sample = publisher.loan_sliced_uninit(slice_length)?;
+    /// let mut sample = publisher.loan_slice_uninit(slice_length)?;
     ///
     /// for element in sample.payload_mut() {
-    ///     element = 1234;
+    ///     element.write(1234);
     /// }
     ///
     /// let sample = unsafe { sample.assume_init() };
@@ -281,15 +276,13 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .sliced::<u64>()
-    /// #     .max_elements(90)
+    /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher().max_slice_len(16).create()?;
     ///
     /// let slice_length = 12;
-    /// let sample = publisher.loan_sliced_uninit(slice_length)?;
+    /// let sample = publisher.loan_slice_uninit(slice_length)?;
     /// let sample = sample.write_from_fn(|n| n + 123);
     ///
     /// sample.send()?;
@@ -326,8 +319,7 @@ impl<
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
     ///
@@ -357,8 +349,7 @@ impl<
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
     ///
@@ -388,8 +379,7 @@ impl<
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
     ///
@@ -423,8 +413,7 @@ impl<
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
     ///

@@ -22,7 +22,7 @@
 //!
 //! let service = zero_copy::Service::new(&service_name)
 //!     // define the messaging pattern
-//!     .publish_subscribe()
+//!     .publish_subscribe::<u64>()
 //!     // various QoS
 //!     .enable_safe_overflow(true)
 //!     .subscriber_max_borrowed_samples(1)
@@ -30,7 +30,6 @@
 //!     .subscriber_max_buffer_size(3)
 //!     .max_subscribers(4)
 //!     .max_publishers(5)
-//!     .typed::<u64>()
 //!     // if the service already exists, open it, otherwise create it
 //!     .open_or_create()?;
 //!
@@ -74,8 +73,7 @@
 //! custom_config.global.service.directory = "custom_path".to_string();
 //!
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe_with_custom_config(&custom_config)
-//!     .typed::<u64>()
+//!     .publish_subscribe_with_custom_config::<u64>(&custom_config)
 //!     .open_or_create()?;
 //!
 //! # Ok(())

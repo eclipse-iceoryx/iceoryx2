@@ -20,8 +20,7 @@
 //!
 //! // use `zero_copy` as communication variant
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let publisher = service.publisher().create()?;

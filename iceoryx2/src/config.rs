@@ -26,8 +26,7 @@
 //! custom_config.global.service.directory = "another_service_dir".to_string();
 //!
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe_with_custom_config(&custom_config)
-//!     .typed::<u64>()
+//!     .publish_subscribe_with_custom_config::<u64>(&custom_config)
 //!     .open_or_create()?;
 //!
 //! # Ok(())

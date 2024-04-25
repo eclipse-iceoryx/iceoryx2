@@ -18,8 +18,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let pubsub = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! println!("type details:                     {:?}", pubsub.static_config().type_details());

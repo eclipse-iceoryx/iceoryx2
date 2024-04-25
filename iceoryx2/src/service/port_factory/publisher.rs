@@ -12,6 +12,8 @@
 
 //! # Example
 //!
+//! ## Typed API
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
@@ -19,8 +21,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let pubsub = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let publisher = pubsub.publisher()
@@ -31,6 +32,30 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! ## Sliced API
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
+//! let pubsub = zero_copy::Service::new(&service_name)
+//!     .publish_subscribe::<[u64]>()
+//!     .open_or_create()?;
+//!
+//! let publisher = pubsub.publisher()
+//!                     // allows to call Publisher::loan_slice() with up to 128 elements
+//!                     .max_slice_len(128)
+//!                     .create()?;
+//!
+//! let sample = publisher.loan_slice(50)?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;

@@ -20,9 +20,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     // create a service based on the type `u64`
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let publisher = service
@@ -65,15 +63,13 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     // create a service based on the slice `[u64]`
-//!     .sliced::<usize>()
-//!     // defines the maximum length of a slice
-//!     .max_elements(128)
+//!     .publish_subscribe::<[usize]>()
 //!     .open_or_create()?;
 //!
 //! let publisher = service
 //!     .publisher()
+//!     // defines the maximum length of a slice
+//!     .max_slice_len(128)
 //!     // defines how many samples can be loaned in parallel
 //!     .max_loaned_samples(5)
 //!     // defines behavior when subscriber queue is full in an non-overflowing service
@@ -713,8 +709,7 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
@@ -748,8 +743,7 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
@@ -802,8 +796,7 @@ impl<Service: service::Service, PayloadType: Default + Debug + Sized>
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
@@ -843,12 +836,10 @@ impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service,
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .sliced::<u64>()
-    /// #     .max_elements(10)
+    /// #     .publish_subscribe::<[u64]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher().max_slice_len(120).create()?;
     ///
     /// let slice_length = 5;
     /// let mut sample = publisher.loan_slice(slice_length)?;
@@ -882,12 +873,10 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .sliced::<usize>()
-    /// #     .max_elements(10)
+    /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher().max_slice_len(120).create()?;
     ///
     /// let slice_length = 5;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;

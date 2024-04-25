@@ -18,8 +18,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let pubsub = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! println!("name:                             {:?}", pubsub.name());
@@ -115,8 +114,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let service_name = ServiceName::new("My/Funk/ServiceName")?;
     /// let pubsub = zero_copy::Service::new(&service_name)
-    ///     .publish_subscribe()
-    ///     .typed::<u64>()
+    ///     .publish_subscribe::<u64>()
     ///     .open_or_create()?;
     ///
     /// let subscriber = pubsub.subscriber().create()?;
@@ -140,8 +138,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let service_name = ServiceName::new("My/Funk/ServiceName")?;
     /// let pubsub = zero_copy::Service::new(&service_name)
-    ///     .publish_subscribe()
-    ///     .typed::<u64>()
+    ///     .publish_subscribe::<u64>()
     ///     .open_or_create()?;
     ///
     /// let publisher = pubsub.publisher()
