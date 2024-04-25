@@ -22,7 +22,7 @@
 //!     .typed::<u64>()
 //!     .open_or_create()?;
 //!
-//! println!("type name:                        {:?}", pubsub.static_config().type_name());
+//! println!("type details:                     {:?}", pubsub.static_config().type_details());
 //! println!("max publishers:                   {:?}", pubsub.static_config().max_supported_publishers());
 //! println!("max subscribers:                  {:?}", pubsub.static_config().max_supported_subscribers());
 //! println!("subscriber buffer size:           {:?}", pubsub.static_config().subscriber_max_buffer_size());

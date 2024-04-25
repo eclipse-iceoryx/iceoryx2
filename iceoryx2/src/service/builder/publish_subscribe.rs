@@ -535,7 +535,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    pub fn open_or_create_impl<MessageType: Debug + ?Sized>(
+    fn open_or_create_impl<MessageType: Debug + ?Sized>(
         mut self,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, MessageType>,

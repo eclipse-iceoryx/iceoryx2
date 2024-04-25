@@ -12,6 +12,8 @@
 
 //! # Example
 //!
+//! ## Typed API
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,7 +27,39 @@
 //! # let publisher = service.publisher().create()?;
 //!
 //! let sample = publisher.loan_uninit()?;
-//! let sample = sample.write_payload(1234);
+//! // write 1234 into sample
+//! let mut sample = sample.write_payload(1234);
+//! // override contents with 456 because its fun
+//! *sample.payload_mut() = 456;
+//!
+//! println!("publisher port id: {:?}", sample.header().publisher_id());
+//! sample.send()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Sliced API
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+//! #
+//! # let service = zero_copy::Service::new(&service_name)
+//! #     .publish_subscribe()
+//! #     .sliced::<usize>()
+//! #     .max_elements(128)
+//! #     .create()?;
+//! #
+//! # let publisher = service.publisher().create()?;
+//!
+//! let slice_length = 12;
+//! let sample = publisher.loan_slice_uninit(slice_length)?;
+//! // initialize the n-th element of the slice with n * 1234
+//! let mut sample = sample.write_from_fn(|n| n * 1234);
+//! // override the content of the first element with 42
+//! sample.payload_mut()[0] = 42;
 //!
 //! println!("publisher port id: {:?}", sample.header().publisher_id());
 //! sample.send()?;
@@ -47,8 +81,12 @@ use std::{
 };
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
-/// [`crate::port::publisher::Publisher::loan()`] or
-/// [`crate::port::publisher::Publisher::loan_uninit()`]. It stores the payload that will be sent
+///  * [`crate::port::publisher::Publisher::loan()`],
+///  * [`crate::port::publisher::Publisher::loan_uninit()`]
+///  * [`crate::port::publisher::Publisher::loan_slice()`]
+///  * [`crate::port::publisher::Publisher::loan_slice_uninit()`]
+///
+/// It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
 ///
@@ -192,11 +230,73 @@ impl<MessageType: Debug, Service: crate::service::Service>
 impl<MessageType: Debug, Service: crate::service::Service>
     SampleMut<[MaybeUninit<MessageType>], Service>
 {
+    /// Extracts the value of the slice of [`core::mem::MaybeUninit<MessageType>`] and labels the sample as initialized
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that every element of the slice of [`core::mem::MaybeUninit<MessageType>`]
+    /// is initialized. Calling this when the content is not fully initialized causes immediate undefined behavior.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .sliced::<usize>()
+    /// #     .max_elements(120)
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// let slice_length = 10;
+    /// let mut sample = publisher.loan_sliced_uninit(slice_length)?;
+    ///
+    /// for element in sample.payload_mut() {
+    ///     element = 1234;
+    /// }
+    ///
+    /// let sample = unsafe { sample.assume_init() };
+    ///
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub unsafe fn assume_init(self) -> SampleMut<[MessageType], Service> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
     }
 
+    /// Writes the payload to the sample and labels the sample as initialized
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .sliced::<u64>()
+    /// #     .max_elements(90)
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// let slice_length = 12;
+    /// let sample = publisher.loan_sliced_uninit(slice_length)?;
+    /// let sample = sample.write_from_fn(|n| n + 123);
+    ///
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn write_from_fn<F: FnMut(usize) -> MessageType>(
         mut self,
         mut initializer: F,
@@ -239,10 +339,6 @@ impl<
     /// ```
     pub fn header(&self) -> &Header {
         self.ptr.as_header_ref()
-    }
-
-    pub fn header_mut(&self) -> &mut Header {
-        self.ptr.as_header_mut()
     }
 
     /// Returns a reference to the payload of the sample.
@@ -317,6 +413,29 @@ impl<
     ///
     /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data is returned, otherwise a [`PublisherSendError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .typed::<u64>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// let mut sample = publisher.loan()?;
+    /// *sample.payload_mut() = 4567;
+    ///
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn send(self) -> Result<usize, PublisherSendError> {
         self.data_segment.send_sample(self.offset_to_chunk.value())
     }

@@ -72,7 +72,9 @@ impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Debug
     }
 }
 
-impl<MessageType: Debug, Service: crate::service::Service> Deref for Sample<MessageType, Service> {
+impl<MessageType: Debug + ?Sized, Service: crate::service::Service> Deref
+    for Sample<MessageType, Service>
+{
     type Target = MessageType;
     fn deref(&self) -> &Self::Target {
         self.ptr.as_message_ref()

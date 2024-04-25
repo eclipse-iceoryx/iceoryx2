@@ -44,7 +44,7 @@ pub(crate) fn header_message_ptr<Header, MessageType>(
     (header_ptr, message_ptr)
 }
 
-/// A `*const Message<Header, MessageType>` non-zero sample pointer to the message.
+/// Contains the pointer to the underlying header and payload of a sample.
 #[repr(C)]
 pub(crate) struct RawSample<Header, MessageType: ?Sized> {
     header: *const Header,
@@ -56,7 +56,9 @@ impl<Header, MessageType> RawSample<Header, [MessageType]> {
     ///
     /// # Safety
     ///
-    /// `message` must be non-null.
+    /// * `header` must be non-null.
+    /// * `message` must be non-null.
+    ///
     #[inline]
     pub(crate) unsafe fn new_slice_unchecked(
         header: *const Header,
@@ -92,7 +94,8 @@ impl<Header, MessageType> RawSample<Header, MessageType> {
     ///
     /// # Safety
     ///
-    /// `raw_ptr` must be non-null.
+    /// * `raw_ptr` must be non-null.
+    ///
     #[inline]
     pub(crate) unsafe fn new_unchecked(raw_ptr: *const u8) -> Self {
         debug_assert!(
@@ -129,7 +132,7 @@ impl<Header, MessageType> fmt::Pointer for RawSample<Header, MessageType> {
     }
 }
 
-/// A `*mut Message<Header, MessageType>` non-zero sample pointer to the message.
+/// Contains the mutable pointer to the underlying header and payload of a sample.
 #[repr(C)]
 pub(crate) struct RawSampleMut<Header, MessageType: ?Sized> {
     header: *mut Header,
@@ -172,7 +175,9 @@ impl<Header, MessageType: ?Sized> RawSampleMut<Header, MessageType> {
     ///
     /// # Safety
     ///
-    /// `message` must be non-null.
+    ///  * `header` mut be non-null.
+    ///  * `message` must be non-null.
+    ///
     #[inline]
     pub(crate) unsafe fn new_unchecked(header: *mut Header, message: *mut MessageType) -> Self {
         debug_assert!(
@@ -189,21 +194,14 @@ impl<Header, MessageType: ?Sized> RawSampleMut<Header, MessageType> {
         unsafe { &*self.header }
     }
 
-    /// Acquires the underlying header as reference.
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn as_header_mut(&self) -> &mut Header {
-        unsafe { &mut *self.header }
-    }
-
-    /// Acquires the underlying data as reference.
+    /// Acquires the underlying message as reference.
     #[must_use]
     #[inline(always)]
     pub(crate) fn as_message_ref(&self) -> &MessageType {
         unsafe { &*self.message }
     }
 
-    /// Acquires the underlying data as mut reference.
+    /// Acquires the underlying message as mutable reference.
     #[must_use]
     #[inline(always)]
     pub(crate) fn as_message_mut(&mut self) -> &mut MessageType {

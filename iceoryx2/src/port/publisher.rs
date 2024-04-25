@@ -12,6 +12,8 @@
 
 //! # Examples
 //!
+//! ## Typed API
+//!
 //! ```
 //! use iceoryx2::{prelude::*, service::port_factory::publisher::UnableToDeliverStrategy};
 //!
@@ -19,6 +21,7 @@
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe()
+//!     // create a service based on the type `u64`
 //!     .typed::<u64>()
 //!     .open_or_create()?;
 //!
@@ -49,6 +52,54 @@
 //!
 //! // send a copy of the value
 //! publisher.send_copy(313)?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Sliced API
+//!
+//! ```
+//! use iceoryx2::{prelude::*, service::port_factory::publisher::UnableToDeliverStrategy};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
+//! let service = zero_copy::Service::new(&service_name)
+//!     .publish_subscribe()
+//!     // create a service based on the slice `[u64]`
+//!     .sliced::<usize>()
+//!     // defines the maximum length of a slice
+//!     .max_elements(128)
+//!     .open_or_create()?;
+//!
+//! let publisher = service
+//!     .publisher()
+//!     // defines how many samples can be loaned in parallel
+//!     .max_loaned_samples(5)
+//!     // defines behavior when subscriber queue is full in an non-overflowing service
+//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!     .create()?;
+//!
+//! // loan some initialized memory and send it
+//! // the message type must implement the [`core::default::Default`] trait in order to be able to use this API
+//! // we acquire a slice of length 12
+//! let mut sample = publisher.loan_slice(12)?;
+//! sample.payload_mut()[5] = 1337;
+//! sample.send()?;
+//!
+//! // loan uninitialized slice of length 60 and send it
+//! let sample = publisher.loan_slice_uninit(60)?;
+//! // initialize the n element of the slice with the value n * 123
+//! let sample = sample.write_from_fn(|n| n * 123 );
+//! sample.send()?;
+//!
+//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<MessageType>`])
+//! let mut sample = publisher.loan_slice_uninit(42)?;
+//! for element in sample.payload_mut() {
+//!     element.write(1337);
+//! }
+//! let sample = unsafe { sample.assume_init() };
+//! sample.send()?;
 //!
 //! # Ok(())
 //! # }
@@ -737,6 +788,37 @@ impl<Service: service::Service, MessageType: Default + Debug + Sized>
 // BEGIN: sliced API
 ////////////////////////
 impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service, [MessageType]> {
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
+    /// and initializes all slice elements with the default value. This can be a performance hit
+    /// and [`Publisher::loan_slice_uninit()`] can be used to loan a slice of
+    /// [`core::mem::MaybeUninit<MessageType>`].
+    ///
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .sliced::<u64>()
+    /// #     .max_elements(10)
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// let slice_length = 5;
+    /// let mut sample = publisher.loan_slice(slice_length)?;
+    /// sample.payload_mut()[2] = 42;
+    ///
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn loan_slice(
         &self,
         number_of_elements: usize,
@@ -747,6 +829,35 @@ impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service,
 }
 
 impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageType]> {
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe()
+    /// #     .sliced::<usize>()
+    /// #     .max_elements(10)
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher().create()?;
+    ///
+    /// let slice_length = 5;
+    /// let sample = publisher.loan_slice_uninit(slice_length)?;
+    /// let sample = sample.write_from_fn(|n| n * 2); // alternatively `sample.payload_mut()` can be use to access the `[MaybeUninit<MessageType>]`
+    ///
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn loan_slice_uninit(
         &self,
         number_of_elements: usize,
