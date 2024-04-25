@@ -68,6 +68,12 @@ impl TypeDetails {
     }
 
     pub fn is_compatible(&self, rhs: &Self) -> bool {
-        self == rhs
+        self.variant == rhs.variant
+            && self.header_type_name == rhs.header_type_name
+            && self.header_size == rhs.header_size
+            && self.header_alignment == rhs.header_alignment
+            && self.message_type_name == rhs.message_type_name
+            && self.message_size == rhs.message_size
+            && self.message_alignment <= rhs.message_alignment
     }
 }

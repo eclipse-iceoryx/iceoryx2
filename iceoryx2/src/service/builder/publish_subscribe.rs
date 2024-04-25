@@ -22,7 +22,7 @@ use crate::service::header::publish_subscribe::Header;
 use crate::service::messaging_pattern::MessagingPattern;
 use crate::service::port_factory::publish_subscribe;
 use crate::service::*;
-use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary::{alignment::Alignment, enum_gen};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -113,7 +113,7 @@ impl std::error::Error for PublishSubscribeOpenOrCreateError {}
 #[derive(Debug)]
 pub struct Builder<MessageType: Debug + ?Sized, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
-    override_message_alignment: Option<usize>,
+    override_alignment: Option<usize>,
     verify_number_of_subscribers: bool,
     verify_number_of_publishers: bool,
     verify_subscriber_max_buffer_size: bool,
@@ -133,7 +133,7 @@ impl<MessageType: Debug + ?Sized, ServiceType: service::Service> Builder<Message
             verify_publisher_history_size: false,
             verify_subscriber_max_borrowed_samples: false,
             verify_enable_safe_overflow: false,
-            override_message_alignment: None,
+            override_alignment: None,
             _data: PhantomData,
         };
 
@@ -170,13 +170,13 @@ impl<MessageType: Debug + ?Sized, ServiceType: service::Service> Builder<Message
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceAvailabilityState> {
         match self.base.is_service_available() {
             Ok(Some((config, storage))) => {
-                if !config
-                    .publish_subscribe()
+                if !self
+                    .config_details()
                     .type_details
-                    .is_compatible(&self.config_details().type_details)
+                    .is_compatible(&config.publish_subscribe().type_details)
                 {
                     fail!(from self, with ServiceAvailabilityState::IncompatibleTypes,
-                        "{} since the service offers the type \"{:?}\" but the requested type is \"{:?}\".",
+                        "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.publish_subscribe().type_details , self.config_details().type_details);
                 }
 
@@ -185,6 +185,14 @@ impl<MessageType: Debug + ?Sized, ServiceType: service::Service> Builder<Message
             Ok(None) => Ok(None),
             Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
         }
+    }
+
+    /// If the [`Service`] is created, it defines the [`Alignment`] of the payload for the service. If
+    /// an existing [`Service`] is opened it requires the service to have at least the defined
+    /// [`Alignment`].
+    pub fn payload_alignment(mut self, alignment: Alignment) -> Self {
+        self.override_alignment = Some(alignment.value());
+        self
     }
 
     /// If the [`Service`] is created, defines the overflow behavior of the service. If an existing
@@ -565,6 +573,16 @@ impl<MessageType: Debug + ?Sized, ServiceType: service::Service> Builder<Message
             }
         }
     }
+
+    fn adjust_payload_alignment(&mut self) {
+        if let Some(alignment) = self.override_alignment {
+            self.config_details_mut().type_details.message_alignment = self
+                .config_details()
+                .type_details
+                .message_alignment
+                .max(alignment);
+        }
+    }
 }
 
 impl<MessageType: Debug, ServiceType: service::Service> Builder<MessageType, ServiceType> {
@@ -578,6 +596,7 @@ impl<MessageType: Debug, ServiceType: service::Service> Builder<MessageType, Ser
     > {
         self.config_details_mut().type_details =
             TypeDetails::from::<MessageType, Header>(TypeVariant::FixedSize);
+        self.adjust_payload_alignment();
 
         self.open_or_create_impl()
     }
@@ -589,6 +608,7 @@ impl<MessageType: Debug, ServiceType: service::Service> Builder<MessageType, Ser
     {
         self.config_details_mut().type_details =
             TypeDetails::from::<MessageType, Header>(TypeVariant::FixedSize);
+        self.adjust_payload_alignment();
 
         self.open_impl()
     }
@@ -600,6 +620,7 @@ impl<MessageType: Debug, ServiceType: service::Service> Builder<MessageType, Ser
     {
         self.config_details_mut().type_details =
             TypeDetails::from::<MessageType, Header>(TypeVariant::FixedSize);
+        self.adjust_payload_alignment();
 
         self.create_impl()
     }
@@ -616,6 +637,7 @@ impl<MessageType: Debug, ServiceType: service::Service> Builder<[MessageType], S
     > {
         self.config_details_mut().type_details =
             TypeDetails::from::<MessageType, Header>(TypeVariant::Dynamic);
+        self.adjust_payload_alignment();
 
         self.open_or_create_impl()
     }
@@ -627,6 +649,7 @@ impl<MessageType: Debug, ServiceType: service::Service> Builder<[MessageType], S
     {
         self.config_details_mut().type_details =
             TypeDetails::from::<MessageType, Header>(TypeVariant::Dynamic);
+        self.adjust_payload_alignment();
 
         self.open_impl()
     }
@@ -640,6 +663,7 @@ impl<MessageType: Debug, ServiceType: service::Service> Builder<[MessageType], S
     > {
         self.config_details_mut().type_details =
             TypeDetails::from::<MessageType, Header>(TypeVariant::Dynamic);
+        self.adjust_payload_alignment();
 
         self.create_impl()
     }

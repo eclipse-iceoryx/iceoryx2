@@ -27,6 +27,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::static_config::type_details::TypeVariant;
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
+    use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -105,20 +106,14 @@ mod service_publish_subscribe {
     }
 
     #[test]
-    fn open_fails_when_service_does_not_fulfill_opener_requirements<Sut: Service>() {
+    fn open_fails_when_service_does_not_satisfy_max_publishers_requirement<Sut: Service>() {
         let service_name = generate_name();
         let sut = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(2)
-            .max_subscribers(2)
-            .enable_safe_overflow(false)
-            .history_size(2)
-            .subscriber_max_borrowed_samples(2)
-            .subscriber_max_buffer_size(2)
             .create();
         assert_that!(sut, is_ok);
 
-        // max_publishers
         let sut2 = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(3)
@@ -136,8 +131,17 @@ mod service_publish_subscribe {
             .open();
 
         assert_that!(sut2, is_ok);
+    }
 
-        // max_subscribers
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_max_subscribers_requirement<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .max_subscribers(2)
+            .create();
+        assert_that!(sut, is_ok);
+
         let sut2 = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(3)
@@ -155,8 +159,17 @@ mod service_publish_subscribe {
             .open();
 
         assert_that!(sut2, is_ok);
+    }
 
-        // safe overflow
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_safe_overflow_requirement<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .enable_safe_overflow(false)
+            .create();
+        assert_that!(sut, is_ok);
+
         let sut2 = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .enable_safe_overflow(true)
@@ -167,8 +180,17 @@ mod service_publish_subscribe {
             sut2.err().unwrap(), eq
             PublishSubscribeOpenError::IncompatibleOverflowBehavior
         );
+    }
 
-        // history size
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_history_requirement<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .history_size(2)
+            .create();
+        assert_that!(sut, is_ok);
+
         let sut2 = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .history_size(3)
@@ -186,8 +208,17 @@ mod service_publish_subscribe {
             .open();
 
         assert_that!(sut2, is_ok);
+    }
 
-        // subscriber max borrow
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_subscriber_max_borrow_requirement<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .subscriber_max_borrowed_samples(2)
+            .create();
+        assert_that!(sut, is_ok);
+
         let sut2 = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(3)
@@ -205,8 +236,19 @@ mod service_publish_subscribe {
             .open();
 
         assert_that!(sut2, is_ok);
+    }
 
-        // buffer size
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_subscriber_max_buffer_size_requirement<
+        Sut: Service,
+    >() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .subscriber_max_buffer_size(2)
+            .create();
+        assert_that!(sut, is_ok);
+
         let sut2 = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(3)
@@ -221,6 +263,34 @@ mod service_publish_subscribe {
         let sut2 = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
+            .open();
+
+        assert_that!(sut2, is_ok);
+    }
+
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_alignment_requirement<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .payload_alignment(Alignment::new(128).unwrap())
+            .create();
+        assert_that!(sut, is_ok);
+
+        let sut2 = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .payload_alignment(Alignment::new(512).unwrap())
+            .open();
+
+        assert_that!(sut2, is_err);
+        assert_that!(
+            sut2.err().unwrap(), eq
+            PublishSubscribeOpenError::IncompatibleTypes
+        );
+
+        let sut2 = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .payload_alignment(Alignment::new(16).unwrap())
             .open();
 
         assert_that!(sut2, is_ok);
@@ -560,6 +630,41 @@ mod service_publish_subscribe {
         let result = subscriber.receive().unwrap();
         assert_that!(result, is_some);
         assert_that!(*result.unwrap(), eq 4567);
+    }
+
+    #[test]
+    fn all_samples_are_correctly_aligned<Sut: Service>() {
+        const BUFFER_SIZE: usize = 100;
+        const ALIGNMENT: usize = 512;
+        let service_name = generate_name();
+
+        let service_pub = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .subscriber_max_buffer_size(BUFFER_SIZE)
+            .payload_alignment(Alignment::new(ALIGNMENT).unwrap())
+            .create()
+            .unwrap();
+
+        let service_sub = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .open()
+            .unwrap();
+
+        let publisher = service_pub.publisher().create().unwrap();
+        let subscriber = service_sub.subscriber().create().unwrap();
+
+        let mut samples = vec![];
+        for _ in 0..BUFFER_SIZE {
+            let sample = publisher.loan().unwrap();
+            let payload_address = (sample.payload() as *const u64) as usize;
+            assert_that!(payload_address % ALIGNMENT, eq 0);
+
+            let recv_sample = subscriber.receive().unwrap().unwrap();
+            let recv_payload_address = (recv_sample.payload() as *const u64) as usize;
+            assert_that!(recv_payload_address % ALIGNMENT, eq 0);
+
+            samples.push(recv_sample);
+        }
     }
 
     #[test]

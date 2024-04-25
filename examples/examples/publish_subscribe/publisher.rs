@@ -12,6 +12,7 @@
 
 use core::time::Duration;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_elementary::alignment::Alignment;
 use transmission_data::TransmissionData;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
@@ -21,6 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service = zero_copy::Service::new(&service_name)
         .publish_subscribe::<TransmissionData>()
+        .payload_alignment(Alignment::new(512).unwrap())
         .open_or_create()?;
 
     let publisher = service.publisher().create()?;
