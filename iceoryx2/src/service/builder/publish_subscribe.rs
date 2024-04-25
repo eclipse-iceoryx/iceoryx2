@@ -111,7 +111,7 @@ impl std::error::Error for PublishSubscribeOpenOrCreateError {}
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Builder<ServiceType: service::Service> {
+pub struct Builder<MessageType: Debug + ?Sized, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_number_of_subscribers: bool,
     verify_number_of_publishers: bool,
@@ -119,9 +119,10 @@ pub struct Builder<ServiceType: service::Service> {
     verify_subscriber_max_borrowed_samples: bool,
     verify_publisher_history_size: bool,
     verify_enable_safe_overflow: bool,
+    _data: PhantomData<MessageType>,
 }
 
-impl<ServiceType: service::Service> Builder<ServiceType> {
+impl<MessageType: Debug + ?Sized, ServiceType: service::Service> Builder<MessageType, ServiceType> {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
@@ -131,6 +132,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             verify_publisher_history_size: false,
             verify_subscriber_max_borrowed_samples: false,
             verify_enable_safe_overflow: false,
+            _data: PhantomData,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::PublishSubscribe(
@@ -236,28 +238,6 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         self
     }
 
-    /// Returns the [`TypedBuilder`] to create a typed [`Service`].
-    pub fn typed<MessageType: Debug>(mut self) -> TypedBuilder<MessageType, ServiceType> {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<MessageType, Header>(TypeVariant::FixedSize);
-
-        TypedBuilder {
-            builder: self,
-            _message_type: PhantomData,
-        }
-    }
-
-    /// Returns the [`SlicedBuilder`] to create a slice typed [`Service`].
-    pub fn sliced<MessageType: Debug>(mut self) -> SlicedBuilder<MessageType, ServiceType> {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<MessageType, Header>(TypeVariant::Dynamic);
-
-        SlicedBuilder {
-            builder: self,
-            _message_type: PhantomData,
-        }
-    }
-
     fn adjust_properties_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.publish_subscribe_mut();
@@ -355,7 +335,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         Ok(existing_settings.clone())
     }
 
-    fn create_impl<MessageType: Debug + ?Sized>(
+    fn create_impl(
         &mut self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeCreateError>
     {
@@ -464,7 +444,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    fn open_impl<MessageType: Debug + ?Sized>(
+    fn open_impl(
         &mut self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeOpenError>
     {
@@ -536,7 +516,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    fn open_or_create_impl<MessageType: Debug + ?Sized>(
+    fn open_or_create_impl(
         mut self,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, MessageType>,
@@ -551,7 +531,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     Err(PublishSubscribeOpenError::DoesNotExist) => continue,
                     Err(e) => return Err(e.into()),
                 },
-                Ok(None) => match self.create_impl::<MessageType>() {
+                Ok(None) => match self.create_impl() {
                     Ok(factory) => return Ok(factory),
                     Err(PublishSubscribeCreateError::AlreadyExists)
                     | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
@@ -585,22 +565,19 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 }
 
-#[derive(Debug)]
-pub struct TypedBuilder<MessageType: Debug, ServiceType: service::Service> {
-    builder: Builder<ServiceType>,
-    _message_type: PhantomData<MessageType>,
-}
-
-impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType, ServiceType> {
+impl<MessageType: Debug, ServiceType: service::Service> Builder<MessageType, ServiceType> {
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create(
-        self,
+        mut self,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, MessageType>,
         PublishSubscribeOpenOrCreateError,
     > {
-        self.builder.open_or_create_impl::<MessageType>()
+        self.config_details_mut().type_details =
+            TypeDetails::from::<MessageType, Header>(TypeVariant::FixedSize);
+
+        self.open_or_create_impl()
     }
 
     /// Opens an existing [`Service`].
@@ -608,7 +585,10 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
         mut self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeOpenError>
     {
-        self.builder.open_impl::<MessageType>()
+        self.config_details_mut().type_details =
+            TypeDetails::from::<MessageType, Header>(TypeVariant::FixedSize);
+
+        self.open_impl()
     }
 
     /// Creates a new [`Service`].
@@ -616,28 +596,37 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
         mut self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeCreateError>
     {
-        self.builder.create_impl::<MessageType>()
+        self.config_details_mut().type_details =
+            TypeDetails::from::<MessageType, Header>(TypeVariant::FixedSize);
+
+        self.create_impl()
     }
 }
 
-#[derive(Debug)]
-pub struct SlicedBuilder<MessageType: Debug + Sized, ServiceType: service::Service> {
-    builder: Builder<ServiceType>,
-    _message_type: PhantomData<MessageType>,
-}
-
-impl<MessageType: Debug + Sized, ServiceType: service::Service>
-    SlicedBuilder<MessageType, ServiceType>
-{
+impl<MessageType: Debug, ServiceType: service::Service> Builder<[MessageType], ServiceType> {
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create(
-        self,
+        mut self,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, [MessageType]>,
         PublishSubscribeOpenOrCreateError,
     > {
-        self.builder.open_or_create_impl::<[MessageType]>()
+        self.config_details_mut().type_details =
+            TypeDetails::from::<MessageType, Header>(TypeVariant::Dynamic);
+
+        self.open_or_create_impl()
+    }
+
+    /// Opens an existing [`Service`].
+    pub fn open(
+        mut self,
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, [MessageType]>, PublishSubscribeOpenError>
+    {
+        self.config_details_mut().type_details =
+            TypeDetails::from::<MessageType, Header>(TypeVariant::Dynamic);
+
+        self.open_impl()
     }
 
     /// Creates a new [`Service`].
@@ -647,14 +636,9 @@ impl<MessageType: Debug + Sized, ServiceType: service::Service>
         publish_subscribe::PortFactory<ServiceType, [MessageType]>,
         PublishSubscribeCreateError,
     > {
-        self.builder.create_impl::<[MessageType]>()
-    }
+        self.config_details_mut().type_details =
+            TypeDetails::from::<MessageType, Header>(TypeVariant::Dynamic);
 
-    /// Opens an existing [`Service`].
-    pub fn open(
-        mut self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, [MessageType]>, PublishSubscribeOpenError>
-    {
-        self.builder.open_impl::<[MessageType]>()
+        self.create_impl()
     }
 }

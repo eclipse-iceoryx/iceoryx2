@@ -42,9 +42,8 @@ mod sample_mut {
         fn new() -> Self {
             let service_name = generate_name();
             let service = Sut::new(&service_name)
-                .publish_subscribe()
+                .publish_subscribe::<u64>()
                 .max_publishers(1)
-                .typed::<u64>()
                 .create()
                 .unwrap();
 
@@ -145,10 +144,7 @@ mod sample_mut {
 
         drop(test_context);
 
-        let result = Sut::new(&service_name)
-            .publish_subscribe()
-            .typed::<u64>()
-            .create();
+        let result = Sut::new(&service_name).publish_subscribe::<u64>().create();
         assert_that!(result, is_err);
         assert_that!(result.err().unwrap(), eq PublishSubscribeCreateError::OldConnectionsStillActive);
     }

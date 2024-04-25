@@ -53,8 +53,7 @@ mod publisher {
     fn publisher_loan_and_send_sample_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .typed::<u64>()
+            .publish_subscribe::<u64>()
             .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
@@ -70,8 +69,7 @@ mod publisher {
     fn publisher_loan_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .typed::<ComplexType>()
+            .publish_subscribe::<ComplexType>()
             .create()?;
 
         let publisher = service.publisher().create()?;
@@ -87,8 +85,7 @@ mod publisher {
         const NUMBER_OF_ELEMENTS: usize = 120;
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .sliced::<ComplexType>()
+            .publish_subscribe::<[ComplexType]>()
             .create()?;
 
         let publisher = service
@@ -109,8 +106,7 @@ mod publisher {
         const NUMBER_OF_ELEMENTS: usize = 125;
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .sliced::<ComplexType>()
+            .publish_subscribe::<[ComplexType]>()
             .create()?;
 
         let publisher = service
@@ -131,8 +127,7 @@ mod publisher {
         const NUMBER_OF_ELEMENTS: usize = 125;
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .sliced::<ComplexType>()
+            .publish_subscribe::<[ComplexType]>()
             .create()?;
 
         let publisher = service
@@ -151,8 +146,7 @@ mod publisher {
     fn publisher_loan_unit_and_send_sample_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .typed::<u64>()
+            .publish_subscribe::<u64>()
             .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
@@ -168,8 +162,7 @@ mod publisher {
     fn publisher_can_borrow_multiple_sample_at_once<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .typed::<u64>()
+            .publish_subscribe::<u64>()
             .create()?;
 
         let sut = service.publisher().max_loaned_samples(4).create()?;
@@ -199,8 +192,7 @@ mod publisher {
     fn publisher_max_loaned_samples_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .typed::<u64>()
+            .publish_subscribe::<u64>()
             .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
@@ -219,8 +211,7 @@ mod publisher {
     fn publisher_sending_sample_reduces_loan_counter<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .typed::<u64>()
+            .publish_subscribe::<u64>()
             .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
@@ -242,8 +233,7 @@ mod publisher {
     fn publisher_dropping_sample_reduces_loan_counter<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
-            .typed::<u64>()
+            .publish_subscribe::<u64>()
             .create()?;
 
         let sut = service.publisher().max_loaned_samples(2).create()?;
@@ -266,10 +256,9 @@ mod publisher {
         let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
         let service = Sut::new(&service_name)
-            .publish_subscribe()
+            .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
             .enable_safe_overflow(false)
-            .typed::<u64>()
             .create()?;
 
         let sut = service
@@ -283,9 +272,8 @@ mod publisher {
         std::thread::scope(|s| {
             s.spawn(|| {
                 let service = Sut::new(&service_name)
-                    .publish_subscribe()
+                    .publish_subscribe::<u64>()
                     .subscriber_max_buffer_size(1)
-                    .typed::<u64>()
                     .open()
                     .unwrap();
 

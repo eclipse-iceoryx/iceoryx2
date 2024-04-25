@@ -40,10 +40,9 @@ mod sample {
         fn new() -> Self {
             let service_name = generate_name();
             let service = Sut::new(&service_name)
-                .publish_subscribe()
+                .publish_subscribe::<u64>()
                 .max_publishers(2)
                 .max_subscribers(1)
-                .typed::<u64>()
                 .create()
                 .unwrap();
 
@@ -89,10 +88,7 @@ mod sample {
         drop(test_context);
 
         assert_that!(
-            Sut::new(&service_name)
-                .publish_subscribe()
-                .typed::<u64>()
-                .create(),
+            Sut::new(&service_name).publish_subscribe::<u64>().create(),
             is_ok
         );
     }
