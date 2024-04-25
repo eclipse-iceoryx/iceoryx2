@@ -107,6 +107,7 @@ pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) max_slice_len: usize,
 }
 
 /// Factory to create a new [`Publisher`] port/endpoint for
@@ -125,6 +126,7 @@ impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
         Self {
             config: LocalPublisherConfig {
                 degration_callback: None,
+                max_slice_len: 1,
                 max_loaned_samples: factory
                     .service
                     .state()
@@ -187,5 +189,16 @@ impl<'factory, Service: service::Service, MessageType: Debug + ?Sized>
             fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),
                 "Failed to create new Publisher port."),
         )
+    }
+}
+
+impl<'factory, Service: service::Service, MessageType: Debug>
+    PortFactoryPublisher<'factory, Service, [MessageType]>
+{
+    /// Sets the maximum slice length that a user can allocate with
+    /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
+    pub fn max_slice_len(mut self, value: usize) -> Self {
+        self.config.max_slice_len = value;
+        self
     }
 }

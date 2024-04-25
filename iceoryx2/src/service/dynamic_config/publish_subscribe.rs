@@ -44,6 +44,7 @@ pub(crate) struct DynamicConfigSettings {
 pub(crate) struct PublisherDetails {
     pub(crate) publisher_id: UniquePublisherId,
     pub(crate) number_of_samples: usize,
+    pub(crate) max_slice_len: usize,
 }
 
 #[derive(Debug, Copy, Clone)]

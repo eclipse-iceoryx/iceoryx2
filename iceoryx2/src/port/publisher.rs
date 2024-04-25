@@ -122,7 +122,7 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
-use crate::service::static_config::publish_subscribe::{self, TypeDetails};
+use crate::service::static_config::publish_subscribe::{self};
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
@@ -393,7 +393,11 @@ impl<Service: service::Service> DataSegment<Service> {
                     };
 
                     if create_connection {
-                        match self.subscriber_connections.create(i, *subscriber_details) {
+                        match self.subscriber_connections.create(
+                            i,
+                            *subscriber_details,
+                            self.config.max_slice_len,
+                        ) {
                             Ok(()) => match &self.subscriber_connections.get(i) {
                                 Some(connection) => self.deliver_sample_history(connection),
                                 None => {
@@ -528,15 +532,22 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
             .messaging_pattern
             .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
-        let data_segment = fail!(from origin, when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples, static_config),
+        let data_segment = fail!(from origin,
+                when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples, static_config, &config),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
+        let max_slice_len = config.max_slice_len;
         let data_segment = Arc::new(DataSegment {
             is_active: AtomicBool::new(true),
             memory: data_segment,
-            message_size: static_config.type_details().sample_layout().size(),
-            message_type_layout: static_config.type_details().message_layout(),
+            message_size: static_config
+                .type_details()
+                .sample_layout(config.max_slice_len)
+                .size(),
+            message_type_layout: static_config
+                .type_details()
+                .message_layout(config.max_slice_len),
             sample_reference_counter: {
                 let mut v = Vec::with_capacity(number_of_samples);
                 for _ in 0..number_of_samples {
@@ -585,6 +596,7 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
             .add_publisher_id(PublisherDetails {
                 publisher_id: port_id,
                 number_of_samples,
+                max_slice_len,
             }) {
             Some(unique_index) => unique_index,
             None => {
@@ -604,8 +616,11 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Publisher<Service, 
         global_config: &config::Config,
         number_of_samples: usize,
         static_config: &publish_subscribe::StaticConfig,
+        config: &LocalPublisherConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
-        let l = static_config.type_details.sample_layout();
+        let l = static_config
+            .type_details
+            .sample_layout(config.max_slice_len);
         let allocator_config = shm_allocator::pool_allocator::Config { bucket_layout: l };
 
         Ok(fail!(from "Publisher::create_data_segment()",
@@ -860,41 +875,27 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, [MessageT
     /// ```
     pub fn loan_slice_uninit(
         &self,
-        number_of_elements: usize,
+        slice_len: usize,
     ) -> Result<SampleMut<[MaybeUninit<MessageType>], Service>, PublisherLoanError> {
-        let max_elements = if let TypeDetails::Sliced { sliced: d } = self
-            .data_segment
-            .static_config
-            .publish_subscribe()
-            .type_details()
-        {
-            d.max_elements
-        } else {
-            debug_assert!(
-                false,
-                "This should never happen! The Publisher Type is not a slice."
-            );
-            0
-        };
-
-        if max_elements < number_of_elements {
+        let max_slice_len = self.data_segment.config.max_slice_len;
+        if max_slice_len < slice_len {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
-                "Unable to loan slice with {} elements since it would exceed the max supported number of elements of {}.",
-                number_of_elements, max_elements);
+                "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
+                slice_len, max_slice_len);
         }
 
-        let layout = RawSampleMut::<Header, [MessageType]>::layout_slice(number_of_elements);
+        let layout = RawSampleMut::<Header, [MessageType]>::layout_slice(slice_len);
         let chunk = self.allocate(layout)?;
 
         let (header_ptr, message_ptr) =
             RawSampleMut::<Header, [MessageType]>::header_slice_message_ptr(
                 chunk.data_ptr,
-                number_of_elements,
+                slice_len,
             );
 
         let message_type_layout = unsafe {
             Layout::from_size_align_unchecked(
-                core::mem::size_of::<MessageType>() * number_of_elements,
+                core::mem::size_of::<MessageType>() * slice_len,
                 core::mem::align_of::<MessageType>(),
             )
         };

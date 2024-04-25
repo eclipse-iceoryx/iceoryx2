@@ -222,11 +222,7 @@ impl<Service: service::Service, MessageType: Debug + ?Sized> Subscriber<Service,
                     };
 
                     if create_connection {
-                        match self.publisher_connections.create(
-                            i,
-                            details.publisher_id,
-                            details.number_of_samples,
-                        ) {
+                        match self.publisher_connections.create(i, details) {
                             Ok(()) => (),
                             Err(e) => match &self.degration_callback {
                                 None => {

@@ -89,10 +89,12 @@ mod publisher {
         let service = Sut::new(&service_name)
             .publish_subscribe()
             .sliced::<ComplexType>()
-            .max_elements(NUMBER_OF_ELEMENTS)
             .create()?;
 
-        let publisher = service.publisher().create()?;
+        let publisher = service
+            .publisher()
+            .max_slice_len(NUMBER_OF_ELEMENTS)
+            .create()?;
         let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS)?;
 
         for i in 0..NUMBER_OF_ELEMENTS {
@@ -109,10 +111,12 @@ mod publisher {
         let service = Sut::new(&service_name)
             .publish_subscribe()
             .sliced::<ComplexType>()
-            .max_elements(NUMBER_OF_ELEMENTS)
             .create()?;
 
-        let publisher = service.publisher().create()?;
+        let publisher = service
+            .publisher()
+            .max_slice_len(NUMBER_OF_ELEMENTS)
+            .create()?;
 
         for i in 0..NUMBER_OF_ELEMENTS {
             let sut = publisher.loan_slice(i)?;
@@ -129,10 +133,12 @@ mod publisher {
         let service = Sut::new(&service_name)
             .publish_subscribe()
             .sliced::<ComplexType>()
-            .max_elements(NUMBER_OF_ELEMENTS)
             .create()?;
 
-        let publisher = service.publisher().create()?;
+        let publisher = service
+            .publisher()
+            .max_slice_len(NUMBER_OF_ELEMENTS)
+            .create()?;
 
         let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS + 1);
         assert_that!(sut, is_err);

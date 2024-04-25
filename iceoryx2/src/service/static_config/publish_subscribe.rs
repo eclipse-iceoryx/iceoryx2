@@ -71,7 +71,6 @@ pub struct Sliced {
     pub header_alignment: usize,
     pub message_size: usize,
     pub message_alignment: usize,
-    pub max_elements: usize,
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -94,7 +93,7 @@ impl TypeDetails {
         }
     }
 
-    pub fn from_slice<MessageType, Header>(max_elements: usize) -> Self {
+    pub fn from_slice<MessageType, Header>() -> Self {
         Self::Sliced {
             sliced: Sliced {
                 type_name: core::any::type_name::<MessageType>().to_string(),
@@ -102,12 +101,11 @@ impl TypeDetails {
                 header_alignment: core::mem::align_of::<Header>(),
                 message_size: core::mem::size_of::<MessageType>(),
                 message_alignment: core::mem::align_of::<MessageType>(),
-                max_elements,
             },
         }
     }
 
-    pub fn sample_layout(&self) -> Layout {
+    pub fn sample_layout(&self, number_of_elements: usize) -> Layout {
         match self {
             Self::Typed { typed: d } => unsafe {
                 let aligned_header_size = align(d.header_size, d.message_alignment);
@@ -120,7 +118,7 @@ impl TypeDetails {
                 let aligned_header_size = align(d.header_size, d.message_alignment);
                 Layout::from_size_align_unchecked(
                     align(
-                        aligned_header_size + d.message_size * d.max_elements,
+                        aligned_header_size + d.message_size * number_of_elements,
                         d.header_alignment,
                     ),
                     d.header_alignment,
@@ -129,14 +127,14 @@ impl TypeDetails {
         }
     }
 
-    pub fn message_layout(&self) -> Layout {
+    pub fn message_layout(&self, number_of_elements: usize) -> Layout {
         match self {
             Self::Typed { typed: d } => unsafe {
                 Layout::from_size_align_unchecked(d.message_size, d.message_alignment)
             },
             Self::Sliced { sliced: d } => unsafe {
                 Layout::from_size_align_unchecked(
-                    d.message_size * d.max_elements,
+                    d.message_size * number_of_elements,
                     d.message_alignment,
                 )
             },

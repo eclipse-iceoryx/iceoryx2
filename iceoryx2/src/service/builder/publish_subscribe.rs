@@ -248,11 +248,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
     /// Returns the [`SlicedBuilder`] to create a slice typed [`Service`].
     pub fn sliced<MessageType: Debug>(mut self) -> SlicedBuilder<MessageType, ServiceType> {
-        self.config_details_mut().type_details = TypeDetails::from_slice::<MessageType, Header>(1);
+        self.config_details_mut().type_details = TypeDetails::from_slice::<MessageType, Header>();
 
         SlicedBuilder {
             builder: self,
-            verify_max_elements: false,
             _message_type: PhantomData,
         }
     }
@@ -622,24 +621,12 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
 #[derive(Debug)]
 pub struct SlicedBuilder<MessageType: Debug + Sized, ServiceType: service::Service> {
     builder: Builder<ServiceType>,
-    verify_max_elements: bool,
     _message_type: PhantomData<MessageType>,
 }
 
 impl<MessageType: Debug + Sized, ServiceType: service::Service>
     SlicedBuilder<MessageType, ServiceType>
 {
-    pub fn max_elements(mut self, value: usize) -> Self {
-        if let TypeDetails::Sliced { sliced: ref mut d } =
-            self.builder.config_details_mut().type_details
-        {
-            d.max_elements = value;
-        };
-        self.verify_max_elements = true;
-
-        self
-    }
-
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create(

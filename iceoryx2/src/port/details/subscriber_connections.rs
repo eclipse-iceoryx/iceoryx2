@@ -39,6 +39,7 @@ impl<Service: service::Service> Connection<Service> {
         this: &SubscriberConnections<Service>,
         subscriber_details: SubscriberDetails,
         number_of_samples: usize,
+        max_slice_len: usize,
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
             "Unable to establish connection to subscriber {:?} from publisher {:?}",
@@ -57,7 +58,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                 .number_of_samples(number_of_samples)
-                                .create_sender(this.static_config.type_details().sample_layout().size()),
+                                .create_sender(this.static_config.type_details().sample_layout(max_slice_len).size()),
                         "{}.", msg);
 
         Ok(Self {
@@ -114,11 +115,13 @@ impl<Service: service::Service> SubscriberConnections<Service> {
         &self,
         index: usize,
         subscriber_details: SubscriberDetails,
+        max_slice_len: usize,
     ) -> Result<(), ZeroCopyCreationError> {
         *self.get_mut(index) = Some(Connection::new(
             self,
             subscriber_details,
             self.number_of_samples,
+            max_slice_len,
         )?);
 
         Ok(())

@@ -1796,11 +1796,14 @@ mod service_publish_subscribe {
         let sut = Sut::new(&service_name)
             .publish_subscribe()
             .sliced::<u64>()
-            .max_elements(MAX_ELEMENTS)
             .create()
             .unwrap();
 
-        let publisher = sut.publisher().create().unwrap();
+        let publisher = sut
+            .publisher()
+            .max_slice_len(MAX_ELEMENTS)
+            .create()
+            .unwrap();
         let subscriber = sut.subscriber().create().unwrap();
 
         for n in 0..MAX_ELEMENTS {
