@@ -34,7 +34,7 @@
 //! # }
 //! ```
 
-use std::alloc::Layout;
+use std::{alloc::Layout, marker::PhantomData};
 
 use crate::config;
 use iceoryx2_bb_elementary::math::align;
@@ -56,114 +56,75 @@ pub struct StaticConfig {
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct Typed {
-    pub type_name: String,
-    pub header_size: usize,
-    pub header_alignment: usize,
-    pub message_size: usize,
-    pub message_alignment: usize,
+pub enum TypeVariant {
+    FixedSize,
+    Dynamic,
+}
+
+pub(crate) struct TypeVariantBuilder<T: ?Sized> {
+    _data: PhantomData<T>,
+}
+
+impl<T> TypeVariantBuilder<T> {
+    pub(crate) fn new() -> TypeVariant {
+        TypeVariant::FixedSize
+    }
+}
+
+impl<T> TypeVariantBuilder<[T]> {
+    pub(crate) fn new() -> TypeVariant {
+        TypeVariant::Dynamic
+    }
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct Sliced {
-    pub type_name: String,
+pub struct TypeDetails {
+    pub variant: TypeVariant,
+    pub header_type_name: String,
     pub header_size: usize,
     pub header_alignment: usize,
+    pub message_type_name: String,
     pub message_size: usize,
     pub message_alignment: usize,
-}
-
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum TypeDetails {
-    Typed { typed: Typed },
-    Sliced { sliced: Sliced },
 }
 
 impl TypeDetails {
-    pub fn from_type<MessageType, Header>() -> Self {
-        Self::Typed {
-            typed: Typed {
-                type_name: core::any::type_name::<MessageType>().to_string(),
-                header_size: core::mem::size_of::<Header>(),
-                header_alignment: core::mem::align_of::<Header>(),
-                message_size: core::mem::size_of::<MessageType>(),
-                message_alignment: core::mem::align_of::<MessageType>(),
-            },
-        }
-    }
-
-    pub fn from_slice<MessageType, Header>() -> Self {
-        Self::Sliced {
-            sliced: Sliced {
-                type_name: core::any::type_name::<MessageType>().to_string(),
-                header_size: core::mem::size_of::<Header>(),
-                header_alignment: core::mem::align_of::<Header>(),
-                message_size: core::mem::size_of::<MessageType>(),
-                message_alignment: core::mem::align_of::<MessageType>(),
-            },
+    pub fn from<MessageType, Header>(variant: TypeVariant) -> Self {
+        Self {
+            variant,
+            header_type_name: core::any::type_name::<Header>().to_string(),
+            header_size: core::mem::size_of::<Header>(),
+            header_alignment: core::mem::align_of::<Header>(),
+            message_type_name: core::any::type_name::<MessageType>().to_string(),
+            message_size: core::mem::size_of::<MessageType>(),
+            message_alignment: core::mem::align_of::<MessageType>(),
         }
     }
 
     pub fn sample_layout(&self, number_of_elements: usize) -> Layout {
-        match self {
-            Self::Typed { typed: d } => unsafe {
-                let aligned_header_size = align(d.header_size, d.message_alignment);
-                Layout::from_size_align_unchecked(
-                    align(aligned_header_size + d.message_size, d.header_alignment),
-                    d.header_alignment,
-                )
-            },
-            Self::Sliced { sliced: d } => unsafe {
-                let aligned_header_size = align(d.header_size, d.message_alignment);
-                Layout::from_size_align_unchecked(
-                    align(
-                        aligned_header_size + d.message_size * number_of_elements,
-                        d.header_alignment,
-                    ),
-                    d.header_alignment,
-                )
-            },
+        let aligned_header_size = align(self.header_size, self.message_alignment);
+        unsafe {
+            Layout::from_size_align_unchecked(
+                align(
+                    aligned_header_size + self.message_size * number_of_elements,
+                    self.header_alignment,
+                ),
+                self.header_alignment,
+            )
         }
     }
 
     pub fn message_layout(&self, number_of_elements: usize) -> Layout {
-        match self {
-            Self::Typed { typed: d } => unsafe {
-                Layout::from_size_align_unchecked(d.message_size, d.message_alignment)
-            },
-            Self::Sliced { sliced: d } => unsafe {
-                Layout::from_size_align_unchecked(
-                    d.message_size * number_of_elements,
-                    d.message_alignment,
-                )
-            },
+        unsafe {
+            Layout::from_size_align_unchecked(
+                self.message_size * number_of_elements,
+                self.message_alignment,
+            )
         }
     }
 
     pub fn is_compatible(&self, rhs: &Self) -> bool {
-        match self {
-            TypeDetails::Typed { typed: lhs } => {
-                if let TypeDetails::Typed { typed: rhs } = rhs {
-                    lhs == rhs
-                } else {
-                    false
-                }
-            }
-            TypeDetails::Sliced { sliced: lhs } => {
-                if let TypeDetails::Sliced { sliced: rhs } = rhs {
-                    // everything must be equal except max_elements, this can be detected at
-                    // runtime
-                    lhs.type_name == rhs.type_name
-                        && lhs.header_size == rhs.header_size
-                        && lhs.header_alignment == rhs.header_alignment
-                        && lhs.message_size == rhs.message_size
-                        && lhs.message_alignment == rhs.message_alignment
-                } else {
-                    false
-                }
-            }
-        }
+        self == rhs
     }
 }
 
@@ -182,14 +143,14 @@ impl StaticConfig {
                 .publish_subscribe
                 .subscriber_max_borrowed_samples,
             enable_safe_overflow: config.defaults.publish_subscribe.enable_safe_overflow,
-            type_details: TypeDetails::Typed {
-                typed: Typed {
-                    type_name: String::new(),
-                    header_size: 0,
-                    header_alignment: 0,
-                    message_size: 0,
-                    message_alignment: 0,
-                },
+            type_details: TypeDetails {
+                variant: TypeVariant::FixedSize,
+                header_type_name: String::new(),
+                header_size: 0,
+                header_alignment: 0,
+                message_type_name: String::new(),
+                message_size: 0,
+                message_alignment: 0,
             },
         }
     }

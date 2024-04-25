@@ -29,7 +29,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 
-use self::static_config::publish_subscribe::TypeDetails;
+use self::static_config::publish_subscribe::{TypeDetails, TypeVariantBuilder};
 
 use super::ServiceState;
 
@@ -238,7 +238,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
     /// Returns the [`TypedBuilder`] to create a typed [`Service`].
     pub fn typed<MessageType: Debug>(mut self) -> TypedBuilder<MessageType, ServiceType> {
-        self.config_details_mut().type_details = TypeDetails::from_type::<MessageType, Header>();
+        self.config_details_mut().type_details =
+            TypeDetails::from::<MessageType, Header>(TypeVariantBuilder::<MessageType>::new());
 
         TypedBuilder {
             builder: self,
@@ -248,7 +249,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
     /// Returns the [`SlicedBuilder`] to create a slice typed [`Service`].
     pub fn sliced<MessageType: Debug>(mut self) -> SlicedBuilder<MessageType, ServiceType> {
-        self.config_details_mut().type_details = TypeDetails::from_slice::<MessageType, Header>();
+        self.config_details_mut().type_details =
+            TypeDetails::from::<MessageType, Header>(TypeVariantBuilder::<[MessageType]>::new());
 
         SlicedBuilder {
             builder: self,
