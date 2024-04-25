@@ -29,7 +29,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 
-use self::type_details::{TypeDetails, TypeVariantBuilder};
+use self::type_details::{TypeDetails, TypeVariant};
 
 use super::ServiceState;
 
@@ -239,7 +239,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// Returns the [`TypedBuilder`] to create a typed [`Service`].
     pub fn typed<MessageType: Debug>(mut self) -> TypedBuilder<MessageType, ServiceType> {
         self.config_details_mut().type_details =
-            TypeDetails::from::<MessageType, Header>(TypeVariantBuilder::<MessageType>::new());
+            TypeDetails::from::<MessageType, Header>(TypeVariant::FixedSize);
 
         TypedBuilder {
             builder: self,
@@ -250,7 +250,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// Returns the [`SlicedBuilder`] to create a slice typed [`Service`].
     pub fn sliced<MessageType: Debug>(mut self) -> SlicedBuilder<MessageType, ServiceType> {
         self.config_details_mut().type_details =
-            TypeDetails::from::<MessageType, Header>(TypeVariantBuilder::<[MessageType]>::new());
+            TypeDetails::from::<MessageType, Header>(TypeVariant::Dynamic);
 
         SlicedBuilder {
             builder: self,

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{alloc::Layout, marker::PhantomData};
+use std::alloc::Layout;
 
 use iceoryx2_bb_elementary::math::align;
 use serde::{Deserialize, Serialize};
@@ -19,22 +19,6 @@ use serde::{Deserialize, Serialize};
 pub enum TypeVariant {
     FixedSize,
     Dynamic,
-}
-
-pub(crate) struct TypeVariantBuilder<T: ?Sized> {
-    _data: PhantomData<T>,
-}
-
-impl<T> TypeVariantBuilder<T> {
-    pub(crate) fn new() -> TypeVariant {
-        TypeVariant::FixedSize
-    }
-}
-
-impl<T> TypeVariantBuilder<[T]> {
-    pub(crate) fn new() -> TypeVariant {
-        TypeVariant::Dynamic
-    }
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
