@@ -382,10 +382,7 @@ impl<Service: service::Service, PayloadType: Debug> Subscriber<Service, [Payload
                 ptr: unsafe {
                     RawSample::<Header, [PayloadType]>::new_slice_unchecked(
                         header_ptr,
-                        core::slice::from_raw_parts(
-                            payload_ptr as *const PayloadType,
-                            number_of_elements,
-                        ),
+                        core::slice::from_raw_parts(payload_ptr, number_of_elements),
                     )
                 },
             }

@@ -54,9 +54,7 @@ impl Alignment {
     ///  * The value must be a power of 2
     ///
     pub unsafe fn new_unchecked(value: usize) -> Self {
-        Self {
-            0: log2_of_power_of_2(value as _),
-        }
+        Self(log2_of_power_of_2(value as _))
     }
 
     /// Returns the value of the [`Alignment`]
