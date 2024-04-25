@@ -1791,25 +1791,28 @@ mod service_publish_subscribe {
 
     #[test]
     fn sliced_service_works<Sut: Service>() {
+        const MAX_ELEMENTS: usize = 91;
         let service_name = generate_name();
         let sut = Sut::new(&service_name)
             .publish_subscribe()
             .sliced::<u64>()
-            .max_elements(12)
+            .max_elements(MAX_ELEMENTS)
             .create()
             .unwrap();
 
         let publisher = sut.publisher().create().unwrap();
         let subscriber = sut.subscriber().create().unwrap();
 
-        let sample = publisher.loan_slice_uninit(11).unwrap();
-        sample.write_from_fn(|i| i as u64 * 25).send().unwrap();
+        for n in 0..MAX_ELEMENTS {
+            let sample = publisher.loan_slice_uninit(n).unwrap();
+            sample.write_from_fn(|i| i as u64 * 25).send().unwrap();
 
-        let recv_sample = subscriber.receive().unwrap().unwrap();
+            let recv_sample = subscriber.receive().unwrap().unwrap();
 
-        assert_that!(recv_sample.payload(), len 11);
-        for (i, element) in recv_sample.payload().iter().enumerate() {
-            assert_that!(*element, eq i as u64 * 25);
+            assert_that!(recv_sample.payload(), len n);
+            for (i, element) in recv_sample.payload().iter().enumerate() {
+                assert_that!(*element, eq i as u64 * 25);
+            }
         }
     }
 
