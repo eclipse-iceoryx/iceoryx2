@@ -15,7 +15,7 @@
 //! ## Typed API
 //!
 //! ```
-//! use iceoryx2::{prelude::*, service::port_factory::publisher::UnableToDeliverStrategy};
+//! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
@@ -58,7 +58,7 @@
 //! ## Sliced API
 //!
 //! ```
-//! use iceoryx2::{prelude::*, service::port_factory::publisher::UnableToDeliverStrategy};
+//! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
