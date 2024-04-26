@@ -62,7 +62,8 @@ impl<Header, PayloadType> RawSample<Header, PayloadType> {
     ///
     /// # Safety
     ///
-    /// * `raw_ptr` must be non-null.
+    /// * `header` must be non-null.
+    /// * `payload` must be non-null.
     ///
     #[inline]
     pub(crate) unsafe fn new_unchecked(header: *const Header, payload: *const PayloadType) -> Self {

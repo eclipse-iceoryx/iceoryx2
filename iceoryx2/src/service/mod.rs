@@ -30,6 +30,8 @@
 //!     .subscriber_max_buffer_size(3)
 //!     .max_subscribers(4)
 //!     .max_publishers(5)
+//!     // increase the alignment of the payload to 512, interesting for SIMD operations
+//!     .payload_alignment(Alignment::new(512).unwrap())
 //!     // if the service already exists, open it, otherwise create it
 //!     .open_or_create()?;
 //!

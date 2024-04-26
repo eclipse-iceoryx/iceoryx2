@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2023 - 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -52,7 +52,7 @@ use crate::{raw_sample::RawSample, sample::Sample, service};
 
 use super::details::publisher_connections::{Connection, PublisherConnections};
 use super::port_identifiers::UniqueSubscriberId;
-use super::update_connections::ConnectionFailure;
+use super::update_connections::{ConnectionFailure, UpdateConnections};
 use super::DegrationCallback;
 
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
@@ -294,25 +294,6 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service,
         self.publisher_connections.buffer_size
     }
 
-    /// Explicitly updates all connections to the [`crate::port::publisher::Publisher`]s. This is
-    /// required to be called whenever a new [`crate::port::publisher::Publisher`] connected to
-    /// the service. It is done implicitly whenever [`Subscriber::receive()`]
-    /// is called.
-    pub fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        if unsafe {
-            self.dynamic_storage
-                .get()
-                .publish_subscribe()
-                .publishers
-                .update_state(&mut *self.publisher_list_state.get())
-        } {
-            fail!(from self, when self.populate_publisher_channels(),
-                "Connections were updated only partially since at least one connection to a publisher failed.");
-        }
-
-        Ok(())
-    }
-
     fn receive_impl(
         &self,
     ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
@@ -344,6 +325,25 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service,
             .type_details
             .payload_ptr_from_header(header.cast())
             .cast()
+    }
+}
+
+impl<Service: service::Service, PayloadType: Debug + ?Sized> UpdateConnections
+    for Subscriber<Service, PayloadType>
+{
+    fn update_connections(&self) -> Result<(), ConnectionFailure> {
+        if unsafe {
+            self.dynamic_storage
+                .get()
+                .publish_subscribe()
+                .publishers
+                .update_state(&mut *self.publisher_list_state.get())
+        } {
+            fail!(from self, when self.populate_publisher_channels(),
+                "Connections were updated only partially since at least one connection to a publisher failed.");
+        }
+
+        Ok(())
     }
 }
 

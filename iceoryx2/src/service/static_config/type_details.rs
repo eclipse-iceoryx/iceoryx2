@@ -15,13 +15,17 @@ use std::alloc::Layout;
 use iceoryx2_bb_elementary::math::align;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+/// Defines if the type is a slice with a runtime-size ([`TypeVariant::Dynamic`])
+/// or if its a type that satisfies [`Sized`] ([`TypeVariant::FixedSize`]).
+#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum TypeVariant {
+    #[default]
     FixedSize,
     Dynamic,
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+/// Contains all type information to the header and payload type.
+#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct TypeDetails {
     pub variant: TypeVariant,
     pub header_type_name: String,
@@ -33,7 +37,7 @@ pub struct TypeDetails {
 }
 
 impl TypeDetails {
-    pub fn from<PayloadType, Header>(variant: TypeVariant) -> Self {
+    pub(crate) fn from<PayloadType, Header>(variant: TypeVariant) -> Self {
         Self {
             variant,
             header_type_name: core::any::type_name::<Header>().to_string(),
@@ -45,13 +49,13 @@ impl TypeDetails {
         }
     }
 
-    pub fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
+    pub(crate) fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
         let header = header as usize;
         let payload_start = align(header + self.header_size, self.payload_alignment);
         payload_start as *const u8
     }
 
-    pub fn sample_layout(&self, number_of_elements: usize) -> Layout {
+    pub(crate) fn sample_layout(&self, number_of_elements: usize) -> Layout {
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
@@ -66,7 +70,7 @@ impl TypeDetails {
         }
     }
 
-    pub fn payload_layout(&self, number_of_elements: usize) -> Layout {
+    pub(crate) fn payload_layout(&self, number_of_elements: usize) -> Layout {
         unsafe {
             Layout::from_size_align_unchecked(
                 self.payload_size * number_of_elements,
@@ -75,7 +79,7 @@ impl TypeDetails {
         }
     }
 
-    pub fn is_compatible(&self, rhs: &Self) -> bool {
+    pub(crate) fn is_compatible(&self, rhs: &Self) -> bool {
         self.variant == rhs.variant
             && self.header_type_name == rhs.header_type_name
             && self.header_size == rhs.header_size

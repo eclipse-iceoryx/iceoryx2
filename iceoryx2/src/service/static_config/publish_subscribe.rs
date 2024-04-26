@@ -33,7 +33,7 @@
 //! # }
 //! ```
 
-use super::type_details::{TypeDetails, TypeVariant};
+use super::type_details::TypeDetails;
 use crate::config;
 use serde::{Deserialize, Serialize};
 
@@ -67,15 +67,7 @@ impl StaticConfig {
                 .publish_subscribe
                 .subscriber_max_borrowed_samples,
             enable_safe_overflow: config.defaults.publish_subscribe.enable_safe_overflow,
-            type_details: TypeDetails {
-                variant: TypeVariant::FixedSize,
-                header_type_name: String::new(),
-                header_size: 0,
-                header_alignment: 0,
-                payload_type_name: String::new(),
-                payload_size: 0,
-                payload_alignment: 0,
-            },
+            type_details: TypeDetails::default(),
         }
     }
 

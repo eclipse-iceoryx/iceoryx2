@@ -56,6 +56,7 @@ impl Header {
         self.publisher_port_id
     }
 
+    /// Returns the [`Layout`] of the corresponding payload.
     pub fn payload_type_layout(&self) -> Layout {
         self.payload_type_layout
     }

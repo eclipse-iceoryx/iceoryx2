@@ -189,7 +189,8 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     /// If the [`Service`] is created, it defines the [`Alignment`] of the payload for the service. If
     /// an existing [`Service`] is opened it requires the service to have at least the defined
-    /// [`Alignment`].
+    /// [`Alignment`]. If the PayloadType [`Alignment`] is greater than the provided [`Alignment`]
+    /// then the PayloadType [`Alignment`] is used.
     pub fn payload_alignment(mut self, alignment: Alignment) -> Self {
         self.override_alignment = Some(alignment.value());
         self
@@ -586,6 +587,12 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 }
 
 impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, ServiceType> {
+    fn prepare_config_details(&mut self) {
+        self.config_details_mut().type_details =
+            TypeDetails::from::<PayloadType, Header>(TypeVariant::FixedSize);
+        self.adjust_payload_alignment();
+    }
+
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create(
@@ -594,10 +601,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
         publish_subscribe::PortFactory<ServiceType, PayloadType>,
         PublishSubscribeOpenOrCreateError,
     > {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<PayloadType, Header>(TypeVariant::FixedSize);
-        self.adjust_payload_alignment();
-
+        self.prepare_config_details();
         self.open_or_create_impl()
     }
 
@@ -606,10 +610,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
         mut self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
     {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<PayloadType, Header>(TypeVariant::FixedSize);
-        self.adjust_payload_alignment();
-
+        self.prepare_config_details();
         self.open_impl()
     }
 
@@ -618,15 +619,18 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
         mut self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
     {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<PayloadType, Header>(TypeVariant::FixedSize);
-        self.adjust_payload_alignment();
-
+        self.prepare_config_details();
         self.create_impl()
     }
 }
 
 impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], ServiceType> {
+    fn prepare_config_details(&mut self) {
+        self.config_details_mut().type_details =
+            TypeDetails::from::<PayloadType, Header>(TypeVariant::Dynamic);
+        self.adjust_payload_alignment();
+    }
+
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create(
@@ -635,10 +639,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
         publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
         PublishSubscribeOpenOrCreateError,
     > {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<PayloadType, Header>(TypeVariant::Dynamic);
-        self.adjust_payload_alignment();
-
+        self.prepare_config_details();
         self.open_or_create_impl()
     }
 
@@ -647,10 +648,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
         mut self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, [PayloadType]>, PublishSubscribeOpenError>
     {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<PayloadType, Header>(TypeVariant::Dynamic);
-        self.adjust_payload_alignment();
-
+        self.prepare_config_details();
         self.open_impl()
     }
 
@@ -661,10 +659,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
         publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
         PublishSubscribeCreateError,
     > {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<PayloadType, Header>(TypeVariant::Dynamic);
-        self.adjust_payload_alignment();
-
+        self.prepare_config_details();
         self.create_impl()
     }
 }

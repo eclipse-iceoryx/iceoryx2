@@ -633,6 +633,19 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn custom_payload_alignment_cannot_be_smaller_than_payload_type_alignment<Sut: Service>() {
+        let service_name = generate_name();
+
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<u64>()
+            .payload_alignment(Alignment::new(1).unwrap())
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().type_details().payload_alignment, eq core::mem::align_of::<u64>());
+    }
+
+    #[test]
     fn all_samples_are_correctly_aligned<Sut: Service>() {
         const BUFFER_SIZE: usize = 100;
         const ALIGNMENT: usize = 512;
