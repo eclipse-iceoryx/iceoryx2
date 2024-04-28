@@ -173,7 +173,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                 if !self
                     .config_details()
                     .type_details
-                    .is_compatible(&config.publish_subscribe().type_details)
+                    .is_compatible_to(&config.publish_subscribe().type_details)
                 {
                     fail!(from self, with ServiceAvailabilityState::IncompatibleTypes,
                         "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",

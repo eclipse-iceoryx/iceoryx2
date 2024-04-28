@@ -1832,7 +1832,7 @@ mod service_publish_subscribe {
             .unwrap();
         let subscriber = sut.subscriber().create().unwrap();
 
-        for n in 0..MAX_ELEMENTS {
+        for n in 0..=MAX_ELEMENTS {
             let sample = publisher.loan_slice_uninit(n).unwrap();
             sample.write_from_fn(|i| i as u64 * 25).send().unwrap();
 
@@ -1846,14 +1846,14 @@ mod service_publish_subscribe {
     }
 
     #[test]
-    fn sliced_aligned_service_works<Sut: Service>() {
+    fn slice_aligned_service_works<Sut: Service>() {
         const MAX_ELEMENTS: usize = 91;
         const ALIGNMENT: usize = 64;
         let service_name = generate_name();
         let service_pub = Sut::new(&service_name)
             .publish_subscribe::<[u64]>()
-            .subscriber_max_buffer_size(MAX_ELEMENTS)
-            .subscriber_max_borrowed_samples(MAX_ELEMENTS)
+            .subscriber_max_buffer_size(MAX_ELEMENTS + 1)
+            .subscriber_max_borrowed_samples(MAX_ELEMENTS + 1)
             .payload_alignment(Alignment::new(ALIGNMENT).unwrap())
             .create()
             .unwrap();
@@ -1871,7 +1871,7 @@ mod service_publish_subscribe {
         let subscriber = service_sub.subscriber().create().unwrap();
 
         let mut samples = vec![];
-        for n in 0..MAX_ELEMENTS {
+        for n in 0..=MAX_ELEMENTS {
             let sample = publisher.loan_slice_uninit(n).unwrap();
             assert_that!((sample.payload().as_ptr() as usize) % ALIGNMENT, eq 0);
             sample.write_from_fn(|i| i as u64 * 25).send().unwrap();

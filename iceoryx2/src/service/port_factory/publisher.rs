@@ -16,7 +16,6 @@
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
@@ -33,11 +32,10 @@
 //! # }
 //! ```
 //!
-//! ## Sliced API
+//! ## Slice API
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;

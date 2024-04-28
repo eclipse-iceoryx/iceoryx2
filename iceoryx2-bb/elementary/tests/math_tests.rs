@@ -24,36 +24,6 @@ fn math_align_returns_input_to_next_greater_value() {
 }
 
 #[test]
-fn is_power_of_2_works() {
-    for i in 0..100 {
-        if i == 0 || i == 1 || i == 2 || i == 4 || i == 8 || i == 16 || i == 32 || i == 64 {
-            assert_that!(is_power_of_2(i), eq true);
-        } else {
-            assert_that!(is_power_of_2(i), eq false);
-        }
-    }
-}
-
-#[test]
-fn math_log2_of_power_of_2_works() {
-    assert_that!(0, eq log2_of_power_of_2(0));
-    for i in 0..64 {
-        assert_that!(i as u8, eq log2_of_power_of_2(2u64.pow(i)));
-    }
-}
-
-#[test]
-fn math_round_to_pow2_works() {
-    assert_that!(round_to_pow2(1), eq 1);
-    assert_that!(round_to_pow2(2), eq 2);
-    assert_that!(round_to_pow2(3), eq 4);
-    assert_that!(round_to_pow2(4), eq 4);
-    assert_that!(round_to_pow2(5), eq 8);
-    assert_that!(round_to_pow2(6), eq 8);
-    assert_that!(round_to_pow2(8589934597), eq 17179869184);
-}
-
-#[test]
 fn math_dec_to_64() {
     assert_that!(0u64.to_b64(), eq "0");
     assert_that!(9u64.to_b64(), eq "9");

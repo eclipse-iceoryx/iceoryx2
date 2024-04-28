@@ -31,30 +31,6 @@ pub const fn align_to<T>(value: usize) -> usize {
     align(value, std::mem::align_of::<T>())
 }
 
-/// Returns true if a given number is power of 2
-pub fn is_power_of_2(value: u64) -> bool {
-    if value == 0 {
-        return true;
-    }
-
-    (value & (value - 1)) == 0
-}
-
-/// Calculates log2 of a number which is a power of 2
-pub fn log2_of_power_of_2(value: u64) -> u8 {
-    let mut bits = value;
-
-    for i in 0..64 {
-        if bits == 1 {
-            return i;
-        }
-
-        bits >>= 1;
-    }
-
-    0
-}
-
 pub trait ToB64 {
     fn to_b64(&self) -> String;
 }
@@ -150,17 +126,4 @@ impl<const N: usize> ToB64 for [u8; N] {
         }
         result
     }
-}
-
-pub fn round_to_pow2(mut value: u64) -> u64 {
-    value -= 1;
-    value |= value >> 1;
-    value |= value >> 2;
-    value |= value >> 4;
-    value |= value >> 8;
-    value |= value >> 16;
-    value |= value >> 32;
-    value += 1;
-
-    value
 }

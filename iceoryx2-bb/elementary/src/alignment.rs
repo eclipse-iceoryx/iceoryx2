@@ -13,8 +13,6 @@
 //! Represents the alignment memory can have. Ensures that the content is always
 //! a power of 2 and not zero.
 
-use crate::math::{is_power_of_2, log2_of_power_of_2};
-
 /// Contains the alignment memory can have.
 ///
 /// # Example
@@ -33,17 +31,13 @@ use crate::math::{is_power_of_2, log2_of_power_of_2};
 /// assert_eq!(broken_alignment, None);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Alignment(u8);
+pub struct Alignment(usize);
 
 impl Alignment {
     /// Creates a new [`Alignment`]. If the value is zero or not a power of 2
     /// it returns [`None`].
     pub fn new(value: usize) -> Option<Self> {
-        if value == 0 || !is_power_of_2(value as _) {
-            return None;
-        }
-
-        unsafe { Some(Self::new_unchecked(value)) }
+        (value.is_power_of_two()).then(|| unsafe { Self::new_unchecked(value) })
     }
 
     /// Creates a new [`Alignment`].
@@ -53,12 +47,12 @@ impl Alignment {
     ///  * The value must not be zero
     ///  * The value must be a power of 2
     ///
-    pub unsafe fn new_unchecked(value: usize) -> Self {
-        Self(log2_of_power_of_2(value as _))
+    pub const unsafe fn new_unchecked(value: usize) -> Self {
+        Self(value)
     }
 
     /// Returns the value of the [`Alignment`]
-    pub fn value(&self) -> usize {
-        2usize.pow(self.0 as u32)
+    pub const fn value(&self) -> usize {
+        self.0
     }
 }

@@ -55,7 +55,7 @@
 //! # }
 //! ```
 //!
-//! ## Sliced API
+//! ## Slice API
 //!
 //! ```
 //! use iceoryx2::prelude::*;
@@ -869,7 +869,7 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     ///
     /// ```
     /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
@@ -883,9 +883,7 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     /// let sample = sample.write_from_fn(|n| n * 2); // alternatively `sample.payload_mut()` can be use to access the `[MaybeUninit<PayloadType>]`
     ///
     /// sample.send()?;
-    ///
-    /// # Ok(())
-    /// # }
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
     /// ```
     pub fn loan_slice_uninit(
         &self,

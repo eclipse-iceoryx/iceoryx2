@@ -12,7 +12,6 @@
 
 #[generic_tests::define]
 mod shm_allocator {
-    use iceoryx2_bb_elementary::math::round_to_pow2;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::shm_allocator::{ShmAllocator, *};
@@ -134,7 +133,7 @@ mod shm_allocator {
         let layout = unsafe {
             Layout::from_size_align_unchecked(
                 CHUNK_SIZE,
-                round_to_pow2(test.sut().max_alignment() as u64 + 1) as usize,
+                (test.sut().max_alignment().next_power_of_two() as u64 + 1) as usize,
             )
         };
         let distance = unsafe { test.sut().allocate(layout) };

@@ -79,7 +79,7 @@ impl TypeDetails {
         }
     }
 
-    pub(crate) fn is_compatible(&self, rhs: &Self) -> bool {
+    pub(crate) fn is_compatible_to(&self, rhs: &Self) -> bool {
         self.variant == rhs.variant
             && self.header_type_name == rhs.header_type_name
             && self.header_size == rhs.header_size

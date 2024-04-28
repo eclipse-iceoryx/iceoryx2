@@ -372,8 +372,8 @@ impl<Service: service::Service, PayloadType: Debug> Subscriber<Service, [Payload
             let header_ptr = absolute_address as *const Header;
             let payload_ptr = self.payload_ptr(header_ptr).cast();
 
-            let msg_layout = unsafe { (*header_ptr).payload_type_layout() };
-            let number_of_elements = msg_layout.size() / core::mem::size_of::<PayloadType>();
+            let payload_layout = unsafe { (*header_ptr).payload_type_layout() };
+            let number_of_elements = payload_layout.size() / core::mem::size_of::<PayloadType>();
 
             Sample {
                 details,

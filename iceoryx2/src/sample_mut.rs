@@ -38,7 +38,7 @@
 //! # }
 //! ```
 //!
-//! ## Sliced API
+//! ## Slice API
 //!
 //! ```
 //! use iceoryx2::prelude::*;
