@@ -19,44 +19,44 @@ use core::{
 use crate::{rwlock::RwLockWriterPreference, WaitAction};
 
 /// Behaves like [`core::sync::atomic::AtomicBool`]
-pub type IceAtomicBool = core::sync::atomic::AtomicBool;
+pub type IoxAtomicBool = core::sync::atomic::AtomicBool;
 
 /// Behaves like [`core::sync::atomic::AtomicUsize`]
-pub type IceAtomicUsize = core::sync::atomic::AtomicUsize;
+pub type IoxAtomicUsize = core::sync::atomic::AtomicUsize;
 
 /// Behaves like [`core::sync::atomic::AtomicU8`]
-pub type IceAtomicU8 = core::sync::atomic::AtomicU8;
+pub type IoxAtomicU8 = core::sync::atomic::AtomicU8;
 
 /// Behaves like [`core::sync::atomic::AtomicU16`]
-pub type IceAtomicU16 = core::sync::atomic::AtomicU16;
+pub type IoxAtomicU16 = core::sync::atomic::AtomicU16;
 
 /// Behaves like [`core::sync::atomic::AtomicU32`]
-pub type IceAtomicU32 = core::sync::atomic::AtomicU32;
+pub type IoxAtomicU32 = core::sync::atomic::AtomicU32;
 
 /// Behaves like [`core::sync::atomic::AtomicI8`]
-pub type IceAtomicI8 = core::sync::atomic::AtomicI8;
+pub type IoxAtomicI8 = core::sync::atomic::AtomicI8;
 
 /// Behaves like [`core::sync::atomic::AtomicI16`]
-pub type IceAtomicI16 = core::sync::atomic::AtomicI16;
+pub type IoxAtomicI16 = core::sync::atomic::AtomicI16;
 
 /// Behaves like [`core::sync::atomic::AtomicI32`]
-pub type IceAtomicI32 = core::sync::atomic::AtomicI32;
+pub type IoxAtomicI32 = core::sync::atomic::AtomicI32;
 
 #[cfg(target_pointer_width = "64")]
 /// Behaves like [`core::sync::atomic::AtomicI64`]
-pub type IceAtomicI64 = core::sync::atomic::AtomicI64;
+pub type IoxAtomicI64 = core::sync::atomic::AtomicI64;
 
 #[cfg(target_pointer_width = "64")]
 /// Behaves like [`core::sync::atomic::AtomicU64`]
-pub type IceAtomicU64 = core::sync::atomic::AtomicU64;
+pub type IoxAtomicU64 = core::sync::atomic::AtomicU64;
 
 #[cfg(target_pointer_width = "32")]
 /// Non lock-free implementation that behaves like [`core::sync::atomic::AtomicI64`]
-pub type IceAtomicI64 = IceAtomic<i64>;
+pub type IoxAtomicI64 = IoxAtomic<i64>;
 
 #[cfg(target_pointer_width = "32")]
 /// Non lock-free implementation that behaves like [`core::sync::atomic::AtomicU64`]
-pub type IceAtomicU64 = IceAtomic<u64>;
+pub type IoxAtomicU64 = IoxAtomic<u64>;
 
 type LockType = RwLockWriterPreference;
 
@@ -128,12 +128,12 @@ pub mod internal {
 /// It enables atomic operations on platforms that do not support them with the restriction that
 /// those operations are no longer lock-free.
 #[repr(C)]
-pub struct IceAtomic<T: internal::AtomicInteger> {
+pub struct IoxAtomic<T: internal::AtomicInteger> {
     data: UnsafeCell<T>,
     lock: LockType,
 }
 
-impl<T: internal::AtomicInteger> IceAtomic<T> {
+impl<T: internal::AtomicInteger> IoxAtomic<T> {
     /// See [`core::sync::atomic::AtomicU64::new()`]
     pub fn new(v: T) -> Self {
         Self {

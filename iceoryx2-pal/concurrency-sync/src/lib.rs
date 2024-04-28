@@ -16,7 +16,7 @@ const SPIN_REPETITIONS: u64 = 10000;
 
 pub mod barrier;
 pub mod condition_variable;
-pub mod ice_atomic;
+pub mod iox_atomic;
 pub mod mutex;
 pub mod rwlock;
 pub mod semaphore;
