@@ -34,19 +34,19 @@
 pub struct Alignment(usize);
 
 impl Alignment {
-    pub const ALIGNMENT_1: Alignment = Alignment(1);
-    pub const ALIGNMENT_2: Alignment = Alignment(2);
-    pub const ALIGNMENT_4: Alignment = Alignment(4);
-    pub const ALIGNMENT_8: Alignment = Alignment(8);
-    pub const ALIGNMENT_16: Alignment = Alignment(16);
-    pub const ALIGNMENT_32: Alignment = Alignment(32);
-    pub const ALIGNMENT_64: Alignment = Alignment(64);
-    pub const ALIGNMENT_128: Alignment = Alignment(128);
-    pub const ALIGNMENT_256: Alignment = Alignment(256);
-    pub const ALIGNMENT_512: Alignment = Alignment(512);
-    pub const ALIGNMENT_1024: Alignment = Alignment(1024);
-    pub const ALIGNMENT_2048: Alignment = Alignment(2048);
-    pub const ALIGNMENT_4096: Alignment = Alignment(4096);
+    pub const ALIGN_1: Alignment = Alignment(1);
+    pub const ALIGN_2: Alignment = Alignment(2);
+    pub const ALIGN_4: Alignment = Alignment(4);
+    pub const ALIGN_8: Alignment = Alignment(8);
+    pub const ALIGN_16: Alignment = Alignment(16);
+    pub const ALIGN_32: Alignment = Alignment(32);
+    pub const ALIGN_64: Alignment = Alignment(64);
+    pub const ALIGN_128: Alignment = Alignment(128);
+    pub const ALIGN_256: Alignment = Alignment(256);
+    pub const ALIGN_512: Alignment = Alignment(512);
+    pub const ALIGN_1024: Alignment = Alignment(1024);
+    pub const ALIGN_2048: Alignment = Alignment(2048);
+    pub const ALIGN_4096: Alignment = Alignment(4096);
 
     /// Creates a new [`Alignment`]. If the value is zero or not a power of 2
     /// it returns [`None`].

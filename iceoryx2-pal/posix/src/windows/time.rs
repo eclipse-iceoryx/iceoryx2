@@ -58,11 +58,15 @@ pub unsafe fn clock_nanosleep(
     if now.is_err() {
         return Errno::EINVAL as _;
     }
+    let now = now.unwrap();
 
-    let time = Duration::from_secs((*rqtp).tv_sec as _)
-        + Duration::from_nanos((*rqtp).tv_nsec as _)
-        - now.unwrap();
+    let future_time_point =
+        Duration::from_secs((*rqtp).tv_sec as _) + Duration::from_nanos((*rqtp).tv_nsec as _);
 
-    std::thread::sleep(time);
+    if now < future_time_point {
+        let sleep_time = future_time_point - now;
+        std::thread::sleep(sleep_time);
+    }
+
     Errno::ESUCCES as _
 }
