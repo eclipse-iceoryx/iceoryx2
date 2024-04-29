@@ -258,11 +258,11 @@ fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
 
 #[test]
 fn mutex_deadlock_detection_works() {
-    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+    for clock_type in ClockType::all_supported_clocks() {
         let handle = MutexHandle::new();
         let sut = MutexBuilder::new()
             .mutex_type(MutexType::WithDeadlockDetection)
-            .clock_type(clock_type)
+            .clock_type(*clock_type)
             .create(5123, &handle)
             .unwrap();
 

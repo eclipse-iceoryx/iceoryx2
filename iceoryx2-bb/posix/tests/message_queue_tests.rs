@@ -43,17 +43,19 @@ fn generate_mq_name() -> FileName {
 fn message_queue_creating_queue_works() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    let name = generate_mq_name();
-    let sut_sender = MessageQueueBuilder::new(&name)
-        .capacity(3)
-        .clock_type(ClockType::Realtime)
-        .create_sender::<u8>(CreationMode::PurgeAndCreate)
-        .unwrap();
+    for clock_type in ClockType::all_supported_clocks() {
+        let name = generate_mq_name();
+        let sut_sender = MessageQueueBuilder::new(&name)
+            .capacity(3)
+            .clock_type(*clock_type)
+            .create_sender::<u8>(CreationMode::PurgeAndCreate)
+            .unwrap();
 
-    assert_that!(sut_sender.name(), eq & name);
-    assert_that!(sut_sender.capacity(), eq 3);
-    assert_that!(sut_sender.clock_type(), eq ClockType::Realtime);
-    assert_that!(sut_sender, len 0);
+        assert_that!(sut_sender.name(), eq & name);
+        assert_that!(sut_sender.capacity(), eq 3);
+        assert_that!(sut_sender.clock_type(), eq * clock_type);
+        assert_that!(sut_sender, len 0);
+    }
 }
 
 #[test]
@@ -314,7 +316,7 @@ fn message_queue_blocking_receive_does_block() {
 fn message_queue_blocking_timed_send_does_block() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+    for clock_type in ClockType::all_supported_clocks() {
         let name = generate_mq_name();
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
@@ -323,7 +325,7 @@ fn message_queue_blocking_timed_send_does_block() {
             s.spawn(|| {
                 let mut sut_sender = MessageQueueBuilder::new(&name)
                     .capacity(1)
-                    .clock_type(clock_type)
+                    .clock_type(*clock_type)
                     .create_sender::<usize>(CreationMode::PurgeAndCreate)
                     .unwrap();
 
@@ -341,7 +343,7 @@ fn message_queue_blocking_timed_send_does_block() {
             let counter_old = counter.load(Ordering::SeqCst);
             let mut sut_receiver = MessageQueueBuilder::new(&name)
                 .capacity(1)
-                .clock_type(clock_type)
+                .clock_type(*clock_type)
                 .open_receiver::<usize>()
                 .unwrap();
             assert_that!(counter_old, eq 0);
@@ -354,7 +356,7 @@ fn message_queue_blocking_timed_send_does_block() {
 fn message_queue_timed_receive_does_block() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+    for clock_type in ClockType::all_supported_clocks() {
         let name = generate_mq_name();
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
@@ -362,7 +364,7 @@ fn message_queue_timed_receive_does_block() {
         std::thread::scope(|s| {
             s.spawn(|| {
                 let mut sut_receiver = MessageQueueBuilder::new(&name)
-                    .clock_type(clock_type)
+                    .clock_type(*clock_type)
                     .create_duplex::<usize>(CreationMode::PurgeAndCreate)
                     .unwrap();
 
@@ -376,7 +378,7 @@ fn message_queue_timed_receive_does_block() {
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::SeqCst);
             let mut sut_sender = MessageQueueBuilder::new(&name)
-                .clock_type(clock_type)
+                .clock_type(*clock_type)
                 .open_duplex::<usize>()
                 .unwrap();
             assert_that!(counter_old, eq 0);
@@ -389,11 +391,11 @@ fn message_queue_timed_receive_does_block() {
 fn message_queue_timed_send_returns_false_on_timeout() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+    for clock_type in ClockType::all_supported_clocks() {
         let name = generate_mq_name();
         let mut sut = MessageQueueBuilder::new(&name)
             .capacity(1)
-            .clock_type(clock_type)
+            .clock_type(*clock_type)
             .create_duplex::<usize>(CreationMode::PurgeAndCreate)
             .unwrap();
 
@@ -406,10 +408,10 @@ fn message_queue_timed_send_returns_false_on_timeout() {
 fn message_queue_timed_receive_returns_none_on_timeout() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+    for clock_type in ClockType::all_supported_clocks() {
         let name = generate_mq_name();
         let mut sut = MessageQueueBuilder::new(&name)
-            .clock_type(clock_type)
+            .clock_type(*clock_type)
             .create_duplex::<usize>(CreationMode::PurgeAndCreate)
             .unwrap();
 
@@ -421,11 +423,11 @@ fn message_queue_timed_receive_returns_none_on_timeout() {
 fn message_queue_timed_send_waits_at_least_for_timeout() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+    for clock_type in ClockType::all_supported_clocks() {
         let name = generate_mq_name();
         let mut sut = MessageQueueBuilder::new(&name)
             .capacity(1)
-            .clock_type(clock_type)
+            .clock_type(*clock_type)
             .create_duplex::<usize>(CreationMode::PurgeAndCreate)
             .unwrap();
 
@@ -440,11 +442,11 @@ fn message_queue_timed_send_waits_at_least_for_timeout() {
 fn message_queue_timed_receive_waits_at_least_for_timeout() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+    for clock_type in ClockType::all_supported_clocks() {
         let name = generate_mq_name();
         let mut sut = MessageQueueBuilder::new(&name)
             .capacity(1)
-            .clock_type(clock_type)
+            .clock_type(*clock_type)
             .create_duplex::<usize>(CreationMode::PurgeAndCreate)
             .unwrap();
 
