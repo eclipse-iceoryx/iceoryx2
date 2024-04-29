@@ -314,122 +314,142 @@ fn message_queue_blocking_receive_does_block() {
 fn message_queue_blocking_timed_send_does_block() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    let name = generate_mq_name();
-    let handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
-    let counter = AtomicU64::new(0);
-    std::thread::scope(|s| {
-        s.spawn(|| {
-            let mut sut_sender = MessageQueueBuilder::new(&name)
-                .capacity(1)
-                .create_sender::<usize>(CreationMode::PurgeAndCreate)
-                .unwrap();
+    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+        let name = generate_mq_name();
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+        let counter = AtomicU64::new(0);
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                let mut sut_sender = MessageQueueBuilder::new(&name)
+                    .capacity(1)
+                    .clock_type(clock_type)
+                    .create_sender::<usize>(CreationMode::PurgeAndCreate)
+                    .unwrap();
 
-            let try_send_result = sut_sender.try_send(&12893);
+                let try_send_result = sut_sender.try_send(&12893);
+                barrier.wait();
+                let timed_send_result = sut_sender.timed_send(&12893, TIMEOUT * 10);
+                counter.store(1, std::sync::atomic::Ordering::SeqCst);
+
+                assert_that!(try_send_result.unwrap(), eq true);
+                assert_that!(timed_send_result.unwrap(), eq true);
+            });
+
             barrier.wait();
-            let timed_send_result = sut_sender.timed_send(&12893, TIMEOUT * 10);
-            counter.store(1, std::sync::atomic::Ordering::SeqCst);
-
-            assert_that!(try_send_result.unwrap(), eq true);
-            assert_that!(timed_send_result.unwrap(), eq true);
+            std::thread::sleep(TIMEOUT);
+            let counter_old = counter.load(Ordering::SeqCst);
+            let mut sut_receiver = MessageQueueBuilder::new(&name)
+                .capacity(1)
+                .clock_type(clock_type)
+                .open_receiver::<usize>()
+                .unwrap();
+            assert_that!(counter_old, eq 0);
+            assert_that!(sut_receiver.try_receive().unwrap().unwrap().value, eq 12893);
         });
-
-        barrier.wait();
-        std::thread::sleep(TIMEOUT);
-        let counter_old = counter.load(Ordering::SeqCst);
-        let mut sut_receiver = MessageQueueBuilder::new(&name)
-            .capacity(1)
-            .open_receiver::<usize>()
-            .unwrap();
-        assert_that!(counter_old, eq 0);
-        assert_that!(sut_receiver.try_receive().unwrap().unwrap().value, eq 12893);
-    });
+    }
 }
 
 #[test]
 fn message_queue_timed_receive_does_block() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    let name = generate_mq_name();
-    let handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
-    let counter = AtomicU64::new(0);
-    std::thread::scope(|s| {
-        s.spawn(|| {
-            let mut sut_receiver = MessageQueueBuilder::new(&name)
-                .create_duplex::<usize>(CreationMode::PurgeAndCreate)
-                .unwrap();
+    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+        let name = generate_mq_name();
+        let handle = BarrierHandle::new();
+        let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+        let counter = AtomicU64::new(0);
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                let mut sut_receiver = MessageQueueBuilder::new(&name)
+                    .clock_type(clock_type)
+                    .create_duplex::<usize>(CreationMode::PurgeAndCreate)
+                    .unwrap();
+
+                barrier.wait();
+                let timed_receive_result = sut_receiver.timed_receive(TIMEOUT * 10);
+                counter.store(1, std::sync::atomic::Ordering::SeqCst);
+                assert_that!(timed_receive_result.unwrap().unwrap().value, eq 981293);
+            });
 
             barrier.wait();
-            let timed_receive_result = sut_receiver.timed_receive(TIMEOUT * 10);
-            counter.store(1, std::sync::atomic::Ordering::SeqCst);
-            assert_that!(timed_receive_result.unwrap().unwrap().value, eq 981293);
+            std::thread::sleep(TIMEOUT);
+            let counter_old = counter.load(Ordering::SeqCst);
+            let mut sut_sender = MessageQueueBuilder::new(&name)
+                .clock_type(clock_type)
+                .open_duplex::<usize>()
+                .unwrap();
+            assert_that!(counter_old, eq 0);
+            assert_that!(sut_sender.try_send(&981293).unwrap(), eq true);
         });
-
-        barrier.wait();
-        std::thread::sleep(TIMEOUT);
-        let counter_old = counter.load(Ordering::SeqCst);
-        let mut sut_sender = MessageQueueBuilder::new(&name)
-            .open_duplex::<usize>()
-            .unwrap();
-        assert_that!(counter_old, eq 0);
-        assert_that!(sut_sender.try_send(&981293).unwrap(), eq true);
-    });
+    }
 }
 
 #[test]
 fn message_queue_timed_send_returns_false_on_timeout() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    let name = generate_mq_name();
-    let mut sut = MessageQueueBuilder::new(&name)
-        .capacity(1)
-        .create_duplex::<usize>(CreationMode::PurgeAndCreate)
-        .unwrap();
+    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+        let name = generate_mq_name();
+        let mut sut = MessageQueueBuilder::new(&name)
+            .capacity(1)
+            .clock_type(clock_type)
+            .create_duplex::<usize>(CreationMode::PurgeAndCreate)
+            .unwrap();
 
-    sut.try_send(&123).unwrap();
-    assert_that!(!sut.timed_send(&123, TIMEOUT).unwrap(), eq true);
+        sut.try_send(&123).unwrap();
+        assert_that!(!sut.timed_send(&123, TIMEOUT).unwrap(), eq true);
+    }
 }
 
 #[test]
 fn message_queue_timed_receive_returns_none_on_timeout() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    let name = generate_mq_name();
-    let mut sut = MessageQueueBuilder::new(&name)
-        .create_duplex::<usize>(CreationMode::PurgeAndCreate)
-        .unwrap();
+    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+        let name = generate_mq_name();
+        let mut sut = MessageQueueBuilder::new(&name)
+            .clock_type(clock_type)
+            .create_duplex::<usize>(CreationMode::PurgeAndCreate)
+            .unwrap();
 
-    assert_that!(sut.timed_receive(TIMEOUT).unwrap(), is_none);
+        assert_that!(sut.timed_receive(TIMEOUT).unwrap(), is_none);
+    }
 }
 
 #[test]
 fn message_queue_timed_send_waits_at_least_for_timeout() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    let name = generate_mq_name();
-    let mut sut = MessageQueueBuilder::new(&name)
-        .capacity(1)
-        .create_duplex::<usize>(CreationMode::PurgeAndCreate)
-        .unwrap();
+    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+        let name = generate_mq_name();
+        let mut sut = MessageQueueBuilder::new(&name)
+            .capacity(1)
+            .clock_type(clock_type)
+            .create_duplex::<usize>(CreationMode::PurgeAndCreate)
+            .unwrap();
 
-    sut.try_send(&123).unwrap();
-    let start = Time::now().unwrap();
-    assert_that!(sut.timed_send(&123, TIMEOUT).unwrap(), eq false);
-    assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+        sut.try_send(&123).unwrap();
+        let start = Time::now().unwrap();
+        assert_that!(sut.timed_send(&123, TIMEOUT).unwrap(), eq false);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+    }
 }
 
 #[test]
 fn message_queue_timed_receive_waits_at_least_for_timeout() {
     test_requires!(POSIX_SUPPORT_MESSAGE_QUEUE);
 
-    let name = generate_mq_name();
-    let mut sut = MessageQueueBuilder::new(&name)
-        .capacity(1)
-        .create_duplex::<usize>(CreationMode::PurgeAndCreate)
-        .unwrap();
+    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+        let name = generate_mq_name();
+        let mut sut = MessageQueueBuilder::new(&name)
+            .capacity(1)
+            .clock_type(clock_type)
+            .create_duplex::<usize>(CreationMode::PurgeAndCreate)
+            .unwrap();
 
-    let start = Time::now().unwrap();
-    assert_that!(sut.timed_receive(TIMEOUT).unwrap(), is_none);
-    assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+        let start = Time::now().unwrap();
+        assert_that!(sut.timed_receive(TIMEOUT).unwrap(), is_none);
+        assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+    }
 }

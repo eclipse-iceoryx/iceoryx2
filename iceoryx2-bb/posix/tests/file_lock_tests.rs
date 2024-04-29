@@ -124,7 +124,7 @@ fn file_lock_write_try_lock_denies_other_try_locks() {
 }
 
 #[test]
-fn file_lock_write_timed_lock_dinies_other_timed_locks() {
+fn file_lock_write_timed_lock_denies_other_timed_locks() {
     test_requires!(POSIX_SUPPORT_FILE_LOCK);
 
     let handle = ReadWriteMutexHandle::new();

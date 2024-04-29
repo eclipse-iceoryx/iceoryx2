@@ -437,9 +437,9 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
         handle_errno!(ReadWriteMutexReadLockError, from self,
             errno_source unsafe { posix::pthread_rwlock_tryrdlock(self.handle.handle.get()).into() },
             success Errno::ESUCCES => Some(MutexReadGuard { mutex: self });
-            success Errno::EBUSY => None,
+            success Errno::EBUSY => None;
+            success Errno::EDEADLK => None,
             Errno::EAGAIN => (MaximumAmountOfReadLocksAcquired, "{} since the maximum amount of read-locks is already acquired.", msg),
-            Errno::EDEADLK => (DeadlockConditionDetected, "{} since a deadlock condition was detected.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         );
     }
@@ -460,10 +460,10 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
                 handle_errno!(ReadWriteMutexReadTimedLockError, from self,
                     errno_source unsafe { posix::pthread_rwlock_timedrdlock(self.handle.handle.get(), &timeout_adjusted.as_timespec()) }.into(),
                     success Errno::ESUCCES => Some(MutexReadGuard { mutex: self });
-                    success Errno::ETIMEDOUT => None,
+                    success Errno::ETIMEDOUT => None;
+                    success Errno::EDEADLK => None,
                     Errno::EAGAIN => (ReadWriteMutexReadLockError(ReadWriteMutexReadLockError::MaximumAmountOfReadLocksAcquired), "{} since the maximum number of read locks were already acquired.", msg),
                     Errno::EINVAL => (TimeoutExceedsMaximumSupportedDuration, "{} since the timeout of {:?} exceeds the maximum supported duration.", msg, timeout),
-                    Errno::EDEADLK => (ReadWriteMutexReadLockError(ReadWriteMutexReadLockError::DeadlockConditionDetected), "{} since the operation would lead to a deadlock.", msg),
                     v => (ReadWriteMutexReadLockError(ReadWriteMutexReadLockError::UnknownError(v as i32)), "{} since unknown error occurred while acquiring the lock ({})", msg, v)
                 )
             }
@@ -517,8 +517,8 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
         handle_errno!(ReadWriteMutexWriteLockError, from self,
             errno_source unsafe { posix::pthread_rwlock_trywrlock(self.handle.handle.get()).into() },
             success Errno::ESUCCES => Some(MutexWriteGuard { mutex: self });
-            success Errno::EBUSY => None,
-            Errno::EDEADLK => (DeadlockConditionDetected, "{} since a deadlock condition was detected.", msg),
+            success Errno::EBUSY => None;
+            success Errno::EDEADLK => None,
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         );
     }
@@ -539,9 +539,9 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
                 handle_errno!(ReadWriteMutexWriteTimedLockError, from self,
                     errno_source unsafe { posix::pthread_rwlock_timedwrlock(self.handle.handle.get(), &timeout_adjusted.as_timespec()) }.into(),
                     success Errno::ESUCCES => Some(MutexWriteGuard { mutex: self });
-                    success Errno::ETIMEDOUT => None,
+                    success Errno::ETIMEDOUT => None;
+                    success Errno::EDEADLK => None,
                     Errno::EINVAL => (TimeoutExceedsMaximumSupportedDuration, "{} since the timeout of {:?} exceeds the maximum supported duration.", msg, timeout),
-                    Errno::EDEADLK => (ReadWriteMutexWriteLockError(ReadWriteMutexWriteLockError::DeadlockConditionDetected), "{} since the operation would lead to a deadlock.", msg),
                     v => (ReadWriteMutexWriteLockError(ReadWriteMutexWriteLockError::UnknownError(v as i32)), "{} since unknown error occurred while acquiring the lock ({})", msg, v)
                 )
             }
