@@ -18,13 +18,12 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let pubsub = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! println!("name:                             {:?}", pubsub.name());
 //! println!("uuid:                             {:?}", pubsub.uuid());
-//! println!("type name:                        {:?}", pubsub.static_config().type_name());
+//! println!("type details:                     {:?}", pubsub.static_config().type_details());
 //! println!("max publishers:                   {:?}", pubsub.static_config().max_supported_publishers());
 //! println!("max subscribers:                  {:?}", pubsub.static_config().max_supported_subscribers());
 //! println!("subscriber buffer size:           {:?}", pubsub.static_config().subscriber_max_buffer_size());
@@ -56,25 +55,25 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 /// [`crate::port::publisher::Publisher`]
 /// or [`crate::port::subscriber::Subscriber`] ports.
 #[derive(Debug)]
-pub struct PortFactory<Service: service::Service, MessageType: Debug> {
+pub struct PortFactory<Service: service::Service, PayloadType: Debug + ?Sized> {
     pub(crate) service: Service,
-    _phantom_message_type: PhantomData<MessageType>,
+    _phantom_payload_type: PhantomData<PayloadType>,
 }
 
-unsafe impl<Service: service::Service, MessageType: Debug> Send
-    for PortFactory<Service, MessageType>
+unsafe impl<Service: service::Service, PayloadType: Debug + ?Sized> Send
+    for PortFactory<Service, PayloadType>
 {
 }
-unsafe impl<Service: service::Service, MessageType: Debug> Sync
-    for PortFactory<Service, MessageType>
+unsafe impl<Service: service::Service, PayloadType: Debug + ?Sized> Sync
+    for PortFactory<Service, PayloadType>
 {
 }
 
-impl<Service: service::Service, MessageType: Debug> PortFactory<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service, PayloadType> {
     pub(crate) fn new(service: Service) -> Self {
         Self {
             service,
-            _phantom_message_type: PhantomData,
+            _phantom_payload_type: PhantomData,
         }
     }
 
@@ -115,8 +114,7 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let service_name = ServiceName::new("My/Funk/ServiceName")?;
     /// let pubsub = zero_copy::Service::new(&service_name)
-    ///     .publish_subscribe()
-    ///     .typed::<u64>()
+    ///     .publish_subscribe::<u64>()
     ///     .open_or_create()?;
     ///
     /// let subscriber = pubsub.subscriber().create()?;
@@ -124,7 +122,7 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// # Ok(())
     /// # }
     /// ```
-    pub fn subscriber(&self) -> PortFactorySubscriber<Service, MessageType> {
+    pub fn subscriber(&self) -> PortFactorySubscriber<Service, PayloadType> {
         PortFactorySubscriber::new(self)
     }
 
@@ -140,8 +138,7 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let service_name = ServiceName::new("My/Funk/ServiceName")?;
     /// let pubsub = zero_copy::Service::new(&service_name)
-    ///     .publish_subscribe()
-    ///     .typed::<u64>()
+    ///     .publish_subscribe::<u64>()
     ///     .open_or_create()?;
     ///
     /// let publisher = pubsub.publisher()
@@ -152,7 +149,7 @@ impl<Service: service::Service, MessageType: Debug> PortFactory<Service, Message
     /// # Ok(())
     /// # }
     /// ```
-    pub fn publisher(&self) -> PortFactoryPublisher<Service, MessageType> {
+    pub fn publisher(&self) -> PortFactoryPublisher<Service, PayloadType> {
         PortFactoryPublisher::new(self)
     }
 }

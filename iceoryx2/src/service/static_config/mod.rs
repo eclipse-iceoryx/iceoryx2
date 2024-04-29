@@ -20,6 +20,10 @@ pub mod event;
 /// based service.
 pub mod publish_subscribe;
 
+/// Contains the size, alignment and name of the header and payload type
+/// and the type variant
+pub mod type_details;
+
 use crate::service::messaging_pattern::MessagingPattern;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;

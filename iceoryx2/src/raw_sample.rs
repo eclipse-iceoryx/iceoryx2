@@ -10,196 +10,156 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::message::Message;
-
 use core::fmt;
 
-/// A `*const Message<Header, Data>` non-zero sample pointer to the message.
-#[repr(transparent)]
-pub(crate) struct RawSample<Header, Data> {
-    message: *const Message<Header, Data>,
+/// Contains the pointer to the underlying header and payload of a sample.
+#[repr(C)]
+pub(crate) struct RawSample<Header, PayloadType: ?Sized> {
+    header: *const Header,
+    payload: *const PayloadType,
 }
 
-impl<Header, Data> RawSample<Header, Data> {
+impl<Header, PayloadType> RawSample<Header, [PayloadType]> {
     /// Creates a new `RawSample`.
     ///
     /// # Safety
     ///
-    /// `message` must be non-null.
+    /// * `header` must be non-null.
+    /// * `payload` must be non-null.
+    ///
     #[inline]
-    pub(crate) unsafe fn new_unchecked(message: *const Message<Header, Data>) -> Self {
+    pub(crate) unsafe fn new_slice_unchecked(
+        header: *const Header,
+        payload: *const [PayloadType],
+    ) -> Self {
         debug_assert!(
-            !message.is_null(),
-            "RawSample::new_unchecked requires that the message pointer is non-null"
+            !header.is_null() && !payload.is_null(),
+            "RawSample::new_unchecked requires that the header- and payload-pointer is non-null"
         );
-        Self { message }
-    }
 
-    /// Creates a new `RawSample`.
-    #[allow(dead_code)]
-    #[inline]
-    pub(crate) fn new(message: *const Message<Header, Data>) -> Option<Self> {
-        if !message.is_null() {
-            // SAFETY: `message` pointer is checked to be non-null
-            Some(unsafe { Self::new_unchecked(message) })
-        } else {
-            None
-        }
+        Self { header, payload }
     }
+}
 
-    /// Acquires the underlying message as `*const` pointer.
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn as_ptr(self) -> *const Message<Header, Data> {
-        self.message
-    }
-
-    /// Acquires the underlying message as reference.
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn as_ref(&self) -> &Message<Header, Data> {
-        // SAFETY: `self.as_ptr()` returns a non-null ptr and `Data` is either the actual message type or wrapped by a `MaybeUninit` which makes a reference to `Message::data` safe
-        unsafe { &(*self.as_ptr()) }
-    }
-
+impl<Header, PayloadType: ?Sized> RawSample<Header, PayloadType> {
     /// Acquires the underlying header as reference.
     #[must_use]
     #[inline(always)]
     pub(crate) fn as_header_ref(&self) -> &Header {
-        &self.as_ref().header
+        unsafe { &*self.header }
     }
 
     /// Acquires the underlying data as reference.
     #[must_use]
     #[inline(always)]
-    pub(crate) fn as_data_ref(&self) -> &Data {
-        &self.as_ref().data
+    pub(crate) fn as_payload_ref(&self) -> &PayloadType {
+        unsafe { &*self.payload }
     }
 }
 
-impl<Header, Data> Clone for RawSample<Header, Data> {
+impl<Header, PayloadType> RawSample<Header, PayloadType> {
+    /// Creates a new `RawSample`.
+    ///
+    /// # Safety
+    ///
+    /// * `header` must be non-null.
+    /// * `payload` must be non-null.
+    ///
+    #[inline]
+    pub(crate) unsafe fn new_unchecked(header: *const Header, payload: *const PayloadType) -> Self {
+        debug_assert!(
+            !header.is_null() && !payload.is_null(),
+            "RawSample::new_unchecked requires that the header- and payload-pointer is non-null"
+        );
+
+        Self { header, payload }
+    }
+}
+
+impl<Header, PayloadType> Clone for RawSample<Header, PayloadType> {
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<Header, Data> Copy for RawSample<Header, Data> {}
+impl<Header, PayloadType> Copy for RawSample<Header, PayloadType> {}
 
-impl<Header: fmt::Debug, Data: fmt::Debug> fmt::Debug for RawSample<Header, Data> {
+impl<Header: fmt::Debug, PayloadType: fmt::Debug> fmt::Debug for RawSample<Header, PayloadType> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&self.message, f)
+        fmt::Pointer::fmt(&self.payload, f)
     }
 }
 
-impl<Header, Data> fmt::Pointer for RawSample<Header, Data> {
+impl<Header, PayloadType> fmt::Pointer for RawSample<Header, PayloadType> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&self.message, f)
+        fmt::Pointer::fmt(&self.payload, f)
     }
 }
 
-/// A `*mut Message<Header, Data>` non-zero sample pointer to the message.
-#[repr(transparent)]
-pub(crate) struct RawSampleMut<Header, Data> {
-    message: *mut Message<Header, Data>,
+/// Contains the mutable pointer to the underlying header and payload of a sample.
+#[repr(C)]
+pub(crate) struct RawSampleMut<Header, PayloadType: ?Sized> {
+    header: *mut Header,
+    payload: *mut PayloadType,
 }
 
-impl<Header, Data> RawSampleMut<Header, Data> {
+impl<Header, PayloadType: ?Sized> RawSampleMut<Header, PayloadType> {
     /// Creates a new `RawSampleMut`.
     ///
     /// # Safety
     ///
-    /// `message` must be non-null.
+    ///  * `header` mut be non-null.
+    ///  * `payload` must be non-null.
+    ///
     #[inline]
-    pub(crate) unsafe fn new_unchecked(message: *mut Message<Header, Data>) -> Self {
+    pub(crate) unsafe fn new_unchecked(header: *mut Header, payload: *mut PayloadType) -> Self {
         debug_assert!(
-            !message.is_null(),
-            "RawSampleMut::new_unchecked requires that the message pointer is non-null"
+            !header.is_null() && !payload.is_null(),
+            "RawSampleMut::new_unchecked requires that the payload pointer is non-null"
         );
-        Self { message }
-    }
-
-    /// Creates a new `RawSampleMut`.
-    #[allow(dead_code)]
-    #[inline]
-    pub(crate) fn new(message: *mut Message<Header, Data>) -> Option<Self> {
-        if !message.is_null() {
-            // SAFETY: `message` pointer is checked to be non-null
-            Some(unsafe { Self::new_unchecked(message) })
-        } else {
-            None
-        }
-    }
-
-    /// Acquires the underlying message as `*const` pointer.
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn as_ptr(self) -> *const Message<Header, Data> {
-        self.message
-    }
-
-    /// Acquires the underlying message as `*mut` pointer.
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn as_mut_ptr(self) -> *mut Message<Header, Data> {
-        self.message
-    }
-
-    /// Acquires the underlying message as reference.
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn as_ref(&self) -> &Message<Header, Data> {
-        // SAFETY: `self.as_ptr()` returns a non-null ptr and `Data` is either the actual message type or wrapped by a `MaybeUninit` which makes a reference to `Message::data` safe
-        unsafe { &(*self.as_ptr()) }
-    }
-
-    /// Acquires the underlying message as mut reference.
-    #[must_use]
-    #[inline(always)]
-    pub(crate) fn as_mut(&mut self) -> &mut Message<Header, Data> {
-        // SAFETY: `self.as_ptr()` returns a non-null ptr and `Data` is either the actual message type or wrapped by a `MaybeUninit` which makes a reference to `Message::data` safe
-        unsafe { &mut (*self.as_mut_ptr()) }
+        Self { header, payload }
     }
 
     /// Acquires the underlying header as reference.
     #[must_use]
     #[inline(always)]
     pub(crate) fn as_header_ref(&self) -> &Header {
-        &self.as_ref().header
+        unsafe { &*self.header }
     }
 
-    /// Acquires the underlying data as reference.
+    /// Acquires the underlying payload as reference.
     #[must_use]
     #[inline(always)]
-    pub(crate) fn as_data_ref(&self) -> &Data {
-        &self.as_ref().data
+    pub(crate) fn as_payload_ref(&self) -> &PayloadType {
+        unsafe { &*self.payload }
     }
 
-    /// Acquires the underlying data as mut reference.
+    /// Acquires the underlying payload as mutable reference.
     #[must_use]
     #[inline(always)]
-    pub(crate) fn as_data_mut(&mut self) -> &mut Data {
-        &mut self.as_mut().data
+    pub(crate) fn as_payload_mut(&mut self) -> &mut PayloadType {
+        unsafe { &mut *self.payload }
     }
 }
 
-impl<Header, Data> Clone for RawSampleMut<Header, Data> {
+impl<Header, PayloadType> Clone for RawSampleMut<Header, PayloadType> {
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<Header, Data> Copy for RawSampleMut<Header, Data> {}
+impl<Header, PayloadType> Copy for RawSampleMut<Header, PayloadType> {}
 
-impl<Header: fmt::Debug, Data: fmt::Debug> fmt::Debug for RawSampleMut<Header, Data> {
+impl<Header: fmt::Debug, PayloadType: fmt::Debug> fmt::Debug for RawSampleMut<Header, PayloadType> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&self.as_ptr(), f)
+        fmt::Pointer::fmt(&self.as_header_ref(), f)
     }
 }
 
-impl<Header, Data> fmt::Pointer for RawSampleMut<Header, Data> {
+impl<Header, PayloadType> fmt::Pointer for RawSampleMut<Header, PayloadType> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&self.as_ptr(), f)
+        fmt::Pointer::fmt(&self.as_header_ref(), f)
     }
 }

@@ -88,8 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_name = ServiceName::new("My/Funk/ServiceName")?;
 
     let service = zero_copy::Service::new(&service_name)
-        .publish_subscribe()
-        .typed::<usize>()
+        .publish_subscribe::<usize>()
         .open_or_create()?;
 
     let publisher = service.publisher().create()?;
@@ -116,8 +115,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_name = ServiceName::new("My/Funk/ServiceName")?;
 
     let service = zero_copy::Service::new(&service_name)
-        .publish_subscribe()
-        .typed::<usize>()
+        .publish_subscribe::<usize>()
         .open_or_create()?;
 
     let subscriber = service.subscriber().create()?;

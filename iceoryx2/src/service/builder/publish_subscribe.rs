@@ -16,19 +16,20 @@
 //!
 use std::marker::PhantomData;
 
-use crate::message::Message;
 use crate::service;
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::messaging_pattern::MessagingPattern;
 use crate::service::port_factory::publish_subscribe;
 use crate::service::*;
-use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary::{alignment::Alignment, enum_gen};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
+
+use self::type_details::{TypeDetails, TypeVariant};
 
 use super::ServiceState;
 
@@ -110,17 +111,19 @@ impl std::error::Error for PublishSubscribeOpenOrCreateError {}
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Builder<ServiceType: service::Service> {
+pub struct Builder<PayloadType: Debug + ?Sized, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
+    override_alignment: Option<usize>,
     verify_number_of_subscribers: bool,
     verify_number_of_publishers: bool,
     verify_subscriber_max_buffer_size: bool,
     verify_subscriber_max_borrowed_samples: bool,
     verify_publisher_history_size: bool,
     verify_enable_safe_overflow: bool,
+    _data: PhantomData<PayloadType>,
 }
 
-impl<ServiceType: service::Service> Builder<ServiceType> {
+impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<PayloadType, ServiceType> {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
@@ -130,6 +133,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             verify_publisher_history_size: false,
             verify_subscriber_max_borrowed_samples: false,
             verify_enable_safe_overflow: false,
+            override_alignment: None,
+            _data: PhantomData,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::PublishSubscribe(
@@ -165,10 +170,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceAvailabilityState> {
         match self.base.is_service_available() {
             Ok(Some((config, storage))) => {
-                if config.publish_subscribe().type_name != self.config_details().type_name {
+                if !self
+                    .config_details()
+                    .type_details
+                    .is_compatible_to(&config.publish_subscribe().type_details)
+                {
                     fail!(from self, with ServiceAvailabilityState::IncompatibleTypes,
-                        "{} since the service offers the type \"{}\" but the requested type is \"{}\".",
-                        error_msg, &config.publish_subscribe().type_name , self.config_details().type_name);
+                        "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
+                        error_msg, &config.publish_subscribe().type_details , self.config_details().type_details);
                 }
 
                 Ok(Some((config, storage)))
@@ -178,11 +187,13 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    fn finalize_config<MessageType: Debug>(&mut self) {
-        self.config_details_mut().type_name = std::any::type_name::<MessageType>().to_string();
-        self.config_details_mut().type_size = core::mem::size_of::<Message<Header, MessageType>>();
-        self.config_details_mut().type_alignment =
-            core::mem::align_of::<Message<Header, MessageType>>();
+    /// If the [`Service`] is created, it defines the [`Alignment`] of the payload for the service. If
+    /// an existing [`Service`] is opened it requires the service to have at least the defined
+    /// [`Alignment`]. If the PayloadType [`Alignment`] is greater than the provided [`Alignment`]
+    /// then the PayloadType [`Alignment`] is used.
+    pub fn payload_alignment(mut self, alignment: Alignment) -> Self {
+        self.override_alignment = Some(alignment.value());
+        self
     }
 
     /// If the [`Service`] is created, defines the overflow behavior of the service. If an existing
@@ -236,13 +247,6 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         self.config_details_mut().max_publishers = value;
         self.verify_number_of_publishers = true;
         self
-    }
-
-    pub fn typed<MessageType: Debug>(self) -> TypedBuilder<MessageType, ServiceType> {
-        TypedBuilder {
-            builder: self,
-            _message_type: PhantomData,
-        }
     }
 
     fn adjust_properties_to_meaningful_values(&mut self) {
@@ -341,163 +345,27 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
         Ok(existing_settings.clone())
     }
-}
-
-#[derive(Debug)]
-pub struct TypedBuilder<MessageType: Debug, ServiceType: service::Service> {
-    builder: Builder<ServiceType>,
-    _message_type: PhantomData<MessageType>,
-}
-
-impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType, ServiceType> {
-    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
-    /// created.
-    pub fn open_or_create(
-        mut self,
-    ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, MessageType>,
-        PublishSubscribeOpenOrCreateError,
-    > {
-        let msg = "Unable to open or create publish subscribe service";
-        self.builder.finalize_config::<MessageType>();
-
-        match self.builder.is_service_available(msg) {
-            Ok(Some(_)) => Ok(self.open()?),
-            Ok(None) => match self.create_impl() {
-                Ok(factory) => Ok(factory),
-                Err(PublishSubscribeCreateError::AlreadyExists)
-                | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
-                    Ok(self.open()?)
-                }
-                Err(e) => Err(e.into()),
-            },
-            Err(ServiceAvailabilityState::ServiceState(
-                ServiceState::IsBeingCreatedByAnotherInstance,
-            )) => Ok(self.open()?),
-            Err(ServiceAvailabilityState::IncompatibleTypes) => {
-                fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::IncompatibleTypes),
-                    "{} since the service is not type compatible.", msg);
-            }
-            Err(ServiceAvailabilityState::ServiceState(
-                ServiceState::IncompatibleMessagingPattern,
-            )) => {
-                fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::IncompatibleMessagingPattern),
-                    "{} since the services messaging pattern does not match.", msg);
-            }
-            Err(ServiceAvailabilityState::ServiceState(ServiceState::Corrupted)) => {
-                fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::ServiceInCorruptedState),
-                    "{} since the service is in a corrupted state.", msg);
-            }
-            Err(ServiceAvailabilityState::ServiceState(ServiceState::PermissionDenied)) => {
-                fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::PermissionDenied),
-                    "{} due to insufficient permissions to access the service.", msg);
-            }
-        }
-    }
-
-    /// Opens an existing [`Service`].
-    pub fn open(
-        mut self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeOpenError>
-    {
-        let msg = "Unable to open publish subscribe service";
-        self.builder.finalize_config::<MessageType>();
-
-        let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
-                                        with PublishSubscribeOpenError::InternalFailure,
-                                        "{} since the adaptive wait could not be created.", msg);
-
-        loop {
-            match self.builder.is_service_available(msg) {
-                Ok(None) => {
-                    fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
-                        "{} since the service does not exist.", msg);
-                }
-                Ok(Some((static_config, static_storage))) => {
-                    let static_config = self.builder.verify_service_properties(&static_config)?;
-
-                    let dynamic_config = Arc::new(
-                        fail!(from self, when self.builder.base.open_dynamic_config_storage(),
-                            with PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
-                            "{} since the dynamic service information could not be opened.", msg),
-                    );
-
-                    self.builder.base.service_config.messaging_pattern =
-                        MessagingPattern::PublishSubscribe(static_config.clone());
-
-                    return Ok(publish_subscribe::PortFactory::new(
-                        ServiceType::from_state(service::ServiceState::new(
-                            self.builder.base.service_config,
-                            self.builder.base.global_config,
-                            dynamic_config,
-                            static_storage,
-                        )),
-                    ));
-                }
-                Err(ServiceAvailabilityState::ServiceState(
-                    ServiceState::IsBeingCreatedByAnotherInstance,
-                )) => {
-                    let timeout = fail!(from self, when adaptive_wait.wait(),
-                                        with PublishSubscribeOpenError::InternalFailure,
-                                        "{} since the adaptive wait failed.", msg);
-
-                    if timeout
-                        > self
-                            .builder
-                            .base
-                            .global_config
-                            .global
-                            .service
-                            .creation_timeout
-                    {
-                        fail!(from self, with PublishSubscribeOpenError::HangsInCreation,
-                            "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded. Waited for {:?} but the state did not change.",
-                            msg, self.builder.base.global_config.global.service.creation_timeout, timeout);
-                    }
-                }
-                Err(ServiceAvailabilityState::IncompatibleTypes) => {
-                    fail!(from self, with PublishSubscribeOpenError::IncompatibleTypes,
-                    "{} since the service is not type compatible.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(
-                    ServiceState::IncompatibleMessagingPattern,
-                )) => {
-                    fail!(from self, with PublishSubscribeOpenError::IncompatibleMessagingPattern,
-                    "{} since the services messaging pattern does not match.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(ServiceState::Corrupted)) => {
-                    fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
-                    "{} since the service is in a corrupted state.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(ServiceState::PermissionDenied)) => {
-                    fail!(from self, with PublishSubscribeOpenError::PermissionDenied,
-                    "{} due to insufficient permissions to access the service.", msg);
-                }
-            }
-        }
-    }
 
     fn create_impl(
         &mut self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeCreateError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
     {
-        self.builder.adjust_properties_to_meaningful_values();
+        self.adjust_properties_to_meaningful_values();
 
         let msg = "Unable to create publish subscribe service";
-        self.builder.finalize_config::<MessageType>();
 
-        if !self.builder.config_details().enable_safe_overflow
-            && (self.builder.config_details().subscriber_max_buffer_size
-                < self.builder.config_details().history_size)
+        if !self.config_details().enable_safe_overflow
+            && (self.config_details().subscriber_max_buffer_size
+                < self.config_details().history_size)
         {
             fail!(from self, with PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize,
                 "{} since the history size is greater than the subscriber buffer size. The subscriber buffer size must be always greater or equal to the history size in the non-overflowing setup.", msg);
         }
 
-        match self.builder.is_service_available(msg) {
+        match self.is_service_available(msg) {
             Ok(None) => {
                 // create static config
-                let static_config = match self.builder.base.create_static_config_storage() {
+                let static_config = match self.base.create_static_config_storage() {
                     Ok(c) => c,
                     Err(StaticStorageCreateError::AlreadyExists) => {
                         fail!(from self, with PublishSubscribeCreateError::AlreadyExists,
@@ -513,7 +381,7 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
                     }
                 };
 
-                let pubsub_config = self.builder.base.service_config.publish_subscribe();
+                let pubsub_config = self.base.service_config.publish_subscribe();
 
                 // create dynamic config
                 let dynamic_config_setting = DynamicConfigSettings {
@@ -521,7 +389,7 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
                     number_of_subscribers: pubsub_config.max_subscribers,
                 };
 
-                let dynamic_config = match self.builder.base.create_dynamic_config_storage(
+                let dynamic_config = match self.base.create_dynamic_config_storage(
                     dynamic_config::MessagingPattern::PublishSubscribe(
                         dynamic_config::publish_subscribe::DynamicConfig::new(
                             &dynamic_config_setting,
@@ -542,7 +410,7 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
                     }
                 };
                 let service_config = fail!(from self,
-                            when ServiceType::ConfigSerializer::serialize(&self.builder.base.service_config),
+                            when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
                             with PublishSubscribeCreateError::Corrupted,
                             "{} since the configuration could not be serialized.", msg);
 
@@ -555,8 +423,8 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
 
                 Ok(publish_subscribe::PortFactory::new(
                     ServiceType::from_state(service::ServiceState::new(
-                        self.builder.base.service_config.clone(),
-                        self.builder.base.global_config.clone(),
+                        self.base.service_config.clone(),
+                        self.base.global_config.clone(),
                         dynamic_config,
                         unlocked_static_details,
                     )),
@@ -587,11 +455,211 @@ impl<MessageType: Debug, ServiceType: service::Service> TypedBuilder<MessageType
         }
     }
 
+    fn open_impl(
+        &mut self,
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
+    {
+        let msg = "Unable to open publish subscribe service";
+
+        let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
+                                        with PublishSubscribeOpenError::InternalFailure,
+                                        "{} since the adaptive wait could not be created.", msg);
+
+        loop {
+            match self.is_service_available(msg) {
+                Ok(None) => {
+                    fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
+                        "{} since the service does not exist.", msg);
+                }
+                Ok(Some((static_config, static_storage))) => {
+                    let static_config = self.verify_service_properties(&static_config)?;
+
+                    let dynamic_config = Arc::new(
+                        fail!(from self, when self.base.open_dynamic_config_storage(),
+                            with PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
+                            "{} since the dynamic service information could not be opened.", msg),
+                    );
+
+                    self.base.service_config.messaging_pattern =
+                        MessagingPattern::PublishSubscribe(static_config.clone());
+
+                    return Ok(publish_subscribe::PortFactory::new(
+                        ServiceType::from_state(service::ServiceState::new(
+                            self.base.service_config.clone(),
+                            self.base.global_config.clone(),
+                            dynamic_config,
+                            static_storage,
+                        )),
+                    ));
+                }
+                Err(ServiceAvailabilityState::ServiceState(
+                    ServiceState::IsBeingCreatedByAnotherInstance,
+                )) => {
+                    let timeout = fail!(from self, when adaptive_wait.wait(),
+                                        with PublishSubscribeOpenError::InternalFailure,
+                                        "{} since the adaptive wait failed.", msg);
+
+                    if timeout > self.base.global_config.global.service.creation_timeout {
+                        fail!(from self, with PublishSubscribeOpenError::HangsInCreation,
+                            "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded. Waited for {:?} but the state did not change.",
+                            msg, self.base.global_config.global.service.creation_timeout, timeout);
+                    }
+                }
+                Err(ServiceAvailabilityState::IncompatibleTypes) => {
+                    fail!(from self, with PublishSubscribeOpenError::IncompatibleTypes,
+                    "{} since the service is not type compatible.", msg);
+                }
+                Err(ServiceAvailabilityState::ServiceState(
+                    ServiceState::IncompatibleMessagingPattern,
+                )) => {
+                    fail!(from self, with PublishSubscribeOpenError::IncompatibleMessagingPattern,
+                    "{} since the services messaging pattern does not match.", msg);
+                }
+                Err(ServiceAvailabilityState::ServiceState(ServiceState::Corrupted)) => {
+                    fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
+                    "{} since the service is in a corrupted state.", msg);
+                }
+                Err(ServiceAvailabilityState::ServiceState(ServiceState::PermissionDenied)) => {
+                    fail!(from self, with PublishSubscribeOpenError::PermissionDenied,
+                    "{} due to insufficient permissions to access the service.", msg);
+                }
+            }
+        }
+    }
+
+    fn open_or_create_impl(
+        mut self,
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, PayloadType>,
+        PublishSubscribeOpenOrCreateError,
+    > {
+        let msg = "Unable to open or create publish subscribe service";
+
+        loop {
+            match self.is_service_available(msg) {
+                Ok(Some(_)) => match self.open_impl() {
+                    Ok(factory) => return Ok(factory),
+                    Err(PublishSubscribeOpenError::DoesNotExist) => continue,
+                    Err(e) => return Err(e.into()),
+                },
+                Ok(None) => match self.create_impl() {
+                    Ok(factory) => return Ok(factory),
+                    Err(PublishSubscribeCreateError::AlreadyExists)
+                    | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
+                        continue;
+                    }
+                    Err(e) => return Err(e.into()),
+                },
+                Err(ServiceAvailabilityState::ServiceState(
+                    ServiceState::IsBeingCreatedByAnotherInstance,
+                )) => continue,
+                Err(ServiceAvailabilityState::IncompatibleTypes) => {
+                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::IncompatibleTypes),
+                    "{} since the service is not type compatible.", msg);
+                }
+                Err(ServiceAvailabilityState::ServiceState(
+                    ServiceState::IncompatibleMessagingPattern,
+                )) => {
+                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::IncompatibleMessagingPattern),
+                    "{} since the services messaging pattern does not match.", msg);
+                }
+                Err(ServiceAvailabilityState::ServiceState(ServiceState::Corrupted)) => {
+                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::ServiceInCorruptedState),
+                    "{} since the service is in a corrupted state.", msg);
+                }
+                Err(ServiceAvailabilityState::ServiceState(ServiceState::PermissionDenied)) => {
+                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::PermissionDenied),
+                    "{} due to insufficient permissions to access the service.", msg);
+                }
+            }
+        }
+    }
+
+    fn adjust_payload_alignment(&mut self) {
+        if let Some(alignment) = self.override_alignment {
+            self.config_details_mut().type_details.payload_alignment = self
+                .config_details()
+                .type_details
+                .payload_alignment
+                .max(alignment);
+        }
+    }
+}
+
+impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, ServiceType> {
+    fn prepare_config_details(&mut self) {
+        self.config_details_mut().type_details =
+            TypeDetails::from::<PayloadType, Header>(TypeVariant::FixedSize);
+        self.adjust_payload_alignment();
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
+    pub fn open_or_create(
+        mut self,
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, PayloadType>,
+        PublishSubscribeOpenOrCreateError,
+    > {
+        self.prepare_config_details();
+        self.open_or_create_impl()
+    }
+
+    /// Opens an existing [`Service`].
+    pub fn open(
+        mut self,
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
+    {
+        self.prepare_config_details();
+        self.open_impl()
+    }
+
     /// Creates a new [`Service`].
     pub fn create(
         mut self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, MessageType>, PublishSubscribeCreateError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
     {
+        self.prepare_config_details();
+        self.create_impl()
+    }
+}
+
+impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], ServiceType> {
+    fn prepare_config_details(&mut self) {
+        self.config_details_mut().type_details =
+            TypeDetails::from::<PayloadType, Header>(TypeVariant::Dynamic);
+        self.adjust_payload_alignment();
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
+    pub fn open_or_create(
+        mut self,
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
+        PublishSubscribeOpenOrCreateError,
+    > {
+        self.prepare_config_details();
+        self.open_or_create_impl()
+    }
+
+    /// Opens an existing [`Service`].
+    pub fn open(
+        mut self,
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, [PayloadType]>, PublishSubscribeOpenError>
+    {
+        self.prepare_config_details();
+        self.open_impl()
+    }
+
+    /// Creates a new [`Service`].
+    pub fn create(
+        mut self,
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
+        PublishSubscribeCreateError,
+    > {
+        self.prepare_config_details();
         self.create_impl()
     }
 }

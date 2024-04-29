@@ -40,10 +40,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_name = ServiceName::new("Complex Data Type Example")?;
 
     let service = zero_copy::Service::new(&service_name)
-        .publish_subscribe()
+        .publish_subscribe::<ComplexDataType>()
         .max_publishers(16)
         .max_subscribers(16)
-        .typed::<ComplexDataType>()
         .open_or_create()?;
 
     let publisher = service.publisher().create()?;

@@ -67,8 +67,7 @@
 //!
 //! // create our port factory by creating or opening the service
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let subscriber = service.subscriber().create()?;
@@ -94,8 +93,7 @@
 //!
 //! // create our port factory by creating or opening the service
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let publisher = service.publisher().create()?;
@@ -188,7 +186,7 @@
 //! let service_name = ServiceName::new("PubSubQos")?;
 //!
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
+//!     .publish_subscribe::<u64>()
 //!     .enable_safe_overflow(true)
 //!     // how many samples a subscriber can borrow in parallel
 //!     .subscriber_max_borrowed_samples(2)
@@ -200,7 +198,6 @@
 //!     .max_subscribers(5)
 //!     // the maximum amount of publishers of this service
 //!     .max_publishers(2)
-//!     .typed::<u64>()
 //!     .create()?;
 //!
 //! # Ok(())
@@ -246,9 +243,8 @@
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
+//!     .publish_subscribe::<u64>()
 //!     .enable_safe_overflow(false)
-//!     .typed::<u64>()
 //!     .open_or_create()?;
 //!
 //! let publisher = service.publisher()
@@ -285,9 +281,6 @@ pub mod config;
 
 /// Central instance that handles all incoming events, the event loop
 pub mod iox2;
-
-#[doc(hidden)]
-pub mod message;
 
 /// The ports or communication endpoints of iceoryx2
 pub mod port;

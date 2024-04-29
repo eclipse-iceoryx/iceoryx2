@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2023 - 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -12,14 +12,15 @@
 
 //! # Examples
 //!
+//! ## Typed API
+//!
 //! ```
-//! use iceoryx2::{prelude::*, service::port_factory::publisher::UnableToDeliverStrategy};
+//! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let publisher = service
@@ -31,7 +32,7 @@
 //!     .create()?;
 //!
 //! // loan some initialized memory and send it
-//! // the message type must implement the [`core::default::Default`] trait in order to be able to use this API
+//! // the payload type must implement the [`core::default::Default`] trait in order to be able to use this API
 //! let mut sample = publisher.loan()?;
 //! *sample.payload_mut() = 1337;
 //! sample.send()?;
@@ -41,7 +42,7 @@
 //! let sample = sample.write_payload(1337);
 //! sample.send()?;
 //!
-//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<MessageType>`])
+//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<PayloadType>`])
 //! let mut sample = publisher.loan_uninit()?;
 //! sample.payload_mut().write(1337);
 //! let sample = unsafe { sample.assume_init() };
@@ -49,6 +50,52 @@
 //!
 //! // send a copy of the value
 //! publisher.send_copy(313)?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Slice API
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
+//! let service = zero_copy::Service::new(&service_name)
+//!     .publish_subscribe::<[usize]>()
+//!     .open_or_create()?;
+//!
+//! let publisher = service
+//!     .publisher()
+//!     // defines the maximum length of a slice
+//!     .max_slice_len(128)
+//!     // defines how many samples can be loaned in parallel
+//!     .max_loaned_samples(5)
+//!     // defines behavior when subscriber queue is full in an non-overflowing service
+//!     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!     .create()?;
+//!
+//! // loan some initialized memory and send it
+//! // the payload type must implement the [`core::default::Default`] trait in order to be able to use this API
+//! // we acquire a slice of length 12
+//! let mut sample = publisher.loan_slice(12)?;
+//! sample.payload_mut()[5] = 1337;
+//! sample.send()?;
+//!
+//! // loan uninitialized slice of length 60 and send it
+//! let sample = publisher.loan_slice_uninit(60)?;
+//! // initialize the n element of the slice with the value n * 123
+//! let sample = sample.write_from_fn(|n| n * 123 );
+//! sample.send()?;
+//!
+//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<PayloadType>`])
+//! let mut sample = publisher.loan_slice_uninit(42)?;
+//! for element in sample.payload_mut() {
+//!     element.write(1337);
+//! }
+//! let sample = unsafe { sample.assume_init() };
+//! sample.send()?;
 //!
 //! # Ok(())
 //! # }
@@ -61,7 +108,6 @@ use std::sync::Arc;
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 use super::port_identifiers::UniquePublisherId;
-use crate::message::Message;
 use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
@@ -72,7 +118,7 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
-use crate::service::static_config::publish_subscribe;
+use crate::service::static_config::publish_subscribe::{self};
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
@@ -112,6 +158,7 @@ impl std::error::Error for PublisherCreateError {}
 pub enum PublisherLoanError {
     OutOfMemory,
     ExceedsMaxLoanedChunks,
+    ExceedsMaxLoanSize,
     InternalFailure,
 }
 
@@ -146,8 +193,8 @@ impl std::error::Error for PublisherSendError {}
 pub(crate) struct DataSegment<Service: service::Service> {
     sample_reference_counter: Vec<AtomicU64>,
     memory: Service::SharedMemory,
-    message_size: usize,
-    message_type_layout: Layout,
+    payload_size: usize,
+    payload_type_layout: Layout,
     port_id: UniquePublisherId,
     config: LocalPublisherConfig,
     dynamic_storage: Arc<Service::DynamicStorage>,
@@ -162,7 +209,7 @@ pub(crate) struct DataSegment<Service: service::Service> {
 
 impl<Service: service::Service> DataSegment<Service> {
     fn sample_index(&self, distance_to_chunk: usize) -> usize {
-        distance_to_chunk / self.message_size
+        distance_to_chunk / self.payload_size
     }
 
     fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError> {
@@ -193,7 +240,7 @@ impl<Service: service::Service> DataSegment<Service> {
         {
             unsafe {
                 self.memory
-                    .deallocate(distance_to_chunk, self.message_type_layout);
+                    .deallocate(distance_to_chunk, self.payload_type_layout);
             }
         }
     }
@@ -342,7 +389,11 @@ impl<Service: service::Service> DataSegment<Service> {
                     };
 
                     if create_connection {
-                        match self.subscriber_connections.create(i, *subscriber_details) {
+                        match self.subscriber_connections.create(
+                            i,
+                            *subscriber_details,
+                            self.config.max_slice_len,
+                        ) {
                             Ok(()) => match &self.subscriber_connections.get(i) {
                                 Some(connection) => self.deliver_sample_history(connection),
                                 None => {
@@ -434,13 +485,15 @@ impl<Service: service::Service> DataSegment<Service> {
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct Publisher<Service: service::Service, MessageType: Debug> {
+pub struct Publisher<Service: service::Service, PayloadType: Debug + ?Sized> {
     pub(crate) data_segment: Arc<DataSegment<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
-    _phantom_message_type: PhantomData<MessageType>,
+    _phantom_payload_type: PhantomData<PayloadType>,
 }
 
-impl<Service: service::Service, MessageType: Debug> Drop for Publisher<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
+    for Publisher<Service, PayloadType>
+{
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_publisher_handle {
             self.data_segment
@@ -452,7 +505,7 @@ impl<Service: service::Service, MessageType: Debug> Drop for Publisher<Service, 
     }
 }
 
-impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, PayloadType> {
     pub(crate) fn new(
         service: &Service,
         static_config: &publish_subscribe::StaticConfig,
@@ -475,15 +528,22 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             .messaging_pattern
             .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
-        let data_segment = fail!(from origin, when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples, static_config),
+        let data_segment = fail!(from origin,
+                when Self::create_data_segment(port_id, service.state().global_config.as_ref(), number_of_samples, static_config, &config),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
+        let max_slice_len = config.max_slice_len;
         let data_segment = Arc::new(DataSegment {
             is_active: AtomicBool::new(true),
             memory: data_segment,
-            message_size: std::mem::size_of::<Message<Header, MessageType>>(),
-            message_type_layout: Layout::new::<MessageType>(),
+            payload_size: static_config
+                .type_details()
+                .sample_layout(config.max_slice_len)
+                .size(),
+            payload_type_layout: static_config
+                .type_details()
+                .payload_layout(config.max_slice_len),
             sample_reference_counter: {
                 let mut v = Vec::with_capacity(number_of_samples);
                 for _ in 0..number_of_samples {
@@ -513,7 +573,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         let mut new_self = Self {
             data_segment,
             dynamic_publisher_handle: None,
-            _phantom_message_type: PhantomData,
+            _phantom_payload_type: PhantomData,
         };
 
         if let Err(e) = new_self.data_segment.populate_subscriber_channels() {
@@ -532,6 +592,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
             .add_publisher_id(PublisherDetails {
                 publisher_id: port_id,
                 number_of_samples,
+                max_slice_len,
             }) {
             Some(unique_index) => unique_index,
             None => {
@@ -551,25 +612,19 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         global_config: &config::Config,
         number_of_samples: usize,
         static_config: &publish_subscribe::StaticConfig,
+        config: &LocalPublisherConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
-        let allocator_config = shm_allocator::pool_allocator::Config {
-            bucket_layout:
-                // # SAFETY: type_size and type_alignment are acquired via
-                //           core::mem::{size_of|align_of}
-                unsafe {
-                Layout::from_size_align_unchecked(
-                    static_config.type_size,
-                    static_config.type_alignment,
-                )
-            },
-        };
+        let l = static_config
+            .type_details
+            .sample_layout(config.max_slice_len);
+        let allocator_config = shm_allocator::pool_allocator::Config { bucket_layout: l };
 
         Ok(fail!(from "Publisher::create_data_segment()",
             when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
             Service::SharedMemory,
                 >>::new(&data_segment_name(port_id))
                 .config(&data_segment_config::<Service>(global_config))
-                .size(static_config.type_size * number_of_samples + static_config.type_alignment - 1)
+                .size(l.size() * number_of_samples + l.align() - 1)
                 .create(&allocator_config),
             "Unable to create the data segment."))
     }
@@ -579,6 +634,69 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
         self.data_segment.port_id
     }
 
+    fn allocate(&self, layout: Layout) -> Result<ShmPointer, PublisherLoanError> {
+        let msg = "Unable to allocate Sample with";
+
+        if self.data_segment.loan_counter.load(Ordering::Relaxed)
+            >= self.data_segment.config.max_loaned_samples
+        {
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
+                "{} {:?} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
+                msg, layout, self.data_segment.loan_counter.load(Ordering::Relaxed), self.data_segment.config.max_loaned_samples);
+        }
+
+        match self.data_segment.allocate(layout) {
+            Ok(chunk) => {
+                self.data_segment
+                    .loan_counter
+                    .fetch_add(1, Ordering::Relaxed);
+                Ok(chunk)
+            }
+            Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
+                fail!(from self, with PublisherLoanError::OutOfMemory,
+                    "{} {:?} since the underlying shared memory is out of memory.", msg, layout);
+            }
+            Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
+            | Err(ShmAllocationError::AllocationError(AllocationError::AlignmentFailure)) => {
+                fatal_panic!(from self, "{} {:?} since the system seems to be corrupted.", msg, layout);
+            }
+            Err(v) => {
+                fail!(from self, with PublisherLoanError::InternalFailure,
+                    "{} {:?} since an internal failure occurred ({:?}).", msg, layout, v);
+            }
+        }
+    }
+
+    fn sample_layout(&self, number_of_elements: usize) -> Layout {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .type_details
+            .sample_layout(number_of_elements)
+    }
+
+    fn payload_layout(&self, number_of_elements: usize) -> Layout {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .type_details
+            .payload_layout(number_of_elements)
+    }
+
+    fn payload_ptr(&self, header: *const Header) -> *const u8 {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .type_details
+            .payload_ptr_from_header(header.cast())
+            .cast()
+    }
+}
+
+////////////////////////
+// BEGIN: typed API
+////////////////////////
+impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, PayloadType> {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
@@ -591,8 +709,7 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
@@ -601,8 +718,8 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     /// # Ok(())
     /// # }
     /// ```
-    pub fn send_copy(&self, value: MessageType) -> Result<usize, PublisherSendError> {
-        let msg = "Unable to send copy of message";
+    pub fn send_copy(&self, value: PayloadType) -> Result<usize, PublisherSendError> {
+        let msg = "Unable to send copy of payload";
         let mut sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
 
@@ -626,14 +743,13 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
     ///
     /// let sample = publisher.loan_uninit()?;
-    /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<MessageType>`
+    /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<PayloadType>`
     ///
     /// sample.send()?;
     ///
@@ -642,60 +758,33 @@ impl<Service: service::Service, MessageType: Debug> Publisher<Service, MessageTy
     /// ```
     pub fn loan_uninit(
         &self,
-    ) -> Result<SampleMut<MaybeUninit<MessageType>, Service>, PublisherLoanError> {
-        let msg = "Unable to loan Sample";
+    ) -> Result<SampleMut<MaybeUninit<PayloadType>, Service>, PublisherLoanError> {
+        let chunk = self.allocate(self.sample_layout(1))?;
+        let header_ptr = chunk.data_ptr as *mut Header;
+        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<PayloadType>;
 
-        if self.data_segment.loan_counter.load(Ordering::Relaxed)
-            >= self.data_segment.config.max_loaned_samples
-        {
-            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
-                "{} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
-                msg, self.data_segment.loan_counter.load(Ordering::Relaxed), self.data_segment.config.max_loaned_samples);
-        }
+        unsafe {
+            header_ptr.write(Header::new(
+                self.data_segment.port_id,
+                Layout::new::<PayloadType>(),
+            ))
+        };
 
-        match self
-            .data_segment
-            .allocate(Layout::new::<Message<Header, MessageType>>())
-        {
-            Ok(chunk) => {
-                let message =
-                    chunk.data_ptr as *mut MaybeUninit<Message<Header, MaybeUninit<MessageType>>>;
-
-                let sample = unsafe {
-                    (*message).write(Message {
-                        header: Header::new(self.data_segment.port_id),
-                        data: MaybeUninit::uninit(),
-                    });
-                    RawSampleMut::new_unchecked(
-                        message as *mut Message<Header, MaybeUninit<MessageType>>,
-                    )
-                };
-
-                self.data_segment
-                    .loan_counter
-                    .fetch_add(1, Ordering::Relaxed);
-                Ok(SampleMut::new(&self.data_segment, sample, chunk.offset))
-            }
-            Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
-                fail!(from self, with PublisherLoanError::OutOfMemory,
-                    "{} since the underlying shared memory is out of memory.", msg);
-            }
-            Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
-            | Err(ShmAllocationError::AllocationError(AllocationError::AlignmentFailure)) => {
-                fatal_panic!(from self, "{} since the system seems to be corrupted.", msg);
-            }
-            Err(v) => {
-                fail!(from self, with PublisherLoanError::InternalFailure,
-                    "{} since an internal failure occurred ({:?}).", msg, v);
-            }
-        }
+        let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, payload_ptr) };
+        Ok(SampleMut::<MaybeUninit<PayloadType>, Service>::new(
+            &self.data_segment,
+            sample,
+            chunk.offset,
+        ))
     }
 }
 
-impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Default + Debug + Sized>
+    Publisher<Service, PayloadType>
+{
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
-    /// can be used to loan a [`core::mem::MaybeUninit<MessageType>`].
+    /// can be used to loan a [`core::mem::MaybeUninit<PayloadType>`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
     ///
@@ -707,8 +796,7 @@ impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service,
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;
@@ -721,13 +809,124 @@ impl<Service: service::Service, MessageType: Default + Debug> Publisher<Service,
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<SampleMut<MessageType, Service>, PublisherLoanError> {
-        Ok(self.loan_uninit()?.write_payload(MessageType::default()))
+    pub fn loan(&self) -> Result<SampleMut<PayloadType, Service>, PublisherLoanError> {
+        Ok(self.loan_uninit()?.write_payload(PayloadType::default()))
+    }
+}
+////////////////////////
+// END: typed API
+////////////////////////
+
+////////////////////////
+// BEGIN: sliced API
+////////////////////////
+impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service, [PayloadType]> {
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
+    /// and initializes all slice elements with the default value. This can be a performance hit
+    /// and [`Publisher::loan_slice_uninit()`] can be used to loan a slice of
+    /// [`core::mem::MaybeUninit<PayloadType>`].
+    ///
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe::<[u64]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher().max_slice_len(120).create()?;
+    ///
+    /// let slice_length = 5;
+    /// let mut sample = publisher.loan_slice(slice_length)?;
+    /// sample.payload_mut()[2] = 42;
+    ///
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn loan_slice(
+        &self,
+        number_of_elements: usize,
+    ) -> Result<SampleMut<[PayloadType], Service>, PublisherLoanError> {
+        let sample = self.loan_slice_uninit(number_of_elements)?;
+        Ok(sample.write_from_fn(|_| PayloadType::default()))
     }
 }
 
-impl<Service: service::Service, MessageType: Debug> UpdateConnections
-    for Publisher<Service, MessageType>
+impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadType]> {
+    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
+    /// #
+    /// # let service = zero_copy::Service::new(&service_name)
+    /// #     .publish_subscribe::<[usize]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher().max_slice_len(120).create()?;
+    ///
+    /// let slice_length = 5;
+    /// let sample = publisher.loan_slice_uninit(slice_length)?;
+    /// let sample = sample.write_from_fn(|n| n * 2); // alternatively `sample.payload_mut()` can be use to access the `[MaybeUninit<PayloadType>]`
+    ///
+    /// sample.send()?;
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn loan_slice_uninit(
+        &self,
+        slice_len: usize,
+    ) -> Result<SampleMut<[MaybeUninit<PayloadType>], Service>, PublisherLoanError> {
+        let max_slice_len = self.data_segment.config.max_slice_len;
+        if max_slice_len < slice_len {
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
+                "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
+                slice_len, max_slice_len);
+        }
+
+        let chunk = self.allocate(self.sample_layout(slice_len))?;
+        let header_ptr = chunk.data_ptr as *mut Header;
+        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<PayloadType>;
+
+        unsafe {
+            header_ptr.write(Header::new(
+                self.data_segment.port_id,
+                self.payload_layout(slice_len),
+            ))
+        };
+
+        let sample = unsafe {
+            RawSampleMut::new_unchecked(
+                header_ptr,
+                core::slice::from_raw_parts_mut(payload_ptr, slice_len),
+            )
+        };
+
+        Ok(SampleMut::<[MaybeUninit<PayloadType>], Service>::new(
+            &self.data_segment,
+            sample,
+            chunk.offset,
+        ))
+    }
+}
+////////////////////////
+// END: sliced API
+////////////////////////
+
+impl<Service: service::Service, PayloadType: Debug> UpdateConnections
+    for Publisher<Service, PayloadType>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         self.data_segment.update_connections()

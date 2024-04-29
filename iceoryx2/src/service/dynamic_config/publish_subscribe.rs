@@ -18,8 +18,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let pubsub = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! println!("number of active publishers:      {:?}", pubsub.dynamic_config().number_of_publishers());
@@ -44,6 +43,7 @@ pub(crate) struct DynamicConfigSettings {
 pub(crate) struct PublisherDetails {
     pub(crate) publisher_id: UniquePublisherId,
     pub(crate) number_of_samples: usize,
+    pub(crate) max_slice_len: usize,
 }
 
 #[derive(Debug, Copy, Clone)]

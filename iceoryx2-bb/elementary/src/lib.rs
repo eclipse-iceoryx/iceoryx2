@@ -14,6 +14,9 @@
 
 #[macro_use]
 pub mod enum_gen;
+
+/// A strong type that represents the alignment part of [`std::alloc::Layout`]
+pub mod alignment;
 pub mod allocator;
 pub mod bump_allocator;
 pub mod lazy_singleton;

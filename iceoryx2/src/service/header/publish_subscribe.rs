@@ -19,8 +19,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let subscriber = service.subscriber().create()?;
@@ -31,23 +30,34 @@
 //! # Ok(())
 //! # }
 //! ```
+use std::alloc::Layout;
+
 use crate::port::port_identifiers::UniquePublisherId;
 
-/// Message header used by
+/// Sample header used by
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 #[derive(Debug)]
 #[repr(C)]
 pub struct Header {
     publisher_port_id: UniquePublisherId,
+    payload_type_layout: Layout,
 }
 
 impl Header {
-    pub(crate) fn new(publisher_port_id: UniquePublisherId) -> Self {
-        Self { publisher_port_id }
+    pub(crate) fn new(publisher_port_id: UniquePublisherId, payload_type_layout: Layout) -> Self {
+        Self {
+            publisher_port_id,
+            payload_type_layout,
+        }
     }
 
     /// Returns the [`UniquePublisherId`] of the source [`crate::port::publisher::Publisher`].
     pub fn publisher_id(&self) -> UniquePublisherId {
         self.publisher_port_id
+    }
+
+    /// Returns the [`Layout`] of the corresponding payload.
+    pub fn payload_type_layout(&self) -> Layout {
+        self.payload_type_layout
     }
 }

@@ -23,24 +23,22 @@ fn perform_benchmark<T: Service>(iterations: u64) {
     let service_name_b2a = ServiceName::new("b2a").unwrap();
 
     let service_a2b = T::new(&service_name_a2b)
-        .publish_subscribe()
+        .publish_subscribe::<u64>()
         .max_publishers(1)
         .max_subscribers(1)
         .history_size(0)
         .subscriber_max_buffer_size(1)
         .enable_safe_overflow(true)
-        .typed::<u64>()
         .create()
         .unwrap();
 
     let service_b2a = T::new(&service_name_b2a)
-        .publish_subscribe()
+        .publish_subscribe::<u64>()
         .max_publishers(1)
         .max_subscribers(1)
         .history_size(0)
         .subscriber_max_buffer_size(1)
         .enable_safe_overflow(true)
-        .typed::<u64>()
         .create()
         .unwrap();
 

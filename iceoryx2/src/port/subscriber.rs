@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2023 - 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -18,8 +18,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let subscriber = service.subscriber().create()?;
@@ -44,17 +43,16 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
 
 use crate::port::DegrationAction;
+use crate::sample::SampleDetails;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
+use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
-use crate::{
-    message::Message, raw_sample::RawSample, sample::Sample, service,
-    service::header::publish_subscribe::Header,
-};
+use crate::{raw_sample::RawSample, sample::Sample, service};
 
 use super::details::publisher_connections::{Connection, PublisherConnections};
 use super::port_identifiers::UniqueSubscriberId;
-use super::update_connections::ConnectionFailure;
+use super::update_connections::{ConnectionFailure, UpdateConnections};
 use super::DegrationCallback;
 
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
@@ -98,7 +96,7 @@ pub(crate) mod internal {
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
-pub struct Subscriber<Service: service::Service, MessageType: Debug> {
+pub struct Subscriber<Service: service::Service, PayloadType: Debug + ?Sized> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: Arc<PublisherConnections<Service>>,
     dynamic_storage: Arc<Service::DynamicStorage>,
@@ -106,10 +104,12 @@ pub struct Subscriber<Service: service::Service, MessageType: Debug> {
     degration_callback: Option<DegrationCallback<'static>>,
 
     publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
-    _phantom_message_type: PhantomData<MessageType>,
+    _phantom_payload_type: PhantomData<PayloadType>,
 }
 
-impl<Service: service::Service, MessageType: Debug> Drop for Subscriber<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
+    for Subscriber<Service, PayloadType>
+{
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
             self.dynamic_storage
@@ -120,7 +120,7 @@ impl<Service: service::Service, MessageType: Debug> Drop for Subscriber<Service,
     }
 }
 
-impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageType> {
+impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service, PayloadType> {
     pub(crate) fn new(
         service: &Service,
         static_config: &StaticConfig,
@@ -166,7 +166,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
             static_config: service.state().static_config.clone(),
-            _phantom_message_type: PhantomData,
+            _phantom_payload_type: PhantomData,
         };
 
         if let Err(e) = new_self.populate_publisher_channels() {
@@ -219,11 +219,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                     };
 
                     if create_connection {
-                        match self.publisher_connections.create(
-                            i,
-                            details.publisher_id,
-                            details.number_of_samples,
-                        ) {
+                        match self.publisher_connections.create(i, details) {
                             Ok(()) => (),
                             Err(e) => match &self.degration_callback {
                                 None => {
@@ -261,7 +257,7 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         &self,
         channel_id: usize,
         connection: &mut Connection<Service>,
-    ) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {
+    ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
         let msg = "Unable to receive another sample";
         match connection.receiver.receive() {
             Ok(data) => match data {
@@ -269,17 +265,15 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
                 Some(offset) => {
                     let absolute_address =
                         offset.value() + connection.data_segment.payload_start_address();
-                    Ok(Some(Sample {
+
+                    let details = SampleDetails {
                         publisher_connections: Arc::clone(&self.publisher_connections),
                         channel_id,
-                        ptr: unsafe {
-                            RawSample::new_unchecked(
-                                absolute_address as *mut Message<Header, MessageType>,
-                            )
-                        },
                         offset,
                         origin: connection.publisher_id,
-                    }))
+                    };
+
+                    Ok(Some((details, absolute_address)))
                 }
             },
             Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
@@ -295,9 +289,14 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         self.publisher_connections.subscriber_id()
     }
 
-    /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
-    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive(&self) -> Result<Option<Sample<MessageType, Service>>, SubscriberReceiveError> {
+    /// Returns the internal buffer size of the [`Subscriber`].
+    pub fn buffer_size(&self) -> usize {
+        self.publisher_connections.buffer_size
+    }
+
+    fn receive_impl(
+        &self,
+    ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
         if let Err(e) = self.update_connections() {
             fail!(from self,
                 with SubscriberReceiveError::ConnectionFailure(e),
@@ -307,8 +306,10 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         for id in 0..self.publisher_connections.len() {
             match &mut self.publisher_connections.get_mut(id) {
                 Some(ref mut connection) => {
-                    if let Some(sample) = self.receive_from_connection(id, connection)? {
-                        return Ok(Some(sample));
+                    if let Some((details, absolute_address)) =
+                        self.receive_from_connection(id, connection)?
+                    {
+                        return Ok(Some((details, absolute_address)));
                     }
                 }
                 None => (),
@@ -318,16 +319,19 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         Ok(None)
     }
 
-    /// Returns the internal buffer size of the [`Subscriber`].
-    pub fn buffer_size(&self) -> usize {
-        self.publisher_connections.buffer_size
+    fn payload_ptr(&self, header: *const Header) -> *const u8 {
+        self.publisher_connections
+            .static_config
+            .type_details
+            .payload_ptr_from_header(header.cast())
+            .cast()
     }
+}
 
-    /// Explicitly updates all connections to the [`crate::port::publisher::Publisher`]s. This is
-    /// required to be called whenever a new [`crate::port::publisher::Publisher`] connected to
-    /// the service. It is done implicitly whenever [`Subscriber::receive()`]
-    /// is called.
-    pub fn update_connections(&self) -> Result<(), ConnectionFailure> {
+impl<Service: service::Service, PayloadType: Debug + ?Sized> UpdateConnections
+    for Subscriber<Service, PayloadType>
+{
+    fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
             self.dynamic_storage
                 .get()
@@ -340,5 +344,46 @@ impl<Service: service::Service, MessageType: Debug> Subscriber<Service, MessageT
         }
 
         Ok(())
+    }
+}
+
+impl<Service: service::Service, PayloadType: Debug> Subscriber<Service, PayloadType> {
+    /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
+    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
+    pub fn receive(&self) -> Result<Option<Sample<PayloadType, Service>>, SubscriberReceiveError> {
+        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
+            let header_ptr = absolute_address as *const Header;
+            let payload_ptr = self.payload_ptr(header_ptr).cast();
+            Sample {
+                details,
+                ptr: unsafe { RawSample::new_unchecked(header_ptr, payload_ptr) },
+            }
+        }))
+    }
+}
+
+impl<Service: service::Service, PayloadType: Debug> Subscriber<Service, [PayloadType]> {
+    /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
+    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
+    pub fn receive(
+        &self,
+    ) -> Result<Option<Sample<[PayloadType], Service>>, SubscriberReceiveError> {
+        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
+            let header_ptr = absolute_address as *const Header;
+            let payload_ptr = self.payload_ptr(header_ptr).cast();
+
+            let payload_layout = unsafe { (*header_ptr).payload_type_layout() };
+            let number_of_elements = payload_layout.size() / core::mem::size_of::<PayloadType>();
+
+            Sample {
+                details,
+                ptr: unsafe {
+                    RawSample::<Header, [PayloadType]>::new_slice_unchecked(
+                        header_ptr,
+                        core::slice::from_raw_parts(payload_ptr, number_of_elements),
+                    )
+                },
+            }
+        }))
     }
 }

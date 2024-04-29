@@ -10,6 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-/// Message header used by
+/// Sample header used by
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 pub mod publish_subscribe;

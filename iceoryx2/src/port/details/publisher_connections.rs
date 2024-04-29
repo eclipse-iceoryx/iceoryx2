@@ -18,8 +18,7 @@ use crate::{
     service::{
         self,
         config_scheme::{connection_config, data_segment_config},
-    },
-    service::{
+        dynamic_config::publish_subscribe::PublisherDetails,
         naming_scheme::{connection_name, data_segment_name},
         static_config::publish_subscribe::StaticConfig,
     },
@@ -43,28 +42,27 @@ pub(crate) struct Connection<Service: service::Service> {
 impl<Service: service::Service> Connection<Service> {
     fn new(
         this: &PublisherConnections<Service>,
-        publisher_id: UniquePublisherId,
-        number_of_samples: usize,
+        details: &PublisherDetails,
     ) -> Result<Self, ConnectionFailure> {
         let msg = format!(
             "Unable to establish connection to publisher {:?} from subscriber {:?}.",
-            publisher_id, this.subscriber_id
+            details.publisher_id, this.subscriber_id
         );
 
         let receiver = fail!(from this,
                         when <Service::Connection as ZeroCopyConnection>::
-                            Builder::new( &connection_name(publisher_id, this.subscriber_id))
+                            Builder::new( &connection_name(details.publisher_id, this.subscriber_id))
                                     .config(&connection_config::<Service>(this.config.as_ref()))
                                     .buffer_size(this.buffer_size)
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
-                                    .number_of_samples(number_of_samples)
-                                    .create_receiver(this.static_config.type_size),
+                                    .number_of_samples(details.number_of_samples)
+                                    .create_receiver(this.static_config.type_details().sample_layout(details.max_slice_len).size()),
                         "{} since the zero copy connection could not be established.", msg);
 
         let data_segment = fail!(from this,
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
-                                Builder::new(&data_segment_name(publisher_id))
+                                Builder::new(&data_segment_name(details.publisher_id))
                                 .config(&data_segment_config::<Service>(this.config.as_ref()))
                                 .open(),
                             "{} since the publishers data segment could not be mapped into the process.", msg);
@@ -72,7 +70,7 @@ impl<Service: service::Service> Connection<Service> {
         Ok(Self {
             receiver,
             data_segment,
-            publisher_id,
+            publisher_id: details.publisher_id,
         })
     }
 }
@@ -81,7 +79,7 @@ pub(crate) struct PublisherConnections<Service: service::Service> {
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     subscriber_id: UniqueSubscriberId,
     config: Arc<config::Config>,
-    static_config: StaticConfig,
+    pub(crate) static_config: StaticConfig,
     pub(crate) buffer_size: usize,
 }
 
@@ -122,10 +120,9 @@ impl<Service: service::Service> PublisherConnections<Service> {
     pub(crate) fn create(
         &self,
         index: usize,
-        publisher_id: UniquePublisherId,
-        number_of_samples: usize,
+        details: &PublisherDetails,
     ) -> Result<(), ConnectionFailure> {
-        *self.get_mut(index) = Some(Connection::new(self, publisher_id, number_of_samples)?);
+        *self.get_mut(index) = Some(Connection::new(self, details)?);
 
         Ok(())
     }

@@ -48,8 +48,7 @@ pub trait UpdateConnections {
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
     /// # let service = zero_copy::Service::new(&service_name)
-    /// #     .publish_subscribe()
-    /// #     .typed::<u64>()
+    /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher().create()?;

@@ -12,15 +12,15 @@
 
 //! # Example
 //!
+//! ## Typed API
+//!
 //! ```
 //! use iceoryx2::prelude::*;
-//! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! let pubsub = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe()
-//!     .typed::<u64>()
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! let publisher = pubsub.publisher()
@@ -31,6 +31,29 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! ## Slice API
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
+//! let pubsub = zero_copy::Service::new(&service_name)
+//!     .publish_subscribe::<[u64]>()
+//!     .open_or_create()?;
+//!
+//! let publisher = pubsub.publisher()
+//!                     // allows to call Publisher::loan_slice() with up to 128 elements
+//!                     .max_slice_len(128)
+//!                     .create()?;
+//!
+//! let sample = publisher.loan_slice(50)?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
@@ -107,24 +130,26 @@ pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) max_slice_len: usize,
 }
 
 /// Factory to create a new [`Publisher`] port/endpoint for
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactoryPublisher<'factory, Service: service::Service, MessageType: Debug> {
+pub struct PortFactoryPublisher<'factory, Service: service::Service, PayloadType: Debug + ?Sized> {
     config: LocalPublisherConfig,
-    pub(crate) factory: &'factory PortFactory<Service, MessageType>,
+    pub(crate) factory: &'factory PortFactory<Service, PayloadType>,
 }
 
-impl<'factory, Service: service::Service, MessageType: Debug>
-    PortFactoryPublisher<'factory, Service, MessageType>
+impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized>
+    PortFactoryPublisher<'factory, Service, PayloadType>
 {
-    pub(crate) fn new(factory: &'factory PortFactory<Service, MessageType>) -> Self {
+    pub(crate) fn new(factory: &'factory PortFactory<Service, PayloadType>) -> Self {
         Self {
             config: LocalPublisherConfig {
                 degration_callback: None,
+                max_slice_len: 1,
                 max_loaned_samples: factory
                     .service
                     .state()
@@ -181,11 +206,22 @@ impl<'factory, Service: service::Service, MessageType: Debug>
     }
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
-    pub fn create(self) -> Result<Publisher<Service, MessageType>, PublisherCreateError> {
+    pub fn create(self) -> Result<Publisher<Service, PayloadType>, PublisherCreateError> {
         let origin = format!("{:?}", self);
         Ok(
             fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),
                 "Failed to create new Publisher port."),
         )
+    }
+}
+
+impl<'factory, Service: service::Service, PayloadType: Debug>
+    PortFactoryPublisher<'factory, Service, [PayloadType]>
+{
+    /// Sets the maximum slice length that a user can allocate with
+    /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
+    pub fn max_slice_len(mut self, value: usize) -> Self {
+        self.config.max_slice_len = value;
+        self
     }
 }

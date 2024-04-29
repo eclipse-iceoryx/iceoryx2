@@ -20,6 +20,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profil
 export PATH=$PATH:$HOME/.cargo/bin
 rustup toolchain add beta nightly 1.73.0 stable
 rustup component add clippy rustfmt
+rustup default stable
+cargo install cargo-nextest --locked
 pw useradd testuser1
 pw useradd testuser2
 pw groupadd testgroup1

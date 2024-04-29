@@ -17,8 +17,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //! # let service = zero_copy::Service::new(&service_name)
-//! #   .publish_subscribe()
-//! #   .typed::<u64>()
+//! #   .publish_subscribe::<u64>()
 //! #   .open_or_create()?;
 //! # let subscriber = service.subscriber().create()?;
 //!
@@ -42,31 +41,57 @@ use crate::port::port_identifiers::UniquePublisherId;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
 
-/// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
-/// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
-/// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
 #[derive(Debug)]
-pub struct Sample<MessageType: Debug, Service: crate::service::Service> {
+pub(crate) struct SampleDetails<Service: crate::service::Service> {
     pub(crate) publisher_connections: Arc<PublisherConnections<Service>>,
-    pub(crate) ptr: RawSample<Header, MessageType>,
     pub(crate) channel_id: usize,
     pub(crate) offset: PointerOffset,
     pub(crate) origin: UniquePublisherId,
 }
 
-impl<MessageType: Debug, Service: crate::service::Service> Deref for Sample<MessageType, Service> {
-    type Target = MessageType;
-    fn deref(&self) -> &Self::Target {
-        self.ptr.as_data_ref()
+/// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
+/// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
+/// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
+pub struct Sample<PayloadType: Debug + ?Sized, Service: crate::service::Service> {
+    pub(crate) ptr: RawSample<Header, PayloadType>,
+    pub(crate) details: SampleDetails<Service>,
+}
+
+impl<PayloadType: Debug + ?Sized, Service: crate::service::Service> Debug
+    for Sample<PayloadType, Service>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Sample<{}, {}> {{ details: {:?} }}",
+            core::any::type_name::<PayloadType>(),
+            core::any::type_name::<Service>(),
+            self.details
+        )
     }
 }
 
-impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<MessageType, Service> {
+impl<PayloadType: Debug + ?Sized, Service: crate::service::Service> Deref
+    for Sample<PayloadType, Service>
+{
+    type Target = PayloadType;
+    fn deref(&self) -> &Self::Target {
+        self.ptr.as_payload_ref()
+    }
+}
+
+impl<PayloadType: Debug + ?Sized, Service: crate::service::Service> Drop
+    for Sample<PayloadType, Service>
+{
     fn drop(&mut self) {
-        match self.publisher_connections.get(self.channel_id) {
+        match self
+            .details
+            .publisher_connections
+            .get(self.details.channel_id)
+        {
             Some(c) => {
-                if c.publisher_id == self.origin {
-                    match c.receiver.release(self.offset) {
+                if c.publisher_id == self.details.origin {
+                    match c.receiver.release(self.details.offset) {
                         Ok(()) => (),
                         Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
                             fatal_panic!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
@@ -81,10 +106,10 @@ impl<MessageType: Debug, Service: crate::service::Service> Drop for Sample<Messa
     }
 }
 
-impl<MessageType: Debug, Service: crate::service::Service> Sample<MessageType, Service> {
+impl<PayloadType: Debug + ?Sized, Service: crate::service::Service> Sample<PayloadType, Service> {
     /// Returns a reference to the payload of the [`Sample`]
-    pub fn payload(&self) -> &MessageType {
-        self.ptr.as_data_ref()
+    pub fn payload(&self) -> &PayloadType {
+        self.ptr.as_payload_ref()
     }
 
     /// Returns a reference to the [`Header`] of the [`Sample`].
@@ -94,6 +119,6 @@ impl<MessageType: Debug, Service: crate::service::Service> Sample<MessageType, S
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     pub fn origin(&self) -> UniquePublisherId {
-        self.origin
+        self.details.origin
     }
 }

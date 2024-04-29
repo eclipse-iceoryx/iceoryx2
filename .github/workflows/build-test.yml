@@ -182,7 +182,6 @@ jobs:
             cargo fmt --all -- --check
             cargo clippy -- -D warnings
             cargo build --workspace --all-targets ${{ matrix.mode }}
-            cargo install cargo-nextest --locked
             cargo nextest run --workspace --no-fail-fast ${{ matrix.mode }}
 
   grcov:
