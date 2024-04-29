@@ -138,11 +138,12 @@ mod ice_atomic {
 
     #[test]
     fn compare_exchange_failure_works<T: Req>() {
+        let n_outdated = T::generate_value();
         let n_old = T::generate_value();
         let n_new = T::generate_value();
         let sut = IoxAtomic::<T>::new(n_old);
 
-        let result = sut.compare_exchange(n_new, n_old, Ordering::Relaxed, Ordering::Relaxed);
+        let result = sut.compare_exchange(n_outdated, n_new, Ordering::Relaxed, Ordering::Relaxed);
 
         assert_that!(result, is_err);
         assert_that!(result.err().unwrap(), eq n_old);
@@ -150,11 +151,13 @@ mod ice_atomic {
 
     #[test]
     fn compare_exchange_weak_failure_works<T: Req>() {
+        let n_outdated = T::generate_value();
         let n_old = T::generate_value();
         let n_new = T::generate_value();
         let sut = IoxAtomic::<T>::new(n_old);
 
-        let result = sut.compare_exchange(n_new, n_old, Ordering::Relaxed, Ordering::Relaxed);
+        let result =
+            sut.compare_exchange_weak(n_outdated, n_new, Ordering::Relaxed, Ordering::Relaxed);
 
         assert_that!(result, is_err);
         assert_that!(result.err().unwrap(), eq n_old);
@@ -191,12 +194,16 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut_1 = IoxAtomic::<T>::new(n1);
+        let sut_2 = IoxAtomic::<T>::new(n2);
 
-        let result = sut.fetch_max(n2, Ordering::Relaxed);
+        let result_1 = sut_1.fetch_max(n2, Ordering::Relaxed);
+        let result_2 = sut_2.fetch_max(n1, Ordering::Relaxed);
 
-        assert_that!(result, eq n1);
-        assert_that!(sut.load(Ordering::Relaxed), eq n1.max(n2));
+        assert_that!(result_1, eq n1);
+        assert_that!(result_2, eq n2);
+        assert_that!(sut_1.load(Ordering::Relaxed), eq n1.max(n2));
+        assert_that!(sut_2.load(Ordering::Relaxed), eq n1.max(n2));
     }
 
     #[test]
@@ -204,12 +211,16 @@ mod ice_atomic {
         let n1 = T::generate_value();
         let n2 = T::generate_value();
 
-        let sut = IoxAtomic::<T>::new(n1);
+        let sut_1 = IoxAtomic::<T>::new(n1);
+        let sut_2 = IoxAtomic::<T>::new(n2);
 
-        let result = sut.fetch_min(n2, Ordering::Relaxed);
+        let result_1 = sut_1.fetch_min(n2, Ordering::Relaxed);
+        let result_2 = sut_2.fetch_min(n1, Ordering::Relaxed);
 
-        assert_that!(result, eq n1);
-        assert_that!(sut.load(Ordering::Relaxed), eq n1.min(n2));
+        assert_that!(result_1, eq n1);
+        assert_that!(result_2, eq n2);
+        assert_that!(sut_1.load(Ordering::Relaxed), eq n1.min(n2));
+        assert_that!(sut_2.load(Ordering::Relaxed), eq n1.min(n2));
     }
 
     #[test]
