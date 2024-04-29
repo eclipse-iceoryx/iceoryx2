@@ -52,6 +52,7 @@
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * `open`, `open_or_create` and `create` are untyped in pubsub-builder [#195](https://github.com/eclipse-iceoryx/iceoryx2/issues/195)
+ * use `ClockMode::Performance` instead of `ClockMode::Safety` in default deployment [#207](https://github.com/eclipse-iceoryx/iceoryx2/issues/207)
 
 ### Workflow
 
