@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    println!("exit ...");
+    println!("exit");
 
     Ok(())
 }

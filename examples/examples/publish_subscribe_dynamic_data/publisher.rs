@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Send sample {} ...", counter);
     }
 
-    println!("exit ...");
+    println!("exit");
 
     Ok(())
 }

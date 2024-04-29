@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Trigger event with id {} ...", counter);
     }
 
-    println!("exit ... ");
+    println!("exit");
 
     Ok(())
 }

@@ -10,10 +10,13 @@ samples up to a length of the max slice length can be allocated with `loan_slice
 turns out that the slice length is insufficient, a new publisher with a larger `max_slice_len` can
 be created.
 
- * **Note 1:** Be aware that the history of the old publisher is lost when it is removed.
- * **Note 2:** We are also working on an API that does not require the user to explicitly create a
-                new publisher whenever the memory is insufficient. It would also solve the
-                history issue.
+ > [!IMPORTANT]
+ > Be aware that the history of the old publisher is lost when it is removed.
+
+ > [!NOTE]
+ > We are also working on an API that does not require the user to explicitly create a
+ > new publisher whenever the memory is insufficient. It would also solve the
+ > history issue.
 
 ## Application does not remove services/ports on shutdown or several application restarts lead to port count exceeded
 
