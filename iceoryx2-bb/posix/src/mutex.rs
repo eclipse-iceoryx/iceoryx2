@@ -232,7 +232,7 @@ pub enum MutexType {
     /// the mutex can be locked multiple times by the same thread
     Recursive = posix::PTHREAD_MUTEX_RECURSIVE,
     /// if the call [`Mutex::lock()`] would cause a deadlock it returns an error instead of causing
-    /// an actual deadlock
+    /// an actual deadlock.
     WithDeadlockDetection = posix::PTHREAD_MUTEX_ERRORCHECK,
 }
 
@@ -638,10 +638,10 @@ impl<'a, T: Debug> Mutex<'a, T> {
                 handle_errno!(MutexTimedLockError, from self,
                     errno_source unsafe { posix::pthread_mutex_timedlock(self.handle.handle.get(), &timeout.as_timespec()) }.into(),
                     success Errno::ESUCCES => Some(MutexGuard { mutex: self });
-                    success Errno::ETIMEDOUT => None,
+                    success Errno::ETIMEDOUT => None;
+                    success Errno::EDEADLK => None,
                     Errno::EAGAIN => (MutexLockError(MutexLockError::ExceededMaximumNumberOfRecursiveLocks), "{} since the maximum number of recursive locks exceeded.", msg),
                     Errno::EINVAL => (TimeoutExceedsMaximumSupportedDuration, "{} since the timeout of {:?} exceeds the maximum supported duration.", msg, duration),
-                    Errno::EDEADLK => (MutexLockError(MutexLockError::DeadlockDetected), "{} since the operation would lead to a deadlock.", msg),
                     Errno::ENOTRECOVERABLE => (MutexLockError(MutexLockError::UnrecoverableState), "{} since the thread/process holding the mutex died and the next owner did not repair the state with Mutex::make_consistent.", msg),
                     v => (MutexLockError(MutexLockError::UnknownError(v as i32)), "{} since unknown error occurred while acquiring the lock ({})", msg, v)
                 )

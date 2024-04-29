@@ -258,34 +258,36 @@ fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
 
 #[test]
 fn mutex_deadlock_detection_works() {
-    let handle = MutexHandle::new();
-    let sut = MutexBuilder::new()
-        .mutex_type(MutexType::WithDeadlockDetection)
-        .create(5123, &handle)
-        .unwrap();
+    for clock_type in [ClockType::Monotonic, ClockType::Realtime] {
+        let handle = MutexHandle::new();
+        let sut = MutexBuilder::new()
+            .mutex_type(MutexType::WithDeadlockDetection)
+            .clock_type(clock_type)
+            .create(5123, &handle)
+            .unwrap();
 
-    let guard = sut.try_lock().unwrap();
-    assert_that!(guard, is_some);
-    let result = sut.try_lock().unwrap();
-    assert_that!(result, is_none);
+        let guard = sut.try_lock().unwrap();
+        assert_that!(guard, is_some);
+        let result = sut.try_lock().unwrap();
+        assert_that!(result, is_none);
 
-    drop(guard);
+        drop(guard);
 
-    let guard = sut.lock();
-    assert_that!(guard, is_ok);
-    let result = sut.lock();
-    assert_that!(result, is_err);
-    assert_that!(result.err().unwrap(), eq MutexLockError::DeadlockDetected);
+        let guard = sut.lock();
+        assert_that!(guard, is_ok);
+        let result = sut.lock();
+        assert_that!(result, is_err);
+        assert_that!(result.err().unwrap(), eq MutexLockError::DeadlockDetected);
 
-    drop(guard);
+        drop(guard);
 
-    let guard = sut.timed_lock(TIMEOUT).unwrap();
-    assert_that!(guard, is_some);
-    let result = sut.timed_lock(TIMEOUT);
-    assert_that!(result, is_ok);
-    assert_that!(result.unwrap(), is_none);
+        let guard = sut.timed_lock(TIMEOUT).unwrap();
+        assert_that!(guard, is_some);
+        let result = sut.timed_lock(TIMEOUT).unwrap();
+        assert_that!(result, is_none);
 
-    drop(guard);
+        drop(guard);
+    }
 }
 
 #[test]
