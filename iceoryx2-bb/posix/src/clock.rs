@@ -89,6 +89,17 @@ impl Default for ClockType {
     }
 }
 
+impl ClockType {
+    /// Returns a slice containing all supported [`ClockType`]s
+    pub fn all_supported_clocks() -> &'static [ClockType] {
+        if Feature::MonotonicClock.is_available() {
+            &[ClockType::Monotonic, ClockType::Realtime]
+        } else {
+            &[ClockType::Realtime]
+        }
+    }
+}
+
 /// Trait to convert constructs which represent time into the c pendant [`posix::timespec`]
 pub trait AsTimespec {
     fn as_timespec(&self) -> posix::timespec;

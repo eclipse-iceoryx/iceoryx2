@@ -611,13 +611,15 @@ pub trait MessageQueueSenderInterface<T>: internal::MessageQueueInterface + Debu
         match self.get().clock_type {
             ClockType::Realtime => {
                 self.get_mut().mq_set_nonblock(false);
+                let now = fail!(from self, when Time::now(),
+                            "{} since the current system time could not be acquired.", msg);
                 if unsafe {
                     posix::mq_timedsend(
                         self.get().mqdes,
                         (value as *const T) as *const posix::c_char,
                         std::mem::size_of::<T>(),
                         prio,
-                        &timeout.as_timespec(),
+                        &(timeout + now.as_duration()).as_timespec(),
                     )
                 } == 0
                 {
@@ -745,13 +747,15 @@ pub trait MessageQueueReceiverInterface<T>: internal::MessageQueueInterface + De
         match self.get().clock_type {
             ClockType::Realtime => {
                 self.get_mut().mq_set_nonblock(false);
+                let now = fail!(from self, when Time::now(),
+                            "{} since the current system time could not be acquired.", msg);
                 let received_bytes = unsafe {
                     posix::mq_timedreceive(
                         self.get().mqdes,
                         data.as_mut_ptr() as *mut posix::c_char,
                         std::mem::size_of::<T>(),
                         &mut priority,
-                        &timeout.as_timespec(),
+                        &(now.as_duration() + timeout).as_timespec(),
                     )
                 };
 
