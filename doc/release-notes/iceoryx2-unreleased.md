@@ -40,6 +40,7 @@
         sample.send()?;
     }
     ```
+ * Example that demonstrates publish-subscribe communication with dynamic data [#205](https://github.com/eclipse-iceoryx/iceoryx2/issues/205)
 
 ### Bugfixes
 
