@@ -106,6 +106,43 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn open_fails_when_service_has_wrong_slice_base_type<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<[u64]>()
+            .create();
+        assert_that!(sut, is_ok);
+
+        let sut2 = Sut::new(&service_name).publish_subscribe::<[i64]>().open();
+        assert_that!(sut2, is_err);
+        assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+    }
+
+    #[test]
+    fn open_fails_when_service_is_slice_based_and_typed_is_requested<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name)
+            .publish_subscribe::<[u64]>()
+            .create();
+        assert_that!(sut, is_ok);
+
+        let sut2 = Sut::new(&service_name).publish_subscribe::<u64>().open();
+        assert_that!(sut2, is_err);
+        assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+    }
+
+    #[test]
+    fn open_fails_when_service_is_type_based_and_slice_is_requested<Sut: Service>() {
+        let service_name = generate_name();
+        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        assert_that!(sut, is_ok);
+
+        let sut2 = Sut::new(&service_name).publish_subscribe::<[u64]>().open();
+        assert_that!(sut2, is_err);
+        assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+    }
+
+    #[test]
     fn open_fails_when_service_does_not_satisfy_max_publishers_requirement<Sut: Service>() {
         let service_name = generate_name();
         let sut = Sut::new(&service_name)
