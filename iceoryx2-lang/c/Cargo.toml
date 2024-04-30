@@ -1,0 +1,26 @@
+[package]
+name = "iceoryx2-lang-c"
+categories.workspace = true
+description.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+path = "src/lib.rs"
+name = "iceoryx2_lang_c"
+crate-type = ["cdylib", "staticlib"]
+
+[build-dependencies]
+cbindgen = { workspace = true }
+
+[dependencies]
+iceoryx2 = { workspace = true }
