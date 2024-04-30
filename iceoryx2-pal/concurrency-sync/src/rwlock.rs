@@ -26,15 +26,15 @@ pub struct RwLockReaderPreference {
 
 impl Default for RwLockReaderPreference {
     fn default() -> Self {
-        Self {
-            reader_count: AtomicU32::new(UNLOCKED),
-        }
+        Self::new()
     }
 }
 
 impl RwLockReaderPreference {
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        Self {
+            reader_count: AtomicU32::new(UNLOCKED),
+        }
     }
 
     pub fn try_read_lock(&self) -> WaitResult {
