@@ -12,6 +12,7 @@
 
 use core::{
     cell::UnsafeCell,
+    fmt::Debug,
     ops::{AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, Not, SubAssign},
     sync::atomic::Ordering,
 };
@@ -92,6 +93,7 @@ pub mod internal {
         + BitAnd<Output = Self>
         + Ord
         + Not<Output = Self>
+        + core::fmt::Debug
     {
         fn overflowing_add(self, rhs: Self) -> (Self, bool);
         fn overflowing_sub(self, rhs: Self) -> (Self, bool);
@@ -147,9 +149,23 @@ pub struct IoxAtomic<T: internal::AtomicInteger> {
     lock: LockType,
 }
 
+unsafe impl<T: internal::AtomicInteger> Send for IoxAtomic<T> {}
+unsafe impl<T: internal::AtomicInteger> Sync for IoxAtomic<T> {}
+
+impl<T: internal::AtomicInteger> Debug for IoxAtomic<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "IoxAtomic<{}> {{ value: {:?} }}",
+            core::any::type_name::<T>(),
+            self.load(Ordering::Relaxed),
+        )
+    }
+}
+
 impl<T: internal::AtomicInteger> IoxAtomic<T> {
     /// See [`core::sync::atomic::AtomicU64::new()`]
-    pub fn new(v: T) -> Self {
+    pub const fn new(v: T) -> Self {
         Self {
             data: UnsafeCell::new(v),
             lock: LockType::new(),

@@ -156,16 +156,16 @@ pub struct RwLockWriterPreference {
 
 impl Default for RwLockWriterPreference {
     fn default() -> Self {
-        Self {
-            state: IoxAtomicU32::new(UNLOCKED),
-            writer_wake_counter: IoxAtomicU32::new(0),
-        }
+        Self::new()
     }
 }
 
 impl RwLockWriterPreference {
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        Self {
+            state: IoxAtomicU32::new(UNLOCKED),
+            writer_wake_counter: IoxAtomicU32::new(0),
+        }
     }
 
     pub fn try_read_lock(&self) -> WaitResult {
