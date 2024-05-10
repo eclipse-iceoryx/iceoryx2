@@ -42,11 +42,8 @@
 //! }
 //! ```
 
-use std::{
-    cell::UnsafeCell,
-    mem::MaybeUninit,
-    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
-};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 
 /// The [`Producer`] of the [`Queue`] which can add values to it via [`Producer::push()`].
 pub struct Producer<'a, T: Copy, const CAPACITY: usize> {
@@ -87,10 +84,10 @@ impl<T: Copy, const CAPACITY: usize> Drop for Consumer<'_, T, CAPACITY> {
 /// The threadsafe lock-free with a compile time fixed capacity.
 pub struct Queue<T: Copy, const CAPACITY: usize> {
     data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
-    write_position: AtomicUsize,
-    read_position: AtomicUsize,
-    has_producer: AtomicBool,
-    has_consumer: AtomicBool,
+    write_position: IoxAtomicUsize,
+    read_position: IoxAtomicUsize,
+    has_producer: IoxAtomicBool,
+    has_consumer: IoxAtomicBool,
 }
 
 unsafe impl<T: Copy + Sync, const CAPACITY: usize> Sync for Queue<T, CAPACITY> {}
@@ -100,10 +97,10 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     pub fn new() -> Self {
         Self {
             data: core::array::from_fn(|_| UnsafeCell::new(MaybeUninit::uninit())),
-            write_position: AtomicUsize::new(0),
-            read_position: AtomicUsize::new(0),
-            has_producer: AtomicBool::new(true),
-            has_consumer: AtomicBool::new(true),
+            write_position: IoxAtomicUsize::new(0),
+            read_position: IoxAtomicUsize::new(0),
+            has_producer: IoxAtomicBool::new(true),
+            has_consumer: IoxAtomicBool::new(true),
         }
     }
 

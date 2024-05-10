@@ -101,12 +101,6 @@
 //! # }
 //! ```
 
-use std::cell::UnsafeCell;
-use std::fmt::Debug;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
-
 use super::port_identifiers::UniquePublisherId;
 use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
@@ -135,6 +129,12 @@ use iceoryx2_cal::shm_allocator::{self, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
+use std::cell::UnsafeCell;
+use std::fmt::Debug;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 /// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
@@ -191,7 +191,7 @@ impl std::error::Error for PublisherSendError {}
 
 #[derive(Debug)]
 pub(crate) struct DataSegment<Service: service::Service> {
-    sample_reference_counter: Vec<AtomicU64>,
+    sample_reference_counter: Vec<IoxAtomicU64>,
     memory: Service::SharedMemory,
     payload_size: usize,
     payload_type_layout: Layout,
@@ -203,8 +203,8 @@ pub(crate) struct DataSegment<Service: service::Service> {
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<usize>>>,
     static_config: crate::service::static_config::StaticConfig,
-    loan_counter: AtomicUsize,
-    is_active: AtomicBool,
+    loan_counter: IoxAtomicUsize,
+    is_active: IoxAtomicBool,
 }
 
 impl<Service: service::Service> DataSegment<Service> {
@@ -535,7 +535,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
 
         let max_slice_len = config.max_slice_len;
         let data_segment = Arc::new(DataSegment {
-            is_active: AtomicBool::new(true),
+            is_active: IoxAtomicBool::new(true),
             memory: data_segment,
             payload_size: static_config
                 .type_details()
@@ -547,7 +547,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
             sample_reference_counter: {
                 let mut v = Vec::with_capacity(number_of_samples);
                 for _ in 0..number_of_samples {
-                    v.push(AtomicU64::new(0));
+                    v.push(IoxAtomicU64::new(0));
                 }
                 v
             },
@@ -567,7 +567,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
                 false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
             },
             static_config: service.state().static_config.clone(),
-            loan_counter: AtomicUsize::new(0),
+            loan_counter: IoxAtomicUsize::new(0),
         });
 
         let mut new_self = Self {

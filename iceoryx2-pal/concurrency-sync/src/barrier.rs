@@ -10,26 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{
-    hint::spin_loop,
-    sync::atomic::{AtomicU32, Ordering},
-};
+use core::{hint::spin_loop, sync::atomic::Ordering};
 
+use crate::iox_atomic::IoxAtomicU32;
 use crate::SPIN_REPETITIONS;
 
 #[derive(Debug)]
 pub struct Barrier {
-    waiters: AtomicU32,
+    waiters: IoxAtomicU32,
 }
 
 impl Barrier {
     pub fn new(number_of_waiters: u32) -> Self {
         Self {
-            waiters: AtomicU32::new(number_of_waiters),
+            waiters: IoxAtomicU32::new(number_of_waiters),
         }
     }
 
-    pub fn wait<Wait: Fn(&AtomicU32, &u32), WakeAll: Fn(&AtomicU32)>(
+    pub fn wait<Wait: Fn(&IoxAtomicU32, &u32), WakeAll: Fn(&IoxAtomicU32)>(
         &self,
         wait: Wait,
         wake_all: WakeAll,

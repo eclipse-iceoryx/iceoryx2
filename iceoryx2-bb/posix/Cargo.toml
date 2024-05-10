@@ -20,6 +20,7 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }
 
 lazy_static = { workspace = true }
 bitflags = { workspace = true }

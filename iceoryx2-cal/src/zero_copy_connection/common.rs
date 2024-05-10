@@ -12,10 +12,11 @@
 
 #[doc(hidden)]
 pub mod details {
+    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8};
     use std::cell::UnsafeCell;
     use std::fmt::Debug;
     use std::marker::PhantomData;
-    use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
+    use std::sync::atomic::Ordering;
 
     use crate::dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
@@ -157,8 +158,8 @@ pub mod details {
         max_borrowed_samples: usize,
         sample_size: usize,
         number_of_samples: usize,
-        state: AtomicU8,
-        init_state: AtomicU64,
+        state: IoxAtomicU8,
+        init_state: IoxAtomicU64,
         enable_safe_overflow: bool,
     }
 
@@ -181,8 +182,8 @@ pub mod details {
                     RelocatableIndexQueue::new_uninit(completion_channel_buffer_capacity)
                 },
                 used_chunk_list: unsafe { RelocatableUsedChunkList::new_uninit(number_of_samples) },
-                state: AtomicU8::new(State::None.value()),
-                init_state: AtomicU64::new(0),
+                state: IoxAtomicU8::new(State::None.value()),
+                init_state: IoxAtomicU64::new(0),
                 enable_safe_overflow,
                 sample_size,
                 max_borrowed_samples,

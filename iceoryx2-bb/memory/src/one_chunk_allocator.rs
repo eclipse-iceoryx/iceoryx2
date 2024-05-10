@@ -44,7 +44,8 @@
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
 use iceoryx2_bb_log::fail;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
+use std::sync::atomic::Ordering;
 
 pub use iceoryx2_bb_elementary::allocator::*;
 use iceoryx2_bb_elementary::math::align;
@@ -54,7 +55,7 @@ pub use std::alloc::Layout;
 pub struct OneChunkAllocator {
     start: usize,
     size: usize,
-    allocated_chunk_start: AtomicUsize,
+    allocated_chunk_start: IoxAtomicUsize,
 }
 
 impl OneChunkAllocator {
@@ -62,7 +63,7 @@ impl OneChunkAllocator {
         OneChunkAllocator {
             start: ptr.as_ptr() as usize,
             size,
-            allocated_chunk_start: AtomicUsize::new(0),
+            allocated_chunk_start: IoxAtomicUsize::new(0),
         }
     }
 

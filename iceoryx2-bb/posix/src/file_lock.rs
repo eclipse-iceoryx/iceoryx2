@@ -44,11 +44,12 @@ use crate::process::{Process, ProcessId};
 use crate::{clock::Time, file_descriptor::FileDescriptorBased};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 use std::fmt::Debug;
-use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::atomic::Ordering;
 use std::{ops::Deref, ops::DerefMut, time::Duration};
 
 use crate::{
@@ -268,7 +269,7 @@ impl FileLockBuilder {
 pub struct FileLock<'a, T: FileDescriptorBased + Debug> {
     file: ReadWriteMutex<'a, T>,
     clock_type: ClockType,
-    lock_state: AtomicI64,
+    lock_state: IoxAtomicI64,
 }
 
 unsafe impl<T: Send + FileDescriptorBased + Debug> Send for FileLock<'_, T> {}
@@ -321,7 +322,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
                 .create(value, handle),
                 "Failed to create ReadWriteMutex for FileLock."),
             clock_type: config.clock_type,
-            lock_state: AtomicI64::new(0),
+            lock_state: IoxAtomicI64::new(0),
         })
     }
 

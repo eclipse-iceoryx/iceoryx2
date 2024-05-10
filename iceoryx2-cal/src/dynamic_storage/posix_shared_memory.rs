@@ -39,6 +39,9 @@
 //! storage.get().store(456, Ordering::Relaxed);
 //!
 //! ```
+pub use crate::dynamic_storage::*;
+use crate::static_storage::file::NamedConceptConfiguration;
+use crate::static_storage::file::NamedConceptRemoveError;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::warn;
@@ -46,17 +49,13 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
+use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::ptr::NonNull;
-use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
-
-pub use crate::dynamic_storage::*;
-use crate::static_storage::file::NamedConceptConfiguration;
-use crate::static_storage::file::NamedConceptRemoveError;
-use iceoryx2_bb_system_types::path::Path;
 pub use std::ops::Deref;
+use std::ptr::NonNull;
+use std::sync::atomic::Ordering;
 
 use self::dynamic_storage_configuration::DynamicStorageConfiguration;
 
@@ -95,7 +94,7 @@ impl<T: Send + Sync + Debug> Clone for Configuration<T> {
 
 #[repr(C)]
 struct Data<T: Send + Sync + Debug> {
-    version: AtomicU64,
+    version: IoxAtomicU64,
     data: T,
 }
 
@@ -277,7 +276,7 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
         let msg = "Failed to init dynamic_storage::PosixSharedMemory";
         let value = shm.base_address().as_ptr() as *mut Data<T>;
         let version_ptr = unsafe { core::ptr::addr_of_mut!((*value).version) };
-        unsafe { version_ptr.write(AtomicU64::new(0)) };
+        unsafe { version_ptr.write(IoxAtomicU64::new(0)) };
 
         unsafe { core::ptr::addr_of_mut!((*value).data).write(initial_value) };
 

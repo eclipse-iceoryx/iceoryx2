@@ -43,12 +43,8 @@
 //! }
 //! ```
 
-use std::{
-    alloc::Layout,
-    cell::UnsafeCell,
-    fmt::Debug,
-    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
-};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+use std::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::{
     math::align_to, owning_pointer::OwningPointer, pointer_trait::PointerTrait,
@@ -119,11 +115,11 @@ pub mod details {
     pub struct SafelyOverflowingIndexQueue<PointerType: PointerTrait<UnsafeCell<usize>>> {
         data_ptr: PointerType,
         capacity: usize,
-        write_position: AtomicUsize,
-        read_position: AtomicUsize,
-        pub(super) has_producer: AtomicBool,
-        pub(super) has_consumer: AtomicBool,
-        is_memory_initialized: AtomicBool,
+        write_position: IoxAtomicUsize,
+        read_position: IoxAtomicUsize,
+        pub(super) has_producer: IoxAtomicBool,
+        pub(super) has_consumer: IoxAtomicBool,
+        is_memory_initialized: IoxAtomicBool,
     }
 
     unsafe impl<PointerType: PointerTrait<UnsafeCell<usize>>> Sync
@@ -146,11 +142,11 @@ pub mod details {
             Self {
                 data_ptr,
                 capacity,
-                write_position: AtomicUsize::new(0),
-                read_position: AtomicUsize::new(0),
-                has_producer: AtomicBool::new(true),
-                has_consumer: AtomicBool::new(true),
-                is_memory_initialized: AtomicBool::new(true),
+                write_position: IoxAtomicUsize::new(0),
+                read_position: IoxAtomicUsize::new(0),
+                has_producer: IoxAtomicBool::new(true),
+                has_consumer: IoxAtomicBool::new(true),
+                is_memory_initialized: IoxAtomicBool::new(true),
             }
         }
     }
@@ -160,11 +156,11 @@ pub mod details {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
                 capacity,
-                write_position: AtomicUsize::new(0),
-                read_position: AtomicUsize::new(0),
-                has_producer: AtomicBool::new(true),
-                has_consumer: AtomicBool::new(true),
-                is_memory_initialized: AtomicBool::new(false),
+                write_position: IoxAtomicUsize::new(0),
+                read_position: IoxAtomicUsize::new(0),
+                has_producer: IoxAtomicBool::new(true),
+                has_consumer: IoxAtomicBool::new(true),
+                is_memory_initialized: IoxAtomicBool::new(false),
             }
         }
 
@@ -196,11 +192,11 @@ pub mod details {
             Self {
                 data_ptr: RelocatablePointer::new(distance_to_data),
                 capacity,
-                write_position: AtomicUsize::new(0),
-                read_position: AtomicUsize::new(0),
-                has_producer: AtomicBool::new(true),
-                has_consumer: AtomicBool::new(true),
-                is_memory_initialized: AtomicBool::new(true),
+                write_position: IoxAtomicUsize::new(0),
+                read_position: IoxAtomicUsize::new(0),
+                has_producer: IoxAtomicBool::new(true),
+                has_consumer: IoxAtomicBool::new(true),
+                is_memory_initialized: IoxAtomicBool::new(true),
             }
         }
 

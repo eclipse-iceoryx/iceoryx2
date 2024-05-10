@@ -18,8 +18,9 @@ use crate::shared_memory_directory::MAX_NUMBER_OF_ENTRIES;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::FixedSizeUniqueIndexSet;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use std::cell::UnsafeCell;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::Ordering;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct FileReferenceSetId(usize);
@@ -49,7 +50,7 @@ pub(crate) struct FileReferenceSet {
     counter: [ReferenceCounter; MAX_NUMBER_OF_ENTRIES],
     decision_counter: [DecisionCounter; MAX_NUMBER_OF_ENTRIES],
     ids: FixedSizeUniqueIndexSet<MAX_NUMBER_OF_ENTRIES>,
-    global_decision_counter: AtomicU64,
+    global_decision_counter: IoxAtomicU64,
 }
 
 unsafe impl Send for FileReferenceSet {}
@@ -69,7 +70,7 @@ impl Default for FileReferenceSet {
             counter: [COUNTER; MAX_NUMBER_OF_ENTRIES],
             decision_counter: [DECISION; MAX_NUMBER_OF_ENTRIES],
             ids: FixedSizeUniqueIndexSet::new(),
-            global_decision_counter: AtomicU64::new(0),
+            global_decision_counter: IoxAtomicU64::new(0),
         }
     }
 }

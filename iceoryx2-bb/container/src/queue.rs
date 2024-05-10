@@ -97,16 +97,15 @@
 //!
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::math::align_to;
+use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
+pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_log::{fail, fatal_panic};
-use std::sync::atomic::AtomicBool;
-use std::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
-
-use iceoryx2_bb_elementary::math::unaligned_mem_size;
-pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::marker::PhantomData;
+use std::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
 
 /// Queue with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableQueue`] it is movable but is not shared memory compatible.
@@ -124,7 +123,7 @@ pub mod details {
         start: usize,
         len: usize,
         capacity: usize,
-        is_initialized: AtomicBool,
+        is_initialized: IoxAtomicBool,
         _phantom_data: PhantomData<T>,
     }
 
@@ -138,7 +137,7 @@ pub mod details {
                 start: 0,
                 len: 0,
                 capacity,
-                is_initialized: AtomicBool::new(true),
+                is_initialized: IoxAtomicBool::new(true),
                 _phantom_data: PhantomData,
             }
         }
@@ -200,7 +199,7 @@ pub mod details {
                 start: 0,
                 len: 0,
                 capacity,
-                is_initialized: AtomicBool::new(true),
+                is_initialized: IoxAtomicBool::new(true),
                 _phantom_data: PhantomData,
             }
         }
@@ -211,7 +210,7 @@ pub mod details {
                 start: 0,
                 len: 0,
                 capacity,
-                is_initialized: AtomicBool::new(false),
+                is_initialized: IoxAtomicBool::new(false),
                 _phantom_data: PhantomData,
             }
         }

@@ -10,16 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{sync::atomic::AtomicBool, time::Duration};
+use core::time::Duration;
 use std::{
     sync::{atomic::Ordering, Arc},
     thread,
     time::Instant,
 };
 
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+
 pub struct Watchdog {
     termination_thread: Option<thread::JoinHandle<()>>,
-    keep_running: Arc<AtomicBool>,
+    keep_running: Arc<IoxAtomicBool>,
 }
 
 impl Drop for Watchdog {
@@ -38,7 +40,7 @@ impl Default for Watchdog {
 
 impl Watchdog {
     pub fn new_with_timeout(timeout: Duration) -> Self {
-        let keep_running = Arc::new(AtomicBool::new(true));
+        let keep_running = Arc::new(IoxAtomicBool::new(true));
 
         Self {
             keep_running: keep_running.clone(),

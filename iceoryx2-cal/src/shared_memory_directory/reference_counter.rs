@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::sync::atomic::Ordering;
 
 struct ReferenceCounterDetails {
     reference_counter: u64,
@@ -40,11 +41,11 @@ impl ReferenceCounterDetails {
 }
 
 #[derive(Debug)]
-pub(crate) struct ReferenceCounter(AtomicU64);
+pub(crate) struct ReferenceCounter(IoxAtomicU64);
 
 impl ReferenceCounter {
     pub(crate) const fn new(value: u64) -> ReferenceCounter {
-        ReferenceCounter(AtomicU64::new(value))
+        ReferenceCounter(IoxAtomicU64::new(value))
     }
 
     pub(crate) fn reset(&self) {

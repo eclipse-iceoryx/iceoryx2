@@ -36,12 +36,6 @@
 //!  });
 //!  ```
 
-use std::{
-    alloc::Layout,
-    fmt::Debug,
-    sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering},
-};
-
 use iceoryx2_bb_elementary::{
     math::align_to,
     math::unaligned_mem_size,
@@ -49,6 +43,8 @@ use iceoryx2_bb_elementary::{
     relocatable_container::RelocatableContainer,
     relocatable_ptr::{PointerTrait, RelocatablePointer},
 };
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
+use std::{alloc::Layout, fmt::Debug, sync::atomic::Ordering};
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 
@@ -62,7 +58,7 @@ pub mod details {
 
     use super::*;
 
-    pub type BitsetElement = AtomicU8;
+    pub type BitsetElement = IoxAtomicU8;
     const BITSET_ELEMENT_BITSIZE: usize = core::mem::size_of::<BitsetElement>() * 8;
 
     struct Id {
@@ -85,8 +81,8 @@ pub mod details {
         data_ptr: PointerType,
         capacity: usize,
         array_capacity: usize,
-        reset_position: AtomicUsize,
-        is_memory_initialized: AtomicBool,
+        reset_position: IoxAtomicUsize,
+        is_memory_initialized: IoxAtomicBool,
     }
 
     unsafe impl<PointerType: PointerTrait<BitsetElement>> Send for BitSet<PointerType> {}
@@ -111,8 +107,8 @@ pub mod details {
                 data_ptr,
                 capacity,
                 array_capacity,
-                is_memory_initialized: AtomicBool::new(true),
-                reset_position: AtomicUsize::new(0),
+                is_memory_initialized: IoxAtomicBool::new(true),
+                reset_position: IoxAtomicUsize::new(0),
             }
         }
     }
@@ -123,8 +119,8 @@ pub mod details {
                 data_ptr: RelocatablePointer::new_uninit(),
                 capacity,
                 array_capacity: Self::array_capacity(capacity),
-                is_memory_initialized: AtomicBool::new(false),
-                reset_position: AtomicUsize::new(0),
+                is_memory_initialized: IoxAtomicBool::new(false),
+                reset_position: IoxAtomicUsize::new(0),
             }
         }
 
@@ -170,8 +166,8 @@ pub mod details {
                 data_ptr: RelocatablePointer::new(distance_to_data),
                 capacity,
                 array_capacity: Self::array_capacity(capacity),
-                is_memory_initialized: AtomicBool::new(true),
-                reset_position: AtomicUsize::new(0),
+                is_memory_initialized: IoxAtomicBool::new(true),
+                reset_position: IoxAtomicUsize::new(0),
             }
         }
     }

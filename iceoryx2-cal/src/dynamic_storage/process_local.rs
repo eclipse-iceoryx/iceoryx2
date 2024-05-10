@@ -44,6 +44,7 @@ use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use once_cell::sync::Lazy;
 use std::alloc::Layout;
 use std::any::Any;
@@ -51,7 +52,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 pub use crate::dynamic_storage::*;
@@ -187,7 +188,7 @@ static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashMap<FilePath, StorageEntry>>> = Laz
 pub struct Storage<T: Send + Sync + Debug + 'static> {
     name: FileName,
     data: Arc<StorageDetails<T>>,
-    has_ownership: AtomicBool,
+    has_ownership: IoxAtomicBool,
     config: Configuration<T>,
 }
 
@@ -359,7 +360,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
                 .clone()
                 .downcast::<StorageDetails<T>>()
                 .unwrap(),
-            has_ownership: AtomicBool::new(false),
+            has_ownership: IoxAtomicBool::new(false),
             config: self.config.clone(),
         })
     }
@@ -417,7 +418,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
                 .clone()
                 .downcast::<StorageDetails<T>>()
                 .unwrap(),
-            has_ownership: AtomicBool::new(self.has_ownership),
+            has_ownership: IoxAtomicBool::new(self.has_ownership),
             config: self.config.clone(),
         })
     }

@@ -10,10 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
-    fmt::Display,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::{fmt::Display, sync::atomic::Ordering};
 
 /// Represents the crates version acquired through the internal environment variables set by cargo,
 /// ("CARGO_PKG_VERSION_{MAJOR|MINOR|PATCH}").
@@ -65,7 +63,7 @@ impl PackageVersion {
 
     /// Returns the current [`PackageVersion`]
     pub fn get() -> PackageVersion {
-        static PACKAGE_VERSION: AtomicU64 = AtomicU64::new(0);
+        static PACKAGE_VERSION: IoxAtomicU64 = IoxAtomicU64::new(0);
 
         if PACKAGE_VERSION.load(Ordering::Relaxed) == 0 {
             let major = option_env!("CARGO_PKG_VERSION_MAJOR")

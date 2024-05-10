@@ -11,21 +11,22 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{allocator::BaseAllocator, math::align};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
+use std::sync::atomic::Ordering;
 
 /// Simple BumpAllocator for testing purposes. Do not use this in production. If you are looking
 /// for a production ready BumpAllocator use the one from iceoryx2_bb_memory::bump_allocator
 #[doc(hidden)]
 pub struct BumpAllocator {
     start: usize,
-    pos: AtomicUsize,
+    pos: IoxAtomicUsize,
 }
 
 impl BumpAllocator {
     pub fn new(start: usize) -> Self {
         Self {
             start,
-            pos: AtomicUsize::new(start),
+            pos: IoxAtomicUsize::new(start),
         }
     }
 }
