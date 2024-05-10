@@ -29,6 +29,12 @@ pub struct Logger {
     ordering_mode: ConsoleLogOrder,
 }
 
+impl Default for Logger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Logger {
     pub const fn new() -> Self {
         Self {

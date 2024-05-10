@@ -47,6 +47,12 @@ pub struct LazySingleton<T> {
 unsafe impl<T: Send> Send for LazySingleton<T> {}
 unsafe impl<T: Send + Sync> Sync for LazySingleton<T> {}
 
+impl<T> Default for LazySingleton<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> LazySingleton<T> {
     /// Creates a new [`LazySingleton`] where the underlying value is not yet initialized.
     pub const fn new() -> Self {
