@@ -20,10 +20,8 @@ use windows_sys::Win32::{
 };
 
 use crate::posix::{c_string_length, types::*};
-use std::{
-    cell::UnsafeCell,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
 const IS_INITIALIZED: u64 = 0xaffedeadbeef;
 const INITIALIZATION_IN_PROGRESS: u64 = 0xbebebebebebebebe;
@@ -33,13 +31,13 @@ const UNINITIALIZED_ENTRY: u64 = 1;
 pub(crate) const MAX_UDS_NAME_LEN: usize = 108;
 
 struct Entry {
-    aba_counter: AtomicU64,
+    aba_counter: IoxAtomicU64,
     value: [UnsafeCell<[u8; MAX_UDS_NAME_LEN]>; 2],
 }
 
 impl Entry {
     fn initialize(&mut self) {
-        self.aba_counter = AtomicU64::new(UNINITIALIZED_ENTRY);
+        self.aba_counter = IoxAtomicU64::new(UNINITIALIZED_ENTRY);
         self.value = [
             UnsafeCell::new([0; MAX_UDS_NAME_LEN]),
             UnsafeCell::new([0; MAX_UDS_NAME_LEN]),
@@ -120,7 +118,7 @@ fn normalized_name(name: &[u8]) -> [u8; MAX_UDS_NAME_LEN] {
 
 #[repr(C)]
 struct PortToUdsNameMap {
-    init_check: AtomicU64,
+    init_check: IoxAtomicU64,
     uds_names: [Entry; 65535],
 }
 

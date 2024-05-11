@@ -15,10 +15,10 @@
 #![allow(unused_variables)]
 
 use std::fmt::Debug;
-use std::sync::atomic::AtomicU64;
 
 use iceoryx2_pal_concurrency_sync::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::condition_variable::*;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
 use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
@@ -159,7 +159,7 @@ pub struct pthread_mutex_t {
     pub(crate) mtx: Mutex,
     pub(crate) track_thread_id: bool,
     pub(crate) mtype: int,
-    pub(crate) current_owner: AtomicU64,
+    pub(crate) current_owner: IoxAtomicU64,
     pub(crate) inconsistent_state: bool,
     pub(crate) unrecoverable_state: bool,
 }
@@ -168,7 +168,7 @@ impl Struct for pthread_mutex_t {
         Self {
             mtx: Mutex::new(),
             mtype: PTHREAD_MUTEX_NORMAL,
-            current_owner: AtomicU64::new(0),
+            current_owner: IoxAtomicU64::new(0),
             track_thread_id: false,
             inconsistent_state: false,
             unrecoverable_state: false,
