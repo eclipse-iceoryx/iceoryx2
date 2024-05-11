@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary::allocator::*;
+use iceoryx2_bb_elementary::{allocator::*, math::align};
 use iceoryx2_bb_memory::{bump_allocator::BumpAllocator, pool_allocator::*};
 use iceoryx2_bb_testing::assert_that;
 
@@ -495,12 +495,13 @@ fn pool_allocator_relocatable_acquire_all_memory_works() {
         sut.number_of_buckets(), ge
              TestFixture::calc_min_number_of_buckets(BUCKET_SIZE, BUCKET_ALIGNMENT)
     );
+
+    let start_addr = align(test.get_memory() as usize, BUCKET_ALIGNMENT);
     for i in 0..sut.number_of_buckets() {
         let memory = sut
             .allocate(unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) })
             .expect("");
-
-        let addr = unsafe { test.get_memory().offset(i as isize * BUCKET_SIZE as isize) as usize };
+        let addr = start_addr + i as usize * BUCKET_SIZE;
         assert_that!((unsafe { memory.as_ref() }.as_ptr()) as usize, eq addr);
         assert_that!(addr, mod BUCKET_ALIGNMENT, is 0);
         assert_that!(unsafe { memory.as_ref() }, len CHUNK_SIZE);
