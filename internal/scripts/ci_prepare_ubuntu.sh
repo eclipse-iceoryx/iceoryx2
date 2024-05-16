@@ -13,7 +13,7 @@
 #!/bin/bash
 
 sudo apt-get update
-sudo apt-get install -y clang curl git libacl1-dev build-essential flex libelf-dev libc6-dev-amd64 binutils-dev libdwarf-dev libc6-dev
+sudo apt-get install -y clang curl git libacl1-dev build-essential flex libelf-dev binutils-dev libdwarf-dev libc6-dev libc6-dev-i386 gcc-multilib-i686-linux-gnu libc6-dev-i386-cross
 sudo useradd testuser1
 sudo useradd testuser2
 sudo groupadd testgroup1
