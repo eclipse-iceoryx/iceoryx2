@@ -5,7 +5,7 @@ and to announce the release of iceoryx generation 2, crafted entirely in
 Rust. As one of the main developers of iceoryx, this journey commenced over a
 year ago as a personal side project.
 
-Iceoryx2, or iceoryx generation 2, is poised to inherit all the familiar
+iceoryx2, or iceoryx generation 2, is poised to inherit all the familiar
 features you've come to rely on from its predecessor. In its initial release,
 expect support for publish-subscribe, service discovery, and dedicated event
 messaging — all without the need for a central broker (RouDi).
@@ -85,7 +85,7 @@ causing frustration.
 Why dwell in the abstract when we can scrutinize a real-world example, comparing
 iceoryx (C++) to iceoryx2 (Rust)? Brace yourself for a journey into a future where
 Rust takes the lead in inter-process zero-copy communication within our specialized
-domain. Iceoryx2 is not just an upgrade — it's a leap forward into a safer, more
+domain. iceoryx2 is not just an upgrade — it's a leap forward into a safer, more
 efficient era.
 
 ## Example: Sending Data

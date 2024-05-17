@@ -27,4 +27,4 @@ cargo run --example event_notifier
 ```
 
 Feel free to run multiple listeners or notifiers concurrently to observe how
-Iceoryx2 efficiently handles event signaling across processes.
+iceoryx2 efficiently handles event signaling across processes.

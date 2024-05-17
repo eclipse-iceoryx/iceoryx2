@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! # Iceoryx2
+//! # iceoryx2
 //!
-//! Iceoryx2 is a cutting-edge service-oriented zero-copy lock-free inter-process communication
+//! iceoryx2 is a cutting-edge service-oriented zero-copy lock-free inter-process communication
 //! middleware. Designed to support various
 //! [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern)s
-//! Iceoryx2 empowers developers with
+//! iceoryx2 empowers developers with
 //! the flexibility of:
 //!
 //! - Publish-Subscribe
@@ -36,9 +36,9 @@
 //! on the same machine or even within the same process without interference. This versatility
 //! allows iceoryx2 to seamlessly integrate with other frameworks simultaneously.
 //!
-//! Iceoryx2 traces its lineage back to the
+//! iceoryx2 traces its lineage back to the
 //! [eclipse iceoryx](https://github.com/eclipse-iceoryx/iceoryx) project, addressing a major
-//! drawback – the central daemon. Iceoryx2 embraces a fully decentralized architecture,
+//! drawback – the central daemon. iceoryx2 embraces a fully decentralized architecture,
 //! eliminating the need for a central daemon entirely.
 //!
 //! # Examples
@@ -267,7 +267,7 @@
 //!
 //! # Custom Configuration
 //!
-//! Iceoryx2 offers the flexibility to configure default quality of service settings, paths, and
+//! iceoryx2 offers the flexibility to configure default quality of service settings, paths, and
 //! file suffixes through a custom configuration file.
 //!
 //! For in-depth details and examples, please visit the

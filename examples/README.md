@@ -1,15 +1,15 @@
 # Examples
 
-## Foundations of Communication in Iceoryx2 Applications
+## Foundations of Communication in iceoryx2 Applications
 
-In the world of Iceoryx2, communication is at the core of everything. To
+In the world of iceoryx2, communication is at the core of everything. To
 facilitate seamless communication, we always begin by opening or creating a
-service, the fundamental building block of an Iceoryx2 application. Services
+service, the fundamental building block of an iceoryx2 application. Services
 serve as the conduit through which different parts of your application
 interact.
 
 The type of service you create is defined by a messaging pattern, which
-dictates how data flows between participants. Iceoryx2 supports various
+dictates how data flows between participants. iceoryx2 supports various
 messaging patterns, including:
 
 * **Publish-Subscribe:** In this pattern, a publisher sends a continuous stream

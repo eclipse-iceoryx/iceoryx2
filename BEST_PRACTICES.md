@@ -24,7 +24,7 @@
 ### Error Handling
 
  * Never return `Err(...)`, always use `fail!` macro.
-   * Iceoryx2 shall always log a message to `DEBUG` whenever an `Err(...)` is.
+   * iceoryx2 shall always log a message to `DEBUG` whenever an `Err(...)` is.
    * When providing for instance `self` as origin, the current state of the object that caused the
      problem is logged.
 
@@ -50,7 +50,7 @@
 ### Fatal Error Handling
 
  * Never call `panic!(...)` directly, always use the `fatal_panic!` macro.
-   * Iceoryx2 shall always log a message to `FATAL` whenever a panic occurs.
+   * iceoryx2 shall always log a message to `FATAL` whenever a panic occurs.
    * When providing for instance `self` as origin, the current state of the object that caused the
      problem is logged.
 
