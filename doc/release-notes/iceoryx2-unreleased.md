@@ -40,8 +40,11 @@
         sample.send()?;
     }
     ```
- * Introduce `IoxAtomic` that supports up to 128bit atomics on 32-bit architecture with a ReadWriteLock [#200](https://github.com/eclipse-iceoryx/iceoryx2/issues/200)
+ * 32-bit support [#200](https://github.com/eclipse-iceoryx/iceoryx2/issues/200)
+    * Introduce `IoxAtomic` that supports up to 128bit atomics on 32-bit architecture with a ReadWriteLock
+    * add CI targets to officially support 32-bit
  * Example that demonstrates publish-subscribe communication with dynamic data [#205](https://github.com/eclipse-iceoryx/iceoryx2/issues/205)
+
 
 ### Bugfixes
 

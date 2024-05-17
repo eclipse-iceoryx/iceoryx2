@@ -55,9 +55,9 @@ use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 pub use iceoryx2_bb_elementary::allocator::*;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 pub use std::alloc::Layout;
 use std::cell::UnsafeCell;
-use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
 #[derive(Debug)]
@@ -67,7 +67,7 @@ pub struct PoolAllocator {
     bucket_alignment: usize,
     start: usize,
     size: usize,
-    is_memory_initialized: AtomicBool,
+    is_memory_initialized: IoxAtomicBool,
 }
 
 impl PoolAllocator {
@@ -116,7 +116,7 @@ impl PoolAllocator {
             bucket_alignment: bucket_layout.align(),
             start: adjusted_start,
             size,
-            is_memory_initialized: AtomicBool::new(false),
+            is_memory_initialized: IoxAtomicBool::new(false),
         }
     }
 
@@ -326,7 +326,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
                 bucket_alignment: bucket_layout.align(),
                 start: adjusted_start,
                 size,
-                is_memory_initialized: AtomicBool::new(true),
+                is_memory_initialized: IoxAtomicBool::new(true),
             },
             next_free_index: std::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
             next_free_index_plus_one: UnsafeCell::new(MAX_NUMBER_OF_BUCKETS as u32 + 1),

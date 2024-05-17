@@ -65,7 +65,8 @@
 //! ```
 
 pub use crate::pointer_trait::PointerTrait;
-use std::{marker::PhantomData, ptr::NonNull, sync::atomic::AtomicIsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicIsize;
+use std::{marker::PhantomData, ptr::NonNull};
 
 /// A [`RelocatablePointer`] stores only the distance from its memory starting position to the
 /// memory location it is pointing to. When the [`RelocatablePointer`] is now shared between
@@ -83,7 +84,7 @@ use std::{marker::PhantomData, ptr::NonNull, sync::atomic::AtomicIsize};
 #[repr(C)]
 #[derive(Debug)]
 pub struct RelocatablePointer<T> {
-    distance: AtomicIsize,
+    distance: IoxAtomicIsize,
     _phantom: PhantomData<T>,
 }
 
@@ -92,7 +93,7 @@ impl<T> RelocatablePointer<T> {
     /// destination starting from the memory location of this [`RelocatablePointer`].
     pub fn new(distance: isize) -> Self {
         Self {
-            distance: AtomicIsize::new(distance),
+            distance: IoxAtomicIsize::new(distance),
             _phantom: PhantomData,
         }
     }

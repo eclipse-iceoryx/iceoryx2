@@ -75,13 +75,7 @@
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 
-use std::{
-    alloc::Layout,
-    mem::MaybeUninit,
-    ops::Deref,
-    ops::DerefMut,
-    sync::atomic::{AtomicBool, Ordering},
-};
+use std::{alloc::Layout, mem::MaybeUninit, ops::Deref, ops::DerefMut, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::{
     math::{align_to, unaligned_mem_size},
@@ -90,6 +84,7 @@ use iceoryx2_bb_elementary::{
     relocatable_ptr::RelocatablePointer,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 /// **Non-movable** relocatable vector with runtime fixed size capacity.
 #[repr(C)]
@@ -98,7 +93,7 @@ pub struct RelocatableVec<T> {
     data_ptr: RelocatablePointer<MaybeUninit<T>>,
     capacity: usize,
     len: usize,
-    is_initialized: AtomicBool,
+    is_initialized: IoxAtomicBool,
 }
 
 unsafe impl<T: Send> Send for RelocatableVec<T> {}
@@ -115,7 +110,7 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
             data_ptr: RelocatablePointer::new(distance_to_data),
             capacity,
             len: 0,
-            is_initialized: AtomicBool::new(true),
+            is_initialized: IoxAtomicBool::new(true),
         }
     }
 
@@ -124,7 +119,7 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
             data_ptr: RelocatablePointer::new_uninit(),
             capacity,
             len: 0,
-            is_initialized: AtomicBool::new(false),
+            is_initialized: IoxAtomicBool::new(false),
         }
     }
 

@@ -14,14 +14,14 @@ use iceoryx2_bb_testing::assert_that;
 
 #[derive(Clone, Copy, Debug)]
 struct TestType {
-    some_numbers: [usize; 128],
+    some_numbers: [usize; 32],
 }
 
 impl From<usize> for TestType {
     fn from(value: usize) -> Self {
         TestType {
             some_numbers: {
-                let mut n = [0usize; 128];
+                let mut n = [0usize; 32];
                 for i in 0..n.len() {
                     n[i] = value + i;
                 }
@@ -52,7 +52,7 @@ mod mpmc_container {
     use std::collections::HashMap;
     use std::collections::HashSet;
     use std::fmt::Debug;
-    use std::sync::atomic::AtomicU64;
+    use std::sync::atomic::AtomicU32;
     use std::sync::atomic::Ordering;
     use std::sync::{Barrier, Mutex};
     use std::thread;
@@ -338,7 +338,7 @@ mod mpmc_container {
             extracted_content.push(Mutex::new(vec![]));
         }
 
-        let finished_threads_counter = AtomicU64::new(0);
+        let finished_threads_counter = AtomicU32::new(0);
         thread::scope(|s| {
             for thread_number in 0..number_of_threads_per_op {
                 let barrier = &barrier;
@@ -388,7 +388,7 @@ mod mpmc_container {
 
                     let mut state = sut.get_state();
                     while finished_threads_counter.load(Ordering::Relaxed)
-                        != number_of_threads_per_op as u64
+                        != number_of_threads_per_op as u32
                     {
                         if unsafe { sut.update_state(&mut state) } {
                             state.for_each(|index: u32, value: &T| {

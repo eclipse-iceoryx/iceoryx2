@@ -13,10 +13,7 @@
 use std::{
     any::Any,
     collections::HashMap,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+    sync::{atomic::Ordering, Arc},
 };
 
 pub use crate::event::*;
@@ -29,6 +26,7 @@ use iceoryx2_bb_posix::{
 };
 pub use iceoryx2_bb_system_types::file_name::FileName;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use once_cell::sync::Lazy;
 use ouroboros::self_referencing;
 
@@ -37,7 +35,7 @@ const DEFAULT_CAPACITY: usize = 2048;
 #[self_referencing]
 #[derive(Debug)]
 struct Management {
-    has_listener: AtomicBool,
+    has_listener: IoxAtomicBool,
     mtx_handle: MutexHandle<ConditionVariableData<FixedSizeQueue<TriggerId, DEFAULT_CAPACITY>>>,
     #[borrows(mtx_handle)]
     #[covariant]
@@ -135,7 +133,7 @@ impl Notifier for Duplex {
                 "{} since the listener is no longer connected.", msg);
         }
 
-        let push_successful = AtomicBool::new(false);
+        let push_successful = IoxAtomicBool::new(false);
 
         if self
             .management
@@ -328,7 +326,7 @@ impl ListenerBuilder<EventImpl> for Builder {
 
         let storage_details = Arc::new(
             ManagementBuilder {
-                has_listener: AtomicBool::new(true),
+                has_listener: IoxAtomicBool::new(true),
                 mtx_handle: MutexHandle::new(),
                 cvar_builder: |mtx_handle: &MutexHandle<
                     ConditionVariableData<FixedSizeQueue<TriggerId, DEFAULT_CAPACITY>>,

@@ -81,8 +81,9 @@ use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 use iceoryx2_pal_posix::*;
 
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 
 pub use crate::access_mode::AccessMode;
 pub use crate::creation_mode::CreationMode;
@@ -192,7 +193,7 @@ impl SharedMemoryBuilder {
             name: self.name,
             base_address: base_address as *mut u8,
             size: actual_shm_size as usize,
-            has_ownership: AtomicBool::new(false),
+            has_ownership: IoxAtomicBool::new(false),
             memory_lock: None,
             file_descriptor: fd,
         };
@@ -291,7 +292,7 @@ impl SharedMemoryCreationBuilder {
             name: self.config.name,
             base_address: core::ptr::null_mut::<u8>(),
             size: self.config.size,
-            has_ownership: AtomicBool::new(self.config.has_ownership),
+            has_ownership: IoxAtomicBool::new(self.config.has_ownership),
             memory_lock: None,
             file_descriptor: fd,
         };
@@ -370,7 +371,7 @@ pub struct SharedMemory {
     name: FileName,
     size: usize,
     base_address: *mut u8,
-    has_ownership: AtomicBool,
+    has_ownership: IoxAtomicBool,
     file_descriptor: FileDescriptor,
     memory_lock: Option<MemoryLock>,
 }

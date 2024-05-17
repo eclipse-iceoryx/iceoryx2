@@ -37,14 +37,11 @@
 //! }
 //! ```
 
-use std::{
-    fmt::Display,
-    sync::atomic::{AtomicU32, Ordering},
-};
-
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_posix::posix;
+use std::{fmt::Display, sync::atomic::Ordering};
 
 use crate::{
     clock::Time,
@@ -75,7 +72,7 @@ impl Display for UniqueSystemId {
 impl UniqueSystemId {
     /// Creates a new system wide unique id
     pub fn new() -> Result<Self, UniqueSystemIdCreationError> {
-        static COUNTER: AtomicU32 = AtomicU32::new(0);
+        static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
         let msg = "Failed to create UniqueSystemId";
         let pid = Process::from_self().id().value() as u128;
         let now = fail!(from "UniqueSystemId::new()",

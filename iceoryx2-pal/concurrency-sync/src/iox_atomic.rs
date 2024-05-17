@@ -12,6 +12,7 @@
 
 use core::{
     cell::UnsafeCell,
+    fmt::Debug,
     ops::{AddAssign, BitAndAssign, BitOrAssign, BitXorAssign, Not, SubAssign},
     sync::atomic::Ordering,
 };
@@ -19,35 +20,49 @@ use core::{
 use crate::{rwlock::RwLockWriterPreference, WaitAction};
 
 /// Behaves like [`core::sync::atomic::AtomicBool`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicBool = core::sync::atomic::AtomicBool;
 
 /// Behaves like [`core::sync::atomic::AtomicUsize`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicUsize = core::sync::atomic::AtomicUsize;
 
+/// Behaves like [`core::sync::atomic::AtomicIsize`]
+#[allow(clippy::disallowed_types)]
+pub type IoxAtomicIsize = core::sync::atomic::AtomicIsize;
+
 /// Behaves like [`core::sync::atomic::AtomicU8`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicU8 = core::sync::atomic::AtomicU8;
 
 /// Behaves like [`core::sync::atomic::AtomicU16`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicU16 = core::sync::atomic::AtomicU16;
 
 /// Behaves like [`core::sync::atomic::AtomicU32`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicU32 = core::sync::atomic::AtomicU32;
 
 /// Behaves like [`core::sync::atomic::AtomicI8`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicI8 = core::sync::atomic::AtomicI8;
 
 /// Behaves like [`core::sync::atomic::AtomicI16`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicI16 = core::sync::atomic::AtomicI16;
 
 /// Behaves like [`core::sync::atomic::AtomicI32`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicI32 = core::sync::atomic::AtomicI32;
 
 #[cfg(target_pointer_width = "64")]
 /// Behaves like [`core::sync::atomic::AtomicI64`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicI64 = core::sync::atomic::AtomicI64;
 
 #[cfg(target_pointer_width = "64")]
 /// Behaves like [`core::sync::atomic::AtomicU64`]
+#[allow(clippy::disallowed_types)]
 pub type IoxAtomicU64 = core::sync::atomic::AtomicU64;
 
 #[cfg(target_pointer_width = "32")]
@@ -78,6 +93,7 @@ pub mod internal {
         + BitAnd<Output = Self>
         + Ord
         + Not<Output = Self>
+        + core::fmt::Debug
     {
         fn overflowing_add(self, rhs: Self) -> (Self, bool);
         fn overflowing_sub(self, rhs: Self) -> (Self, bool);
@@ -133,9 +149,23 @@ pub struct IoxAtomic<T: internal::AtomicInteger> {
     lock: LockType,
 }
 
+unsafe impl<T: internal::AtomicInteger> Send for IoxAtomic<T> {}
+unsafe impl<T: internal::AtomicInteger> Sync for IoxAtomic<T> {}
+
+impl<T: internal::AtomicInteger> Debug for IoxAtomic<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "IoxAtomic<{}> {{ value: {:?} }}",
+            core::any::type_name::<T>(),
+            self.load(Ordering::Relaxed),
+        )
+    }
+}
+
 impl<T: internal::AtomicInteger> IoxAtomic<T> {
     /// See [`core::sync::atomic::AtomicU64::new()`]
-    pub fn new(v: T) -> Self {
+    pub const fn new(v: T) -> Self {
         Self {
             data: UnsafeCell::new(v),
             lock: LockType::new(),

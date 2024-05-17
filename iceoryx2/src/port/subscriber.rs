@@ -86,14 +86,6 @@ impl std::fmt::Display for SubscriberCreateError {
 
 impl std::error::Error for SubscriberCreateError {}
 
-pub(crate) mod internal {
-    use std::fmt::Debug;
-
-    pub(crate) trait SubscribeMgmt: Debug {
-        fn release_sample(&self, channel_id: usize, sample: usize);
-    }
-}
-
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
 pub struct Subscriber<Service: service::Service, PayloadType: Debug + ?Sized> {

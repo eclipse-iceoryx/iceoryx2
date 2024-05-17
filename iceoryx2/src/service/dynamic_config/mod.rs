@@ -20,13 +20,10 @@ pub mod event;
 /// based service.
 pub mod publish_subscribe;
 
-use std::{
-    fmt::Display,
-    sync::atomic::{AtomicU64, Ordering},
-};
-
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::{fmt::Display, sync::atomic::Ordering};
 
 const MARKED_FOR_DESTRUCTION: u64 = u64::MAX - 1;
 
@@ -46,7 +43,7 @@ pub(crate) enum MessagingPattern {
 #[derive(Debug)]
 pub struct DynamicConfig {
     messaging_pattern: MessagingPattern,
-    reference_counter: AtomicU64,
+    reference_counter: IoxAtomicU64,
 }
 
 impl Display for DynamicConfig {
@@ -63,7 +60,7 @@ impl DynamicConfig {
     pub(crate) fn new_uninit(messaging_pattern: MessagingPattern) -> Self {
         Self {
             messaging_pattern,
-            reference_counter: AtomicU64::new(1),
+            reference_counter: IoxAtomicU64::new(1),
         }
     }
 

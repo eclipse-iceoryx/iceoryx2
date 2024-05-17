@@ -211,8 +211,9 @@ impl Errno {
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
-    use std::sync::atomic::{AtomicBool, Ordering};
-    static IS_LOCKED: AtomicBool = AtomicBool::new(false);
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+    use std::sync::atomic::Ordering;
+    static IS_LOCKED: IoxAtomicBool = IoxAtomicBool::new(false);
 
     while IS_LOCKED
         .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)

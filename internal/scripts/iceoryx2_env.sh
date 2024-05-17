@@ -67,6 +67,7 @@ setup_docker_image() {
     export PATH=$PATH:/root/.cargo/bin
     rustup toolchain install stable
     rustup toolchain install nightly
+    cargo install cargo-nextest
 
     mkdir -p /root/.config/fish
     echo "set -gx PATH /root/.cargo/bin \$PATH" >> /root/.config/fish/config.fish

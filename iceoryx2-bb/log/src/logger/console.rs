@@ -12,10 +12,8 @@
 
 //! The default [`Logger`] implementation.
 
-use std::{
-    io::IsTerminal,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::{io::IsTerminal, sync::atomic::Ordering};
 
 use termsize::Size;
 
@@ -27,14 +25,20 @@ pub enum ConsoleLogOrder {
 }
 
 pub struct Logger {
-    counter: AtomicU64,
+    counter: IoxAtomicU64,
     ordering_mode: ConsoleLogOrder,
+}
+
+impl Default for Logger {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Logger {
     pub const fn new() -> Self {
         Self {
-            counter: AtomicU64::new(0),
+            counter: IoxAtomicU64::new(0),
             ordering_mode: ConsoleLogOrder::Counter,
         }
     }

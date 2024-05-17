@@ -25,6 +25,12 @@ pub struct Logger {
     buffer: Mutex<Vec<Entry>>,
 }
 
+impl Default for Logger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Logger {
     pub const fn new() -> Logger {
         Logger {

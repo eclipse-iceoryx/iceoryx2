@@ -66,10 +66,11 @@ use crate::{
 use enum_iterator::{all, Sequence};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_posix::posix::{Errno, Struct};
 use iceoryx2_pal_posix::*;
 use lazy_static::lazy_static;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::Ordering;
 use tiny_fn::tiny_fn;
 
 macro_rules! define_signals {
@@ -214,7 +215,7 @@ impl Drop for SignalGuard {
     }
 }
 
-static LAST_SIGNAL: AtomicUsize = AtomicUsize::new(posix::MAX_SIGNAL_VALUE);
+static LAST_SIGNAL: IoxAtomicUsize = IoxAtomicUsize::new(posix::MAX_SIGNAL_VALUE);
 
 /// Manages POSIX signal handling. It provides an interface to register custom callbacks for
 /// signals, to perform a blocking wait until a certain signal arrived (for instance like CTRL+c) and

@@ -117,10 +117,6 @@
 //! File::remove(&file_name);
 //! ```
 
-use std::mem::MaybeUninit;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::{mem::size_of, time::Duration};
-
 use crate::clock::AsTimeval;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::SynchronousMultiplexing;
@@ -130,8 +126,12 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
+use std::mem::MaybeUninit;
+use std::sync::atomic::Ordering;
+use std::{mem::size_of, time::Duration};
 
 use crate::{config::UNIX_DOMAIN_SOCKET_PATH_LENGTH, file::*, permission::Permission};
 
@@ -295,7 +295,7 @@ const BLOCKING_TIMEOUT: Duration = Duration::from_secs(i16::MAX as _);
 #[derive(Debug)]
 struct UnixDatagramSocket {
     name: FilePath,
-    is_non_blocking: AtomicBool,
+    is_non_blocking: IoxAtomicBool,
     file_descriptor: FileDescriptor,
 }
 
@@ -503,7 +503,7 @@ impl UnixDatagramSocket {
 
         Ok(Self {
             name: *name,
-            is_non_blocking: AtomicBool::new(false),
+            is_non_blocking: IoxAtomicBool::new(false),
             file_descriptor: FileDescriptor::new(raw_fd).unwrap(),
         })
     }

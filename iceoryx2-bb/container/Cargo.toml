@@ -15,6 +15,7 @@ version = { workspace = true }
 [dependencies]
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }
 
 [dev-dependencies]
 generic-tests = { workspace = true }

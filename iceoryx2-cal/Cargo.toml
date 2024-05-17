@@ -20,6 +20,7 @@ iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-threadsafe = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }
 
 once_cell = { workspace = true }
 lazy_static = { workspace = true }

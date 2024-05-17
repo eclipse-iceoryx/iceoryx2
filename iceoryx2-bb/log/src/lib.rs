@@ -144,12 +144,10 @@ pub mod log;
 pub mod fail;
 pub mod logger;
 
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 use std::{
     fmt::Arguments,
-    sync::{
-        atomic::{AtomicU8, Ordering},
-        Once,
-    },
+    sync::{atomic::Ordering, Once},
 };
 
 use logger::Logger;
@@ -166,7 +164,7 @@ static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
 const DEFAULT_LOG_LEVEL: u8 = LogLevel::Trace as u8;
 
 static mut LOGGER: Option<&'static dyn logger::Logger> = None;
-static LOG_LEVEL: AtomicU8 = AtomicU8::new(DEFAULT_LOG_LEVEL);
+static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL);
 static INIT: Once = Once::new();
 
 /// Describes the log level.

@@ -14,18 +14,6 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use core::sync::atomic::{AtomicU64, Ordering};
-use windows_sys::Win32::{
-    Foundation::{
-        ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, ERROR_PATH_NOT_FOUND,
-        INVALID_HANDLE_VALUE,
-    },
-    Security::SECURITY_ATTRIBUTES,
-    Storage::FileSystem::{
-        CreateDirectoryA, FindClose, FindFirstFileA, FindNextFileA, WIN32_FIND_DATAA,
-    },
-};
-
 use crate::{
     posix::Struct,
     posix::{self},
@@ -35,6 +23,18 @@ use crate::{
     },
     win32call,
     windows::win32_udp_port_to_uds_name::MAX_UDS_NAME_LEN,
+};
+use core::sync::atomic::Ordering;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use windows_sys::Win32::{
+    Foundation::{
+        ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, ERROR_PATH_NOT_FOUND,
+        INVALID_HANDLE_VALUE,
+    },
+    Security::SECURITY_ATTRIBUTES,
+    Storage::FileSystem::{
+        CreateDirectoryA, FindClose, FindFirstFileA, FindNextFileA, WIN32_FIND_DATAA,
+    },
 };
 
 use super::settings::MAX_PATH_LENGTH;
@@ -138,7 +138,7 @@ pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
 }
 
 pub unsafe fn opendir(dirname: *const c_char) -> *mut DIR {
-    static COUNT: AtomicU64 = AtomicU64::new(1);
+    static COUNT: IoxAtomicU64 = IoxAtomicU64::new(1);
     let id = COUNT.fetch_add(1, Ordering::Relaxed);
 
     HandleTranslator::get_instance().add(FdHandleEntry::DirectoryStream(id));

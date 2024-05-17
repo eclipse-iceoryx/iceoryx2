@@ -88,10 +88,11 @@ use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 use std::alloc::Layout;
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
-use std::sync::atomic::{fence, AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{fence, Ordering};
 use tiny_fn::tiny_fn;
 
 tiny_fn! {
@@ -200,9 +201,9 @@ impl Drop for UniqueIndex<'_> {
 pub struct UniqueIndexSet {
     data_ptr: RelocatablePointer<UnsafeCell<u32>>,
     capacity: u32,
-    borrowed_indices: AtomicUsize,
-    pub(crate) head: AtomicU64,
-    is_memory_initialized: AtomicBool,
+    borrowed_indices: IoxAtomicUsize,
+    pub(crate) head: IoxAtomicU64,
+    is_memory_initialized: IoxAtomicBool,
 }
 
 unsafe impl Sync for UniqueIndexSet {}
@@ -213,9 +214,9 @@ impl RelocatableContainer for UniqueIndexSet {
         Self {
             data_ptr: RelocatablePointer::new_uninit(),
             capacity: capacity as u32,
-            borrowed_indices: AtomicUsize::new(0),
-            head: AtomicU64::new(0),
-            is_memory_initialized: AtomicBool::new(false),
+            borrowed_indices: IoxAtomicUsize::new(0),
+            head: IoxAtomicU64::new(0),
+            is_memory_initialized: IoxAtomicBool::new(false),
         }
     }
 
@@ -245,9 +246,9 @@ impl RelocatableContainer for UniqueIndexSet {
         Self {
             data_ptr: RelocatablePointer::new(distance_to_data),
             capacity: capacity as u32,
-            borrowed_indices: AtomicUsize::new(0),
-            head: AtomicU64::new(0),
-            is_memory_initialized: AtomicBool::new(true),
+            borrowed_indices: IoxAtomicUsize::new(0),
+            head: IoxAtomicU64::new(0),
+            is_memory_initialized: IoxAtomicBool::new(true),
         }
     }
 

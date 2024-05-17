@@ -63,10 +63,8 @@
 //! }
 //! ```
 
-use std::{
-    marker::PhantomData,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::{marker::PhantomData, sync::atomic::Ordering};
 
 /// A building block to generate global unique ids
 #[derive(Debug, Eq, Hash, PartialEq)]
@@ -76,7 +74,7 @@ pub struct UniqueId {
 
 impl Default for UniqueId {
     fn default() -> Self {
-        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
 
         UniqueId {
             value: COUNTER.fetch_add(1, Ordering::Relaxed),
@@ -106,7 +104,7 @@ pub struct TypedUniqueId<T> {
 
 impl<T> Default for TypedUniqueId<T> {
     fn default() -> Self {
-        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
 
         Self {
             value: COUNTER.fetch_add(1, Ordering::Relaxed),

@@ -10,17 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::sync::atomic::Ordering;
 
 const UNDECIDED: u64 = u64::MAX;
 const LOST: u64 = u64::MAX;
 
 #[derive(Debug)]
-pub(crate) struct DecisionCounter(AtomicU64);
+pub(crate) struct DecisionCounter(IoxAtomicU64);
 
 impl DecisionCounter {
     pub(crate) const fn new() -> Self {
-        DecisionCounter(AtomicU64::new(UNDECIDED))
+        DecisionCounter(IoxAtomicU64::new(UNDECIDED))
     }
 
     pub(crate) fn set_to_undecided(&self) {

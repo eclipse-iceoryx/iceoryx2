@@ -10,10 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::atomic::{AtomicUsize, Ordering};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
+use std::sync::atomic::Ordering;
 
-static CREATION_COUNTER: AtomicUsize = AtomicUsize::new(0);
-static DROP_COUNTER: AtomicUsize = AtomicUsize::new(0);
+static CREATION_COUNTER: IoxAtomicUsize = IoxAtomicUsize::new(0);
+static DROP_COUNTER: IoxAtomicUsize = IoxAtomicUsize::new(0);
 
 #[derive(Debug)]
 pub struct LifetimeTracker {}

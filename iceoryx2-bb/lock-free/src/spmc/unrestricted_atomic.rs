@@ -31,12 +31,9 @@
 //! let my_data = atomic.load();
 //! ```
 
-use std::{
-    cell::UnsafeCell,
-    fmt::Debug,
-    mem::MaybeUninit,
-    sync::atomic::{AtomicBool, AtomicU64, Ordering},
-};
+use std::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
+
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32};
 
 // ATTENTION: To ensure the functionality also in the case of an overflow with the 'write_cell'
 // value, the value of `NUMBER_OF_CELLS` must be a power of two
@@ -69,9 +66,9 @@ unsafe impl<'a, T: Copy> Sync for Producer<'a, T> {}
 /// unrestricted.
 #[repr(C)]
 pub struct UnrestrictedAtomic<T: Copy> {
-    write_cell: AtomicU64,
+    write_cell: IoxAtomicU32,
     data: [UnsafeCell<MaybeUninit<T>>; NUMBER_OF_CELLS],
-    has_producer: AtomicBool,
+    has_producer: IoxAtomicBool,
 }
 
 impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {
@@ -94,8 +91,8 @@ impl<T: Copy> UnrestrictedAtomic<T> {
     /// Creates a new atomic containing the provided value.
     pub fn new(value: T) -> Self {
         Self {
-            has_producer: AtomicBool::new(true),
-            write_cell: AtomicU64::new(1),
+            has_producer: IoxAtomicBool::new(true),
+            write_cell: IoxAtomicU32::new(1),
             data: [
                 UnsafeCell::new(MaybeUninit::new(value)),
                 UnsafeCell::new(MaybeUninit::uninit()),

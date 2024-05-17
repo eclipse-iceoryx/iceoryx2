@@ -14,10 +14,10 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 use std::cell::OnceCell;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
-
 use windows_sys::Win32::Networking::WinSock::WSAEWOULDBLOCK;
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
 
@@ -43,7 +43,7 @@ impl Struct for WSADATA {}
 impl GlobalWsaInitializer {
     unsafe fn init() {
         static mut WSA_INSTANCE: OnceCell<GlobalWsaInitializer> = OnceCell::new();
-        static mut INITIALIZATION_STATE: AtomicU8 = AtomicU8::new(0);
+        static mut INITIALIZATION_STATE: IoxAtomicU8 = IoxAtomicU8::new(0);
 
         match INITIALIZATION_STATE.compare_exchange(0, 1, Ordering::Relaxed, Ordering::Relaxed) {
             Ok(_) => {

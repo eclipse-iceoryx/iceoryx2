@@ -57,10 +57,11 @@
 use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_system_types::port::{self, Port};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::{self, Struct};
 use iceoryx2_pal_posix::posix::{Errno, SockAddrIn};
 use std::fmt::Debug;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased};
@@ -521,7 +522,7 @@ impl UdpServer {
 struct UdpSocket {
     socket_fd: FileDescriptor,
     details: posix::sockaddr_in,
-    is_non_blocking: AtomicBool,
+    is_non_blocking: IoxAtomicBool,
 }
 
 impl Debug for UdpSocket {
@@ -551,7 +552,7 @@ impl UdpSocket {
         Self {
             socket_fd,
             details,
-            is_non_blocking: AtomicBool::new(false),
+            is_non_blocking: IoxAtomicBool::new(false),
         }
     }
 

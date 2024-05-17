@@ -13,12 +13,9 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use std::{
-    io::Write,
-    sync::atomic::{AtomicU8, Ordering},
-};
-
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
+use std::{io::Write, sync::atomic::Ordering};
 
 use crate::posix::*;
 
@@ -124,7 +121,7 @@ unsafe fn write_real_shm_name(name: *const c_char, buffer: &[u8]) -> bool {
 }
 
 unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
-    static COUNTER: AtomicU8 = AtomicU8::new(0);
+    static COUNTER: IoxAtomicU8 = IoxAtomicU8::new(0);
 
     let mut now = timespec::new();
     clock_gettime(CLOCK_REALTIME, &mut now);

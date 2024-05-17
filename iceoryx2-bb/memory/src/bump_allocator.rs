@@ -15,14 +15,11 @@
 //! deallocate all allocated chunks. See this: `https://os.phil-opp.com/allocator-designs/`
 //! for more details.
 
-use std::{
-    fmt::Display,
-    ptr::NonNull,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::{fmt::Display, ptr::NonNull, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_log::fail;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 pub use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 
@@ -30,7 +27,7 @@ pub use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 pub struct BumpAllocator {
     pub(crate) start: usize,
     size: usize,
-    current_position: AtomicUsize,
+    current_position: IoxAtomicUsize,
 }
 
 impl Display for BumpAllocator {
@@ -51,7 +48,7 @@ impl BumpAllocator {
         Self {
             start: ptr.as_ptr() as usize,
             size,
-            current_position: AtomicUsize::new(0),
+            current_position: IoxAtomicUsize::new(0),
         }
     }
 

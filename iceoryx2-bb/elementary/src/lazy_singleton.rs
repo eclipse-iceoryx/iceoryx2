@@ -33,29 +33,33 @@
 //! println!("{}", LAZY_GLOBAL.get());
 //! ```
 
-use std::{
-    cell::UnsafeCell,
-    sync::atomic::{AtomicBool, Ordering},
-};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
 /// The lazy initialized singleton building block of type T
 #[derive(Debug)]
 pub struct LazySingleton<T> {
     data: UnsafeCell<Option<T>>,
-    is_initialized: AtomicBool,
-    is_finalized: AtomicBool,
+    is_initialized: IoxAtomicBool,
+    is_finalized: IoxAtomicBool,
 }
 
 unsafe impl<T: Send> Send for LazySingleton<T> {}
 unsafe impl<T: Send + Sync> Sync for LazySingleton<T> {}
+
+impl<T> Default for LazySingleton<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl<T> LazySingleton<T> {
     /// Creates a new [`LazySingleton`] where the underlying value is not yet initialized.
     pub const fn new() -> Self {
         Self {
             data: UnsafeCell::new(None),
-            is_initialized: AtomicBool::new(false),
-            is_finalized: AtomicBool::new(false),
+            is_initialized: IoxAtomicBool::new(false),
+            is_finalized: IoxAtomicBool::new(false),
         }
     }
 
