@@ -74,3 +74,12 @@ fn clock_time_now_is_monotonic_with_monotonic_clock() {
     assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT * 2);
     assert_that!(start2.elapsed().unwrap(), time_at_least TIMEOUT);
 }
+
+#[test]
+fn clock_time_as_timespec_works() {
+    let now = Time::now().unwrap();
+    let timespec = now.as_timespec();
+
+    assert_that!(timespec.tv_sec, eq now.as_duration().as_secs() as _);
+    assert_that!(timespec.tv_nsec, eq now.as_duration().subsec_nanos() as _);
+}

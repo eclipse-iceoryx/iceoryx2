@@ -26,3 +26,19 @@ fn creation_mode_o_flag_conversion_works() {
     );
     assert_that!(CreationMode::OpenOrCreate.as_oflag(), eq posix::O_CREAT);
 }
+
+#[test]
+fn creation_mode_display_works() {
+    assert_that!(
+        format!("{}", CreationMode::PurgeAndCreate),
+        eq "CreationMode::PurgeAndCreate"
+    );
+    assert_that!(
+        format!("{}", CreationMode::CreateExclusive),
+        eq "CreationMode::CreateExclusive"
+    );
+    assert_that!(
+        format!("{}", CreationMode::OpenOrCreate),
+        eq "CreationMode::OpenOrCreate"
+    );
+}

@@ -15,6 +15,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::*;
+use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 use iceoryx2_bb_posix::file_type::*;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -135,6 +136,7 @@ fn directory_create_from_path_works() {
     let sut_create = Directory::create(&sut_name, Permission::OWNER_ALL);
     assert_that!(sut_create, is_ok);
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
+    assert_that!(unsafe { sut_create.unwrap().file_descriptor().native_handle() }, ge 0);
 }
 
 #[test]

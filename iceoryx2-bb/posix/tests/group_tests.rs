@@ -39,3 +39,19 @@ fn group_works() {
     assert_that!(group_from_name.name(), eq group_from_gid.name());
     assert_that!(*group_from_name.name(), eq group_name);
 }
+
+#[test]
+fn group_as_works() {
+    test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
+
+    let root_1 = 0u32.as_group().unwrap();
+    let root_2 = "root".to_string().as_group().unwrap();
+    let root_3 = "root".as_group().unwrap();
+
+    assert_that!(root_1.name().as_bytes(), eq b"root");
+    assert_that!(root_2.gid(), eq 0);
+    assert_that!(root_3.gid(), eq 0);
+
+    assert_that!(root_1.password().len(), ge 0);
+    assert_that!(root_1.members().len(), ge 0);
+}

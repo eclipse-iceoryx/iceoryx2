@@ -26,4 +26,5 @@ fn file_type_mode_t_conversion_works() {
     );
     assert_that!(FileType::Socket, eq FileType::from_mode_t(posix::S_IFSOCK));
     assert_that!(FileType::FiFo, eq FileType::from_mode_t(posix::S_IFIFO));
+    assert_that!(FileType::Unknown, eq FileType::from_mode_t(91239813));
 }
