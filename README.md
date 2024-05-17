@@ -131,7 +131,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 This example is a simplified version of the
-[publish-subscribe example](examples/examples/publish_subscribe/). You can
+[publish-subscribe example](examples/rust/publish_subscribe/). You can
 execute it by opening two terminals and calling:
 
 **Terminal 1:**
@@ -236,7 +236,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 This example is a simplified version of the
-[event example](examples/examples/event/). You can
+[event example](examples/rust/event/). You can
 execute it by opening two terminals and calling:
 
 **Terminal 1:**

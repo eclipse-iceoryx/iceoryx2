@@ -15,47 +15,47 @@ iceoryx2 = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 
 [lib]
-name = "transmission_data"
-path = "src/transmission_data.rs"
+name = "examples_common"
+path = "rust/_examples_common/lib.rs"
 
 # complex data types
 
 [[example]]
 name = "complex_data_types"
-path = "examples/complex_data_types/complex_data_types.rs"
+path = "rust/complex_data_types/complex_data_types.rs"
 
 # discovery
 
 [[example]]
 name = "discovery"
-path = "examples/discovery/discovery.rs"
+path = "rust/discovery/discovery.rs"
 
 # event
 
 [[example]]
 name = "event_listener"
-path = "examples/event/listener.rs"
+path = "rust/event/listener.rs"
 
 [[example]]
 name = "event_notifier"
-path = "examples/event/notifier.rs"
+path = "rust/event/notifier.rs"
 
 # publish_subscribe
 
 [[example]]
 name = "publish_subscribe_publisher"
-path = "examples/publish_subscribe/publisher.rs"
+path = "rust/publish_subscribe/publisher.rs"
 
 [[example]]
 name = "publish_subscribe_subscriber"
-path = "examples/publish_subscribe/subscriber.rs"
+path = "rust/publish_subscribe/subscriber.rs"
 
 # publish_subscribe_dynamic_data
 
 [[example]]
 name = "publish_subscribe_dyn_publisher"
-path = "examples/publish_subscribe_dynamic_data/publisher.rs"
+path = "rust/publish_subscribe_dynamic_data/publisher.rs"
 
 [[example]]
 name = "publish_subscribe_dyn_subscriber"
-path = "examples/publish_subscribe_dynamic_data/subscriber.rs"
+path = "rust/publish_subscribe_dynamic_data/subscriber.rs"
