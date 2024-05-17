@@ -268,7 +268,7 @@ The support levels can be adjusted when required.
 | iOS              | planned      | -                     | tier 2               |
 | Linux (x86_64)   | done         | tier 2                | tier 1               |
 | Linux (aarch64)  | done         | tier 2                | tier 1               |
-| Linux (32-bit)   | in-progress  | tier 3                | tier 1               |
+| Linux (32-bit)   | done         | tier 2                | tier 1               |
 | Mac OS           | done         | tier 2                | tier 2               |
 | QNX              | planned      | -                     | tier 1               |
 | WatchOS          | planned      | -                     | tier 2               |
