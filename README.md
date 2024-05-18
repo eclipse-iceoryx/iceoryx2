@@ -1,3 +1,4 @@
+[![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx2/branch/main/graph/badge.svg?branch=main)](https://codecov.io/gh/eclipse-iceoryx/iceoryx2?branch=main)
 [![Benchmarks](https://img.shields.io/badge/Benchmarks-gray)](benchmarks/README.md)
 [![Changelog](https://img.shields.io/badge/Changelog-gray)](CHANGELOG.md)
 [![Crates.io](https://img.shields.io/crates/v/iceoryx2?color=blue)](https://crates.io/crates/iceoryx2)
