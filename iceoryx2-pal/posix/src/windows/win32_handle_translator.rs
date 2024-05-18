@@ -29,7 +29,8 @@ const MAX_SUPPORTED_FD_HANDLES: usize = 1024;
 #[doc(hidden)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum FdHandleEntry {
-    Handle(Win32Handle),
+    SharedMemory(ShmHandle),
+    File(FileHandle),
     DirectoryStream(u64),
     Socket(SocketHandle),
     UdsDatagramSocket(UdsDatagramSocketHandle),
@@ -38,10 +39,16 @@ pub enum FdHandleEntry {
 
 #[doc(hidden)]
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Win32Handle {
+pub struct FileHandle {
     pub handle: HANDLE,
-    pub state_handle: HANDLE,
     pub lock_state: int,
+}
+
+#[doc(hidden)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct ShmHandle {
+    pub handle: FileHandle,
+    pub state_handle: HANDLE,
 }
 
 #[doc(hidden)]
@@ -226,10 +233,25 @@ impl HandleTranslator {
     }
 
     #[allow(clippy::mut_from_ref)]
-    pub(crate) unsafe fn get_mut(&self, fd: int) -> &mut Win32Handle {
+    pub(crate) unsafe fn get_shm_handle_mut(&self, fd: int) -> &mut ShmHandle {
         self.lock();
         match unsafe { &mut *self.fd2handle[fd as usize].get() } {
-            FdHandleEntry::Handle(ref mut handle) => {
+            FdHandleEntry::SharedMemory(ref mut handle) => {
+                self.unlock();
+                handle
+            }
+            _ => {
+                self.unlock();
+                panic!("Accessed invalid file descriptor.");
+            }
+        }
+    }
+
+    #[allow(clippy::mut_from_ref)]
+    pub(crate) unsafe fn get_file_handle_mut(&self, fd: int) -> &mut FileHandle {
+        self.lock();
+        match unsafe { &mut *self.fd2handle[fd as usize].get() } {
+            FdHandleEntry::File(ref mut handle) => {
                 self.unlock();
                 handle
             }
