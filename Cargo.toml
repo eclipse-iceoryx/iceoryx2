@@ -26,7 +26,7 @@ members = [
 
 [workspace.package]
 categories = ["network-programming"]
-description = "Iceoryx2: Lock-Free Zero-Copy Interprocess Communication"
+description = "iceoryx2: Lock-Free Zero-Copy Interprocess Communication"
 edition = "2021"
 homepage = "https://iceoryx.io"
 keywords = ["zero-copy", "communication", "ipc", "inter-process", "publish-subscribe", "request-response", "shmem", "shared-memory", "shared_memory", "shared"]

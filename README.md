@@ -26,30 +26,30 @@
 
 ## Introduction
 
-Welcome to Iceoryx2, the efficient, and ultra-low latency inter-process communication
+Welcome to iceoryx2, the efficient, and ultra-low latency inter-process communication
 middleware. This library is designed to provide you with fast and reliable
 zero-copy and lock-free inter-process communication mechanisms.
 
-Iceoryx2 is all about providing a seamless experience for inter-process
+iceoryx2 is all about providing a seamless experience for inter-process
 communication, featuring versatile messaging patterns. Whether you're diving
 into publish-subscribe, events, or the promise of upcoming features like
-request-response, pipelines, and blackboard, Iceoryx2 has you covered.
+request-response, pipelines, and blackboard, iceoryx2 has you covered.
 
-One of the features of Iceoryx2 is its consistently low transmission latency
+One of the features of iceoryx2 is its consistently low transmission latency
 regardless of payload size, ensuring a predictable and reliable
 communication experience.
 
-Iceoryx2's origins can be traced back to
+iceoryx2's origins can be traced back to
 [iceoryx](https://github.com/eclipse-iceoryx/iceoryx). By overcoming past
-technical debts and refining the architecture, Iceoryx2 enables the modularity
+technical debts and refining the architecture, iceoryx2 enables the modularity
 we've always desired.
 
-In the near future, Iceoryx2 is poised to support at least the same feature set
+In the near future, iceoryx2 is poised to support at least the same feature set
 and platforms as [iceoryx](https://github.com/eclipse-iceoryx/iceoryx),
 ensuring a seamless transition and offering enhanced
 capabilities for your inter-process communication needs. So, if you're looking
 for lightning-fast, cross-platform communication that doesn't compromise on
-performance or modularity, Iceoryx2 is your answer.
+performance or modularity, iceoryx2 is your answer.
 
 ## Performance
 
@@ -131,7 +131,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 This example is a simplified version of the
-[publish-subscribe example](examples/examples/publish_subscribe/). You can
+[publish-subscribe example](examples/rust/publish_subscribe/). You can
 execute it by opening two terminals and calling:
 
 **Terminal 1:**
@@ -236,7 +236,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 This example is a simplified version of the
-[event example](examples/examples/event/). You can
+[event example](examples/rust/event/). You can
 execute it by opening two terminals and calling:
 
 **Terminal 1:**

@@ -233,9 +233,9 @@ pub struct Event {
     pub event_id_max_value: usize,
 }
 
-/// Represents the configuration that Iceoryx2 will utilize. It is divided into two sections:
-/// the [Global] settings, which must align with the Iceoryx2 instance the application intends to
-/// join, and the [Defaults] for communication within that Iceoryx2 instance. The user has the
+/// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
+/// the [Global] settings, which must align with the iceoryx2 instance the application intends to
+/// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
 /// flexibility to override both sections.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone)]

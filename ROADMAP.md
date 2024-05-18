@@ -54,7 +54,7 @@
 
 ## Microservices (Quality of Life Improvements)
 
-### Iceoryx Tooling
+### iceoryx Tooling
 
 * [ ] Service Discovery
 * [ ] Introspection Service

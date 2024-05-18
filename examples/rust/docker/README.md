@@ -1,4 +1,4 @@
-# Using Iceoryx2 in A Docker Environment
+# Using iceoryx2 in A Docker Environment
 
 ## Introduction
 
@@ -30,7 +30,7 @@ the host.
 
 ## Requirements
 
-Iceoryx2 discovers services by parsing the service toml files in the
+iceoryx2 discovers services by parsing the service toml files in the
 `/tmp/iceoryx2` directory and communicates via shared memory that is located
 in `/dev/shm`. If both directories are available in every docker container and
 are shared with the host, iceoryx2 can establish a connection between them.
@@ -48,7 +48,7 @@ cargo build --example publish_subscribe_subscriber
 ```
 
 Create the directory `/tmp/iceoryx2` so that it can be mounted into the docker
-container. Iceoryx2 creates it automatically but in our case we start the
+container. iceoryx2 creates it automatically but in our case we start the
 container before we start iceoryx2, therefore we have to create it manually.
 
 ```sh

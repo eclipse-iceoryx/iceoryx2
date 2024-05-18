@@ -3,7 +3,7 @@
 ## How To Send Data Where The Size Is Unknown At Compilation-Time?
 
 Take a look at the
-[publish-subscribe dynamic data size example](examples/examples/publish_subscribe_dynamic_data_size).
+[publish-subscribe dynamic data size example](examples/rust/publish_subscribe_dynamic_data_size).
 
 The idea is to create a service based on a slice and define at runtime a `max_slice_len`. Then
 samples up to a length of the max slice length can be allocated with `loan_slice{_uninit}`. When it
@@ -28,7 +28,7 @@ go out of scope. This is not the case when the application is:
 
 iceoryx2 already provides a mechanism that registers a signal handler that
 handles termination requests gracefully, see
-[publish subscribe example](examples/examples/publish_subscribe) and
+[publish subscribe example](examples/rust/publish_subscribe) and
 
 ```rust
 while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {

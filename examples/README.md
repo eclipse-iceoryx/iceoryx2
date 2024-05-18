@@ -1,15 +1,15 @@
 # Examples
 
-## Foundations of Communication in Iceoryx2 Applications
+## Foundations of Communication in iceoryx2 Applications
 
-In the world of Iceoryx2, communication is at the core of everything. To
+In the world of iceoryx2, communication is at the core of everything. To
 facilitate seamless communication, we always begin by opening or creating a
-service, the fundamental building block of an Iceoryx2 application. Services
+service, the fundamental building block of an iceoryx2 application. Services
 serve as the conduit through which different parts of your application
 interact.
 
 The type of service you create is defined by a messaging pattern, which
-dictates how data flows between participants. Iceoryx2 supports various
+dictates how data flows between participants. iceoryx2 supports various
 messaging patterns, including:
 
 * **Publish-Subscribe:** In this pattern, a publisher sends a continuous stream
@@ -38,10 +38,10 @@ they interact and exchange data.
 
 | Name | Description |
 |------|-------------|
-| [complex data types](examples/complex_data_types) | Send zero-copy compatible versions of `Vec`, `String`, .... |
-| [discovery](examples/discovery) | List all available services in a system. |
-| [docker](examples/docker) | Communicate between different docker containers and the host. |
-| [event](examples/event) | Exchanging event signals between multiple processes.|
-| [publish subscribe](examples/publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |
-| [publish subscribe dynamic data](examples/publish_subscribe_dynamic_data) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern) and payload data that has a dynamic size. |
+| [complex data types](rust/complex_data_types) | Send zero-copy compatible versions of `Vec`, `String`, .... |
+| [discovery](rust/discovery) | List all available services in a system. |
+| [docker](rust/docker) | Communicate between different docker containers and the host. |
+| [event](rust/event) | Exchanging event signals between multiple processes.|
+| [publish subscribe](rust/publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |
+| [publish subscribe dynamic data](rust/publish_subscribe_dynamic_data) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern) and payload data that has a dynamic size. |
 

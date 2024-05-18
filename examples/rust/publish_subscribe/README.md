@@ -25,7 +25,7 @@ cargo run --example publish_subscribe_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes
-simultaneously to explore how Iceoryx2 handles publisher-subscriber communication
+simultaneously to explore how iceoryx2 handles publisher-subscriber communication
 efficiently.
 
 You may hit the maximum supported number of ports when too many publisher or 

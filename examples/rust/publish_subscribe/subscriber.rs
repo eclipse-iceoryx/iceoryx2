@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
-use transmission_data::TransmissionData;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
