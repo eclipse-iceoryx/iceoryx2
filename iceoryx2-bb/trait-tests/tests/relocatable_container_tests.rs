@@ -60,6 +60,21 @@ mod relocatable_container {
         }
     }
 
+    #[test]
+    #[should_panic]
+    fn init_twice_causes_panic<T: RelocatableContainer>() {
+        const MAX_CAPACITY: usize = 18;
+
+        let memory = Box::pin_with(Memory::<131072, BumpAllocator>::new()).unwrap();
+
+        let sut = unsafe { T::new_uninit(MAX_CAPACITY) };
+
+        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+
+        //panics
+        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+    }
+
     #[instantiate_tests(<RelocatableVec<u64>>)]
     mod vec_u64 {}
 
