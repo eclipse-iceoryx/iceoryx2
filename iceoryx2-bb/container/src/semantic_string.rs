@@ -61,7 +61,7 @@
 //! ```
 
 use crate::byte_string::FixedSizeByteStringModificationError;
-use crate::byte_string::{as_escaped_string, strlen, FixedSizeByteString};
+use crate::byte_string::{as_escaped_string, strnlen, FixedSizeByteString};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use std::fmt::{Debug, Display};
@@ -148,7 +148,10 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///   * The contents must not contain invalid UTF-8 characters
     ///
     unsafe fn from_c_str(ptr: *mut std::ffi::c_char) -> Result<Self, SemanticStringError> {
-        Self::new(std::slice::from_raw_parts(ptr as *const u8, strlen(ptr)))
+        Self::new(std::slice::from_raw_parts(
+            ptr as *const u8,
+            strnlen(ptr, CAPACITY + 1),
+        ))
     }
 
     /// Returns the contents as a slice

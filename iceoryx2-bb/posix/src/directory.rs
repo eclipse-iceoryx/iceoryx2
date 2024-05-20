@@ -33,7 +33,7 @@
 //!
 //! Directory::remove(&dir_name).unwrap();
 //! ```
-use iceoryx2_bb_container::byte_string::strlen;
+use iceoryx2_bb_container::byte_string::strnlen;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
@@ -389,7 +389,7 @@ impl Directory {
                 let raw_name = unsafe {
                     (*(*namelist.offset(i as isize))).d_name.as_ptr() as *mut posix::c_char
                 };
-                let raw_name_length = unsafe { strlen(raw_name) };
+                let raw_name_length = unsafe { strnlen(raw_name, FileName::max_len()) };
 
                 const DOT: posix::c_char = b'.' as _;
                 // dot is skipped
