@@ -18,6 +18,7 @@ mod fixed_size_byte_string {
 
     use iceoryx2_bb_container::byte_string::*;
     use iceoryx2_bb_testing::assert_that;
+    use std::collections::hash_map::DefaultHasher;
 
     const SUT_CAPACITY: usize = 129;
     const SUT_CAPACITY_ALT: usize = 65;
@@ -392,9 +393,9 @@ mod fixed_size_byte_string {
         let sut_1_1 = Sut::from_bytes_truncated(b"hypnotoad forever");
         let sut_2 = Sut::from_bytes_truncated(b"the hoff rocks");
 
-        let mut hasher_1 = std::hash::DefaultHasher::new();
-        let mut hasher_1_1 = std::hash::DefaultHasher::new();
-        let mut hasher_2 = std::hash::DefaultHasher::new();
+        let mut hasher_1 = DefaultHasher::new();
+        let mut hasher_1_1 = DefaultHasher::new();
+        let mut hasher_2 = DefaultHasher::new();
 
         sut_1.hash(&mut hasher_1);
         let hash_1 = hasher_1.finish();

@@ -17,10 +17,16 @@ use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::group_name::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_bb_system_types::user_name::*;
+use iceoryx2_bb_testing::assert_that;
+
+#[test]
+fn display_error_enum_works() {
+    assert_that!(format!("{}", SemanticStringError::InvalidContent), eq "SemanticStringError::InvalidContent");
+    assert_that!(format!("{}", SemanticStringError::ExceedsMaximumLength), eq "SemanticStringError::ExceedsMaximumLength");
+}
 
 #[generic_tests::define]
 mod semantic_string {
-    use iceoryx2_bb_testing::assert_that;
 
     use super::*;
 
@@ -130,6 +136,13 @@ mod semantic_string {
 
         assert_that!(sut.strip_prefix(b"a0123"), eq Ok(false));
         assert_that!(sut.as_bytes(), eq b"a4567");
+
+        let result = sut.strip_prefix(b"a45");
+        if result.is_ok() {
+            assert_that!(sut.as_bytes(), eq b"67");
+        } else {
+            assert_that!(result.err().unwrap(), eq SemanticStringError::InvalidContent);
+        }
     }
 
     #[test]
@@ -140,6 +153,13 @@ mod semantic_string {
 
         assert_that!(sut.strip_suffix(b"a4567"), eq Ok(false));
         assert_that!(sut.as_bytes(), eq b"a0123");
+
+        let result = sut.strip_suffix(b"a0123");
+        if result.is_ok() {
+            assert_that!(sut.as_bytes(), eq b"");
+        } else {
+            assert_that!(result.err().unwrap(), eq SemanticStringError::InvalidContent);
+        }
     }
 
     #[test]
@@ -153,6 +173,13 @@ mod semantic_string {
         assert_that!(sut.truncate(6), is_ok);
         assert_that!(sut, len 4);
         assert_that!(sut.as_bytes(), eq b"a012");
+
+        let result = sut.truncate(0);
+        if result.is_ok() {
+            assert_that!(sut, is_empty);
+        } else {
+            assert_that!(result.err().unwrap(), eq SemanticStringError::InvalidContent);
+        }
     }
 
     #[test]
@@ -162,6 +189,56 @@ mod semantic_string {
 
         let sut = Sut::new(&[b'f', b'u', b'u', 0xff, 0xff]);
         assert_that!(sut, is_err);
+    }
+
+    #[test]
+    fn is_full_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
+        let sut = Sut::new(b"a01234567").unwrap();
+        assert_that!(sut.is_full(), eq false);
+    }
+
+    #[test]
+    fn capacity_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
+        let sut = Sut::new(b"a01234567").unwrap();
+        assert_that!(sut.capacity(), eq CAPACITY);
+    }
+
+    #[test]
+    fn insert_too_much_bytes_fails<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
+        let mut sut = Sut::new(b"a01234567").unwrap();
+        let mut bytes = vec![];
+        for _ in 0..8192 {
+            bytes.push(b'a')
+        }
+
+        let result = sut.insert_bytes(0, &bytes);
+        assert_that!(result, is_err);
+        assert_that!(
+            result.err().unwrap(), eq
+            SemanticStringError::ExceedsMaximumLength
+        );
+    }
+
+    #[test]
+    fn pop_until_empty_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
+        let mut sut = Sut::new(b"aaa").unwrap();
+
+        let mut do_pop = || {
+            let result = sut.pop();
+            if result.is_ok() {
+                assert_that!(result.unwrap().unwrap(), eq b'a');
+            } else {
+                assert_that!(result.err().unwrap(), eq SemanticStringError::InvalidContent);
+            }
+        };
+
+        do_pop();
+        do_pop();
+        do_pop();
+
+        if sut.is_empty() {
+            assert_that!(sut.pop().unwrap(), eq None);
+        }
     }
 
     #[instantiate_tests(<{FileName::max_len()}, FileName>)]
