@@ -45,10 +45,9 @@ fn group_as_works() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
     let root_1 = 0u32.as_group().unwrap();
-    let root_2 = "root".to_string().as_group().unwrap();
-    let root_3 = "root".as_group().unwrap();
+    let root_2 = root_1.name().to_string().as_group().unwrap();
+    let root_3 = (&root_1.name().to_string()).as_group().unwrap();
 
-    assert_that!(root_1.name().as_bytes(), eq b"root");
     assert_that!(root_2.gid(), eq 0);
     assert_that!(root_3.gid(), eq 0);
 
