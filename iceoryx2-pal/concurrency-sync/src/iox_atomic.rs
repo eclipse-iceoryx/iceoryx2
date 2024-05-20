@@ -55,21 +55,27 @@ pub type IoxAtomicI16 = core::sync::atomic::AtomicI16;
 #[allow(clippy::disallowed_types)]
 pub type IoxAtomicI32 = core::sync::atomic::AtomicI32;
 
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(
+    target_pointer_width = "64",
+    not(feature = "enforce_32bit_rwlock_atomic")
+))]
 /// Behaves like [`core::sync::atomic::AtomicI64`]
 #[allow(clippy::disallowed_types)]
 pub type IoxAtomicI64 = core::sync::atomic::AtomicI64;
 
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(
+    target_pointer_width = "64",
+    not(feature = "enforce_32bit_rwlock_atomic")
+))]
 /// Behaves like [`core::sync::atomic::AtomicU64`]
 #[allow(clippy::disallowed_types)]
 pub type IoxAtomicU64 = core::sync::atomic::AtomicU64;
 
-#[cfg(target_pointer_width = "32")]
+#[cfg(any(target_pointer_width = "32", feature = "enforce_32bit_rwlock_atomic"))]
 /// Non lock-free implementation that behaves like [`core::sync::atomic::AtomicI64`]
 pub type IoxAtomicI64 = IoxAtomic<i64>;
 
-#[cfg(target_pointer_width = "32")]
+#[cfg(any(target_pointer_width = "32", feature = "enforce_32bit_rwlock_atomic"))]
 /// Non lock-free implementation that behaves like [`core::sync::atomic::AtomicU64`]
 pub type IoxAtomicU64 = IoxAtomic<u64>;
 
