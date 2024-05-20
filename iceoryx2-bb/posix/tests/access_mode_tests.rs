@@ -32,3 +32,11 @@ fn access_mode_o_flag_conversion_works() {
     assert_that!(AccessMode::Write.as_oflag(), eq posix::O_WRONLY);
     assert_that!(AccessMode::ReadWrite.as_oflag(), eq posix::O_RDWR);
 }
+
+#[test]
+fn access_mode_display_works() {
+    assert_that!(format!("{}", AccessMode::None), eq "AccessMode::None");
+    assert_that!(format!("{}", AccessMode::Read), eq "AccessMode::Read");
+    assert_that!(format!("{}", AccessMode::Write), eq "AccessMode::Write");
+    assert_that!(format!("{}", AccessMode::ReadWrite), eq "AccessMode::ReadWrite");
+}

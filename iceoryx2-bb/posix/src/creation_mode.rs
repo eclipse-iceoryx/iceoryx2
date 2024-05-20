@@ -42,7 +42,7 @@ impl Display for CreationMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "CreationMode: {}",
+            "CreationMode::{}",
             match self {
                 CreationMode::CreateExclusive => "CreateExclusive",
                 CreationMode::PurgeAndCreate => "PurgeAndCreate",

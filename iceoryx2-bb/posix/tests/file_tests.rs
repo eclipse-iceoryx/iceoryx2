@@ -181,6 +181,7 @@ fn file_simple_read_write_works() {
 
     let mut content = "oh look what is in the file \n in in that line \t fuuu".to_string();
     let result = file.write(unsafe { content.as_mut_vec() }.as_slice());
+    assert_that!(file.flush(), is_ok);
 
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
@@ -223,6 +224,17 @@ fn file_created_file_does_exist() -> Result<(), FileError> {
     test.create_file(&test.file);
 
     assert_that!(File::does_exist(&test.file)?, eq true);
+    Ok(())
+}
+
+#[test]
+fn file_truncate_works() -> Result<(), FileError> {
+    const NEW_SIZE: usize = 192;
+    let test = TestFixture::new();
+    let mut sut = test.create_file(&test.file);
+    assert_that!(sut.truncate(NEW_SIZE), is_ok);
+    assert_that!(sut.metadata().unwrap().size(), eq NEW_SIZE as _);
+
     Ok(())
 }
 

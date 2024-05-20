@@ -20,9 +20,9 @@ use windows_sys::Win32::{
     },
     Networking::WinSock::closesocket,
     Storage::FileSystem::{
-        FlushFileBuffers, GetFileAttributesA, ReadFile, RemoveDirectoryA, SetFilePointer,
-        WriteFile, FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_READONLY, FILE_BEGIN, FILE_CURRENT,
-        FILE_END, INVALID_FILE_ATTRIBUTES, INVALID_SET_FILE_POINTER,
+        FlushFileBuffers, GetFileAttributesA, ReadFile, RemoveDirectoryA, SetEndOfFile,
+        SetFilePointer, WriteFile, FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_READONLY, FILE_BEGIN,
+        FILE_CURRENT, FILE_END, INVALID_FILE_ATTRIBUTES, INVALID_SET_FILE_POINTER,
     },
     System::{
         Diagnostics::ToolHelp::{
@@ -129,9 +129,14 @@ pub unsafe fn dup(fildes: int) -> int {
 
 pub unsafe fn close(fd: int) -> int {
     match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::Handle(handle)) => {
-            win32call! { CloseHandle(handle.handle)};
+        Some(FdHandleEntry::SharedMemory(handle)) => {
+            win32call! { CloseHandle(handle.handle.handle)};
             win32call! { CloseHandle(handle.state_handle)};
+            HandleTranslator::get_instance().remove(fd);
+            0
+        }
+        Some(FdHandleEntry::File(handle)) => {
+            win32call! { CloseHandle(handle.handle)};
             HandleTranslator::get_instance().remove(fd);
             0
         }
@@ -153,7 +158,7 @@ pub unsafe fn close(fd: int) -> int {
 
 pub unsafe fn read(fd: int, buf: *mut void, count: size_t) -> ssize_t {
     match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::Handle(handle)) => {
+        Some(FdHandleEntry::File(handle)) => {
             let mut bytes_read = 0;
             if win32call! {ReadFile(
                 handle.handle,
@@ -177,7 +182,7 @@ pub unsafe fn read(fd: int, buf: *mut void, count: size_t) -> ssize_t {
 
 pub unsafe fn write(fd: int, buf: *const void, count: size_t) -> ssize_t {
     match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::Handle(handle)) => {
+        Some(FdHandleEntry::File(handle)) => {
             let mut bytes_written = 0;
             if win32call! {WriteFile(
                 handle.handle,
@@ -229,7 +234,7 @@ pub unsafe fn unlink(pathname: *const c_char) -> int {
 
 pub unsafe fn lseek(fd: int, offset: off_t, whence: int) -> off_t {
     match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::Handle(handle)) => {
+        Some(FdHandleEntry::File(handle)) => {
             let move_method = match whence {
                 SEEK_SET => FILE_BEGIN,
                 SEEK_CUR => FILE_CURRENT,
@@ -275,16 +280,26 @@ pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
         return -1;
     }
 
-    let win_handle = match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::Handle(v)) => v,
+    match HandleTranslator::get_instance().get(fd) {
+        Some(FdHandleEntry::SharedMemory(handle)) => {
+            shm_set_size(handle.state_handle, length as u64);
+            0
+        }
+        Some(FdHandleEntry::File(handle)) => {
+            win32call! { SetFilePointer(
+                handle.handle,
+                length as _,
+                core::ptr::null_mut(),
+                FILE_BEGIN,
+            )};
+            win32call! { SetEndOfFile(handle.handle)};
+            0
+        }
         _ => {
             Errno::set(Errno::EBADF);
-            return -1;
+            0
         }
-    };
-
-    shm_set_size(win_handle.state_handle, length as u64);
-    0
+    }
 }
 
 pub unsafe fn fchown(fd: int, owner: uid_t, group: gid_t) -> int {
@@ -293,7 +308,7 @@ pub unsafe fn fchown(fd: int, owner: uid_t, group: gid_t) -> int {
 
 pub unsafe fn fsync(fd: int) -> int {
     match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::Handle(handle)) => {
+        Some(FdHandleEntry::File(handle)) => {
             win32call! {FlushFileBuffers(handle.handle)};
             0
         }

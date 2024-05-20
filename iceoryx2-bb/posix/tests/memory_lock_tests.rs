@@ -31,3 +31,15 @@ fn memory_lock_works() {
         assert_that!(mem_lock, is_ok);
     }
 }
+
+#[test]
+fn memory_lock_all_works() {
+    test_requires!(POSIX_SUPPORT_MEMORY_LOCK);
+
+    assert_that!(
+        MemoryLock::lock_all(LockMode::LockAllPagesThatBecomeMapped),
+        is_ok
+    );
+
+    MemoryLock::unlock_all();
+}

@@ -35,7 +35,7 @@ use windows_sys::Win32::{
     System::{Memory::*, IO::OVERLAPPED},
 };
 
-use super::win32_handle_translator::{FdHandleEntry, HandleTranslator, Win32Handle};
+use super::win32_handle_translator::{FdHandleEntry, FileHandle, HandleTranslator, ShmHandle};
 
 const MAX_SUPPORTED_SHM_SIZE: usize = 1024 * 1024 * 1024;
 
@@ -184,10 +184,12 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
         }
     }
 
-    HandleTranslator::get_instance().add(FdHandleEntry::Handle(Win32Handle {
-        handle: shm_handle,
+    HandleTranslator::get_instance().add(FdHandleEntry::SharedMemory(ShmHandle {
+        handle: FileHandle {
+            handle: shm_handle,
+            lock_state: F_UNLCK,
+        },
         state_handle: shm_state_handle,
-        lock_state: F_UNLCK,
     }))
 }
 
@@ -316,14 +318,14 @@ pub unsafe fn mmap(
     }
 
     let win_handle = match HandleTranslator::get_instance().get(fd) {
-        Some(FdHandleEntry::Handle(v)) => v,
+        Some(FdHandleEntry::SharedMemory(v)) => v,
         _ => {
             Errno::set(Errno::EINVAL);
             return core::ptr::null_mut::<void>();
         }
     };
 
-    match win32call! { MapViewOfFile(win_handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)} {
+    match win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)} {
         0 => {
             Errno::set(Errno::ENOMEM);
             core::ptr::null_mut::<void>()

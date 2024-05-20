@@ -58,7 +58,10 @@ impl<'a> TestFixture<'a> {
 
         TestFixture {
             file_name,
-            sut: FileLockBuilder::new().create(file, handle).expect(""),
+            sut: FileLockBuilder::new()
+                .priority(ReadWriteMutexPriority::PreferWriter)
+                .create(file, handle)
+                .expect(""),
         }
     }
 }
@@ -129,7 +132,7 @@ fn file_lock_write_timed_lock_denies_other_timed_locks() {
 
     let handle = ReadWriteMutexHandle::new();
     let test = TestFixture::new(&handle);
-    let guard = test.sut.write_timed_lock(TIMEOUT).unwrap();
+    let guard = test.sut.write_timed_lock(TIMEOUT).unwrap().unwrap();
 
     let result = test.sut.get_lock_state().unwrap();
     assert_that!(result.lock_type(), eq LockType::Write);
@@ -407,4 +410,45 @@ fn file_lock_write_try_lock_does_not_block() {
         thread::sleep(std::time::Duration::from_millis(10));
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
     });
+}
+
+#[test]
+fn file_lock_read_write_works() {
+    test_requires!(POSIX_SUPPORT_FILE_LOCK);
+
+    let handle = ReadWriteMutexHandle::new();
+    let test = TestFixture::new(&handle);
+    let mut guard = test.sut.write_lock().expect("");
+
+    assert_that!(guard.write(b"hello").unwrap(), eq 5);
+    drop(guard);
+
+    let guard = test.sut.write_lock().expect("");
+
+    let mut content = vec![];
+    assert_that!(guard.read_to_vector(&mut content).unwrap(), eq 5);
+    assert_that!(content, eq b"hello");
+
+    drop(guard);
+
+    let guard = test.sut.read_lock().expect("");
+
+    let mut content = vec![];
+    assert_that!(guard.read_to_vector(&mut content).unwrap(), eq 5);
+    assert_that!(content, eq b"hello");
+}
+
+#[test]
+fn file_lock_try_and_timed_lock_fails_when_locked() {
+    test_requires!(POSIX_SUPPORT_FILE_LOCK);
+
+    let handle = ReadWriteMutexHandle::new();
+    let test = TestFixture::new(&handle);
+    let _guard = test.sut.write_lock().expect("");
+
+    assert_that!(test.sut.read_try_lock().unwrap(), is_none);
+    assert_that!(test.sut.write_try_lock().unwrap(), is_none);
+
+    assert_that!(test.sut.read_timed_lock(TIMEOUT).unwrap(), is_none);
+    assert_that!(test.sut.write_timed_lock(TIMEOUT).unwrap(), is_none);
 }

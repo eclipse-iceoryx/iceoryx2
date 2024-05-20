@@ -28,6 +28,8 @@ fn multi_condition_variable_construction_works() {
         .create_multi_condition_variable(1234, &handle)
         .unwrap();
     assert_that!(*sut.lock().unwrap(), eq 1234);
+    assert_that!(*sut.try_lock().unwrap().unwrap(), eq 1234);
+    assert_that!(*sut.timed_lock(TIMEOUT).unwrap().unwrap(), eq 1234);
 }
 
 #[test]

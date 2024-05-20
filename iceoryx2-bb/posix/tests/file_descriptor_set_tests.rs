@@ -145,3 +145,28 @@ fn file_descriptor_set_timed_wait_works() {
     assert_that!(result, len 1);
     assert_that!(result[0], eq unsafe{sut_receiver.file_descriptor().native_handle()});
 }
+
+#[test]
+fn file_descriptor_guard_has_access_to_underlying_fd() {
+    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
+
+    let socket_name = generate_socket_name();
+
+    let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let fd_set = FileDescriptorSet::new();
+    let guard = fd_set.add(&sut_receiver).unwrap();
+
+    unsafe {
+        assert_that!(guard.file_descriptor().native_handle(), eq sut_receiver.file_descriptor().native_handle())
+    }
+}
+
+#[test]
+fn file_descriptor_debug_works() {
+    let sut = FileDescriptorSet::new();
+    assert_that!(format!("{:?}", sut).starts_with("FileDescriptorSet"), eq true);
+}
