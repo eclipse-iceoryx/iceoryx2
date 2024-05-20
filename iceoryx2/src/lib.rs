@@ -264,6 +264,10 @@
 //!  * `logger_log` - Uses the [log crate](https://crates.io/crates/log) as default log backend
 //!  * `logger_tracing` - Uses the [tracing crate](https://crates.io/crates/tracing) as default log
 //!     backend
+//!  * `enforce_32bit_rwlock_atomic` - Enforces the 32-bit atomic also on 64-bit platforms. Enables
+//!     32-bit and 64-bit applications to communicate but at the expense of the lock-free
+//!     guarantee. Enabling the feature can cause a deadlock of the whole system when one
+//!     application crashes at the wrong time.
 //!
 //! # Custom Configuration
 //!

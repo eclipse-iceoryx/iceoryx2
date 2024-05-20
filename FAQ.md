@@ -18,6 +18,12 @@ be created.
  > new publisher whenever the memory is insufficient. It would also solve the
  > history issue.
 
+## How To Make 32-bit and 64-bit iceoryx2 Applications Interoperatable
+
+Use the feature flag `enforce_32bit_rwlock_atomic` which enforces 32-bit atomics for all
+targets at the cost of the lock-free guarantee. Meaning, when an application crashes at the wrong
+point in time it can lead to a system deadlock.
+
 ## Application does not remove services/ports on shutdown or several application restarts lead to port count exceeded
 
 The structs of iceoryx2 need to be able to cleanup all resources when they
