@@ -48,7 +48,7 @@
 
 use std::ffi::CStr;
 
-use iceoryx2_bb_container::byte_string::strlen;
+use iceoryx2_bb_container::byte_string::strnlen;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::{group_name::GroupName, user_name::UserName};
@@ -228,7 +228,7 @@ impl Group {
         let name = fail!(from origin, when unsafe{ GroupName::from_c_str(group.gr_name) },
                             with GroupError::SystemGroupNameLengthLongerThanSupportedLength,
                             "{} since the group name length ({}) is greater than the supported group name length of {}.",
-                            msg, unsafe { strlen(group.gr_name) }, GroupName::max_len() );
+                            msg, unsafe { strnlen(group.gr_name, GroupName::max_len()) }, GroupName::max_len() );
         let password = Self::extract_entry(&origin, group.gr_passwd, "password")?;
 
         let mut counter: isize = 0;
@@ -243,7 +243,7 @@ impl Group {
                 .push(fail!(from origin, when unsafe { UserName::from_c_str(group_member) },
                         with GroupError::SystemUserNameLengthLongerThanSupportedLength,
                         "{} since the user name length ({}) is greater than the support user name length of {}.",
-                        msg, unsafe { strlen(group_member) }, UserName::max_len() ));
+                        msg, unsafe { strnlen(group_member, UserName::max_len()) }, UserName::max_len() ));
             counter += 1;
         }
 

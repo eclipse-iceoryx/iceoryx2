@@ -45,15 +45,15 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 ///
 ///  * The string must be '\0' (null) terminated.
 ///
-pub unsafe fn strlen(ptr: *mut core::ffi::c_char) -> usize {
+pub unsafe fn strnlen(ptr: *const core::ffi::c_char, len: usize) -> usize {
     const NULL_TERMINATION: core::ffi::c_char = 0;
-    for i in 0..isize::MAX {
-        if *ptr.offset(i) == NULL_TERMINATION {
-            return i as usize;
+    for i in 0..len {
+        if *ptr.add(i) == NULL_TERMINATION {
+            return i;
         }
     }
 
-    unreachable!()
+    len
 }
 
 /// Error which can occur when a [`FixedSizeByteString`] is modified.
@@ -64,7 +64,7 @@ pub enum FixedSizeByteStringModificationError {
 
 impl std::fmt::Display for FixedSizeByteStringModificationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "FixedSizeByteStringModificationError::{:?}", self)
     }
 }
 
@@ -278,9 +278,9 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
     ///  * `ptr` must be '\0' (null) terminated
     ///
     pub unsafe fn from_c_str(
-        ptr: *mut core::ffi::c_char,
+        ptr: *const core::ffi::c_char,
     ) -> Result<Self, FixedSizeByteStringModificationError> {
-        let string_length = strlen(ptr);
+        let string_length = strnlen(ptr, CAPACITY + 1);
         if CAPACITY < string_length {
             return Err(FixedSizeByteStringModificationError::InsertWouldExceedCapacity);
         }
