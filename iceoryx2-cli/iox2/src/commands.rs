@@ -84,27 +84,30 @@ fn find_command_binaries_in_development_dirs() -> Vec<CommandInfo> {
 }
 
 fn find_command_binaries_in_system_path() -> Vec<CommandInfo> {
-    let mut commands = Vec::new();
-    if let Ok(path_var) = env::var("PATH") {
-        for path in env::split_paths(&path_var) {
-            if let Ok(entries) = fs::read_dir(path) {
-                for entry in entries.filter_map(Result::ok) {
-                    let path = entry.path();
-                    if is_valid_command_binary(&path) {
-                        if let Some(command_name) = path.file_name().and_then(|n| n.to_str()) {
-                            commands.push(CommandInfo {
-                                name: command_name.to_string(),
-                                path,
-                                is_development: false,
-                            });
-                        }
-                    }
-                }
+    env::var("PATH")
+        .ok()
+        .into_iter()
+        .flat_map(|path_var| env::split_paths(&path_var).collect::<Vec<_>>())
+        .flat_map(|path: PathBuf| {
+            fs::read_dir(path)
+                .into_iter()
+                .flat_map(|read_dir| read_dir.filter_map(Result::ok))
+        })
+        .filter_map(|entry| {
+            let path = entry.path();
+            if is_valid_command_binary(&path) {
+                path.file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|command_name| CommandInfo {
+                        name: command_name.to_string(),
+                        path: path.clone(),
+                        is_development: false,
+                    })
+            } else {
+                None
             }
-        }
-    }
-
-    commands
+        })
+        .collect()
 }
 
 fn is_valid_command_binary(path: &PathBuf) -> bool {
