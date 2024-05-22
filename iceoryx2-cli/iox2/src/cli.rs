@@ -1,4 +1,5 @@
 use clap::Parser;
+use colored::*;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -14,17 +15,26 @@ pub struct Cli {
     #[arg(short, long, help = "List all installed commands")]
     pub list: bool,
 
-    #[arg(short, long, help = "Run development commands")]
+    #[arg(
+        short,
+        long,
+        help = "Specify to execute development versions of commands if they exist"
+    )]
     pub dev: bool,
 
     #[arg(hide = true, required = false)]
     pub external_command: Vec<String>,
 }
 
-fn help_template() -> &'static str {
-    "\
-    USAGE: iox2 [OPTIONS] <COMMAND>\n\n\
-    OPTIONS:\n{options}\n\n\
-    COMMANDS:\n{subcommands}\n\
-    \u{00A0}\u{00A0}...         See all installed commands with --list"
+fn help_template() -> String {
+    format!(
+        "{}{}{}\n\n{}\n{{options}}\n\n{}\n{{subcommands}}{}{}",
+        "Usage: ".bright_green().bold(),
+        "iox2 ".bold(),
+        "[OPTIONS] [COMMAND]",
+        "Options:".bright_green().bold(),
+        "Commands:".bright_green().bold(),
+        "  ...         ".bold(),
+        "See all installed commands with --list"
+    )
 }

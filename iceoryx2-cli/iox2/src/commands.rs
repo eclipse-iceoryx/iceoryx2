@@ -21,18 +21,26 @@ pub enum ExecutionError {
 }
 
 pub fn list() {
-    println!("Installed Commands:");
-    let installed_commands = find();
-    for command in installed_commands {
-        println!(
-            "  {}",
+    println!("{}", "Installed Commands:".bright_green().bold());
+    let mut installed_commands = find();
+    installed_commands.sort_by_key(|command| command.name.clone());
+    installed_commands
+        .iter()
+        .map(|command| {
             format!(
-                "{}{}",
-                if command.is_development { "(dev) " } else { "" },
-                command.name.bold(),
+                "  {}",
+                format!(
+                    "{} {}",
+                    command.name.bold(),
+                    if command.is_development {
+                        "(dev) ".italic()
+                    } else {
+                        "".italic()
+                    },
+                )
             )
-        );
-    }
+        })
+        .for_each(|formatted_command| println!("{}", formatted_command));
 }
 
 fn find() -> Vec<CommandInfo> {
@@ -45,10 +53,9 @@ fn find() -> Vec<CommandInfo> {
 }
 
 fn find_command_binaries_in_development_dirs() -> Vec<CommandInfo> {
-    let mut commands = Vec::new();
     let current_exe = match env::current_exe() {
         Ok(exe) => exe,
-        Err(_) => return commands,
+        Err(_) => return Vec::new(),
     };
     let build_type = if cfg!(debug_assertions) {
         "debug"
@@ -64,23 +71,25 @@ fn find_command_binaries_in_development_dirs() -> Vec<CommandInfo> {
         .unwrap()
         .join(build_type);
 
-    if let Ok(entries) = fs::read_dir(&binary_dir) {
-        for entry in entries.filter_map(Result::ok) {
-            let path = entry.path();
-            if is_valid_command_binary(&path) {
-                if let Some(command_name) = path.file_name().and_then(|n| n.to_str()) {
+    fs::read_dir(binary_dir)
+        .ok()
+        .into_iter()
+        .flat_map(|entries| entries.filter_map(Result::ok))
+        .map(|entry| entry.path())
+        .filter(|path| is_valid_command_binary(path))
+        .filter_map(|path| {
+            path.file_name()
+                .and_then(|n| n.to_str())
+                .map(|command_name| {
                     let stripped = command_name.strip_prefix("iox2-").unwrap_or(command_name);
-                    commands.push(CommandInfo {
+                    CommandInfo {
                         name: stripped.to_string(),
-                        path,
+                        path: path.clone(),
                         is_development: true,
-                    });
-                }
-            }
-        }
-    }
-
-    commands
+                    }
+                })
+        })
+        .collect()
 }
 
 fn find_command_binaries_in_system_path() -> Vec<CommandInfo> {
