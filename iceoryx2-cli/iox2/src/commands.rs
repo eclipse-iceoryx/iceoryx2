@@ -2,6 +2,7 @@ use colored::*;
 use std::env;
 use std::fs;
 use std::io;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use thiserror::Error;
@@ -29,16 +30,13 @@ pub fn list() {
         .iter()
         .map(|command| {
             format!(
-                "  {}",
-                format!(
-                    "{} {}",
-                    command.name.bold(),
-                    if command.is_development {
-                        "(dev) ".italic()
-                    } else {
-                        "".italic()
-                    },
-                )
+                "  {} {}",
+                command.name.bold(),
+                if command.is_development {
+                    "(dev) ".italic()
+                } else {
+                    "".italic()
+                },
             )
         })
         .for_each(|formatted_command| println!("{}", formatted_command));
@@ -94,7 +92,7 @@ fn find_development_command_binaries() -> Vec<CommandInfo> {
         .into_iter()
         .flat_map(|entries| entries.filter_map(Result::ok))
         .map(|entry| entry.path())
-        .filter(|path| is_valid_command_binary(path))
+        .filter(|path_buf: &PathBuf| is_valid_command_binary(path_buf.as_path()))
         .filter_map(|path| {
             path.file_name()
                 .and_then(|n| n.to_str())
@@ -134,7 +132,7 @@ fn find_installed_command_binaries() -> Vec<CommandInfo> {
         .collect()
 }
 
-fn is_valid_command_binary(path: &PathBuf) -> bool {
+fn is_valid_command_binary(path: &Path) -> bool {
     path.is_file()
         && path
             .file_stem()
@@ -172,9 +170,9 @@ pub fn execute_external_command(
 ) -> Result<(), ExecutionError> {
     let available_commands = find();
     if let Some(command_info) = available_commands.into_iter().find(|c| {
-        &c.name == command_name
+        c.name == command_name
             && if dev_flag_present {
-                c.is_development == true
+                c.is_development
             } else {
                 if c.is_development {
                     println!(
