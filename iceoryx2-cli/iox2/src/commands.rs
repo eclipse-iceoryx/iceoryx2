@@ -1,6 +1,7 @@
 use colored::*;
 use std::env;
 use std::fs;
+use std::io;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use thiserror::Error;
@@ -43,35 +44,52 @@ pub fn list() {
         .for_each(|formatted_command| println!("{}", formatted_command));
 }
 
-fn find() -> Vec<CommandInfo> {
-    let development_commands = find_command_binaries_in_development_dirs();
-    let installed_commands = find_command_binaries_in_system_path();
+fn get_build_path_dirs() -> Result<std::path::PathBuf, io::Error> {
+    let current_exe = env::current_exe()?;
 
-    let mut all_commands = development_commands;
-    all_commands.extend(installed_commands.iter().cloned());
-    all_commands
-}
-
-fn find_command_binaries_in_development_dirs() -> Vec<CommandInfo> {
-    let current_exe = match env::current_exe() {
-        Ok(exe) => exe,
-        Err(_) => return Vec::new(),
-    };
     let build_type = if cfg!(debug_assertions) {
         "debug"
     } else {
         "release"
     };
 
-    // Get the location of the binary directory for the build
-    let binary_dir = current_exe
+    let build_path = current_exe
         .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join(build_type);
+        .and_then(|p| p.parent())
+        .map(|p| p.join(build_type))
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                "Failed to construct path of development dir",
+            )
+        })?;
 
-    fs::read_dir(binary_dir)
+    Ok(build_path)
+}
+
+fn get_install_path_dirs() -> impl Iterator<Item = std::path::PathBuf> {
+    env::var("PATH")
+        .ok()
+        .into_iter()
+        .flat_map(|path_var| env::split_paths(&path_var).collect::<Vec<_>>())
+}
+
+fn find() -> Vec<CommandInfo> {
+    let development_commands = find_development_command_binaries();
+    let installed_commands = find_installed_command_binaries();
+
+    let mut all_commands = development_commands;
+    all_commands.extend(installed_commands.iter().cloned());
+    all_commands
+}
+
+fn find_development_command_binaries() -> Vec<CommandInfo> {
+    let development_binaries_dir = match get_build_path_dirs() {
+        Ok(location) => location,
+        Err(_) => return Vec::new(),
+    };
+
+    fs::read_dir(development_binaries_dir)
         .ok()
         .into_iter()
         .flat_map(|entries| entries.filter_map(Result::ok))
@@ -92,11 +110,8 @@ fn find_command_binaries_in_development_dirs() -> Vec<CommandInfo> {
         .collect()
 }
 
-fn find_command_binaries_in_system_path() -> Vec<CommandInfo> {
-    env::var("PATH")
-        .ok()
-        .into_iter()
-        .flat_map(|path_var| env::split_paths(&path_var).collect::<Vec<_>>())
+fn find_installed_command_binaries() -> Vec<CommandInfo> {
+    get_install_path_dirs()
         .flat_map(|path: PathBuf| {
             fs::read_dir(path)
                 .into_iter()
@@ -128,6 +143,26 @@ fn is_valid_command_binary(path: &PathBuf) -> bool {
             .unwrap()
             .starts_with("iox2-")
         && path.extension().is_none() // Exclude files with extensions (e.g. '.d')
+}
+
+pub fn paths() {
+    let mut development_binaries_dirs = Vec::new();
+    development_binaries_dirs.extend(get_build_path_dirs().ok());
+
+    let mut installed_binaries_dirs = Vec::new();
+    installed_binaries_dirs.extend(get_install_path_dirs());
+
+    println!("{}", "Development Binary Paths:".bright_green().bold());
+    for dir in &development_binaries_dirs {
+        println!("  {}", dir.display().to_string().bold());
+    }
+
+    println!();
+
+    println!("{}", "Installed Binary Paths:".bright_green().bold());
+    for dir in &installed_binaries_dirs {
+        println!("  {}", dir.display().to_string().bold());
+    }
 }
 
 pub fn execute_external_command(

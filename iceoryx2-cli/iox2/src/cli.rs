@@ -18,6 +18,13 @@ pub struct Cli {
     #[arg(
         short,
         long,
+        help = "Display paths that will be checked for installed commands"
+    )]
+    pub paths: bool,
+
+    #[arg(
+        short,
+        long,
         help = "Specify to execute development versions of commands if they exist"
     )]
     pub dev: bool,
