@@ -43,7 +43,6 @@ pub mod toml;
 /// Failure emitted by [`Serialize::serialize()`]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SerializeError {
-    UnsupportedType,
     InternalError,
 }
 

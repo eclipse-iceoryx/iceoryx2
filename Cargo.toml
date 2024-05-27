@@ -33,7 +33,7 @@ keywords = ["zero-copy", "communication", "ipc", "inter-process", "publish-subsc
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/eclipse-iceoryx/iceoryx2"
-rust-version = "1.73"
+rust-version = "1.75"
 version = "0.3.0"
 
 [workspace.dependencies]
@@ -56,23 +56,23 @@ iceoryx2-cal = { version = "0.3.0", path = "iceoryx2-cal" }
 
 iceoryx2 = { version = "0.3.0", path = "iceoryx2/" }
 
-bindgen = { version = "0.65.1" }
-bitflags = { version = "1.3.2" }
-cc = { version = "1.0" }
+bindgen = { version = "0.69.4" }
+bitflags = { version = "2.5.0" }
+cc = { version = "1.0.98" }
 cdr = { version = "0.2.4" }
-clap = { version = "3.2.25", features = ["derive"] }
-enum-iterator = { version = "1.2.0" }
+clap = { version = "4.5.4", features = ["derive"] }
+enum-iterator = { version = "2.1.0" }
 generic-tests = { version = "0.1.2" }
 lazy_static = { version = "1.4.0" }
-log = { version = "0.4.20" }
-once_cell = { version = "1.16.0" }
-ouroboros = { version = "0.17.2" }
+log = { version = "0.4.21" }
+once_cell = { version = "1.19.0" }
+ouroboros = { version = "0.18.4" }
 pin-init = { version = "0.2.0" }
-serde = { version = "1.0.139", features = ["derive"] }
+serde = { version = "1.0.203", features = ["derive"] }
 sha1_smol = { version = "1.0.0" }
-termsize = { version = "0.1" }
+termsize = { version = "0.1.6" }
 tiny-fn = { version = "0.1.5" }
-toml = { version = "0.5.9" }
+toml = { version = "0.8.13" }
 tracing = { version = "0.1.40" }
 windows-sys = { version = "0.48.0", features = ["Win32_Security", "Win32_Security_Authorization", "Win32_System_Memory", "Win32_System_Threading", "Win32_Foundation", "Win32_System_WindowsProgramming", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Diagnostics_Debug", "Win32_System_SystemInformation", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Console", "Win32_Networking_WinSock",
 "Win32_System_SystemServices"] }

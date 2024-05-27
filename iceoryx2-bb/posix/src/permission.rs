@@ -21,10 +21,12 @@ use std::fmt::Display;
 
 type ModeType = posix::mode_t;
 
+/// Defines the permission of a file or directory in a POSIX system.
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Permission(ModeType);
+
 bitflags! {
-    /// Defines the permission of a file or directory in a POSIX system.
-   #[derive(Default)]
-    pub struct Permission: ModeType {
+    impl Permission: ModeType {
         const OWNER_READ = 0o0400;
         const OWNER_WRITE = 0o0200;
         const OWNER_EXEC = 0o0100;
@@ -48,12 +50,13 @@ bitflags! {
 
         const MASK = 0o7777;
         const UNKNOWN = 0xFFFF;
+        const _ = !0;
     }
 }
 
 impl Permission {
     pub fn none() -> Self {
-        Self { bits: 0 }
+        Self { 0: 0 }
     }
 }
 
@@ -118,12 +121,12 @@ impl PermissionExt for posix::mode_t {
 impl Permission {
     /// Returns true when self contains the permissions of the rhs, otherwise false.
     pub fn has(&self, rhs: Permission) -> bool {
-        (*self & rhs) != Permission::none()
+        (self.0 & rhs.0) != 0
     }
 
     /// Converts the permissions into the C type mode_t
     pub fn as_mode(&self) -> posix::mode_t {
-        self.bits
+        self.0
     }
 }
 
