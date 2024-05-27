@@ -56,7 +56,7 @@ bitflags! {
 
 impl Permission {
     pub fn none() -> Self {
-        Self { 0: 0 }
+        Self(0)
     }
 }
 

@@ -23,6 +23,12 @@ pub use iceoryx2_bb_elementary::allocator::{AllocationError, Allocator, BaseAllo
 #[derive(Debug)]
 pub struct HeapAllocator {}
 
+impl Default for HeapAllocator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HeapAllocator {
     pub const fn new() -> HeapAllocator {
         HeapAllocator {}

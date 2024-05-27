@@ -306,22 +306,22 @@ impl ThreadBuilder {
         }
     }
 
-    pub fn spawn<'a, T: Debug, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
+    pub fn spawn<'a, T, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
     where
-        T: Send + 'static,
+        T: Debug + Send + 'static,
         F: FnOnce() -> T + Send + 'static,
     {
         self.spawn_impl(f, None)
     }
 
     /// Creates a new thread with the provided callable `f`.
-    fn spawn_impl<'a, T: Debug, F>(
+    fn spawn_impl<'a, T, F>(
         self,
         f: F,
         stack: Option<&'a mut [u8]>,
     ) -> Result<Thread<'a>, ThreadSpawnError>
     where
-        T: Send + 'static,
+        T: Debug + Send + 'static,
         F: FnOnce() -> T + Send + 'static,
     {
         let mut attributes = ScopeGuardBuilder::new( posix::pthread_attr_t::new())
@@ -561,9 +561,9 @@ impl ThreadGuardedStackBuilder {
     }
 
     /// See: [`ThreadBuilder::spawn()`]
-    pub fn spawn<'a, T: Debug, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
+    pub fn spawn<'a, T, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
     where
-        T: Send + 'static,
+        T: Debug + Send + 'static,
         F: FnOnce() -> T + Send + 'static,
     {
         self.config.spawn_impl(f, None)
@@ -580,9 +580,9 @@ pub struct ThreadCustomStackBuilder<'a> {
 
 impl<'a> ThreadCustomStackBuilder<'a> {
     /// See: [`ThreadBuilder::spawn()`]
-    pub fn spawn<T: Debug, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
+    pub fn spawn<T, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
     where
-        T: Send + 'static,
+        T: Debug + Send + 'static,
         F: FnOnce() -> T + Send + 'static,
     {
         self.config.spawn_impl(f, Some(self.stack))
