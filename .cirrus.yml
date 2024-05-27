@@ -138,7 +138,7 @@ ubuntu_22_04_x64_min_version_debug_task:
   only_if: false
   depends_on: preflight_check
   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
-  set_toolchain_script: rustup default 1.73.0
+  set_toolchain_script: rustup default 1.75.0
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
   linux_only_doc_test_script: cargo test --doc -- --ignored
 
@@ -189,7 +189,7 @@ ubuntu_22_04_aarch64_min_version_debug_task:
   depends_on: preflight_check
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
-  set_toolchain_script: rustup default 1.73.0
+  set_toolchain_script: rustup default 1.75.0
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 ubuntu_22_04_aarch64_stable_debug_task:
@@ -286,7 +286,7 @@ freebsd_x64_min_version_debug_task:
     PATH: /root/.cargo/bin:$PATH
     HOME: /root  # must be set manually to '/root' or 'rustup' will throw an error
   <<: *IOX2_FREEBSD_SETUP
-  set_toolchain_script: rustup default 1.73.0
+  set_toolchain_script: rustup default 1.75.0
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 freebsd_x64_stable_debug_task:
@@ -319,7 +319,7 @@ macos_aarch64_min_version_debug_task:
     - uname -a
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
     - rustup component add clippy rustfmt
-  set_toolchain_script: rustup default 1.73.0
+  set_toolchain_script: rustup default 1.75.0
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
 
 macos_aarch64_stable_debug_task:

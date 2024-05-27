@@ -99,7 +99,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable] # [stable, 1.73.0, beta, nightly]
+        toolchain: [stable] # [stable, 1.75.0, beta, nightly]
         mode: 
           - name: "release"
             arg: "--release"
@@ -139,7 +139,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable, 1.73.0, beta, nightly]
+        toolchain: [stable, 1.75.0, beta, nightly]
         mode: 
           - name: "release"
             arg: "--release"
@@ -180,7 +180,7 @@ jobs:
   #   strategy:
   #     matrix:
   #       architecture: ["aarch64"] # ["aarch64", "armv7"]
-  #       toolchain: [ stable ] # [stable, 1.73.0, beta, nightly]
+  #       toolchain: [ stable ] # [stable, 1.75.0, beta, nightly]
   #       mode: ["--release", ""]
   #   timeout-minutes: 30
   #   steps:
@@ -206,7 +206,7 @@ jobs:
     strategy:
       matrix:
         freebsd_version: [ "14.0" ] 
-        toolchain: [ "stable", "1.73.0" ] # [stable, 1.73.0, beta, nightly]
+        toolchain: [ "stable", "1.75.0" ] # [stable, 1.75.0, beta, nightly]
         mode: [""] # ["--release", ""]
     steps:
       - uses: actions/checkout@v4
