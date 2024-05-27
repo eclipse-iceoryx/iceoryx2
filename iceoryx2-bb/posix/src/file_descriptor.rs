@@ -114,7 +114,10 @@ pub struct FileDescriptor {
 impl Clone for FileDescriptor {
     fn clone_from(&mut self, source: &Self) {
         self.close();
-        *self = source.clone();
+        // TODO: [#223] START: rewrite lines to: let *self = source.clone()
+        let temp = source.clone();
+        *self = temp;
+        // TODO: [#223] END
     }
 
     fn clone(&self) -> Self {

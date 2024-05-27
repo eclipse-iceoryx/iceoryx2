@@ -14,7 +14,7 @@
 
 pacman -Syu --noconfirm clang git rustup
 pacman -Scc --noconfirm 
-rustup toolchain add beta nightly stable 1.73.0
+rustup toolchain add beta nightly stable 1.75.0
 rustup component add clippy llvm-tools-preview rustfmt
 rustup default stable
 groupadd users

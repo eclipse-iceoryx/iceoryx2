@@ -13,6 +13,7 @@
 extern crate bindgen;
 extern crate cc;
 
+use bindgen::*;
 use std::env;
 use std::path::PathBuf;
 
@@ -27,7 +28,7 @@ fn main() {
     let bindings = if std::env::var("DOCS_RS").is_ok() {
         bindgen::Builder::default()
             .header("src/c/posix.h")
-            .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+            .parse_callbacks(Box::new(CargoCallbacks::new()))
             .clang_arg("-D IOX2_DOCS_RS_SUPPORT")
             .use_core()
             .generate()
@@ -37,7 +38,7 @@ fn main() {
         {
             bindgen::Builder::default()
                 .header("src/c/posix.h")
-                .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+                .parse_callbacks(Box::new(CargoCallbacks::new()))
                 .use_core()
                 .generate()
                 .expect("Unable to generate bindings")
@@ -47,7 +48,7 @@ fn main() {
         {
             bindgen::Builder::default()
                 .header("src/c/posix.h")
-                .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+                .parse_callbacks(Box::new(CargoCallbacks::new()))
                 .clang_arg("-D IOX2_ACL_SUPPORT")
                 .generate()
                 .expect("Unable to generate bindings")

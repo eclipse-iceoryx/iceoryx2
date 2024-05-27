@@ -18,7 +18,7 @@ pkg update
 pkg install -y curl git llvm
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
 export PATH=$PATH:$HOME/.cargo/bin
-rustup toolchain add beta nightly 1.73.0 stable
+rustup toolchain add beta nightly 1.75.0 stable
 rustup component add clippy rustfmt
 rustup default stable
 cargo install cargo-nextest --locked
