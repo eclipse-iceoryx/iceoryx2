@@ -26,23 +26,21 @@ set(RUST_ARCH_TRIPLET_FLAG "")
 set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
 set(RUST_ARCH_TARGET_DIR ${RUST_TARGET_DIR}/${RUST_ARCH_TRIPLET})
 
+# TODO switch for Windows
 set(ICEORYX2_LANG_C_LIB ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/libiceoryx2_lang_c.a)
+set(ICEORYX2_LANG_C_INCLUDE_DIR ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/iceoryx2_lang_c_cbindgen/include)
 
 # run cargo
 add_custom_target(
     iceoryx2 ALL
     COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --target-dir=${RUST_TARGET_DIR} ${RUST_ARCH_TRIPLET_FLAG}
     BYPRODUCTS
-    "${CMAKE_CURRENT_SOURCE_DIR}/iceoryx2.h"
+    ${ICEORYX2_LANG_C_INCLUDE_DIR}/iox2/iceoryx2.h
     ${ICEORYX2_LANG_C_LIB}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     VERBATIM
     USES_TERMINAL
 )
-
-# TODO remove once generation works as expected ... have a look at iceoryx-rs
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/iceoryx2.h"
-  "${CMAKE_BINARY_DIR}/generated/include/iox2/iceoryx2.h" @ONLY)
 
 # set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 # list(APPEND CMAKE_FIND_LIBRARY_SUFFIXES ".so")
@@ -56,7 +54,7 @@ add_library(${PROJECT_NAME} INTERFACE)
 
 add_dependencies(${PROJECT_NAME} iceoryx2)
 
-target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_BINARY_DIR}/generated/include)
+target_include_directories(${PROJECT_NAME} INTERFACE ${ICEORYX2_LANG_C_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ${ICEORYX2_LANG_C_LIB})
 
