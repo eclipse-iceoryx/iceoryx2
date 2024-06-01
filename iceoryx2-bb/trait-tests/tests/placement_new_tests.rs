@@ -20,7 +20,7 @@ mod placement_new {
         }
     }
 
-    struct Fuu(i32);
+    pub struct Fuu(pub i32);
 
     impl PlacementDefault for Fuu {
         unsafe fn placement_default(ptr: *mut Self) {
@@ -30,32 +30,48 @@ mod placement_new {
     }
 
     struct Bar {
-        value: u64,
+        _value: u64,
     }
 
     impl PlacementDefault for Bar {
         unsafe fn placement_default(ptr: *mut Self) {
             DEFAULT_CTOR_COUNT.fetch_add(1, Ordering::Relaxed);
-            ptr.write(Self { value: 123 })
+            ptr.write(Self { _value: 123 })
         }
     }
 
     #[derive(PlacementDefault)]
-    struct TestStruct {
+    struct NamedTestStruct {
         value1: UnitStruct,
         value2: Fuu,
         value3: Bar,
     }
 
+    #[derive(PlacementDefault)]
+    struct UnnamedTestStruct(Fuu, Bar, Bar, UnitStruct, UnitStruct, UnitStruct);
+
     #[test]
-    fn placement_default_works() {
+    fn placement_default_derive_for_structs_works() {
         DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
 
-        let layout = Layout::new::<TestStruct>();
-        let memory = unsafe { alloc(layout) } as *mut TestStruct;
-        unsafe { TestStruct::placement_default(memory) };
+        let layout = Layout::new::<NamedTestStruct>();
+        let memory = unsafe { alloc(layout) } as *mut NamedTestStruct;
+        unsafe { NamedTestStruct::placement_default(memory) };
 
         assert_that!(DEFAULT_CTOR_COUNT.load(Ordering::Relaxed), eq 3);
+
+        unsafe { dealloc(memory.cast(), layout) };
+    }
+
+    #[test]
+    fn placement_default_derive_for_unnamed_structs_works() {
+        DEFAULT_CTOR_COUNT.store(0, Ordering::Relaxed);
+
+        let layout = Layout::new::<UnnamedTestStruct>();
+        let memory = unsafe { alloc(layout) } as *mut UnnamedTestStruct;
+        unsafe { UnnamedTestStruct::placement_default(memory) };
+
+        assert_that!(DEFAULT_CTOR_COUNT.load(Ordering::Relaxed), eq 6);
 
         unsafe { dealloc(memory.cast(), layout) };
     }

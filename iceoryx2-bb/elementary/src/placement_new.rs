@@ -20,7 +20,6 @@ macro_rules! Impl {
     };
 }
 
-Impl!(bool);
 Impl!(f32);
 Impl!(f64);
 Impl!(u8);
@@ -35,6 +34,8 @@ Impl!(i64);
 Impl!(i128);
 Impl!(isize);
 Impl!(usize);
+Impl!(char);
+Impl!(bool);
 Impl!(IoxAtomicBool);
 Impl!(IoxAtomicU8);
 Impl!(IoxAtomicU16);

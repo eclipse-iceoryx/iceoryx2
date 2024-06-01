@@ -9,7 +9,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
-    let place_new_impl = match input.data {
+    let place_default_impl = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Named(ref fields_named) => {
                 let field_inits = fields_named.named.iter().map(|f| {
@@ -17,7 +17,6 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
                     quote! {
                         let field_address = core::ptr::addr_of_mut!((*ptr).#name);
                         PlacementDefault::placement_default(field_address);
-                        //PlacementDefault::placement_default(&mut (*ptr).#name);
                     }
                 });
 
@@ -28,10 +27,10 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
                 }
             }
             Fields::Unnamed(ref fields_unnamed) => {
-                let field_inits = fields_unnamed.unnamed.iter().map(|f| {
-                    let name = &f.ident;
+                let field_inits = fields_unnamed.unnamed.iter().enumerate().map(|(i, _)| {
+                    let index = syn::Index::from(i);
                     quote! {
-                        let field_address = core::ptr::addr_of_mut!((*ptr).#name);
+                        let field_address = core::ptr::addr_of_mut!((*ptr).#index);
                         PlacementDefault::placement_default(field_address);
                     }
                 });
@@ -54,7 +53,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl iceoryx2_bb_elementary::placement_new::PlacementDefault for #name {
-            #place_new_impl
+            #place_default_impl
         }
     };
 
