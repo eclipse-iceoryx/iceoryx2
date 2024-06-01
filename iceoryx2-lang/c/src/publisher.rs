@@ -1,10 +1,13 @@
 use core::time::Duration;
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::set_log_level;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 #[no_mangle]
 pub extern "C" fn run_publisher(seconds: u32) -> i32 {
+    set_log_level(iceoryx2_bb_log::LogLevel::Info);
+
     let service_name = ServiceName::new("Hello/from/C");
 
     if service_name.is_err() {

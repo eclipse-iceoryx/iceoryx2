@@ -24,3 +24,4 @@ cbindgen = { workspace = true }
 
 [dependencies]
 iceoryx2 = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
