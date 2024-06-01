@@ -56,7 +56,7 @@ add_dependencies(${PROJECT_NAME} iceoryx2)
 
 target_include_directories(${PROJECT_NAME} INTERFACE ${ICEORYX2_LANG_C_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} INTERFACE ${ICEORYX2_LANG_C_LIB})
+target_link_libraries(${PROJECT_NAME} INTERFACE ${ICEORYX2_LANG_C_LIB} -lm)
 
 ########## find_package in source tree ##########
 set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
