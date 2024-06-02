@@ -76,5 +76,5 @@ pub extern "C" fn run_publisher(seconds: u32) -> i32 {
 
     println!("exit");
 
-    return 0;
+    0
 }

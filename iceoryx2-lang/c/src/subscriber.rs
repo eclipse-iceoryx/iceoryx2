@@ -65,5 +65,5 @@ pub extern "C" fn run_subscriber(seconds: u32) -> i32 {
 
     println!("exit");
 
-    return 0;
+    0
 }

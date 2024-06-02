@@ -35,5 +35,5 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
         println!("\n{:#?}", &service);
     }
 
-    return 0;
+    0
 }
