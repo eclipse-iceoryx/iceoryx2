@@ -82,7 +82,7 @@ iox2_common_build_release_template: &IOX2_COMMON_BUILD_RELEASE
 
 iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
   <<: *IOX2_COMMON_BUILD_RELEASE
-  test_script: RUSTFLAGS="-C debug-assertions" cargo nextest run --release --tests --workspace --no-fail-fast
+  test_script: cargo nextest run --release --tests --workspace --no-fail-fast
 
 iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP
   setup_script:
@@ -103,6 +103,13 @@ iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP
 #
 
 only_if: $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH == 'main')
+
+#
+# Global environment variables
+#
+
+env:
+  RUSTFLAGS: "-C debug-assertions"
 
 #
 # Preflight-Check with Ubuntu x86 stable debug
