@@ -1,9 +1,48 @@
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! Contains helper derive macros for iceoryx2.
+
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
+/// Implements the [`iceoryx2_bb_elementary::placement_default::PlacementDefault`] trait when all
+/// fields of the struct implement it.
+///
+/// ```
+/// use iceoryx2_bb_derive_macros::PlacementDefault;
+/// use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+/// use std::alloc::{alloc, dealloc, Layout};
+///
+/// #[derive(PlacementDefault)]
+/// struct MyLargeType {
+///     value_1: u64,
+///     value_2: Option<usize>,
+///     value_3: [u8; 10485760],
+/// }
+///
+/// let layout = Layout::new::<MyLargeType>();
+/// let raw_memory = unsafe { alloc(layout) } as *mut MyLargeType;
+/// unsafe { MyLargeType::placement_default(raw_memory) };
+///
+/// unsafe { &mut *raw_memory }.value_3[123] = 31;
+///
+/// unsafe { core::ptr::drop_in_place(raw_memory) };
+/// unsafe { dealloc(raw_memory.cast(), layout) };
+
+/// ```
 #[proc_macro_derive(PlacementDefault)]
 pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -17,7 +56,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
                     let name = &f.ident;
                     quote! {
                         let field_address = core::ptr::addr_of_mut!((*ptr).#name);
-                        PlacementDefault::placement_default(field_address);
+                        iceoryx2_bb_elementary::placement_default::PlacementDefault::placement_default(field_address);
                     }
                 });
 
@@ -32,7 +71,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
                     let index = syn::Index::from(i);
                     quote! {
                         let field_address = core::ptr::addr_of_mut!((*ptr).#index);
-                        PlacementDefault::placement_default(field_address);
+                        iceoryx2_bb_elementary::placement_default::PlacementDefault::placement_default(field_address);
                     }
                 });
 

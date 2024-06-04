@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Describes a container which can shared between processes.
+
 use crate::{allocator::AllocationError, allocator::BaseAllocator};
 
 /// Describes a container which can shared between processes. Since the shared memory is often
