@@ -8,6 +8,7 @@ use syn::{parse_macro_input, Data, DeriveInput, Fields};
 pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     let place_default_impl = match input.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
@@ -21,7 +22,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
                 });
 
                 quote! {
-                    unsafe fn placement_default(ptr: *mut #name) {
+                    unsafe fn placement_default(ptr: *mut Self) {
                         #(#field_inits)*
                     }
                 }
@@ -36,14 +37,14 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
                 });
 
                 quote! {
-                    unsafe fn placement_default(ptr: *mut #name) {
+                    unsafe fn placement_default(ptr: *mut Self) {
                         #(#field_inits)*
                     }
                 }
             }
             Fields::Unit => {
                 quote! {
-                    unsafe fn placement_default(ptr: *mut #name) {
+                    unsafe fn placement_default(ptr: *mut Self) {
                     }
                 }
             }
@@ -52,7 +53,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        impl iceoryx2_bb_elementary::placement_new::PlacementDefault for #name {
+        impl #impl_generics iceoryx2_bb_elementary::placement_new::PlacementDefault for #name #ty_generics #where_clause {
             #place_default_impl
         }
     };
