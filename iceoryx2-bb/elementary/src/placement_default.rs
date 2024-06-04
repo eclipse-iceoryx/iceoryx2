@@ -1,6 +1,41 @@
 use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 
+/// A trait that allows types to perform a placement new based on their
+/// [`Default::default()`] implementation. This can be used to avoid additional
+/// copies when a type must be written into a specific memory location.
+///
+/// ```
+/// use std::alloc::{alloc, dealloc, Layout};
+/// use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+///
+/// struct MyLargeType {
+///     value_1: [u64; 10485760],
+///     value_2: [u64; 10485760]
+/// }
+///
+/// impl PlacementDefault for MyLargeType {
+///     unsafe fn placement_default(ptr: *mut Self) {
+///         let value_1_ptr = core::ptr::addr_of_mut!(unsafe {&mut *ptr}.value_1);
+///         let value_2_ptr = core::ptr::addr_of_mut!(unsafe {&mut *ptr}.value_2);
+///
+///         PlacementDefault::placement_default(value_1_ptr);
+///         PlacementDefault::placement_default(value_2_ptr);
+///     }
+/// }
+///
+/// let layout = Layout::new::<MyLargeType>();
+/// let raw_memory = unsafe { alloc(layout) } as *mut MyLargeType;
+/// unsafe { MyLargeType::placement_default(raw_memory) };
+///
+/// unsafe { &mut *raw_memory }.value_1[123] = 456;
+///
+/// unsafe { core::ptr::drop_in_place(raw_memory) };
+/// unsafe { dealloc(raw_memory.cast(), layout) };
+/// ```
 pub trait PlacementDefault {
+    /// Performs a initialization of Self at the provided memory position
+    /// with [`Default::default()`].
+    ///
     /// # Safety
     ///
     ///  * ptr must have at least the alignment of Self

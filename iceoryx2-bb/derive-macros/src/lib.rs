@@ -53,7 +53,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        impl #impl_generics iceoryx2_bb_elementary::placement_new::PlacementDefault for #name #ty_generics #where_clause {
+        impl #impl_generics iceoryx2_bb_elementary::placement_default::PlacementDefault for #name #ty_generics #where_clause {
             #place_default_impl
         }
     };

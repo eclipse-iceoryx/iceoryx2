@@ -6,7 +6,7 @@ mod placement_new {
     };
 
     use iceoryx2_bb_derive_macros::PlacementDefault;
-    use iceoryx2_bb_elementary::placement_new::PlacementDefault;
+    use iceoryx2_bb_elementary::placement_default::PlacementDefault;
     use iceoryx2_bb_testing::assert_that;
 
     static DEFAULT_CTOR_COUNT: AtomicUsize = AtomicUsize::new(0);
