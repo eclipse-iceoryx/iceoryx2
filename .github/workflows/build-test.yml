@@ -139,7 +139,47 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable, 1.75.0, beta, nightly]
+        toolchain: [stable, 1.75.0]
+        mode: 
+          - name: "release"
+            arg: "--release"
+          - name: "debug"
+            arg: ""
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+      - name: Prepare system
+        run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
+
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
+
+  x86_64_unstable:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [beta, nightly]
         mode: 
           - name: "release"
             arg: "--release"
