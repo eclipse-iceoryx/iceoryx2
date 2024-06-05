@@ -99,6 +99,7 @@ use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
@@ -397,15 +398,17 @@ pub struct FixedSizeQueue<T, const CAPACITY: usize> {
     _data: [MaybeUninit<T>; CAPACITY],
 }
 
+impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
+    unsafe fn placement_default(ptr: *mut Self) {
+        let state_ptr = core::ptr::addr_of_mut!((&mut *ptr).state);
+        state_ptr.write(Self::initialize_state());
+    }
+}
+
 impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
     fn default() -> Self {
         Self {
-            state: unsafe {
-                RelocatableQueue::new(
-                    CAPACITY,
-                    align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableQueue<T>>()) as isize,
-                )
-            },
+            state: Self::initialize_state(),
             _data: unsafe { MaybeUninit::uninit().assume_init() },
         }
     }
@@ -415,6 +418,15 @@ unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY>
 unsafe impl<T: Sync, const CAPACITY: usize> Sync for FixedSizeQueue<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
+    fn initialize_state() -> RelocatableQueue<T> {
+        unsafe {
+            RelocatableQueue::new(
+                CAPACITY,
+                align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableQueue<T>>()) as isize,
+            )
+        }
+    }
+
     /// Creates a new queue.
     pub fn new() -> Self {
         Self::default()
