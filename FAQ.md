@@ -24,6 +24,14 @@ Use the feature flag `enforce_32bit_rwlock_atomic` which enforces 32-bit atomics
 targets at the cost of the lock-free guarantee. Meaning, when an application crashes at the wrong
 point in time it can lead to a system deadlock.
 
+## My Transmission Type Is Too Large, Encounter Stack Overflow On Initialization.
+
+Take a look at the
+[complex data types example](examples/rust/complex_data_types).
+
+In this example the `PlacementDefault` trait is introduced that allows in place initialization
+and solves the stack overflow issue when the data type is larger than the available stack size.
+
 ## Application does not remove services/ports on shutdown or several application restarts lead to port count exceeded
 
 The structs of iceoryx2 need to be able to cleanup all resources when they

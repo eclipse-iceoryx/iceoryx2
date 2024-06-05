@@ -60,8 +60,6 @@
 //! }
 //! ```
 
-pub use iceoryx2_bb_elementary::placement_default::PlacementDefault;
-
 use crate::byte_string::FixedSizeByteStringModificationError;
 use crate::byte_string::{as_escaped_string, strnlen, FixedSizeByteString};
 use iceoryx2_bb_elementary::enum_gen;
@@ -381,10 +379,10 @@ macro_rules! semantic_string {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
         }
 
-        impl iceoryx2_bb_container::semantic_string::PlacementDefault for $string_name {
+        impl iceoryx2_bb_elementary::placement_default::PlacementDefault for $string_name {
             unsafe fn placement_default(ptr: *mut Self) {
                 let ptr = core::ptr::addr_of_mut!((&mut *ptr).value);
-                iceoryx2_bb_container::semantic_string::PlacementDefault::placement_default(ptr)
+                iceoryx2_bb_elementary::placement_default::PlacementDefault::placement_default(ptr)
             }
         }
 

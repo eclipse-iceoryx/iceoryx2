@@ -22,6 +22,7 @@ enforce_32bit_rwlock_atomic = ["iceoryx2-pal-concurrency-sync/enforce_32bit_rwlo
 
 [dependencies]
 iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-log = { workspace = true }

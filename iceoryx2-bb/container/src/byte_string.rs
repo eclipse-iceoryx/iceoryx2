@@ -38,6 +38,7 @@ use std::{
 };
 
 use iceoryx2_bb_derive_macros::PlacementDefault;
+use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_log::{fail, fatal_panic};
 
 /// Returns the length of a string

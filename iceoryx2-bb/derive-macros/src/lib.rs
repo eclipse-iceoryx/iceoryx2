@@ -56,7 +56,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
                     let name = &f.ident;
                     quote! {
                         let field_address = core::ptr::addr_of_mut!((*ptr).#name);
-                        iceoryx2_bb_elementary::placement_default::PlacementDefault::placement_default(field_address);
+                        PlacementDefault::placement_default(field_address);
                     }
                 });
 
@@ -71,7 +71,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
                     let index = syn::Index::from(i);
                     quote! {
                         let field_address = core::ptr::addr_of_mut!((*ptr).#index);
-                        iceoryx2_bb_elementary::placement_default::PlacementDefault::placement_default(field_address);
+                        PlacementDefault::placement_default(field_address);
                     }
                 });
 
@@ -92,7 +92,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        impl #impl_generics iceoryx2_bb_elementary::placement_default::PlacementDefault for #name #ty_generics #where_clause {
+        impl #impl_generics PlacementDefault for #name #ty_generics #where_clause {
             #place_default_impl
         }
     };
