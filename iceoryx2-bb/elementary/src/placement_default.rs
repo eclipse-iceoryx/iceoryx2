@@ -98,17 +98,18 @@ Impl!(IoxAtomicI64);
 Impl!(IoxAtomicIsize);
 Impl!(IoxAtomicUsize);
 
-impl<T: PlacementDefault + Default, const CAPACITY: usize> PlacementDefault for [T; CAPACITY] {
+impl<T: PlacementDefault, const CAPACITY: usize> PlacementDefault for [T; CAPACITY] {
     unsafe fn placement_default(ptr: *mut Self) {
         for i in 0..CAPACITY {
-            (ptr as *mut T).add(i).write(T::default())
+            PlacementDefault::placement_default((ptr as *mut T).add(i))
         }
     }
 }
 
-impl<T: PlacementDefault + Default> PlacementDefault for (T,) {
+impl<T: PlacementDefault> PlacementDefault for (T,) {
     unsafe fn placement_default(ptr: *mut Self) {
-        ptr.write((T::default(),))
+        let ptr = core::ptr::addr_of_mut!((*ptr).0);
+        PlacementDefault::placement_default(ptr)
     }
 }
 
@@ -116,4 +117,8 @@ impl<T> PlacementDefault for Option<T> {
     unsafe fn placement_default(ptr: *mut Self) {
         ptr.write(None)
     }
+}
+
+impl<T: PlacementDefault> PlacementDefault for core::mem::MaybeUninit<T> {
+    unsafe fn placement_default(_ptr: *mut Self) {}
 }
