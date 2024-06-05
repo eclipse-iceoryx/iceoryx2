@@ -333,7 +333,7 @@ pub struct FixedSizeVec<T, const CAPACITY: usize> {
 
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
-        let state_ptr = core::ptr::addr_of_mut!((&mut *ptr).state);
+        let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(Self::initialize_state())
     }
 }

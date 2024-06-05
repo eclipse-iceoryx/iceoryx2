@@ -30,8 +30,8 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 ///
 /// impl PlacementDefault for MyLargeType {
 ///     unsafe fn placement_default(ptr: *mut Self) {
-///         let value_1_ptr = core::ptr::addr_of_mut!(unsafe {&mut *ptr}.value_1);
-///         let value_2_ptr = core::ptr::addr_of_mut!(unsafe {&mut *ptr}.value_2);
+///         let value_1_ptr = core::ptr::addr_of_mut!((*ptr).value_1);
+///         let value_2_ptr = core::ptr::addr_of_mut!((*ptr).value_2);
 ///
 ///         PlacementDefault::placement_default(value_1_ptr);
 ///         PlacementDefault::placement_default(value_2_ptr);
