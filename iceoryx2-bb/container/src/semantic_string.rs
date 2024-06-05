@@ -379,13 +379,6 @@ macro_rules! semantic_string {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
         }
 
-        impl iceoryx2_bb_elementary::placement_default::PlacementDefault for $string_name {
-            unsafe fn placement_default(ptr: *mut Self) {
-                let ptr = core::ptr::addr_of_mut!((&mut *ptr).value);
-                iceoryx2_bb_elementary::placement_default::PlacementDefault::placement_default(ptr)
-            }
-        }
-
         impl iceoryx2_bb_container::semantic_string::SemanticString<$capacity> for $string_name {
             fn as_string(&self) -> &iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity> {
                 &self.value

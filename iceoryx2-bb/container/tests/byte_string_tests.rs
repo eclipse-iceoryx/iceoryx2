@@ -12,11 +12,14 @@
 
 mod fixed_size_byte_string {
     use std::{
+        alloc::{alloc, dealloc, Layout},
         hash::{Hash, Hasher},
+        mem::size_of,
         ops::DerefMut,
     };
 
     use iceoryx2_bb_container::byte_string::*;
+    use iceoryx2_bb_elementary::placement_default::PlacementDefault;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::hash_map::DefaultHasher;
 
@@ -499,5 +502,22 @@ mod fixed_size_byte_string {
     fn remove_range_out_of_bounds_index_panics() {
         let mut sut = Sut::from_bytes_truncated(b"Who did eat the last unicorn?");
         sut.remove_range(48, 12);
+    }
+
+    #[test]
+    fn placement_default_works() {
+        let layout = Layout::new::<Sut>();
+        let memory = unsafe { alloc(layout) } as *mut Sut;
+        for i in 0..size_of::<Sut>() {
+            unsafe { (memory as *mut u8).add(i).write(0xff) };
+        }
+        unsafe { Sut::placement_default(memory) };
+        let sut = unsafe { &mut (*memory) };
+        assert_that!(sut, len 0);
+
+        assert_that!(sut.push_bytes(b"hello"), is_ok);
+        assert_that!(sut.as_bytes(), eq b"hello");
+
+        unsafe { dealloc(memory.cast(), layout) };
     }
 }

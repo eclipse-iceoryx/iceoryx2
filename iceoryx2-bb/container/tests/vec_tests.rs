@@ -10,8 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::alloc::{alloc, dealloc, Layout};
+use std::mem::size_of;
+
 use iceoryx2_bb_container::vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
@@ -242,4 +246,25 @@ fn fixed_size_vec_pop_releases_ownership() {
         drop(result);
         assert_that!(LifetimeTracker::number_of_living_instances(), eq i);
     }
+}
+
+#[test]
+fn placement_default_works() {
+    type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
+    let layout = Layout::new::<Sut>();
+    let memory = unsafe { alloc(layout) } as *mut Sut;
+    for i in 0..size_of::<Sut>() {
+        unsafe { (memory as *mut u8).add(i).write(0xff) };
+    }
+    unsafe { Sut::placement_default(memory) };
+
+    let sut = unsafe { &mut (*memory) };
+    assert_that!(sut, len 0);
+    assert_that!(sut.push(123), eq true);
+    assert_that!(sut.push(456), eq true);
+
+    assert_that!(sut.pop(), eq Some(456));
+    assert_that!(sut.pop(), eq Some(123));
+
+    unsafe { dealloc(memory.cast(), layout) };
 }
