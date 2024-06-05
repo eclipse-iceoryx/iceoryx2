@@ -19,3 +19,6 @@ proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }

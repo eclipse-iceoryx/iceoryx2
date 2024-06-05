@@ -14,7 +14,6 @@ version = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-container = { workspace = true }
-iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
