@@ -89,7 +89,8 @@ jobs:
         rust-toolchain: stable
         check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
         print-version-cmd: cargo-nextest --version
-        cache-key: cache-1-${{ runner.os }}-cargo-nextest
+        # increment cache-N-${{}} if a new nextest version is required
+        cache-key: cache-2-${{ runner.os }}-cargo-nextest
         artifact-bin-name: cargo-nextest
         artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
