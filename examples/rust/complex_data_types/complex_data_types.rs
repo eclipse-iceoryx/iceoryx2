@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         // ComplexDataType as a size of over 30MB, we need to perform a placement new
-        // otherwise we will encounter a StackOverflow.
+        // otherwise we will encounter a stack overflow in debug builds.
         // Therefore, we acquire an uninitialized sample, use the PlacementDefault
         // trait to initialize ComplexDataType in place and then populate it with data.
         let mut sample = publisher.loan_uninit()?;

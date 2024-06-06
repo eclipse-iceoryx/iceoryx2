@@ -12,15 +12,13 @@
 
 mod fixed_size_byte_string {
     use std::{
-        alloc::{alloc, dealloc, Layout},
         hash::{Hash, Hasher},
-        mem::size_of,
         ops::DerefMut,
     };
 
     use iceoryx2_bb_container::byte_string::*;
     use iceoryx2_bb_elementary::placement_default::PlacementDefault;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
     use std::collections::hash_map::DefaultHasher;
 
     const SUT_CAPACITY: usize = 129;
@@ -506,18 +504,11 @@ mod fixed_size_byte_string {
 
     #[test]
     fn placement_default_works() {
-        let layout = Layout::new::<Sut>();
-        let memory = unsafe { alloc(layout) } as *mut Sut;
-        for i in 0..size_of::<Sut>() {
-            unsafe { (memory as *mut u8).add(i).write(0xff) };
-        }
-        unsafe { Sut::placement_default(memory) };
-        let sut = unsafe { &mut (*memory) };
-        assert_that!(sut, len 0);
+        let mut sut = RawMemory::<Sut>::new_filled(0xff);
+        unsafe { Sut::placement_default(sut.as_mut_ptr()) };
+        assert_that!(unsafe {sut.assume_init()}, len 0);
 
-        assert_that!(sut.push_bytes(b"hello"), is_ok);
-        assert_that!(sut.as_bytes(), eq b"hello");
-
-        unsafe { dealloc(memory.cast(), layout) };
+        assert_that!(unsafe { sut.assume_init_mut() }.push_bytes(b"hello"), is_ok);
+        assert_that!(unsafe {sut.assume_init()}.as_bytes(), eq b"hello");
     }
 }

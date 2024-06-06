@@ -254,6 +254,8 @@ jobs:
       - uses: vmactions/freebsd-vm@v1
         with:
           release: ${{ matrix.freebsd_version }}
+          mem: 8192
+          copyback: false
           run: |
             ./internal/scripts/ci_prepare_freebsd.sh
             export PATH=$PATH:$HOME/.cargo/bin

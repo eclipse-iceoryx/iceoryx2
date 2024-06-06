@@ -11,16 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod queue {
-    use std::{
-        alloc::{alloc, dealloc, Layout},
-        mem::size_of,
-    };
-
     use iceoryx2_bb_container::queue::*;
     use iceoryx2_bb_elementary::{
         bump_allocator::BumpAllocator, placement_default::PlacementDefault,
     };
-    use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
+    use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker, memory::RawMemory};
 
     const SUT_CAPACITY: usize = 128;
     type Sut = FixedSizeQueue<usize, SUT_CAPACITY>;
@@ -302,21 +297,14 @@ mod queue {
     #[test]
     fn placement_default_works() {
         type Sut = FixedSizeQueue<usize, SUT_CAPACITY>;
-        let layout = Layout::new::<Sut>();
-        let memory = unsafe { alloc(layout) } as *mut Sut;
-        for i in 0..size_of::<Sut>() {
-            unsafe { (memory as *mut u8).add(i).write(0xff) };
-        }
-        unsafe { Sut::placement_default(memory) };
+        let mut sut = RawMemory::<Sut>::new_filled(0xff);
+        unsafe { Sut::placement_default(sut.as_mut_ptr()) };
 
-        let sut = unsafe { &mut (*memory) };
-        assert_that!(sut, len 0);
-        assert_that!(sut.push(123), eq true);
-        assert_that!(sut.push(456), eq true);
+        assert_that!(unsafe {sut.assume_init()}, len 0);
+        assert_that!(unsafe {sut.assume_init_mut()}.push(123), eq true);
+        assert_that!(unsafe {sut.assume_init_mut()}.push(456), eq true);
 
-        assert_that!(sut.pop(), eq Some(123));
-        assert_that!(sut.pop(), eq Some(456));
-
-        unsafe { dealloc(memory.cast(), layout) };
+        assert_that!(unsafe {sut.assume_init_mut()}.pop(), eq Some(123));
+        assert_that!(unsafe {sut.assume_init_mut()}.pop(), eq Some(456));
     }
 }

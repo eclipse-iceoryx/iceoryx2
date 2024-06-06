@@ -13,6 +13,8 @@
 //! Trait to perform placement new construction on a given pointer via [`Default::default()`].
 //! See [`PlacementDefault`] for example.
 
+use std::mem::MaybeUninit;
+
 use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 
 /// A trait that allows types to perform a placement new based on their
@@ -98,6 +100,15 @@ Impl!(IoxAtomicI64);
 Impl!(IoxAtomicIsize);
 Impl!(IoxAtomicUsize);
 
+impl<T: PlacementDefault> PlacementDefault for [T] {
+    unsafe fn placement_default(ptr: *mut Self) {
+        let ptr = ptr as *mut [MaybeUninit<T>];
+        for i in (*ptr).iter_mut() {
+            PlacementDefault::placement_default(i.as_mut_ptr());
+        }
+    }
+}
+
 impl<T: PlacementDefault, const CAPACITY: usize> PlacementDefault for [T; CAPACITY] {
     unsafe fn placement_default(ptr: *mut Self) {
         for i in 0..CAPACITY {
@@ -106,10 +117,53 @@ impl<T: PlacementDefault, const CAPACITY: usize> PlacementDefault for [T; CAPACI
     }
 }
 
-impl<T: PlacementDefault> PlacementDefault for (T,) {
+impl<T1: PlacementDefault> PlacementDefault for (T1,) {
     unsafe fn placement_default(ptr: *mut Self) {
         let ptr = core::ptr::addr_of_mut!((*ptr).0);
         PlacementDefault::placement_default(ptr)
+    }
+}
+
+impl<T1: PlacementDefault, T2: PlacementDefault> PlacementDefault for (T1, T2) {
+    unsafe fn placement_default(ptr: *mut Self) {
+        let elem = core::ptr::addr_of_mut!((*ptr).0);
+        PlacementDefault::placement_default(elem);
+
+        let elem = core::ptr::addr_of_mut!((*ptr).1);
+        PlacementDefault::placement_default(elem)
+    }
+}
+
+impl<T1: PlacementDefault, T2: PlacementDefault, T3: PlacementDefault> PlacementDefault
+    for (T1, T2, T3)
+{
+    unsafe fn placement_default(ptr: *mut Self) {
+        let elem = core::ptr::addr_of_mut!((*ptr).0);
+        PlacementDefault::placement_default(elem);
+
+        let elem = core::ptr::addr_of_mut!((*ptr).1);
+        PlacementDefault::placement_default(elem);
+
+        let elem = core::ptr::addr_of_mut!((*ptr).2);
+        PlacementDefault::placement_default(elem)
+    }
+}
+
+impl<T1: PlacementDefault, T2: PlacementDefault, T3: PlacementDefault, T4: PlacementDefault>
+    PlacementDefault for (T1, T2, T3, T4)
+{
+    unsafe fn placement_default(ptr: *mut Self) {
+        let elem = core::ptr::addr_of_mut!((*ptr).0);
+        PlacementDefault::placement_default(elem);
+
+        let elem = core::ptr::addr_of_mut!((*ptr).1);
+        PlacementDefault::placement_default(elem);
+
+        let elem = core::ptr::addr_of_mut!((*ptr).2);
+        PlacementDefault::placement_default(elem);
+
+        let elem = core::ptr::addr_of_mut!((*ptr).3);
+        PlacementDefault::placement_default(elem)
     }
 }
 

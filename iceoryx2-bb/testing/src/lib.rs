@@ -13,6 +13,7 @@
 #[macro_use]
 pub mod assert;
 pub mod lifetime_tracker;
+pub mod memory;
 pub mod watchdog;
 
 #[macro_export(local_inner_macros)]
