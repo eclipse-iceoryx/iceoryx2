@@ -26,6 +26,7 @@ lazy_static = { workspace = true }
 bitflags = { workspace = true }
 enum-iterator = { workspace = true }
 tiny-fn = { workspace = true }
+serde = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

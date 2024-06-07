@@ -54,10 +54,8 @@ impl crate::service::Service for Service {
     type ServiceNameHasher = hash::sha1::Sha1;
     type SharedMemory = shared_memory::posix::Memory<PoolAllocator>;
     type Connection = zero_copy_connection::posix_shared_memory::Connection;
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    type Event = event::sem_bitset_posix_shared_memory::Event;
-    #[cfg(any(target_os = "macos", target_os = "windows"))]
     type Event = event::unix_datagram_socket::EventImpl;
+    type Monitoring = monitoring::file_lock::FileLockMonitoring;
 
     fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self {
         Self { state }

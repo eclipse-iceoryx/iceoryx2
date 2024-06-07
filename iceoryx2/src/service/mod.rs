@@ -191,6 +191,7 @@ use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::Event;
 use iceoryx2_cal::hash::Hash;
+use iceoryx2_cal::monitoring::Monitoring;
 use iceoryx2_cal::named_concept::NamedConceptListError;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::serialize::Serialize;
@@ -310,6 +311,9 @@ pub trait Service: Debug + Sized {
 
     /// The mechanism used to signal events between endpoints.
     type Event: Event;
+
+    /// Monitoring mechanism to detect dead processes.
+    type Monitoring: Monitoring;
 
     #[doc(hidden)]
     fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self;

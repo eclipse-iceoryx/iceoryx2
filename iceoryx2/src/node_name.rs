@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,67 +10,57 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! # Example
-//!
-//! ```
-//! use iceoryx2::prelude::*;
-//!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//!
-//! # Ok(())
-//! # }
-//! ```
-
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use serde::{de::Visitor, Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ServiceName {
-    value: String,
+const NODE_NAME_LENGTH: usize = 255;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct NodeName {
+    value: iceoryx2_bb_container::byte_string::FixedSizeByteString<NODE_NAME_LENGTH>,
 }
 
-impl ServiceName {
-    /// Creates a new [`ServiceName`]. The name is not allowed to be empty and longer than
-    /// [`ServiceName::max_len()`].
+impl NodeName {
+    /// Creates a new [`NodeName`]. Is not allowed to be longer than [`NodeName::max_len()`].
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
-        if name.is_empty() {
-            return Err(SemanticStringError::InvalidContent);
-        }
-
-        Ok(Self { value: name.into() })
+        Ok(Self {
+            value: iceoryx2_bb_container::byte_string::FixedSizeByteString::from_bytes(
+                name.as_bytes(),
+            )?,
+        })
     }
 
-    /// Returns a str reference to the [`ServiceName`]
+    /// Returns a str reference to the [`NodeName`]
     pub fn as_str(&self) -> &str {
-        &self.value
+        // SAFETY: `ServieName` was created from a `&str` and therefore this conversion is safe
+        unsafe { std::str::from_utf8_unchecked(self.value.as_bytes()) }
     }
 
-    /// Returns the maximum length of a [`ServiceName`]
+    /// Returns the maximum length of a [`NodeName`]
     pub const fn max_len() -> usize {
-        SERVICE_NAME_LENGTH
+        NODE_NAME_LENGTH
     }
 }
 
-impl std::fmt::Display for ServiceName {
+impl std::fmt::Display for NodeName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::write!(f, "{}", self.value)
     }
 }
 
-impl PartialEq<&str> for ServiceName {
+impl PartialEq<&str> for NodeName {
     fn eq(&self, other: &&str) -> bool {
         *self.as_str() == **other
     }
 }
 
-impl PartialEq<&str> for &ServiceName {
+impl PartialEq<&str> for &NodeName {
     fn eq(&self, other: &&str) -> bool {
         *self.as_str() == **other
     }
 }
 
-impl std::ops::Deref for ServiceName {
+impl std::ops::Deref for NodeName {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -78,10 +68,10 @@ impl std::ops::Deref for ServiceName {
     }
 }
 
-struct ServiceNameVisitor;
+struct NodeNameVisitor;
 
-impl<'de> Visitor<'de> for ServiceNameVisitor {
-    type Value = ServiceName;
+impl<'de> Visitor<'de> for NodeNameVisitor {
+    type Value = NodeName;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a string containing the service name")
@@ -91,23 +81,23 @@ impl<'de> Visitor<'de> for ServiceNameVisitor {
     where
         E: serde::de::Error,
     {
-        match ServiceName::new(v) {
+        match NodeName::new(v) {
             Ok(v) => Ok(v),
-            Err(v) => Err(E::custom(format!("invalid service name provided {:?}.", v))),
+            Err(v) => Err(E::custom(format!("invalid node name provided {:?}.", v))),
         }
     }
 }
 
-impl<'de> Deserialize<'de> for ServiceName {
+impl<'de> Deserialize<'de> for NodeName {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        deserializer.deserialize_str(ServiceNameVisitor)
+        deserializer.deserialize_str(NodeNameVisitor)
     }
 }
 
-impl Serialize for ServiceName {
+impl Serialize for NodeName {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
