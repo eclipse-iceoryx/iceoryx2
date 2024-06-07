@@ -139,6 +139,16 @@ pub struct Service {
     pub connection_suffix: String,
 }
 
+/// All configurable settings of a [`crate::node::Node`].
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+pub struct Node {
+    /// The directory in which all node files are stored
+    pub directory: String,
+    /// The suffix of the monitor token
+    pub monitor_suffix: String,
+}
+
 /// The global settings
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
@@ -149,6 +159,8 @@ pub struct Global {
     pub prefix: String,
     /// [`crate::service::Service`] settings
     pub service: Service,
+    /// [`crate::node::Node`] settings
+    pub node: Node,
 }
 
 impl Global {
@@ -157,6 +169,16 @@ impl Global {
         let mut path = self.root_path();
         path.add_path_entry(
             &FixedSizeByteString::from_bytes(self.service.directory.as_bytes()).unwrap(),
+        )
+        .unwrap();
+        path
+    }
+
+    /// The absolute path to the node directory where all node details are stored
+    pub fn get_absolute_node_dir(&self) -> Path {
+        let mut path = self.root_path();
+        path.add_path_entry(
+            &FixedSizeByteString::from_bytes(self.node.directory.as_bytes()).unwrap(),
         )
         .unwrap();
         path
@@ -262,6 +284,10 @@ impl Default for Config {
                     dynamic_config_storage_suffix: ".dynamic".to_string(),
                     creation_timeout: Duration::from_millis(500),
                     connection_suffix: ".connection".to_string(),
+                },
+                node: Node {
+                    directory: "nodes".to_string(),
+                    monitor_suffix: ".node_monitor".to_string(),
                 },
             },
             defaults: Defaults {
