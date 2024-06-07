@@ -283,7 +283,7 @@ impl Directory {
 
         for entry in entries {
             inc_path
-                .add_path_entry(&entry)
+                .add_path_entry(&entry.into())
                 .expect("Always works since it recreates the provided path");
 
             match Directory::does_exist(&inc_path) {
@@ -334,7 +334,7 @@ impl Directory {
         for entry in contents {
             let mut sub_path = *path;
             sub_path
-                .add_path_entry(entry.name().as_string())
+                .add_path_entry(&entry.name().into())
                 .expect("always a valid path entry");
             if entry.metadata().file_type() == FileType::Directory {
                 fail!(from origin, when Directory::remove(&sub_path),

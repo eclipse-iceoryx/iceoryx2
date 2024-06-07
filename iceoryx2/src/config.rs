@@ -87,7 +87,6 @@
 //! # }
 //! ```
 
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::lazy_singleton::*;
 use iceoryx2_bb_posix::{file::FileBuilder, shared_memory::AccessMode};
@@ -168,20 +167,14 @@ impl Global {
     /// The absolute path to the service directory where all static service infos are stored
     pub fn get_absolute_service_dir(&self) -> Path {
         let mut path = self.root_path();
-        path.add_path_entry(
-            &FixedSizeByteString::from_bytes(self.service.directory.as_bytes()).unwrap(),
-        )
-        .unwrap();
+        path.add_path_entry(&self.service.directory).unwrap();
         path
     }
 
     /// The absolute path to the node directory where all node details are stored
     pub fn get_absolute_node_dir(&self) -> Path {
         let mut path = self.root_path();
-        path.add_path_entry(
-            &FixedSizeByteString::from_bytes(self.node.directory.as_bytes()).unwrap(),
-        )
-        .unwrap();
+        path.add_path_entry(&self.node.directory).unwrap();
         path
     }
 

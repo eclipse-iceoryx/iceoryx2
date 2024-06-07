@@ -66,7 +66,7 @@ pub trait NamedConceptConfiguration: Default + Clone + Debug {
     /// Returns the full path for a given value under the given configuration.
     fn path_for(&self, value: &FileName) -> FilePath {
         let mut path = *self.get_path_hint();
-        fatal_panic!(from self, when path.add_path_entry(self.get_prefix().as_string()),
+        fatal_panic!(from self, when path.add_path_entry(&self.get_prefix().into()),
                     "The path hint \"{}\" in combination with the prefix \"{}\" exceed the maximum supported path length of {} of the operating system.",
                     path, value, Path::max_len());
         fatal_panic!(from self, when path.push_bytes(value.as_string()),

@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::directory::*;
@@ -71,7 +70,7 @@ impl TestFixture {
 
     fn create_dir(&mut self, directory: &Path) -> Directory {
         let mut directory = *directory;
-        let mut file = FixedSizeByteString::from_bytes(b"dir_tests_").unwrap();
+        let mut file = FileName::new(b"dir_tests_").unwrap();
         file.push_bytes(
             UniqueSystemId::new()
                 .unwrap()
@@ -80,7 +79,7 @@ impl TestFixture {
                 .as_bytes(),
         )
         .unwrap();
-        directory.add_path_entry(&file).unwrap();
+        directory.add_path_entry(&file.into()).unwrap();
 
         self.directories.push(directory);
 
@@ -145,19 +144,17 @@ fn directory_create_from_path_works_recursively() {
 
     let mut sut_name = test.generate_directory_name();
     sut_name
-        .add_path_entry(&FixedSizeByteString::from_bytes(b"all").unwrap())
+        .add_path_entry(&Path::new(b"all").unwrap())
         .unwrap();
     sut_name
-        .add_path_entry(&FixedSizeByteString::from_bytes(b"glory").unwrap())
+        .add_path_entry(&Path::new(b"glory").unwrap())
+        .unwrap();
+    sut_name.add_path_entry(&Path::new(b"to").unwrap()).unwrap();
+    sut_name
+        .add_path_entry(&Path::new(b"the").unwrap())
         .unwrap();
     sut_name
-        .add_path_entry(&FixedSizeByteString::from_bytes(b"to").unwrap())
-        .unwrap();
-    sut_name
-        .add_path_entry(&FixedSizeByteString::from_bytes(b"the").unwrap())
-        .unwrap();
-    sut_name
-        .add_path_entry(&FixedSizeByteString::from_bytes(b"hypnotoad").unwrap())
+        .add_path_entry(&Path::new(b"hypnotoad").unwrap())
         .unwrap();
 
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
