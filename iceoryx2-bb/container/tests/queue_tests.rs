@@ -12,8 +12,10 @@
 
 mod queue {
     use iceoryx2_bb_container::queue::*;
-    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
+    use iceoryx2_bb_elementary::{
+        bump_allocator::BumpAllocator, placement_default::PlacementDefault,
+    };
+    use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker, memory::RawMemory};
 
     const SUT_CAPACITY: usize = 128;
     type Sut = FixedSizeQueue<usize, SUT_CAPACITY>;
@@ -290,5 +292,19 @@ mod queue {
         for i in 0..SUT_CAPACITY {
             assert_that!(unsafe { sut.get_unchecked(i) }, eq i * 3 + 2);
         }
+    }
+
+    #[test]
+    fn placement_default_works() {
+        type Sut = FixedSizeQueue<usize, SUT_CAPACITY>;
+        let mut sut = RawMemory::<Sut>::new_filled(0xff);
+        unsafe { Sut::placement_default(sut.as_mut_ptr()) };
+
+        assert_that!(unsafe {sut.assume_init()}, len 0);
+        assert_that!(unsafe {sut.assume_init_mut()}.push(123), eq true);
+        assert_that!(unsafe {sut.assume_init_mut()}.push(456), eq true);
+
+        assert_that!(unsafe {sut.assume_init_mut()}.pop(), eq Some(123));
+        assert_that!(unsafe {sut.assume_init_mut()}.pop(), eq Some(456));
     }
 }

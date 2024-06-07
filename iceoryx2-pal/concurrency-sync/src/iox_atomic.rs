@@ -89,6 +89,7 @@ pub mod internal {
 
     pub trait AtomicInteger:
         Copy
+        + Default
         + Send
         + Eq
         + AddAssign
@@ -149,6 +150,7 @@ pub mod internal {
 /// iceoryx2 implementation of an atomic that has an internal [`RwLockWriterPreference`].
 /// It enables atomic operations on platforms that do not support them with the restriction that
 /// those operations are no longer lock-free.
+#[derive(Default)]
 #[repr(C)]
 pub struct IoxAtomic<T: internal::AtomicInteger> {
     data: UnsafeCell<T>,

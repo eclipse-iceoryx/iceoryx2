@@ -17,4 +17,6 @@ pub use crate::service::{
     port_factory::publisher::UnableToDeliverStrategy, process_local, service_name::ServiceName,
     zero_copy, Service,
 };
+pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_elementary::alignment::Alignment;
+pub use iceoryx2_bb_elementary::placement_default::PlacementDefault;

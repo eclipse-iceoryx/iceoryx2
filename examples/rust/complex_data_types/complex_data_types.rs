@@ -17,20 +17,24 @@ use iceoryx2_bb_container::{
     byte_string::FixedSizeByteString, queue::FixedSizeQueue, vec::FixedSizeVec,
 };
 
-#[derive(Debug, Default)]
+// For both data types we derive from PlacementDefault to allow in memory initialization
+// without any copy. Avoids stack overflows when data type is larger than the available stack.
+#[derive(Debug, Default, PlacementDefault)]
 #[repr(C)]
 pub struct ComplexData {
     name: FixedSizeByteString<4>,
     data: FixedSizeVec<u64, 4>,
 }
 
-#[derive(Debug, Default)]
+// For both data types we derive from PlacementDefault to allow in memory initialization
+// without any copy. Avoids stack overflows when data type is larger than the available stack.
+#[derive(Debug, Default, PlacementDefault)]
 #[repr(C)]
 pub struct ComplexDataType {
     plain_old_data: u64,
     text: FixedSizeByteString<8>,
     vec_of_data: FixedSizeVec<u64, 4>,
-    vec_of_complex_data: FixedSizeVec<ComplexData, 4>,
+    vec_of_complex_data: FixedSizeVec<ComplexData, 404857>,
     a_queue_of_things: FixedSizeQueue<FixedSizeByteString<4>, 2>,
 }
 
@@ -50,10 +54,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut counter = 0;
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
-        // acquire and send out sample
-        let mut sample = publisher.loan()?;
-        let payload = sample.payload_mut();
+        // ComplexDataType as a size of over 30MB, we need to perform a placement new
+        // otherwise we will encounter a stack overflow in debug builds.
+        // Therefore, we acquire an uninitialized sample, use the PlacementDefault
+        // trait to initialize ComplexDataType in place and then populate it with data.
+        let mut sample = publisher.loan_uninit()?;
+        unsafe { ComplexDataType::placement_default(sample.payload_mut().as_mut_ptr()) };
+        let mut sample = unsafe { sample.assume_init() };
 
+        let payload = sample.payload_mut();
         payload.plain_old_data = counter;
         payload.text = FixedSizeByteString::from_bytes(b"hello")?;
         payload.vec_of_data.push(counter);

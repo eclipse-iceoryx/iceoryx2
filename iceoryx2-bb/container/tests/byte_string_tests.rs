@@ -17,7 +17,8 @@ mod fixed_size_byte_string {
     };
 
     use iceoryx2_bb_container::byte_string::*;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+    use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
     use std::collections::hash_map::DefaultHasher;
 
     const SUT_CAPACITY: usize = 129;
@@ -499,5 +500,15 @@ mod fixed_size_byte_string {
     fn remove_range_out_of_bounds_index_panics() {
         let mut sut = Sut::from_bytes_truncated(b"Who did eat the last unicorn?");
         sut.remove_range(48, 12);
+    }
+
+    #[test]
+    fn placement_default_works() {
+        let mut sut = RawMemory::<Sut>::new_filled(0xff);
+        unsafe { Sut::placement_default(sut.as_mut_ptr()) };
+        assert_that!(unsafe {sut.assume_init()}, len 0);
+
+        assert_that!(unsafe { sut.assume_init_mut() }.push_bytes(b"hello"), is_ok);
+        assert_that!(unsafe {sut.assume_init()}.as_bytes(), eq b"hello");
     }
 }

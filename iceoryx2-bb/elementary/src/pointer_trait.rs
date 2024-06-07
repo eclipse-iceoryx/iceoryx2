@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Trait which describes a form of pointer. Required to distinguish normal pointers from
+//! relocatable pointers.
+
 /// Trait which describes a form of pointer. Required to distinguish normal pointers from
 /// relocatable pointers.
 pub trait PointerTrait<T> {

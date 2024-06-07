@@ -79,6 +79,7 @@ use std::{alloc::Layout, mem::MaybeUninit, ops::Deref, ops::DerefMut, sync::atom
 
 use iceoryx2_bb_elementary::{
     math::{align_to, unaligned_mem_size},
+    placement_default::PlacementDefault,
     pointer_trait::PointerTrait,
     relocatable_container::RelocatableContainer,
     relocatable_ptr::RelocatablePointer,
@@ -330,15 +331,17 @@ pub struct FixedSizeVec<T, const CAPACITY: usize> {
     _data: [MaybeUninit<T>; CAPACITY],
 }
 
+impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T, CAPACITY> {
+    unsafe fn placement_default(ptr: *mut Self) {
+        let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
+        state_ptr.write(Self::initialize_state())
+    }
+}
+
 impl<T, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
     fn default() -> Self {
         Self {
-            state: unsafe {
-                RelocatableVec::new(
-                    CAPACITY,
-                    align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableVec<T>>()) as isize,
-                )
-            },
+            state: Self::initialize_state(),
             _data: core::array::from_fn(|_| MaybeUninit::uninit()),
         }
     }
@@ -377,6 +380,15 @@ impl<T: Clone, const CAPACITY: usize> Clone for FixedSizeVec<T, CAPACITY> {
 unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeVec<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
+    fn initialize_state() -> RelocatableVec<T> {
+        unsafe {
+            RelocatableVec::new(
+                CAPACITY,
+                align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableVec<T>>()) as isize,
+            )
+        }
+    }
+
     /// Creates a new vector.
     pub fn new() -> Self {
         Self::default()

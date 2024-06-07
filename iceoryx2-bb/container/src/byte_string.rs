@@ -37,6 +37,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use iceoryx2_bb_derive_macros::PlacementDefault;
+use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_log::{fail, fatal_panic};
 
 /// Returns the length of a string
@@ -71,12 +73,12 @@ impl std::fmt::Display for FixedSizeByteStringModificationError {
 impl std::error::Error for FixedSizeByteStringModificationError {}
 
 /// Relocatable string with compile time fixed size capacity.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PlacementDefault)]
 #[repr(C)]
 pub struct FixedSizeByteString<const CAPACITY: usize> {
     len: usize,
     data: [MaybeUninit<u8>; CAPACITY],
-    _terminator: u8,
+    terminator: u8,
 }
 
 unsafe impl<const CAPACITY: usize> Send for FixedSizeByteString<CAPACITY> {}
@@ -222,7 +224,7 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         let mut new_self = Self {
             len: 0,
             data: unsafe { MaybeUninit::uninit().assume_init() },
-            _terminator: 0,
+            terminator: 0,
         };
         new_self.data[0] = MaybeUninit::new(0);
         new_self

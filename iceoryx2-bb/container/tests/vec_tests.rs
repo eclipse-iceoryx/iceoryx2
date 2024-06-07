@@ -12,9 +12,11 @@
 
 use iceoryx2_bb_container::vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+use iceoryx2_bb_testing::memory::RawMemory;
 
 const SUT_CAPACITY: usize = 128;
 type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
@@ -242,4 +244,18 @@ fn fixed_size_vec_pop_releases_ownership() {
         drop(result);
         assert_that!(LifetimeTracker::number_of_living_instances(), eq i);
     }
+}
+
+#[test]
+fn placement_default_works() {
+    type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
+    let mut sut = RawMemory::<Sut>::new_filled(0xff);
+    unsafe { Sut::placement_default(sut.as_mut_ptr()) };
+
+    assert_that!(unsafe { sut.assume_init()}, len 0);
+    assert_that!(unsafe { sut.assume_init_mut()}.push(123), eq true);
+    assert_that!(unsafe { sut.assume_init_mut()}.push(456), eq true);
+
+    assert_that!(unsafe { sut.assume_init_mut()}.pop(), eq Some(456));
+    assert_that!(unsafe { sut.assume_init_mut()}.pop(), eq Some(123));
 }

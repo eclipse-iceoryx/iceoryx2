@@ -38,7 +38,7 @@ they interact and exchange data.
 
 | Name | Description |
 |------|-------------|
-| [complex data types](rust/complex_data_types) | Send zero-copy compatible versions of `Vec`, `String`, .... |
+| [complex data types](rust/complex_data_types) | Send zero-copy compatible versions of `Vec` and `String`. Introduces `PlacementDefault` trait for large data types to perform an in place initialization where otherwise a stack overflow would be encountered.|
 | [discovery](rust/discovery) | List all available services in a system. |
 | [docker](rust/docker) | Communicate between different docker containers and the host. |
 | [event](rust/event) | Exchanging event signals between multiple processes.|

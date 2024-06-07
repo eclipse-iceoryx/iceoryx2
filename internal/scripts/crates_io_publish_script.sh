@@ -22,6 +22,7 @@ cargo publish -p iceoryx2-pal-concurrency-sync
 cargo publish -p iceoryx2-pal-posix
 cargo publish -p iceoryx2-bb-log
 cargo publish -p iceoryx2-bb-elementary
+cargo publish -p iceoryx2-bb-derive-macros
 cargo publish -p iceoryx2-bb-container
 cargo publish -p iceoryx2-bb-system-types
 cargo publish -p iceoryx2-bb-posix

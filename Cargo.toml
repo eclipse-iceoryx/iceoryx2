@@ -4,6 +4,7 @@ members = [
     "iceoryx2-bb/lock-free/",
     "iceoryx2-bb/threadsafe/",
     "iceoryx2-bb/container",
+    "iceoryx2-bb/derive-macros",
     "iceoryx2-bb/elementary",
     "iceoryx2-bb/log",
     "iceoryx2-bb/memory",
@@ -40,6 +41,7 @@ version = "0.3.0"
 iceoryx2-bb-threadsafe = { version = "0.3.0", path = "iceoryx2-bb/threadsafe/" }
 iceoryx2-bb-lock-free = { version = "0.3.0", path = "iceoryx2-bb/lock-free/" }
 iceoryx2-bb-container = { version = "0.3.0", path = "iceoryx2-bb/container/" }
+iceoryx2-bb-derive-macros = { version = "0.3.0", path = "iceoryx2-bb/derive-macros/" }
 iceoryx2-bb-elementary = { version = "0.3.0", path = "iceoryx2-bb/elementary/" }
 iceoryx2-bb-log = { version = "0.3.0", path = "iceoryx2-bb/log/" }
 iceoryx2-bb-memory = { version = "0.3.0", path = "iceoryx2-bb/memory/" }
@@ -68,8 +70,11 @@ log = { version = "0.4.21" }
 once_cell = { version = "1.19.0" }
 ouroboros = { version = "0.18.4" }
 pin-init = { version = "0.2.0" }
+proc-macro2 = { version = "1.0.84" }
+quote = { version = "1.0.36" }
 serde = { version = "1.0.203", features = ["derive"] }
 sha1_smol = { version = "1.0.0" }
+syn = { version = "2.0.66", features = ["full"] }
 termsize = { version = "0.1.6" }
 tiny-fn = { version = "0.1.5" }
 toml = { version = "0.8.13" }
