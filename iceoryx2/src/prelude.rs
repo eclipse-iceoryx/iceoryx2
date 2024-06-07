@@ -12,6 +12,8 @@
 
 pub use crate::iox2::Iox2;
 pub use crate::iox2::Iox2Event;
+pub use crate::node::{Node, NodeBuilder};
+pub use crate::node_name::NodeName;
 pub use crate::port::event_id::EventId;
 pub use crate::service::{
     attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier,

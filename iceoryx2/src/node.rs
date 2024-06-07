@@ -10,34 +10,44 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::config::Config;
 use crate::node_name::NodeName;
 use crate::service;
+use crate::service::config_scheme::node_monitoring_config;
+use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_elementary::math::ToB64;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_cal::monitoring::*;
-use iceoryx2_cal::named_concept::NamedConceptConfiguration;
-use serde::{Deserialize, Serialize};
+use iceoryx2_cal::{monitoring::*, serialize::*, static_storage::*};
 use std::marker::PhantomData;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCreationFailure {
     InternalError,
     InsufficientPermissions,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 struct NodeDetails {
     id: UniqueSystemId,
     name: NodeName,
     config: Config,
 }
 
+pub struct NodeState<Service: service::Service> {
+    details: NodeDetails,
+    _service: PhantomData<Service>,
+}
+
+impl<Service: service::Service> NodeState<Service> {
+    pub fn cleanup(self) {
+        todo!()
+    }
+}
+
 pub struct Node<Service: service::Service> {
     details: NodeDetails,
     _monitor: <Service::Monitoring as Monitoring>::Token,
-    _service: PhantomData<Service>,
+    _details_storage: Service::StaticStorage,
 }
 
 impl<Service: service::Service> Node<Service> {
@@ -51,6 +61,14 @@ impl<Service: service::Service> Node<Service> {
 
     pub fn id(&self) -> &UniqueSystemId {
         &self.details.id
+    }
+
+    pub fn list() -> Vec<NodeState<Service>> {
+        todo!()
+    }
+
+    pub fn list_with_custom_config(config: &Config) -> Vec<NodeState<Service>> {
+        todo!()
     }
 }
 
@@ -91,18 +109,10 @@ impl NodeBuilder {
         } else {
             Config::get_global_config().clone()
         };
-        let monitor_config = <Service::Monitoring as NamedConceptMgmt>::Configuration::default()
-            .prefix(
-                FileName::new(config.global.prefix.as_bytes())
-                    .expect("Global config contains valid global.prefix."),
-            )
-            .suffix(
-                FileName::new(config.global.node.monitor_suffix.as_bytes())
-                    .expect("Global config contains valid ."),
-            )
-            .path_hint(config.global.get_absolute_node_dir());
 
-        let token_result = <Service::Monitoring as Monitoring>::Builder::new(&monitor_name).token();
+        let token_result = <Service::Monitoring as Monitoring>::Builder::new(&monitor_name)
+            .config(&node_monitoring_config::<Service>(&config))
+            .token();
 
         let token = match token_result {
             Ok(token) => token,
@@ -120,18 +130,51 @@ impl NodeBuilder {
             }
         };
 
-        Ok(Node {
-            _service: PhantomData,
-            _monitor: token,
-            details: NodeDetails {
-                id: node_id,
-                name: if let Some(name) = self.name {
-                    name
-                } else {
-                    NodeName::new("").expect("An empty NodeName is always valid.")
-                },
-                config,
+        let details = NodeDetails {
+            id: node_id,
+            name: if let Some(name) = self.name {
+                name
+            } else {
+                NodeName::new("").expect("An empty NodeName is always valid.")
             },
+            config,
+        };
+
+        let details_config = node_details_config::<Service>(&details.config, &monitor_name);
+        let serialized_details = match <Service::ConfigSerializer>::serialize(&details) {
+            Ok(serialized_details) => serialized_details,
+            Err(SerializeError::InternalError) => {
+                fail!(from self, with NodeCreationFailure::InternalError,
+                    "{msg} since the node details could not be serialized.");
+            }
+        };
+
+        let node_details = match <Service::StaticStorage as StaticStorage>::Builder::new(
+            &FileName::new(b"details").unwrap(),
+        )
+        .config(&details_config)
+        .has_ownership(true)
+        .create(&serialized_details)
+        {
+            Ok(node_details) => node_details,
+            Err(StaticStorageCreateError::InsufficientPermissions) => {
+                fail!(from self, with NodeCreationFailure::InsufficientPermissions,
+                    "{msg} due to insufficient permissions to create the node details file.");
+            }
+            Err(StaticStorageCreateError::AlreadyExists) => {
+                fatal_panic!(from self,
+                    "This should never happen! {msg} since the node details file already exists.");
+            }
+            Err(e) => {
+                fail!(from self, with NodeCreationFailure::InternalError,
+                    "{msg} due to an unknown failure while creating the node details file {:?}.", e);
+            }
+        };
+
+        Ok(Node {
+            _monitor: token,
+            _details_storage: node_details,
+            details,
         })
     }
 }

@@ -147,6 +147,8 @@ pub struct Node {
     pub directory: Path,
     /// The suffix of the monitor token
     pub monitor_suffix: FileName,
+    /// The suffix of the files where the node configuration is stored.
+    pub static_config_suffix: FileName,
 }
 
 /// The global settings
@@ -165,14 +167,14 @@ pub struct Global {
 
 impl Global {
     /// The absolute path to the service directory where all static service infos are stored
-    pub fn get_absolute_service_dir(&self) -> Path {
+    pub fn service_dir(&self) -> Path {
         let mut path = self.root_path();
         path.add_path_entry(&self.service.directory).unwrap();
         path
     }
 
     /// The absolute path to the node directory where all node details are stored
-    pub fn get_absolute_node_dir(&self) -> Path {
+    pub fn node_dir(&self) -> Path {
         let mut path = self.root_path();
         path.add_path_entry(&self.node.directory).unwrap();
         path
@@ -282,6 +284,7 @@ impl Default for Config {
                 node: Node {
                     directory: Path::new(b"nodes").unwrap(),
                     monitor_suffix: FileName::new(b".node_monitor").unwrap(),
+                    static_config_suffix: FileName::new(b".node").unwrap(),
                 },
             },
             defaults: Defaults {

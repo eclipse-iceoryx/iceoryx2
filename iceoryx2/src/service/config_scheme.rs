@@ -12,6 +12,7 @@
 
 use crate::config;
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
 
 pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
@@ -55,4 +56,28 @@ pub(crate) fn data_segment_config<Service: crate::service::Service>(
         .prefix(global_config.global.prefix)
         .suffix(global_config.global.service.publisher_data_segment_suffix)
         .path_hint(global_config.global.root_path())
+}
+
+pub(crate) fn node_monitoring_config<Service: crate::service::Service>(
+    global_config: &config::Config,
+) -> <Service::Monitoring as NamedConceptMgmt>::Configuration {
+    <<Service::Monitoring as NamedConceptMgmt>::Configuration>::default()
+        .prefix(global_config.global.prefix)
+        .suffix(global_config.global.node.monitor_suffix)
+        .path_hint(global_config.global.node_dir())
+}
+
+pub(crate) fn node_details_config<Service: crate::service::Service>(
+    global_config: &config::Config,
+    monitor_name: &FileName,
+) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
+    let origin = format!("node_details_config<{}>", core::any::type_name::<Service>());
+    let mut path = global_config.global.node_dir();
+    fatal_panic!(from origin, when path.add_path_entry(&monitor_name.into()),
+                    "The node path exceeds the maximum path length.");
+
+    <<Service::StaticStorage as NamedConceptMgmt>::Configuration>::default()
+        .prefix(global_config.global.prefix)
+        .suffix(global_config.global.node.static_config_suffix)
+        .path_hint(path)
 }
