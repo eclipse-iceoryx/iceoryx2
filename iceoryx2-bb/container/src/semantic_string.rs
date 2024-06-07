@@ -379,6 +379,48 @@ macro_rules! semantic_string {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
         }
 
+        // START: serde
+        pub(crate) mod VisitorType {
+            pub(crate) struct $string_name;
+        }
+
+        impl<'de> serde::de::Visitor<'de> for VisitorType::$string_name {
+            type Value = $string_name;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string containing the service name")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match $string_name::new(v.as_bytes()) {
+                    Ok(v) => Ok(v),
+                    Err(v) => Err(E::custom(std::format!("invalid {} provided {:?}.", std::stringify!($string_name), v))),
+                }
+            }
+        }
+
+        impl<'de> serde::Deserialize<'de> for $string_name {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                deserializer.deserialize_str(VisitorType::$string_name)
+            }
+        }
+
+        impl serde::Serialize for $string_name {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                serializer.serialize_str(std::str::from_utf8(self.as_bytes()).unwrap())
+            }
+        }
+        // END: serde
+
         impl iceoryx2_bb_container::semantic_string::SemanticString<$capacity> for $string_name {
             fn as_string(&self) -> &iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity> {
                 &self.value
