@@ -103,6 +103,11 @@ use crate::service::port_factory::publisher::UnableToDeliverStrategy;
 /// Path to the default config file
 pub const DEFAULT_CONFIG_FILE: &[u8] = b"config/iceoryx2.toml";
 
+pub(crate) const MAX_NUMBER_OF_CUSTOM_PROPERTIES: usize = 8;
+pub(crate) const CUSTOM_PROPERTY_KEY_SIZE: usize = 64;
+pub(crate) const CUSTOM_PROPERTY_VALUE_SIZE: usize = 128;
+pub(crate) const SERVICE_NAME_LENGTH: usize = 255;
+
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`] or
 /// [`Config::setup_global_config_from_file()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

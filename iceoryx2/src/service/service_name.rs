@@ -22,10 +22,9 @@
 //! # }
 //! ```
 
+use crate::config::SERVICE_NAME_LENGTH;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use serde::{de::Visitor, Deserialize, Serialize};
-
-const SERVICE_NAME_LENGTH: usize = 255;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ServiceName {
