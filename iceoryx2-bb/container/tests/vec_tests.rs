@@ -259,3 +259,32 @@ fn placement_default_works() {
     assert_that!(unsafe { sut.assume_init_mut()}.pop(), eq Some(456));
     assert_that!(unsafe { sut.assume_init_mut()}.pop(), eq Some(123));
 }
+
+#[test]
+fn fixed_size_vec_as_slice_works() {
+    let mut sut = Sut::new();
+    for i in 0..12 {
+        sut.push(2 * i * i + 3);
+    }
+
+    for (i, element) in sut.as_slice().iter().enumerate() {
+        assert_that!(*element, eq 2 * i * i + 3);
+    }
+}
+
+#[test]
+fn fixed_size_vec_as_mut_slice_works() {
+    let mut sut = Sut::new();
+    for i in 0..12 {
+        sut.push(3 + 2 * i);
+    }
+
+    for (i, element) in sut.as_mut_slice().iter_mut().enumerate() {
+        assert_that!(*element, eq 3 + 2 * i);
+        *element = 3 * i;
+    }
+
+    for (i, element) in sut.iter().enumerate() {
+        assert_that!(*element, eq 3 * i);
+    }
+}
