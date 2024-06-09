@@ -85,7 +85,7 @@ impl StaticConfig {
     }
 
     /// Returns the value of a property
-    pub fn property(&self, key: &str) -> Option<&str> {
+    pub(crate) fn property(&self, key: &str) -> Option<&str> {
         self.properties
             .iter()
             .find(|&v| v.0 == key)
@@ -93,12 +93,12 @@ impl StaticConfig {
     }
 
     /// Returns the uuid of the [`crate::service::Service`]
-    pub fn uuid(&self) -> &str {
+    pub(crate) fn uuid(&self) -> &str {
         &self.uuid
     }
 
     /// Returns the [`ServiceName`] of the [`crate::service::Service`]
-    pub fn service_name(&self) -> &ServiceName {
+    pub(crate) fn name(&self) -> &ServiceName {
         &self.service_name
     }
 

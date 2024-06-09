@@ -367,7 +367,7 @@ pub trait Service: Debug + Sized {
                 continue;
             }
 
-            if service_config.service_name() == service_name {
+            if service_config.name() == service_name {
                 return Ok(true);
             }
         }

@@ -79,12 +79,17 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
 
     /// Returns the [`ServiceName`] of the service
     pub fn name(&self) -> &ServiceName {
-        self.service.state().static_config.service_name()
+        self.service.state().static_config.name()
     }
 
     /// Returns the uuid of the [`crate::service::Service`]
     pub fn uuid(&self) -> &str {
         self.service.state().static_config.uuid()
+    }
+
+    /// Returns the value of a property
+    pub fn property(&self, key: &str) -> Option<&str> {
+        self.service.state().static_config.property(key)
     }
 
     /// Returns the [`static_config::event::StaticConfig`] of the [`crate::service::Service`].
