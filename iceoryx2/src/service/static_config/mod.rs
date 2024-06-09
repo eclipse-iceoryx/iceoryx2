@@ -24,11 +24,7 @@ pub mod publish_subscribe;
 /// and the type variant
 pub mod type_details;
 
-use crate::config::{
-    CUSTOM_PROPERTY_KEY_SIZE, CUSTOM_PROPERTY_VALUE_SIZE, MAX_NUMBER_OF_CUSTOM_PROPERTIES,
-};
 use crate::service::messaging_pattern::MessagingPattern;
-use iceoryx2_bb_container::{byte_string::FixedSizeByteString, vec::FixedSizeVec};
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;
 use serde::{Deserialize, Serialize};
@@ -42,13 +38,7 @@ use super::service_name::ServiceName;
 pub struct StaticConfig {
     uuid: String,
     service_name: ServiceName,
-    custom_properties: FixedSizeVec<
-        (
-            FixedSizeByteString<CUSTOM_PROPERTY_KEY_SIZE>,
-            FixedSizeByteString<CUSTOM_PROPERTY_VALUE_SIZE>,
-        ),
-        MAX_NUMBER_OF_CUSTOM_PROPERTIES,
-    >,
+    properties: Vec<(String, String)>,
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
@@ -72,9 +62,9 @@ impl StaticConfig {
             uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
                 .value()
                 .into(),
-            service_name: *service_name,
+            service_name: service_name.clone(),
             messaging_pattern,
-            custom_properties: FixedSizeVec::new(),
+            properties: Vec::new(),
         }
     }
 
@@ -88,21 +78,18 @@ impl StaticConfig {
             uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
                 .value()
                 .into(),
-            service_name: *service_name,
+            service_name: service_name.clone(),
             messaging_pattern,
-            custom_properties: FixedSizeVec::new(),
+            properties: Vec::new(),
         }
     }
 
-    /// Returns the value of a custom property
-    pub fn custom_property(&self, key: &[u8]) -> Option<&[u8]> {
-        for (k, v) in self.custom_properties.iter() {
-            if key == k.as_bytes() {
-                return Some(v.as_bytes());
-            }
-        }
-
-        None
+    /// Returns the value of a property
+    pub fn property(&self, key: &str) -> Option<&str> {
+        self.properties
+            .iter()
+            .find(|&v| v.0 == key)
+            .and_then(|v| Some(v.1.as_str()))
     }
 
     /// Returns the uuid of the [`crate::service::Service`]

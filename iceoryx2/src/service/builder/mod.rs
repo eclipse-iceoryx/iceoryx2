@@ -104,7 +104,7 @@ pub struct Builder<S: Service> {
 impl<S: Service> Builder<S> {
     pub(crate) fn new(name: &ServiceName) -> Self {
         Self {
-            name: *name,
+            name: name.clone(),
             _phantom_s: PhantomData,
         }
     }

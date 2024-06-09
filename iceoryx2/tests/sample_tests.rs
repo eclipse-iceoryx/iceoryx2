@@ -79,7 +79,7 @@ mod sample {
     fn sample_of_dropped_service_does_not_block_new_service_creation<Sut: Service>() {
         let test_context = TestContext::<Sut>::new();
 
-        let service_name = test_context.service_name;
+        let service_name = test_context.service_name.clone();
 
         assert_that!(test_context.publisher_1.send_copy(5), eq Ok(1));
         let sample = test_context.subscriber.receive().unwrap();
