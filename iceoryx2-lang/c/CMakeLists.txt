@@ -42,9 +42,14 @@ set(RUST_ARCH_TRIPLET_FLAG "")
 set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
 set(RUST_ARCH_TARGET_DIR ${RUST_TARGET_DIR}/${RUST_ARCH_TRIPLET})
 
-# TODO distinguish between static and dynamic builds
-# TODO switch for Windows
-set(ICEORYX2_LANG_C_LIB ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/libiceoryx2_lang_c.a)
+set(ICEORYX2_LANG_C_STATIC_LIB_NAME libiceoryx2_lang_c.a)
+set(ICEORYX2_LANG_C_SHARED_LIB_NAME libiceoryx2_lang_c.so)
+if(MSVC)
+    set(ICEORYX2_LANG_C_STATIC_LIB_NAME iceoryx2_lang_c.lib)
+    set(ICEORYX2_LANG_C_SHARED_LIB_NAME iceoryx2_lang_c.dll)
+endif()
+set(ICEORYX2_LANG_C_STATIC_LIB ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_LANG_C_STATIC_LIB_NAME})
+set(ICEORYX2_LANG_C_SHARED_LIB ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_LANG_C_SHARED_LIB_NAME})
 set(ICEORYX2_LANG_C_INCLUDE_DIR ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/iceoryx2_lang_c_cbindgen/include)
 
 # run cargo
@@ -53,7 +58,8 @@ add_custom_target(
     COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --target-dir=${RUST_TARGET_DIR} ${RUST_ARCH_TRIPLET_FLAG}
     BYPRODUCTS
     ${ICEORYX2_LANG_C_INCLUDE_DIR}/iox2/iceoryx2.h
-    ${ICEORYX2_LANG_C_LIB}
+    ${ICEORYX2_LANG_C_STATIC_LIB}
+    ${ICEORYX2_LANG_C_SHARED_LIB}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     VERBATIM
     USES_TERMINAL
@@ -74,6 +80,11 @@ target_include_directories(${PROJECT_NAME}
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
-target_link_libraries(${PROJECT_NAME} INTERFACE ${ICEORYX2_LANG_C_LIB} -lm)
+# TODO check if there is a generator expression to link static or shared libs
+target_link_libraries(${PROJECT_NAME} INTERFACE
+    ${ICEORYX2_LANG_C_STATIC_LIB}
+    $<$<NOT:$<PLATFORM_ID:Windows>>:m>
+    $<$<PLATFORM_ID:Windows>:ws2_32 wsock32 ntdll>
+)
 
 include(cmake/install.cmake)
