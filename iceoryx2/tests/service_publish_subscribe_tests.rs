@@ -1677,7 +1677,7 @@ mod service_publish_subscribe {
             for n in names {
                 let mut name_found = false;
                 for s in &state {
-                    if *s.service_name() == n {
+                    if *s.name() == n {
                         name_found = true;
                         break;
                     }

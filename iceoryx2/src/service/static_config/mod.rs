@@ -109,17 +109,17 @@ impl StaticConfig {
     }
 
     /// Returns the value of a property
-    pub(crate) fn property(&self, key: &str) -> Vec<&str> {
+    pub fn property(&self, key: &str) -> Vec<&str> {
         self.properties.get(key)
     }
 
     /// Returns the uuid of the [`crate::service::Service`]
-    pub(crate) fn uuid(&self) -> &str {
+    pub fn uuid(&self) -> &str {
         &self.uuid
     }
 
     /// Returns the [`ServiceName`] of the [`crate::service::Service`]
-    pub(crate) fn name(&self) -> &ServiceName {
+    pub fn name(&self) -> &ServiceName {
         &self.service_name
     }
 

@@ -53,36 +53,34 @@ pub struct PortFactory<Service: service::Service> {
 unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
 unsafe impl<Service: service::Service> Sync for PortFactory<Service> {}
 
-impl<Service: service::Service> PortFactory<Service> {
-    pub(crate) fn new(service: Service) -> Self {
-        Self { service }
-    }
+impl<Service: service::Service> crate::service::port_factory::PortFactory for PortFactory<Service> {
+    type StaticConfig = static_config::event::StaticConfig;
+    type DynamicConfig = dynamic_config::event::DynamicConfig;
 
-    /// Returns the [`ServiceName`] of the [`crate::service::Service`]
-    pub fn name(&self) -> &ServiceName {
+    fn name(&self) -> &ServiceName {
         self.service.state().static_config.name()
     }
 
-    /// Returns the uuid of the [`crate::service::Service`]
-    pub fn uuid(&self) -> &str {
+    fn uuid(&self) -> &str {
         self.service.state().static_config.uuid()
     }
 
-    /// Returns the value of a property
-    pub fn property(&self, key: &str) -> Vec<&str> {
+    fn property(&self, key: &str) -> Vec<&str> {
         self.service.state().static_config.property(key)
     }
 
-    /// Returns the [`static_config::event::StaticConfig`] of the [`crate::service::Service`].
-    /// Contains all settings that never change during the lifetime of the service.
-    pub fn static_config(&self) -> &static_config::event::StaticConfig {
+    fn static_config(&self) -> &static_config::event::StaticConfig {
         self.service.state().static_config.event()
     }
 
-    /// Returns the [`dynamic_config::event::DynamicConfig`] of the [`crate::service::Service`].
-    /// Contains all dynamic settings, like the current participants etc..
-    pub fn dynamic_config(&self) -> &dynamic_config::event::DynamicConfig {
+    fn dynamic_config(&self) -> &dynamic_config::event::DynamicConfig {
         self.service.state().dynamic_storage.get().event()
+    }
+}
+
+impl<Service: service::Service> PortFactory<Service> {
+    pub(crate) fn new(service: Service) -> Self {
+        Self { service }
     }
 
     /// Returns a [`PortFactoryNotifier`] to create a new [`crate::port::notifier::Notifier`] port

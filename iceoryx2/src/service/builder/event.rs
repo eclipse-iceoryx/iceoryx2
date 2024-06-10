@@ -197,7 +197,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         "{} since the event does not exist.", msg);
                 }
                 Ok(Some((static_config, static_storage))) => {
-                    let static_config = self.verify_service_properties(&static_config)?;
+                    let event_static_config = self.verify_service_properties(&static_config)?;
 
                     let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
@@ -206,11 +206,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     );
 
                     self.base.service_config.messaging_pattern =
-                        MessagingPattern::Event(static_config);
+                        MessagingPattern::Event(event_static_config);
 
                     return Ok(event::PortFactory::new(ServiceType::from_state(
                         service::ServiceState::new(
-                            self.base.service_config,
+                            static_config,
                             self.base.global_config,
                             dynamic_config,
                             static_storage,

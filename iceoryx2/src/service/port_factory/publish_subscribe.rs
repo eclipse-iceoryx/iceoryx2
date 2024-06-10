@@ -69,43 +69,43 @@ unsafe impl<Service: service::Service, PayloadType: Debug + ?Sized> Sync
 {
 }
 
+impl<Service: service::Service, PayloadType: Debug + ?Sized>
+    crate::service::port_factory::PortFactory for PortFactory<Service, PayloadType>
+{
+    type StaticConfig = static_config::publish_subscribe::StaticConfig;
+    type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig;
+
+    fn name(&self) -> &ServiceName {
+        self.service.state().static_config.name()
+    }
+
+    fn uuid(&self) -> &str {
+        self.service.state().static_config.uuid()
+    }
+
+    fn property(&self, key: &str) -> Vec<&str> {
+        self.service.state().static_config.property(key)
+    }
+
+    fn static_config(&self) -> &static_config::publish_subscribe::StaticConfig {
+        self.service.state().static_config.publish_subscribe()
+    }
+
+    fn dynamic_config(&self) -> &dynamic_config::publish_subscribe::DynamicConfig {
+        self.service
+            .state()
+            .dynamic_storage
+            .get()
+            .publish_subscribe()
+    }
+}
+
 impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service, PayloadType> {
     pub(crate) fn new(service: Service) -> Self {
         Self {
             service,
             _phantom_payload_type: PhantomData,
         }
-    }
-
-    /// Returns the [`ServiceName`] of the service
-    pub fn name(&self) -> &ServiceName {
-        self.service.state().static_config.name()
-    }
-
-    /// Returns the uuid of the [`crate::service::Service`]
-    pub fn uuid(&self) -> &str {
-        self.service.state().static_config.uuid()
-    }
-
-    /// Returns the value of a property
-    pub fn property(&self, key: &str) -> Vec<&str> {
-        self.service.state().static_config.property(key)
-    }
-
-    /// Returns the [`static_config::event::StaticConfig`] of the [`crate::service::Service`].
-    /// Contains all settings that never change during the lifetime of the service.
-    pub fn static_config(&self) -> &static_config::publish_subscribe::StaticConfig {
-        self.service.state().static_config.publish_subscribe()
-    }
-
-    /// Returns the [`dynamic_config::event::DynamicConfig`] of the [`crate::service::Service`].
-    /// Contains all dynamic settings, like the current participants etc..
-    pub fn dynamic_config(&self) -> &dynamic_config::publish_subscribe::DynamicConfig {
-        self.service
-            .state()
-            .dynamic_storage
-            .get()
-            .publish_subscribe()
     }
 
     /// Returns a [`PortFactorySubscriber`] to create a new

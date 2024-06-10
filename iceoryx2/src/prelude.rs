@@ -14,8 +14,8 @@ pub use crate::iox2::Iox2;
 pub use crate::iox2::Iox2Event;
 pub use crate::port::event_id::EventId;
 pub use crate::service::{
-    port_factory::publisher::UnableToDeliverStrategy, process_local, service_name::ServiceName,
-    zero_copy, Service,
+    port_factory::publisher::UnableToDeliverStrategy, port_factory::PortFactory, process_local,
+    service_name::ServiceName, zero_copy, Service,
 };
 pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_elementary::alignment::Alignment;

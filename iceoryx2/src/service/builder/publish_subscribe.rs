@@ -472,7 +472,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                         "{} since the service does not exist.", msg);
                 }
                 Ok(Some((static_config, static_storage))) => {
-                    let static_config = self.verify_service_properties(&static_config)?;
+                    let pub_sub_static_config = self.verify_service_properties(&static_config)?;
 
                     let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
@@ -481,11 +481,11 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                     );
 
                     self.base.service_config.messaging_pattern =
-                        MessagingPattern::PublishSubscribe(static_config.clone());
+                        MessagingPattern::PublishSubscribe(pub_sub_static_config.clone());
 
                     return Ok(publish_subscribe::PortFactory::new(
                         ServiceType::from_state(service::ServiceState::new(
-                            self.base.service_config.clone(),
+                            static_config,
                             self.base.global_config.clone(),
                             dynamic_config,
                             static_storage,

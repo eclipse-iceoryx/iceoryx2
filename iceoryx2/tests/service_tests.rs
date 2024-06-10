@@ -35,12 +35,18 @@ mod service {
     }
 
     trait SutFactory {
-        type Factory;
+        type Factory: PortFactory;
         type CreateError: std::fmt::Debug;
         type OpenError: std::fmt::Debug;
 
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError>;
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError>;
+        fn create(
+            service_name: &ServiceName,
+            properties: Vec<(String, String)>,
+        ) -> Result<Self::Factory, Self::CreateError>;
+        fn open(
+            service_name: &ServiceName,
+            properties: Vec<(String, String)>,
+        ) -> Result<Self::Factory, Self::OpenError>;
 
         fn assert_create_error(error: Self::CreateError);
         fn assert_open_error(error: Self::OpenError);
@@ -51,12 +57,26 @@ mod service {
         type CreateError = PublishSubscribeCreateError;
         type OpenError = PublishSubscribeOpenError;
 
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
-            Sut::new(&service_name).publish_subscribe::<u64>().create()
+        fn create(
+            service_name: &ServiceName,
+            properties: Vec<(String, String)>,
+        ) -> Result<Self::Factory, Self::CreateError> {
+            let mut sut_builder = Sut::new(&service_name);
+            for property in properties {
+                sut_builder = sut_builder.add_property(&property.0, &property.1);
+            }
+            sut_builder.publish_subscribe::<u64>().create()
         }
 
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
-            Sut::new(&service_name).publish_subscribe::<u64>().open()
+        fn open(
+            service_name: &ServiceName,
+            properties: Vec<(String, String)>,
+        ) -> Result<Self::Factory, Self::OpenError> {
+            let mut sut_builder = Sut::new(&service_name);
+            for property in properties {
+                sut_builder = sut_builder.add_property(&property.0, &property.1);
+            }
+            sut_builder.publish_subscribe::<u64>().open()
         }
 
         fn assert_create_error(error: Self::CreateError) {
@@ -86,12 +106,26 @@ mod service {
         type CreateError = EventCreateError;
         type OpenError = EventOpenError;
 
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
-            Sut::new(&service_name).event().create()
+        fn create(
+            service_name: &ServiceName,
+            properties: Vec<(String, String)>,
+        ) -> Result<Self::Factory, Self::CreateError> {
+            let mut sut_builder = Sut::new(&service_name);
+            for property in properties {
+                sut_builder = sut_builder.add_property(&property.0, &property.1);
+            }
+            sut_builder.event().create()
         }
 
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
-            Sut::new(&service_name).event().open()
+        fn open(
+            service_name: &ServiceName,
+            properties: Vec<(String, String)>,
+        ) -> Result<Self::Factory, Self::OpenError> {
+            let mut sut_builder = Sut::new(&service_name);
+            for property in properties {
+                sut_builder = sut_builder.add_property(&property.0, &property.1);
+            }
+            sut_builder.event().open()
         }
 
         fn assert_create_error(error: Self::CreateError) {
@@ -164,7 +198,7 @@ mod service {
                         let service_name = generate_name();
                         barrier_enter.wait();
 
-                        let _sut = Factory::create(&service_name).unwrap();
+                        let _sut = Factory::create(&service_name, Vec::new()).unwrap();
 
                         barrier_exit.wait();
                     }
@@ -198,7 +232,7 @@ mod service {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
 
-                        let sut = Factory::create(&service_name);
+                        let sut = Factory::create(&service_name, Vec::new());
                         match sut {
                             Ok(_) => {
                                 success_counter.fetch_add(1, Ordering::Relaxed);
@@ -245,7 +279,7 @@ mod service {
             let mut threads = vec![];
             threads.push(s.spawn(|| {
                 for service_name in service_names {
-                    let sut = Factory::create(&service_name).unwrap();
+                    let sut = Factory::create(&service_name, Vec::new()).unwrap();
                     barrier_enter.wait();
 
                     drop(sut);
@@ -259,7 +293,7 @@ mod service {
                     for service_name in service_names {
                         barrier_enter.wait();
 
-                        let sut = Factory::open(&service_name);
+                        let sut = Factory::open(&service_name, Vec::new());
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
@@ -276,6 +310,25 @@ mod service {
                 thread.join().unwrap();
             }
         });
+    }
+
+    #[test]
+    fn setting_properties_in_creator_works<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let properties = vec![
+            ("1. Hello".to_string(), "Hypnotoad".to_string()),
+            ("2. No more".to_string(), "Coffee".to_string()),
+            ("3. Just have a".to_string(), "lick on the toad".to_string()),
+        ];
+        let sut_create = Factory::create(&service_name, properties.clone()).unwrap();
+        for property in &properties {
+            assert_that!(sut_create.property(&property.0), eq vec![&property.1]);
+        }
+
+        let sut_open = Factory::open(&service_name, Vec::new()).unwrap();
+        for property in &properties {
+            assert_that!(sut_open.property(&property.0), eq vec![&property.1]);
+        }
     }
 
     mod zero_copy {
