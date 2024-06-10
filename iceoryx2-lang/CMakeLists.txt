@@ -13,7 +13,9 @@
 cmake_minimum_required(VERSION 3.28)
 project(iceoryx2-lang)
 
-add_subdirectory(c)
+if(LANG_C)
+    add_subdirectory(c)
+endif()
 
 if(BUILD_TESTING)
     add_subdirectory(tests/tbd)
