@@ -35,6 +35,8 @@ use crate::config;
 
 use super::service_name::ServiceName;
 
+/// Represents a single service property (key-value) pair that can be defined when the service
+/// is being created.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub struct Property {
     key: String,
@@ -42,15 +44,18 @@ pub struct Property {
 }
 
 impl Property {
+    /// Acquires the service property key
     pub fn key(&self) -> &str {
         &self.key
     }
 
+    /// Acquires the service property value
     pub fn value(&self) -> &str {
         &self.value
     }
 }
 
+/// Represents all service properties. They can be set when the service is created.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct ServiceProperties(Vec<Property>);
 
@@ -75,6 +80,7 @@ impl ServiceProperties {
         self.0.sort();
     }
 
+    /// Returns all values to a specific key
     pub fn get(&self, key: &str) -> Vec<&str> {
         self.0
             .iter()

@@ -102,6 +102,37 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! ## Publish-Subscribe With Custom Service Properties
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! use iceoryx2::config::Config;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
+//!
+//! let service_creator = zero_copy::Service::new(&service_name)
+//!     // all properties that are defined when creating a new service are stored in the
+//!     // static config of the service
+//!     .add_property("some property key", "some property value")
+//!     .add_property("some property key", "another property value for the same key")
+//!     .add_property("another key", "another value")
+//!     .publish_subscribe::<u64>()
+//!     .create()?;
+//!
+//! let service_open = zero_copy::Service::new(&service_name)
+//!     // All properties that are defined when opening a new service interpreted as
+//!     // requirements.
+//!     // If a property key as either a different value or is not set at all, the service
+//!     // cannot be opened. If not specific properties are required one can skip them completely.
+//!     .add_property("another key", "another value")
+//!     .publish_subscribe::<u64>()
+//!     .open()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 /// The builder to create or open [`Service`]s
 pub mod builder;

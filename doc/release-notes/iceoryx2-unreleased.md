@@ -45,6 +45,10 @@
     * add CI targets to officially support 32-bit
  * Example that demonstrates publish-subscribe communication with dynamic data [#205](https://github.com/eclipse-iceoryx/iceoryx2/issues/205)
  * Introduce `PlacementNew` trait and derive proc-macro [#224](https://github.com/eclipse-iceoryx/iceoryx2/issues/224)
+ * Custom service properties support, see [example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/service_properties) [#231](https://github.com/eclipse-iceoryx/iceoryx2/issues/231)
+    * Implement Serialize,Deserialize for
+        * `FixedSizeByteString`
+        * `FixedSizeVec`
 
 ### Bugfixes
 
@@ -88,4 +92,18 @@
         .publish_subscribe::<u64>() // type is now up here
         .create() // or open(), or open_or_create()
         .unwrap();
+    ```
+
+2. `service_name` was renamed into `name` for consistency reasons.
+
+    ```rust
+    let services = zero_copy::Service::list()?;
+
+    for service in services {
+        // old
+        let name = service.service_name();
+
+        // new
+        let name = service.name();
+    }
     ```
