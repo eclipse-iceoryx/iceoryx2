@@ -40,6 +40,7 @@ pub enum PublishSubscribeOpenError {
     InternalFailure,
     IncompatibleTypes,
     IncompatibleMessagingPattern,
+    IncompatibleProperties,
     DoesNotSupportRequestedMinBufferSize,
     DoesNotSupportRequestedMinHistorySize,
     DoesNotSupportRequestedMinSubscriberBorrowedSamples,
@@ -283,6 +284,15 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
         existing_settings: &static_config::StaticConfig,
     ) -> Result<static_config::publish_subscribe::StaticConfig, PublishSubscribeOpenError> {
         let msg = "Unable to open publish subscribe service";
+
+        let required_properties = self.base.service_config.properties();
+        let existing_properties = existing_settings.properties();
+
+        if let Err(incompatible_key) = required_properties.is_compatible_to(existing_properties) {
+            fail!(from self, with PublishSubscribeOpenError::IncompatibleProperties,
+                "{} due to incompatible service property key {}. The following properties {:?} are required but the service has the properties {:?}.",
+                msg, incompatible_key, required_properties, existing_properties);
+        }
 
         let required_settings = self.base.service_config.publish_subscribe();
         let existing_settings = match &existing_settings.messaging_pattern {

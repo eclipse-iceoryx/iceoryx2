@@ -43,6 +43,7 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use static_config::ServiceProperties;
 
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config};
@@ -83,8 +84,8 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized>
         self.service.state().static_config.uuid()
     }
 
-    fn property(&self, key: &str) -> Vec<&str> {
-        self.service.state().static_config.property(key)
+    fn properties(&self) -> &ServiceProperties {
+        self.service.state().static_config.properties()
     }
 
     fn static_config(&self) -> &static_config::publish_subscribe::StaticConfig {

@@ -33,6 +33,7 @@ pub enum EventOpenError {
     PermissionDenied,
     EventInCorruptedState,
     IncompatibleMessagingPattern,
+    IncompatibleProperties,
     InternalFailure,
     HangsInCreation,
     DoesNotSupportRequestedAmountOfNotifiers,
@@ -355,6 +356,15 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         existing_settings: &static_config::StaticConfig,
     ) -> Result<static_config::event::StaticConfig, EventOpenError> {
         let msg = "Unable to open event";
+
+        let required_properties = self.base.service_config.properties();
+        let existing_properties = existing_settings.properties();
+
+        if let Err(incompatible_key) = required_properties.is_compatible_to(existing_properties) {
+            fail!(from self, with EventOpenError::IncompatibleProperties,
+                "{} due to incompatible service property key {}. The following properties {:?} are required but the service has the properties {:?}.",
+                msg, incompatible_key, required_properties, existing_properties);
+        }
 
         let required_settings = self.base.service_config.event();
         let existing_settings = match &existing_settings.messaging_pattern {

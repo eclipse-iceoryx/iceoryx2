@@ -50,6 +50,7 @@ mod service {
 
         fn assert_create_error(error: Self::CreateError);
         fn assert_open_error(error: Self::OpenError);
+        fn assert_property_error(error: Self::OpenError);
     }
 
     impl<Sut: Service> SutFactory for publish_subscribe::PortFactory<Sut, u64> {
@@ -77,6 +78,10 @@ mod service {
                 sut_builder = sut_builder.add_property(&property.0, &property.1);
             }
             sut_builder.publish_subscribe::<u64>().open()
+        }
+
+        fn assert_property_error(error: Self::OpenError) {
+            assert_that!(error, eq PublishSubscribeOpenError::IncompatibleProperties);
         }
 
         fn assert_create_error(error: Self::CreateError) {
@@ -126,6 +131,10 @@ mod service {
                 sut_builder = sut_builder.add_property(&property.0, &property.1);
             }
             sut_builder.event().open()
+        }
+
+        fn assert_property_error(error: Self::OpenError) {
+            assert_that!(error, eq EventOpenError::IncompatibleProperties);
         }
 
         fn assert_create_error(error: Self::CreateError) {
@@ -313,7 +322,7 @@ mod service {
     }
 
     #[test]
-    fn setting_properties_in_creator_works<Sut: Service, Factory: SutFactory>() {
+    fn setting_properties_in_creator_can_be_read_in_opener<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
         let properties = vec![
             ("1. Hello".to_string(), "Hypnotoad".to_string()),
@@ -321,14 +330,113 @@ mod service {
             ("3. Just have a".to_string(), "lick on the toad".to_string()),
         ];
         let sut_create = Factory::create(&service_name, properties.clone()).unwrap();
-        for property in &properties {
-            assert_that!(sut_create.property(&property.0), eq vec![&property.1]);
+
+        let mut count = 0;
+        for property in sut_create.properties().iter().zip(properties.iter()) {
+            assert_that!(property.0.key(), eq property.1.0);
+            assert_that!(property.0.value(), eq property.1.1);
+            count += 1;
         }
+        assert_that!(count, eq properties.len());
 
         let sut_open = Factory::open(&service_name, Vec::new()).unwrap();
-        for property in &properties {
-            assert_that!(sut_open.property(&property.0), eq vec![&property.1]);
+        let mut count = 0;
+        for property in sut_open.properties().iter().zip(properties.iter()) {
+            assert_that!(property.0.key(), eq property.1.0);
+            assert_that!(property.0.value(), eq property.1.1);
+            count += 1;
         }
+        assert_that!(count, eq properties.len());
+    }
+
+    #[test]
+    fn opener_succeeds_when_properties_do_match<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let properties = vec![
+            ("1. Hello".to_string(), "Hypnotoad".to_string()),
+            ("1. Hello".to_string(), "Take a number".to_string()),
+            ("2. No more".to_string(), "Coffee".to_string()),
+            ("3. Just have a".to_string(), "lick on the toad".to_string()),
+        ];
+        let _sut_create = Factory::create(&service_name, properties.clone()).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            vec![
+                ("1. Hello".to_string(), "Hypnotoad".to_string()),
+                ("1. Hello".to_string(), "Take a number".to_string()),
+                ("3. Just have a".to_string(), "lick on the toad".to_string()),
+            ],
+        );
+
+        assert_that!(sut_open, is_ok);
+        let sut_open = sut_open.unwrap();
+
+        let mut count = 0;
+        for property in sut_open.properties().iter().zip(properties.iter()) {
+            assert_that!(property.0.key(), eq property.1.0);
+            assert_that!(property.0.value(), eq property.1.1);
+            count += 1;
+        }
+        assert_that!(count, eq properties.len());
+    }
+
+    #[test]
+    fn opener_fails_when_property_value_does_not_match<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let properties = vec![
+            ("1. Hello".to_string(), "Hypnotoad".to_string()),
+            ("2. No more".to_string(), "Coffee".to_string()),
+        ];
+        let _sut_create = Factory::create(&service_name, properties.clone()).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            vec![("1. Hello".to_string(), "lick on the toad".to_string())],
+        );
+
+        assert_that!(sut_open, is_err);
+        Factory::assert_property_error(sut_open.err().unwrap());
+    }
+
+    #[test]
+    fn opener_fails_when_property_key_does_not_exist<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let properties = vec![
+            ("1. Hello".to_string(), "Hypnotoad".to_string()),
+            ("2. No more".to_string(), "Coffee".to_string()),
+        ];
+        let _sut_create = Factory::create(&service_name, properties.clone()).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            vec![("Whatever".to_string(), "lick on the toad".to_string())],
+        );
+
+        assert_that!(sut_open, is_err);
+        Factory::assert_property_error(sut_open.err().unwrap());
+    }
+
+    #[test]
+    fn opener_fails_when_property_value_does_not_exist<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let properties = vec![
+            ("1. Hello".to_string(), "Hypnotoad".to_string()),
+            ("1. Hello".to_string(), "Number Two".to_string()),
+            ("2. No more".to_string(), "Coffee".to_string()),
+        ];
+        let _sut_create = Factory::create(&service_name, properties.clone()).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            vec![
+                ("1. Hello".to_string(), "lick on the toad".to_string()),
+                ("1. Hello".to_string(), "Number Eight".to_string()),
+            ],
+        );
+
+        assert_that!(sut_open, is_err);
+        Factory::assert_property_error(sut_open.err().unwrap());
     }
 
     mod zero_copy {

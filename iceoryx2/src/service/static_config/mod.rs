@@ -24,6 +24,8 @@ pub mod publish_subscribe;
 /// and the type variant
 pub mod type_details;
 
+use std::ops::Deref;
+
 use crate::service::messaging_pattern::MessagingPattern;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;
@@ -33,8 +35,32 @@ use crate::config;
 
 use super::service_name::ServiceName;
 
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd, Ord)]
+pub struct Property {
+    key: String,
+    value: String,
+}
+
+impl Property {
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    pub fn value(&self) -> &str {
+        &self.value
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub(crate) struct ServiceProperties(Vec<(String, String)>);
+pub struct ServiceProperties(Vec<Property>);
+
+impl Deref for ServiceProperties {
+    type Target = [Property];
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_slice()
+    }
+}
 
 impl ServiceProperties {
     pub(crate) fn new() -> Self {
@@ -42,16 +68,34 @@ impl ServiceProperties {
     }
 
     pub(crate) fn add(&mut self, key: &str, value: &str) {
-        self.0.push((key.into(), value.into()));
+        self.0.push(Property {
+            key: key.into(),
+            value: value.into(),
+        });
         self.0.sort();
     }
 
-    pub(crate) fn get(&self, key: &str) -> Vec<&str> {
+    pub fn get(&self, key: &str) -> Vec<&str> {
         self.0
             .iter()
-            .filter(|(k, _)| k == key)
-            .map(|(_, value)| value.as_str())
+            .filter(|p| p.key == key)
+            .map(|p| p.value.as_str())
             .collect()
+    }
+
+    pub(crate) fn is_compatible_to(&self, rhs: &ServiceProperties) -> Result<(), &str> {
+        let is_subset = |lhs: Vec<&str>, rhs: Vec<&str>| lhs.iter().all(|v| rhs.contains(v));
+
+        for property in &self.0 {
+            let lhs_values = self.get(&property.key);
+            let rhs_values = rhs.get(&property.key);
+
+            if !is_subset(lhs_values, rhs_values) {
+                return Err(&property.key);
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -108,9 +152,9 @@ impl StaticConfig {
         }
     }
 
-    /// Returns the value of a property
-    pub fn property(&self, key: &str) -> Vec<&str> {
-        self.properties.get(key)
+    /// Returns the properties of the [`crate::service::Service`]
+    pub fn properties(&self) -> &ServiceProperties {
+        &self.properties
     }
 
     /// Returns the uuid of the [`crate::service::Service`]
