@@ -69,7 +69,7 @@ impl<Service: service::Service> PortFactory<Service> {
     }
 
     /// Returns the value of a property
-    pub fn property(&self, key: &str) -> Option<&str> {
+    pub fn property(&self, key: &str) -> Vec<&str> {
         self.service.state().static_config.property(key)
     }
 

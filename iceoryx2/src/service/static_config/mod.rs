@@ -33,12 +33,34 @@ use crate::config;
 
 use super::service_name::ServiceName;
 
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub(crate) struct ServiceProperties(Vec<(String, String)>);
+
+impl ServiceProperties {
+    pub(crate) fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub(crate) fn add(&mut self, key: &str, value: &str) {
+        self.0.push((key.into(), value.into()));
+        self.0.sort();
+    }
+
+    pub(crate) fn get(&self, key: &str) -> Vec<&str> {
+        self.0
+            .iter()
+            .filter(|(k, _)| k == key)
+            .map(|(_, value)| value.as_str())
+            .collect()
+    }
+}
+
 /// Defines a common set of static service configuration details every service shares.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct StaticConfig {
     uuid: String,
     service_name: ServiceName,
-    properties: Vec<(String, String)>,
+    properties: ServiceProperties,
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
@@ -56,6 +78,7 @@ impl StaticConfig {
     pub(crate) fn new_event<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
+        properties: ServiceProperties,
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
@@ -64,13 +87,14 @@ impl StaticConfig {
                 .into(),
             service_name: service_name.clone(),
             messaging_pattern,
-            properties: Vec::new(),
+            properties,
         }
     }
 
     pub(crate) fn new_publish_subscribe<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
+        properties: ServiceProperties,
     ) -> Self {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
@@ -80,16 +104,13 @@ impl StaticConfig {
                 .into(),
             service_name: service_name.clone(),
             messaging_pattern,
-            properties: Vec::new(),
+            properties,
         }
     }
 
     /// Returns the value of a property
-    pub(crate) fn property(&self, key: &str) -> Option<&str> {
-        self.properties
-            .iter()
-            .find(|&v| v.0 == key)
-            .and_then(|v| Some(v.1.as_str()))
+    pub(crate) fn property(&self, key: &str) -> Vec<&str> {
+        self.properties.get(key)
     }
 
     /// Returns the uuid of the [`crate::service::Service`]

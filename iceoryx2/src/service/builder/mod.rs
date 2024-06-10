@@ -98,6 +98,7 @@ impl std::error::Error for ReadStaticStorageFailure {}
 #[derive(Debug)]
 pub struct Builder<S: Service> {
     name: ServiceName,
+    properties: ServiceProperties,
     _phantom_s: PhantomData<S>,
 }
 
@@ -105,8 +106,18 @@ impl<S: Service> Builder<S> {
     pub(crate) fn new(name: &ServiceName) -> Self {
         Self {
             name: name.clone(),
+            properties: ServiceProperties::new(),
             _phantom_s: PhantomData,
         }
+    }
+
+    /// Defines a property requirement. If a new [`Service`] is created all properties will be
+    /// added. If an existing [`Service`] is opened those properties are interpreted as
+    /// requirements that the service has to satisfy. If a property does not match or does not
+    /// exist the open process will fail.
+    pub fn add_property(mut self, key: &str, value: &str) -> Self {
+        self.properties.add(key, value);
+        self
     }
 
     /// Create a new builder to create a
@@ -125,7 +136,11 @@ impl<S: Service> Builder<S> {
         config: &config::Config,
     ) -> publish_subscribe::Builder<PayloadType, S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(&self.name, config),
+            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
+                &self.name,
+                config,
+                self.properties,
+            ),
             Arc::new(config.clone()),
         )
         .publish_subscribe()
@@ -142,7 +157,7 @@ impl<S: Service> Builder<S> {
     /// with a custom [`config::Config`]
     pub fn event_with_custom_config(self, config: &config::Config) -> event::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config),
+            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config, self.properties),
             Arc::new(config.clone()),
         )
         .event()
