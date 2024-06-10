@@ -329,11 +329,21 @@ impl<T> RelocatableVec<T> {
     }
 
     /// Returns a slice to the contents of the vector
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableVec::init()`] must be called once before
+    ///
     pub unsafe fn as_slice(&self) -> &[T] {
         core::slice::from_raw_parts(self.data_ptr.as_ptr().cast(), self.len)
     }
 
     /// Returns a mutable slice to the contents of the vector
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableVec::init()`] must be called once before
+    ///
     pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
         core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr().cast(), self.len)
     }
