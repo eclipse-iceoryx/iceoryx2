@@ -12,6 +12,6 @@
 
 @PACKAGE_INIT@
 
-# TODO check if this is correct
-include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/@TARGETS_EXPORT_NAME@.cmake")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 check_required_components("@PROJECT_NAME@")

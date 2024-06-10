@@ -11,7 +11,8 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.28)
-project(iceoryx2)
+set(IOX2_VERSION_STRING "0.3.0")
+project(iceoryx2 VERSION ${IOX2_VERSION_STRING})
 
 #TODO how to handle feature flags
 

@@ -11,9 +11,13 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.28)
-project(iceoryx2_lang_c)
+project(iceoryx2_lang_c VERSION ${IOX2_VERSION_STRING})
 
+set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
+
+#
 ########## Rust target ##########
+#
 
 set(RUST_BUILD_TYPE "release")
 set(RUST_BUILD_TYPE_FLAG "--${RUST_BUILD_TYPE}")
@@ -38,6 +42,7 @@ set(RUST_ARCH_TRIPLET_FLAG "")
 set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
 set(RUST_ARCH_TARGET_DIR ${RUST_TARGET_DIR}/${RUST_ARCH_TRIPLET})
 
+# TODO distinguish between static and dynamic builds
 # TODO switch for Windows
 set(ICEORYX2_LANG_C_LIB ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/libiceoryx2_lang_c.a)
 set(ICEORYX2_LANG_C_INCLUDE_DIR ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/iceoryx2_lang_c_cbindgen/include)
@@ -54,25 +59,21 @@ add_custom_target(
     USES_TERMINAL
 )
 
-# set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-# list(APPEND CMAKE_FIND_LIBRARY_SUFFIXES ".so")
-# list(APPEND CMAKE_FIND_LIBRARY_SUFFIXES ".dll")
 #
-# find_library(ICEORYX2_LANG_C_LIB ${PROJECT_NAME} HINTS ${iceoryx2_SOURCE_DIR}/target/release)
-
 ########## C target ##########
+#
 
 add_library(${PROJECT_NAME} INTERFACE)
+add_library(iceoryx2::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 add_dependencies(${PROJECT_NAME} iceoryx2)
 
-target_include_directories(${PROJECT_NAME} INTERFACE ${ICEORYX2_LANG_C_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME}
+    INTERFACE
+    $<BUILD_INTERFACE:${ICEORYX2_LANG_C_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:include/${PREFIX}>
+)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ${ICEORYX2_LANG_C_LIB} -lm)
 
-########## find_package in source tree ##########
-set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
-    CACHE FILEPATH
-    "${PROJECT_NAME}Config.cmake to make find_package(${PROJECT_NAME}) work in source tree!"
-    FORCE
-)
+include(cmake/install.cmake)
