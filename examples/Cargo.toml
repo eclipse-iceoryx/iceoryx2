@@ -59,3 +59,17 @@ path = "rust/publish_subscribe_dynamic_data/publisher.rs"
 [[example]]
 name = "publish_subscribe_dyn_subscriber"
 path = "rust/publish_subscribe_dynamic_data/subscriber.rs"
+
+# service properties
+
+[[example]]
+name = "service_properties_creator"
+path = "rust/service_properties/creator.rs"
+
+[[example]]
+name = "service_properties_opener"
+path = "rust/service_properties/opener.rs"
+
+[[example]]
+name = "service_properties_incompatible"
+path = "rust/service_properties/incompatible.rs"

@@ -44,4 +44,4 @@ they interact and exchange data.
 | [event](rust/event) | Exchanging event signals between multiple processes.|
 | [publish subscribe](rust/publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |
 | [publish subscribe dynamic data](rust/publish_subscribe_dynamic_data) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern) and payload data that has a dynamic size. |
-
+| [service properties](rust/service_properties) | Creates a service with custom properties that are available to every endpoint. If the properties are not compatible the service will not open. |
