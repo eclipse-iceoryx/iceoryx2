@@ -35,7 +35,7 @@ pub enum EventOpenError {
     PermissionDenied,
     EventInCorruptedState,
     IncompatibleMessagingPattern,
-    IncompatibleProperties,
+    IncompatibleAttributes,
     InternalFailure,
     HangsInCreation,
     DoesNotSupportRequestedAmountOfNotifiers,
@@ -395,8 +395,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         let existing_attributes = existing_settings.attributes();
 
         if let Err(incompatible_key) = required_attributes.is_compatible_to(existing_attributes) {
-            fail!(from self, with EventOpenError::IncompatibleProperties,
-                "{} due to incompatible service property key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
+            fail!(from self, with EventOpenError::IncompatibleAttributes,
+                "{} due to incompatible service attribute key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
                 msg, incompatible_key, required_attributes, existing_attributes);
         }
 

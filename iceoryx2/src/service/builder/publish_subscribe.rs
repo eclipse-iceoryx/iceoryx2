@@ -43,7 +43,7 @@ pub enum PublishSubscribeOpenError {
     InternalFailure,
     IncompatibleTypes,
     IncompatibleMessagingPattern,
-    IncompatibleProperties,
+    IncompatibleAttributes,
     DoesNotSupportRequestedMinBufferSize,
     DoesNotSupportRequestedMinHistorySize,
     DoesNotSupportRequestedMinSubscriberBorrowedSamples,
@@ -292,8 +292,8 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
         let existing_attributes = existing_settings.attributes();
 
         if let Err(incompatible_key) = required_attributes.is_compatible_to(existing_attributes) {
-            fail!(from self, with PublishSubscribeOpenError::IncompatibleProperties,
-                "{} due to incompatible service property key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
+            fail!(from self, with PublishSubscribeOpenError::IncompatibleAttributes,
+                "{} due to incompatible service attribute key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
                 msg, incompatible_key, required_attributes, existing_attributes);
         }
 

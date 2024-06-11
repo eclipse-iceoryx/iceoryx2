@@ -77,7 +77,7 @@ mod service {
         }
 
         fn assert_attribute_error(error: Self::OpenError) {
-            assert_that!(error, eq PublishSubscribeOpenError::IncompatibleProperties);
+            assert_that!(error, eq PublishSubscribeOpenError::IncompatibleAttributes);
         }
 
         fn assert_create_error(error: Self::CreateError) {
@@ -126,7 +126,7 @@ mod service {
         }
 
         fn assert_attribute_error(error: Self::OpenError) {
-            assert_that!(error, eq EventOpenError::IncompatibleProperties);
+            assert_that!(error, eq EventOpenError::IncompatibleAttributes);
         }
 
         fn assert_create_error(error: Self::CreateError) {
