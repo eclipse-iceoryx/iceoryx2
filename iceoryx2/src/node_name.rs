@@ -13,32 +13,21 @@
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use serde::{de::Visitor, Deserialize, Serialize};
 
-const NODE_NAME_LENGTH: usize = 255;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct NodeName {
-    value: iceoryx2_bb_container::byte_string::FixedSizeByteString<NODE_NAME_LENGTH>,
+    value: String,
 }
 
 impl NodeName {
     /// Creates a new [`NodeName`]. Is not allowed to be longer than [`NodeName::max_len()`].
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
-        Ok(Self {
-            value: iceoryx2_bb_container::byte_string::FixedSizeByteString::from_bytes(
-                name.as_bytes(),
-            )?,
-        })
+        Ok(Self { value: name.into() })
     }
 
     /// Returns a str reference to the [`NodeName`]
     pub fn as_str(&self) -> &str {
         // SAFETY: `ServieName` was created from a `&str` and therefore this conversion is safe
         unsafe { std::str::from_utf8_unchecked(self.value.as_bytes()) }
-    }
-
-    /// Returns the maximum length of a [`NodeName`]
-    pub const fn max_len() -> usize {
-        NODE_NAME_LENGTH
     }
 }
 

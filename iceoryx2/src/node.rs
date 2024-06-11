@@ -26,6 +26,9 @@ pub enum NodeCreationFailure {
     InsufficientPermissions,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum NodeListFailure {}
+
 #[derive(serde::Serialize, serde::Deserialize)]
 struct NodeDetails {
     id: UniqueSystemId,
@@ -63,11 +66,20 @@ impl<Service: service::Service> Node<Service> {
         &self.details.id
     }
 
-    pub fn list() -> Vec<NodeState<Service>> {
-        todo!()
+    pub fn list() -> Result<Vec<NodeState<Service>>, NodeListFailure> {
+        Self::list_with_custom_config(Config::get_global_config())
     }
 
-    pub fn list_with_custom_config(config: &Config) -> Vec<NodeState<Service>> {
+    pub fn list_with_custom_config(
+        config: &Config,
+    ) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
+        let msg = "Unable to list all nodes";
+        let origin = "Node::list_with_custom_config()";
+
+        let nodes = <Service::Monitoring as NamedConceptMgmt>::list_cfg(&node_monitoring_config::<
+            Service,
+        >(&config));
+
         todo!()
     }
 }
@@ -132,8 +144,8 @@ impl NodeBuilder {
 
         let details = NodeDetails {
             id: node_id,
-            name: if let Some(name) = self.name {
-                name
+            name: if let Some(ref name) = self.name {
+                name.clone()
             } else {
                 NodeName::new("").expect("An empty NodeName is always valid.")
             },
