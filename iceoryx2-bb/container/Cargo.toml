@@ -22,3 +22,4 @@ serde = { workspace = true }
 [dev-dependencies]
 generic-tests = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
+serde_test = { workspace = true }
