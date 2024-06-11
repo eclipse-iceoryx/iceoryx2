@@ -124,6 +124,7 @@ impl NamedConceptMgmt for FileLockMonitoring {
     }
 }
 
+#[derive(Debug)]
 pub struct Cleaner {
     _cleaner: ProcessCleaner,
     name: FileName,
@@ -137,6 +138,7 @@ impl NamedConcept for Cleaner {
 
 impl MonitoringCleaner for Cleaner {}
 
+#[derive(Debug)]
 pub struct Token {
     _guard: ProcessGuard,
     name: FileName,

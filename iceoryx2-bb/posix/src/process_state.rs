@@ -742,6 +742,7 @@ impl ProcessMonitor {
 ///     Err(_) => (),
 /// }
 /// ```
+#[derive(Debug)]
 pub struct ProcessCleaner {
     _file: File,
     _owner_lock_file: File,

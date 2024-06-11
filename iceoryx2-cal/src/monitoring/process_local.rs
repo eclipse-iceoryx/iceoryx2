@@ -153,6 +153,7 @@ impl Monitoring for ProcessLocalMonitoring {
     type Builder = Builder;
 }
 
+#[derive(Debug)]
 pub struct Cleaner {
     name: FileName,
 }

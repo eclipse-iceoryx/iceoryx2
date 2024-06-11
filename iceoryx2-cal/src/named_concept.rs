@@ -122,7 +122,7 @@ pub trait NamedConceptBuilder<T: NamedConceptMgmt> {
 /// Every concept that is uniquely identified by a [`FileName`] and corresponds to some kind of
 /// file in the file system is a [`NamedConcept`]. This trait provides the essential property of
 /// these concepts [`NamedConcept::name()`]
-pub trait NamedConcept {
+pub trait NamedConcept: Debug {
     /// Returns the name of the concept
     fn name(&self) -> &FileName;
 }

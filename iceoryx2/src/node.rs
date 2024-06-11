@@ -15,36 +15,44 @@ use crate::service;
 use crate::service::config_scheme::node_monitoring_config;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_elementary::math::ToB64;
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::{monitoring::*, serialize::*, static_storage::*};
-use std::marker::PhantomData;
+use iceoryx2_cal::{
+    monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCreationFailure {
-    InternalError,
     InsufficientPermissions,
+    InternalError,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum NodeListFailure {}
+pub enum NodeListFailure {
+    InsufficientPermissions,
+    Interrupt,
+    InternalError,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum NodeReadStorageFailure {
+    ReadError,
+    Corrupted,
+    InternalError,
+}
 
 #[derive(serde::Serialize, serde::Deserialize)]
-struct NodeDetails {
+pub struct NodeDetails {
     id: UniqueSystemId,
     name: NodeName,
     config: Config,
 }
 
-pub struct NodeState<Service: service::Service> {
-    details: NodeDetails,
-    _service: PhantomData<Service>,
-}
-
-impl<Service: service::Service> NodeState<Service> {
-    pub fn cleanup(self) {
-        todo!()
-    }
+pub enum NodeState {
+    Active(NodeDetails),
+    Dead(Option<NodeDetails>),
+    Corrupted,
+    DoesNotExist,
 }
 
 pub struct Node<Service: service::Service> {
@@ -66,21 +74,191 @@ impl<Service: service::Service> Node<Service> {
         &self.details.id
     }
 
-    pub fn list() -> Result<Vec<NodeState<Service>>, NodeListFailure> {
+    pub fn list() -> Result<Vec<NodeState>, NodeListFailure> {
         Self::list_with_custom_config(Config::get_global_config())
     }
 
-    pub fn list_with_custom_config(
-        config: &Config,
-    ) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
+    fn list_all_nodes(
+        config: &<Service::Monitoring as NamedConceptMgmt>::Configuration,
+    ) -> Result<Vec<FileName>, NodeListFailure> {
+        let result = <Service::Monitoring as NamedConceptMgmt>::list_cfg(config);
+
+        if result.is_ok() {
+            return Ok(result.unwrap());
+        }
+
         let msg = "Unable to list all nodes";
-        let origin = "Node::list_with_custom_config()";
+        let origin = format!("Node::list_all_nodes({:?})", config);
+        match result.err().unwrap() {
+            NamedConceptListError::InsufficientPermissions => {
+                fail!(from origin, with NodeListFailure::InsufficientPermissions,
+                        "{} due to insufficient permissions while listing all nodes.", msg);
+            }
+            NamedConceptListError::InternalError => {
+                fail!(from origin, with NodeListFailure::InternalError,
+                        "{} due to an internal failure while listing all nodes.", msg);
+            }
+        }
+    }
 
-        let nodes = <Service::Monitoring as NamedConceptMgmt>::list_cfg(&node_monitoring_config::<
-            Service,
-        >(&config));
+    fn state_from_monitor(
+        monitor: &<Service::Monitoring as Monitoring>::Monitor,
+    ) -> Result<State, NodeListFailure> {
+        let result = monitor.state();
 
-        todo!()
+        if result.is_ok() {
+            return Ok(result.unwrap());
+        }
+
+        let msg = "Unable to acquire node state from monitor";
+        let origin = format!("Node::state_from_monitor({:?})", monitor);
+
+        match result.err().unwrap() {
+            MonitoringStateError::Interrupt => {
+                fail!(from origin, with NodeListFailure::Interrupt,
+                    "{} due to an interrupt signal while acquiring the nodes state.", msg);
+            }
+            MonitoringStateError::InternalError => {
+                fail!(from origin, with NodeListFailure::InternalError,
+                    "{} due to an internal error while acquiring the nodes state.", msg);
+            }
+        }
+    }
+
+    fn get_node_state(
+        config: &<Service::Monitoring as NamedConceptMgmt>::Configuration,
+        name: &FileName,
+    ) -> Result<State, NodeListFailure> {
+        let result = <Service::Monitoring as Monitoring>::Builder::new(name).monitor();
+
+        if result.is_ok() {
+            return Ok(Self::state_from_monitor(&result.unwrap())?);
+        }
+
+        let msg = "Unable to acquire node monitor";
+        let origin = format!("Node::get_node_state({:?}, {:?})", config, name);
+        match result.err().unwrap() {
+            MonitoringCreateMonitorError::InsufficientPermissions => {
+                fail!(from origin, with NodeListFailure::InsufficientPermissions,
+                        "{} due to insufficient permissions while acquiring the node state.", msg);
+            }
+            MonitoringCreateMonitorError::Interrupt => {
+                fail!(from origin, with NodeListFailure::Interrupt,
+                        "{} since an interrupt was received while acquiring the node state.", msg);
+            }
+            MonitoringCreateMonitorError::InternalError => {
+                fail!(from origin, with NodeListFailure::InternalError,
+                        "{} since an internal failure occurred while acquiring the node state.", msg);
+            }
+        }
+    }
+
+    fn open_node_storage(
+        config: &Config,
+        node_name: &FileName,
+    ) -> Result<Option<Service::StaticStorage>, NodeReadStorageFailure> {
+        let details_config = node_details_config::<Service>(config, &node_name);
+        let result = <Service::StaticStorage as StaticStorage>::Builder::new(
+            &FileName::new(b"details").unwrap(),
+        )
+        .config(&details_config)
+        .has_ownership(false)
+        .open();
+
+        if result.is_ok() {
+            return Ok(Some(result.unwrap()));
+        }
+
+        let msg = "Unable to open node config storage";
+        let origin = format!("open_node_storage({:?}, {:?})", config, node_name);
+
+        match result.err().unwrap() {
+            StaticStorageOpenError::DoesNotExist => Ok(None),
+            StaticStorageOpenError::Read => {
+                fail!(from origin, with NodeReadStorageFailure::ReadError,
+                    "{} since the node config storage could not be read.", msg);
+            }
+            StaticStorageOpenError::IsLocked => {
+                fail!(from origin, with NodeReadStorageFailure::Corrupted,
+                    "{} since the node config storage seems to be uninitialized but the state should always be present.", msg);
+            }
+            StaticStorageOpenError::InternalError => {
+                fail!(from origin, with NodeReadStorageFailure::InternalError,
+                    "{} due to an internal failure while opening the node config storage.", msg);
+            }
+        }
+    }
+
+    fn get_node_details(
+        config: &Config,
+        node_name: &FileName,
+    ) -> Result<Option<NodeDetails>, NodeReadStorageFailure> {
+        let node_storage = Self::open_node_storage(config, node_name)?;
+        if node_storage.is_none() {
+            return Ok(None);
+        }
+        let node_storage = node_storage.unwrap();
+
+        let mut read_content =
+            String::from_utf8(vec![b' '; node_storage.len() as usize]).expect("");
+
+        let origin = format!("get_node_details({:?}, {:?})", config, node_name);
+        let msg = "Unable to read node details";
+
+        if node_storage
+            .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
+            .is_err()
+        {
+            fail!(from origin, with NodeReadStorageFailure::ReadError,
+                "{} since the content of the node config storage could not be read.", msg);
+        }
+
+        let node_details = fail!(from origin,
+                    when Service::ConfigSerializer::deserialize::<NodeDetails>(unsafe { read_content.as_mut_vec()}),
+                    with NodeReadStorageFailure::Corrupted,
+                "{} since the contents of the node config storage is corrupted.", msg);
+
+        Ok(Some(node_details))
+    }
+
+    pub fn list_with_custom_config(config: &Config) -> Result<Vec<NodeState>, NodeListFailure> {
+        let origin = format!("Node::list_with_custom_config({:?})", config);
+
+        let monitoring_config = node_monitoring_config::<Service>(&config);
+        let mut nodes = vec![];
+
+        for node_name in &Self::list_all_nodes(&monitoring_config)? {
+            let node_state = Self::get_node_state(&monitoring_config, node_name)?;
+
+            if node_state == State::DoesNotExist {
+                continue;
+            }
+
+            match Self::get_node_details(config, node_name) {
+                Ok(Some(node_details)) => {
+                    if node_state == State::Alive {
+                        nodes.push(NodeState::Active(node_details))
+                    } else if node_state == State::Dead {
+                        nodes.push(NodeState::Dead(Some(node_details)))
+                    }
+                }
+                Ok(None) => {
+                    let node_state = Self::get_node_state(&monitoring_config, node_name)?;
+
+                    match node_state {
+                        State::Alive => nodes.push(NodeState::Corrupted),
+                        State::Dead => nodes.push(NodeState::Dead(None)),
+                        State::DoesNotExist => continue,
+                    }
+                }
+                Err(e) => {
+                    warn!(from origin, "The node details of {:?} are broken ({:?}).", node_name, e);
+                    nodes.push(NodeState::Corrupted)
+                }
+            };
+        }
+
+        Ok(nodes)
     }
 }
 
@@ -108,6 +286,82 @@ impl NodeBuilder {
         self
     }
 
+    fn create_token<Service: service::Service>(
+        &self,
+        config: &Config,
+        monitor_name: &FileName,
+    ) -> Result<<Service::Monitoring as Monitoring>::Token, NodeCreationFailure> {
+        let msg = "Unable to create token for new node";
+        let token_result = <Service::Monitoring as Monitoring>::Builder::new(&monitor_name)
+            .config(&node_monitoring_config::<Service>(&config))
+            .token();
+
+        match token_result {
+            Ok(token) => Ok(token),
+            Err(MonitoringCreateTokenError::InsufficientPermissions) => {
+                fail!(from self, with NodeCreationFailure::InsufficientPermissions,
+                    "{msg} due to insufficient permissions to create a monitor token.");
+            }
+            Err(MonitoringCreateTokenError::AlreadyExists) => {
+                fatal_panic!(from self,
+                    "This should never happen! {msg} since a node with the same UniqueNodeId already exists.");
+            }
+            Err(MonitoringCreateTokenError::InternalError) => {
+                fail!(from self, with NodeCreationFailure::InternalError,
+                    "{msg} since the monitor token could not be created.");
+            }
+        }
+    }
+
+    fn create_node_details_storage<Service: service::Service>(
+        &self,
+        config: &Config,
+        monitor_name: &FileName,
+        node_id: UniqueSystemId,
+    ) -> Result<(Service::StaticStorage, NodeDetails), NodeCreationFailure> {
+        let msg = "Unable to create node details storage";
+        let details = NodeDetails {
+            id: node_id,
+            name: if let Some(ref name) = self.name {
+                name.clone()
+            } else {
+                NodeName::new("").expect("An empty NodeName is always valid.")
+            },
+            config: config.clone(),
+        };
+
+        let details_config = node_details_config::<Service>(&details.config, &monitor_name);
+        let serialized_details = match <Service::ConfigSerializer>::serialize(&details) {
+            Ok(serialized_details) => serialized_details,
+            Err(SerializeError::InternalError) => {
+                fail!(from self, with NodeCreationFailure::InternalError,
+                    "{msg} since the node details could not be serialized.");
+            }
+        };
+
+        match <Service::StaticStorage as StaticStorage>::Builder::new(
+            &FileName::new(b"details").unwrap(),
+        )
+        .config(&details_config)
+        .has_ownership(true)
+        .create(&serialized_details)
+        {
+            Ok(node_details) => Ok((node_details, details)),
+            Err(StaticStorageCreateError::InsufficientPermissions) => {
+                fail!(from self, with NodeCreationFailure::InsufficientPermissions,
+                    "{msg} due to insufficient permissions to create the node details file.");
+            }
+            Err(StaticStorageCreateError::AlreadyExists) => {
+                fatal_panic!(from self,
+                    "This should never happen! {msg} since the node details file already exists.");
+            }
+            Err(e) => {
+                fail!(from self, with NodeCreationFailure::InternalError,
+                    "{msg} due to an unknown failure while creating the node details file {:?}.", e);
+            }
+        }
+    }
+
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
         let msg = "Unable to create node";
         let node_id = fail!(from self, when UniqueSystemId::new(),
@@ -122,70 +376,13 @@ impl NodeBuilder {
             Config::get_global_config().clone()
         };
 
-        let token_result = <Service::Monitoring as Monitoring>::Builder::new(&monitor_name)
-            .config(&node_monitoring_config::<Service>(&config))
-            .token();
-
-        let token = match token_result {
-            Ok(token) => token,
-            Err(MonitoringCreateTokenError::InsufficientPermissions) => {
-                fail!(from self, with NodeCreationFailure::InsufficientPermissions,
-                    "{msg} due to insufficient permissions to create a monitor token.");
-            }
-            Err(MonitoringCreateTokenError::AlreadyExists) => {
-                fatal_panic!(from self,
-                    "This should never happen! {msg} since a node with the same UniqueNodeId already exists.");
-            }
-            Err(MonitoringCreateTokenError::InternalError) => {
-                fail!(from self, with NodeCreationFailure::InternalError,
-                    "{msg} since the monitor token could not be created.");
-            }
-        };
-
-        let details = NodeDetails {
-            id: node_id,
-            name: if let Some(ref name) = self.name {
-                name.clone()
-            } else {
-                NodeName::new("").expect("An empty NodeName is always valid.")
-            },
-            config,
-        };
-
-        let details_config = node_details_config::<Service>(&details.config, &monitor_name);
-        let serialized_details = match <Service::ConfigSerializer>::serialize(&details) {
-            Ok(serialized_details) => serialized_details,
-            Err(SerializeError::InternalError) => {
-                fail!(from self, with NodeCreationFailure::InternalError,
-                    "{msg} since the node details could not be serialized.");
-            }
-        };
-
-        let node_details = match <Service::StaticStorage as StaticStorage>::Builder::new(
-            &FileName::new(b"details").unwrap(),
-        )
-        .config(&details_config)
-        .has_ownership(true)
-        .create(&serialized_details)
-        {
-            Ok(node_details) => node_details,
-            Err(StaticStorageCreateError::InsufficientPermissions) => {
-                fail!(from self, with NodeCreationFailure::InsufficientPermissions,
-                    "{msg} due to insufficient permissions to create the node details file.");
-            }
-            Err(StaticStorageCreateError::AlreadyExists) => {
-                fatal_panic!(from self,
-                    "This should never happen! {msg} since the node details file already exists.");
-            }
-            Err(e) => {
-                fail!(from self, with NodeCreationFailure::InternalError,
-                    "{msg} due to an unknown failure while creating the node details file {:?}.", e);
-            }
-        };
+        let (details_storage, details) =
+            self.create_node_details_storage::<Service>(&config, &monitor_name, node_id)?;
+        let token = self.create_token::<Service>(&config, &monitor_name)?;
 
         Ok(Node {
             _monitor: token,
-            _details_storage: node_details,
+            _details_storage: details_storage,
             details,
         })
     }
