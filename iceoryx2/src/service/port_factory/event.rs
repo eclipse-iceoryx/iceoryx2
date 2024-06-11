@@ -34,8 +34,8 @@
 //! # }
 //! ```
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use static_config::ServiceProperties;
 
+use crate::service::attribute::AttributeSet;
 use crate::service::{self, static_config};
 use crate::service::{dynamic_config, ServiceName};
 
@@ -66,7 +66,7 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
         self.service.state().static_config.uuid()
     }
 
-    fn properties(&self) -> &ServiceProperties {
+    fn attributes(&self) -> &AttributeSet {
         self.service.state().static_config.properties()
     }
 

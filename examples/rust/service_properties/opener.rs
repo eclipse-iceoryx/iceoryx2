@@ -19,15 +19,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_name = ServiceName::new("Service/With/Properties")?;
 
     let service = zero_copy::Service::new(&service_name)
-        // define properties that the service requires
-        // if no properties are defined the service accepts any property
-        .add_property("camera_resolution", "1920x1080")
+        // define attributes that the service requires
+        // if no attributes are defined the service accepts any attribute
+        .add_attribute("camera_resolution", "1920x1080")
         .publish_subscribe::<u64>()
         .open()?;
 
     let subscriber = service.subscriber().create()?;
 
-    println!("defined service properties: {:?}", service.properties());
+    println!("defined service attributes: {:?}", service.attributes());
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         while let Some(sample) = subscriber.receive()? {

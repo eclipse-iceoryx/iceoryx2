@@ -163,6 +163,9 @@ pub mod service_name;
 ///  * QoS provided when the service was created
 pub mod static_config;
 
+/// Represents static features of a service that can be set when a [`Service`] is created.
+pub mod attribute;
+
 /// A configuration when communicating within a single process or single address space.
 pub mod process_local;
 

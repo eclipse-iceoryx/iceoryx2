@@ -43,8 +43,8 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use static_config::ServiceProperties;
 
+use crate::service::attribute::AttributeSet;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config};
 
@@ -84,7 +84,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized>
         self.service.state().static_config.uuid()
     }
 
-    fn properties(&self) -> &ServiceProperties {
+    fn attributes(&self) -> &AttributeSet {
         self.service.state().static_config.properties()
     }
 

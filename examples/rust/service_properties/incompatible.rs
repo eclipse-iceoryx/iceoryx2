@@ -16,9 +16,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_name = ServiceName::new("Service/With/Properties")?;
 
     // the opening of the service will fail since the
-    // `camera_resolution` property is `1920x1080` and not `3840x2160`
+    // `camera_resolution` attribute is `1920x1080` and not `3840x2160`
     let _incompatible_service = zero_copy::Service::new(&service_name)
-        .add_property("camera_resolution", "3840x2160")
+        .add_attribute("camera_resolution", "3840x2160")
         .publish_subscribe::<u64>()
         .open()?;
 

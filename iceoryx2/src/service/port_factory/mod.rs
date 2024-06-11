@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use super::{service_name::ServiceName, ServiceProperties};
+use super::{attribute::AttributeSet, service_name::ServiceName};
 
 /// Factory to create the endpoints of
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) based
@@ -46,8 +46,8 @@ pub trait PortFactory {
     /// Returns the uuid of the [`crate::service::Service`]
     fn uuid(&self) -> &str;
 
-    /// Returns the properties defined in the [`crate::service::Service`]
-    fn properties(&self) -> &ServiceProperties;
+    /// Returns the attributes defined in the [`crate::service::Service`]
+    fn attributes(&self) -> &AttributeSet;
 
     /// Returns the StaticConfig of the [`crate::service::Service`].
     /// Contains all settings that never change during the lifetime of the service.

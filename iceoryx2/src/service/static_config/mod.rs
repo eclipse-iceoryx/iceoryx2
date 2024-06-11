@@ -24,8 +24,6 @@ pub mod publish_subscribe;
 /// and the type variant
 pub mod type_details;
 
-use std::ops::Deref;
-
 use crate::service::messaging_pattern::MessagingPattern;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;
@@ -33,84 +31,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::config;
 
-use super::service_name::ServiceName;
-
-/// Represents a single service property (key-value) pair that can be defined when the service
-/// is being created.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd, Ord)]
-pub struct Property {
-    key: String,
-    value: String,
-}
-
-impl Property {
-    /// Acquires the service property key
-    pub fn key(&self) -> &str {
-        &self.key
-    }
-
-    /// Acquires the service property value
-    pub fn value(&self) -> &str {
-        &self.value
-    }
-}
-
-/// Represents all service properties. They can be set when the service is created.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct ServiceProperties(Vec<Property>);
-
-impl Deref for ServiceProperties {
-    type Target = [Property];
-
-    fn deref(&self) -> &Self::Target {
-        self.0.as_slice()
-    }
-}
-
-impl ServiceProperties {
-    pub(crate) fn new() -> Self {
-        Self(Vec::new())
-    }
-
-    pub(crate) fn add(&mut self, key: &str, value: &str) {
-        self.0.push(Property {
-            key: key.into(),
-            value: value.into(),
-        });
-        self.0.sort();
-    }
-
-    /// Returns all values to a specific key
-    pub fn get(&self, key: &str) -> Vec<&str> {
-        self.0
-            .iter()
-            .filter(|p| p.key == key)
-            .map(|p| p.value.as_str())
-            .collect()
-    }
-
-    pub(crate) fn is_compatible_to(&self, rhs: &ServiceProperties) -> Result<(), &str> {
-        let is_subset = |lhs: Vec<&str>, rhs: Vec<&str>| lhs.iter().all(|v| rhs.contains(v));
-
-        for property in &self.0 {
-            let lhs_values = self.get(&property.key);
-            let rhs_values = rhs.get(&property.key);
-
-            if !is_subset(lhs_values, rhs_values) {
-                return Err(&property.key);
-            }
-        }
-
-        Ok(())
-    }
-}
+use super::{attribute::AttributeSet, service_name::ServiceName};
 
 /// Defines a common set of static service configuration details every service shares.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct StaticConfig {
     uuid: String,
     service_name: ServiceName,
-    properties: ServiceProperties,
+    properties: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
@@ -128,7 +56,7 @@ impl StaticConfig {
     pub(crate) fn new_event<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
-        properties: ServiceProperties,
+        properties: AttributeSet,
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
@@ -144,7 +72,7 @@ impl StaticConfig {
     pub(crate) fn new_publish_subscribe<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
-        properties: ServiceProperties,
+        properties: AttributeSet,
     ) -> Self {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
@@ -159,7 +87,7 @@ impl StaticConfig {
     }
 
     /// Returns the properties of the [`crate::service::Service`]
-    pub fn properties(&self) -> &ServiceProperties {
+    pub fn properties(&self) -> &AttributeSet {
         &self.properties
     }
 

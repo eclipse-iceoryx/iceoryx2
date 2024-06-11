@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
-use iceoryx2::{prelude::*, service::static_config::Property};
+use iceoryx2::prelude::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -21,19 +21,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service = zero_copy::Service::new(&service_name)
         // define a set of properties that are static for the lifetime
         // of the service
-        .add_property("dds_service_mapping", "my_funky_service_name")
-        .add_property("tcp_serialization_format", "cdr")
-        .add_property("someip_service_mapping", "1/2/3")
-        .add_property("camera_resolution", "1920x1080")
+        .add_attribute("dds_service_mapping", "my_funky_service_name")
+        .add_attribute("tcp_serialization_format", "cdr")
+        .add_attribute("someip_service_mapping", "1/2/3")
+        .add_attribute("camera_resolution", "1920x1080")
         //
         .publish_subscribe::<u64>()
         .create()?;
 
     let publisher = service.publisher().create()?;
 
-    println!("defined service properties: {:?}", service.properties());
-    for property in service.properties().iter() {
-        println!("{} = {}", property.key(), property.value());
+    println!("defined service attributes: {:?}", service.attributes());
+    for attribute in service.attributes().iter() {
+        println!("{} = {}", attribute.key(), attribute.value());
     }
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
