@@ -42,7 +42,6 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use super::attribute::AttributeSet;
 use super::config_scheme::dynamic_config_storage_config;
 use super::config_scheme::static_config_storage_config;
 use super::naming_scheme::dynamic_config_storage_name;
@@ -99,7 +98,6 @@ impl std::error::Error for ReadStaticStorageFailure {}
 #[derive(Debug)]
 pub struct Builder<S: Service> {
     name: ServiceName,
-    attributes: AttributeSet,
     _phantom_s: PhantomData<S>,
 }
 
@@ -107,18 +105,8 @@ impl<S: Service> Builder<S> {
     pub(crate) fn new(name: &ServiceName) -> Self {
         Self {
             name: name.clone(),
-            attributes: AttributeSet::new(),
             _phantom_s: PhantomData,
         }
-    }
-
-    /// Defines a attribute requirement. If a new [`Service`] is created all properties will be
-    /// added. If an existing [`Service`] is opened those properties are interpreted as
-    /// requirements that the service has to satisfy. If a attribute does not match or does not
-    /// exist the open process will fail.
-    pub fn add_attribute(mut self, key: &str, value: &str) -> Self {
-        self.attributes.add(key, value);
-        self
     }
 
     /// Create a new builder to create a
@@ -137,11 +125,7 @@ impl<S: Service> Builder<S> {
         config: &config::Config,
     ) -> publish_subscribe::Builder<PayloadType, S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
-                &self.name,
-                config,
-                self.attributes,
-            ),
+            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(&self.name, config),
             Arc::new(config.clone()),
         )
         .publish_subscribe()
@@ -158,7 +142,7 @@ impl<S: Service> Builder<S> {
     /// with a custom [`config::Config`]
     pub fn event_with_custom_config(self, config: &config::Config) -> event::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config, self.attributes),
+            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config),
             Arc::new(config.clone()),
         )
         .event()

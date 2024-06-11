@@ -33,6 +33,40 @@ impl Attribute {
     }
 }
 
+pub struct DefinedAttributes(pub(crate) AttributeSet);
+
+impl DefinedAttributes {
+    pub fn new() -> Self {
+        Self(AttributeSet::new())
+    }
+
+    pub fn define(mut self, key: &str, value: &str) -> Self {
+        self.0.add(key, value);
+        self
+    }
+
+    pub fn attributes(&self) -> &AttributeSet {
+        &self.0
+    }
+}
+
+pub struct RequiredAttributes(pub(crate) AttributeSet);
+
+impl RequiredAttributes {
+    pub fn new() -> Self {
+        Self(AttributeSet::new())
+    }
+
+    pub fn require(mut self, key: &str, value: &str) -> Self {
+        self.0.add(key, value);
+        self
+    }
+
+    pub fn attributes(&self) -> &AttributeSet {
+        &self.0
+    }
+}
+
 /// Represents all service properties. They can be set when the service is created.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct AttributeSet(Vec<Attribute>);

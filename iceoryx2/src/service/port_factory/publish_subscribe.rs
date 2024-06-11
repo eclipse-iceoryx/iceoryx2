@@ -85,7 +85,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized>
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.state().static_config.properties()
+        self.service.state().static_config.attributes()
     }
 
     fn static_config(&self) -> &static_config::publish_subscribe::StaticConfig {

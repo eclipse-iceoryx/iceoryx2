@@ -29,7 +29,10 @@ use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 
-use self::type_details::{TypeDetails, TypeVariant};
+use self::{
+    attribute::{AttributeSet, DefinedAttributes, RequiredAttributes},
+    type_details::{TypeDetails, TypeVariant},
+};
 
 use super::ServiceState;
 
@@ -250,7 +253,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
         self
     }
 
-    fn adjust_properties_to_meaningful_values(&mut self) {
+    fn adjust_attributes_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.publish_subscribe_mut();
 
@@ -279,19 +282,19 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
         }
     }
 
-    fn verify_service_properties(
+    fn verify_service_attributes(
         &self,
         existing_settings: &static_config::StaticConfig,
+        required_attributes: &AttributeSet,
     ) -> Result<static_config::publish_subscribe::StaticConfig, PublishSubscribeOpenError> {
         let msg = "Unable to open publish subscribe service";
 
-        let required_properties = self.base.service_config.properties();
-        let existing_properties = existing_settings.properties();
+        let existing_attributes = existing_settings.attributes();
 
-        if let Err(incompatible_key) = required_properties.is_compatible_to(existing_properties) {
+        if let Err(incompatible_key) = required_attributes.is_compatible_to(existing_attributes) {
             fail!(from self, with PublishSubscribeOpenError::IncompatibleProperties,
-                "{} due to incompatible service property key {}. The following properties {:?} are required but the service has the properties {:?}.",
-                msg, incompatible_key, required_properties, existing_properties);
+                "{} due to incompatible service property key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
+                msg, incompatible_key, required_attributes, existing_attributes);
         }
 
         let required_settings = self.base.service_config.publish_subscribe();
@@ -358,9 +361,10 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     fn create_impl(
         &mut self,
+        attributes: &DefinedAttributes,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
     {
-        self.adjust_properties_to_meaningful_values();
+        self.adjust_attributes_to_meaningful_values();
 
         let msg = "Unable to create publish subscribe service";
 
@@ -419,6 +423,8 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                             "{} since the dynamic service segment could not be created ({:?}).", msg, e);
                     }
                 };
+
+                self.base.service_config.attributes = attributes.0.clone();
                 let service_config = fail!(from self,
                             when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
                             with PublishSubscribeCreateError::Corrupted,
@@ -467,6 +473,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     fn open_impl(
         &mut self,
+        attributes: &RequiredAttributes,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
     {
         let msg = "Unable to open publish subscribe service";
@@ -482,7 +489,8 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                         "{} since the service does not exist.", msg);
                 }
                 Ok(Some((static_config, static_storage))) => {
-                    let pub_sub_static_config = self.verify_service_properties(&static_config)?;
+                    let pub_sub_static_config =
+                        self.verify_service_attributes(&static_config, &attributes.0)?;
 
                     let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
@@ -539,6 +547,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     fn open_or_create_impl(
         mut self,
+        attributes: &RequiredAttributes,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, PayloadType>,
         PublishSubscribeOpenOrCreateError,
@@ -547,12 +556,12 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
         loop {
             match self.is_service_available(msg) {
-                Ok(Some(_)) => match self.open_impl() {
+                Ok(Some(_)) => match self.open_impl(attributes) {
                     Ok(factory) => return Ok(factory),
                     Err(PublishSubscribeOpenError::DoesNotExist) => continue,
                     Err(e) => return Err(e.into()),
                 },
-                Ok(None) => match self.create_impl() {
+                Ok(None) => match self.create_impl(&DefinedAttributes(attributes.0.clone())) {
                     Ok(factory) => return Ok(factory),
                     Err(PublishSubscribeCreateError::AlreadyExists)
                     | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
@@ -606,31 +615,64 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create(
+        self,
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, PayloadType>,
+        PublishSubscribeOpenOrCreateError,
+    > {
+        self.open_or_create_with_attributes(&RequiredAttributes::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
+    /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
+    /// does not exist the required attributes will be defined in the [`Service`].
+    pub fn open_or_create_with_attributes(
         mut self,
+        required_attributes: &RequiredAttributes,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, PayloadType>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
-        self.open_or_create_impl()
+        self.open_or_create_impl(required_attributes)
     }
 
     /// Opens an existing [`Service`].
     pub fn open(
+        self,
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
+    {
+        self.open_with_attributes(&RequiredAttributes::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    pub fn open_with_attributes(
         mut self,
+        required_attributes: &RequiredAttributes,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
     {
         self.prepare_config_details();
-        self.open_impl()
+        self.open_impl(required_attributes)
     }
 
     /// Creates a new [`Service`].
     pub fn create(
+        self,
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
+    {
+        self.create_with_attributes(&DefinedAttributes::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    pub fn create_with_attributes(
         mut self,
+        attributes: &DefinedAttributes,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
     {
         self.prepare_config_details();
-        self.create_impl()
+        self.create_impl(attributes)
     }
 }
 
@@ -644,32 +686,67 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create(
+        self,
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
+        PublishSubscribeOpenOrCreateError,
+    > {
+        self.open_or_create_with_attributes(&RequiredAttributes::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
+    /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
+    /// does not exist the required attributes will be defined in the [`Service`].
+    pub fn open_or_create_with_attributes(
         mut self,
+        attributes: &RequiredAttributes,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
-        self.open_or_create_impl()
+        self.open_or_create_impl(attributes)
     }
 
     /// Opens an existing [`Service`].
     pub fn open(
+        self,
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, [PayloadType]>, PublishSubscribeOpenError>
+    {
+        self.open_with_attributes(&RequiredAttributes::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    pub fn open_with_attributes(
         mut self,
+        attributes: &RequiredAttributes,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, [PayloadType]>, PublishSubscribeOpenError>
     {
         self.prepare_config_details();
-        self.open_impl()
+        self.open_impl(attributes)
     }
 
     /// Creates a new [`Service`].
     pub fn create(
+        self,
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
+        PublishSubscribeCreateError,
+    > {
+        self.create_with_attributes(&DefinedAttributes::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    pub fn create_with_attributes(
         mut self,
+        attributes: &DefinedAttributes,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
         PublishSubscribeCreateError,
     > {
         self.prepare_config_details();
-        self.create_impl()
+        self.create_impl(attributes)
     }
 }

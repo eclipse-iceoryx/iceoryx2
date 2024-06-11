@@ -67,7 +67,7 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.state().static_config.properties()
+        self.service.state().static_config.attributes()
     }
 
     fn static_config(&self) -> &static_config::event::StaticConfig {

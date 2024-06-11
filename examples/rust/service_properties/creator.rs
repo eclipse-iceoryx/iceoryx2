@@ -19,15 +19,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_name = ServiceName::new("Service/With/Properties")?;
 
     let service = zero_copy::Service::new(&service_name)
-        // define a set of properties that are static for the lifetime
-        // of the service
-        .add_attribute("dds_service_mapping", "my_funky_service_name")
-        .add_attribute("tcp_serialization_format", "cdr")
-        .add_attribute("someip_service_mapping", "1/2/3")
-        .add_attribute("camera_resolution", "1920x1080")
-        //
         .publish_subscribe::<u64>()
-        .create()?;
+        .create_with_attributes(
+            // define a set of properties that are static for the lifetime
+            // of the service
+            &DefinedAttributes::new()
+                .define("dds_service_mapping", "my_funky_service_name")
+                .define("tcp_serialization_format", "cdr")
+                .define("someip_service_mapping", "1/2/3")
+                .define("camera_resolution", "1920x1080"),
+        )?;
 
     let publisher = service.publisher().create()?;
 

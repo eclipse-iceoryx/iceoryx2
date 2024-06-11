@@ -41,11 +41,11 @@ mod service {
 
         fn create(
             service_name: &ServiceName,
-            attributes: Vec<(String, String)>,
+            attributes: &DefinedAttributes,
         ) -> Result<Self::Factory, Self::CreateError>;
         fn open(
             service_name: &ServiceName,
-            attributes: Vec<(String, String)>,
+            attributes: &RequiredAttributes,
         ) -> Result<Self::Factory, Self::OpenError>;
 
         fn assert_create_error(error: Self::CreateError);
@@ -60,24 +60,20 @@ mod service {
 
         fn create(
             service_name: &ServiceName,
-            attributes: Vec<(String, String)>,
+            attributes: &DefinedAttributes,
         ) -> Result<Self::Factory, Self::CreateError> {
-            let mut sut_builder = Sut::new(&service_name);
-            for attribute in attributes {
-                sut_builder = sut_builder.add_attribute(&attribute.0, &attribute.1);
-            }
-            sut_builder.publish_subscribe::<u64>().create()
+            Sut::new(&service_name)
+                .publish_subscribe::<u64>()
+                .create_with_attributes(attributes)
         }
 
         fn open(
             service_name: &ServiceName,
-            attributes: Vec<(String, String)>,
+            attributes: &RequiredAttributes,
         ) -> Result<Self::Factory, Self::OpenError> {
-            let mut sut_builder = Sut::new(&service_name);
-            for attribute in attributes {
-                sut_builder = sut_builder.add_attribute(&attribute.0, &attribute.1);
-            }
-            sut_builder.publish_subscribe::<u64>().open()
+            Sut::new(&service_name)
+                .publish_subscribe::<u64>()
+                .open_with_attributes(attributes)
         }
 
         fn assert_attribute_error(error: Self::OpenError) {
@@ -113,24 +109,20 @@ mod service {
 
         fn create(
             service_name: &ServiceName,
-            attributes: Vec<(String, String)>,
+            attributes: &DefinedAttributes,
         ) -> Result<Self::Factory, Self::CreateError> {
-            let mut sut_builder = Sut::new(&service_name);
-            for attribute in attributes {
-                sut_builder = sut_builder.add_attribute(&attribute.0, &attribute.1);
-            }
-            sut_builder.event().create()
+            Sut::new(&service_name)
+                .event()
+                .create_with_attributes(attributes)
         }
 
         fn open(
             service_name: &ServiceName,
-            attributes: Vec<(String, String)>,
+            attributes: &RequiredAttributes,
         ) -> Result<Self::Factory, Self::OpenError> {
-            let mut sut_builder = Sut::new(&service_name);
-            for attribute in attributes {
-                sut_builder = sut_builder.add_attribute(&attribute.0, &attribute.1);
-            }
-            sut_builder.event().open()
+            Sut::new(&service_name)
+                .event()
+                .open_with_attributes(attributes)
         }
 
         fn assert_attribute_error(error: Self::OpenError) {
@@ -207,7 +199,8 @@ mod service {
                         let service_name = generate_name();
                         barrier_enter.wait();
 
-                        let _sut = Factory::create(&service_name, Vec::new()).unwrap();
+                        let _sut =
+                            Factory::create(&service_name, &DefinedAttributes::new()).unwrap();
 
                         barrier_exit.wait();
                     }
@@ -241,7 +234,7 @@ mod service {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
 
-                        let sut = Factory::create(&service_name, Vec::new());
+                        let sut = Factory::create(&service_name, &DefinedAttributes::new());
                         match sut {
                             Ok(_) => {
                                 success_counter.fetch_add(1, Ordering::Relaxed);
@@ -288,7 +281,7 @@ mod service {
             let mut threads = vec![];
             threads.push(s.spawn(|| {
                 for service_name in service_names {
-                    let sut = Factory::create(&service_name, Vec::new()).unwrap();
+                    let sut = Factory::create(&service_name, &DefinedAttributes::new()).unwrap();
                     barrier_enter.wait();
 
                     drop(sut);
@@ -302,7 +295,7 @@ mod service {
                     for service_name in service_names {
                         barrier_enter.wait();
 
-                        let sut = Factory::open(&service_name, Vec::new());
+                        let sut = Factory::open(&service_name, &RequiredAttributes::new());
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
@@ -324,75 +317,55 @@ mod service {
     #[test]
     fn setting_attributes_in_creator_can_be_read_in_opener<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let attributes = vec![
-            ("1. Hello".to_string(), "Hypnotoad".to_string()),
-            ("2. No more".to_string(), "Coffee".to_string()),
-            ("3. Just have a".to_string(), "lick on the toad".to_string()),
-        ];
-        let sut_create = Factory::create(&service_name, attributes.clone()).unwrap();
+        let defined_attributes = DefinedAttributes::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee")
+            .define("3. Just have a", "lick on the toad");
+        let sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
 
-        let mut count = 0;
-        for attribute in sut_create.attributes().iter().zip(attributes.iter()) {
-            assert_that!(attribute.0.key(), eq attribute.1.0);
-            assert_that!(attribute.0.value(), eq attribute.1.1);
-            count += 1;
-        }
-        assert_that!(count, eq attributes.len());
+        assert_that!(sut_create.attributes(), eq defined_attributes.attributes());
 
-        let sut_open = Factory::open(&service_name, Vec::new()).unwrap();
-        let mut count = 0;
-        for attribute in sut_open.attributes().iter().zip(attributes.iter()) {
-            assert_that!(attribute.0.key(), eq attribute.1.0);
-            assert_that!(attribute.0.value(), eq attribute.1.1);
-            count += 1;
-        }
-        assert_that!(count, eq attributes.len());
+        let sut_open = Factory::open(&service_name, &RequiredAttributes::new()).unwrap();
+
+        assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
     }
 
     #[test]
     fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let attributes = vec![
-            ("1. Hello".to_string(), "Hypnotoad".to_string()),
-            ("1. Hello".to_string(), "Take a number".to_string()),
-            ("2. No more".to_string(), "Coffee".to_string()),
-            ("3. Just have a".to_string(), "lick on the toad".to_string()),
-        ];
-        let _sut_create = Factory::create(&service_name, attributes.clone()).unwrap();
+        let defined_attributes = DefinedAttributes::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("1. Hello", "Take a number")
+            .define("2. No more", "Coffee")
+            .define("3. Just have a", "lick on the toad");
+
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
 
         let sut_open = Factory::open(
             &service_name,
-            vec![
-                ("1. Hello".to_string(), "Hypnotoad".to_string()),
-                ("1. Hello".to_string(), "Take a number".to_string()),
-                ("3. Just have a".to_string(), "lick on the toad".to_string()),
-            ],
+            &RequiredAttributes::new()
+                .require("1. Hello", "Hypnotoad")
+                .require("1. Hello", "Take a number")
+                .require("3. Just have a", "lick on the toad"),
         );
 
         assert_that!(sut_open, is_ok);
         let sut_open = sut_open.unwrap();
 
-        let mut count = 0;
-        for attribute in sut_open.attributes().iter().zip(attributes.iter()) {
-            assert_that!(attribute.0.key(), eq attribute.1.0);
-            assert_that!(attribute.0.value(), eq attribute.1.1);
-            count += 1;
-        }
-        assert_that!(count, eq attributes.len());
+        assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
     }
 
     #[test]
     fn opener_fails_when_attribute_value_does_not_match<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let attributes = vec![
-            ("1. Hello".to_string(), "Hypnotoad".to_string()),
-            ("2. No more".to_string(), "Coffee".to_string()),
-        ];
-        let _sut_create = Factory::create(&service_name, attributes.clone()).unwrap();
+        let defined_attributes = DefinedAttributes::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
 
         let sut_open = Factory::open(
             &service_name,
-            vec![("1. Hello".to_string(), "lick on the toad".to_string())],
+            &RequiredAttributes::new().require("1. Hello", "lick on the toad"),
         );
 
         assert_that!(sut_open, is_err);
@@ -402,15 +375,14 @@ mod service {
     #[test]
     fn opener_fails_when_attribute_key_does_not_exist<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let attributes = vec![
-            ("1. Hello".to_string(), "Hypnotoad".to_string()),
-            ("2. No more".to_string(), "Coffee".to_string()),
-        ];
-        let _sut_create = Factory::create(&service_name, attributes.clone()).unwrap();
+        let defined_attributes = DefinedAttributes::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
 
         let sut_open = Factory::open(
             &service_name,
-            vec![("Whatever".to_string(), "lick on the toad".to_string())],
+            &RequiredAttributes::new().require("Whatever", "lick on the toad"),
         );
 
         assert_that!(sut_open, is_err);
@@ -420,19 +392,17 @@ mod service {
     #[test]
     fn opener_fails_when_attribute_value_does_not_exist<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let attributes = vec![
-            ("1. Hello".to_string(), "Hypnotoad".to_string()),
-            ("1. Hello".to_string(), "Number Two".to_string()),
-            ("2. No more".to_string(), "Coffee".to_string()),
-        ];
-        let _sut_create = Factory::create(&service_name, attributes.clone()).unwrap();
+        let defined_attributes = DefinedAttributes::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("1. Hello", "Number Two")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
 
         let sut_open = Factory::open(
             &service_name,
-            vec![
-                ("1. Hello".to_string(), "lick on the toad".to_string()),
-                ("1. Hello".to_string(), "Number Eight".to_string()),
-            ],
+            &RequiredAttributes::new()
+                .require("1. Hello", "lick on the toad")
+                .require("1. Hello", "Number Eight"),
         );
 
         assert_that!(sut_open, is_err);

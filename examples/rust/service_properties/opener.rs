@@ -19,11 +19,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_name = ServiceName::new("Service/With/Properties")?;
 
     let service = zero_copy::Service::new(&service_name)
-        // define attributes that the service requires
-        // if no attributes are defined the service accepts any attribute
-        .add_attribute("camera_resolution", "1920x1080")
         .publish_subscribe::<u64>()
-        .open()?;
+        .open_with_attributes(
+            // define attributes that the service requires
+            // if no attributes are defined the service accepts any attribute
+            &RequiredAttributes::new().require("camera_resolution", "1920x1080"),
+        )?;
 
     let subscriber = service.subscriber().create()?;
 

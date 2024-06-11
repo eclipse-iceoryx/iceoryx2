@@ -38,7 +38,7 @@ use super::{attribute::AttributeSet, service_name::ServiceName};
 pub struct StaticConfig {
     uuid: String,
     service_name: ServiceName,
-    properties: AttributeSet,
+    pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
@@ -56,7 +56,6 @@ impl StaticConfig {
     pub(crate) fn new_event<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
-        properties: AttributeSet,
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
@@ -65,14 +64,13 @@ impl StaticConfig {
                 .into(),
             service_name: service_name.clone(),
             messaging_pattern,
-            properties,
+            attributes: AttributeSet::new(),
         }
     }
 
     pub(crate) fn new_publish_subscribe<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
-        properties: AttributeSet,
     ) -> Self {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
@@ -82,13 +80,13 @@ impl StaticConfig {
                 .into(),
             service_name: service_name.clone(),
             messaging_pattern,
-            properties,
+            attributes: AttributeSet::new(),
         }
     }
 
-    /// Returns the properties of the [`crate::service::Service`]
-    pub fn properties(&self) -> &AttributeSet {
-        &self.properties
+    /// Returns the attributes of the [`crate::service::Service`]
+    pub fn attributes(&self) -> &AttributeSet {
+        &self.attributes
     }
 
     /// Returns the uuid of the [`crate::service::Service`]
