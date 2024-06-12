@@ -45,11 +45,6 @@ impl ServiceName {
     pub fn as_str(&self) -> &str {
         &self.value
     }
-
-    /// Returns the maximum length of a [`ServiceName`]
-    pub const fn max_len() -> usize {
-        SERVICE_NAME_LENGTH
-    }
 }
 
 impl std::fmt::Display for ServiceName {

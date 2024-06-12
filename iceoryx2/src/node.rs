@@ -85,11 +85,11 @@ pub struct DeadNodeView<Service: service::Service>(AliveNodeView<Service>);
 
 impl<Service: service::Service> DeadNodeView<Service> {
     pub fn id(&self) -> &UniqueSystemId {
-        &self.0.id()
+        self.0.id()
     }
 
     pub fn details(&self) -> &Option<NodeDetails> {
-        &self.0.details()
+        self.0.details()
     }
 
     pub fn remove_stale_resources(&self) -> Result<bool, NodeCleanupFailure> {
@@ -131,10 +131,7 @@ fn remove_node_details_directory<Service: service::Service>(
 ) -> Result<(), NodeCleanupFailure> {
     let msg = "Unable to remove node resources";
 
-    match Directory::remove(&node_details_path::<Service>(
-        &details.config,
-        &monitor_name,
-    )) {
+    match Directory::remove(&node_details_path::<Service>(&details.config, monitor_name)) {
         Ok(()) => Ok(()),
         Err(DirectoryRemoveError::InsufficientPermissions) => {
             fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
@@ -153,7 +150,7 @@ fn acquire_all_node_detail_storages<Service: service::Service>(
     config: &<Service::StaticStorage as NamedConceptMgmt>::Configuration,
 ) -> Result<Vec<FileName>, NodeCleanupFailure> {
     let msg = "Unable to list all node detail storages";
-    match <Service::StaticStorage as NamedConceptMgmt>::list_cfg(&config) {
+    match <Service::StaticStorage as NamedConceptMgmt>::list_cfg(config) {
         Ok(v) => Ok(v),
         Err(NamedConceptListError::InsufficientPermissions) => {
             fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
@@ -245,7 +242,7 @@ impl<Service: service::Service> Node<Service> {
     pub fn list_with_custom_config(
         config: &Config,
     ) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
-        let monitoring_config = node_monitoring_config::<Service>(&config);
+        let monitoring_config = node_monitoring_config::<Service>(config);
         let mut nodes = vec![];
 
         for node_name in &Self::list_all_nodes(&monitoring_config)? {
@@ -278,8 +275,8 @@ impl<Service: service::Service> Node<Service> {
     ) -> Result<Vec<FileName>, NodeListFailure> {
         let result = <Service::Monitoring as NamedConceptMgmt>::list_cfg(config);
 
-        if result.is_ok() {
-            return Ok(result.unwrap());
+        if let Ok(result) = result {
+            return Ok(result);
         }
 
         let msg = "Unable to list all nodes";
@@ -301,8 +298,8 @@ impl<Service: service::Service> Node<Service> {
     ) -> Result<State, NodeListFailure> {
         let result = monitor.state();
 
-        if result.is_ok() {
-            return Ok(result.unwrap());
+        if let Ok(result) = result {
+            return Ok(result);
         }
 
         let msg = "Unable to acquire node state from monitor";
@@ -326,8 +323,8 @@ impl<Service: service::Service> Node<Service> {
     ) -> Result<State, NodeListFailure> {
         let result = <Service::Monitoring as Monitoring>::Builder::new(name).monitor();
 
-        if result.is_ok() {
-            return Ok(Self::state_from_monitor(&result.unwrap())?);
+        if let Ok(result) = result {
+            return Self::state_from_monitor(&result);
         }
 
         let msg = "Unable to acquire node monitor";
@@ -352,7 +349,7 @@ impl<Service: service::Service> Node<Service> {
         config: &Config,
         node_name: &FileName,
     ) -> Result<Option<Service::StaticStorage>, NodeReadStorageFailure> {
-        let details_config = node_details_config::<Service>(config, &node_name);
+        let details_config = node_details_config::<Service>(config, node_name);
         let result = <Service::StaticStorage as StaticStorage>::Builder::new(
             &FileName::new(b"node").unwrap(),
         )
@@ -360,8 +357,8 @@ impl<Service: service::Service> Node<Service> {
         .has_ownership(false)
         .open();
 
-        if result.is_ok() {
-            return Ok(Some(result.unwrap()));
+        if let Ok(result) = result {
+            return Ok(Some(result));
         }
 
         let msg = "Unable to open node config storage";
@@ -423,6 +420,12 @@ pub struct NodeBuilder {
     config: Option<Config>,
 }
 
+impl Default for NodeBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NodeBuilder {
     pub fn new() -> Self {
         Self {
@@ -447,8 +450,8 @@ impl NodeBuilder {
         monitor_name: &FileName,
     ) -> Result<<Service::Monitoring as Monitoring>::Token, NodeCreationFailure> {
         let msg = "Unable to create token for new node";
-        let token_result = <Service::Monitoring as Monitoring>::Builder::new(&monitor_name)
-            .config(&node_monitoring_config::<Service>(&config))
+        let token_result = <Service::Monitoring as Monitoring>::Builder::new(monitor_name)
+            .config(&node_monitoring_config::<Service>(config))
             .token();
 
         match token_result {
@@ -483,7 +486,7 @@ impl NodeBuilder {
             config: config.clone(),
         };
 
-        let details_config = node_details_config::<Service>(&details.config, &monitor_name);
+        let details_config = node_details_config::<Service>(&details.config, monitor_name);
         let serialized_details = match <Service::ConfigSerializer>::serialize(&details) {
             Ok(serialized_details) => serialized_details,
             Err(SerializeError::InternalError) => {
