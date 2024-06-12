@@ -173,6 +173,17 @@ jobs:
       - name: Run cargo nextest
         run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
 
+      - name: Build language bindings
+        run: |
+          cmake -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON .
+          cmake --build target/ffi/build
+          cmake --install target/ffi/build
+
+      - name: Build language binding examples in out-of-tree configuration
+        run: |
+          cmake -B target/ffi/out-of-tree -Hexamples/c/ -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install
+          cmake --build target/ffi/out-of-tree
+
   x86_64_unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
