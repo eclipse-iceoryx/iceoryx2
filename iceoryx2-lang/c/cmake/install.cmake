@@ -66,9 +66,9 @@ install(
 
 # lib
 install(
-    FILES ${ICEORYX2_LANG_C_STATIC_LIB} ${ICEORYX2_LANG_C_SHARED_LIB}
+    FILES ${ICEORYX2_LANG_C_LIB}
     DESTINATION ${DESTINATION_LIBDIR}
-    COMPONENT dev
+    COMPONENT lib
 )
 
 # license

@@ -27,6 +27,12 @@ endmacro()
 message(STATUS "iceoryx2 options:")
 
 add_option(
+    NAME BUILD_SHARED_LIBS
+    DESCRIPTION "Build language binding as shared lib"
+    VALUE OFF
+)
+
+add_option(
     NAME LANG_C
     DESCRIPTION "Build C language binding"
     VALUE ON
@@ -37,7 +43,6 @@ add_option(
     DESCRIPTION "Build examples"
     VALUE OFF
 )
-
 
 add_subdirectory(iceoryx2-lang)
 

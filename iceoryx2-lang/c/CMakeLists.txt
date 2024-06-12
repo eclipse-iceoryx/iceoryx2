@@ -42,24 +42,33 @@ set(RUST_ARCH_TRIPLET_FLAG "")
 set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
 set(RUST_ARCH_TARGET_DIR ${RUST_TARGET_DIR}/${RUST_ARCH_TRIPLET})
 
+set(ICEORYX2_LANG_C_INCLUDE_DIR ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/iceoryx2_lang_c_cbindgen/include)
+
 set(ICEORYX2_LANG_C_STATIC_LIB_NAME libiceoryx2_lang_c.a)
 set(ICEORYX2_LANG_C_SHARED_LIB_NAME libiceoryx2_lang_c.so)
 if(MSVC)
     set(ICEORYX2_LANG_C_STATIC_LIB_NAME iceoryx2_lang_c.lib)
     set(ICEORYX2_LANG_C_SHARED_LIB_NAME iceoryx2_lang_c.dll)
 endif()
+
 set(ICEORYX2_LANG_C_STATIC_LIB ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_LANG_C_STATIC_LIB_NAME})
 set(ICEORYX2_LANG_C_SHARED_LIB ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_LANG_C_SHARED_LIB_NAME})
-set(ICEORYX2_LANG_C_INCLUDE_DIR ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/iceoryx2_lang_c_cbindgen/include)
+
+set(ICEORYX2_LANG_C_LIB_NAME ${ICEORYX2_LANG_C_STATIC_LIB_NAME})
+set(ICEORYX2_LANG_C_LIB ${ICEORYX2_LANG_C_STATIC_LIB})
+if(BUILD_SHARED_LIBS)
+    set(ICEORYX2_LANG_C_LIB_NAME ${ICEORYX2_LANG_C_SHARED_LIB_NAME})
+    set(ICEORYX2_LANG_C_LIB ${ICEORYX2_LANG_C_SHARED_LIB})
+endif()
 
 # run cargo
 add_custom_target(
-    iceoryx2 ALL
+    iceoryx2_build_step ALL
     COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --target-dir=${RUST_TARGET_DIR} ${RUST_ARCH_TRIPLET_FLAG}
     BYPRODUCTS
-    ${ICEORYX2_LANG_C_INCLUDE_DIR}/iox2/iceoryx2.h
-    ${ICEORYX2_LANG_C_STATIC_LIB}
-    ${ICEORYX2_LANG_C_SHARED_LIB}
+        ${ICEORYX2_LANG_C_INCLUDE_DIR}/iox2/iceoryx2.h
+        ${ICEORYX2_LANG_C_STATIC_LIB}
+        ${ICEORYX2_LANG_C_SHARED_LIB}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     VERBATIM
     USES_TERMINAL
@@ -72,7 +81,7 @@ add_custom_target(
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(iceoryx2::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-add_dependencies(${PROJECT_NAME} iceoryx2)
+add_dependencies(${PROJECT_NAME} iceoryx2_build_step)
 
 target_include_directories(${PROJECT_NAME}
     INTERFACE
@@ -80,9 +89,15 @@ target_include_directories(${PROJECT_NAME}
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
-# TODO check if there is a generator expression to link static or shared libs
+# NOTE the solution with specifying a 'BUILD_INTERFACE' and a 'INSTALL_INTERFACE' was the only one that worked;
+# alternatively an imported library could be created, e.g. 'iceoryx2_ffi' with a corresponding alias, e.g. 'iceoryx2::ffi';
+# the imported lib needs to be present here and also in 'Config.cmake.in' but they need to be named differently, e.g.
+# 'iceoryx2_ffi_imported' in 'Config.cmake.in' but with the same alias, e.g 'iceoryx2::ffi';
+# the 'target_link_libraries' would then depend on 'iceoryx2::ffi'
+include(GNUInstallDirs)
 target_link_libraries(${PROJECT_NAME} INTERFACE
-    ${ICEORYX2_LANG_C_STATIC_LIB}
+    $<BUILD_INTERFACE:${ICEORYX2_LANG_C_LIB}>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_LANG_C_LIB_NAME}>
     $<$<NOT:$<PLATFORM_ID:Windows>>:m>
     $<$<PLATFORM_ID:Windows>:ws2_32 wsock32 ntdll>
 )
