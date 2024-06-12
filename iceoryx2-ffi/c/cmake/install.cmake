@@ -59,14 +59,14 @@ install(
 # header
 install(
     # the '/' at the end is important in order to not have the 'include' folder installed but only the content
-    DIRECTORY ${ICEORYX2_LANG_C_INCLUDE_DIR}/
+    DIRECTORY ${ICEORYX2_C_INCLUDE_DIR}/
     DESTINATION ${DESTINATION_INCLUDEDIR}
     COMPONENT dev
 )
 
 # lib
 install(
-    FILES ${ICEORYX2_LANG_C_LIB}
+    FILES ${ICEORYX2_C_LIB_FILE}
     DESTINATION ${DESTINATION_LIBDIR}
     COMPONENT lib
 )
@@ -74,7 +74,7 @@ install(
 # license
 install(
     FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSE-APACHE  ${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSE-MIT
-    DESTINATION ${DESTINATION_DATAROOTDIR}/doc/iceoryx2_lang_c
+    DESTINATION ${DESTINATION_DATAROOTDIR}/doc/${PROJECT_NAME}
     COMPONENT dev
 )
 

@@ -18,7 +18,7 @@ use std::path::Path;
 use cbindgen::Config;
 
 fn main() {
-    // this is the out dir of the iceoryx2-lang C crate not the workspace out dir,
+    // this is the out dir of the iceoryx2-ffi-c crate not the workspace out dir,
     // therefore we need to traverse to a known location and create the path for the header
     let out_dir = env::var("OUT_DIR").expect("Target output directory");
 
@@ -26,7 +26,7 @@ fn main() {
         .join("../../../")
         .canonicalize()
         .expect("Path to iceoryx2 base dir for header generation");
-    header_path.push("iceoryx2_lang_c_cbindgen/include/iox2/iceoryx2.h");
+    header_path.push("iceoryx2-ffi-cbindgen/include/iox2/iceoryx2.h");
 
     let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("Cargo manifest dir");
 

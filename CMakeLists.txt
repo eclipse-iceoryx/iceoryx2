@@ -33,18 +33,12 @@ add_option(
 )
 
 add_option(
-    NAME LANG_C
-    DESCRIPTION "Build C language binding"
-    VALUE ON
-)
-
-add_option(
     NAME EXAMPLES
     DESCRIPTION "Build examples"
     VALUE OFF
 )
 
-add_subdirectory(iceoryx2-lang)
+add_subdirectory(iceoryx2-ffi/c)
 
 if(EXAMPLES)
     add_subdirectory(examples/c)

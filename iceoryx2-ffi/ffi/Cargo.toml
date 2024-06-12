@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-lang-c"
+name = "iceoryx2-ffi"
 categories.workspace = true
 description.workspace = true
 edition.workspace = true
@@ -16,7 +16,6 @@ build = "build.rs"
 
 [lib]
 path = "src/lib.rs"
-name = "iceoryx2_lang_c"
 crate-type = ["cdylib", "staticlib"]
 
 [build-dependencies]
