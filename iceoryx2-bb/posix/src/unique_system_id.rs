@@ -74,6 +74,12 @@ impl Display for UniqueSystemId {
     }
 }
 
+impl From<u128> for UniqueSystemId {
+    fn from(value: u128) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+
 impl UniqueSystemId {
     /// Creates a new system wide unique id
     pub fn new() -> Result<Self, UniqueSystemIdCreationError> {

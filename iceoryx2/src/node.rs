@@ -10,12 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::marker::PhantomData;
+
 use crate::node_name::NodeName;
 use crate::service;
 use crate::service::config_scheme::node_monitoring_config;
 use crate::{config::Config, service::config_scheme::node_details_config};
-use iceoryx2_bb_elementary::math::ToB64;
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
@@ -41,21 +42,52 @@ enum NodeReadStorageFailure {
     InternalError,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NodeDetails {
-    id: UniqueSystemId,
     name: NodeName,
     config: Config,
 }
 
-pub enum NodeState {
-    Active(NodeDetails),
-    Dead(Option<NodeDetails>),
-    Corrupted,
-    DoesNotExist,
+#[derive(Debug, Clone)]
+pub enum NodeState<Service: service::Service> {
+    Alive(AliveNodeView<Service>),
+    Dead(DeadNodeView<Service>),
+}
+
+#[derive(Debug, Clone)]
+pub struct AliveNodeView<Service: service::Service> {
+    id: UniqueSystemId,
+    details: Option<NodeDetails>,
+    _service: PhantomData<Service>,
+}
+
+impl<Service: service::Service> AliveNodeView<Service> {
+    pub fn id(&self) -> &UniqueSystemId {
+        &self.id
+    }
+
+    pub fn details(&self) -> &Option<NodeDetails> {
+        &self.details
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DeadNodeView<Service: service::Service>(AliveNodeView<Service>);
+
+impl<Service: service::Service> DeadNodeView<Service> {
+    pub fn id(&self) -> &UniqueSystemId {
+        &self.0.id()
+    }
+
+    pub fn details(&self) -> &Option<NodeDetails> {
+        &self.0.details()
+    }
+
+    pub fn remove_stale_resources(&self) {}
 }
 
 pub struct Node<Service: service::Service> {
+    id: UniqueSystemId,
     details: NodeDetails,
     _monitor: <Service::Monitoring as Monitoring>::Token,
     _details_storage: Service::StaticStorage,
@@ -71,11 +103,42 @@ impl<Service: service::Service> Node<Service> {
     }
 
     pub fn id(&self) -> &UniqueSystemId {
-        &self.details.id
+        &self.id
     }
 
-    pub fn list() -> Result<Vec<NodeState>, NodeListFailure> {
+    pub fn list() -> Result<Vec<NodeState<Service>>, NodeListFailure> {
         Self::list_with_custom_config(Config::get_global_config())
+    }
+
+    pub fn list_with_custom_config(
+        config: &Config,
+    ) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
+        let monitoring_config = node_monitoring_config::<Service>(&config);
+        let mut nodes = vec![];
+
+        for node_name in &Self::list_all_nodes(&monitoring_config)? {
+            let id_value = core::str::from_utf8(node_name.as_bytes()).unwrap();
+            let id_value = id_value.parse::<u128>().unwrap();
+
+            let details = match Self::get_node_details(config, node_name) {
+                Ok(v) => v,
+                Err(_) => None,
+            };
+
+            let node_view = AliveNodeView::<Service> {
+                id: id_value.into(),
+                details,
+                _service: PhantomData,
+            };
+
+            match Self::get_node_state(&monitoring_config, node_name)? {
+                State::DoesNotExist => (),
+                State::Alive => nodes.push(NodeState::Alive(node_view)),
+                State::Dead => nodes.push(NodeState::Dead(DeadNodeView(node_view))),
+            };
+        }
+
+        Ok(nodes)
     }
 
     fn list_all_nodes(
@@ -220,46 +283,6 @@ impl<Service: service::Service> Node<Service> {
 
         Ok(Some(node_details))
     }
-
-    pub fn list_with_custom_config(config: &Config) -> Result<Vec<NodeState>, NodeListFailure> {
-        let origin = format!("Node::list_with_custom_config({:?})", config);
-
-        let monitoring_config = node_monitoring_config::<Service>(&config);
-        let mut nodes = vec![];
-
-        for node_name in &Self::list_all_nodes(&monitoring_config)? {
-            let node_state = Self::get_node_state(&monitoring_config, node_name)?;
-
-            if node_state == State::DoesNotExist {
-                continue;
-            }
-
-            match Self::get_node_details(config, node_name) {
-                Ok(Some(node_details)) => {
-                    if node_state == State::Alive {
-                        nodes.push(NodeState::Active(node_details))
-                    } else if node_state == State::Dead {
-                        nodes.push(NodeState::Dead(Some(node_details)))
-                    }
-                }
-                Ok(None) => {
-                    let node_state = Self::get_node_state(&monitoring_config, node_name)?;
-
-                    match node_state {
-                        State::Alive => nodes.push(NodeState::Corrupted),
-                        State::Dead => nodes.push(NodeState::Dead(None)),
-                        State::DoesNotExist => continue,
-                    }
-                }
-                Err(e) => {
-                    warn!(from origin, "The node details of {:?} are broken ({:?}).", node_name, e);
-                    nodes.push(NodeState::Corrupted)
-                }
-            };
-        }
-
-        Ok(nodes)
-    }
 }
 
 #[derive(Debug)]
@@ -317,11 +340,9 @@ impl NodeBuilder {
         &self,
         config: &Config,
         monitor_name: &FileName,
-        node_id: UniqueSystemId,
     ) -> Result<(Service::StaticStorage, NodeDetails), NodeCreationFailure> {
         let msg = "Unable to create node details storage";
         let details = NodeDetails {
-            id: node_id,
             name: if let Some(ref name) = self.name {
                 name.clone()
             } else {
@@ -367,7 +388,7 @@ impl NodeBuilder {
         let node_id = fail!(from self, when UniqueSystemId::new(),
                                 with NodeCreationFailure::InternalError,
                                 "{msg} since the unique node id could not be generated.");
-        let monitor_name = node_id.value().to_b64();
+        let monitor_name = node_id.value().to_string();
         let monitor_name = fatal_panic!(from self, when FileName::new(monitor_name.as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let config = if let Some(ref config) = self.config {
@@ -377,10 +398,11 @@ impl NodeBuilder {
         };
 
         let (details_storage, details) =
-            self.create_node_details_storage::<Service>(&config, &monitor_name, node_id)?;
+            self.create_node_details_storage::<Service>(&config, &monitor_name)?;
         let token = self.create_token::<Service>(&config, &monitor_name)?;
 
         Ok(Node {
+            id: node_id,
             _monitor: token,
             _details_storage: details_storage,
             details,
