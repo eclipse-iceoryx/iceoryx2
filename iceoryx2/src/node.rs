@@ -354,7 +354,7 @@ impl<Service: service::Service> Node<Service> {
     ) -> Result<Option<Service::StaticStorage>, NodeReadStorageFailure> {
         let details_config = node_details_config::<Service>(config, &node_name);
         let result = <Service::StaticStorage as StaticStorage>::Builder::new(
-            &FileName::new(b"details").unwrap(),
+            &FileName::new(b"node").unwrap(),
         )
         .config(&details_config)
         .has_ownership(false)
@@ -493,10 +493,10 @@ impl NodeBuilder {
         };
 
         match <Service::StaticStorage as StaticStorage>::Builder::new(
-            &FileName::new(b"details").unwrap(),
+            &FileName::new(b"node").unwrap(),
         )
         .config(&details_config)
-        .has_ownership(true)
+        .has_ownership(false)
         .create(&serialized_details)
         {
             Ok(node_details) => Ok((node_details, details)),

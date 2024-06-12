@@ -248,7 +248,7 @@ pub enum ProcessCleanerCreateError {
 #[derive(Debug)]
 pub struct ProcessGuard {
     file: File,
-    _owner_lock_file: File,
+    owner_lock_file: File,
 }
 
 const INIT_PERMISSION: Permission = Permission::OWNER_WRITE;
@@ -293,7 +293,7 @@ impl ProcessGuard {
         fail!(from origin, when Self::create_directory(path),
             "{} since the directory \"{}\" of the process guard could not be created", msg, path);
 
-        let _owner_lock_file = fail!(from origin, when Self::create_file(&owner_lock_path, FINAL_PERMISSION),
+        let owner_lock_file = fail!(from origin, when Self::create_file(&owner_lock_path, FINAL_PERMISSION),
                                     "{} since the owner_lock file \"{}\" could not be created.", msg, owner_lock_path);
         let mut file = fail!(from origin, when Self::create_file(path, INIT_PERMISSION),
                                 "{} since the state file \"{}\" could not be created.", msg, path);
@@ -321,7 +321,7 @@ impl ProcessGuard {
                 trace!(from "ProcessGuard::new()", "create process state \"{}\" for monitoring", path);
                 Ok(Self {
                     file,
-                    _owner_lock_file,
+                    owner_lock_file,
                 })
             }
             Err(v) => {
@@ -467,6 +467,11 @@ impl ProcessGuard {
                 unreachable!()
             }
         }
+    }
+
+    pub(crate) fn staged_death(mut self) {
+        self.file.release_ownership();
+        self.owner_lock_file.release_ownership();
     }
 }
 
@@ -696,7 +701,7 @@ impl ProcessMonitor {
         let origin = "ProcessMonitor::new()";
         let msg = format!("Unable to open ProcessMonitor state file \"{}\"", path);
 
-        match FileBuilder::new(path).open_existing(AccessMode::Read) {
+        match FileBuilder::new(path).open_existing(AccessMode::Write) {
             Ok(f) => Ok(Some(f)),
             Err(FileOpenError::FileDoesNotExist) => Ok(None),
             Err(FileOpenError::IsDirectory) => {
@@ -704,15 +709,8 @@ impl ProcessMonitor {
                     "{} since the path is a directory.", msg);
             }
             Err(FileOpenError::InsufficientPermissions) => {
-                if FileBuilder::new(path)
-                    .open_existing(AccessMode::Write)
-                    .is_ok()
-                {
-                    Ok(None)
-                } else {
-                    fail!(from origin, with ProcessMonitorCreateError::InsufficientPermissions,
+                fail!(from origin, with ProcessMonitorCreateError::InsufficientPermissions,
                     "{} due to insufficient permissions.", msg);
-                }
             }
             Err(FileOpenError::Interrupt) => {
                 fail!(from origin, with ProcessMonitorCreateError::Interrupt,
