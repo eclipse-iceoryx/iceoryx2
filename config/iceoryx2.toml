@@ -6,7 +6,7 @@ prefix                                      = 'iox2_'
 [global.node]
 directory                                   = 'nodes'
 monitor_suffix                              = '.node_monitor'
-static_config_suffix                        = '.node'
+static_config_suffix                        = '.details'
 
 [global.service]
 directory                                   = 'services'

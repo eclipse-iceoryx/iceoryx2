@@ -133,7 +133,7 @@ pub trait NamedConcept: Debug {
 ///  * [`NamedConceptMgmt::remove()`]
 ///  * [`NamedConceptMgmt::does_exist()`]
 ///  * [`NamedConceptMgmt::list()`]
-pub trait NamedConceptMgmt {
+pub trait NamedConceptMgmt: Debug {
     type Configuration: NamedConceptConfiguration;
 
     /// Removes an existing concept. Returns true if the concepts existed and was removed,

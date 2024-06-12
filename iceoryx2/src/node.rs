@@ -14,10 +14,12 @@ use std::marker::PhantomData;
 
 use crate::node_name::NodeName;
 use crate::service;
-use crate::service::config_scheme::node_monitoring_config;
+use crate::service::config_scheme::{node_details_path, node_monitoring_config};
 use crate::{config::Config, service::config_scheme::node_details_config};
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_posix::directory::{Directory, DirectoryRemoveError};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_cal::named_concept::NamedConceptRemoveError;
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
@@ -33,6 +35,13 @@ pub enum NodeListFailure {
     InsufficientPermissions,
     Interrupt,
     InternalError,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum NodeCleanupFailure {
+    Interrupt,
+    InternalError,
+    InsufficientPermissions,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -83,14 +92,137 @@ impl<Service: service::Service> DeadNodeView<Service> {
         &self.0.details()
     }
 
-    pub fn remove_stale_resources(&self) {}
+    pub fn remove_stale_resources(&self) -> Result<bool, NodeCleanupFailure> {
+        let msg = "Unable to remove stale resources";
+        let monitor_name = fatal_panic!(from self, when FileName::new(self.id().value().to_string().as_bytes()),
+                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
+
+        let _cleaner =
+            match <Service::Monitoring as Monitoring>::Builder::new(&monitor_name).cleaner() {
+                Ok(cleaner) => cleaner,
+                Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance)
+                | Err(MonitoringCreateCleanerError::DoesNotExist) => return Ok(false),
+                Err(MonitoringCreateCleanerError::Interrupt) => {
+                    fail!(from self, with NodeCleanupFailure::Interrupt,
+                    "{} since an interrupt signal was received.", msg);
+                }
+                Err(MonitoringCreateCleanerError::InternalError) => {
+                    fail!(from self, with NodeCleanupFailure::InternalError,
+                    "{} due to an internal error while acquiring monitoring cleaner.", msg);
+                }
+                Err(MonitoringCreateCleanerError::InstanceStillAlive) => {
+                    fatal_panic!(from self,
+                        "This should never happen! {} since the Node is still alive.", msg);
+                }
+            };
+
+        if let Some(details) = self.details() {
+            remove_node::<Service>(*self.id(), details)
+        } else {
+            Ok(true)
+        }
+    }
 }
 
+fn remove_node_details_directory<Service: service::Service>(
+    origin: &str,
+    details: &NodeDetails,
+    monitor_name: &FileName,
+) -> Result<(), NodeCleanupFailure> {
+    let msg = "Unable to remove node resources";
+
+    match Directory::remove(&node_details_path::<Service>(
+        &details.config,
+        &monitor_name,
+    )) {
+        Ok(()) => Ok(()),
+        Err(DirectoryRemoveError::InsufficientPermissions) => {
+            fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
+                        "{} since the node config directory could not be removed due to insufficient of permissions.", msg);
+        }
+        Err(e) => {
+            fail!(from origin, with NodeCleanupFailure::InternalError,
+                        "{} since the node config directory could not be removed due to an internal error ({:?}).",
+                        msg, e);
+        }
+    }
+}
+
+fn acquire_all_node_detail_storages<Service: service::Service>(
+    origin: &str,
+    config: &<Service::StaticStorage as NamedConceptMgmt>::Configuration,
+) -> Result<Vec<FileName>, NodeCleanupFailure> {
+    let msg = "Unable to list all node detail storages";
+    match <Service::StaticStorage as NamedConceptMgmt>::list_cfg(&config) {
+        Ok(v) => Ok(v),
+        Err(NamedConceptListError::InsufficientPermissions) => {
+            fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
+                "{} due to insufficient permissions.", msg);
+        }
+        Err(NamedConceptListError::InternalError) => {
+            fail!(from origin, with NodeCleanupFailure::InternalError,
+                "{} due to an internal error.", msg);
+        }
+    }
+}
+
+fn remove_detail_storages<Service: service::Service>(
+    origin: &str,
+    storages: Vec<FileName>,
+    config: &<Service::StaticStorage as NamedConceptMgmt>::Configuration,
+) -> Result<(), NodeCleanupFailure> {
+    let msg = "Unable to remove node detail storage";
+    for entry in storages {
+        match unsafe { <Service::StaticStorage as NamedConceptMgmt>::remove_cfg(&entry, config) } {
+            Ok(_) => (),
+            Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
+                    "{} {} due to insufficient permissions.", msg, entry);
+            }
+            Err(NamedConceptRemoveError::InternalError) => {
+                fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
+                    "{} {} due to an internal failure.", msg, entry);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn remove_node<Service: service::Service>(
+    id: UniqueSystemId,
+    details: &NodeDetails,
+) -> Result<bool, NodeCleanupFailure> {
+    let origin = format!(
+        "remove_node<{}>({:?})",
+        core::any::type_name::<Service>(),
+        id
+    );
+    let msg = "Unable to remove node resources";
+    let monitor_name = fatal_panic!(from origin, when FileName::new(id.value().to_string().as_bytes()),
+                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
+
+    let details_config = node_details_config::<Service>(&details.config, &monitor_name);
+    let detail_storages = acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
+    remove_detail_storages::<Service>(&origin, detail_storages, &details_config)?;
+
+    remove_node_details_directory::<Service>(&origin, details, &monitor_name)?;
+    Ok(true)
+}
+
+#[derive(Debug)]
 pub struct Node<Service: service::Service> {
     id: UniqueSystemId,
     details: NodeDetails,
     _monitor: <Service::Monitoring as Monitoring>::Token,
     _details_storage: Service::StaticStorage,
+}
+
+impl<Service: service::Service> Drop for Node<Service> {
+    fn drop(&mut self) {
+        warn!(from self, when remove_node::<Service>(self.id, &self.details),
+            "Unable to remove node resources.");
+    }
 }
 
 impl<Service: service::Service> Node<Service> {
@@ -388,8 +520,7 @@ impl NodeBuilder {
         let node_id = fail!(from self, when UniqueSystemId::new(),
                                 with NodeCreationFailure::InternalError,
                                 "{msg} since the unique node id could not be generated.");
-        let monitor_name = node_id.value().to_string();
-        let monitor_name = fatal_panic!(from self, when FileName::new(monitor_name.as_bytes()),
+        let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let config = if let Some(ref config) = self.config {
             config.clone()

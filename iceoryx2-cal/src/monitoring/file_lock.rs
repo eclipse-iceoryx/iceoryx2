@@ -35,6 +35,7 @@ use super::{
     MonitoringMonitor, MonitoringStateError, MonitoringToken,
 };
 
+#[derive(Debug)]
 pub struct FileLockMonitoring {}
 
 impl NamedConceptMgmt for FileLockMonitoring {

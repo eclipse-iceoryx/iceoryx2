@@ -284,7 +284,7 @@ impl Default for Config {
                 node: Node {
                     directory: Path::new(b"nodes").unwrap(),
                     monitor_suffix: FileName::new(b".node_monitor").unwrap(),
-                    static_config_suffix: FileName::new(b".node").unwrap(),
+                    static_config_suffix: FileName::new(b".details").unwrap(),
                 },
             },
             defaults: Defaults {

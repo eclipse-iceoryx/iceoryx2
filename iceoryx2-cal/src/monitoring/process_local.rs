@@ -86,6 +86,7 @@ impl NamedConceptConfiguration for Configuration {
     }
 }
 
+#[derive(Debug)]
 pub struct ProcessLocalMonitoring {}
 
 impl NamedConceptMgmt for ProcessLocalMonitoring {
