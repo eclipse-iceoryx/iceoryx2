@@ -55,16 +55,9 @@ endif()
 set(ICEORYX2_C_STATIC_LIB_FILE ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_C_STATIC_LIB_NAME})
 set(ICEORYX2_C_SHARED_LIB_FILE ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_C_SHARED_LIB_NAME})
 
-set(ICEORYX2_C_LIB_NAME ${ICEORYX2_C_STATIC_LIB_NAME})
-set(ICEORYX2_C_LIB_FILE ${ICEORYX2_C_STATIC_LIB_FILE})
-if(BUILD_SHARED_LIBS)
-    set(ICEORYX2_C_LIB_NAME ${ICEORYX2_C_SHARED_LIB_NAME})
-    set(ICEORYX2_C_LIB_FILE ${ICEORYX2_C_SHARED_LIB_FILE})
-endif()
-
 # run cargo
 add_custom_target(
-    iceoryx2_build_step ALL
+    iceoryx2-build-step ALL
     COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --target-dir=${RUST_TARGET_DIR} ${RUST_ARCH_TRIPLET_FLAG}
     BYPRODUCTS
         ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
@@ -79,16 +72,27 @@ add_custom_target(
 ########## C target ##########
 #
 
-add_library(${PROJECT_NAME} INTERFACE)
-add_library(iceoryx2::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+# include lib
 
-add_dependencies(${PROJECT_NAME} iceoryx2_build_step)
+add_library(includes-only INTERFACE)
+add_library(iceoryx2-c::includes-only ALIAS includes-only)
 
-target_include_directories(${PROJECT_NAME}
+add_dependencies(includes-only iceoryx2-build-step)
+
+target_include_directories(includes-only
     INTERFACE
     $<BUILD_INTERFACE:${ICEORYX2_C_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
+
+# static lib
+
+add_library(static-lib INTERFACE)
+add_library(iceoryx2-c::static-lib ALIAS static-lib)
+
+add_library(shared-lib INTERFACE)
+add_library(iceoryx2-c::shared-lib ALIAS shared-lib)
+
 
 # NOTE the solution with specifying a 'BUILD_INTERFACE' and a 'INSTALL_INTERFACE' was the only one that worked;
 # alternatively an imported library could be created, e.g. 'iceoryx2_ffi' with a corresponding alias, e.g. 'iceoryx2::ffi';
@@ -96,12 +100,19 @@ target_include_directories(${PROJECT_NAME}
 # 'iceoryx2_ffi_imported' in 'Config.cmake.in' but with the same alias, e.g 'iceoryx2::ffi';
 # the 'target_link_libraries' would then depend on 'iceoryx2::ffi'
 include(GNUInstallDirs)
-target_link_libraries(${PROJECT_NAME} INTERFACE
-    $<BUILD_INTERFACE:${ICEORYX2_C_LIB_FILE}>
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_LIB_NAME}>
+target_link_libraries(static-lib INTERFACE
+    iceoryx2-c::includes-only
+    $<BUILD_INTERFACE:${ICEORYX2_C_STATIC_LIB_FILE}>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_STATIC_LIB_NAME}>
     $<$<NOT:$<PLATFORM_ID:Windows>>:m>
-    $<$<PLATFORM_ID:Windows>:bcrypt ntdll synchronization ws2_32 wsock32>
+    $<$<AND:$<PLATFORM_ID:Windows>,$<C_COMPILER_ID:MSVC>>:bcrypt ntdll synchronization ws2_32 wsock32>
+    $<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<C_COMPILER_ID:MSVC>>>:ntdll ws2_32 wsock32>
     $<$<PLATFORM_ID:Darwin>:stdc++>
+)
+target_link_libraries(shared-lib INTERFACE
+    iceoryx2-c::includes-only
+    $<BUILD_INTERFACE:${ICEORYX2_C_SHARED_LIB_FILE}>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_SHARED_LIB_NAME}>
 )
 
 include(cmake/install.cmake)

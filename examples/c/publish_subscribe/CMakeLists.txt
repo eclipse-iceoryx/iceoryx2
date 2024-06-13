@@ -16,7 +16,7 @@ project(example_c_publish_subscribe LANGUAGES C)
 find_package(iceoryx2-c REQUIRED)
 
 add_executable(example_c_publisher src/publisher.c)
-target_link_libraries(example_c_publisher iceoryx2::iceoryx2-c)
+target_link_libraries(example_c_publisher iceoryx2-c::static-lib)
 
 add_executable(example_c_subscriber src/subscriber.c)
-target_link_libraries(example_c_subscriber iceoryx2::iceoryx2-c)
+target_link_libraries(example_c_subscriber iceoryx2-c::static-lib)

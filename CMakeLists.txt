@@ -27,12 +27,6 @@ endmacro()
 message(STATUS "iceoryx2 options:")
 
 add_option(
-    NAME BUILD_SHARED_LIBS
-    DESCRIPTION "Build language binding as shared lib"
-    VALUE OFF
-)
-
-add_option(
     NAME EXAMPLES
     DESCRIPTION "Build examples"
     VALUE OFF

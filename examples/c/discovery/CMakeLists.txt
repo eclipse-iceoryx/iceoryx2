@@ -17,4 +17,4 @@ find_package(iceoryx2-c REQUIRED)
 
 add_executable(example_c_discovery src/main.c)
 
-target_link_libraries(example_c_discovery iceoryx2::iceoryx2-c)
+target_link_libraries(example_c_discovery iceoryx2-c::static-lib)
