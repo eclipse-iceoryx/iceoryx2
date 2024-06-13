@@ -75,7 +75,13 @@
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 
-use std::{alloc::Layout, mem::MaybeUninit, ops::Deref, ops::DerefMut, sync::atomic::Ordering};
+use std::{
+    alloc::Layout,
+    marker::PhantomData,
+    mem::MaybeUninit,
+    ops::{Deref, DerefMut},
+    sync::atomic::Ordering,
+};
 
 use iceoryx2_bb_elementary::{
     math::{align_to, unaligned_mem_size},
@@ -86,6 +92,7 @@ use iceoryx2_bb_elementary::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+use serde::{de::Visitor, Deserialize, Serialize};
 
 /// **Non-movable** relocatable vector with runtime fixed size capacity.
 #[repr(C)]
@@ -320,6 +327,26 @@ impl<T> RelocatableVec<T> {
 
         value.assume_init()
     }
+
+    /// Returns a slice to the contents of the vector
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableVec::init()`] must be called once before
+    ///
+    pub unsafe fn as_slice(&self) -> &[T] {
+        core::slice::from_raw_parts(self.data_ptr.as_ptr().cast(), self.len)
+    }
+
+    /// Returns a mutable slice to the contents of the vector
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableVec::init()`] must be called once before
+    ///
+    pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
+        core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr().cast(), self.len)
+    }
 }
 
 /// Relocatable vector with compile time fixed size capacity. In contrast to its counterpart the
@@ -329,6 +356,67 @@ impl<T> RelocatableVec<T> {
 pub struct FixedSizeVec<T, const CAPACITY: usize> {
     state: RelocatableVec<T>,
     _data: [MaybeUninit<T>; CAPACITY],
+}
+
+impl<'de, T: Serialize + Deserialize<'de>, const CAPACITY: usize> Serialize
+    for FixedSizeVec<T, CAPACITY>
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.as_slice().serialize(serializer)
+    }
+}
+
+struct FixedSizeVecVisitor<T, const CAPACITY: usize> {
+    _value: PhantomData<T>,
+}
+
+impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Visitor<'de>
+    for FixedSizeVecVisitor<T, CAPACITY>
+{
+    type Value = FixedSizeVec<T, CAPACITY>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let str = format!(
+            "an array of at most {} elements of type {}",
+            CAPACITY,
+            core::any::type_name::<T>()
+        );
+        formatter.write_str(&str)
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::SeqAccess<'de>,
+    {
+        let mut new_vec = Self::Value::new();
+
+        while let Some(element) = seq.next_element()? {
+            if !new_vec.push(element) {
+                return Err(<A::Error as serde::de::Error>::custom(format!(
+                    "the array can hold at most {} elements",
+                    CAPACITY
+                )));
+            }
+        }
+
+        Ok(new_vec)
+    }
+}
+
+impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Deserialize<'de>
+    for FixedSizeVec<T, CAPACITY>
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_seq(FixedSizeVecVisitor::<T, CAPACITY> {
+            _value: PhantomData,
+        })
+    }
 }
 
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T, CAPACITY> {
@@ -445,5 +533,15 @@ impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
     /// Removes all elements from the vector
     pub fn clear(&mut self) {
         unsafe { self.state.clear() }
+    }
+
+    /// Returns a slice to the contents of the vector
+    pub fn as_slice(&self) -> &[T] {
+        unsafe { self.state.as_slice() }
+    }
+
+    /// Returns a mutable slice to the contents of the vector
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        unsafe { self.state.as_mut_slice() }
     }
 }

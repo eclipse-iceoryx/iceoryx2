@@ -31,13 +31,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::config;
 
-use super::service_name::ServiceName;
+use super::{attribute::AttributeSet, service_name::ServiceName};
 
 /// Defines a common set of static service configuration details every service shares.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct StaticConfig {
     uuid: String,
     service_name: ServiceName,
+    pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
@@ -61,8 +62,9 @@ impl StaticConfig {
             uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
                 .value()
                 .into(),
-            service_name: *service_name,
+            service_name: service_name.clone(),
             messaging_pattern,
+            attributes: AttributeSet::new(),
         }
     }
 
@@ -76,9 +78,15 @@ impl StaticConfig {
             uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
                 .value()
                 .into(),
-            service_name: *service_name,
+            service_name: service_name.clone(),
             messaging_pattern,
+            attributes: AttributeSet::new(),
         }
+    }
+
+    /// Returns the attributes of the [`crate::service::Service`]
+    pub fn attributes(&self) -> &AttributeSet {
+        &self.attributes
     }
 
     /// Returns the uuid of the [`crate::service::Service`]
@@ -87,7 +95,7 @@ impl StaticConfig {
     }
 
     /// Returns the [`ServiceName`] of the [`crate::service::Service`]
-    pub fn service_name(&self) -> &ServiceName {
+    pub fn name(&self) -> &ServiceName {
         &self.service_name
     }
 

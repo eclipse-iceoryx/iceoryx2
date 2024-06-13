@@ -25,11 +25,9 @@
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use serde::{de::Visitor, Deserialize, Serialize};
 
-const SERVICE_NAME_LENGTH: usize = 255;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ServiceName {
-    value: iceoryx2_bb_container::byte_string::FixedSizeByteString<SERVICE_NAME_LENGTH>,
+    value: String,
 }
 
 impl ServiceName {
@@ -39,17 +37,12 @@ impl ServiceName {
             return Err(SemanticStringError::InvalidContent);
         }
 
-        Ok(Self {
-            value: iceoryx2_bb_container::byte_string::FixedSizeByteString::from_bytes(
-                name.as_bytes(),
-            )?,
-        })
+        Ok(Self { value: name.into() })
     }
 
     /// Returns a str reference to the [`ServiceName`]
     pub fn as_str(&self) -> &str {
-        // SAFETY: `ServieName` was created from a `&str` and therefore this conversion is safe
-        unsafe { std::str::from_utf8_unchecked(self.value.as_bytes()) }
+        &self.value
     }
 }
 

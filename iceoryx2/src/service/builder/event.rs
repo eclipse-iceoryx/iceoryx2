@@ -24,6 +24,8 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 
+use self::attribute::{AttributeSpecifier, AttributeVerifier};
+
 use super::ServiceState;
 
 /// Failures that can occur when an existing [`MessagingPattern::Event`] [`Service`] shall be opened.
@@ -33,6 +35,7 @@ pub enum EventOpenError {
     PermissionDenied,
     EventInCorruptedState,
     IncompatibleMessagingPattern,
+    IncompatibleAttributes,
     InternalFailure,
     HangsInCreation,
     DoesNotSupportRequestedAmountOfNotifiers,
@@ -153,19 +156,32 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
-    pub fn open_or_create(
+    pub fn open_or_create(self) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
+    /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
+    /// does not exist the required attributes will be defined in the [`Service`].
+    pub fn open_or_create_with_attributes(
         mut self,
+        required_attributes: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
         let msg = "Unable to open or create event service";
 
         match self.base.is_service_available() {
-            Ok(Some(_)) => Ok(self.open()?),
-            Ok(None) => match self.create_impl() {
-                Ok(factory) => Ok(factory),
-                Err(EventCreateError::AlreadyExists)
-                | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
-                Err(e) => Err(e.into()),
-            },
+            Ok(Some(_)) => Ok(self.open_with_attributes(required_attributes)?),
+            Ok(None) => {
+                match self.create_impl(&AttributeSpecifier(
+                    required_attributes.attributes().clone(),
+                )) {
+                    Ok(factory) => Ok(factory),
+                    Err(EventCreateError::AlreadyExists)
+                    | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
+                    Err(e) => Err(e.into()),
+                }
+            }
             Err(ServiceState::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
             Err(ServiceState::Corrupted) => {
                 fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::EventInCorruptedState),
@@ -183,7 +199,16 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// Opens an existing [`Service`].
-    pub fn open(mut self) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
+    pub fn open(self) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
+        self.open_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    pub fn open_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         let msg = "Unable to open event service";
 
         let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
@@ -197,7 +222,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         "{} since the event does not exist.", msg);
                 }
                 Ok(Some((static_config, static_storage))) => {
-                    let static_config = self.verify_service_properties(&static_config)?;
+                    let event_static_config =
+                        self.verify_service_attributes(&static_config, required_attributes)?;
 
                     let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
@@ -206,11 +232,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     );
 
                     self.base.service_config.messaging_pattern =
-                        MessagingPattern::Event(static_config);
+                        MessagingPattern::Event(event_static_config);
 
                     return Ok(event::PortFactory::new(ServiceType::from_state(
                         service::ServiceState::new(
-                            self.base.service_config,
+                            static_config,
                             self.base.global_config,
                             dynamic_config,
                             static_storage,
@@ -244,8 +270,24 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    fn create_impl(&mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
-        self.adjust_properties_to_meaningful_values();
+    /// Creates a new [`Service`].
+    pub fn create(mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
+        self.create_impl(&AttributeSpecifier::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    pub fn create_with_attributes(
+        mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
+        self.create_impl(attributes)
+    }
+
+    fn create_impl(
+        &mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
+        self.adjust_attributes_to_meaningful_values();
 
         let msg = "Unable to create event service";
 
@@ -291,6 +333,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     }
                 };
 
+                self.base.service_config.attributes = attributes.0.clone();
+
                 let service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
                                             with EventCreateError::Corrupted,
                                             "{} since the configuration could not be serialized.", msg);
@@ -330,12 +374,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    /// Creates a new [`Service`].
-    pub fn create(mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
-        self.create_impl()
-    }
-
-    fn adjust_properties_to_meaningful_values(&mut self) {
+    fn adjust_attributes_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.event_mut();
 
@@ -350,11 +389,20 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    fn verify_service_properties(
+    fn verify_service_attributes(
         &self,
         existing_settings: &static_config::StaticConfig,
+        required_attributes: &AttributeVerifier,
     ) -> Result<static_config::event::StaticConfig, EventOpenError> {
         let msg = "Unable to open event";
+
+        let existing_attributes = existing_settings.attributes();
+        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
+        {
+            fail!(from self, with EventOpenError::IncompatibleAttributes,
+                "{} due to incompatible service attribute key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
+                msg, incompatible_key, required_attributes, existing_attributes);
+        }
 
         let required_settings = self.base.service_config.event();
         let existing_settings = match &existing_settings.messaging_pattern {

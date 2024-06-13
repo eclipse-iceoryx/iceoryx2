@@ -19,6 +19,7 @@ mod fixed_size_byte_string {
     use iceoryx2_bb_container::byte_string::*;
     use iceoryx2_bb_elementary::placement_default::PlacementDefault;
     use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
+    use serde_test::{assert_tokens, Token};
     use std::collections::hash_map::DefaultHasher;
 
     const SUT_CAPACITY: usize = 129;
@@ -498,7 +499,7 @@ mod fixed_size_byte_string {
     #[test]
     #[should_panic]
     fn remove_range_out_of_bounds_index_panics() {
-        let mut sut = Sut::from_bytes_truncated(b"Who did eat the last unicorn?");
+        let mut sut = Sut::from_bytes_truncated(b"Who ate the last unicorn?");
         sut.remove_range(48, 12);
     }
 
@@ -510,5 +511,13 @@ mod fixed_size_byte_string {
 
         assert_that!(unsafe { sut.assume_init_mut() }.push_bytes(b"hello"), is_ok);
         assert_that!(unsafe {sut.assume_init()}.as_bytes(), eq b"hello");
+    }
+
+    #[test]
+    fn serialization_works() {
+        let content = "Brother Hypnotoad is starring at you.";
+        let sut = Sut::from_bytes_truncated(content.as_bytes());
+
+        assert_tokens(&sut, &[Token::Str(content)]);
     }
 }

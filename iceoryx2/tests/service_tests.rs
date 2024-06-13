@@ -35,15 +35,22 @@ mod service {
     }
 
     trait SutFactory {
-        type Factory;
+        type Factory: PortFactory;
         type CreateError: std::fmt::Debug;
         type OpenError: std::fmt::Debug;
 
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError>;
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError>;
+        fn create(
+            service_name: &ServiceName,
+            attributes: &AttributeSpecifier,
+        ) -> Result<Self::Factory, Self::CreateError>;
+        fn open(
+            service_name: &ServiceName,
+            attributes: &AttributeVerifier,
+        ) -> Result<Self::Factory, Self::OpenError>;
 
         fn assert_create_error(error: Self::CreateError);
         fn assert_open_error(error: Self::OpenError);
+        fn assert_attribute_error(error: Self::OpenError);
     }
 
     impl<Sut: Service> SutFactory for publish_subscribe::PortFactory<Sut, u64> {
@@ -51,12 +58,26 @@ mod service {
         type CreateError = PublishSubscribeCreateError;
         type OpenError = PublishSubscribeOpenError;
 
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
-            Sut::new(&service_name).publish_subscribe::<u64>().create()
+        fn create(
+            service_name: &ServiceName,
+            attributes: &AttributeSpecifier,
+        ) -> Result<Self::Factory, Self::CreateError> {
+            Sut::new(&service_name)
+                .publish_subscribe::<u64>()
+                .create_with_attributes(attributes)
         }
 
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
-            Sut::new(&service_name).publish_subscribe::<u64>().open()
+        fn open(
+            service_name: &ServiceName,
+            attributes: &AttributeVerifier,
+        ) -> Result<Self::Factory, Self::OpenError> {
+            Sut::new(&service_name)
+                .publish_subscribe::<u64>()
+                .open_with_attributes(attributes)
+        }
+
+        fn assert_attribute_error(error: Self::OpenError) {
+            assert_that!(error, eq PublishSubscribeOpenError::IncompatibleAttributes);
         }
 
         fn assert_create_error(error: Self::CreateError) {
@@ -86,12 +107,26 @@ mod service {
         type CreateError = EventCreateError;
         type OpenError = EventOpenError;
 
-        fn create(service_name: &ServiceName) -> Result<Self::Factory, Self::CreateError> {
-            Sut::new(&service_name).event().create()
+        fn create(
+            service_name: &ServiceName,
+            attributes: &AttributeSpecifier,
+        ) -> Result<Self::Factory, Self::CreateError> {
+            Sut::new(&service_name)
+                .event()
+                .create_with_attributes(attributes)
         }
 
-        fn open(service_name: &ServiceName) -> Result<Self::Factory, Self::OpenError> {
-            Sut::new(&service_name).event().open()
+        fn open(
+            service_name: &ServiceName,
+            attributes: &AttributeVerifier,
+        ) -> Result<Self::Factory, Self::OpenError> {
+            Sut::new(&service_name)
+                .event()
+                .open_with_attributes(attributes)
+        }
+
+        fn assert_attribute_error(error: Self::OpenError) {
+            assert_that!(error, eq EventOpenError::IncompatibleAttributes);
         }
 
         fn assert_create_error(error: Self::CreateError) {
@@ -164,7 +199,8 @@ mod service {
                         let service_name = generate_name();
                         barrier_enter.wait();
 
-                        let _sut = Factory::create(&service_name).unwrap();
+                        let _sut =
+                            Factory::create(&service_name, &AttributeSpecifier::new()).unwrap();
 
                         barrier_exit.wait();
                     }
@@ -198,7 +234,7 @@ mod service {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
 
-                        let sut = Factory::create(&service_name);
+                        let sut = Factory::create(&service_name, &AttributeSpecifier::new());
                         match sut {
                             Ok(_) => {
                                 success_counter.fetch_add(1, Ordering::Relaxed);
@@ -245,7 +281,7 @@ mod service {
             let mut threads = vec![];
             threads.push(s.spawn(|| {
                 for service_name in service_names {
-                    let sut = Factory::create(&service_name).unwrap();
+                    let sut = Factory::create(&service_name, &AttributeSpecifier::new()).unwrap();
                     barrier_enter.wait();
 
                     drop(sut);
@@ -259,7 +295,7 @@ mod service {
                     for service_name in service_names {
                         barrier_enter.wait();
 
-                        let sut = Factory::open(&service_name);
+                        let sut = Factory::open(&service_name, &AttributeVerifier::new());
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
@@ -276,6 +312,137 @@ mod service {
                 thread.join().unwrap();
             }
         });
+    }
+
+    #[test]
+    fn setting_attributes_in_creator_can_be_read_in_opener<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee")
+            .define("3. Just have a", "lick on the toad");
+        let sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        assert_that!(sut_create.attributes(), eq defined_attributes.attributes());
+
+        let sut_open = Factory::open(&service_name, &AttributeVerifier::new()).unwrap();
+
+        assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
+    }
+
+    #[test]
+    fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("1. Hello", "Take a number")
+            .define("2. No more", "Coffee")
+            .define("3. Just have a", "lick on the toad");
+
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            &AttributeVerifier::new()
+                .require("1. Hello", "Hypnotoad")
+                .require("1. Hello", "Take a number")
+                .require("3. Just have a", "lick on the toad"),
+        );
+
+        assert_that!(sut_open, is_ok);
+        let sut_open = sut_open.unwrap();
+
+        assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
+    }
+
+    #[test]
+    fn opener_fails_when_attribute_value_does_not_match<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            &AttributeVerifier::new().require("1. Hello", "lick on the toad"),
+        );
+
+        assert_that!(sut_open, is_err);
+        Factory::assert_attribute_error(sut_open.err().unwrap());
+    }
+
+    #[test]
+    fn opener_fails_when_attribute_key_does_not_exist<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            &AttributeVerifier::new().require("Whatever", "lick on the toad"),
+        );
+
+        assert_that!(sut_open, is_err);
+        Factory::assert_attribute_error(sut_open.err().unwrap());
+    }
+
+    #[test]
+    fn opener_fails_when_attribute_value_does_not_exist<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("1. Hello", "Number Two")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            &AttributeVerifier::new()
+                .require("1. Hello", "lick on the toad")
+                .require("1. Hello", "Number Eight"),
+        );
+
+        assert_that!(sut_open, is_err);
+        Factory::assert_attribute_error(sut_open.err().unwrap());
+    }
+
+    #[test]
+    fn opener_fails_when_attribute_required_key_does_not_exist<
+        Sut: Service,
+        Factory: SutFactory,
+    >() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            &AttributeVerifier::new().require_key("i do not exist"),
+        );
+
+        assert_that!(sut_open, is_err);
+        Factory::assert_attribute_error(sut_open.err().unwrap());
+    }
+
+    #[test]
+    fn opener_succeeds_when_attribute_required_key_does_exist<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            &AttributeVerifier::new().require_key("2. No more"),
+        );
+
+        assert_that!(sut_open, is_ok);
     }
 
     mod zero_copy {

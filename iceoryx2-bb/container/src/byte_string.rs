@@ -40,6 +40,7 @@ use std::{
 use iceoryx2_bb_derive_macros::PlacementDefault;
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_log::{fail, fatal_panic};
+use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Returns the length of a string
 ///
@@ -79,6 +80,47 @@ pub struct FixedSizeByteString<const CAPACITY: usize> {
     len: usize,
     data: [MaybeUninit<u8>; CAPACITY],
     terminator: u8,
+}
+
+impl<const CAPACITY: usize> Serialize for FixedSizeByteString<CAPACITY> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(core::str::from_utf8(self.as_bytes()).unwrap())
+    }
+}
+
+struct FixedSizeByteStringVisitor<const CAPACITY: usize>;
+
+impl<'de, const CAPACITY: usize> Visitor<'de> for FixedSizeByteStringVisitor<CAPACITY> {
+    type Value = FixedSizeByteString<CAPACITY>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str(&format!("a string with a length of at most {}", CAPACITY))
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match FixedSizeByteString::from_bytes(v.as_bytes()) {
+            Ok(v) => Ok(v),
+            Err(_) => Err(E::custom(format!(
+                "the string exceeds the maximum length of {}",
+                CAPACITY
+            ))),
+        }
+    }
+}
+
+impl<'de, const CAPACITY: usize> Deserialize<'de> for FixedSizeByteString<CAPACITY> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(FixedSizeByteStringVisitor)
+    }
 }
 
 unsafe impl<const CAPACITY: usize> Send for FixedSizeByteString<CAPACITY> {}

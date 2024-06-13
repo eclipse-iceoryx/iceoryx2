@@ -102,6 +102,42 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! ## Publish-Subscribe With Custom Service Attributes
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! use iceoryx2::config::Config;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
+//!
+//! let service_creator = zero_copy::Service::new(&service_name)
+//!     .publish_subscribe::<u64>()
+//!     .create_with_attributes(
+//!         // all attributes that are defined when creating a new service are stored in the
+//!         // static config of the service
+//!         &AttributeSpecifier::new()
+//!             .define("some attribute key", "some attribute value")
+//!             .define("some attribute key", "another attribute value for the same key")
+//!             .define("another key", "another value")
+//!     )?;
+//!
+//! let service_open = zero_copy::Service::new(&service_name)
+//!     .publish_subscribe::<u64>()
+//!     .open_with_attributes(
+//!         // All attributes that are defined when opening a new service interpreted as
+//!         // requirements.
+//!         // If a attribute key as either a different value or is not set at all, the service
+//!         // cannot be opened. If not specific attributes are required one can skip them completely.
+//!         &AttributeVerifier::new()
+//!             .require("another key", "another value")
+//!             .require_key("some attribute key")
+//!     )?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 /// The builder to create or open [`Service`]s
 pub mod builder;
@@ -131,6 +167,9 @@ pub mod service_name;
 ///  * data type
 ///  * QoS provided when the service was created
 pub mod static_config;
+
+/// Represents static features of a service that can be set when a [`Service`] is created.
+pub mod attribute;
 
 /// A configuration when communicating within a single process or single address space.
 pub mod process_local;
@@ -367,7 +406,7 @@ pub trait Service: Debug + Sized {
                 continue;
             }
 
-            if service_config.service_name() == service_name {
+            if service_config.name() == service_name {
                 return Ok(true);
             }
         }
