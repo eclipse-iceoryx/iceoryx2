@@ -19,6 +19,7 @@ use iceoryx2_bb_posix::{
         ProcessCleaner, ProcessCleanerCreateError, ProcessGuard, ProcessGuardCreateError,
         ProcessMonitor, ProcessMonitorCreateError, ProcessMonitorStateError, ProcessState,
     },
+    testing::__internal_process_guard_staged_death,
 };
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
 
@@ -31,8 +32,8 @@ use crate::{
 };
 
 use super::{
-    Monitoring, MonitoringBuilder, MonitoringCleaner, MonitoringCreateTokenError,
-    MonitoringMonitor, MonitoringStateError, MonitoringToken,
+    testing::__InternalMonitoringTokenTestable, Monitoring, MonitoringBuilder, MonitoringCleaner,
+    MonitoringCreateTokenError, MonitoringMonitor, MonitoringStateError, MonitoringToken,
 };
 
 #[derive(Debug)]
@@ -141,7 +142,7 @@ impl MonitoringCleaner for Cleaner {}
 
 #[derive(Debug)]
 pub struct Token {
-    _guard: ProcessGuard,
+    guard: ProcessGuard,
     name: FileName,
 }
 
@@ -152,6 +153,12 @@ impl NamedConcept for Token {
 }
 
 impl MonitoringToken for Token {}
+
+impl __InternalMonitoringTokenTestable for Token {
+    fn staged_death(self) {
+        __internal_process_guard_staged_death(self.guard);
+    }
+}
 
 #[derive(Debug)]
 pub struct Monitor {
@@ -215,8 +222,8 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
         let msg = "Unable to create FileLockMonitoring token";
         let process_state_path = self.config.path_for(&self.name);
         match ProcessGuard::new(&process_state_path) {
-            Ok(_guard) => Ok(Token {
-                _guard,
+            Ok(guard) => Ok(Token {
+                guard,
                 name: self.name,
             }),
             Err(ProcessGuardCreateError::InsufficientPermissions) => {
