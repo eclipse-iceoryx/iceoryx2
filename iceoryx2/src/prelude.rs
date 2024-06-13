@@ -14,7 +14,7 @@ pub use crate::iox2::Iox2;
 pub use crate::iox2::Iox2Event;
 pub use crate::port::event_id::EventId;
 pub use crate::service::{
-    attribute::AttributeSet, attribute::AttributeSpecifier, attribute::RequiredAttributes,
+    attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier,
     port_factory::publisher::UnableToDeliverStrategy, port_factory::PortFactory, process_local,
     service_name::ServiceName, zero_copy, Service,
 };

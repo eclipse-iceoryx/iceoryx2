@@ -54,7 +54,7 @@
 //!         // requirements.
 //!         // If a attribute key as either a different value or is not set at all, the service
 //!         // cannot be opened. If not specific attributes are required one can skip them completely.
-//!         &RequiredAttributes::new()
+//!         &AttributeVerifier::new()
 //!             .require("another key", "another value")
 //!             .require_key("some attribute key")
 //!     )?;
@@ -153,18 +153,18 @@ impl AttributeSpecifier {
 /// Represents the set of [`Attribute`]s that are required when the [`crate::service::Service`]
 /// is opened.
 #[derive(Debug)]
-pub struct RequiredAttributes {
+pub struct AttributeVerifier {
     attribute_set: AttributeSet,
     required_keys: Vec<String>,
 }
 
-impl Default for RequiredAttributes {
+impl Default for AttributeVerifier {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RequiredAttributes {
+impl AttributeVerifier {
     /// Creates a new empty set of [`Attribute`]s
     pub fn new() -> Self {
         Self {
@@ -193,6 +193,28 @@ impl RequiredAttributes {
     /// Returns the underlying required keys
     pub fn keys(&self) -> &Vec<String> {
         &self.required_keys
+    }
+
+    /// Verifies if the [`AttributeSet`] contains all required keys and key-value pairs.
+    pub fn verify_requirements(&self, rhs: &AttributeSet) -> Result<(), &str> {
+        let is_subset = |lhs: Vec<&str>, rhs: Vec<&str>| lhs.iter().all(|v| rhs.contains(v));
+
+        for attribute in self.attributes().iter() {
+            let lhs_values = self.attribute_set.get(&attribute.key);
+            let rhs_values = rhs.get(&attribute.key);
+
+            if !is_subset(lhs_values, rhs_values) {
+                return Err(&attribute.key);
+            }
+        }
+
+        for key in self.keys() {
+            if rhs.get(key).is_empty() {
+                return Err(key);
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -228,20 +250,5 @@ impl AttributeSet {
             .filter(|p| p.key == key)
             .map(|p| p.value.as_str())
             .collect()
-    }
-
-    pub(crate) fn is_compatible_to(&self, rhs: &Self) -> Result<(), &str> {
-        let is_subset = |lhs: Vec<&str>, rhs: Vec<&str>| lhs.iter().all(|v| rhs.contains(v));
-
-        for attribute in &self.0 {
-            let lhs_values = self.get(&attribute.key);
-            let rhs_values = rhs.get(&attribute.key);
-
-            if !is_subset(lhs_values, rhs_values) {
-                return Err(&attribute.key);
-            }
-        }
-
-        Ok(())
     }
 }

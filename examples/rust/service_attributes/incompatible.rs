@@ -20,14 +20,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .open_with_attributes(
             // the opening of the service will fail since the
             // `camera_resolution` attribute is `1920x1080` and not `3840x2160`
-            &RequiredAttributes::new().require("camera_resolution", "3840x2160"),
+            &AttributeVerifier::new().require("camera_resolution", "3840x2160"),
         );
 
     let _incompatible_service = zero_copy::Service::new(&service_name)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // the opening of the service will fail since the key is not defined.
-            &RequiredAttributes::new().require_key("camera_type"),
+            &AttributeVerifier::new().require_key("camera_type"),
         );
 
     Ok(())

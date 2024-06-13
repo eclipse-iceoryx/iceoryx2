@@ -130,7 +130,7 @@
 //!         // requirements.
 //!         // If a attribute key as either a different value or is not set at all, the service
 //!         // cannot be opened. If not specific attributes are required one can skip them completely.
-//!         &RequiredAttributes::new()
+//!         &AttributeVerifier::new()
 //!             .require("another key", "another value")
 //!             .require_key("some attribute key")
 //!     )?;

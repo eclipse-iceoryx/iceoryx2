@@ -25,7 +25,7 @@ attribute defined in the previous example:
 zero_copy::Service::new(&service_name)
     //...
     .open_with_attributes(
-        RequiredAttributes::new()
+        AttributeVerifier::new()
             .require("my_custom_key", "some_funky_value")
             // dont care for the value but the key must be present
             .require_key("another_key")
@@ -39,7 +39,7 @@ is not set and another attribute where the value does not match:
 zero_copy::Service::new(&service_name)
     //...
     .open_with_attributes(
-        RequiredAttributes::new()
+        AttributeVerifier::new()
             .require("another_key", "zero")
             .require_key("unknown_key")
     )?;

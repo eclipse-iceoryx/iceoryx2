@@ -45,7 +45,7 @@ mod service {
         ) -> Result<Self::Factory, Self::CreateError>;
         fn open(
             service_name: &ServiceName,
-            attributes: &RequiredAttributes,
+            attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError>;
 
         fn assert_create_error(error: Self::CreateError);
@@ -69,7 +69,7 @@ mod service {
 
         fn open(
             service_name: &ServiceName,
-            attributes: &RequiredAttributes,
+            attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
             Sut::new(&service_name)
                 .publish_subscribe::<u64>()
@@ -118,7 +118,7 @@ mod service {
 
         fn open(
             service_name: &ServiceName,
-            attributes: &RequiredAttributes,
+            attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
             Sut::new(&service_name)
                 .event()
@@ -295,7 +295,7 @@ mod service {
                     for service_name in service_names {
                         barrier_enter.wait();
 
-                        let sut = Factory::open(&service_name, &RequiredAttributes::new());
+                        let sut = Factory::open(&service_name, &AttributeVerifier::new());
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
@@ -325,7 +325,7 @@ mod service {
 
         assert_that!(sut_create.attributes(), eq defined_attributes.attributes());
 
-        let sut_open = Factory::open(&service_name, &RequiredAttributes::new()).unwrap();
+        let sut_open = Factory::open(&service_name, &AttributeVerifier::new()).unwrap();
 
         assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
     }
@@ -343,7 +343,7 @@ mod service {
 
         let sut_open = Factory::open(
             &service_name,
-            &RequiredAttributes::new()
+            &AttributeVerifier::new()
                 .require("1. Hello", "Hypnotoad")
                 .require("1. Hello", "Take a number")
                 .require("3. Just have a", "lick on the toad"),
@@ -365,7 +365,7 @@ mod service {
 
         let sut_open = Factory::open(
             &service_name,
-            &RequiredAttributes::new().require("1. Hello", "lick on the toad"),
+            &AttributeVerifier::new().require("1. Hello", "lick on the toad"),
         );
 
         assert_that!(sut_open, is_err);
@@ -382,7 +382,7 @@ mod service {
 
         let sut_open = Factory::open(
             &service_name,
-            &RequiredAttributes::new().require("Whatever", "lick on the toad"),
+            &AttributeVerifier::new().require("Whatever", "lick on the toad"),
         );
 
         assert_that!(sut_open, is_err);
@@ -400,7 +400,7 @@ mod service {
 
         let sut_open = Factory::open(
             &service_name,
-            &RequiredAttributes::new()
+            &AttributeVerifier::new()
                 .require("1. Hello", "lick on the toad")
                 .require("1. Hello", "Number Eight"),
         );
@@ -422,7 +422,7 @@ mod service {
 
         let sut_open = Factory::open(
             &service_name,
-            &RequiredAttributes::new().require_key("i do not exist"),
+            &AttributeVerifier::new().require_key("i do not exist"),
         );
 
         assert_that!(sut_open, is_err);
@@ -439,7 +439,7 @@ mod service {
 
         let sut_open = Factory::open(
             &service_name,
-            &RequiredAttributes::new().require_key("2. No more"),
+            &AttributeVerifier::new().require_key("2. No more"),
         );
 
         assert_that!(sut_open, is_ok);

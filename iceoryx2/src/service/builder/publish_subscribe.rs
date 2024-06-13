@@ -30,7 +30,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 
 use self::{
-    attribute::{AttributeSpecifier, RequiredAttributes},
+    attribute::{AttributeSpecifier, AttributeVerifier},
     type_details::{TypeDetails, TypeVariant},
 };
 
@@ -285,26 +285,16 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
     fn verify_service_attributes(
         &self,
         existing_settings: &static_config::StaticConfig,
-        required_attributes: &RequiredAttributes,
+        required_attributes: &AttributeVerifier,
     ) -> Result<static_config::publish_subscribe::StaticConfig, PublishSubscribeOpenError> {
         let msg = "Unable to open publish subscribe service";
 
         let existing_attributes = existing_settings.attributes();
-
-        if let Err(incompatible_key) = required_attributes
-            .attributes()
-            .is_compatible_to(existing_attributes)
+        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
         {
             fail!(from self, with PublishSubscribeOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
                 msg, incompatible_key, required_attributes, existing_attributes);
-        }
-
-        for key in required_attributes.keys() {
-            if existing_settings.attributes().get(key).is_empty() {
-                fail!(from self, with PublishSubscribeOpenError::IncompatibleAttributes,
-                    "{} due to a missing required attribute key \"{}\".", msg, key);
-            }
         }
 
         let required_settings = self.base.service_config.publish_subscribe();
@@ -483,7 +473,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     fn open_impl(
         &mut self,
-        attributes: &RequiredAttributes,
+        attributes: &AttributeVerifier,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
     {
         let msg = "Unable to open publish subscribe service";
@@ -557,7 +547,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     fn open_or_create_impl(
         mut self,
-        attributes: &RequiredAttributes,
+        attributes: &AttributeVerifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, PayloadType>,
         PublishSubscribeOpenOrCreateError,
@@ -632,7 +622,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
         publish_subscribe::PortFactory<ServiceType, PayloadType>,
         PublishSubscribeOpenOrCreateError,
     > {
-        self.open_or_create_with_attributes(&RequiredAttributes::new())
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -641,7 +631,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
     /// does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
-        required_attributes: &RequiredAttributes,
+        required_attributes: &AttributeVerifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, PayloadType>,
         PublishSubscribeOpenOrCreateError,
@@ -655,14 +645,14 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
         self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
     {
-        self.open_with_attributes(&RequiredAttributes::new())
+        self.open_with_attributes(&AttributeVerifier::new())
     }
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
-        required_attributes: &RequiredAttributes,
+        required_attributes: &AttributeVerifier,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
     {
         self.prepare_config_details();
@@ -703,7 +693,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
         publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
         PublishSubscribeOpenOrCreateError,
     > {
-        self.open_or_create_with_attributes(&RequiredAttributes::new())
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -712,7 +702,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
     /// does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
-        attributes: &RequiredAttributes,
+        attributes: &AttributeVerifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
         PublishSubscribeOpenOrCreateError,
@@ -726,14 +716,14 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
         self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, [PayloadType]>, PublishSubscribeOpenError>
     {
-        self.open_with_attributes(&RequiredAttributes::new())
+        self.open_with_attributes(&AttributeVerifier::new())
     }
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
-        attributes: &RequiredAttributes,
+        attributes: &AttributeVerifier,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, [PayloadType]>, PublishSubscribeOpenError>
     {
         self.prepare_config_details();

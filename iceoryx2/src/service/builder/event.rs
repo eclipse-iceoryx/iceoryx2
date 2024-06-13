@@ -24,7 +24,7 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 
-use self::attribute::{AttributeSpecifier, RequiredAttributes};
+use self::attribute::{AttributeSpecifier, AttributeVerifier};
 
 use super::ServiceState;
 
@@ -157,7 +157,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     pub fn open_or_create(self) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
-        self.open_or_create_with_attributes(&RequiredAttributes::new())
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -166,7 +166,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
-        required_attributes: &RequiredAttributes,
+        required_attributes: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
         let msg = "Unable to open or create event service";
 
@@ -200,14 +200,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
     /// Opens an existing [`Service`].
     pub fn open(self) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
-        self.open_with_attributes(&RequiredAttributes::new())
+        self.open_with_attributes(&AttributeVerifier::new())
     }
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
-        required_attributes: &RequiredAttributes,
+        required_attributes: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         let msg = "Unable to open event service";
 
@@ -392,26 +392,16 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     fn verify_service_attributes(
         &self,
         existing_settings: &static_config::StaticConfig,
-        required_attributes: &RequiredAttributes,
+        required_attributes: &AttributeVerifier,
     ) -> Result<static_config::event::StaticConfig, EventOpenError> {
         let msg = "Unable to open event";
 
         let existing_attributes = existing_settings.attributes();
-
-        if let Err(incompatible_key) = required_attributes
-            .attributes()
-            .is_compatible_to(existing_attributes)
+        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
         {
             fail!(from self, with EventOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
                 msg, incompatible_key, required_attributes, existing_attributes);
-        }
-
-        for key in required_attributes.keys() {
-            if existing_settings.attributes().get(key).is_empty() {
-                fail!(from self, with EventOpenError::IncompatibleAttributes,
-                    "{} due to a missing required attribute key \"{}\".", msg, key);
-            }
         }
 
         let required_settings = self.base.service_config.event();
