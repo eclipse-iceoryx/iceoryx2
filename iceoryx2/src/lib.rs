@@ -287,7 +287,6 @@ pub mod config;
 pub mod iox2;
 
 pub mod node;
-pub mod node_name;
 
 /// The ports or communication endpoints of iceoryx2
 pub mod port;

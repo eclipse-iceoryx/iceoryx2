@@ -10,19 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::marker::PhantomData;
+pub mod node_name;
 
-use crate::node_name::NodeName;
+use crate::node::node_name::NodeName;
 use crate::service;
-use crate::service::config_scheme::{node_details_path, node_monitoring_config};
+use crate::service::config_scheme::node_monitoring_config;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
-use iceoryx2_bb_posix::directory::{Directory, DirectoryRemoveError};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::named_concept::NamedConceptRemoveError;
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
+use std::marker::PhantomData;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCreationFailure {
@@ -55,6 +55,16 @@ enum NodeReadStorageFailure {
 pub struct NodeDetails {
     name: NodeName,
     config: Config,
+}
+
+impl NodeDetails {
+    pub fn name(&self) -> &NodeName {
+        &self.name
+    }
+
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -124,27 +134,6 @@ impl<Service: service::Service> DeadNodeView<Service> {
     }
 }
 
-fn remove_node_details_directory<Service: service::Service>(
-    origin: &str,
-    details: &NodeDetails,
-    monitor_name: &FileName,
-) -> Result<(), NodeCleanupFailure> {
-    let msg = "Unable to remove node resources";
-
-    match Directory::remove(&node_details_path::<Service>(&details.config, monitor_name)) {
-        Ok(()) => Ok(()),
-        Err(DirectoryRemoveError::InsufficientPermissions) => {
-            fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
-                        "{} since the node config directory could not be removed due to insufficient of permissions.", msg);
-        }
-        Err(e) => {
-            fail!(from origin, with NodeCleanupFailure::InternalError,
-                        "{} since the node config directory could not be removed due to an internal error ({:?}).",
-                        msg, e);
-        }
-    }
-}
-
 fn acquire_all_node_detail_storages<Service: service::Service>(
     origin: &str,
     config: &<Service::StaticStorage as NamedConceptMgmt>::Configuration,
@@ -203,7 +192,6 @@ fn remove_node<Service: service::Service>(
     let detail_storages = acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
     remove_detail_storages::<Service>(&origin, detail_storages, &details_config)?;
 
-    remove_node_details_directory::<Service>(&origin, details, &monitor_name)?;
     Ok(true)
 }
 
@@ -434,14 +422,39 @@ impl NodeBuilder {
         }
     }
 
-    pub fn name(mut self, value: NodeName) -> Self {
-        self.name = Some(value);
+    pub fn name(mut self, value: &NodeName) -> Self {
+        self.name = Some(value.clone());
         self
     }
 
     pub fn config(mut self, value: Config) -> Self {
         self.config = Some(value);
         self
+    }
+
+    pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
+        let msg = "Unable to create node";
+        let node_id = fail!(from self, when UniqueSystemId::new(),
+                                with NodeCreationFailure::InternalError,
+                                "{msg} since the unique node id could not be generated.");
+        let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
+                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
+        let config = if let Some(ref config) = self.config {
+            config.clone()
+        } else {
+            Config::get_global_config().clone()
+        };
+
+        let (details_storage, details) =
+            self.create_node_details_storage::<Service>(&config, &monitor_name)?;
+        let token = self.create_token::<Service>(&config, &monitor_name)?;
+
+        Ok(Node {
+            id: node_id,
+            _monitor: token,
+            _details_storage: details_storage,
+            details,
+        })
     }
 
     fn create_token<Service: service::Service>(
@@ -516,30 +529,5 @@ impl NodeBuilder {
                     "{msg} due to an unknown failure while creating the node details file {:?}.", e);
             }
         }
-    }
-
-    pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
-        let msg = "Unable to create node";
-        let node_id = fail!(from self, when UniqueSystemId::new(),
-                                with NodeCreationFailure::InternalError,
-                                "{msg} since the unique node id could not be generated.");
-        let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
-                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
-        let config = if let Some(ref config) = self.config {
-            config.clone()
-        } else {
-            Config::get_global_config().clone()
-        };
-
-        let (details_storage, details) =
-            self.create_node_details_storage::<Service>(&config, &monitor_name)?;
-        let token = self.create_token::<Service>(&config, &monitor_name)?;
-
-        Ok(Node {
-            id: node_id,
-            _monitor: token,
-            _details_storage: details_storage,
-            details,
-        })
     }
 }

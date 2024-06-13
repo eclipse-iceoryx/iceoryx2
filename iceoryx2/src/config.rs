@@ -122,7 +122,7 @@ impl std::error::Error for ConfigCreationError {}
 
 /// All configurable settings of a [`crate::service::Service`].
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Service {
     /// The directory in which all service files are stored
     pub directory: Path,
@@ -141,7 +141,7 @@ pub struct Service {
 
 /// All configurable settings of a [`crate::node::Node`].
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Node {
     /// The directory in which all node files are stored
     pub directory: Path,
@@ -153,7 +153,7 @@ pub struct Node {
 
 /// The global settings
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Global {
     root_path_unix: Path,
     root_path_windows: Path,
@@ -200,7 +200,7 @@ impl Global {
 /// Default settings. These values are used when the user in the code does not specify anything
 /// else.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Defaults {
     /// Default settings for the messaging pattern publish-subscribe
     pub publish_subscribe: PublishSubscribe,
@@ -211,7 +211,7 @@ pub struct Defaults {
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct PublishSubscribe {
     /// The maximum amount of supported [`crate::port::subscriber::Subscriber`]
     pub max_subscribers: usize,
@@ -241,7 +241,7 @@ pub struct PublishSubscribe {
 /// Default settings for the event messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Event {
     /// The maximum amount of supported [`crate::port::listener::Listener`]
     pub max_listeners: usize,
@@ -256,7 +256,7 @@ pub struct Event {
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
 /// flexibility to override both sections.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Config {
     /// Global settings for the iceoryx2 instance
     pub global: Global,

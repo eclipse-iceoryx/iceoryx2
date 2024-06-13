@@ -31,8 +31,7 @@ pub struct ServiceName {
 }
 
 impl ServiceName {
-    /// Creates a new [`ServiceName`]. The name is not allowed to be empty and longer than
-    /// [`ServiceName::max_len()`].
+    /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
         if name.is_empty() {
             return Err(SemanticStringError::InvalidContent);

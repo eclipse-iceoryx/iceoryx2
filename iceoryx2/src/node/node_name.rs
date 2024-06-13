@@ -19,7 +19,7 @@ pub struct NodeName {
 }
 
 impl NodeName {
-    /// Creates a new [`NodeName`]. Is not allowed to be longer than [`NodeName::max_len()`].
+    /// Creates a new [`NodeName`].
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
         Ok(Self { value: name.into() })
     }
