@@ -26,23 +26,24 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(RUST_BUILD_TYPE_FLAG "")
 endif()
 
-set(RUST_ARCH_TRIPLET "")
-set(RUST_ARCH_TRIPLET_FLAG "")
-# if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i486")
-#     set(RUST_ARCH_TRIPLET "i686-unknown-linux-gnu")
-#     set(RUST_ARCH_TRIPLET_FLAG "--target=${RUST_ARCH_TRIPLET}")
-# elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armv7l")
-#     set(RUST_ARCH_TRIPLET "armv7-unknown-linux-gnueabihf")
-#     set(RUST_ARCH_TRIPLET_FLAG "--target=${RUST_ARCH_TRIPLET}")
-# elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-#     set(RUST_ARCH_TRIPLET "${CMAKE_SYSTEM_PROCESSOR}-unknown-linux-gnu")
-#     set(RUST_ARCH_TRIPLET_FLAG "--target=${RUST_ARCH_TRIPLET}")
-# endif()
+if("${RUST_TARGET_TRIPLET}" STREQUAL "")
+    set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust/native)
+    set(RUST_TARGET_DIR_FULL ${CMAKE_BINARY_DIR}/rust/native/${RUST_BUILD_TYPE})
+    set(RUST_TARGET_TRIPLET_FLAG "")
+else()
+    set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
+    set(RUST_TARGET_DIR_FULL ${CMAKE_BINARY_DIR}/rust/${RUST_TARGET_TRIPLET}/${RUST_BUILD_TYPE})
+    set(RUST_TARGET_TRIPLET_FLAG "--target=${RUST_TARGET_TRIPLET}")
+endif()
 
-set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
-set(RUST_ARCH_TARGET_DIR ${RUST_TARGET_DIR}/${RUST_ARCH_TRIPLET})
+set(ICEORYX2_C_INCLUDE_DIR ${RUST_TARGET_DIR_FULL}/iceoryx2-ffi-cbindgen/include)
 
-set(ICEORYX2_C_INCLUDE_DIR ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/iceoryx2-ffi-cbindgen/include)
+message(STATUS "#### ${RUST_TARGET_TRIPLET}")
+message(STATUS "#### ${RUST_TARGET_DIR}")
+message(STATUS "#### ${RUST_TARGET_DIR_FULL}")
+message(STATUS "#### ${RUST_TARGET_TRIPLET_FLAG}")
+message(STATUS "#### ${ICEORYX2_C_INCLUDE_DIR}")
+
 
 set(ICEORYX2_C_LIB iceoryx2_ffi)
 set(ICEORYX2_C_STATIC_LIB_LINK_NAME lib${ICEORYX2_C_LIB}.a)
@@ -59,21 +60,21 @@ elseif(APPLE)
     set(ICEORYX2_C_SHARED_LIB_LINK_NAME lib${ICEORYX2_C_LIB}.dylib)
 endif()
 
-set(ICEORYX2_C_STATIC_LIB_LINK_FILE ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_C_STATIC_LIB_LINK_NAME})
-set(ICEORYX2_C_SHARED_LIB_LINK_FILE ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_C_SHARED_LIB_LINK_NAME})
+set(ICEORYX2_C_STATIC_LIB_LINK_FILE ${RUST_TARGET_DIR_FULL}/${ICEORYX2_C_STATIC_LIB_LINK_NAME})
+set(ICEORYX2_C_SHARED_LIB_LINK_FILE ${RUST_TARGET_DIR_FULL}/${ICEORYX2_C_SHARED_LIB_LINK_NAME})
 set(ICEORYX2_C_SHARED_LIB_DLL_FILE) # intentionally empty; only used on Windows
 
 list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_STATIC_LIB_LINK_FILE})
 list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_SHARED_LIB_LINK_FILE})
 if(WIN32)
-    set(ICEORYX2_C_SHARED_LIB_DLL_FILE ${RUST_ARCH_TARGET_DIR}/${RUST_BUILD_TYPE}/${ICEORYX2_C_LIB}.dll)
+    set(ICEORYX2_C_SHARED_LIB_DLL_FILE ${RUST_TARGET_DIR_FULL}${ICEORYX2_C_LIB}.dll)
     list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_SHARED_LIB_DLL_FILE})
 endif()
 
 # run cargo
 add_custom_target(
     iceoryx2-build-step ALL
-    COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --target-dir=${RUST_TARGET_DIR} ${RUST_ARCH_TRIPLET_FLAG}
+    COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
     BYPRODUCTS
         ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
         ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
@@ -108,7 +109,6 @@ add_library(iceoryx2-c::static-lib ALIAS static-lib)
 
 add_library(shared-lib INTERFACE)
 add_library(iceoryx2-c::shared-lib ALIAS shared-lib)
-
 
 # NOTE the solution with specifying a 'BUILD_INTERFACE' and a 'INSTALL_INTERFACE' was the only one that worked;
 # alternatively an imported library could be created, e.g. 'iceoryx2_ffi' with a corresponding alias, e.g. 'iceoryx2::ffi';
