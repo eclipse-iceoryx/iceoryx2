@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .create_with_attributes(
             // define a set of properties that are static for the lifetime
             // of the service
-            &DefinedAttributes::new()
+            &AttributeSpecifier::new()
                 .define("dds_service_mapping", "my_funky_service_name")
                 .define("tcp_serialization_format", "cdr")
                 .define("someip_service_mapping", "1/2/3")

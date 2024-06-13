@@ -24,7 +24,7 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 
-use self::attribute::{AttributeSet, DefinedAttributes, RequiredAttributes};
+use self::attribute::{AttributeSpecifier, RequiredAttributes};
 
 use super::ServiceState;
 
@@ -172,12 +172,16 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
         match self.base.is_service_available() {
             Ok(Some(_)) => Ok(self.open_with_attributes(required_attributes)?),
-            Ok(None) => match self.create_impl(&DefinedAttributes(required_attributes.0.clone())) {
-                Ok(factory) => Ok(factory),
-                Err(EventCreateError::AlreadyExists)
-                | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
-                Err(e) => Err(e.into()),
-            },
+            Ok(None) => {
+                match self.create_impl(&AttributeSpecifier(
+                    required_attributes.attributes().clone(),
+                )) {
+                    Ok(factory) => Ok(factory),
+                    Err(EventCreateError::AlreadyExists)
+                    | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
+                    Err(e) => Err(e.into()),
+                }
+            }
             Err(ServiceState::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
             Err(ServiceState::Corrupted) => {
                 fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::EventInCorruptedState),
@@ -219,7 +223,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 }
                 Ok(Some((static_config, static_storage))) => {
                     let event_static_config =
-                        self.verify_service_attributes(&static_config, &required_attributes.0)?;
+                        self.verify_service_attributes(&static_config, required_attributes)?;
 
                     let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
@@ -268,20 +272,20 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
     /// Creates a new [`Service`].
     pub fn create(mut self) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
-        self.create_impl(&DefinedAttributes::new())
+        self.create_impl(&AttributeSpecifier::new())
     }
 
     /// Creates a new [`Service`] with a set of attributes.
     pub fn create_with_attributes(
         mut self,
-        attributes: &DefinedAttributes,
+        attributes: &AttributeSpecifier,
     ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
         self.create_impl(attributes)
     }
 
     fn create_impl(
         &mut self,
-        attributes: &DefinedAttributes,
+        attributes: &AttributeSpecifier,
     ) -> Result<event::PortFactory<ServiceType>, EventCreateError> {
         self.adjust_attributes_to_meaningful_values();
 
@@ -388,16 +392,26 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     fn verify_service_attributes(
         &self,
         existing_settings: &static_config::StaticConfig,
-        required_attributes: &AttributeSet,
+        required_attributes: &RequiredAttributes,
     ) -> Result<static_config::event::StaticConfig, EventOpenError> {
         let msg = "Unable to open event";
 
         let existing_attributes = existing_settings.attributes();
 
-        if let Err(incompatible_key) = required_attributes.is_compatible_to(existing_attributes) {
+        if let Err(incompatible_key) = required_attributes
+            .attributes()
+            .is_compatible_to(existing_attributes)
+        {
             fail!(from self, with EventOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
                 msg, incompatible_key, required_attributes, existing_attributes);
+        }
+
+        for key in required_attributes.keys() {
+            if existing_settings.attributes().get(key).is_empty() {
+                fail!(from self, with EventOpenError::IncompatibleAttributes,
+                    "{} due to a missing required attribute key \"{}\".", msg, key);
+            }
         }
 
         let required_settings = self.base.service_config.event();

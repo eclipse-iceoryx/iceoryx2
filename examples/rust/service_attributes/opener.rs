@@ -23,7 +23,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .open_with_attributes(
             // define attributes that the service requires
             // if no attributes are defined the service accepts any attribute
-            &RequiredAttributes::new().require("camera_resolution", "1920x1080"),
+            &RequiredAttributes::new()
+                .require("camera_resolution", "1920x1080")
+                .require_key("dds_service_mapping"),
         )?;
 
     let subscriber = service.subscriber().create()?;

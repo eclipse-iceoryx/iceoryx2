@@ -28,7 +28,7 @@
 //!     .create_with_attributes(
 //!         // all attributes that are defined when creating a new service are stored in the
 //!         // static config of the service
-//!         &DefinedAttributes::new()
+//!         &AttributeSpecifier::new()
 //!             .define("some attribute key", "some attribute value")
 //!             .define("some attribute key", "another attribute value for the same key")
 //!             .define("another key", "another value")
@@ -56,6 +56,7 @@
 //!         // cannot be opened. If not specific attributes are required one can skip them completely.
 //!         &RequiredAttributes::new()
 //!             .require("another key", "another value")
+//!             .require_key("some attribute key")
 //!     )?;
 //!
 //! # Ok(())
@@ -121,30 +122,41 @@ impl Attribute {
     }
 }
 
-pub struct DefinedAttributes(pub(crate) AttributeSet);
+/// Represents the set of [`Attribute`]s that are defined when the [`crate::service::Service`]
+/// is created.
+pub struct AttributeSpecifier(pub(crate) AttributeSet);
 
-impl Default for DefinedAttributes {
+impl Default for AttributeSpecifier {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl DefinedAttributes {
+impl AttributeSpecifier {
+    /// Creates a new empty set of [`Attribute`]s
     pub fn new() -> Self {
         Self(AttributeSet::new())
     }
 
+    /// Defines a value for a specific key. A key is allowed to have multiple values.
     pub fn define(mut self, key: &str, value: &str) -> Self {
         self.0.add(key, value);
         self
     }
 
+    /// Returns the underlying [`AttributeSet`]
     pub fn attributes(&self) -> &AttributeSet {
         &self.0
     }
 }
 
-pub struct RequiredAttributes(pub(crate) AttributeSet);
+/// Represents the set of [`Attribute`]s that are required when the [`crate::service::Service`]
+/// is opened.
+#[derive(Debug)]
+pub struct RequiredAttributes {
+    attribute_set: AttributeSet,
+    required_keys: Vec<String>,
+}
 
 impl Default for RequiredAttributes {
     fn default() -> Self {
@@ -153,17 +165,34 @@ impl Default for RequiredAttributes {
 }
 
 impl RequiredAttributes {
+    /// Creates a new empty set of [`Attribute`]s
     pub fn new() -> Self {
-        Self(AttributeSet::new())
+        Self {
+            attribute_set: AttributeSet::new(),
+            required_keys: Vec::new(),
+        }
     }
 
+    /// Requires a value for a specific key. A key is allowed to have multiple values.
     pub fn require(mut self, key: &str, value: &str) -> Self {
-        self.0.add(key, value);
+        self.attribute_set.add(key, value);
         self
     }
 
+    /// Requires that a specific key is defined.
+    pub fn require_key(mut self, key: &str) -> Self {
+        self.required_keys.push(key.into());
+        self
+    }
+
+    /// Returns the underlying required [`AttributeSet`]
     pub fn attributes(&self) -> &AttributeSet {
-        &self.0
+        &self.attribute_set
+    }
+
+    /// Returns the underlying required keys
+    pub fn keys(&self) -> &Vec<String> {
+        &self.required_keys
     }
 }
 

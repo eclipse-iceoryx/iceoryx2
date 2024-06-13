@@ -117,7 +117,7 @@
 //!     .create_with_attributes(
 //!         // all attributes that are defined when creating a new service are stored in the
 //!         // static config of the service
-//!         &DefinedAttributes::new()
+//!         &AttributeSpecifier::new()
 //!             .define("some attribute key", "some attribute value")
 //!             .define("some attribute key", "another attribute value for the same key")
 //!             .define("another key", "another value")
@@ -132,6 +132,7 @@
 //!         // cannot be opened. If not specific attributes are required one can skip them completely.
 //!         &RequiredAttributes::new()
 //!             .require("another key", "another value")
+//!             .require_key("some attribute key")
 //!     )?;
 //!
 //! # Ok(())

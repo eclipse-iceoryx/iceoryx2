@@ -9,7 +9,7 @@ are key-value pairs that can be defined via the service builder like so:
 zero_copy::Service::new(&service_name)
     //...
     .create_with_attributes(
-        DefinedAttributes::new()
+        AttributeSpecifier::new()
             .define("my_custom_key", "some_funky_value")
             .define("my_custom_key", "another_value_for_the_same_key")
             .define("another_key", "another_value")
@@ -27,6 +27,8 @@ zero_copy::Service::new(&service_name)
     .open_with_attributes(
         RequiredAttributes::new()
             .require("my_custom_key", "some_funky_value")
+            // dont care for the value but the key must be present
+            .require_key("another_key")
     )?;
 ```
 
@@ -38,8 +40,8 @@ zero_copy::Service::new(&service_name)
     //...
     .open_with_attributes(
         RequiredAttributes::new()
-            .require("unknown_key", "whatever")
             .require("another_key", "zero")
+            .require_key("unknown_key")
     )?;
 ```
 

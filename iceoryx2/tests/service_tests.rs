@@ -41,7 +41,7 @@ mod service {
 
         fn create(
             service_name: &ServiceName,
-            attributes: &DefinedAttributes,
+            attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError>;
         fn open(
             service_name: &ServiceName,
@@ -60,7 +60,7 @@ mod service {
 
         fn create(
             service_name: &ServiceName,
-            attributes: &DefinedAttributes,
+            attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
             Sut::new(&service_name)
                 .publish_subscribe::<u64>()
@@ -109,7 +109,7 @@ mod service {
 
         fn create(
             service_name: &ServiceName,
-            attributes: &DefinedAttributes,
+            attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
             Sut::new(&service_name)
                 .event()
@@ -200,7 +200,7 @@ mod service {
                         barrier_enter.wait();
 
                         let _sut =
-                            Factory::create(&service_name, &DefinedAttributes::new()).unwrap();
+                            Factory::create(&service_name, &AttributeSpecifier::new()).unwrap();
 
                         barrier_exit.wait();
                     }
@@ -234,7 +234,7 @@ mod service {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
 
-                        let sut = Factory::create(&service_name, &DefinedAttributes::new());
+                        let sut = Factory::create(&service_name, &AttributeSpecifier::new());
                         match sut {
                             Ok(_) => {
                                 success_counter.fetch_add(1, Ordering::Relaxed);
@@ -281,7 +281,7 @@ mod service {
             let mut threads = vec![];
             threads.push(s.spawn(|| {
                 for service_name in service_names {
-                    let sut = Factory::create(&service_name, &DefinedAttributes::new()).unwrap();
+                    let sut = Factory::create(&service_name, &AttributeSpecifier::new()).unwrap();
                     barrier_enter.wait();
 
                     drop(sut);
@@ -317,7 +317,7 @@ mod service {
     #[test]
     fn setting_attributes_in_creator_can_be_read_in_opener<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let defined_attributes = DefinedAttributes::new()
+        let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee")
             .define("3. Just have a", "lick on the toad");
@@ -333,7 +333,7 @@ mod service {
     #[test]
     fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let defined_attributes = DefinedAttributes::new()
+        let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("1. Hello", "Take a number")
             .define("2. No more", "Coffee")
@@ -358,7 +358,7 @@ mod service {
     #[test]
     fn opener_fails_when_attribute_value_does_not_match<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let defined_attributes = DefinedAttributes::new()
+        let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
         let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
@@ -375,7 +375,7 @@ mod service {
     #[test]
     fn opener_fails_when_attribute_key_does_not_exist<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let defined_attributes = DefinedAttributes::new()
+        let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
         let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
@@ -392,7 +392,7 @@ mod service {
     #[test]
     fn opener_fails_when_attribute_value_does_not_exist<Sut: Service, Factory: SutFactory>() {
         let service_name = generate_name();
-        let defined_attributes = DefinedAttributes::new()
+        let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("1. Hello", "Number Two")
             .define("2. No more", "Coffee");
@@ -407,6 +407,42 @@ mod service {
 
         assert_that!(sut_open, is_err);
         Factory::assert_attribute_error(sut_open.err().unwrap());
+    }
+
+    #[test]
+    fn opener_fails_when_attribute_required_key_does_not_exist<
+        Sut: Service,
+        Factory: SutFactory,
+    >() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            &RequiredAttributes::new().require_key("i do not exist"),
+        );
+
+        assert_that!(sut_open, is_err);
+        Factory::assert_attribute_error(sut_open.err().unwrap());
+    }
+
+    #[test]
+    fn opener_succeeds_when_attribute_required_key_does_exist<Sut: Service, Factory: SutFactory>() {
+        let service_name = generate_name();
+        let defined_attributes = AttributeSpecifier::new()
+            .define("1. Hello", "Hypnotoad")
+            .define("2. No more", "Coffee");
+        let _sut_create = Factory::create(&service_name, &defined_attributes).unwrap();
+
+        let sut_open = Factory::open(
+            &service_name,
+            &RequiredAttributes::new().require_key("2. No more"),
+        );
+
+        assert_that!(sut_open, is_ok);
     }
 
     mod zero_copy {

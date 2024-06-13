@@ -30,7 +30,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
 
 use self::{
-    attribute::{AttributeSet, DefinedAttributes, RequiredAttributes},
+    attribute::{AttributeSpecifier, RequiredAttributes},
     type_details::{TypeDetails, TypeVariant},
 };
 
@@ -285,16 +285,26 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
     fn verify_service_attributes(
         &self,
         existing_settings: &static_config::StaticConfig,
-        required_attributes: &AttributeSet,
+        required_attributes: &RequiredAttributes,
     ) -> Result<static_config::publish_subscribe::StaticConfig, PublishSubscribeOpenError> {
         let msg = "Unable to open publish subscribe service";
 
         let existing_attributes = existing_settings.attributes();
 
-        if let Err(incompatible_key) = required_attributes.is_compatible_to(existing_attributes) {
+        if let Err(incompatible_key) = required_attributes
+            .attributes()
+            .is_compatible_to(existing_attributes)
+        {
             fail!(from self, with PublishSubscribeOpenError::IncompatibleAttributes,
-                "{} due to incompatible service attribute key {}. The following attributes {:?} are required but the service has the attributes {:?}.",
+                "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
                 msg, incompatible_key, required_attributes, existing_attributes);
+        }
+
+        for key in required_attributes.keys() {
+            if existing_settings.attributes().get(key).is_empty() {
+                fail!(from self, with PublishSubscribeOpenError::IncompatibleAttributes,
+                    "{} due to a missing required attribute key \"{}\".", msg, key);
+            }
         }
 
         let required_settings = self.base.service_config.publish_subscribe();
@@ -361,7 +371,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     fn create_impl(
         &mut self,
-        attributes: &DefinedAttributes,
+        attributes: &AttributeSpecifier,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
     {
         self.adjust_attributes_to_meaningful_values();
@@ -490,7 +500,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                 }
                 Ok(Some((static_config, static_storage))) => {
                     let pub_sub_static_config =
-                        self.verify_service_attributes(&static_config, &attributes.0)?;
+                        self.verify_service_attributes(&static_config, attributes)?;
 
                     let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
@@ -561,14 +571,16 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                     Err(PublishSubscribeOpenError::DoesNotExist) => continue,
                     Err(e) => return Err(e.into()),
                 },
-                Ok(None) => match self.create_impl(&DefinedAttributes(attributes.0.clone())) {
-                    Ok(factory) => return Ok(factory),
-                    Err(PublishSubscribeCreateError::AlreadyExists)
-                    | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
-                        continue;
+                Ok(None) => {
+                    match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
+                        Ok(factory) => return Ok(factory),
+                        Err(PublishSubscribeCreateError::AlreadyExists)
+                        | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
+                            continue;
+                        }
+                        Err(e) => return Err(e.into()),
                     }
-                    Err(e) => return Err(e.into()),
-                },
+                }
                 Err(ServiceAvailabilityState::ServiceState(
                     ServiceState::IsBeingCreatedByAnotherInstance,
                 )) => continue,
@@ -662,13 +674,13 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
         self,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
     {
-        self.create_with_attributes(&DefinedAttributes::new())
+        self.create_with_attributes(&AttributeSpecifier::new())
     }
 
     /// Creates a new [`Service`] with a set of attributes.
     pub fn create_with_attributes(
         mut self,
-        attributes: &DefinedAttributes,
+        attributes: &AttributeSpecifier,
     ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
     {
         self.prepare_config_details();
@@ -735,13 +747,13 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
         publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
         PublishSubscribeCreateError,
     > {
-        self.create_with_attributes(&DefinedAttributes::new())
+        self.create_with_attributes(&AttributeSpecifier::new())
     }
 
     /// Creates a new [`Service`] with a set of attributes.
     pub fn create_with_attributes(
         mut self,
-        attributes: &DefinedAttributes,
+        attributes: &AttributeSpecifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
         PublishSubscribeCreateError,

@@ -60,12 +60,12 @@ mod fixed_size_vec {
             assert_that!(unsafe { *sut.get_unchecked_mut(i) }, eq i * 2 + 3);
         }
 
-        for i in 0..sut.capacity() {
+        for i in (0..sut.capacity()).rev() {
             assert_that!(sut, is_not_empty);
-            assert_that!(sut, len sut.capacity() - i);
+            assert_that!(sut, len i + 1);
             let result = sut.pop();
             assert_that!(sut.is_full(), eq false);
-            assert_that!(result, eq Some((sut.capacity() - i - 1) * 2 + 3));
+            assert_that!(result, eq Some(i * 2 + 3));
         }
 
         assert_that!(sut, is_empty);
