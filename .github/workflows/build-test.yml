@@ -104,8 +104,10 @@ jobs:
         mode: 
           - name: "release"
             arg: "--release"
+            cmake_build_type: "Release"
           - name: "debug"
             arg: ""
+            cmake_build_type: "Debug"
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
@@ -125,14 +127,43 @@ jobs:
           artifact-bin-name: cargo-nextest
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
-      - name: Prepare system
-        run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
+      - name: Prepare Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: internal\scripts\ci_prepare_windows.bat
+      - name: Prepare Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
       - name: Run cargo nextest
         run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
+
+      - name: Build language bindings
+        run: |
+          cmake . \
+                -B target/ffi/build \
+                -DCMAKE_INSTALL_PREFIX=target/ffi/install \
+                -DEXAMPLES=ON \
+                -DCMAKE_BUILD_TYPE=${{ matrix.mode.cmake_build_type }} \
+                -DRUST_TARGET_TRIPLET="i686-unknown-linux-gnu" \
+                -DCMAKE_C_FLAGS="-m32"
+          cmake --build target/ffi/build
+          cmake --install target/ffi/build
+
+      - name: Build language binding examples in out-of-tree configuration
+        if: false # out-of-tree cross-compilation is currently not supported
+        run: |
+          rm -rf target/ffi/build
+          cmake examples/c \
+                -B target/ffi/out-of-tree \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
+                -DCMAKE_BUILD_TYPE=${{ matrix.mode.cmake_build_type }} \
+                -DCMAKE_C_FLAGS="-m32"
+          cmake --build target/ffi/out-of-tree
 
   x86_64:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
@@ -141,11 +172,13 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [stable, 1.75.0]
-        mode: 
+        mode:
           - name: "release"
             arg: "--release"
+            cmake_build_type: "Release"
           - name: "debug"
             arg: ""
+            cmake_build_type: "Debug"
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
@@ -164,8 +197,14 @@ jobs:
           artifact-bin-name: cargo-nextest
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
-      - name: Prepare system
-        run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
+      - name: Prepare Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: internal\scripts\ci_prepare_windows.bat
+      - name: Prepare Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
@@ -173,15 +212,28 @@ jobs:
       - name: Run cargo nextest
         run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
 
+      - name: Print native libs of FFI target
+        if: false
+        run: |
+          cd iceoryx2-ffi/ffi
+          cargo rustc -q -- --print=native-static-libs
+
       - name: Build language bindings
         run: |
-          cmake -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON .
+          cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON -DCMAKE_BUILD_TYPE=${{ matrix.mode.cmake_build_type }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
 
+      - name: Remove language binding build artifacts on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: rm -r -force target/ffi/build
+      - name: Remove language binding build artifacts on non-Windows
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: rm -rf target/ffi/build
+
       - name: Build language binding examples in out-of-tree configuration
         run: |
-          cmake -B target/ffi/out-of-tree -Hexamples/c/ -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install
+          cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install -DCMAKE_BUILD_TYPE=${{ matrix.mode.cmake_build_type }}
           cmake --build target/ffi/out-of-tree
 
   x86_64_unstable:
@@ -215,8 +267,14 @@ jobs:
           artifact-bin-name: cargo-nextest
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
-      - name: Prepare system
-        run: ${{ matrix.os == 'windows-latest' && 'internal\scripts\ci_prepare_windows.bat' || ( matrix.os == 'ubuntu-latest' && './internal/scripts/ci_prepare_ubuntu.sh' || 'uname -a' ) }}
+      - name: Prepare Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: internal\scripts\ci_prepare_windows.bat
+      - name: Prepare Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
@@ -275,8 +333,26 @@ jobs:
             export RUSTFLAGS="-C debug-assertions"
             cargo fmt --all -- --check
             cargo clippy -- -D warnings
+            echo "###################"
+            echo "# Run cargo build #"
+            echo "###################"
             cargo build --workspace --all-targets ${{ matrix.mode }}
+            echo "######################"
+            echo "# Run cargo nextest #"
+            echo "#####################"
             cargo nextest run --workspace --no-fail-fast ${{ matrix.mode }}
+            echo "###########################"
+            echo "# Build language bindings #"
+            echo "###########################"
+            cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON
+            cmake --build target/ffi/build
+            cmake --install target/ffi/build
+            echo "################################################################"
+            echo "# Build language binding examples in out-of-tree configuration #"
+            echo "################################################################"
+            rm -rf target/ffi/build
+            cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install
+            cmake --build target/ffi/out-of-tree
 
   grcov:
     needs: [preflight-check, static-code-analysis]

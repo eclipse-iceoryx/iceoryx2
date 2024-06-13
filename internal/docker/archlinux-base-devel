@@ -11,6 +11,8 @@ ENV PATH="/root/.cargo/bin:$PATH"
 RUN echo "#### Installing dependencies" \
   && pacman -Syu --noconfirm \
        clang \
+       cmake \
+       gcc \
        git \
   && pacman -Scc --noconfirm \
   && echo "#### Install minimal Rust toolchain" \

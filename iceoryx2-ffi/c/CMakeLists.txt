@@ -38,13 +38,6 @@ endif()
 
 set(ICEORYX2_C_INCLUDE_DIR ${RUST_TARGET_DIR_FULL}/iceoryx2-ffi-cbindgen/include)
 
-message(STATUS "#### ${RUST_TARGET_TRIPLET}")
-message(STATUS "#### ${RUST_TARGET_DIR}")
-message(STATUS "#### ${RUST_TARGET_DIR_FULL}")
-message(STATUS "#### ${RUST_TARGET_TRIPLET_FLAG}")
-message(STATUS "#### ${ICEORYX2_C_INCLUDE_DIR}")
-
-
 set(ICEORYX2_C_LIB iceoryx2_ffi)
 set(ICEORYX2_C_STATIC_LIB_LINK_NAME lib${ICEORYX2_C_LIB}.a)
 set(ICEORYX2_C_SHARED_LIB_LINK_NAME lib${ICEORYX2_C_LIB}.so)
@@ -67,7 +60,7 @@ set(ICEORYX2_C_SHARED_LIB_DLL_FILE) # intentionally empty; only used on Windows
 list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_STATIC_LIB_LINK_FILE})
 list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_SHARED_LIB_LINK_FILE})
 if(WIN32)
-    set(ICEORYX2_C_SHARED_LIB_DLL_FILE ${RUST_TARGET_DIR_FULL}${ICEORYX2_C_LIB}.dll)
+    set(ICEORYX2_C_SHARED_LIB_DLL_FILE ${RUST_TARGET_DIR_FULL}/${ICEORYX2_C_LIB}.dll)
     list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_SHARED_LIB_DLL_FILE})
 endif()
 
@@ -121,7 +114,7 @@ target_link_libraries(static-lib INTERFACE
     $<BUILD_INTERFACE:${ICEORYX2_C_STATIC_LIB_LINK_FILE}>
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_STATIC_LIB_LINK_NAME}>
     $<$<NOT:$<PLATFORM_ID:Windows>>:m>
-    $<$<AND:$<PLATFORM_ID:Windows>,$<C_COMPILER_ID:MSVC>>:bcrypt ntdll synchronization ws2_32 wsock32>
+    $<$<AND:$<PLATFORM_ID:Windows>,$<C_COMPILER_ID:MSVC>>:bcrypt userenv ntdll synchronization ws2_32 wsock32>
     $<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<C_COMPILER_ID:MSVC>>>:ntdll ws2_32 wsock32>
     $<$<PLATFORM_ID:Darwin>:stdc++>
 )

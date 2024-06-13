@@ -10,6 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+# elfenpiff is stupid
+
 cmake_minimum_required(VERSION 3.28)
 project(examples_c LANGUAGES C)
 
