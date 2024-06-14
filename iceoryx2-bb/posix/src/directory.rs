@@ -321,6 +321,30 @@ impl Directory {
         &self.path
     }
 
+    /// Removes an empty directory. If the directory is not empty it returns an error.
+    pub fn remove_empty(path: &Path) -> Result<(), DirectoryRemoveError> {
+        if unsafe { posix::rmdir(path.as_c_str()) } == -1 {
+            let msg = format!("Unable to remove empty directory \"{}\"", path);
+            handle_errno!(DirectoryRemoveError, from "Directory::remove",
+                Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
+                Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
+                Errno::EBUSY => (CurrentlyInUse, "{} since the directory is currently in use.", msg),
+                Errno::EINVAL => (LastComponentIsDot, "{} since the last path component is \".\".", msg),
+                Errno::ELOOP => (LoopInSymbolicLinks, "{} due to a loop in the symbolic links of the path \".\".", msg),
+                Errno::ENOENT => (DanglingSymbolicLink, "{} since the path contains a dangling symbolic link.", msg),
+                Errno::EEXIST => (DirectoryDoesNotExist, "{} since the directory does not exist.", msg),
+                Errno::ENOTDIR => (NotADirectory, "{} since it is not a directory.", msg),
+                Errno::EROFS => (ResidesOnReadOnlyFileSystem, "{} since the directory resides on a read only file system.", msg),
+                Errno::ENOTEMPTY => (NotEmptyOrHardLinksPointingToTheDirectory, "{} since the directory is not empty or there are hard links pointing to the directory.", msg),
+                Errno::EIO => (IOerror, "{} due to a physicial I/O error.", msg),
+                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
+            );
+        }
+
+        trace!(from "Directory::remove", "removed \"{}\"", path);
+        Ok(())
+    }
+
     /// Removes and existing directory with all of its contents.
     pub fn remove(path: &Path) -> Result<(), DirectoryRemoveError> {
         let msg = format!("Unable to remove directory \"{}\"", path);
@@ -345,25 +369,7 @@ impl Directory {
             }
         }
 
-        if unsafe { posix::rmdir(path.as_c_str()) } == -1 {
-            handle_errno!(DirectoryRemoveError, from "Directory::remove",
-                Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
-                Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
-                Errno::EBUSY => (CurrentlyInUse, "{} since the directory is currently in use.", msg),
-                Errno::EINVAL => (LastComponentIsDot, "{} since the last path component is \".\".", msg),
-                Errno::ELOOP => (LoopInSymbolicLinks, "{} due to a loop in the symbolic links of the path \".\".", msg),
-                Errno::ENOENT => (DanglingSymbolicLink, "{} since the path contains a dangling symbolic link.", msg),
-                Errno::EEXIST => (DirectoryDoesNotExist, "{} since the directory does not exist.", msg),
-                Errno::ENOTDIR => (NotADirectory, "{} since it is not a directory.", msg),
-                Errno::EROFS => (ResidesOnReadOnlyFileSystem, "{} since the directory resides on a read only file system.", msg),
-                Errno::ENOTEMPTY => (NotEmptyOrHardLinksPointingToTheDirectory, "{} since the directory is not empty or there are hard links pointing to the directory.", msg),
-                Errno::EIO => (IOerror, "{} due to a physicial I/O error.", msg),
-                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-            );
-        }
-
-        trace!(from "Directory::remove", "removed \"{}\"", path);
-        Ok(())
+        Self::remove_empty(path)
     }
 
     /// Returns the contents of the directory inside a vector of [`DirectoryEntry`]s.

@@ -17,11 +17,11 @@ pub mod testing;
 
 use crate::node::node_name::NodeName;
 use crate::service;
-use crate::service::config_scheme::node_monitoring_config;
+use crate::service::config_scheme::{node_details_path, node_monitoring_config};
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::named_concept::NamedConceptRemoveError;
+use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
@@ -187,6 +187,29 @@ fn remove_detail_storages<Service: service::Service>(
     Ok(())
 }
 
+fn remove_node_details_directory<Service: service::Service>(
+    config: &Config,
+    monitor_name: &FileName,
+) -> Result<(), NodeCleanupFailure> {
+    let origin = format!(
+        "remove_node_details_directory({:?}, {:?})",
+        config, monitor_name
+    );
+    let msg = "Unable to remove node details directory";
+    let path = node_details_path(config, monitor_name);
+    match <Service::StaticStorage as NamedConceptMgmt>::remove_path_hint(&path) {
+        Ok(()) => Ok(()),
+        Err(NamedConceptPathHintRemoveError::InsufficientPermissions) => {
+            fail!(from origin, with NodeCleanupFailure::InsufficientPermissions,
+                "{} due to insufficient permissions.", msg);
+        }
+        Err(NamedConceptPathHintRemoveError::InternalError) => {
+            fail!(from origin, with NodeCleanupFailure::InternalError,
+                "{} due to an internal error.", msg);
+        }
+    }
+}
+
 fn remove_node<Service: service::Service>(
     id: UniqueSystemId,
     details: &NodeDetails,
@@ -203,6 +226,7 @@ fn remove_node<Service: service::Service>(
     let details_config = node_details_config::<Service>(&details.config, &monitor_name);
     let detail_storages = acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
     remove_detail_storages::<Service>(&origin, detail_storages, &details_config)?;
+    remove_node_details_directory::<Service>(details.config(), &monitor_name)?;
 
     Ok(true)
 }
@@ -427,19 +451,10 @@ impl<Service: service::Service> Node<Service> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct NodeBuilder {
     name: Option<NodeName>,
     config: Option<Config>,
-}
-
-impl Default for NodeBuilder {
-    fn default() -> Self {
-        Self {
-            name: None,
-            config: None,
-        }
-    }
 }
 
 impl NodeBuilder {

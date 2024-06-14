@@ -85,7 +85,7 @@ impl UniqueSystemId {
     pub fn new() -> Result<Self, UniqueSystemIdCreationError> {
         static COUNTER: IoxAtomicU32 = IoxAtomicU32::new(0);
         let msg = "Failed to create UniqueSystemId";
-        let pid = Process::from_self().id().value() as u32;
+        let pid = Process::from_self().id().value() as _;
         let now = fail!(from "UniqueSystemId::new()",
                         when Time::now_with_clock(ClockType::default()),
                         with UniqueSystemIdCreationError::FailedToAcquireTime,

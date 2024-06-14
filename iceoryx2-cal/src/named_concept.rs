@@ -13,7 +13,8 @@
 use std::fmt::Debug;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_posix::directory::{Directory, DirectoryRemoveError};
 pub use iceoryx2_bb_system_types::file_name::FileName;
 pub use iceoryx2_bb_system_types::file_path::FilePath;
 pub use iceoryx2_bb_system_types::path::Path;
@@ -34,6 +35,12 @@ pub enum NamedConceptRemoveError {
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum NamedConceptListError {
+    InsufficientPermissions,
+    InternalError,
+}
+
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+pub enum NamedConceptPathHintRemoveError {
     InsufficientPermissions,
     InternalError,
 }
@@ -186,5 +193,25 @@ pub trait NamedConceptMgmt: Debug {
     /// The default path hint for every zero copy connection
     fn default_path_hint() -> Path {
         iceoryx2_bb_posix::config::temp_directory()
+    }
+
+    /// Removes the path hint directory. Will be realized only when the concept actually uses
+    /// the path hint.
+    fn remove_path_hint(value: &Path) -> Result<(), NamedConceptPathHintRemoveError>;
+}
+
+pub(crate) fn remove_path_hint(value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {
+    let origin = format!("remove_path_hint({:?})", value);
+    let msg = "Unable to remove path hint";
+    match Directory::remove_empty(value) {
+        Ok(()) | Err(DirectoryRemoveError::DirectoryDoesNotExist) => Ok(()),
+        Err(DirectoryRemoveError::InsufficientPermissions) => {
+            fail!(from origin, with NamedConceptPathHintRemoveError::InsufficientPermissions,
+                "{} due to insufficient permissions.", msg);
+        }
+        Err(e) => {
+            fail!(from origin, with NamedConceptPathHintRemoveError::InternalError,
+                "{} due to an internal error ({:?}).", msg, e);
+        }
     }
 }

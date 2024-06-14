@@ -106,6 +106,12 @@ impl NamedConceptMgmt for EventImpl {
             &(*cfg).into(),
         )
     }
+
+    fn remove_path_hint(
+        value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        crate::named_concept::remove_path_hint(value)
+    }
 }
 
 impl crate::event::Event for EventImpl {

@@ -66,13 +66,14 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
+//! use iceoryx2_bb_system_types::path::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! let mut custom_config = Config::default();
 //! // adjust the global root path under which every file/directory is stored
-//! custom_config.global.service.directory = "custom_path".to_string();
+//! custom_config.global.service.directory = Path::new(b"custom_path")?;
 //!
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe_with_custom_config::<u64>(&custom_config)
@@ -87,13 +88,14 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
+//! use iceoryx2_bb_system_types::path::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! let mut custom_config = Config::default();
 //! // adjust the global service path under which service related files are stored
-//! custom_config.global.service.directory = "custom_services".to_string();
+//! custom_config.global.service.directory = Path::new(b"custom_services")?;
 //!
 //! let service = zero_copy::Service::new(&service_name)
 //!     .event_with_custom_config(&custom_config)

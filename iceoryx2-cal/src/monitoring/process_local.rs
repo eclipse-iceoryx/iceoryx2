@@ -145,6 +145,12 @@ impl NamedConceptMgmt for ProcessLocalMonitoring {
 
         Ok(guard.unwrap().remove(&storage_name))
     }
+
+    fn remove_path_hint(
+        _value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Ok(())
+    }
 }
 
 impl Monitoring for ProcessLocalMonitoring {

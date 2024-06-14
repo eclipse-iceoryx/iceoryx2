@@ -124,6 +124,12 @@ impl NamedConceptMgmt for FileLockMonitoring {
             }
         }
     }
+
+    fn remove_path_hint(
+        value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        crate::named_concept::remove_path_hint(value)
+    }
 }
 
 #[derive(Debug)]

@@ -67,11 +67,11 @@ pub(crate) fn node_monitoring_config<Service: crate::service::Service>(
         .path_hint(global_config.global.node_dir())
 }
 
-pub(crate) fn node_details_path<Service: crate::service::Service>(
+pub(crate) fn node_details_path(
     global_config: &config::Config,
     monitor_name: &FileName,
 ) -> iceoryx2_bb_system_types::path::Path {
-    let origin = format!("node_details_path<{}>", core::any::type_name::<Service>());
+    let origin = "node_details_path";
     let mut path = global_config.global.node_dir();
     fatal_panic!(from origin, when path.add_path_entry(&monitor_name.into()),
                     "The node path exceeds the maximum path length.");
@@ -85,5 +85,5 @@ pub(crate) fn node_details_config<Service: crate::service::Service>(
     <<Service::StaticStorage as NamedConceptMgmt>::Configuration>::default()
         .prefix(global_config.global.prefix)
         .suffix(global_config.global.node.static_config_suffix)
-        .path_hint(node_details_path::<Service>(global_config, monitor_name))
+        .path_hint(node_details_path(global_config, monitor_name))
 }

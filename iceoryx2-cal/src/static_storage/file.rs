@@ -284,6 +284,10 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
         fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp,
                 "{} since the underlying resources are currently being created or the creation process hangs.", msg);
     }
+
+    fn remove_path_hint(value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {
+        crate::named_concept::remove_path_hint(value)
+    }
 }
 
 impl crate::static_storage::StaticStorage for Storage {
