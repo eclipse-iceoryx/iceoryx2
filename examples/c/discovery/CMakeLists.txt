@@ -10,15 +10,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#!/bin/bash
+cmake_minimum_required(VERSION 3.22)
+project(example_c_discovery LANGUAGES C)
 
-pacman -Syu --noconfirm clang cmake gcc git rustup
-pacman -Scc --noconfirm 
-rustup toolchain add beta nightly stable 1.75.0
-rustup component add clippy llvm-tools-preview rustfmt
-rustup default stable
-groupadd users
-useradd testuser1 
-useradd testuser2 
-groupadd testgroup1 
-groupadd testgroup2
+find_package(iceoryx2-c REQUIRED)
+
+add_executable(example_c_discovery src/main.c)
+
+# NOTE we use this example to test the builds for the shared library but this build
+# is partially broken on macOS; see also #233
+target_link_libraries(example_c_discovery
+   $<$<NOT:$<PLATFORM_ID:Darwin>>:iceoryx2-c::shared-lib>
+   $<$<PLATFORM_ID:Darwin>:iceoryx2-c::static-lib>
+)

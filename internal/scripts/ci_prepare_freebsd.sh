@@ -15,7 +15,7 @@
 export ASSUME_ALWAYS_YES=yes
 
 pkg update
-pkg install -y curl git llvm
+pkg install -y cmake curl gcc git llvm
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
 export PATH=$PATH:$HOME/.cargo/bin
 rustup toolchain add beta nightly 1.75.0 stable

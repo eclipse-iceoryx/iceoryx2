@@ -14,7 +14,9 @@ ENV PATH="/root/.cargo/bin:$PATH"
 RUN echo "#### Installing dependencies" \
   && apt update && apt install -y \
        clang \
+       cmake \
        curl \
+       gcc \
        git \
        libacl1-dev \
   && rm -rf /var/lib/apt/lists/* \

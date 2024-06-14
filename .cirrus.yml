@@ -84,6 +84,24 @@ iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND
   <<: *IOX2_COMMON_BUILD_RELEASE
   test_script: cargo nextest run --release --tests --workspace --no-fail-fast
 
+iox2_ffi_common_debug_template: &IOX2_FFI_COMMON_DEBUG
+  ffi_script:
+    - cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON -DCMAKE_BUILD_TYPE=Debug
+    - cmake --build target/ffi/build
+    - cmake --install target/ffi/build
+    - rm -rf target/ffi/build
+    - cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/install -DCMAKE_BUILD_TYPE=Debug
+    - cmake --build target/ffi/out-of-tree
+
+iox2_ffi_common_release_template: &IOX2_FFI_COMMON_RELEASE
+  ffi_script:
+    - cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON -DCMAKE_BUILD_TYPE=Release
+    - cmake --build target/ffi/build
+    - cmake --install target/ffi/build
+    - rm -rf target/ffi/build
+    - cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install" -DCMAKE_BUILD_TYPE=Release
+    - cmake --build target/ffi/out-of-tree
+
 iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP
   setup_script:
     - uname -a
@@ -206,6 +224,7 @@ ubuntu_22_04_aarch64_stable_debug_task:
   set_toolchain_script: rustup default stable
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+  <<: *IOX2_FFI_COMMON_DEBUG
 
 ubuntu_22_04_aarch64_beta_debug_task:
   depends_on: ubuntu_22_04_aarch64_stable_debug
@@ -223,6 +242,7 @@ ubuntu_22_04_aarch64_stable_release_task:
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
   set_toolchain_script: rustup default stable
   <<: *IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
+  <<: *IOX2_FFI_COMMON_RELEASE
 
 #
 # Arch Linux x86
@@ -237,6 +257,7 @@ arch_linux_x64_stable_debug_task:
   set_toolchain_script: rustup default stable
   <<: *IOX2_CARGO_FMT_AND_CLIPPY
   <<: *IOX2_COMMON_BUILD_AND_TEST_DEBUG
+  <<: *IOX2_FFI_COMMON_DEBUG
 
 arch_linux_x64_beta_debug_task:
   depends_on: arch_linux_x64_stable_debug
@@ -254,6 +275,7 @@ arch_linux_x64_stable_release_task:
   <<: *IOX2_CONTAINER_ARCH_LINUX_X64
   set_toolchain_script: rustup default stable
   <<: *IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
+  <<: *IOX2_FFI_COMMON_RELEASE
 
 #
 # Windows Server 2019 x86

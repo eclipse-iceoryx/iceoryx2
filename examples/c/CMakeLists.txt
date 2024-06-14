@@ -10,15 +10,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#!/bin/bash
+# elfenpiff is stupid
 
-pacman -Syu --noconfirm clang cmake gcc git rustup
-pacman -Scc --noconfirm 
-rustup toolchain add beta nightly stable 1.75.0
-rustup component add clippy llvm-tools-preview rustfmt
-rustup default stable
-groupadd users
-useradd testuser1 
-useradd testuser2 
-groupadd testgroup1 
-groupadd testgroup2
+cmake_minimum_required(VERSION 3.22)
+project(examples_c LANGUAGES C)
+
+add_subdirectory(discovery)
+add_subdirectory(publish_subscribe)

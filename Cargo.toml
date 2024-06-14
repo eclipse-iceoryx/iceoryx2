@@ -13,6 +13,8 @@ members = [
     "iceoryx2-bb/testing",
     "iceoryx2-bb/trait-tests",
 
+    "iceoryx2-ffi/ffi",
+
     "iceoryx2-cal",
     "iceoryx2",
     "iceoryx2-pal/concurrency-sync",
@@ -56,10 +58,13 @@ iceoryx2-pal-configuration = { version = "0.3.0", path = "iceoryx2-pal/configura
 
 iceoryx2-cal = { version = "0.3.0", path = "iceoryx2-cal" }
 
+iceoryx2-ffi = { version = "0.3.0", path = "iceoryx2-ffi" }
+
 iceoryx2 = { version = "0.3.0", path = "iceoryx2/" }
 
 bindgen = { version = "0.69.4" }
 bitflags = { version = "2.5.0" }
+cbindgen = { version = "0.26.0" }
 cc = { version = "1.0.98" }
 cdr = { version = "0.2.4" }
 clap = { version = "4.5.4", features = ["derive"] }
