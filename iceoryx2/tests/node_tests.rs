@@ -15,7 +15,7 @@ mod node {
     use std::collections::HashSet;
 
     use iceoryx2::config::Config;
-    use iceoryx2::node::NodeState;
+    use iceoryx2::node::{NodeState, NodeView};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2_bb_container::semantic_string::SemanticString;

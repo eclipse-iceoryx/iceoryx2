@@ -13,7 +13,7 @@
 #[generic_tests::define]
 mod node_death_tests {
     use iceoryx2::node::testing::__internal_node_staged_death;
-    use iceoryx2::node::NodeState;
+    use iceoryx2::node::{NodeState, NodeView};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2_bb_testing::assert_that;
@@ -51,10 +51,10 @@ mod node_death_tests {
 
         S::staged_death(sut);
 
-        let node_list = Node::<S::Service>::list().unwrap();
+        let mut node_list = Node::<S::Service>::list().unwrap();
         assert_that!(node_list, len 1);
 
-        if let NodeState::Dead(state) = &node_list[0] {
+        if let Some(NodeState::Dead(state)) = node_list.pop() {
             assert_that!(*state.details().as_ref().unwrap().name(), eq node_name);
             assert_that!(state.remove_stale_resources(), eq Ok(true));
         } else {

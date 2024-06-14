@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+/// The name for a node.
 pub mod node_name;
 
 #[doc(hidden)]
@@ -28,12 +29,15 @@ use iceoryx2_cal::{
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 
+/// The failures that can occur when a [`Node`] is created with the [`NodeBuilder`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCreationFailure {
     InsufficientPermissions,
     InternalError,
 }
 
+/// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`]
+/// or [`Node::list_with_custom_config()`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeListFailure {
     InsufficientPermissions,
@@ -41,6 +45,8 @@ pub enum NodeListFailure {
     InternalError,
 }
 
+/// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of
+/// a dead [`Node`] are removed.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCleanupFailure {
     Interrupt,
@@ -55,6 +61,8 @@ enum NodeReadStorageFailure {
     InternalError,
 }
 
+/// Optional detailed informations that a [`Node`] can have. They can only be obtained when the
+/// process has sufficient access permissions.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NodeDetails {
     name: NodeName,
@@ -62,21 +70,35 @@ pub struct NodeDetails {
 }
 
 impl NodeDetails {
+    /// Returns the [`NodeName`]. Multiple [`Node`]s are allowed to have the same [`NodeName`], it
+    /// is not unique!
     pub fn name(&self) -> &NodeName {
         &self.name
     }
 
+    /// Returns the [`Config`] the [`Node`] uses to create all entities.
     pub fn config(&self) -> &Config {
         &self.config
     }
 }
 
+/// The current state of the [`Node`]. If the [`Node`] is dead all of its resources can be removed
+/// with [`DeadNodeView::remove_stale_resources()`].
 #[derive(Debug, Clone)]
 pub enum NodeState<Service: service::Service> {
     Alive(AliveNodeView<Service>),
     Dead(DeadNodeView<Service>),
 }
 
+/// Contains all available details of a [`Node`].
+pub trait NodeView {
+    /// Returns the [`UniqueSystemId`] of the [`Node`].
+    fn id(&self) -> &UniqueSystemId;
+    /// Returns the [`NodeDetails`].
+    fn details(&self) -> &Option<NodeDetails>;
+}
+
+/// All the informations of a [`Node`] that is alive.
 #[derive(Debug, Clone)]
 pub struct AliveNodeView<Service: service::Service> {
     id: UniqueSystemId,
@@ -84,29 +106,33 @@ pub struct AliveNodeView<Service: service::Service> {
     _service: PhantomData<Service>,
 }
 
-impl<Service: service::Service> AliveNodeView<Service> {
-    pub fn id(&self) -> &UniqueSystemId {
+impl<Service: service::Service> NodeView for AliveNodeView<Service> {
+    fn id(&self) -> &UniqueSystemId {
         &self.id
     }
 
-    pub fn details(&self) -> &Option<NodeDetails> {
+    fn details(&self) -> &Option<NodeDetails> {
         &self.details
     }
 }
 
+/// All the informations and management operations belonging to a dead [`Node`].
 #[derive(Debug, Clone)]
 pub struct DeadNodeView<Service: service::Service>(AliveNodeView<Service>);
 
-impl<Service: service::Service> DeadNodeView<Service> {
-    pub fn id(&self) -> &UniqueSystemId {
+impl<Service: service::Service> NodeView for DeadNodeView<Service> {
+    fn id(&self) -> &UniqueSystemId {
         self.0.id()
     }
 
-    pub fn details(&self) -> &Option<NodeDetails> {
+    fn details(&self) -> &Option<NodeDetails> {
         self.0.details()
     }
+}
 
-    pub fn remove_stale_resources(&self) -> Result<bool, NodeCleanupFailure> {
+impl<Service: service::Service> DeadNodeView<Service> {
+    /// Removes all stale resources of a dead [`Node`].
+    pub fn remove_stale_resources(self) -> Result<bool, NodeCleanupFailure> {
         let msg = "Unable to remove stale resources";
         let monitor_name = fatal_panic!(from self, when FileName::new(self.id().value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
@@ -231,6 +257,12 @@ fn remove_node<Service: service::Service>(
     Ok(true)
 }
 
+/// The [`Node`] is the entry point to the whole iceoryx2 infrastructure and owns all entities.
+/// As soon as a process crashes other processes can detect dead [`Node`]s via [`Node::list()`]
+/// or [`Node::list_with_custom_config()`] and clean up the stale resources - the entities that
+/// were created via the [`Node`].
+///
+/// Can be created via the [`NodeBuilder`].
 #[derive(Debug)]
 pub struct Node<Service: service::Service> {
     id: UniqueSystemId,
@@ -250,22 +282,27 @@ impl<Service: service::Service> Drop for Node<Service> {
 }
 
 impl<Service: service::Service> Node<Service> {
+    /// Returns the [`NodeName`].
     pub fn name(&self) -> &NodeName {
         &self.details.name
     }
 
+    /// Returns the [`Config`] that the [`Node`] will use to create any iceoryx2 entity.
     pub fn config(&self) -> &Config {
         &self.details.config
     }
 
+    /// Returns the [`UniqueSystemId`] of the [`Node`].
     pub fn id(&self) -> &UniqueSystemId {
         &self.id
     }
 
+    /// Returns a list of [`NodeState`] of all [`Node`]s in the system.
     pub fn list() -> Result<Vec<NodeState<Service>>, NodeListFailure> {
         Self::list_with_custom_config(Config::get_global_config())
     }
 
+    /// Returns a list of [`NodeState`] of all [`Node`]s in the system under a given [`Config`].
     pub fn list_with_custom_config(
         config: &Config,
     ) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
@@ -451,6 +488,20 @@ impl<Service: service::Service> Node<Service> {
     }
 }
 
+/// Creates a [`Node`].
+///
+/// ```
+/// use iceoryx2::prelude::*;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let node = NodeBuilder::new()
+///                 .name(NodeName::new("my_little_node")?)
+///                 .create::<zero_copy::Service>()?;
+///
+/// // do things with your cool new node
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, Default)]
 pub struct NodeBuilder {
     name: Option<NodeName>,
@@ -458,20 +509,26 @@ pub struct NodeBuilder {
 }
 
 impl NodeBuilder {
+    /// Creates a new [`NodeBuilder`]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Sets the [`NodeName`] of the to be created [`Node`].
     pub fn name(mut self, value: &NodeName) -> Self {
         self.name = Some(value.clone());
         self
     }
 
+    /// Sets the config of the [`Node`] that will be used to create all entities owned by the
+    /// [`Node`].
     pub fn config(mut self, value: &Config) -> Self {
         self.config = Some(value.clone());
         self
     }
 
+    /// Creates a new [`Node`] for a specific [`service::Service`]. All entities owned by the
+    /// [`Node`] will have the same [`service::Service`].
     pub fn create<Service: service::Service>(self) -> Result<Node<Service>, NodeCreationFailure> {
         let msg = "Unable to create node";
         let node_id = fail!(from self, when UniqueSystemId::new(),
