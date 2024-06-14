@@ -18,7 +18,10 @@ mod node {
     use iceoryx2::node::NodeState;
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
+    use iceoryx2_bb_container::semantic_string::SemanticString;
+    use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+    use iceoryx2_bb_system_types::path::Path;
     use iceoryx2_bb_testing::assert_that;
 
     #[derive(Debug, Eq, PartialEq)]
@@ -42,24 +45,26 @@ mod node {
         }
     }
 
-    fn assert_node_presence<S: Service>(node_details: &Vec<Details>) {
-        let node_list = Node::<S>::list().unwrap();
+    fn assert_node_presence<S: Service>(node_details: &Vec<Details>, config: Option<&Config>) {
+        let node_list = if let Some(ref config) = config {
+            Node::<S>::list_with_custom_config(config).unwrap()
+        } else {
+            Node::<S>::list().unwrap()
+        };
         for node in node_list {
             match node {
-                NodeState::<S>::Alive(state) => {
-                    let state_details = state.details().as_ref().unwrap();
-                    let triple =
-                        Details::new(state_details.name(), state.id(), state_details.config());
+                NodeState::<S>::Alive(view) => {
+                    let details = view.details().as_ref().unwrap();
+                    let triple = Details::new(details.name(), view.id(), details.config());
 
                     assert_that!(
                         *node_details,
                         contains triple
                     )
                 }
-                NodeState::<S>::Dead(state) => {
-                    let state_details = state.details().as_ref().unwrap();
-                    let triple =
-                        Details::new(state_details.name(), state.id(), state_details.config());
+                NodeState::<S>::Dead(view) => {
+                    let details = view.details().as_ref().unwrap();
+                    let triple = Details::new(details.name(), view.id(), details.config());
 
                     assert_that!(
                         *node_details,
@@ -124,7 +129,7 @@ mod node {
             nodes.push(node);
         }
 
-        assert_node_presence::<S>(&node_details);
+        assert_node_presence::<S>(&node_details, None);
     }
 
     #[test]
@@ -143,7 +148,7 @@ mod node {
         for _ in 0..NUMBER_OF_NODES {
             nodes.pop();
             node_details.pop();
-            assert_node_presence::<S>(&node_details);
+            assert_node_presence::<S>(&node_details, None);
         }
     }
 
@@ -161,6 +166,48 @@ mod node {
             nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
             assert_that!(node_ids.insert(nodes.last().unwrap().id().value()), eq true);
         }
+    }
+
+    #[test]
+    fn nodes_with_disjunct_config_are_separated<S: Service>() {
+        const NUMBER_OF_NODES: usize = 16;
+
+        let mut nodes_1 = vec![];
+        let mut node_details_1 = vec![];
+        let mut nodes_2 = vec![];
+        let mut node_details_2 = vec![];
+
+        let mut config = Config::default();
+        config.global.node.directory = Path::new(b"node2").unwrap();
+
+        for i in 0..NUMBER_OF_NODES {
+            let node_name = generate_node_name(i, "gravity should be illegal");
+            let node_1 = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+            let node_2 = NodeBuilder::new()
+                .config(&config)
+                .name(&node_name)
+                .create::<S>()
+                .unwrap();
+
+            node_details_1.push(Details::from_node(&node_1));
+            node_details_2.push(Details::from_node(&node_2));
+            nodes_1.push(node_1);
+            nodes_2.push(node_2);
+        }
+
+        for _ in 0..NUMBER_OF_NODES {
+            nodes_1.pop();
+            nodes_2.pop();
+            node_details_1.pop();
+            node_details_2.pop();
+
+            assert_node_presence::<S>(&node_details_1, None);
+            assert_node_presence::<S>(&node_details_1, Some(&config));
+        }
+
+        let mut path = config.global.root_path();
+        path.add_path_entry(&config.global.node.directory).unwrap();
+        let _ = Directory::remove(&path);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

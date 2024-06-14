@@ -410,16 +410,16 @@ pub struct NodeBuilder {
 
 impl Default for NodeBuilder {
     fn default() -> Self {
-        Self::new()
+        Self {
+            name: None,
+            config: None,
+        }
     }
 }
 
 impl NodeBuilder {
     pub fn new() -> Self {
-        Self {
-            name: None,
-            config: None,
-        }
+        Self::default()
     }
 
     pub fn name(mut self, value: &NodeName) -> Self {
@@ -427,8 +427,8 @@ impl NodeBuilder {
         self
     }
 
-    pub fn config(mut self, value: Config) -> Self {
-        self.config = Some(value);
+    pub fn config(mut self, value: &Config) -> Self {
+        self.config = Some(value.clone());
         self
     }
 
