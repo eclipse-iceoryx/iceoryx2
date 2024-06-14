@@ -12,11 +12,67 @@
 
 #[generic_tests::define]
 mod node {
+    use std::collections::HashSet;
+
     use iceoryx2::config::Config;
     use iceoryx2::node::NodeState;
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
+    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+
+    #[derive(Debug, Eq, PartialEq)]
+    struct Details {
+        name: NodeName,
+        id: u128,
+        config: Config,
+    }
+
+    impl Details {
+        fn new(name: &NodeName, id: &UniqueSystemId, config: &Config) -> Self {
+            Self {
+                name: name.clone(),
+                id: id.value(),
+                config: config.clone(),
+            }
+        }
+
+        fn from_node<S: Service>(node: &Node<S>) -> Self {
+            Self::new(node.name(), node.id(), node.config())
+        }
+    }
+
+    fn assert_node_presence<S: Service>(node_details: &Vec<Details>) {
+        let node_list = Node::<S>::list().unwrap();
+        for node in node_list {
+            match node {
+                NodeState::<S>::Alive(state) => {
+                    let state_details = state.details().as_ref().unwrap();
+                    let triple =
+                        Details::new(state_details.name(), state.id(), state_details.config());
+
+                    assert_that!(
+                        *node_details,
+                        contains triple
+                    )
+                }
+                NodeState::<S>::Dead(state) => {
+                    let state_details = state.details().as_ref().unwrap();
+                    let triple =
+                        Details::new(state_details.name(), state.id(), state_details.config());
+
+                    assert_that!(
+                        *node_details,
+                        contains triple
+                    )
+                }
+            }
+        }
+    }
+
+    fn generate_node_name(i: usize, prefix: &str) -> NodeName {
+        NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
+    }
 
     #[test]
     fn node_without_name_can_be_created<S: Service>() {
@@ -59,33 +115,51 @@ mod node {
     fn nodes_can_be_listed<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
 
-        let generate_node_name =
-            |i: usize| NodeName::new(&("give me a bit".to_string() + &i.to_string())).unwrap();
-
         let mut nodes = vec![];
-        let mut node_names = vec![];
+        let mut node_details = vec![];
         for i in 0..NUMBER_OF_NODES {
-            let node_name = generate_node_name(i);
-            nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
-            node_names.push(node_name);
+            let node_name = generate_node_name(i, "give me a bit");
+            let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+            node_details.push(Details::from_node(&node));
+            nodes.push(node);
         }
 
-        let node_list = Node::<S>::list().unwrap();
-        for node in node_list {
-            match node {
-                NodeState::<S>::Alive(state) => {
-                    assert_that!(
-                        node_names,
-                        contains * state.details().as_ref().unwrap().name()
-                    )
-                }
-                NodeState::<S>::Dead(state) => {
-                    assert_that!(
-                        node_names,
-                        contains * state.details().as_ref().unwrap().name()
-                    )
-                }
-            }
+        assert_node_presence::<S>(&node_details);
+    }
+
+    #[test]
+    fn when_node_goes_out_of_scope_it_cleans_up<S: Service>() {
+        const NUMBER_OF_NODES: usize = 16;
+
+        let mut nodes = vec![];
+        let mut node_details = vec![];
+        for i in 0..NUMBER_OF_NODES {
+            let node_name = generate_node_name(i, "gravity should be illegal");
+            let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+            node_details.push(Details::from_node(&node));
+            nodes.push(node);
+        }
+
+        for _ in 0..NUMBER_OF_NODES {
+            nodes.pop();
+            node_details.pop();
+            assert_node_presence::<S>(&node_details);
+        }
+    }
+
+    #[test]
+    fn id_is_unique<S: Service>() {
+        const NUMBER_OF_NODES: usize = 16;
+
+        let mut nodes = vec![];
+        let mut node_ids = HashSet::new();
+        for i in 0..NUMBER_OF_NODES {
+            let node_name = generate_node_name(
+                i,
+                "its a bird, its a plane, no its the mountain goat jumping through the code",
+            );
+            nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
+            assert_that!(node_ids.insert(nodes.last().unwrap().id().value()), eq true);
         }
     }
 
