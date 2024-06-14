@@ -86,34 +86,20 @@ iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND
 
 iox2_ffi_common_debug_template: &IOX2_FFI_COMMON_DEBUG
   ffi_script:
-    - cmake . \
-            -B target/ffi/build \
-            -DCMAKE_INSTALL_PREFIX=target/ffi/install \
-            -DEXAMPLES=ON \
-            -DCMAKE_BUILD_TYPE="Debug"
+    - cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON -DCMAKE_BUILD_TYPE=Debug
     - cmake --build target/ffi/build
     - cmake --install target/ffi/build
     - rm -rf target/ffi/build
-    - cmake examples/c \
-            -B target/ffi/out-of-tree \
-            -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/install \
-            -DCMAKE_BUILD_TYPE="Debug"
+    - cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/install -DCMAKE_BUILD_TYPE=Debug
     - cmake --build target/ffi/out-of-tree
 
 iox2_ffi_common_release_template: &IOX2_FFI_COMMON_RELEASE
   ffi_script:
-    - cmake . \
-            -B target/ffi/build \
-            -DCMAKE_INSTALL_PREFIX=target/ffi/install \
-            -DEXAMPLES=ON \
-            -DCMAKE_BUILD_TYPE="Release"
+    - cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON -DCMAKE_BUILD_TYPE=Release
     - cmake --build target/ffi/build
     - cmake --install target/ffi/build
     - rm -rf target/ffi/build
-    - cmake examples/c \
-            -B target/ffi/out-of-tree \
-            -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/install \
-            -DCMAKE_BUILD_TYPE="Release"
+    - cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install" -DCMAKE_BUILD_TYPE=Release
     - cmake --build target/ffi/out-of-tree
 
 iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP

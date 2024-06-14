@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.22)
 project(iceoryx2-c VERSION ${IOX2_VERSION_STRING} LANGUAGES C)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
@@ -113,9 +113,9 @@ target_link_libraries(static-lib INTERFACE
     iceoryx2-c::includes-only
     $<BUILD_INTERFACE:${ICEORYX2_C_STATIC_LIB_LINK_FILE}>
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_STATIC_LIB_LINK_NAME}>
-    $<$<NOT:$<PLATFORM_ID:Windows>>:m>
-    $<$<AND:$<PLATFORM_ID:Windows>,$<C_COMPILER_ID:MSVC>>:bcrypt userenv ntdll synchronization ws2_32 wsock32>
-    $<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<C_COMPILER_ID:MSVC>>>:ntdll ws2_32 wsock32>
+    $<$<NOT:$<PLATFORM_ID:Windows>>:m pthread>
+    $<$<PLATFORM_ID:Windows>:userenv ntdll ws2_32 wsock32>
+    $<$<AND:$<PLATFORM_ID:Windows>,$<C_COMPILER_ID:MSVC>>:bcrypt synchronization>
     $<$<PLATFORM_ID:Darwin>:stdc++>
 )
 target_link_libraries(shared-lib INTERFACE

@@ -104,10 +104,10 @@ jobs:
         mode: 
           - name: "release"
             arg: "--release"
-            cmake_build_type: "Release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
           - name: "debug"
             arg: ""
-            cmake_build_type: "Debug"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
@@ -148,9 +148,9 @@ jobs:
                 -B target/ffi/build \
                 -DCMAKE_INSTALL_PREFIX=target/ffi/install \
                 -DEXAMPLES=ON \
-                -DCMAKE_BUILD_TYPE=${{ matrix.mode.cmake_build_type }} \
                 -DRUST_TARGET_TRIPLET="i686-unknown-linux-gnu" \
-                -DCMAKE_C_FLAGS="-m32"
+                -DCMAKE_C_FLAGS="-m32" \
+                ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
 
@@ -161,8 +161,8 @@ jobs:
           cmake examples/c \
                 -B target/ffi/out-of-tree \
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
-                -DCMAKE_BUILD_TYPE=${{ matrix.mode.cmake_build_type }} \
-                -DCMAKE_C_FLAGS="-m32"
+                -DCMAKE_C_FLAGS="-m32" \
+                -${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/out-of-tree
 
   x86_64:
@@ -171,14 +171,22 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable, 1.75.0]
+        toolchain: [stable, stable-gnu, 1.75.0]
         mode:
           - name: "release"
             arg: "--release"
-            cmake_build_type: "Release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
           - name: "debug"
             arg: ""
-            cmake_build_type: "Debug"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
+        include:
+          - toolchain: stable-gnu
+            cmake-build-system-generator: '-G "MinGW Makefiles"'
+        exclude:
+          - os: ubuntu-latest
+            toolchain: stable-gnu
+          - os: macos-latest
+            toolchain: stable-gnu
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
@@ -210,17 +218,18 @@ jobs:
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
 
       - name: Run cargo nextest
+        if: ${{ matrix.toolchain != 'stable-gnu' }}
         run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
 
       - name: Print native libs of FFI target
-        if: false
+        if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
         run: |
           cd iceoryx2-ffi/ffi
           cargo rustc -q -- --print=native-static-libs
 
       - name: Build language bindings
         run: |
-          cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON -DCMAKE_BUILD_TYPE=${{ matrix.mode.cmake_build_type }}
+          cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
 
@@ -233,7 +242,7 @@ jobs:
 
       - name: Build language binding examples in out-of-tree configuration
         run: |
-          cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install -DCMAKE_BUILD_TYPE=${{ matrix.mode.cmake_build_type }}
+          cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
           cmake --build target/ffi/out-of-tree
 
   x86_64_unstable:
@@ -344,14 +353,14 @@ jobs:
             echo "###########################"
             echo "# Build language bindings #"
             echo "###########################"
-            cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON
+            cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_BUILD_TYPE=Release -DEXAMPLES=ON
             cmake --build target/ffi/build
             cmake --install target/ffi/build
             echo "################################################################"
             echo "# Build language binding examples in out-of-tree configuration #"
             echo "################################################################"
             rm -rf target/ffi/build
-            cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install
+            cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install -DCMAKE_BUILD_TYPE=Release
             cmake --build target/ffi/out-of-tree
 
   grcov:
