@@ -51,6 +51,8 @@ mod node {
         } else {
             Node::<S>::list().unwrap()
         };
+
+        assert_that!(node_list, len node_details.len());
         for node in node_list {
             match node {
                 NodeState::<S>::Alive(view) => {
@@ -202,7 +204,7 @@ mod node {
             node_details_2.pop();
 
             assert_node_presence::<S>(&node_details_1, None);
-            assert_node_presence::<S>(&node_details_1, Some(&config));
+            assert_node_presence::<S>(&node_details_2, Some(&config));
         }
 
         let mut path = config.global.root_path();

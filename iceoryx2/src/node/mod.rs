@@ -12,6 +12,9 @@
 
 pub mod node_name;
 
+#[doc(hidden)]
+pub mod testing;
+
 use crate::node::node_name::NodeName;
 use crate::service;
 use crate::service::config_scheme::node_monitoring_config;
@@ -23,6 +26,7 @@ use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCreationFailure {
@@ -107,24 +111,32 @@ impl<Service: service::Service> DeadNodeView<Service> {
         let monitor_name = fatal_panic!(from self, when FileName::new(self.id().value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
 
-        let _cleaner =
-            match <Service::Monitoring as Monitoring>::Builder::new(&monitor_name).cleaner() {
-                Ok(cleaner) => cleaner,
-                Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance)
-                | Err(MonitoringCreateCleanerError::DoesNotExist) => return Ok(false),
-                Err(MonitoringCreateCleanerError::Interrupt) => {
-                    fail!(from self, with NodeCleanupFailure::Interrupt,
+        let config = if let Some(d) = self.details() {
+            d.config()
+        } else {
+            Config::get_global_config()
+        };
+
+        let _cleaner = match <Service::Monitoring as Monitoring>::Builder::new(&monitor_name)
+            .config(&node_monitoring_config::<Service>(config))
+            .cleaner()
+        {
+            Ok(cleaner) => cleaner,
+            Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance)
+            | Err(MonitoringCreateCleanerError::DoesNotExist) => return Ok(false),
+            Err(MonitoringCreateCleanerError::Interrupt) => {
+                fail!(from self, with NodeCleanupFailure::Interrupt,
                     "{} since an interrupt signal was received.", msg);
-                }
-                Err(MonitoringCreateCleanerError::InternalError) => {
-                    fail!(from self, with NodeCleanupFailure::InternalError,
+            }
+            Err(MonitoringCreateCleanerError::InternalError) => {
+                fail!(from self, with NodeCleanupFailure::InternalError,
                     "{} due to an internal error while acquiring monitoring cleaner.", msg);
-                }
-                Err(MonitoringCreateCleanerError::InstanceStillAlive) => {
-                    fatal_panic!(from self,
+            }
+            Err(MonitoringCreateCleanerError::InstanceStillAlive) => {
+                fatal_panic!(from self,
                         "This should never happen! {} since the Node is still alive.", msg);
-                }
-            };
+            }
+        };
 
         if let Some(details) = self.details() {
             remove_node::<Service>(*self.id(), details)
@@ -199,7 +211,7 @@ fn remove_node<Service: service::Service>(
 pub struct Node<Service: service::Service> {
     id: UniqueSystemId,
     details: NodeDetails,
-    _monitor: <Service::Monitoring as Monitoring>::Token,
+    monitor: ManuallyDrop<<Service::Monitoring as Monitoring>::Token>,
     _details_storage: Service::StaticStorage,
 }
 
@@ -207,6 +219,9 @@ impl<Service: service::Service> Drop for Node<Service> {
     fn drop(&mut self) {
         warn!(from self, when remove_node::<Service>(self.id, &self.details),
             "Unable to remove node resources.");
+        unsafe {
+            ManuallyDrop::<<Service::Monitoring as Monitoring>::Token>::drop(&mut self.monitor)
+        };
     }
 }
 
@@ -256,6 +271,14 @@ impl<Service: service::Service> Node<Service> {
         }
 
         Ok(nodes)
+    }
+
+    pub(crate) fn staged_death(mut self) -> <Service::Monitoring as Monitoring>::Token {
+        let monitor = unsafe {
+            ManuallyDrop::<<Service::Monitoring as Monitoring>::Token>::take(&mut self.monitor)
+        };
+        core::mem::forget(self);
+        monitor
     }
 
     fn list_all_nodes(
@@ -309,7 +332,9 @@ impl<Service: service::Service> Node<Service> {
         config: &<Service::Monitoring as NamedConceptMgmt>::Configuration,
         name: &FileName,
     ) -> Result<State, NodeListFailure> {
-        let result = <Service::Monitoring as Monitoring>::Builder::new(name).monitor();
+        let result = <Service::Monitoring as Monitoring>::Builder::new(name)
+            .config(config)
+            .monitor();
 
         if let Ok(result) = result {
             return Self::state_from_monitor(&result);
@@ -451,7 +476,7 @@ impl NodeBuilder {
 
         Ok(Node {
             id: node_id,
-            _monitor: token,
+            monitor: ManuallyDrop::new(token),
             _details_storage: details_storage,
             details,
         })
