@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef _WIN64
+#if !(defined(_WIN64) || defined(_WIN32))
 #include <dirent.h>
 
 int scandir_ext(const char *dir, struct dirent ***namelist) {
