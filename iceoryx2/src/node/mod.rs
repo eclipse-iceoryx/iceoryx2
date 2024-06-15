@@ -10,6 +10,61 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! The [`Node`](crate::node::Node) is the central entry point of iceoryx2. It is the owner of all communication
+//! entities and provides additional memory to them to perform reference counting amongst other
+//! things.
+//!
+//! It allows also the system to monitor the state of processes and cleanup stale resources of
+//! dead processes.
+//!
+//! # Create a [`Node`](crate::node::Node)
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new()
+//!                 .name(&NodeName::new("my_little_node")?)
+//!                 .create::<zero_copy::Service>()?;
+//!
+//! println!("created node {:?}", node);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # List all existing [`Node`](crate::node::Node)s
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node_state_list = Node::<zero_copy::Service>::list()?;
+//!
+//! for node_state in node_state_list {
+//!     println!("found node {:?}", node_state);
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Cleanup stale resources of all dead [`Node`](crate::node::Node)s
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node_state_list = Node::<zero_copy::Service>::list()?;
+//!
+//! for node_state in node_state_list {
+//!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state {
+//!         println!("cleanup resources of dead node {:?}", view);
+//!         view.remove_stale_resources()?;
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+
 /// The name for a node.
 pub mod node_name;
 
