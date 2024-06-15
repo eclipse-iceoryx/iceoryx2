@@ -46,7 +46,7 @@ pub enum EventOpenError {
 
 impl std::fmt::Display for EventOpenError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "EventOpenError::{:?}", self)
     }
 }
 
@@ -66,7 +66,7 @@ pub enum EventCreateError {
 
 impl std::fmt::Display for EventCreateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "EventCreateError::{:?}", self)
     }
 }
 
@@ -83,7 +83,7 @@ enum_gen! {
 
 impl std::fmt::Display for EventOpenOrCreateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "EventOpenOrCreateError::{:?}", self)
     }
 }
 

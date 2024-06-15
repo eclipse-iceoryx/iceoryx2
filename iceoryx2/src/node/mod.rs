@@ -36,6 +36,14 @@ pub enum NodeCreationFailure {
     InternalError,
 }
 
+impl std::fmt::Display for NodeCreationFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "NodeCreationFailure::{:?}", self)
+    }
+}
+
+impl std::error::Error for NodeCreationFailure {}
+
 /// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`]
 /// or [`Node::list_with_custom_config()`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -45,6 +53,14 @@ pub enum NodeListFailure {
     InternalError,
 }
 
+impl std::fmt::Display for NodeListFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "NodeListFailure::{:?}", self)
+    }
+}
+
+impl std::error::Error for NodeListFailure {}
+
 /// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of
 /// a dead [`Node`] are removed.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -53,6 +69,14 @@ pub enum NodeCleanupFailure {
     InternalError,
     InsufficientPermissions,
 }
+
+impl std::fmt::Display for NodeCleanupFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "NodeCleanupFailure::{:?}", self)
+    }
+}
+
+impl std::error::Error for NodeCleanupFailure {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum NodeReadStorageFailure {
@@ -495,7 +519,7 @@ impl<Service: service::Service> Node<Service> {
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let node = NodeBuilder::new()
-///                 .name(NodeName::new("my_little_node")?)
+///                 .name(&NodeName::new("my_little_node")?)
 ///                 .create::<zero_copy::Service>()?;
 ///
 /// // do things with your cool new node

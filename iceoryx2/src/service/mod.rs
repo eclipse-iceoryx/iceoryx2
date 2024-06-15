@@ -216,7 +216,7 @@ pub enum ServiceDoesExistError {
 
 impl std::fmt::Display for ServiceDoesExistError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "ServiceDoesExistError::{:?}", self)
     }
 }
 
@@ -232,7 +232,7 @@ pub enum ServiceListError {
 
 impl std::fmt::Display for ServiceListError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "ServiceListError::{:?}", self)
     }
 }
 

@@ -58,7 +58,7 @@ pub enum NotifierCreateError {
 
 impl std::fmt::Display for NotifierCreateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "NotifierCreateError::{:?}", self)
     }
 }
 
@@ -72,7 +72,7 @@ pub enum NotifierNotifyError {
 
 impl std::fmt::Display for NotifierNotifyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "NotifierNotifyError::{:?}", self)
     }
 }
 

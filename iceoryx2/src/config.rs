@@ -118,7 +118,7 @@ pub enum ConfigCreationError {
 
 impl std::fmt::Display for ConfigCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "ConfigCreationError::{:?}", self)
     }
 }
 

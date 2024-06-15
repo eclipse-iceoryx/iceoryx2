@@ -146,7 +146,7 @@ pub enum PublisherCreateError {
 
 impl std::fmt::Display for PublisherCreateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "PublisherCreateError::{:?}", self)
     }
 }
 
@@ -164,7 +164,7 @@ pub enum PublisherLoanError {
 
 impl std::fmt::Display for PublisherLoanError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "PublisherLoanError::{:?}", self)
     }
 }
 
@@ -183,7 +183,7 @@ enum_gen! {
 
 impl std::fmt::Display for PublisherSendError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "PublisherSendError::{:?}", self)
     }
 }
 
