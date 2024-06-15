@@ -18,10 +18,9 @@ mod node {
     use iceoryx2::node::{NodeState, NodeView};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
-    use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_bb_system_types::path::Path;
+    use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::assert_that;
 
     #[derive(Debug, Eq, PartialEq)]

@@ -49,6 +49,11 @@
     * Implement Serialize,Deserialize for
         * `FixedSizeByteString`
         * `FixedSizeVec`
+ * Introduce Nodes [#102](https://github.com/eclipse-iceoryx/iceoryx2/issues/102)
+    * Implement Serialize,Deserialize for
+        * `SemanticString`
+        * `UniqueSystemId`
+
 
 ### Bugfixes
 
@@ -106,4 +111,30 @@
         // new
         let name = service.name();
     }
+    ```
+
+3. Directory entries in `Config` converted to type `Path`
+
+    ```
+    let mut config = Config::default();
+
+    // old
+    config.global.service.directory = "Some/Directory".into();
+
+    // new
+    use iceoryx2_bb_system_types::path::*;
+    config.global.service.directory = Path::new(b"Some/Directory")?;
+    ```
+
+4. Suffix/prefix entries in `Config` converted to type `FileName`
+
+    ```
+    let mut config = Config::default();
+
+    // old
+    config.global.prefix = "iox2_".into();
+
+    // new
+    use iceoryx2_bb_system_types::file_name::*;
+    config.global.prefix = FileName::new(b"iox2_")?;
     ```
