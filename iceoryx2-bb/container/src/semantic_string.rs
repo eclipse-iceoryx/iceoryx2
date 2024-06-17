@@ -379,7 +379,7 @@ macro_rules! semantic_string {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
         }
 
-        // START: serde
+        // BEGIN: serde
         pub(crate) mod VisitorType {
             pub(crate) struct $string_name;
         }
@@ -471,6 +471,14 @@ macro_rules! semantic_string {
             fn from(value: &$string_name) -> String {
                 // SAFETY: It is ensured that the semantic string contains only valid utf-8 strings
                 unsafe { String::from_utf8_unchecked(value.as_bytes().to_vec()) }
+            }
+        }
+
+        impl std::convert::TryFrom<&str> for $string_name {
+            type Error = iceoryx2_bb_container::semantic_string::SemanticStringError;
+
+            fn try_from(value: &str) -> Result<Self, Self::Error> {
+                Self::new(value.as_bytes())
             }
         }
 

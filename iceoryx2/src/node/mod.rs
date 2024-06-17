@@ -38,7 +38,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node_state_list = Node::<zero_copy::Service>::list()?;
+//! let node_state_list = Node::<zero_copy::Service>::list(Config::get_global_config())?;
 //!
 //! for node_state in node_state_list {
 //!     println!("found node {:?}", node_state);
@@ -53,7 +53,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node_state_list = Node::<zero_copy::Service>::list()?;
+//! let node_state_list = Node::<zero_copy::Service>::list(Config::get_global_config())?;
 //!
 //! for node_state in node_state_list {
 //!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state {
@@ -99,8 +99,7 @@ impl std::fmt::Display for NodeCreationFailure {
 
 impl std::error::Error for NodeCreationFailure {}
 
-/// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`]
-/// or [`Node::list_with_custom_config()`].
+/// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeListFailure {
     InsufficientPermissions,
@@ -338,7 +337,7 @@ fn remove_node<Service: service::Service>(
 
 /// The [`Node`] is the entry point to the whole iceoryx2 infrastructure and owns all entities.
 /// As soon as a process crashes other processes can detect dead [`Node`]s via [`Node::list()`]
-/// or [`Node::list_with_custom_config()`] and clean up the stale resources - the entities that
+/// and clean up the stale resources - the entities that
 /// were created via the [`Node`].
 ///
 /// Can be created via the [`NodeBuilder`].
@@ -346,7 +345,7 @@ fn remove_node<Service: service::Service>(
 pub struct Node<Service: service::Service> {
     id: UniqueSystemId,
     details: NodeDetails,
-    monitor: ManuallyDrop<<Service::Monitoring as Monitoring>::Token>,
+    token: ManuallyDrop<<Service::Monitoring as Monitoring>::Token>,
     _details_storage: Service::StaticStorage,
 }
 
@@ -355,7 +354,7 @@ impl<Service: service::Service> Drop for Node<Service> {
         warn!(from self, when remove_node::<Service>(self.id, &self.details),
             "Unable to remove node resources.");
         unsafe {
-            ManuallyDrop::<<Service::Monitoring as Monitoring>::Token>::drop(&mut self.monitor)
+            ManuallyDrop::<<Service::Monitoring as Monitoring>::Token>::drop(&mut self.token)
         };
     }
 }
@@ -376,15 +375,8 @@ impl<Service: service::Service> Node<Service> {
         &self.id
     }
 
-    /// Returns a list of [`NodeState`] of all [`Node`]s in the system.
-    pub fn list() -> Result<Vec<NodeState<Service>>, NodeListFailure> {
-        Self::list_with_custom_config(Config::get_global_config())
-    }
-
     /// Returns a list of [`NodeState`] of all [`Node`]s in the system under a given [`Config`].
-    pub fn list_with_custom_config(
-        config: &Config,
-    ) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
+    pub fn list(config: &Config) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
         let monitoring_config = node_monitoring_config::<Service>(config);
         let mut nodes = vec![];
 
@@ -415,7 +407,7 @@ impl<Service: service::Service> Node<Service> {
 
     pub(crate) fn staged_death(mut self) -> <Service::Monitoring as Monitoring>::Token {
         let monitor = unsafe {
-            ManuallyDrop::<<Service::Monitoring as Monitoring>::Token>::take(&mut self.monitor)
+            ManuallyDrop::<<Service::Monitoring as Monitoring>::Token>::take(&mut self.token)
         };
         core::mem::forget(self);
         monitor
@@ -538,11 +530,11 @@ impl<Service: service::Service> Node<Service> {
         config: &Config,
         node_name: &FileName,
     ) -> Result<Option<NodeDetails>, NodeReadStorageFailure> {
-        let node_storage = Self::open_node_storage(config, node_name)?;
-        if node_storage.is_none() {
+        let node_storage = if let Some(n) = Self::open_node_storage(config, node_name)? {
+            n
+        } else {
             return Ok(None);
-        }
-        let node_storage = node_storage.unwrap();
+        };
 
         let mut read_content =
             String::from_utf8(vec![b' '; node_storage.len() as usize]).expect("");
@@ -627,7 +619,7 @@ impl NodeBuilder {
 
         Ok(Node {
             id: node_id,
-            monitor: ManuallyDrop::new(token),
+            token: ManuallyDrop::new(token),
             _details_storage: details_storage,
             details,
         })

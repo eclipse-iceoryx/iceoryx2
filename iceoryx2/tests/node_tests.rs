@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod node {
-    use std::collections::HashSet;
+    use std::collections::{HashSet, VecDeque};
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{NodeState, NodeView};
@@ -44,35 +44,23 @@ mod node {
         }
     }
 
-    fn assert_node_presence<S: Service>(node_details: &Vec<Details>, config: Option<&Config>) {
-        let node_list = if let Some(ref config) = config {
-            Node::<S>::list_with_custom_config(config).unwrap()
-        } else {
-            Node::<S>::list().unwrap()
-        };
+    fn assert_node_presence<S: Service>(node_details: &VecDeque<Details>, config: &Config) {
+        let node_list = Node::<S>::list(config).unwrap();
 
         assert_that!(node_list, len node_details.len());
         for node in node_list {
-            match node {
-                NodeState::<S>::Alive(view) => {
-                    let details = view.details().as_ref().unwrap();
-                    let triple = Details::new(details.name(), view.id(), details.config());
+            let view = match node {
+                NodeState::<S>::Alive(ref view) => view as &dyn NodeView,
+                NodeState::<S>::Dead(ref view) => view as &dyn NodeView,
+            };
 
-                    assert_that!(
-                        *node_details,
-                        contains triple
-                    )
-                }
-                NodeState::<S>::Dead(view) => {
-                    let details = view.details().as_ref().unwrap();
-                    let triple = Details::new(details.name(), view.id(), details.config());
+            let details = view.details().as_ref().unwrap();
+            let triple = Details::new(details.name(), view.id(), details.config());
 
-                    assert_that!(
-                        *node_details,
-                        contains triple
-                    )
-                }
-            }
+            assert_that!(
+                *node_details,
+                contains triple
+            )
         }
     }
 
@@ -122,15 +110,15 @@ mod node {
         const NUMBER_OF_NODES: usize = 16;
 
         let mut nodes = vec![];
-        let mut node_details = vec![];
+        let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "give me a bit");
             let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
-            node_details.push(Details::from_node(&node));
+            node_details.push_back(Details::from_node(&node));
             nodes.push(node);
         }
 
-        assert_node_presence::<S>(&node_details, None);
+        assert_node_presence::<S>(&node_details, Config::get_global_config());
     }
 
     #[test]
@@ -138,18 +126,18 @@ mod node {
         const NUMBER_OF_NODES: usize = 16;
 
         let mut nodes = vec![];
-        let mut node_details = vec![];
+        let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "gravity should be illegal");
             let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
-            node_details.push(Details::from_node(&node));
+            node_details.push_back(Details::from_node(&node));
             nodes.push(node);
         }
 
         for _ in 0..NUMBER_OF_NODES {
             nodes.pop();
-            node_details.pop();
-            assert_node_presence::<S>(&node_details, None);
+            node_details.pop_back();
+            assert_node_presence::<S>(&node_details, Config::get_global_config());
         }
     }
 
@@ -173,37 +161,38 @@ mod node {
     fn nodes_with_disjunct_config_are_separated<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
 
-        let mut nodes_1 = vec![];
-        let mut node_details_1 = vec![];
-        let mut nodes_2 = vec![];
-        let mut node_details_2 = vec![];
+        let mut nodes_1 = VecDeque::new();
+        let mut node_details_1 = VecDeque::new();
+        let mut nodes_2 = VecDeque::new();
+        let mut node_details_2 = VecDeque::new();
 
         let mut config = Config::default();
         config.global.node.directory = Path::new(b"node2").unwrap();
 
         for i in 0..NUMBER_OF_NODES {
-            let node_name = generate_node_name(i, "gravity should be illegal");
-            let node_1 = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+            let node_name_1 = generate_node_name(i, "gravity should be illegal");
+            let node_name_2 = generate_node_name(i, "i like to name it name it");
+            let node_1 = NodeBuilder::new().name(&node_name_1).create::<S>().unwrap();
             let node_2 = NodeBuilder::new()
                 .config(&config)
-                .name(&node_name)
+                .name(&node_name_2)
                 .create::<S>()
                 .unwrap();
 
-            node_details_1.push(Details::from_node(&node_1));
-            node_details_2.push(Details::from_node(&node_2));
-            nodes_1.push(node_1);
-            nodes_2.push(node_2);
+            node_details_1.push_back(Details::from_node(&node_1));
+            node_details_2.push_back(Details::from_node(&node_2));
+            nodes_1.push_back(node_1);
+            nodes_2.push_back(node_2);
         }
 
         for _ in 0..NUMBER_OF_NODES {
-            nodes_1.pop();
-            nodes_2.pop();
-            node_details_1.pop();
-            node_details_2.pop();
+            nodes_1.pop_back();
+            nodes_2.pop_front();
+            node_details_1.pop_back();
+            node_details_2.pop_front();
 
-            assert_node_presence::<S>(&node_details_1, None);
-            assert_node_presence::<S>(&node_details_2, Some(&config));
+            assert_node_presence::<S>(&node_details_1, Config::get_global_config());
+            assert_node_presence::<S>(&node_details_2, &config);
         }
 
         let mut path = config.global.root_path();
