@@ -9,6 +9,10 @@
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * Subscriber buffer size can be reduced [#19](https://github.com/eclipse-iceoryx/iceoryx2/issues/19)
+ * Introduce Nodes [#102](https://github.com/eclipse-iceoryx/iceoryx2/issues/102)
+    * Implement Serialize,Deserialize for
+        * `SemanticString`
+        * `UniqueSystemId`
  * Multiple features from [#195](https://github.com/eclipse-iceoryx/iceoryx2/issues/195)
     * Introduce `payload_alignment` in `publish_subscribe` builder to increase alignment of payload for all service samples
     * Introduce support for slice-types with dynamic sizes.
@@ -49,11 +53,7 @@
     * Implement Serialize,Deserialize for
         * `FixedSizeByteString`
         * `FixedSizeVec`
- * Introduce Nodes [#102](https://github.com/eclipse-iceoryx/iceoryx2/issues/102)
-    * Implement Serialize,Deserialize for
-        * `SemanticString`
-        * `UniqueSystemId`
-
+ * Remove `Service::does_exist_with_custom_config` and `Service::list_with_custom_config` [#238](https://github.com/eclipse-iceoryx/iceoryx2/issues/238)
 
 ### Bugfixes
 
@@ -135,4 +135,25 @@
 
     // new
     config.global.prefix = "iox2_".try_into()?;
+
+5. `Service::list_with_custom_config` was removed.
+
+    ```rust
+    // old
+    let services = zero_copy::Service::list()?;
+    let services = zero_copy::Service::list_with_custom_config(Config::get_global_config())?;
+
+    // new
+    let services = zero_copy::Service::list(Config::get_global_config())?;
+    ```
+
+6. `Service::does_exist_with_custom_config` was removed.
+
+    ```rust
+    // old
+    let services = zero_copy::Service::does_exist(service_name)?;
+    let services = zero_copy::Service::does_exist_with_custom_config(service_name, Config::get_global_config())?;
+
+    // new
+    let services = zero_copy::Service::does_exist(service_name, Config::get_global_config())?;
     ```
