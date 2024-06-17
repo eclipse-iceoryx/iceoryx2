@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef _WIN64
+#if !(defined(_WIN64) || defined(_WIN32))
 #include "posix.h"
 
 int iox2_sigaction_func(int sig, const struct iox2_sigaction *restrict act,

@@ -28,7 +28,7 @@
 #include <mqueue.h>
 #endif
 
-#ifndef _WIN64
+#if !(defined(_WIN64) || defined(_WIN32))
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <grp.h>
@@ -102,10 +102,10 @@ char *acl_to_text(acl_t, ssize_t *) { return NULL; }
 acl_t acl_from_text(const char *) { return 0; }
 #endif
 
-#ifndef _WIN64
+#if !(defined(_WIN64) || defined(_WIN32))
 struct iox2_sigaction {
-    size_t iox2_sa_handler;
-    sigset_t iox2_sa_mask;
-    int iox2_sa_flags;
+  size_t iox2_sa_handler;
+  sigset_t iox2_sa_mask;
+  int iox2_sa_flags;
 };
 #endif

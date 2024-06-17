@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifdef _WIN64
+#if defined(_WIN64) || defined(_WIN32)
 // clang-format off
 // the include order is important, since some headers are defining macros that
 // are used in the next header

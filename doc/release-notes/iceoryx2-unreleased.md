@@ -54,7 +54,7 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Build failure for Windows 11 i686-pc-windows-msvc [#235](https://github.com/eclipse-iceoryx/iceoryx2/issues/235)
 
 ### Refactoring
 
