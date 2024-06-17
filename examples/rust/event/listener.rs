@@ -16,11 +16,10 @@ use iceoryx2::prelude::*;
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let event_name = ServiceName::new("MyEventName")?;
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
-    let event = zero_copy::Service::new(&event_name)
-        .event()
-        .open_or_create()?;
+    let event_name = ServiceName::new("MyEventName")?;
+    let event = node.service(&event_name).event().open_or_create()?;
 
     let listener = event.listener().create()?;
 

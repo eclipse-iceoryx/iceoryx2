@@ -17,9 +17,11 @@ use iceoryx2::prelude::*;
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let service_name = ServiceName::new("My/Funk/ServiceName")?;
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
-    let service = zero_copy::Service::new(&service_name)
+    let service_name = ServiceName::new("My/Funk/ServiceName")?;
+    let service = node
+        .service(&service_name)
         .publish_subscribe::<TransmissionData>()
         .open_or_create()?;
 

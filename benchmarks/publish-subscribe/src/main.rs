@@ -21,8 +21,10 @@ const ITERATIONS: u64 = 10000000;
 fn perform_benchmark<T: Service>(iterations: u64) {
     let service_name_a2b = ServiceName::new("a2b").unwrap();
     let service_name_b2a = ServiceName::new("b2a").unwrap();
+    let node = NodeBuilder::new().create::<T>().unwrap();
 
-    let service_a2b = T::new(&service_name_a2b)
+    let service_a2b = node
+        .service(&service_name_a2b)
         .publish_subscribe::<u64>()
         .max_publishers(1)
         .max_subscribers(1)
@@ -32,7 +34,8 @@ fn perform_benchmark<T: Service>(iterations: u64) {
         .create()
         .unwrap();
 
-    let service_b2a = T::new(&service_name_b2a)
+    let service_b2a = node
+        .service(&service_name_b2a)
         .publish_subscribe::<u64>()
         .max_publishers(1)
         .max_subscribers(1)

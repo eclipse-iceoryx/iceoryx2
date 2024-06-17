@@ -29,6 +29,7 @@ mod sample {
     }
 
     struct TestContext<Sut: Service> {
+        node: Node<Sut>,
         service_name: ServiceName,
         service: PortFactory<Sut, u64>,
         publisher_1: Publisher<Sut, u64>,
@@ -38,8 +39,10 @@ mod sample {
 
     impl<Sut: Service> TestContext<Sut> {
         fn new() -> Self {
+            let node = NodeBuilder::new().create::<Sut>().unwrap();
             let service_name = generate_name();
-            let service = Sut::new(&service_name)
+            let service = node
+                .service(&service_name)
                 .publish_subscribe::<u64>()
                 .max_publishers(2)
                 .max_subscribers(1)
@@ -53,6 +56,7 @@ mod sample {
             let subscriber = service.subscriber().create().unwrap();
 
             Self {
+                node,
                 service_name,
                 service,
                 publisher_1,
@@ -87,8 +91,14 @@ mod sample {
 
         drop(test_context);
 
+        let test_context = TestContext::<Sut>::new();
+
         assert_that!(
-            Sut::new(&service_name).publish_subscribe::<u64>().create(),
+            test_context
+                .node
+                .service(&service_name)
+                .publish_subscribe::<u64>()
+                .create(),
             is_ok
         );
     }

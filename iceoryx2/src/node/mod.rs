@@ -73,7 +73,9 @@ pub mod testing;
 
 use crate::node::node_name::NodeName;
 use crate::service;
+use crate::service::builder::Builder;
 use crate::service::config_scheme::{node_details_path, node_monitoring_config};
+use crate::service::service_name::ServiceName;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -349,6 +351,9 @@ pub struct Node<Service: service::Service> {
     _details_storage: Service::StaticStorage,
 }
 
+unsafe impl<Service: service::Service> Send for Node<Service> {}
+unsafe impl<Service: service::Service> Sync for Node<Service> {}
+
 impl<Service: service::Service> Drop for Node<Service> {
     fn drop(&mut self) {
         warn!(from self, when remove_node::<Service>(self.id, &self.details),
@@ -373,6 +378,10 @@ impl<Service: service::Service> Node<Service> {
     /// Returns the [`UniqueSystemId`] of the [`Node`].
     pub fn id(&self) -> &UniqueSystemId {
         &self.id
+    }
+
+    pub fn service(&self, name: &ServiceName) -> Builder<Service> {
+        Builder::new(name, self.config())
     }
 
     /// Returns a list of [`NodeState`] of all [`Node`]s in the system under a given [`Config`].

@@ -202,7 +202,6 @@ use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 
-use self::builder::Builder;
 use self::dynamic_config::DecrementReferenceCounterResult;
 use self::service_name::ServiceName;
 
@@ -284,11 +283,6 @@ impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> Drop
 /// Contains the building blocks a [`Service`] requires to create the underlying resources and
 /// establish communication.
 pub trait Service: Debug + Sized {
-    /// Creates a new [`Builder`] for a given service name
-    fn new(name: &ServiceName) -> Builder<Self> {
-        Builder::new(name)
-    }
-
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;

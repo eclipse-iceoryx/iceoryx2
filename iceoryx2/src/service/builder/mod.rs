@@ -96,15 +96,17 @@ impl std::error::Error for ReadStaticStorageFailure {}
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Builder<S: Service> {
+pub struct Builder<'node, S: Service> {
     name: ServiceName,
+    config: &'node config::Config,
     _phantom_s: PhantomData<S>,
 }
 
-impl<S: Service> Builder<S> {
-    pub(crate) fn new(name: &ServiceName) -> Self {
+impl<'node, S: Service> Builder<'node, S> {
+    pub(crate) fn new(name: &ServiceName, config: &'node config::Config) -> Self {
         Self {
             name: name.clone(),
+            config,
             _phantom_s: PhantomData,
         }
     }
@@ -114,19 +116,9 @@ impl<S: Service> Builder<S> {
     pub fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
     ) -> publish_subscribe::Builder<PayloadType, S> {
-        self.publish_subscribe_with_custom_config(config::Config::get_global_config())
-    }
-
-    /// Create a new builder to create a
-    /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
-    /// with a custom [`config::Config`]
-    pub fn publish_subscribe_with_custom_config<PayloadType: Debug + ?Sized>(
-        self,
-        config: &config::Config,
-    ) -> publish_subscribe::Builder<PayloadType, S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(&self.name, config),
-            Arc::new(config.clone()),
+            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(&self.name, self.config),
+            Arc::new(self.config.clone()),
         )
         .publish_subscribe()
     }
@@ -134,16 +126,9 @@ impl<S: Service> Builder<S> {
     /// Create a new builder to create a
     /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
     pub fn event(self) -> event::Builder<S> {
-        self.event_with_custom_config(config::Config::get_global_config())
-    }
-
-    /// Create a new builder to create a
-    /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
-    /// with a custom [`config::Config`]
-    pub fn event_with_custom_config(self, config: &config::Config) -> event::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config),
-            Arc::new(config.clone()),
+            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, self.config),
+            Arc::new(self.config.clone()),
         )
         .event()
     }

@@ -43,7 +43,11 @@ mod service_publish_subscribe {
     #[test]
     fn creating_non_existing_service_works<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
 
         assert_that!(sut, is_ok);
         let sut = sut.unwrap();
@@ -53,10 +57,17 @@ mod service_publish_subscribe {
     #[test]
     fn creating_same_service_twice_fails<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut2, is_err);
         assert_that!(
             sut2.err().unwrap(), eq
@@ -67,19 +78,30 @@ mod service_publish_subscribe {
     #[test]
     fn recreate_after_drop_works<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut, is_ok);
 
         drop(sut);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut2, is_ok);
     }
 
     #[test]
     fn open_fails_when_service_does_not_exist<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().open();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq PublishSubscribeOpenError::DoesNotExist);
     }
@@ -87,20 +109,34 @@ mod service_publish_subscribe {
     #[test]
     fn open_succeeds_when_service_does_exist<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<u64>().open();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
         assert_that!(sut2, is_ok);
     }
 
     #[test]
     fn open_fails_when_service_has_wrong_type<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<i64>().open();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<i64>()
+            .open();
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
     }
@@ -108,12 +144,17 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_has_wrong_slice_base_type<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<[u64]>()
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<[i64]>().open();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<[i64]>()
+            .open();
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
     }
@@ -121,12 +162,17 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_is_slice_based_and_typed_is_requested<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<[u64]>()
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<u64>().open();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
     }
@@ -134,10 +180,17 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_is_type_based_and_slice_is_requested<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<[u64]>().open();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<[u64]>()
+            .open();
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
     }
@@ -145,13 +198,16 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_max_publishers_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(2)
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(3)
             .open();
@@ -162,7 +218,8 @@ mod service_publish_subscribe {
             PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers
         );
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(1)
             .open();
@@ -173,13 +230,16 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_max_subscribers_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(2)
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(3)
             .open();
@@ -190,7 +250,8 @@ mod service_publish_subscribe {
             PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers
         );
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(1)
             .open();
@@ -201,13 +262,16 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_safe_overflow_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .enable_safe_overflow(false)
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .enable_safe_overflow(true)
             .open();
@@ -222,13 +286,16 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_history_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .history_size(2)
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .history_size(3)
             .open();
@@ -239,7 +306,8 @@ mod service_publish_subscribe {
             PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize
         );
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .history_size(1)
             .open();
@@ -250,13 +318,16 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_subscriber_max_borrow_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(2)
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(3)
             .open();
@@ -267,7 +338,8 @@ mod service_publish_subscribe {
             PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples
         );
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(1)
             .open();
@@ -280,13 +352,16 @@ mod service_publish_subscribe {
         Sut: Service,
     >() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(2)
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(3)
             .open();
@@ -297,7 +372,8 @@ mod service_publish_subscribe {
             PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize
         );
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
             .open();
@@ -308,13 +384,16 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_alignment_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .payload_alignment(Alignment::new(128).unwrap())
             .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .payload_alignment(Alignment::new(512).unwrap())
             .open();
@@ -325,7 +404,8 @@ mod service_publish_subscribe {
             PublishSubscribeOpenError::IncompatibleTypes
         );
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .payload_alignment(Alignment::new(16).unwrap())
             .open();
@@ -336,31 +416,51 @@ mod service_publish_subscribe {
     #[test]
     fn open_does_not_fail_when_service_owner_is_dropped<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<u64>().open();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
         assert_that!(sut2, is_ok);
 
         drop(sut);
 
-        let sut3 = Sut::new(&service_name).publish_subscribe::<u64>().open();
+        let sut3 = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
         assert_that!(sut3, is_ok);
     }
 
     #[test]
     fn open_fails_when_all_previous_owners_have_been_dropped<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(sut, is_ok);
 
-        let sut2 = Sut::new(&service_name).publish_subscribe::<u64>().open();
+        let sut2 = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
         assert_that!(sut2, is_ok);
 
         drop(sut);
         drop(sut2);
 
-        let sut3 = Sut::new(&service_name).publish_subscribe::<u64>().open();
+        let sut3 = node
+            .service(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
         assert_that!(sut3, is_err);
         assert_that!(sut3.err().unwrap(), eq PublishSubscribeOpenError::DoesNotExist);
     }
@@ -368,7 +468,9 @@ mod service_publish_subscribe {
     #[test]
     fn open_or_create_creates_service_if_it_does_not_exist<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open_or_create();
 
@@ -378,12 +480,15 @@ mod service_publish_subscribe {
     #[test]
     fn open_or_create_opens_service_if_it_does_exist<Sut: Service>() {
         let service_name = generate_name();
-        let _sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let _sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open_or_create();
 
@@ -393,7 +498,9 @@ mod service_publish_subscribe {
     #[test]
     fn max_publishers_and_subscribers_is_set_to_config_default<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -413,7 +520,9 @@ mod service_publish_subscribe {
     #[test]
     fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
         let service_name = generate_name();
-        let _sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let _sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(4)
             .max_subscribers(5)
@@ -424,7 +533,8 @@ mod service_publish_subscribe {
             .create();
         assert_that!(_sut, is_ok);
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -459,9 +569,15 @@ mod service_publish_subscribe {
             .defaults
             .publish_subscribe
             .subscriber_max_buffer_size = 13;
+        let node_1 = NodeBuilder::new()
+            .config(&custom_config)
+            .create::<Sut>()
+            .unwrap();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
-            .publish_subscribe_with_custom_config::<u64>(&custom_config)
+        let sut = node_1
+            .service(&service_name)
+            .publish_subscribe::<u64>()
             .create()
             .unwrap();
 
@@ -472,7 +588,8 @@ mod service_publish_subscribe {
         assert_that!(sut.static_config().subscriber_max_borrowed_samples(), eq 12);
         assert_that!(sut.static_config().subscriber_max_buffer_size(), eq 13);
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node_2
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -488,15 +605,18 @@ mod service_publish_subscribe {
     #[test]
     fn number_of_publishers_works<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         const MAX_PUBLISHERS: usize = 8;
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUBLISHERS)
             .create()
             .unwrap();
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -528,10 +648,12 @@ mod service_publish_subscribe {
     fn type_informations_are_correct<Sut: Service>() {
         type Header = iceoryx2::service::header::publish_subscribe::Header;
         type PayloadType = u64;
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let service_name = generate_name();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<PayloadType>()
             .create()
             .unwrap();
@@ -551,8 +673,10 @@ mod service_publish_subscribe {
         type PayloadType = u64;
 
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<[PayloadType]>()
             .create()
             .unwrap();
@@ -569,15 +693,18 @@ mod service_publish_subscribe {
     #[test]
     fn number_of_subscribers_works<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         const MAX_SUBSCRIBERS: usize = 8;
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(MAX_SUBSCRIBERS)
             .create()
             .unwrap();
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -608,13 +735,16 @@ mod service_publish_subscribe {
     #[test]
     fn simple_communication_works_subscriber_created_first<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -642,13 +772,16 @@ mod service_publish_subscribe {
     #[test]
     fn simple_communication_works_publisher_created_first<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -672,8 +805,10 @@ mod service_publish_subscribe {
     #[test]
     fn custom_payload_alignment_cannot_be_smaller_than_payload_type_alignment<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .payload_alignment(Alignment::new(1).unwrap())
             .create()
@@ -687,8 +822,10 @@ mod service_publish_subscribe {
         const BUFFER_SIZE: usize = 100;
         const ALIGNMENT: usize = 512;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let service_pub = Sut::new(&service_name)
+        let service_pub = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .subscriber_max_buffer_size(BUFFER_SIZE)
             .subscriber_max_borrowed_samples(BUFFER_SIZE)
@@ -696,7 +833,8 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let service_sub = Sut::new(&service_name)
+        let service_sub = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .open()
             .unwrap();
@@ -725,10 +863,12 @@ mod service_publish_subscribe {
     #[test]
     fn publisher_reclaims_all_samples_after_disconnect<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         const RECONNECTIONS: usize = 20;
         const MAX_SUBSCRIBERS: usize = 10;
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(1)
             .max_subscribers(MAX_SUBSCRIBERS)
@@ -760,10 +900,12 @@ mod service_publish_subscribe {
     #[test]
     fn publisher_updates_connections_after_reconnect<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         const RECONNECTIONS: usize = 20;
         const MAX_SUBSCRIBERS: usize = 10;
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(1)
             .max_subscribers(MAX_SUBSCRIBERS)
@@ -793,10 +935,12 @@ mod service_publish_subscribe {
     #[test]
     fn subscriber_updates_connections_after_reconnect<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         const RECONNECTIONS: usize = 20;
         const MAX_PUBLISHERS: usize = 10;
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUBLISHERS)
             .history_size(0)
@@ -835,10 +979,12 @@ mod service_publish_subscribe {
         let create_service_barrier = Barrier::new(2);
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         thread::scope(|s| {
             s.spawn(|| {
-                let sut2 = Sut::new(&service_name)
+                let sut2 = node
+                    .service(&service_name)
                     .publish_subscribe::<u64>()
                     .create()
                     .unwrap();
@@ -857,7 +1003,8 @@ mod service_publish_subscribe {
             let mut threads = vec![];
             for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
                 threads.push(s.spawn(|| {
-                    let sut = Sut::new(&service_name)
+                    let sut = node
+                        .service(&service_name)
                         .publish_subscribe::<u64>()
                         .open()
                         .unwrap();
@@ -895,10 +1042,12 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
         let reconnection_cycle = AtomicUsize::new(0);
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         thread::scope(|s| {
             s.spawn(|| {
-                let sut = Sut::new(&service_name)
+                let sut = node
+                    .service(&service_name)
                     .publish_subscribe::<u64>()
                     .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
                     .open_or_create()
@@ -920,7 +1069,8 @@ mod service_publish_subscribe {
 
             for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
                 s.spawn(|| {
-                    let sut2 = Sut::new(&service_name)
+                    let sut2 = node
+                        .service(&service_name)
                         .publish_subscribe::<u64>()
                         .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
                         .open_or_create()
@@ -951,8 +1101,10 @@ mod service_publish_subscribe {
         const MAX_SUB: usize = 6;
         const NUMBER_OF_ITERATIONS: u64 = 128;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUB)
             .max_subscribers(MAX_SUB)
@@ -994,8 +1146,10 @@ mod service_publish_subscribe {
         const MAX_SUB: usize = 7;
         const NUMBER_OF_ITERATIONS: u64 = 128;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let _sut = Sut::new(&service_name)
+        let _sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUB)
             .max_subscribers(MAX_SUB)
@@ -1007,7 +1161,7 @@ mod service_publish_subscribe {
 
         for _ in 0..MAX_PUB + MAX_SUB {
             channels.push(
-                Sut::new(&service_name)
+                node.service(&service_name)
                     .publish_subscribe::<u64>()
                     .open()
                     .unwrap(),
@@ -1046,9 +1200,11 @@ mod service_publish_subscribe {
     #[test]
     fn publish_safely_overflows_when_enabled<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         const BUFFER_SIZE: usize = 2;
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .enable_safe_overflow(true)
             .subscriber_max_buffer_size(BUFFER_SIZE)
@@ -1075,9 +1231,11 @@ mod service_publish_subscribe {
     #[test]
     fn publish_does_not_overflow_when_deactivated<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         const BUFFER_SIZE: usize = 5;
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .enable_safe_overflow(false)
             .subscriber_max_buffer_size(BUFFER_SIZE)
@@ -1108,8 +1266,10 @@ mod service_publish_subscribe {
     #[test]
     fn publish_non_overflow_with_greater_history_than_buffer_fails<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .enable_safe_overflow(false)
             .history_size(12)
@@ -1127,8 +1287,10 @@ mod service_publish_subscribe {
     fn publish_history_is_delivered_on_subscription<Sut: Service>() {
         const BUFFER_SIZE: usize = 2;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .history_size(3)
             .subscriber_max_buffer_size(BUFFER_SIZE)
@@ -1154,8 +1316,10 @@ mod service_publish_subscribe {
     fn publish_history_of_zero_works<Sut: Service>() {
         const BUFFER_SIZE: usize = 2;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .history_size(0)
             .subscriber_max_buffer_size(BUFFER_SIZE)
@@ -1175,9 +1339,11 @@ mod service_publish_subscribe {
     #[test]
     fn publish_send_copy_with_huge_overflow_works<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         const BUFFER_SIZE: usize = 5;
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .max_publishers(1)
             .max_subscribers(2)
@@ -1209,8 +1375,10 @@ mod service_publish_subscribe {
     ) {
         const ITERATIONS: usize = 16;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .max_publishers(1)
             .max_subscribers(max_subscribers)
@@ -1388,8 +1556,10 @@ mod service_publish_subscribe {
     ) {
         const ITERATIONS: usize = 16;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .max_publishers(1)
             .max_subscribers(1)
@@ -1509,7 +1679,9 @@ mod service_publish_subscribe {
         const MAX_SUBSCRIBERS: usize = 8;
 
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUBLISHERS)
             .max_subscribers(MAX_SUBSCRIBERS)
@@ -1562,7 +1734,9 @@ mod service_publish_subscribe {
     #[test]
     fn set_max_publishers_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(0)
             .create()
@@ -1574,7 +1748,9 @@ mod service_publish_subscribe {
     #[test]
     fn set_max_subscribers_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(0)
             .create()
@@ -1586,7 +1762,9 @@ mod service_publish_subscribe {
     #[test]
     fn set_subscriber_max_borrowed_samples_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(0)
             .create()
@@ -1598,7 +1776,9 @@ mod service_publish_subscribe {
     #[test]
     fn set_buffer_size_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(0)
             .create()
@@ -1610,9 +1790,11 @@ mod service_publish_subscribe {
     #[test]
     fn does_exist_works_single<Sut: Service>() {
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
 
-        let _sut = Sut::new(&service_name)
+        let _sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -1629,6 +1811,7 @@ mod service_publish_subscribe {
     fn does_exist_works_many<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 8;
 
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         let mut services = vec![];
         let mut service_names = vec![];
 
@@ -1637,7 +1820,7 @@ mod service_publish_subscribe {
             assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
 
             services.push(
-                Sut::new(&service_name)
+                node.service(&service_name)
                     .publish_subscribe::<u64>()
                     .create()
                     .unwrap(),
@@ -1670,6 +1853,7 @@ mod service_publish_subscribe {
     fn list_works<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 8;
 
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
         let mut services = vec![];
         let mut service_names = vec![];
 
@@ -1695,7 +1879,7 @@ mod service_publish_subscribe {
             let service_name = generate_name();
 
             services.push(
-                Sut::new(&service_name)
+                node.service(&service_name)
                     .publish_subscribe::<u64>()
                     .create()
                     .unwrap(),
@@ -1721,7 +1905,9 @@ mod service_publish_subscribe {
     #[test]
     fn dropping_service_keeps_established_communication<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -1741,7 +1927,9 @@ mod service_publish_subscribe {
     #[test]
     fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -1751,14 +1939,14 @@ mod service_publish_subscribe {
 
         drop(sut);
 
-        assert_that!(Sut::new(&service_name)
+        assert_that!(node.service(&service_name)
             .publish_subscribe::<u64>()
             .create().err().unwrap(),
             eq PublishSubscribeCreateError::OldConnectionsStillActive);
 
         drop(subscriber);
 
-        assert_that!(Sut::new(&service_name)
+        assert_that!(node.service(&service_name)
             .publish_subscribe::<u64>()
             .create().err().unwrap(),
             eq PublishSubscribeCreateError::OldConnectionsStillActive);
@@ -1766,7 +1954,9 @@ mod service_publish_subscribe {
         drop(publisher);
 
         assert_that!(
-            Sut::new(&service_name).publish_subscribe::<u64>().create(),
+            node.service(&service_name)
+                .publish_subscribe::<u64>()
+                .create(),
             is_ok
         );
     }
@@ -1775,14 +1965,17 @@ mod service_publish_subscribe {
     fn subscriber_can_decrease_buffer_size<Sut: Service>() {
         const BUFFER_SIZE: usize = 16;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = Sut::new(&service_name)
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .subscriber_max_buffer_size(BUFFER_SIZE)
             .create()
             .unwrap();
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<usize>()
             .open()
             .unwrap();
@@ -1824,14 +2017,17 @@ mod service_publish_subscribe {
     fn subscriber_creation_fails_when_buffer_size_exceeds_service_max<Sut: Service>() {
         const BUFFER_SIZE: usize = 16;
         let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let _sut = Sut::new(&service_name)
+        let _sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(BUFFER_SIZE)
             .create()
             .unwrap();
 
-        let sut2 = Sut::new(&service_name)
+        let sut2 = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -1844,7 +2040,9 @@ mod service_publish_subscribe {
     #[test]
     fn subscriber_buffer_size_is_at_least_one<Sut: Service>() {
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -1857,7 +2055,9 @@ mod service_publish_subscribe {
     fn sliced_service_works<Sut: Service>() {
         const MAX_ELEMENTS: usize = 91;
         let service_name = generate_name();
-        let sut = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service(&service_name)
             .publish_subscribe::<[u64]>()
             .create()
             .unwrap();
@@ -1887,7 +2087,10 @@ mod service_publish_subscribe {
         const MAX_ELEMENTS: usize = 91;
         const ALIGNMENT: usize = 64;
         let service_name = generate_name();
-        let service_pub = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let service_pub = node
+            .service(&service_name)
             .publish_subscribe::<[u64]>()
             .subscriber_max_buffer_size(MAX_ELEMENTS + 1)
             .subscriber_max_borrowed_samples(MAX_ELEMENTS + 1)
@@ -1895,7 +2098,8 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let service_sub = Sut::new(&service_name)
+        let service_sub = node
+            .service(&service_name)
             .publish_subscribe::<[u64]>()
             .open()
             .unwrap();
