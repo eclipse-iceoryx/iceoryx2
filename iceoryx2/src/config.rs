@@ -18,7 +18,6 @@
 //! use iceoryx2_bb_system_types::path::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! # let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! // create a default config and override some entries
 //! let mut custom_config = Config::default();
@@ -29,7 +28,7 @@
 //!     .config(&custom_config)
 //!     .create::<zero_copy::Service>()?;
 //!
-//! let service = node.service_builder(&service_name)
+//! let service = node.service_builder("MyServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!

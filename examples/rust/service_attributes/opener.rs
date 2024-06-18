@@ -18,9 +18,8 @@ const CYCLE_TIME: Duration = Duration::from_secs(1);
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
-    let service_name = ServiceName::new("Service/With/Properties")?;
     let service = node
-        .service_builder(&service_name)
+        .service_builder("Service/With/Properties".try_into()?)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // define attributes that the service requires

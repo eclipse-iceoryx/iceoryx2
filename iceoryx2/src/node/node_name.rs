@@ -38,6 +38,14 @@ impl std::fmt::Display for NodeName {
     }
 }
 
+impl TryInto<NodeName> for &str {
+    type Error = SemanticStringError;
+
+    fn try_into(self) -> Result<NodeName, Self::Error> {
+        NodeName::new(self)
+    }
+}
+
 impl PartialEq<&str> for NodeName {
     fn eq(&self, other: &&str) -> bool {
         *self.as_str() == **other

@@ -46,7 +46,7 @@ mod node_death_tests {
         let node_name = S::generate_node_name(0, "toby or no toby");
 
         let mut sut = NodeBuilder::new()
-            .name(&node_name)
+            .name(node_name.clone())
             .create::<S::Service>()
             .unwrap();
 

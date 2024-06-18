@@ -55,7 +55,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -73,7 +73,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<ComplexType>()
             .create()?;
 
@@ -91,7 +91,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -114,7 +114,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -137,7 +137,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -158,7 +158,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -176,7 +176,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -208,7 +208,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -229,7 +229,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -253,7 +253,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -278,7 +278,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
             .enable_safe_overflow(false)
@@ -295,7 +295,7 @@ mod publisher {
         std::thread::scope(|s| {
             s.spawn(|| {
                 let service = node
-                    .service_builder(&service_name)
+                    .service_builder(service_name)
                     .publish_subscribe::<u64>()
                     .subscriber_max_buffer_size(1)
                     .open()

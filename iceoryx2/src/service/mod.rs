@@ -19,9 +19,8 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service = node.service_builder(&service_name)
+//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
 //!     // define the messaging pattern
 //!     .publish_subscribe::<u64>()
 //!     // various QoS
@@ -47,9 +46,8 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let event_name = ServiceName::new("MyEventName")?;
 //!
-//! let event = node.service_builder(&event_name)
+//! let event = node.service_builder("MyEventName".try_into()?)
 //!     // define the messaging pattern
 //!     .event()
 //!     // various QoS
@@ -70,8 +68,6 @@
 //! use iceoryx2_bb_system_types::path::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//!
 //! let mut custom_config = Config::default();
 //! // adjust the global root path under which every file/directory is stored
 //! custom_config.global.service.directory = "custom_path".try_into()?;
@@ -80,7 +76,7 @@
 //!     .config(&custom_config)
 //!     .create::<zero_copy::Service>()?;
 //!
-//! let service = node.service_builder(&service_name)
+//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -96,9 +92,8 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service_creator = node.service_builder(&service_name)
+//! let service_creator = node.service_builder("My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .create_with_attributes(
 //!         // all attributes that are defined when creating a new service are stored in the
@@ -109,7 +104,7 @@
 //!             .define("another key", "another value")
 //!     )?;
 //!
-//! let service_open = node.service_builder(&service_name)
+//! let service_open = node.service_builder("My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_with_attributes(
 //!         // All attributes that are defined when opening a new service interpreted as

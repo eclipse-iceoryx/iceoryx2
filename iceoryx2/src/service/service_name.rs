@@ -52,6 +52,14 @@ impl std::fmt::Display for ServiceName {
     }
 }
 
+impl TryInto<ServiceName> for &str {
+    type Error = SemanticStringError;
+
+    fn try_into(self) -> Result<ServiceName, Self::Error> {
+        ServiceName::new(self)
+    }
+}
+
 impl PartialEq<&str> for ServiceName {
     fn eq(&self, other: &&str) -> bool {
         *self.as_str() == **other
