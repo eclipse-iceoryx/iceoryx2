@@ -53,6 +53,10 @@ impl NamedConceptMgmt for Channel {
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
         SharedMemory::remove_cfg(name, &(*cfg).into())
     }
+
+    fn remove_path_hint(_value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {
+        Ok(())
+    }
 }
 
 impl CommunicationChannel<usize> for Channel {

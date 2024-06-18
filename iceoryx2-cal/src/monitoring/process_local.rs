@@ -86,6 +86,7 @@ impl NamedConceptConfiguration for Configuration {
     }
 }
 
+#[derive(Debug)]
 pub struct ProcessLocalMonitoring {}
 
 impl NamedConceptMgmt for ProcessLocalMonitoring {
@@ -144,6 +145,12 @@ impl NamedConceptMgmt for ProcessLocalMonitoring {
 
         Ok(guard.unwrap().remove(&storage_name))
     }
+
+    fn remove_path_hint(
+        _value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Ok(())
+    }
 }
 
 impl Monitoring for ProcessLocalMonitoring {
@@ -153,6 +160,7 @@ impl Monitoring for ProcessLocalMonitoring {
     type Builder = Builder;
 }
 
+#[derive(Debug)]
 pub struct Cleaner {
     name: FileName,
 }

@@ -64,7 +64,7 @@ pub enum SubscriberReceiveError {
 
 impl std::fmt::Display for SubscriberReceiveError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "SubscriberReceiveError::{:?}", self)
     }
 }
 
@@ -80,7 +80,7 @@ pub enum SubscriberCreateError {
 
 impl std::fmt::Display for SubscriberCreateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "SubscriberCreateError::{:?}", self)
     }
 }
 

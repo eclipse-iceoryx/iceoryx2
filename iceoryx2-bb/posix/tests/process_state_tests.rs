@@ -18,6 +18,7 @@ use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::Permission;
+use iceoryx2_bb_posix::testing::__internal_process_guard_staged_death;
 use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
@@ -80,21 +81,13 @@ pub fn process_state_monitor_detects_dead_state() {
     let mut cleaner_path = path.clone();
     cleaner_path.push_bytes(b"_owner_lock").unwrap();
 
-    let file = FileBuilder::new(&path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
-    let cleaner_file = FileBuilder::new(&cleaner_path)
-        .creation_mode(CreationMode::PurgeAndCreate)
-        .create()
-        .unwrap();
+    let guard = ProcessGuard::new(&path).unwrap();
+    __internal_process_guard_staged_death(guard);
 
     let monitor = ProcessMonitor::new(&path).unwrap();
-
     assert_that!(monitor.state().unwrap(), eq ProcessState::Dead);
-    file.remove_self().unwrap();
+    ProcessCleaner::new(&path).unwrap();
     assert_that!(monitor.state().unwrap(), eq ProcessState::DoesNotExist);
-    cleaner_file.remove_self().unwrap();
 }
 
 #[test]

@@ -30,12 +30,12 @@
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 
 use core::hash::{Hash, Hasher};
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_log::fail;
-use iceoryx2_pal_configuration::{FILENAME_LENGTH, PATH_SEPARATOR, ROOT};
+use iceoryx2_pal_configuration::{PATH_SEPARATOR, ROOT};
 
+use crate::file_name::FileName;
 use crate::file_path::FilePath;
 
 const PATH_LENGTH: usize = iceoryx2_pal_configuration::PATH_LENGTH;
@@ -102,11 +102,8 @@ semantic_string! {
 impl Path {
     /// Adds a new file or directory entry to the path. It adds it in a fashion that a slash is
     /// added when the path does not end with a slash - except when it is empty.
-    pub fn add_path_entry(
-        &mut self,
-        entry: &FixedSizeByteString<FILENAME_LENGTH>,
-    ) -> Result<(), SemanticStringError> {
-        let msg = format!("Unable to add entry \"{}\" to path since it would exceed the maximum supported path length of {} or the entry contains invalid symbols.",
+    pub fn add_path_entry(&mut self, entry: &Path) -> Result<(), SemanticStringError> {
+        let msg = format!("Unable to add entry \"{}\" to path since it would exceed the maximum supported path length of {}.",
             entry, PATH_LENGTH);
         if !self.is_empty()
             && self.as_bytes()[self.len() - 1] != iceoryx2_pal_configuration::PATH_SEPARATOR
@@ -155,7 +152,7 @@ impl Path {
         Ok(Path::new(value)?.normalize())
     }
 
-    pub fn entries(&self) -> Vec<FixedSizeByteString<FILENAME_LENGTH>> {
+    pub fn entries(&self) -> Vec<FileName> {
         let skip_size = if cfg!(target_os = "windows") && self.is_absolute() {
             // skip drive letter like C:\ since the path is absolute
             1
@@ -167,13 +164,31 @@ impl Path {
             .split(|c| *c == PATH_SEPARATOR)
             .skip(skip_size)
             .filter(|entry| !entry.is_empty())
-            .map(|entry| unsafe { FixedSizeByteString::new_unchecked(entry) })
+            .map(|entry| unsafe { FileName::new_unchecked(entry) })
             .collect()
     }
 }
 
 impl From<FilePath> for Path {
     fn from(value: FilePath) -> Self {
+        unsafe { Path::new_unchecked(value.as_bytes()) }
+    }
+}
+
+impl From<FileName> for Path {
+    fn from(value: FileName) -> Self {
+        unsafe { Path::new_unchecked(value.as_bytes()) }
+    }
+}
+
+impl From<&FilePath> for Path {
+    fn from(value: &FilePath) -> Self {
+        unsafe { Path::new_unchecked(value.as_bytes()) }
+    }
+}
+
+impl From<&FileName> for Path {
+    fn from(value: &FileName) -> Self {
         unsafe { Path::new_unchecked(value.as_bytes()) }
     }
 }

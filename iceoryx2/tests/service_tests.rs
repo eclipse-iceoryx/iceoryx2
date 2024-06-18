@@ -180,7 +180,7 @@ mod service {
     }
 
     #[test]
-    fn concurent_creating_services_with_unique_names_is_successful<
+    fn concurrent_creating_services_with_unique_names_is_successful<
         Sut: Service,
         Factory: SutFactory,
     >() {

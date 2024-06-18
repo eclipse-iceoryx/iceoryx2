@@ -68,6 +68,8 @@ pub mod shared_memory;
 pub mod signal;
 pub mod socket_ancillary;
 pub mod system_configuration;
+#[doc(hidden)]
+pub mod testing;
 pub mod thread;
 pub mod unique_system_id;
 pub mod unix_datagram_socket;

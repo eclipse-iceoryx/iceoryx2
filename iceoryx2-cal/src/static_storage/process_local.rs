@@ -227,6 +227,10 @@ impl NamedConceptMgmt for Storage {
             None => Ok(false),
         }
     }
+
+    fn remove_path_hint(_value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {
+        Ok(())
+    }
 }
 
 impl NamedConcept for Storage {

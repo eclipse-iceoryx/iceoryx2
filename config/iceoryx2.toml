@@ -3,6 +3,11 @@ root_path_unix                              = '/tmp/iceoryx2/'
 root_path_windows                           = 'c:\Temp\iceoryx2\'
 prefix                                      = 'iox2_'
 
+[global.node]
+directory                                   = 'nodes'
+monitor_suffix                              = '.node_monitor'
+static_config_suffix                        = '.details'
+
 [global.service]
 directory                                   = 'services'
 publisher_data_segment_suffix               = '.publisher_data'

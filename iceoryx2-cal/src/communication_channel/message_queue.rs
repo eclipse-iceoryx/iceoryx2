@@ -120,6 +120,12 @@ impl<T: Copy + Debug> NamedConceptMgmt for Channel<T> {
             }
         }
     }
+
+    fn remove_path_hint(
+        _value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Ok(())
+    }
 }
 
 impl<T: Copy + Debug> CommunicationChannel<T> for Channel<T> {

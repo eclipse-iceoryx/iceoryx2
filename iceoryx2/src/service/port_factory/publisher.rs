@@ -98,7 +98,7 @@ impl<'de> Visitor<'de> for UnableToDeliverStrategyVisitor {
     type Value = UnableToDeliverStrategy;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a string containing either 'block' or 'discard_sample'")
+        formatter.write_str("a string containing either 'Block' or 'DiscardSample'")
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -106,8 +106,8 @@ impl<'de> Visitor<'de> for UnableToDeliverStrategyVisitor {
         E: serde::de::Error,
     {
         match v {
-            "block" => Ok(UnableToDeliverStrategy::Block),
-            "discard_sample" => Ok(UnableToDeliverStrategy::DiscardSample),
+            "Block" => Ok(UnableToDeliverStrategy::Block),
+            "DiscardSample" => Ok(UnableToDeliverStrategy::DiscardSample),
             v => Err(E::custom(format!(
                 "Invalid UnableToDeliverStrategy provided: \"{:?}\".",
                 v

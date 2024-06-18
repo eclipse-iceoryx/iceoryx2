@@ -283,7 +283,7 @@ impl Directory {
 
         for entry in entries {
             inc_path
-                .add_path_entry(&entry)
+                .add_path_entry(&entry.into())
                 .expect("Always works since it recreates the provided path");
 
             match Directory::does_exist(&inc_path) {
@@ -321,31 +321,10 @@ impl Directory {
         &self.path
     }
 
-    /// Removes and existing directory with all of its contents.
-    pub fn remove(path: &Path) -> Result<(), DirectoryRemoveError> {
-        let msg = format!("Unable to remove directory \"{}\"", path);
-        let origin = "Directory::remove()";
-
-        let dir = fail!(from origin, when Directory::new(path),
-                            "{} since the directory {} could not be opened.", msg, path);
-        let contents = fail!(from origin, when dir.contents(),
-                            "{} since the directory contents of {} could not be read.", msg, path);
-
-        for entry in contents {
-            let mut sub_path = *path;
-            sub_path
-                .add_path_entry(entry.name().as_string())
-                .expect("always a valid path entry");
-            if entry.metadata().file_type() == FileType::Directory {
-                fail!(from origin, when Directory::remove(&sub_path),
-                    "{} since the sub-path {} could not be removed.", msg, sub_path);
-            } else {
-                fail!(from origin, when File::remove(&unsafe{FilePath::new_unchecked(sub_path.as_bytes())}),
-                    "{} since the file {} could not be removed.", msg, sub_path);
-            }
-        }
-
+    /// Removes an empty directory. If the directory is not empty it returns an error.
+    pub fn remove_empty(path: &Path) -> Result<(), DirectoryRemoveError> {
         if unsafe { posix::rmdir(path.as_c_str()) } == -1 {
+            let msg = format!("Unable to remove empty directory \"{}\"", path);
             handle_errno!(DirectoryRemoveError, from "Directory::remove",
                 Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
                 Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
@@ -364,6 +343,33 @@ impl Directory {
 
         trace!(from "Directory::remove", "removed \"{}\"", path);
         Ok(())
+    }
+
+    /// Removes and existing directory with all of its contents.
+    pub fn remove(path: &Path) -> Result<(), DirectoryRemoveError> {
+        let msg = format!("Unable to remove directory \"{}\"", path);
+        let origin = "Directory::remove()";
+
+        let dir = fail!(from origin, when Directory::new(path),
+                            "{} since the directory {} could not be opened.", msg, path);
+        let contents = fail!(from origin, when dir.contents(),
+                            "{} since the directory contents of {} could not be read.", msg, path);
+
+        for entry in contents {
+            let mut sub_path = *path;
+            sub_path
+                .add_path_entry(&entry.name().into())
+                .expect("always a valid path entry");
+            if entry.metadata().file_type() == FileType::Directory {
+                fail!(from origin, when Directory::remove(&sub_path),
+                    "{} since the sub-path {} could not be removed.", msg, sub_path);
+            } else {
+                fail!(from origin, when File::remove(&unsafe{FilePath::new_unchecked(sub_path.as_bytes())}),
+                    "{} since the file {} could not be removed.", msg, sub_path);
+            }
+        }
+
+        Self::remove_empty(path)
     }
 
     /// Returns the contents of the directory inside a vector of [`DirectoryEntry`]s.

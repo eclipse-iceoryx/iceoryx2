@@ -69,6 +69,8 @@
 
 //! ```
 
+use std::fmt::Debug;
+
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 pub use iceoryx2_bb_system_types::file_name::FileName;
 
@@ -79,6 +81,8 @@ pub use crate::{
 
 pub mod file_lock;
 pub mod process_local;
+#[doc(hidden)]
+pub mod testing;
 
 /// Represents the state of a monitored process.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

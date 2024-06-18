@@ -439,4 +439,10 @@ impl NamedConceptMgmt for EventImpl {
 
         Ok(guard.unwrap().remove(&storage_name).is_some())
     }
+
+    fn remove_path_hint(
+        _value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Ok(())
+    }
 }

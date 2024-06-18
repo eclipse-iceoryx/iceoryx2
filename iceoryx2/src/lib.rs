@@ -286,6 +286,9 @@ pub mod config;
 /// Central instance that handles all incoming events, the event loop
 pub mod iox2;
 
+/// Central instance that owns all service entities and can handle incoming event in an event loop
+pub mod node;
+
 /// The ports or communication endpoints of iceoryx2
 pub mod port;
 

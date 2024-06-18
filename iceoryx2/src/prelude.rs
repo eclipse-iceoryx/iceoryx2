@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub use crate::config::Config;
 pub use crate::iox2::Iox2;
 pub use crate::iox2::Iox2Event;
+pub use crate::node::{node_name::NodeName, Node, NodeBuilder, NodeState};
 pub use crate::port::event_id::EventId;
 pub use crate::service::{
     attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier,

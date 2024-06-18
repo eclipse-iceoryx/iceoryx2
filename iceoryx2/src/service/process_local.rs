@@ -55,6 +55,7 @@ impl crate::service::Service for Service {
     type SharedMemory = shared_memory::process_local::Memory<PoolAllocator>;
     type Connection = zero_copy_connection::process_local::Connection;
     type Event = event::sem_bitset_process_local::Event;
+    type Monitoring = monitoring::process_local::ProcessLocalMonitoring;
 
     fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self {
         Self { state }

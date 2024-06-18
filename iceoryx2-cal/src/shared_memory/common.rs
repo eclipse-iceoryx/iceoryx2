@@ -380,6 +380,12 @@ pub mod details {
             when Storage::remove_cfg(name, &cfg.convert()),
             "Unable to remove shared memory concept \"{}\".", name))
         }
+
+        fn remove_path_hint(
+            _value: &Path,
+        ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+            Ok(())
+        }
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>

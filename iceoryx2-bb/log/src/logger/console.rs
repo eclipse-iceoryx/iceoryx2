@@ -47,7 +47,7 @@ impl Logger {
         if std::io::stdout().is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[0;90m[T]",
-                LogLevel::Debug => "\x1b[0;90m[D]",
+                LogLevel::Debug => "\x1b[0;93m[D]",
                 LogLevel::Info => "\x1b[0;92m[I]",
                 LogLevel::Warn => "\x1b[0;33m[W]",
                 LogLevel::Error => "\x1b[0;31m[E]",

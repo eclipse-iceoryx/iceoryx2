@@ -50,6 +50,28 @@ mod semantic_string {
     }
 
     #[test]
+    fn try_from_legal_str_succeeds<
+        const CAPACITY: usize,
+        Sut: SemanticString<CAPACITY> + TryFrom<&'static str>,
+    >() {
+        let sut = Sut::try_from("woohoo-md");
+        assert_that!(sut, is_ok);
+        let sut = unsafe { sut.unwrap_unchecked() };
+
+        assert_that!(sut, len 9);
+        assert_that!(sut.as_bytes(), eq b"woohoo-md");
+    }
+
+    #[test]
+    fn try_from_illegal_str_fails<
+        const CAPACITY: usize,
+        Sut: SemanticString<CAPACITY> + TryFrom<&'static str>,
+    >() {
+        let sut = Sut::try_from("oh zero \0.txt");
+        assert_that!(sut, is_err);
+    }
+
+    #[test]
     fn insert_works<const CAPACITY: usize, Sut: SemanticString<CAPACITY>>() {
         let mut sut = Sut::new(b"hello").unwrap();
         assert_that!(sut.insert(1, b't'), is_ok);

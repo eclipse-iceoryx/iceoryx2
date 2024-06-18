@@ -68,7 +68,7 @@ enum_gen! {
 
 impl std::fmt::Display for OpenDynamicStorageFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "OpenDynamicStorageFailure::{:?}", self)
     }
 }
 
@@ -84,7 +84,7 @@ enum_gen! {
 
 impl std::fmt::Display for ReadStaticStorageFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "ReadStaticStorageFailure::{:?}", self)
     }
 }
 

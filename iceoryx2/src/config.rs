@@ -17,13 +17,15 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
+//! use iceoryx2_bb_system_types::path::*;
+//!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! // create a default config and override some entries
 //! let mut custom_config = Config::default();
 //! custom_config.defaults.publish_subscribe.max_publishers = 5;
-//! custom_config.global.service.directory = "another_service_dir".to_string();
+//! custom_config.global.service.directory = Path::new(b"another_service_dir")?;
 //!
 //! let service = zero_copy::Service::new(&service_name)
 //!     .publish_subscribe_with_custom_config::<u64>(&custom_config)
@@ -38,13 +40,15 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
+//! use iceoryx2_bb_system_types::path::*;
+//!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # let event_name = ServiceName::new("MyEventName")?;
 //!
 //! // create a default config and override some entries
 //! let mut custom_config = Config::default();
 //! custom_config.defaults.event.max_notifiers = 5;
-//! custom_config.global.service.directory = "custom_service_dir".to_string();
+//! custom_config.global.service.directory = Path::new(b"custom_service_dir")?;
 //!
 //! let event = zero_copy::Service::new(&event_name)
 //!     .event_with_custom_config(&custom_config)
@@ -87,10 +91,10 @@
 //! # }
 //! ```
 
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::lazy_singleton::*;
 use iceoryx2_bb_posix::{file::FileBuilder, shared_memory::AccessMode};
+use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
@@ -114,7 +118,7 @@ pub enum ConfigCreationError {
 
 impl std::fmt::Display for ConfigCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        std::write!(f, "ConfigCreationError::{:?}", self)
     }
 }
 
@@ -122,43 +126,61 @@ impl std::error::Error for ConfigCreationError {}
 
 /// All configurable settings of a [`crate::service::Service`].
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Service {
     /// The directory in which all service files are stored
-    pub directory: String,
+    pub directory: Path,
     /// The suffix of the publishers data segment
-    pub publisher_data_segment_suffix: String,
+    pub publisher_data_segment_suffix: FileName,
     /// The suffix of the static config file
-    pub static_config_storage_suffix: String,
+    pub static_config_storage_suffix: FileName,
     /// The suffix of the dynamic config file
-    pub dynamic_config_storage_suffix: String,
+    pub dynamic_config_storage_suffix: FileName,
     /// Defines the time of how long another process will wait until the service creation is
     /// finalized
     pub creation_timeout: Duration,
     /// The suffix of a one-to-one connection
-    pub connection_suffix: String,
+    pub connection_suffix: FileName,
+}
+
+/// All configurable settings of a [`crate::node::Node`].
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct Node {
+    /// The directory in which all node files are stored
+    pub directory: Path,
+    /// The suffix of the monitor token
+    pub monitor_suffix: FileName,
+    /// The suffix of the files where the node configuration is stored.
+    pub static_config_suffix: FileName,
 }
 
 /// The global settings
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Global {
-    root_path_unix: String,
-    root_path_windows: String,
+    root_path_unix: Path,
+    root_path_windows: Path,
     /// Prefix used for all files created during runtime
-    pub prefix: String,
+    pub prefix: FileName,
     /// [`crate::service::Service`] settings
     pub service: Service,
+    /// [`crate::node::Node`] settings
+    pub node: Node,
 }
 
 impl Global {
     /// The absolute path to the service directory where all static service infos are stored
-    pub fn get_absolute_service_dir(&self) -> Path {
+    pub fn service_dir(&self) -> Path {
         let mut path = self.root_path();
-        path.add_path_entry(
-            &FixedSizeByteString::from_bytes(self.service.directory.as_bytes()).unwrap(),
-        )
-        .unwrap();
+        path.add_path_entry(&self.service.directory).unwrap();
+        path
+    }
+
+    /// The absolute path to the node directory where all node details are stored
+    pub fn node_dir(&self) -> Path {
+        let mut path = self.root_path();
+        path.add_path_entry(&self.node.directory).unwrap();
         path
     }
 
@@ -182,7 +204,7 @@ impl Global {
 /// Default settings. These values are used when the user in the code does not specify anything
 /// else.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Defaults {
     /// Default settings for the messaging pattern publish-subscribe
     pub publish_subscribe: PublishSubscribe,
@@ -193,7 +215,7 @@ pub struct Defaults {
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct PublishSubscribe {
     /// The maximum amount of supported [`crate::port::subscriber::Subscriber`]
     pub max_subscribers: usize,
@@ -223,7 +245,7 @@ pub struct PublishSubscribe {
 /// Default settings for the event messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Event {
     /// The maximum amount of supported [`crate::port::listener::Listener`]
     pub max_listeners: usize,
@@ -238,7 +260,7 @@ pub struct Event {
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
 /// flexibility to override both sections.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Config {
     /// Global settings for the iceoryx2 instance
     pub global: Global,
@@ -252,16 +274,21 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             global: Global {
-                root_path_unix: "/tmp/iceoryx2/".to_string(),
-                prefix: "iox2_".to_string(),
-                root_path_windows: "C:\\Temp\\iceoryx2\\".to_string(),
+                root_path_unix: Path::new(b"/tmp/iceoryx2/").unwrap(),
+                root_path_windows: Path::new(b"C:\\Temp\\iceoryx2\\").unwrap(),
+                prefix: FileName::new(b"iox2_").unwrap(),
                 service: Service {
-                    directory: "services".to_string(),
-                    publisher_data_segment_suffix: ".publisher_data".to_string(),
-                    static_config_storage_suffix: ".service".to_string(),
-                    dynamic_config_storage_suffix: ".dynamic".to_string(),
+                    directory: Path::new(b"services").unwrap(),
+                    publisher_data_segment_suffix: FileName::new(b".publisher_data").unwrap(),
+                    static_config_storage_suffix: FileName::new(b".service").unwrap(),
+                    dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
                     creation_timeout: Duration::from_millis(500),
-                    connection_suffix: ".connection".to_string(),
+                    connection_suffix: FileName::new(b".connection").unwrap(),
+                },
+                node: Node {
+                    directory: Path::new(b"nodes").unwrap(),
+                    monitor_suffix: FileName::new(b".node_monitor").unwrap(),
+                    static_config_suffix: FileName::new(b".details").unwrap(),
                 },
             },
             defaults: Defaults {

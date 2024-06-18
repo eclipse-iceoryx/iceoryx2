@@ -464,6 +464,12 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
             }
         }
     }
+
+    fn remove_path_hint(
+        _value: &Path,
+    ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+        Ok(())
+    }
 }
 
 impl<T: Send + Sync + Debug> DynamicStorage<T> for Storage<T> {

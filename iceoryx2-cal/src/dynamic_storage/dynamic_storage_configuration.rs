@@ -22,7 +22,7 @@ pub(crate) trait DynamicStorageConfiguration<T>: NamedConceptConfiguration {
         let mut path = *self.get_path_hint();
         let type_hash = Sha1::new(std::any::type_name::<T>().as_bytes()).value();
 
-        fatal_panic!(from self, when path.add_path_entry(self.get_prefix().as_string()),
+        fatal_panic!(from self, when path.add_path_entry(&self.get_prefix().into()),
                     "The path \"{}\" in combination with the prefix \"{}\" exceed the maximum supported path length of {} of the operating system.",
                     path, value, Path::max_len());
         fatal_panic!(from self, when path.push_bytes(type_hash.as_base64url().as_bytes()),

@@ -668,6 +668,10 @@ pub mod details {
                     when Storage::remove_cfg(name, &cfg.convert()),
                     "Failed to remove ZeroCopyConnection \"{}\".", name))
         }
+
+        fn remove_path_hint(_value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {
+            Ok(())
+        }
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyConnection for Connection<Storage> {

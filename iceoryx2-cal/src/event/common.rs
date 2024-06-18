@@ -206,6 +206,12 @@ pub mod details {
                     when Storage::remove_cfg(name, &cfg.convert()),
                     "Failed to remove Event \"{}\".", name))
         }
+
+        fn remove_path_hint(
+            _value: &Path,
+        ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
+            Ok(())
+        }
     }
 
     impl<
