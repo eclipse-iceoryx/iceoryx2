@@ -391,7 +391,7 @@ impl<Service: service::Service> Node<Service> {
         &self.shared.id
     }
 
-    pub fn service(&self, name: &ServiceName) -> Builder<Service> {
+    pub fn service_builder(&self, name: &ServiceName) -> Builder<Service> {
         Builder::new(name, self.shared.clone())
     }
 

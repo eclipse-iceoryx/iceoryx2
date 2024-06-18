@@ -44,7 +44,7 @@ mod sample_mut {
             let node = NodeBuilder::new().create::<Sut>().unwrap();
             let service_name = generate_name();
             let service = node
-                .service(&service_name)
+                .service_builder(&service_name)
                 .publish_subscribe::<u64>()
                 .max_publishers(1)
                 .create()
@@ -151,7 +151,7 @@ mod sample_mut {
         let test_context = TestContext::<Sut>::new();
         let result = test_context
             .node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(result, is_err);

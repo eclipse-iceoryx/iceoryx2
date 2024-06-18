@@ -20,7 +20,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! let service = node.service(&service_name)
+//! let service = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -64,7 +64,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! let service = node.service(&service_name)
+//! let service = node.service_builder(&service_name)
 //!     .publish_subscribe::<[usize]>()
 //!     .open_or_create()?;
 //!
@@ -711,7 +711,7 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -746,7 +746,7 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -800,7 +800,7 @@ impl<Service: service::Service, PayloadType: Default + Debug + Sized>
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -841,7 +841,7 @@ impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service,
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<[u64]>()
     /// #     .open_or_create()?;
     /// #
@@ -879,7 +879,7 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #

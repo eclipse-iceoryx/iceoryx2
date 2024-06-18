@@ -20,7 +20,7 @@
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! // use `zero_copy` as communication variant
-//! let service = node.service(&service_name)
+//! let service = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!

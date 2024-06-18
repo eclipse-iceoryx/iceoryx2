@@ -45,7 +45,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
 
@@ -59,13 +59,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut2, is_err);
@@ -80,7 +80,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut, is_ok);
@@ -88,7 +88,7 @@ mod service_publish_subscribe {
         drop(sut);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut2, is_ok);
@@ -99,7 +99,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open();
         assert_that!(sut, is_err);
@@ -111,13 +111,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open();
         assert_that!(sut2, is_ok);
@@ -128,13 +128,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<i64>()
             .open();
         assert_that!(sut2, is_err);
@@ -146,13 +146,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[u64]>()
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[i64]>()
             .open();
         assert_that!(sut2, is_err);
@@ -164,13 +164,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[u64]>()
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open();
         assert_that!(sut2, is_err);
@@ -182,13 +182,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[u64]>()
             .open();
         assert_that!(sut2, is_err);
@@ -200,14 +200,14 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(3)
             .open();
@@ -219,7 +219,7 @@ mod service_publish_subscribe {
         );
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(1)
             .open();
@@ -232,14 +232,14 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(3)
             .open();
@@ -251,7 +251,7 @@ mod service_publish_subscribe {
         );
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(1)
             .open();
@@ -264,14 +264,14 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .enable_safe_overflow(false)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .enable_safe_overflow(true)
             .open();
@@ -288,14 +288,14 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .history_size(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .history_size(3)
             .open();
@@ -307,7 +307,7 @@ mod service_publish_subscribe {
         );
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .history_size(1)
             .open();
@@ -320,14 +320,14 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(3)
             .open();
@@ -339,7 +339,7 @@ mod service_publish_subscribe {
         );
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(1)
             .open();
@@ -354,14 +354,14 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(3)
             .open();
@@ -373,7 +373,7 @@ mod service_publish_subscribe {
         );
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
             .open();
@@ -386,14 +386,14 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .payload_alignment(Alignment::new(128).unwrap())
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .payload_alignment(Alignment::new(512).unwrap())
             .open();
@@ -405,7 +405,7 @@ mod service_publish_subscribe {
         );
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .payload_alignment(Alignment::new(16).unwrap())
             .open();
@@ -418,13 +418,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open();
         assert_that!(sut2, is_ok);
@@ -432,7 +432,7 @@ mod service_publish_subscribe {
         drop(sut);
 
         let sut3 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open();
         assert_that!(sut3, is_ok);
@@ -443,13 +443,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open();
         assert_that!(sut2, is_ok);
@@ -458,7 +458,7 @@ mod service_publish_subscribe {
         drop(sut2);
 
         let sut3 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open();
         assert_that!(sut3, is_err);
@@ -470,7 +470,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open_or_create();
 
@@ -482,13 +482,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let _sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open_or_create();
 
@@ -500,7 +500,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -522,7 +522,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let _sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(4)
             .max_subscribers(5)
@@ -534,7 +534,7 @@ mod service_publish_subscribe {
         assert_that!(_sut, is_ok);
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -576,7 +576,7 @@ mod service_publish_subscribe {
         let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node_1
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -589,7 +589,7 @@ mod service_publish_subscribe {
         assert_that!(sut.static_config().subscriber_max_buffer_size(), eq 13);
 
         let sut2 = node_2
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -609,14 +609,14 @@ mod service_publish_subscribe {
         const MAX_PUBLISHERS: usize = 8;
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUBLISHERS)
             .create()
             .unwrap();
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -653,7 +653,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<PayloadType>()
             .create()
             .unwrap();
@@ -676,7 +676,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[PayloadType]>()
             .create()
             .unwrap();
@@ -697,14 +697,14 @@ mod service_publish_subscribe {
         const MAX_SUBSCRIBERS: usize = 8;
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(MAX_SUBSCRIBERS)
             .create()
             .unwrap();
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -738,13 +738,13 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -775,13 +775,13 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -808,7 +808,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .payload_alignment(Alignment::new(1).unwrap())
             .create()
@@ -825,7 +825,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let service_pub = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .subscriber_max_buffer_size(BUFFER_SIZE)
             .subscriber_max_borrowed_samples(BUFFER_SIZE)
@@ -834,7 +834,7 @@ mod service_publish_subscribe {
             .unwrap();
 
         let service_sub = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .open()
             .unwrap();
@@ -868,7 +868,7 @@ mod service_publish_subscribe {
         const MAX_SUBSCRIBERS: usize = 10;
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(1)
             .max_subscribers(MAX_SUBSCRIBERS)
@@ -905,7 +905,7 @@ mod service_publish_subscribe {
         const MAX_SUBSCRIBERS: usize = 10;
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(1)
             .max_subscribers(MAX_SUBSCRIBERS)
@@ -940,7 +940,7 @@ mod service_publish_subscribe {
         const MAX_PUBLISHERS: usize = 10;
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUBLISHERS)
             .history_size(0)
@@ -984,7 +984,7 @@ mod service_publish_subscribe {
         thread::scope(|s| {
             s.spawn(|| {
                 let sut2 = node
-                    .service(&service_name)
+                    .service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .create()
                     .unwrap();
@@ -1004,7 +1004,7 @@ mod service_publish_subscribe {
             for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
                 threads.push(s.spawn(|| {
                     let sut = node
-                        .service(&service_name)
+                        .service_builder(&service_name)
                         .publish_subscribe::<u64>()
                         .open()
                         .unwrap();
@@ -1047,7 +1047,7 @@ mod service_publish_subscribe {
         thread::scope(|s| {
             s.spawn(|| {
                 let sut = node
-                    .service(&service_name)
+                    .service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
                     .open_or_create()
@@ -1070,7 +1070,7 @@ mod service_publish_subscribe {
             for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
                 s.spawn(|| {
                     let sut2 = node
-                        .service(&service_name)
+                        .service_builder(&service_name)
                         .publish_subscribe::<u64>()
                         .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
                         .open_or_create()
@@ -1104,7 +1104,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUB)
             .max_subscribers(MAX_SUB)
@@ -1149,7 +1149,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let _sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUB)
             .max_subscribers(MAX_SUB)
@@ -1161,7 +1161,7 @@ mod service_publish_subscribe {
 
         for _ in 0..MAX_PUB + MAX_SUB {
             channels.push(
-                node.service(&service_name)
+                node.service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .open()
                     .unwrap(),
@@ -1204,7 +1204,7 @@ mod service_publish_subscribe {
         const BUFFER_SIZE: usize = 2;
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .enable_safe_overflow(true)
             .subscriber_max_buffer_size(BUFFER_SIZE)
@@ -1235,7 +1235,7 @@ mod service_publish_subscribe {
         const BUFFER_SIZE: usize = 5;
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .enable_safe_overflow(false)
             .subscriber_max_buffer_size(BUFFER_SIZE)
@@ -1269,7 +1269,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .enable_safe_overflow(false)
             .history_size(12)
@@ -1290,7 +1290,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .history_size(3)
             .subscriber_max_buffer_size(BUFFER_SIZE)
@@ -1319,7 +1319,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .history_size(0)
             .subscriber_max_buffer_size(BUFFER_SIZE)
@@ -1343,7 +1343,7 @@ mod service_publish_subscribe {
         const BUFFER_SIZE: usize = 5;
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .max_publishers(1)
             .max_subscribers(2)
@@ -1378,7 +1378,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .max_publishers(1)
             .max_subscribers(max_subscribers)
@@ -1559,7 +1559,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .max_publishers(1)
             .max_subscribers(1)
@@ -1681,7 +1681,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUBLISHERS)
             .max_subscribers(MAX_SUBSCRIBERS)
@@ -1736,7 +1736,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(0)
             .create()
@@ -1750,7 +1750,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(0)
             .create()
@@ -1764,7 +1764,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_borrowed_samples(0)
             .create()
@@ -1778,7 +1778,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(0)
             .create()
@@ -1794,7 +1794,7 @@ mod service_publish_subscribe {
         assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
 
         let _sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -1820,7 +1820,7 @@ mod service_publish_subscribe {
             assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
 
             services.push(
-                node.service(&service_name)
+                node.service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .create()
                     .unwrap(),
@@ -1879,7 +1879,7 @@ mod service_publish_subscribe {
             let service_name = generate_name();
 
             services.push(
-                node.service(&service_name)
+                node.service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .create()
                     .unwrap(),
@@ -1907,7 +1907,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -1929,7 +1929,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -1939,14 +1939,14 @@ mod service_publish_subscribe {
 
         drop(sut);
 
-        assert_that!(node.service(&service_name)
+        assert_that!(node.service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create().err().unwrap(),
             eq PublishSubscribeCreateError::OldConnectionsStillActive);
 
         drop(subscriber);
 
-        assert_that!(node.service(&service_name)
+        assert_that!(node.service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create().err().unwrap(),
             eq PublishSubscribeCreateError::OldConnectionsStillActive);
@@ -1954,7 +1954,7 @@ mod service_publish_subscribe {
         drop(publisher);
 
         assert_that!(
-            node.service(&service_name)
+            node.service_builder(&service_name)
                 .publish_subscribe::<u64>()
                 .create(),
             is_ok
@@ -1968,14 +1968,14 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .subscriber_max_buffer_size(BUFFER_SIZE)
             .create()
             .unwrap();
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<usize>()
             .open()
             .unwrap();
@@ -2020,14 +2020,14 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let _sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(BUFFER_SIZE)
             .create()
             .unwrap();
 
         let sut2 = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
@@ -2042,7 +2042,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
@@ -2057,7 +2057,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[u64]>()
             .create()
             .unwrap();
@@ -2090,7 +2090,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let service_pub = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[u64]>()
             .subscriber_max_buffer_size(MAX_ELEMENTS + 1)
             .subscriber_max_borrowed_samples(MAX_ELEMENTS + 1)
@@ -2099,7 +2099,7 @@ mod service_publish_subscribe {
             .unwrap();
 
         let service_sub = node
-            .service(&service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[u64]>()
             .open()
             .unwrap();

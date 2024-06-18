@@ -31,7 +31,7 @@ pub extern "C" fn run_subscriber(seconds: u32) -> i32 {
     let node = node.unwrap();
 
     let service = node
-        .service(&service_name)
+        .service_builder(&service_name)
         .publish_subscribe::<u64>()
         .open_or_create();
 

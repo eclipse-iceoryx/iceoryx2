@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service_name = ServiceName::new("Service/With/Properties")?;
     let service = node
-        .service(&service_name)
+        .service_builder(&service_name)
         .publish_subscribe::<u64>()
         .create_with_attributes(
             // define a set of properties that are static for the lifetime

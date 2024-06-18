@@ -25,7 +25,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
-//! let event = node.service(&event_name)
+//! let event = node.service_builder(&event_name)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -46,7 +46,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
-//! let event = node.service(&event_name)
+//! let event = node.service_builder(&event_name)
 //!     .event()
 //!     .open_or_create()?;
 //!

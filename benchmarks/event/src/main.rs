@@ -22,7 +22,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
     let node = NodeBuilder::new().create::<T>().unwrap();
 
     let service_a2b = node
-        .service(&service_name_a2b)
+        .service_builder(&service_name_a2b)
         .event()
         .max_notifiers(1)
         .max_listeners(1)
@@ -31,7 +31,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
         .unwrap();
 
     let service_b2a = node
-        .service(&service_name_b2a)
+        .service_builder(&service_name_b2a)
         .event()
         .max_notifiers(1)
         .max_listeners(1)

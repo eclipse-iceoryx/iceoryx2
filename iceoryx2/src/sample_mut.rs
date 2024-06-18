@@ -20,7 +20,7 @@
 //! # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
 //! #
-//! # let service = node.service(&service_name)
+//! # let service = node.service_builder(&service_name)
 //! #     .publish_subscribe::<u64>()
 //! #     .open_or_create()?;
 //! #
@@ -47,7 +47,7 @@
 //! # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
 //! #
-//! # let service = node.service(&service_name)
+//! # let service = node.service_builder(&service_name)
 //! #     .publish_subscribe::<[usize]>()
 //! #     .create()?;
 //! #
@@ -170,7 +170,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -205,7 +205,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -246,7 +246,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
@@ -281,7 +281,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
@@ -325,7 +325,7 @@ impl<
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
@@ -356,7 +356,7 @@ impl<
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
@@ -387,7 +387,7 @@ impl<
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;
@@ -422,7 +422,7 @@ impl<
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = node.service(&service_name)
+    /// # let service = node.service_builder(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher().create()?;

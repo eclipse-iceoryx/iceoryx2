@@ -21,7 +21,7 @@
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service = node.service(&service_name)
+//! let service = node.service_builder(&service_name)
 //!     // define the messaging pattern
 //!     .publish_subscribe::<u64>()
 //!     // various QoS
@@ -49,7 +49,7 @@
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
 //!
-//! let event = node.service(&event_name)
+//! let event = node.service_builder(&event_name)
 //!     // define the messaging pattern
 //!     .event()
 //!     // various QoS
@@ -80,7 +80,7 @@
 //!     .config(&custom_config)
 //!     .create::<zero_copy::Service>()?;
 //!
-//! let service = node.service(&service_name)
+//! let service = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -98,7 +98,7 @@
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service_creator = node.service(&service_name)
+//! let service_creator = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .create_with_attributes(
 //!         // all attributes that are defined when creating a new service are stored in the
@@ -109,7 +109,7 @@
 //!             .define("another key", "another value")
 //!     )?;
 //!
-//! let service_open = node.service(&service_name)
+//! let service_open = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_with_attributes(
 //!         // All attributes that are defined when opening a new service interpreted as
@@ -262,7 +262,8 @@ impl<S: Service> Drop for ServiceState<S> {
     }
 }
 
-/// Represents a service. Used to create or open new services with the [`Builder`].
+/// Represents a service. Used to create or open new services with the
+/// [`crate::node::Node::service_builder()`].
 /// Contains the building blocks a [`Service`] requires to create the underlying resources and
 /// establish communication.
 pub trait Service: Debug + Sized {

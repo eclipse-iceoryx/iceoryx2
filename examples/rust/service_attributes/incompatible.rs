@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service_name = ServiceName::new("Service/With/Properties")?;
     let _incompatible_service = node
-        .service(&service_name)
+        .service_builder(&service_name)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // the opening of the service will fail since the
@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
 
     let _incompatible_service = node
-        .service(&service_name)
+        .service_builder(&service_name)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // the opening of the service will fail since the key is not defined.

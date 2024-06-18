@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service_name = ServiceName::new("Complex Data Type Example")?;
     let service = node
-        .service(&service_name)
+        .service_builder(&service_name)
         .publish_subscribe::<ComplexDataType>()
         .max_publishers(16)
         .max_subscribers(16)

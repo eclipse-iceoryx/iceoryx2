@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let service_name = ServiceName::new("My/Funk/ServiceName")?;
     let service = node
-        .service(&service_name)
+        .service_builder(&service_name)
         .publish_subscribe::<TransmissionData>()
         .open_or_create()?;
 
