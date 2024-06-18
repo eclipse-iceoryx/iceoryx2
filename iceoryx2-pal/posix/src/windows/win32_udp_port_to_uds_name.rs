@@ -199,7 +199,7 @@ impl Drop for PortToUds {
 impl PortToUds {
     pub fn new() -> Option<Self> {
         let handle: HANDLE = 0;
-        let (shm_handle, _) = unsafe {
+        let (shm_handle, last_error) = unsafe {
             win32call! { CreateFileMappingA(handle, core::ptr::null::<SECURITY_ATTRIBUTES>(), PAGE_READWRITE | SEC_RESERVE, 0, SHM_SIZE as _, SHM_SEGMENT_NAME.as_ptr()), ignore ERROR_ALREADY_EXISTS}
         };
 
@@ -207,7 +207,7 @@ impl PortToUds {
             return None;
         }
 
-        let has_created_shm = unsafe { GetLastError() != ERROR_ALREADY_EXISTS };
+        let has_created_shm = last_error != ERROR_ALREADY_EXISTS;
 
         let (map_result, _) = unsafe {
             win32call! {MapViewOfFile(shm_handle, FILE_MAP_ALL_ACCESS, 0, 0, SHM_SIZE as _)}

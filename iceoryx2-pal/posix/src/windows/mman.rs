@@ -23,8 +23,8 @@ use windows_sys::Win32::Storage::FileSystem::{
 };
 use windows_sys::Win32::{
     Foundation::{
-        CloseHandle, GetLastError, ERROR_ACCESS_DENIED, ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND,
-        FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
+        CloseHandle, ERROR_ACCESS_DENIED, ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, FALSE,
+        GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
     },
     Security::SECURITY_ATTRIBUTES,
     Storage::FileSystem::{
@@ -140,7 +140,8 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
         const MAX_SIZE_LOW: u32 = (MAX_SUPPORTED_SHM_SIZE & 0xFFFFFFFF) as u32;
         const MAX_SIZE_HIGH: u32 = ((MAX_SUPPORTED_SHM_SIZE >> 32) & 0xFFFFFFFF) as u32;
 
-        (shm_handle, _) = win32call! {CreateFileMappingA(
+        let last_mapping_error;
+        (shm_handle, last_mapping_error) = win32call! {CreateFileMappingA(
             handle,
             core::ptr::null::<SECURITY_ATTRIBUTES>(),
             PAGE_READWRITE | SEC_RESERVE,
@@ -155,7 +156,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
             return -1;
         }
 
-        if oflag & O_EXCL != 0 && GetLastError() == ERROR_ALREADY_EXISTS {
+        if oflag & O_EXCL != 0 && last_mapping_error == ERROR_ALREADY_EXISTS {
             CloseHandle(shm_handle);
             CloseHandle(shm_state_handle);
             return -1;
@@ -168,7 +169,8 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
             return -1;
         }
 
-        (shm_handle, _) =
+        let last_mapping_error;
+        (shm_handle, last_mapping_error) =
             win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8)};
 
         if shm_handle == 0 {
@@ -177,7 +179,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
             return -1;
         }
 
-        if GetLastError() != 0 {
+        if last_mapping_error != 0 {
             Errno::set(Errno::EACCES);
             win32call! {CloseHandle(shm_handle)};
             win32call! {CloseHandle(shm_state_handle)};
