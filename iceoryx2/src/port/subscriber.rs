@@ -146,7 +146,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service,
         let publisher_connections = Arc::new(PublisherConnections::new(
             publisher_list.capacity(),
             port_id,
-            &service.state().global_config,
+            service.state().shared_node.clone(),
             static_config,
             buffer_size,
         ));

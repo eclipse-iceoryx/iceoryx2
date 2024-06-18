@@ -153,14 +153,16 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized>
                 max_loaned_samples: factory
                     .service
                     .state()
-                    .global_config
+                    .shared_node
+                    .config()
                     .defaults
                     .publish_subscribe
                     .publisher_max_loaned_samples,
                 unable_to_deliver_strategy: factory
                     .service
                     .state()
-                    .global_config
+                    .shared_node
+                    .config()
                     .defaults
                     .publish_subscribe
                     .unable_to_deliver_strategy,

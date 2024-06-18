@@ -142,9 +142,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::PublishSubscribe(
-            static_config::publish_subscribe::StaticConfig::new(
-                new_self.base.global_config.as_ref(),
-            ),
+            static_config::publish_subscribe::StaticConfig::new(new_self.base.shared_node.config()),
         );
 
         new_self
@@ -440,7 +438,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                 Ok(publish_subscribe::PortFactory::new(
                     ServiceType::from_state(service::ServiceState::new(
                         self.base.service_config.clone(),
-                        self.base.global_config.clone(),
+                        self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
                     )),
@@ -504,7 +502,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                     return Ok(publish_subscribe::PortFactory::new(
                         ServiceType::from_state(service::ServiceState::new(
                             static_config,
-                            self.base.global_config.clone(),
+                            self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
                         )),
@@ -517,10 +515,18 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
                                         with PublishSubscribeOpenError::InternalFailure,
                                         "{} since the adaptive wait failed.", msg);
 
-                    if timeout > self.base.global_config.global.service.creation_timeout {
+                    if timeout
+                        > self
+                            .base
+                            .shared_node
+                            .config()
+                            .global
+                            .service
+                            .creation_timeout
+                    {
                         fail!(from self, with PublishSubscribeOpenError::HangsInCreation,
                             "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded. Waited for {:?} but the state did not change.",
-                            msg, self.base.global_config.global.service.creation_timeout, timeout);
+                            msg, self.base.shared_node.config().global.service.creation_timeout, timeout);
                     }
                 }
                 Err(ServiceAvailabilityState::IncompatibleTypes) => {

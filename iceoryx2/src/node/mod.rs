@@ -339,11 +339,17 @@ fn remove_node<Service: service::Service>(
 }
 
 #[derive(Debug)]
-pub struct SharedNode<Service: service::Service> {
+pub(crate) struct SharedNode<Service: service::Service> {
     id: UniqueSystemId,
     details: NodeDetails,
     token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
     _details_storage: Service::StaticStorage,
+}
+
+impl<Service: service::Service> SharedNode<Service> {
+    pub(crate) fn config(&self) -> &Config {
+        &self.details.config
+    }
 }
 
 impl<Service: service::Service> Drop for SharedNode<Service> {
@@ -386,7 +392,7 @@ impl<Service: service::Service> Node<Service> {
     }
 
     pub fn service(&self, name: &ServiceName) -> Builder<Service> {
-        Builder::new(name, self.config())
+        Builder::new(name, self.shared.clone())
     }
 
     /// Returns a list of [`NodeState`] of all [`Node`]s in the system under a given [`Config`].

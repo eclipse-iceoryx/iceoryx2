@@ -186,6 +186,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::config;
+use crate::node::SharedNode;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -237,23 +238,23 @@ impl std::error::Error for ServiceListError {}
 
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
-pub struct ServiceState<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> {
+pub struct ServiceState<S: Service> {
     pub(crate) static_config: StaticConfig,
-    pub(crate) global_config: Arc<config::Config>,
-    pub(crate) dynamic_storage: Arc<Dynamic>,
-    pub(crate) static_storage: Static,
+    pub(crate) shared_node: Arc<SharedNode<S>>,
+    pub(crate) dynamic_storage: Arc<S::DynamicStorage>,
+    pub(crate) static_storage: S::StaticStorage,
 }
 
-impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> ServiceState<Static, Dynamic> {
+impl<S: Service> ServiceState<S> {
     pub(crate) fn new(
         static_config: StaticConfig,
-        global_config: Arc<config::Config>,
-        dynamic_storage: Arc<Dynamic>,
-        static_storage: Static,
+        shared_node: Arc<SharedNode<S>>,
+        dynamic_storage: Arc<S::DynamicStorage>,
+        static_storage: S::StaticStorage,
     ) -> Self {
         let new_self = Self {
             static_config,
-            global_config,
+            shared_node,
             dynamic_storage,
             static_storage,
         };
@@ -262,9 +263,7 @@ impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> ServiceState
     }
 }
 
-impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> Drop
-    for ServiceState<Static, Dynamic>
-{
+impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
         match self.dynamic_storage.get().decrement_reference_counter() {
             DecrementReferenceCounterResult::HasOwners => {
@@ -310,13 +309,13 @@ pub trait Service: Debug + Sized {
     type Monitoring: Monitoring;
 
     #[doc(hidden)]
-    fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self;
+    fn from_state(state: ServiceState<Self>) -> Self;
 
     #[doc(hidden)]
-    fn state(&self) -> &ServiceState<Self::StaticStorage, Self::DynamicStorage>;
+    fn state(&self) -> &ServiceState<Self>;
 
     #[doc(hidden)]
-    fn state_mut(&mut self) -> &mut ServiceState<Self::StaticStorage, Self::DynamicStorage>;
+    fn state_mut(&mut self) -> &mut ServiceState<Self>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

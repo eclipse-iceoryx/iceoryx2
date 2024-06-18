@@ -41,10 +41,7 @@ use super::ServiceState;
 /// Defines a zero copy inter-process communication setup based on posix mechanisms.
 #[derive(Debug)]
 pub struct Service {
-    state: ServiceState<
-        static_storage::file::Storage,
-        dynamic_storage::posix_shared_memory::Storage<DynamicConfig>,
-    >,
+    state: ServiceState<Self>,
 }
 
 impl crate::service::Service for Service {
@@ -57,15 +54,15 @@ impl crate::service::Service for Service {
     type Event = event::unix_datagram_socket::EventImpl;
     type Monitoring = monitoring::file_lock::FileLockMonitoring;
 
-    fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self {
+    fn from_state(state: ServiceState<Self>) -> Self {
         Self { state }
     }
 
-    fn state(&self) -> &ServiceState<Self::StaticStorage, Self::DynamicStorage> {
+    fn state(&self) -> &ServiceState<Self> {
         &self.state
     }
 
-    fn state_mut(&mut self) -> &mut ServiceState<Self::StaticStorage, Self::DynamicStorage> {
+    fn state_mut(&mut self) -> &mut ServiceState<Self> {
         &mut self.state
     }
 }
