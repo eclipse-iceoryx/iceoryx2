@@ -10,8 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub fn __internal_node_staged_death<S: crate::service::Service>(
-    node: crate::node::Node<S>,
+/// # Safety
+///
+///  * only for internal testing purposes
+///  * shall be called at most once
+///
+pub unsafe fn __internal_node_staged_death<S: crate::service::Service>(
+    node: &mut crate::node::Node<S>,
 ) -> <S::Monitoring as iceoryx2_cal::monitoring::Monitoring>::Token {
     node.staged_death()
 }

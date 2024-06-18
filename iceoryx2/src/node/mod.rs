@@ -83,8 +83,9 @@ use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptR
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
+use std::cell::UnsafeCell;
 use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
+use std::sync::Arc;
 
 /// The failures that can occur when a [`Node`] is created with the [`NodeBuilder`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -337,6 +338,23 @@ fn remove_node<Service: service::Service>(
     Ok(true)
 }
 
+#[derive(Debug)]
+pub struct SharedNode<Service: service::Service> {
+    id: UniqueSystemId,
+    details: NodeDetails,
+    token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
+    _details_storage: Service::StaticStorage,
+}
+
+impl<Service: service::Service> Drop for SharedNode<Service> {
+    fn drop(&mut self) {
+        if self.token.get_mut().is_some() {
+            warn!(from self, when remove_node::<Service>(self.id, &self.details),
+                "Unable to remove node resources.");
+        }
+    }
+}
+
 /// The [`Node`] is the entry point to the whole iceoryx2 infrastructure and owns all entities.
 /// As soon as a process crashes other processes can detect dead [`Node`]s via [`Node::list()`]
 /// and clean up the stale resources - the entities that
@@ -345,39 +363,26 @@ fn remove_node<Service: service::Service>(
 /// Can be created via the [`NodeBuilder`].
 #[derive(Debug)]
 pub struct Node<Service: service::Service> {
-    id: UniqueSystemId,
-    details: NodeDetails,
-    token: ManuallyDrop<<Service::Monitoring as Monitoring>::Token>,
-    _details_storage: Service::StaticStorage,
+    shared: Arc<SharedNode<Service>>,
 }
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}
 unsafe impl<Service: service::Service> Sync for Node<Service> {}
 
-impl<Service: service::Service> Drop for Node<Service> {
-    fn drop(&mut self) {
-        warn!(from self, when remove_node::<Service>(self.id, &self.details),
-            "Unable to remove node resources.");
-        unsafe {
-            ManuallyDrop::<<Service::Monitoring as Monitoring>::Token>::drop(&mut self.token)
-        };
-    }
-}
-
 impl<Service: service::Service> Node<Service> {
     /// Returns the [`NodeName`].
     pub fn name(&self) -> &NodeName {
-        &self.details.name
+        &self.shared.details.name
     }
 
     /// Returns the [`Config`] that the [`Node`] will use to create any iceoryx2 entity.
     pub fn config(&self) -> &Config {
-        &self.details.config
+        &self.shared.details.config
     }
 
     /// Returns the [`UniqueSystemId`] of the [`Node`].
     pub fn id(&self) -> &UniqueSystemId {
-        &self.id
+        &self.shared.id
     }
 
     pub fn service(&self, name: &ServiceName) -> Builder<Service> {
@@ -414,12 +419,13 @@ impl<Service: service::Service> Node<Service> {
         Ok(nodes)
     }
 
-    pub(crate) fn staged_death(mut self) -> <Service::Monitoring as Monitoring>::Token {
-        let monitor = unsafe {
-            ManuallyDrop::<<Service::Monitoring as Monitoring>::Token>::take(&mut self.token)
-        };
-        core::mem::forget(self);
-        monitor
+    /// # Safety
+    ///
+    ///  * only for internal testing purposes
+    ///  * shall be called at most once
+    ///
+    pub(crate) unsafe fn staged_death(&mut self) -> <Service::Monitoring as Monitoring>::Token {
+        (*self.shared.token.get()).take().unwrap()
     }
 
     fn list_all_nodes(
@@ -627,10 +633,12 @@ impl NodeBuilder {
         let token = self.create_token::<Service>(&config, &monitor_name)?;
 
         Ok(Node {
-            id: node_id,
-            token: ManuallyDrop::new(token),
-            _details_storage: details_storage,
-            details,
+            shared: Arc::new(SharedNode {
+                id: node_id,
+                token: UnsafeCell::new(Some(token)),
+                _details_storage: details_storage,
+                details,
+            }),
         })
     }
 
