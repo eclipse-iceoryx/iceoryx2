@@ -74,7 +74,7 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
 
     let security_attributes = from_mode_to_security_attributes(INVALID_HANDLE_VALUE, mode);
 
-    let handle = win32call! {CreateFileA(
+    let (handle, _) = win32call! {CreateFileA(
         pathname as *const u8,
         access_mode,
         shared_mode,
@@ -111,7 +111,7 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
             handle.state_handle
         }
         Some(FdHandleEntry::File(handle)) => {
-            let size = win32call! {GetFileSize(handle.handle, core::ptr::null_mut::<u32>())};
+            let (size, _) = win32call! {GetFileSize(handle.handle, core::ptr::null_mut::<u32>())};
             if size == INVALID_FILE_SIZE {
                 Errno::set(Errno::EINVAL);
                 return -1;
@@ -121,7 +121,9 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
             file_stat.st_mode = S_IFREG;
 
             let mut info = BY_HANDLE_FILE_INFORMATION::new();
-            if win32call! {GetFileInformationByHandle(handle.handle, &mut info)} == 0 {
+            let (has_file_info, _) =
+                win32call! {GetFileInformationByHandle(handle.handle, &mut info)};
+            if has_file_info == FALSE {
                 Errno::set(Errno::EINVAL);
                 return -1;
             }
@@ -163,14 +165,14 @@ pub(crate) unsafe fn acquire_mode_from_path(file_path: &[u8]) -> Option<mode_t> 
     const SECURITY_BUFFER_CAPACITY: usize = 1024;
     let mut security_attributes_buffer = [0u8; SECURITY_BUFFER_CAPACITY];
     let mut required_buffer_capacity = 0;
-    if win32call!(GetFileSecurityA(
+    let (has_read_file_security, _) = win32call!(GetFileSecurityA(
         file_path.as_ptr(),
         DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,
         security_attributes_buffer.as_mut_ptr() as *mut void,
         SECURITY_BUFFER_CAPACITY as u32,
         &mut required_buffer_capacity
-    )) == 0
-    {
+    ));
+    if has_read_file_security == FALSE {
         return None;
     }
 
@@ -264,14 +266,14 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
     if lock_type == F_UNLCK {
         let mut overlapped = OVERLAPPED::new();
         handle.lock_state = F_UNLCK;
-        if win32call! {UnlockFileEx(
+        let (file_unlocked, _) = win32call! {UnlockFileEx(
             handle.handle,
             0,
             MAXWORD,
             MAXWORD,
             &mut overlapped,
-        )} == 0
-        {
+        )};
+        if file_unlocked == FALSE {
             Errno::set(Errno::EINVAL);
             return -1;
         }
@@ -289,8 +291,9 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
 
     let mut overlapped = OVERLAPPED::new();
 
-    if win32call! {LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped)} == FALSE
-    {
+    let (has_file_locked, _) =
+        win32call! {LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped)};
+    if has_file_locked == FALSE {
         return -1;
     }
 
@@ -315,7 +318,7 @@ pub unsafe fn fcntl2(fd: int, cmd: int) -> int {
 
 unsafe fn handle_to_file_path(handle: HANDLE) -> Option<[u8; MAX_PATH_LENGTH]> {
     let mut file_path = [0u8; MAX_PATH_LENGTH];
-    let file_path_len = win32call!(GetFinalPathNameByHandleA(
+    let (file_path_len, _) = win32call!(GetFinalPathNameByHandleA(
         handle,
         file_path.as_mut_ptr(),
         MAX_PATH_LENGTH as u32,
@@ -349,12 +352,12 @@ pub unsafe fn fchmod(fd: int, mode: mode_t) -> int {
 
     let security_attributes = from_mode_to_security_attributes(handle, mode);
 
-    if win32call!(SetFileSecurityA(
+    let (has_file_security_set, _) = win32call!(SetFileSecurityA(
         file_path.as_ptr(),
         DACL_SECURITY_INFORMATION,
         security_attributes.lpSecurityDescriptor
-    )) == 0
-    {
+    ));
+    if has_file_security_set == FALSE {
         Errno::set(Errno::EPERM);
         return -1;
     }

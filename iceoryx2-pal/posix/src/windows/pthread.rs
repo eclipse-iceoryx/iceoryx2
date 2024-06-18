@@ -25,7 +25,7 @@ use iceoryx2_pal_concurrency_sync::rwlock::*;
 use iceoryx2_pal_concurrency_sync::{barrier::Barrier, mutex::Mutex};
 use iceoryx2_pal_concurrency_sync::{WaitAction, WaitResult};
 use windows_sys::Win32::{
-    Foundation::{CloseHandle, ERROR_TIMEOUT, STILL_ACTIVE, WAIT_FAILED},
+    Foundation::{CloseHandle, ERROR_TIMEOUT, FALSE, STILL_ACTIVE, WAIT_FAILED},
     System::{
         Memory::LocalFree,
         Threading::{
@@ -315,7 +315,7 @@ pub unsafe fn pthread_create(
         arg,
     };
 
-    let handle = win32call! {CreateThread(
+    let (handle, _) = win32call! {CreateThread(
         core::ptr::null(),
         (*attributes).stacksize,
         Some(thread_callback),
@@ -344,10 +344,12 @@ pub unsafe fn pthread_create(
 
 pub unsafe fn pthread_join(thread: pthread_t, retval: *mut *mut void) -> int {
     let mut ret_val = Errno::ESUCCES;
-    if win32call! { WaitForSingleObject(thread.handle, INFINITE) } == WAIT_FAILED {
+    let (wait_result, _) = win32call! { WaitForSingleObject(thread.handle, INFINITE) };
+    if wait_result == WAIT_FAILED {
         ret_val = Errno::EINVAL;
     }
-    if win32call! { CloseHandle(thread.handle) } == 0 {
+    let (has_closed, _) = win32call! { CloseHandle(thread.handle) };
+    if has_closed == FALSE {
         ret_val = Errno::EINVAL;
     }
 
@@ -357,8 +359,8 @@ pub unsafe fn pthread_join(thread: pthread_t, retval: *mut *mut void) -> int {
 
 pub unsafe fn pthread_self() -> pthread_t {
     let mut thread = pthread_t::new();
-    thread.handle = win32call! { GetCurrentThread() };
-    thread.id = win32call! { GetCurrentThreadId() };
+    (thread.handle, _) = win32call! { GetCurrentThread() };
+    (thread.id, _) = win32call! { GetCurrentThreadId() };
     thread.index_to_state = ThreadStates::get_instance().get_index_of(thread.id);
     thread
 }
@@ -417,9 +419,8 @@ pub unsafe fn pthread_setaffinity_np(
         return Errno::EINVAL as int;
     }
 
-    if win32call! { SetThreadAffinityMask(thread.handle, core::mem::transmute::<[u8; CPU_SETSIZE/ 8], usize>((*cpuset).__bits) )}
-        == 0
-    {
+    let (has_set_affinity, _) = win32call! { SetThreadAffinityMask(thread.handle, core::mem::transmute::<[u8; CPU_SETSIZE/ 8], usize>((*cpuset).__bits) )};
+    if has_set_affinity == 0 {
         return Errno::EINVAL as int;
     }
 

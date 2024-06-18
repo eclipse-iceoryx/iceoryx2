@@ -88,13 +88,14 @@ pub unsafe fn pathconf(path: *const c_char, name: int) -> long {
 }
 
 pub unsafe fn getpid() -> pid_t {
-    win32call! { GetCurrentProcessId()  }
+    let (pid, _) = win32call! { GetCurrentProcessId() };
+    pid
 }
 
 impl Struct for PROCESSENTRY32 {}
 
 pub unsafe fn getppid() -> pid_t {
-    let snapshot = win32call! { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+    let (snapshot, _) = win32call! { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
     if snapshot == INVALID_HANDLE_VALUE {
         return 0;
     }
@@ -105,16 +106,16 @@ pub unsafe fn getppid() -> pid_t {
     let mut parent_process_id = 0;
     let self_process_id = getgid();
 
-    if win32call! { Process32First(snapshot, &mut process_entry) } == TRUE {
+    let (has_snapshot, _) = win32call! { Process32First(snapshot, &mut process_entry) };
+    if has_snapshot == TRUE {
         loop {
             if process_entry.th32ProcessID == self_process_id {
                 parent_process_id = process_entry.th32ParentProcessID;
                 break;
             }
 
-            if win32call! { Process32Next(snapshot, &mut process_entry), ignore ERROR_NO_MORE_FILES }
-                == FALSE
-            {
+            let (has_snapshot, _) = win32call! { Process32Next(snapshot, &mut process_entry), ignore ERROR_NO_MORE_FILES };
+            if has_snapshot == FALSE {
                 break;
             }
         }
@@ -160,14 +161,14 @@ pub unsafe fn read(fd: int, buf: *mut void, count: size_t) -> ssize_t {
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::File(handle)) => {
             let mut bytes_read = 0;
-            if win32call! {ReadFile(
+            let (file_read, _) = win32call! {ReadFile(
                 handle.handle,
                 buf,
                 count as u32,
                 &mut bytes_read,
                 core::ptr::null_mut::<OVERLAPPED>(),
-            )} == 0
-            {
+            )};
+            if file_read == FALSE {
                 -1
             } else {
                 bytes_read as ssize_t
@@ -184,14 +185,14 @@ pub unsafe fn write(fd: int, buf: *const void, count: size_t) -> ssize_t {
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::File(handle)) => {
             let mut bytes_written = 0;
-            if win32call! {WriteFile(
+            let (file_written, _) = win32call! {WriteFile(
                 handle.handle,
                 buf as *const u8,
                 count as u32,
                 &mut bytes_written,
                 core::ptr::null_mut::<OVERLAPPED>(),
-            )} == 0
-            {
+            )};
+            if file_written == FALSE {
                 -1
             } else {
                 bytes_written as ssize_t
@@ -205,7 +206,7 @@ pub unsafe fn write(fd: int, buf: *const void, count: size_t) -> ssize_t {
 }
 
 pub unsafe fn access(pathname: *const c_char, mode: int) -> int {
-    let attributes =
+    let (attributes, _) =
         win32call! {GetFileAttributesA(pathname as *const u8), ignore ERROR_FILE_NOT_FOUND};
 
     if attributes == INVALID_FILE_ATTRIBUTES {
@@ -244,7 +245,7 @@ pub unsafe fn lseek(fd: int, offset: off_t, whence: int) -> off_t {
                 }
             };
 
-            let new_position = win32call! {SetFilePointer(handle.handle, offset, core::ptr::null_mut::<i32>(), move_method)};
+            let (new_position, _) = win32call! {SetFilePointer(handle.handle, offset, core::ptr::null_mut::<i32>(), move_method)};
 
             if new_position == INVALID_SET_FILE_POINTER {
                 return -1;
@@ -268,7 +269,9 @@ pub unsafe fn getgid() -> gid_t {
 }
 
 pub unsafe fn rmdir(pathname: *const c_char) -> int {
-    if win32call! {RemoveDirectoryA(pathname as*const u8), ignore ERROR_FILE_NOT_FOUND} == 0 {
+    let (has_removed, _) =
+        win32call! {RemoveDirectoryA(pathname as*const u8), ignore ERROR_FILE_NOT_FOUND};
+    if has_removed == FALSE {
         return -1;
     }
     0

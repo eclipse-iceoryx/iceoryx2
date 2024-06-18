@@ -24,7 +24,7 @@ use windows_sys::Win32::Storage::FileSystem::{
 use windows_sys::Win32::{
     Foundation::{
         CloseHandle, GetLastError, ERROR_ACCESS_DENIED, ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND,
-        GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
+        FALSE, GENERIC_READ, GENERIC_WRITE, HANDLE, INVALID_HANDLE_VALUE,
     },
     Security::SECURITY_ATTRIBUTES,
     Storage::FileSystem::{
@@ -81,7 +81,7 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
 
     //SHM_STATE_SUFFIX
     let mut data = WIN32_FIND_DATAA::new();
-    let handle = win32call! { FindFirstFileA(search_path.as_ptr().cast(), &mut data), ignore ERROR_FILE_NOT_FOUND };
+    let (handle, _) = win32call! { FindFirstFileA(search_path.as_ptr().cast(), &mut data), ignore ERROR_FILE_NOT_FOUND };
 
     if handle == INVALID_HANDLE_VALUE {
         return result;
@@ -103,7 +103,8 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
             }
         }
 
-        if win32call! { FindNextFileA(handle, &mut data) } == 0 {
+        let (file_found, _) = win32call! { FindNextFileA(handle, &mut data) };
+        if file_found == FALSE {
             break;
         }
     }
@@ -139,7 +140,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
         const MAX_SIZE_LOW: u32 = (MAX_SUPPORTED_SHM_SIZE & 0xFFFFFFFF) as u32;
         const MAX_SIZE_HIGH: u32 = ((MAX_SUPPORTED_SHM_SIZE >> 32) & 0xFFFFFFFF) as u32;
 
-        shm_handle = win32call! {CreateFileMappingA(
+        (shm_handle, _) = win32call! {CreateFileMappingA(
             handle,
             core::ptr::null::<SECURITY_ATTRIBUTES>(),
             PAGE_READWRITE | SEC_RESERVE,
@@ -167,7 +168,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
             return -1;
         }
 
-        shm_handle =
+        (shm_handle, _) =
             win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8)};
 
         if shm_handle == 0 {
@@ -224,7 +225,7 @@ unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LEN
 unsafe fn create_state_handle(name: *const c_char) -> HANDLE {
     let name = remove_leading_path_separator(name);
 
-    win32call! {CreateFileA(
+    let (handle, _) = win32call! {CreateFileA(
         shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
         GENERIC_WRITE | GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
@@ -232,13 +233,14 @@ unsafe fn create_state_handle(name: *const c_char) -> HANDLE {
         CREATE_NEW,
         FILE_ATTRIBUTE_NORMAL,
         0,
-    )}
+    )};
+    handle
 }
 
 unsafe fn open_state_handle(name: *const c_char) -> HANDLE {
     let name = remove_leading_path_separator(name);
 
-    win32call! {CreateFileA(
+    let (handle, _) = win32call! {CreateFileA(
         shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
         GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
@@ -246,7 +248,8 @@ unsafe fn open_state_handle(name: *const c_char) -> HANDLE {
         OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL,
         0,
-    ), ignore ERROR_FILE_NOT_FOUND }
+    ), ignore ERROR_FILE_NOT_FOUND };
+    handle
 }
 
 pub(crate) unsafe fn shm_set_size(fd_handle: HANDLE, shm_size: u64) {
@@ -275,15 +278,14 @@ pub(crate) unsafe fn shm_get_size(fd_handle: HANDLE) -> u64 {
     let mut bytes_read = 0;
 
     win32call! {SetFilePointer(fd_handle, 0, core::ptr::null_mut::<i32>(), FILE_BEGIN)};
-    if win32call! { ReadFile(
+    let (has_read_file, _) = win32call! { ReadFile(
         fd_handle,
         (&mut read_buffer as *mut u64) as *mut void,
         8,
         &mut bytes_read,
         core::ptr::null_mut::<OVERLAPPED>(),
-    )} == 0
-        || bytes_read != 8
-    {
+    )};
+    if has_read_file == FALSE || bytes_read != 8 {
         read_buffer = 0;
     }
 
@@ -293,11 +295,10 @@ pub(crate) unsafe fn shm_get_size(fd_handle: HANDLE) -> u64 {
 pub unsafe fn shm_unlink(name: *const c_char) -> int {
     let name = remove_leading_path_separator(name);
 
-    if win32call! { DeleteFileA(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr()),
-    ignore ERROR_FILE_NOT_FOUND, ERROR_ACCESS_DENIED}
-        == 0
-    {
-        // TODO: [#41]
+    let (has_deleted_file, _) = win32call! { DeleteFileA(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr()),
+    ignore ERROR_FILE_NOT_FOUND, ERROR_ACCESS_DENIED};
+    if has_deleted_file == FALSE {
+        // TODO: [#9]
         Errno::set(Errno::ENOENT);
         return -1;
     }
@@ -325,7 +326,9 @@ pub unsafe fn mmap(
         }
     };
 
-    match win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)} {
+    let (map_result, _) =
+        win32call! { MapViewOfFile(win_handle.handle.handle, FILE_MAP_ALL_ACCESS, 0, 0, len)};
+    match map_result {
         0 => {
             Errno::set(Errno::ENOMEM);
             core::ptr::null_mut::<void>()
@@ -341,7 +344,8 @@ pub unsafe fn mmap(
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
-    if win32call! { UnmapViewOfFile(addr as _) } == 0 {
+    let (has_unmapped, _) = win32call! { UnmapViewOfFile(addr as _) };
+    if has_unmapped == FALSE {
         Errno::set(Errno::EINVAL);
         return -1;
     }
