@@ -15,6 +15,7 @@
 * [ ] `#![no_std]` on `nightly` on all tier 1 platforms
 * [ ] `#![no_std]` on `stable` on all tier 1 platforms
 * [ ] completely dynamic setup with dynamic shared memory
+* [ ] iceoryx on a rover on the moon
 
 ## Shared Memory Container & Types
 
