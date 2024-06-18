@@ -342,7 +342,7 @@ fn remove_node<Service: service::Service>(
 pub(crate) struct SharedNode<Service: service::Service> {
     id: UniqueSystemId,
     details: NodeDetails,
-    token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
+    monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
     _details_storage: Service::StaticStorage,
 }
 
@@ -354,7 +354,7 @@ impl<Service: service::Service> SharedNode<Service> {
 
 impl<Service: service::Service> Drop for SharedNode<Service> {
     fn drop(&mut self) {
-        if self.token.get_mut().is_some() {
+        if self.monitoring_token.get_mut().is_some() {
             warn!(from self, when remove_node::<Service>(self.id, &self.details),
                 "Unable to remove node resources.");
         }
@@ -431,7 +431,7 @@ impl<Service: service::Service> Node<Service> {
     ///  * shall be called at most once
     ///
     pub(crate) unsafe fn staged_death(&mut self) -> <Service::Monitoring as Monitoring>::Token {
-        (*self.shared.token.get()).take().unwrap()
+        (*self.shared.monitoring_token.get()).take().unwrap()
     }
 
     fn list_all_nodes(
@@ -636,12 +636,12 @@ impl NodeBuilder {
 
         let (details_storage, details) =
             self.create_node_details_storage::<Service>(&config, &monitor_name)?;
-        let token = self.create_token::<Service>(&config, &monitor_name)?;
+        let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
 
         Ok(Node {
             shared: Arc::new(SharedNode {
                 id: node_id,
-                token: UnsafeCell::new(Some(token)),
+                monitoring_token: UnsafeCell::new(Some(monitoring_token)),
                 _details_storage: details_storage,
                 details,
             }),

@@ -18,9 +18,10 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service(&service_name)
 //!     // define the messaging pattern
 //!     .publish_subscribe::<u64>()
 //!     // various QoS
@@ -45,9 +46,10 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
 //!
-//! let event = zero_copy::Service::new(&event_name)
+//! let event = node.service(&event_name)
 //!     // define the messaging pattern
 //!     .event()
 //!     // various QoS
@@ -61,11 +63,10 @@
 //! # }
 //! ```
 //!
-//! ## Publish-Subscribe With Custom Configuration
+//! ## Service With Custom Configuration
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! use iceoryx2::config::Config;
 //! use iceoryx2_bb_system_types::path::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -73,32 +74,14 @@
 //!
 //! let mut custom_config = Config::default();
 //! // adjust the global root path under which every file/directory is stored
-//! custom_config.global.service.directory = Path::new(b"custom_path")?;
+//! custom_config.global.service.directory = "custom_path".try_into()?;
 //!
-//! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe_with_custom_config::<u64>(&custom_config)
-//!     .open_or_create()?;
+//! let node = NodeBuilder::new()
+//!     .config(&custom_config)
+//!     .create::<zero_copy::Service>()?;
 //!
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! ## Event With Custom Configuration
-//!
-//! ```
-//! use iceoryx2::prelude::*;
-//! use iceoryx2::config::Config;
-//! use iceoryx2_bb_system_types::path::*;
-//!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//!
-//! let mut custom_config = Config::default();
-//! // adjust the global service path under which service related files are stored
-//! custom_config.global.service.directory = Path::new(b"custom_services")?;
-//!
-//! let service = zero_copy::Service::new(&service_name)
-//!     .event_with_custom_config(&custom_config)
+//! let service = node.service(&service_name)
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! # Ok(())
@@ -112,9 +95,10 @@
 //! use iceoryx2::config::Config;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service_creator = zero_copy::Service::new(&service_name)
+//! let service_creator = node.service(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .create_with_attributes(
 //!         // all attributes that are defined when creating a new service are stored in the
@@ -125,7 +109,7 @@
 //!             .define("another key", "another value")
 //!     )?;
 //!
-//! let service_open = zero_copy::Service::new(&service_name)
+//! let service_open = node.service(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_with_attributes(
 //!         // All attributes that are defined when opening a new service interpreted as

@@ -16,10 +16,11 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<process_local::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! // use `process_local` as communication variant
-//! let service = process_local::Service::new(&service_name)
+//! let service = node.service(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!

@@ -18,8 +18,9 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -61,8 +62,9 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service(&service_name)
 //!     .publish_subscribe::<[usize]>()
 //!     .open_or_create()?;
 //!
@@ -706,9 +708,10 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// ```
     /// use iceoryx2::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = zero_copy::Service::new(&service_name)
+    /// # let service = node.service(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -740,9 +743,10 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// ```
     /// use iceoryx2::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = zero_copy::Service::new(&service_name)
+    /// # let service = node.service(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -793,9 +797,10 @@ impl<Service: service::Service, PayloadType: Default + Debug + Sized>
     /// ```
     /// use iceoryx2::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = zero_copy::Service::new(&service_name)
+    /// # let service = node.service(&service_name)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -833,9 +838,10 @@ impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service,
     /// ```
     /// use iceoryx2::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = zero_copy::Service::new(&service_name)
+    /// # let service = node.service(&service_name)
     /// #     .publish_subscribe::<[u64]>()
     /// #     .open_or_create()?;
     /// #
@@ -870,9 +876,10 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     /// ```
     /// use iceoryx2::prelude::*;
     ///
+    /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// # let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
     /// #
-    /// # let service = zero_copy::Service::new(&service_name)
+    /// # let service = node.service(&service_name)
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #

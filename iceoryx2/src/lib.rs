@@ -63,10 +63,12 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//!
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! // create our port factory by creating or opening the service
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -89,10 +91,12 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//!
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
 //!
 //! // create our port factory by creating or opening the service
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -122,9 +126,11 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//!
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
 //!
-//! let event = zero_copy::Service::new(&event_name)
+//! let event = node.service(&event_name)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -148,9 +154,11 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//!
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
 //!
-//! let event = zero_copy::Service::new(&event_name)
+//! let event = node.service(&event_name)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -183,9 +191,10 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("PubSubQos")?;
 //!
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .enable_safe_overflow(true)
 //!     // how many samples a subscriber can borrow in parallel
@@ -210,9 +219,10 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("EventQos")?;
 //!
-//! let event = zero_copy::Service::new(&event_name)
+//! let event = node.service(&event_name)
 //!     .event()
 //!     // the maximum amount of notifiers of this service
 //!     .max_notifiers(2)
@@ -240,9 +250,10 @@
 //! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .enable_safe_overflow(false)
 //!     .open_or_create()?;
