@@ -206,8 +206,7 @@ use self::builder::Builder;
 use self::dynamic_config::DecrementReferenceCounterResult;
 use self::service_name::ServiceName;
 
-/// Failure that can be reported by [`Service::does_exist()`] or
-/// [`Service::does_exist_with_custom_config()`].
+/// Failure that can be reported by [`Service::does_exist()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceDoesExistError {
     InsufficientPermissions,
@@ -222,8 +221,7 @@ impl std::fmt::Display for ServiceDoesExistError {
 
 impl std::error::Error for ServiceDoesExistError {}
 
-/// Failure that can be reported by [`Service::list()`] or
-/// [`Service::list_with_custom_config()`].
+/// Failure that can be reported by [`Service::list()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceListError {
     InsufficientPermissions,
@@ -326,23 +324,6 @@ pub trait Service: Debug + Sized {
     #[doc(hidden)]
     fn state_mut(&mut self) -> &mut ServiceState<Self::StaticStorage, Self::DynamicStorage>;
 
-    /// Checks if a service with the name exists.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let name = ServiceName::new("Some/Name")?;
-    /// let does_name_exist = zero_copy::Service::does_exist(&name)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn does_exist(service_name: &ServiceName) -> Result<bool, ServiceDoesExistError> {
-        Self::does_exist_with_custom_config(service_name, config::Config::get_global_config())
-    }
-
     /// Checks if a service under a given [`config::Config`] does exist
     ///
     /// # Example
@@ -354,11 +335,11 @@ pub trait Service: Debug + Sized {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let name = ServiceName::new("Some/Name")?;
     /// let mut custom_config = Config::default();
-    /// let does_name_exist = zero_copy::Service::does_exist_with_custom_config(&name, &custom_config)?;
+    /// let does_name_exist = zero_copy::Service::does_exist(&name, &custom_config)?;
     /// # Ok(())
     /// # }
     /// ```
-    fn does_exist_with_custom_config(
+    fn does_exist(
         service_name: &ServiceName,
         config: &config::Config,
     ) -> Result<bool, ServiceDoesExistError> {
@@ -420,26 +401,6 @@ pub trait Service: Debug + Sized {
         Ok(false)
     }
 
-    /// Returns a list of all created services in the system.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use iceoryx2::prelude::*;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let services = zero_copy::Service::list()?;
-    ///
-    /// for service in services {
-    ///     println!("\n{:#?}", &service);
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    fn list() -> Result<Vec<StaticConfig>, ServiceListError> {
-        Self::list_with_custom_config(config::Config::get_global_config())
-    }
-
     /// Returns a list of all services created under a given [`config::Config`].
     ///
     /// # Example
@@ -450,7 +411,7 @@ pub trait Service: Debug + Sized {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut custom_config = Config::default();
-    /// let services = zero_copy::Service::list_with_custom_config(&custom_config)?;
+    /// let services = zero_copy::Service::list(&custom_config)?;
     ///
     /// for service in services {
     ///     println!("\n{:#?}", &service);
@@ -458,9 +419,7 @@ pub trait Service: Debug + Sized {
     /// # Ok(())
     /// # }
     /// ```
-    fn list_with_custom_config(
-        config: &config::Config,
-    ) -> Result<Vec<StaticConfig>, ServiceListError> {
+    fn list(config: &config::Config) -> Result<Vec<StaticConfig>, ServiceListError> {
         let msg = "Unable to list all services";
         let origin = "Service::list_from_config()";
         let static_storage_config = config_scheme::static_config_storage_config::<Self>(config);

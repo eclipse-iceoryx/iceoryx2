@@ -23,7 +23,7 @@ pub use subscriber::*;
 pub extern "C" fn zero_copy_service_list() -> i32 {
     set_log_level(iceoryx2_bb_log::LogLevel::Info);
 
-    let services = zero_copy::Service::list();
+    let services = zero_copy::Service::list(Config::get_global_config());
 
     if services.is_err() {
         return -1;

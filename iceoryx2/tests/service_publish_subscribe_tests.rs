@@ -1610,19 +1610,19 @@ mod service_publish_subscribe {
     #[test]
     fn does_exist_works_single<Sut: Service>() {
         let service_name = generate_name();
-        assert_that!(Sut::does_exist(&service_name).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
 
         let _sut = Sut::new(&service_name)
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
 
-        assert_that!(Sut::does_exist(&service_name).unwrap(), eq true);
-        assert_that!(Sut::does_exist(&service_name).unwrap(), eq true);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq true);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq true);
 
         drop(_sut);
 
-        assert_that!(Sut::does_exist(&service_name).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
     }
 
     #[test]
@@ -1634,7 +1634,7 @@ mod service_publish_subscribe {
 
         for i in 0..NUMBER_OF_SERVICES {
             let service_name = generate_name();
-            assert_that!(Sut::does_exist(&service_name).unwrap(), eq false);
+            assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
 
             services.push(
                 Sut::new(&service_name)
@@ -1645,13 +1645,13 @@ mod service_publish_subscribe {
             service_names.push(service_name);
 
             for s in service_names.iter().take(i + 1) {
-                assert_that!(Sut::does_exist(s).unwrap(), eq true);
+                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq true);
             }
         }
 
         for i in 0..NUMBER_OF_SERVICES {
             for s in service_names.iter().take(NUMBER_OF_SERVICES - i) {
-                assert_that!(Sut::does_exist(s).unwrap(), eq true);
+                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq true);
             }
 
             for s in service_names
@@ -1659,7 +1659,7 @@ mod service_publish_subscribe {
                 .take(NUMBER_OF_SERVICES)
                 .skip(NUMBER_OF_SERVICES - i)
             {
-                assert_that!(Sut::does_exist(s).unwrap(), eq false);
+                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq false);
             }
 
             services.pop();
@@ -1702,7 +1702,7 @@ mod service_publish_subscribe {
             );
             service_names.push(service_name);
 
-            let service_list = Sut::list().unwrap();
+            let service_list = Sut::list(Config::get_global_config()).unwrap();
             assert_that!(service_list, len i + 1);
 
             assert_that!(contains_service_names(service_names.clone(), service_list), eq true);
@@ -1712,7 +1712,7 @@ mod service_publish_subscribe {
             services.pop();
             service_names.pop();
 
-            let service_list = Sut::list().unwrap();
+            let service_list = Sut::list(Config::get_global_config()).unwrap();
             assert_that!(service_list, len NUMBER_OF_SERVICES - i - 1);
             assert_that!(contains_service_names(service_names.clone(), service_list), eq true);
         }
@@ -1730,7 +1730,7 @@ mod service_publish_subscribe {
         let subscriber = sut.subscriber().create().unwrap();
 
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
 
         const PAYLOAD: u64 = 98129312938;
 

@@ -555,9 +555,9 @@ mod service_event {
         let notifier = sut.notifier().default_event_id(event_id).create().unwrap();
         let listener = sut.listener().create().unwrap();
 
-        assert_that!(Sut::does_exist(&service_name), eq Ok(true));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name), eq Ok(false));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(false));
 
         assert_that!(notifier.notify(), eq Ok(1));
 
@@ -579,9 +579,9 @@ mod service_event {
         let notifier = sut.notifier().default_event_id(event_id).create().unwrap();
         let listener = sut.listener().create().unwrap();
 
-        assert_that!(Sut::does_exist(&service_name), eq Ok(true));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name), eq Ok(false));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(false));
 
         let sut = Sut::new(&service_name).event().create();
         assert_that!(sut, is_err);
