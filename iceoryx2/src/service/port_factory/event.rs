@@ -16,8 +16,9 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
-//! let event = zero_copy::Service::new(&event_name)
+//! let event = node.service_builder(&event_name)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -92,8 +93,9 @@ impl<Service: service::Service> PortFactory<Service> {
     /// use iceoryx2::prelude::*;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// let event_name = ServiceName::new("MyEventName")?;
-    /// let event = zero_copy::Service::new(&event_name)
+    /// let event = node.service_builder(&event_name)
     ///     .event()
     ///     .open_or_create()?;
     ///
@@ -113,8 +115,9 @@ impl<Service: service::Service> PortFactory<Service> {
     /// use iceoryx2::prelude::*;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// let event_name = ServiceName::new("MyEventName")?;
-    /// let event = zero_copy::Service::new(&event_name)
+    /// let event = node.service_builder(&event_name)
     ///     .event()
     ///     .open_or_create()?;
     ///

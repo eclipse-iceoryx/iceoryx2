@@ -19,8 +19,10 @@ use iceoryx2_bb_log::set_log_level;
 fn perform_benchmark<T: Service>(args: &Args) {
     let service_name_a2b = ServiceName::new("a2b").unwrap();
     let service_name_b2a = ServiceName::new("b2a").unwrap();
+    let node = NodeBuilder::new().create::<T>().unwrap();
 
-    let service_a2b = T::new(&service_name_a2b)
+    let service_a2b = node
+        .service_builder(&service_name_a2b)
         .event()
         .max_notifiers(1)
         .max_listeners(1)
@@ -28,7 +30,8 @@ fn perform_benchmark<T: Service>(args: &Args) {
         .create()
         .unwrap();
 
-    let service_b2a = T::new(&service_name_b2a)
+    let service_b2a = node
+        .service_builder(&service_name_b2a)
         .event()
         .max_notifiers(1)
         .max_listeners(1)

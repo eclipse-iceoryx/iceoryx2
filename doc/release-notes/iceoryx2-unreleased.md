@@ -22,8 +22,9 @@
     use iceoryx2::prelude::*;
 
     fn main() -> Result<(), Box<dyn std::error::Error>> {
+        let node = NodeBuilder::new().create::<zero_copy::Service>()?;
         let service_name = ServiceName::new("My/Funk/ServiceName")?;
-        let service = zero_copy::Service::new(&service_name)
+        let service = node.service_builder(&service_name)
             .publish_subscribe::<[usize]>()
             // set a custom alignment of 512, interesting for SIMD-operations
             .payload_alignment(Alignment::new(512).unwrap())
@@ -83,23 +84,56 @@
 
 ### API Breaking Changes
 
-1. `open`, `open_or_create` and `create` are untyped for publish-subscribe services
+1. Services are created via the `Node`
+
+    ```rust
+    // old
+    let service = zero_copy::Service::new(&service_name)
+        .event()
+        .create()?;
+
+    // new
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    let service = node.service_builder(&service_name)
+        .event()
+        .create()?;
+    ```
+
+2. Custom configurations are added to the `Node`. Methods
+    `{event|publish_subscribe}_with_custom_config` are removed
+
+    ```rust
+    // old
+    let service = zero_copy::Service::new(&service_name)
+        .publish_subscribe_with_custom_config::<u64>(&custom_config)
+        .open_or_create()?;
+
+    // new
+    let node = NodeBuilder::new()
+                    .config(&custom_config)
+                    .create::<zero_copy::Service>()?;
+
+    let service = node.service_builder(&service_name)
+        .publish_subscribe::<u64>()
+        .open_or_create()?;
+    ```
+
+3. `open`, `open_or_create` and `create` are untyped for publish-subscribe services
 
     ```rust
     // old
     let service = zero_copy::Service::new(&service_name)
         .publish_subscribe()
-        .create::<u64>() // or open::<u64>(), or open_or_create::<u64>()
-        .unwrap();
+        .create::<u64>()?; // or open::<u64>(), or open_or_create::<u64>()
 
     // new
-    let service = zero_copy::Service::new(&service_name)
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    let service = node.service_builder(&service_name)
         .publish_subscribe::<u64>() // type is now up here
-        .create() // or open(), or open_or_create()
-        .unwrap();
+        .create()?; // or open(), or open_or_create()
     ```
 
-2. `service_name` was renamed into `name` for consistency reasons.
+4. `service_name` was renamed into `name` for consistency reasons.
 
     ```rust
     let services = zero_copy::Service::list()?;
@@ -113,7 +147,7 @@
     }
     ```
 
-3. Directory entries in `Config` converted to type `Path`
+5. Directory entries in `Config` converted to type `Path`
 
     ```
     let mut config = Config::default();
@@ -125,7 +159,7 @@
     config.global.service.directory = "Some/Directory".try_into()?;
     ```
 
-4. Suffix/prefix entries in `Config` converted to type `FileName`
+6. Suffix/prefix entries in `Config` converted to type `FileName`
 
     ```
     let mut config = Config::default();
@@ -136,7 +170,7 @@
     // new
     config.global.prefix = "iox2_".try_into()?;
 
-5. `Service::list_with_custom_config` was removed.
+7. `Service::list_with_custom_config` was removed.
 
     ```rust
     // old
@@ -147,7 +181,7 @@
     let services = zero_copy::Service::list(Config::get_global_config())?;
     ```
 
-6. `Service::does_exist_with_custom_config` was removed.
+8. `Service::does_exist_with_custom_config` was removed.
 
     ```rust
     // old

@@ -21,14 +21,17 @@ pub extern "C" fn run_publisher(seconds: u32) -> i32 {
     set_log_level(iceoryx2_bb_log::LogLevel::Info);
 
     let service_name = ServiceName::new("Hello/from/C");
+    let node = NodeBuilder::new().create::<zero_copy::Service>();
 
-    if service_name.is_err() {
+    if service_name.is_err() || node.is_err() {
         return -1;
     }
 
     let service_name = service_name.unwrap();
+    let node = node.unwrap();
 
-    let service = zero_copy::Service::new(&service_name)
+    let service = node
+        .service_builder(&service_name)
         .publish_subscribe::<u64>()
         .open_or_create();
 

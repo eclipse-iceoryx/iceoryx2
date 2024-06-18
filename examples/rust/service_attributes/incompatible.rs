@@ -13,9 +13,11 @@
 use iceoryx2::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let service_name = ServiceName::new("Service/With/Properties")?;
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
-    let _incompatible_service = zero_copy::Service::new(&service_name)
+    let service_name = ServiceName::new("Service/With/Properties")?;
+    let _incompatible_service = node
+        .service_builder(&service_name)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // the opening of the service will fail since the
@@ -23,7 +25,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &AttributeVerifier::new().require("camera_resolution", "3840x2160"),
         );
 
-    let _incompatible_service = zero_copy::Service::new(&service_name)
+    let _incompatible_service = node
+        .service_builder(&service_name)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // the opening of the service will fail since the key is not defined.

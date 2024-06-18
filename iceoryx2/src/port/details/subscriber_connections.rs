@@ -19,10 +19,10 @@ use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
 };
 
+use crate::node::SharedNode;
 use crate::service::config_scheme::connection_config;
 use crate::service::dynamic_config::publish_subscribe::SubscriberDetails;
 use crate::{
-    config,
     port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},
     service,
     service::{naming_scheme::connection_name, static_config::publish_subscribe::StaticConfig},
@@ -53,7 +53,7 @@ impl<Service: service::Service> Connection<Service> {
 
         let sender = fail!(from this, when <Service::Connection as ZeroCopyConnection>::
                         Builder::new( &connection_name(this.port_id, subscriber_details.port_id))
-                                .config(&connection_config::<Service>(this.config.as_ref()))
+                                .config(&connection_config::<Service>(this.shared_node.config()))
                                 .buffer_size(subscriber_details.buffer_size)
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
@@ -72,7 +72,7 @@ impl<Service: service::Service> Connection<Service> {
 pub(crate) struct SubscriberConnections<Service: service::Service> {
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     port_id: UniquePublisherId,
-    config: Arc<config::Config>,
+    shared_node: Arc<SharedNode<Service>>,
     pub(crate) static_config: StaticConfig,
     number_of_samples: usize,
 }
@@ -80,14 +80,14 @@ pub(crate) struct SubscriberConnections<Service: service::Service> {
 impl<Service: service::Service> SubscriberConnections<Service> {
     pub(crate) fn new(
         capacity: usize,
-        config: &Arc<config::Config>,
+        shared_node: Arc<SharedNode<Service>>,
         port_id: UniquePublisherId,
         static_config: &StaticConfig,
         number_of_samples: usize,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
-            config: Arc::clone(config),
+            shared_node,
             port_id,
             static_config: static_config.clone(),
             number_of_samples,

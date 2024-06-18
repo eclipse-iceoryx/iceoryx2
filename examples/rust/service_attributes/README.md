@@ -6,7 +6,7 @@ This example illustrates the definition and usage of custom service attributes. 
 are key-value pairs that can be defined via the service builder like so:
 
 ```rust
-zero_copy::Service::new(&service_name)
+node.service_builder(&service_name)
     //...
     .create_with_attributes(
         AttributeSpecifier::new()
@@ -22,7 +22,7 @@ service will not be opened. For example, the following service can be opened bec
 attribute defined in the previous example:
 
 ```rust
-zero_copy::Service::new(&service_name)
+node.service_builder(&service_name)
     //...
     .open_with_attributes(
         AttributeVerifier::new()
@@ -36,7 +36,7 @@ In contrast, the following example cannot open the service because it requires a
 is not set and another attribute where the value does not match:
 
 ```rust
-zero_copy::Service::new(&service_name)
+node.service_builder(&service_name)
     //...
     .open_with_attributes(
         AttributeVerifier::new()
@@ -48,7 +48,7 @@ zero_copy::Service::new(&service_name)
 To list all attributes of a service, you can use the following code:
 
 ```rust
-let service = zero_copy::Service::new(&service_name)
+let service = node.service_builder(&service_name)
     //...
     .open()?;
 

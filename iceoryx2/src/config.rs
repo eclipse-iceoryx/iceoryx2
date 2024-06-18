@@ -12,8 +12,6 @@
 
 //! # Examples
 //!
-//! ## Publish-Subscriber
-//!
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
@@ -27,31 +25,12 @@
 //! custom_config.defaults.publish_subscribe.max_publishers = 5;
 //! custom_config.global.service.directory = Path::new(b"another_service_dir")?;
 //!
-//! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe_with_custom_config::<u64>(&custom_config)
-//!     .open_or_create()?;
+//! let node = NodeBuilder::new()
+//!     .config(&custom_config)
+//!     .create::<zero_copy::Service>()?;
 //!
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! ## Event
-//!
-//! ```
-//! use iceoryx2::prelude::*;
-//! use iceoryx2::config::Config;
-//! use iceoryx2_bb_system_types::path::*;
-//!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! # let event_name = ServiceName::new("MyEventName")?;
-//!
-//! // create a default config and override some entries
-//! let mut custom_config = Config::default();
-//! custom_config.defaults.event.max_notifiers = 5;
-//! custom_config.global.service.directory = Path::new(b"custom_service_dir")?;
-//!
-//! let event = zero_copy::Service::new(&event_name)
-//!     .event_with_custom_config(&custom_config)
+//! let service = node.service_builder(&service_name)
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! # Ok(())

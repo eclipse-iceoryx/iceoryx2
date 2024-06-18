@@ -41,9 +41,11 @@ pub struct ComplexDataType {
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let service_name = ServiceName::new("Complex Data Type Example")?;
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
-    let service = zero_copy::Service::new(&service_name)
+    let service_name = ServiceName::new("Complex Data Type Example")?;
+    let service = node
+        .service_builder(&service_name)
         .publish_subscribe::<ComplexDataType>()
         .max_publishers(16)
         .max_subscribers(16)

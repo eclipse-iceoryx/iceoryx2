@@ -32,6 +32,7 @@ mod sample_mut {
     }
 
     struct TestContext<Sut: Service> {
+        node: Node<Sut>,
         service_name: ServiceName,
         service: PortFactory<Sut, u64>,
         publisher: Publisher<Sut, u64>,
@@ -40,8 +41,10 @@ mod sample_mut {
 
     impl<Sut: Service> TestContext<Sut> {
         fn new() -> Self {
+            let node = NodeBuilder::new().create::<Sut>().unwrap();
             let service_name = generate_name();
-            let service = Sut::new(&service_name)
+            let service = node
+                .service_builder(&service_name)
                 .publish_subscribe::<u64>()
                 .max_publishers(1)
                 .create()
@@ -56,6 +59,7 @@ mod sample_mut {
             let subscriber = service.subscriber().create().unwrap();
 
             Self {
+                node,
                 service_name,
                 service,
                 publisher,
@@ -144,7 +148,12 @@ mod sample_mut {
 
         drop(test_context);
 
-        let result = Sut::new(&service_name).publish_subscribe::<u64>().create();
+        let test_context = TestContext::<Sut>::new();
+        let result = test_context
+            .node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
         assert_that!(result, is_err);
         assert_that!(result.err().unwrap(), eq PublishSubscribeCreateError::OldConnectionsStillActive);
     }

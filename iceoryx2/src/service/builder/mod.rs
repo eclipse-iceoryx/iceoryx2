@@ -20,7 +20,7 @@ pub mod event;
 /// Builder for [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 pub mod publish_subscribe;
 
-use crate::config;
+use crate::node::SharedNode;
 use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
@@ -98,13 +98,15 @@ impl std::error::Error for ReadStaticStorageFailure {}
 #[derive(Debug)]
 pub struct Builder<S: Service> {
     name: ServiceName,
+    shared_node: Arc<SharedNode<S>>,
     _phantom_s: PhantomData<S>,
 }
 
 impl<S: Service> Builder<S> {
-    pub(crate) fn new(name: &ServiceName) -> Self {
+    pub(crate) fn new(name: &ServiceName, shared_node: Arc<SharedNode<S>>) -> Self {
         Self {
             name: name.clone(),
+            shared_node,
             _phantom_s: PhantomData,
         }
     }
@@ -114,19 +116,12 @@ impl<S: Service> Builder<S> {
     pub fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
     ) -> publish_subscribe::Builder<PayloadType, S> {
-        self.publish_subscribe_with_custom_config(config::Config::get_global_config())
-    }
-
-    /// Create a new builder to create a
-    /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
-    /// with a custom [`config::Config`]
-    pub fn publish_subscribe_with_custom_config<PayloadType: Debug + ?Sized>(
-        self,
-        config: &config::Config,
-    ) -> publish_subscribe::Builder<PayloadType, S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(&self.name, config),
-            Arc::new(config.clone()),
+            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
+                &self.name,
+                self.shared_node.config(),
+            ),
+            self.shared_node,
         )
         .publish_subscribe()
     }
@@ -134,16 +129,9 @@ impl<S: Service> Builder<S> {
     /// Create a new builder to create a
     /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
     pub fn event(self) -> event::Builder<S> {
-        self.event_with_custom_config(config::Config::get_global_config())
-    }
-
-    /// Create a new builder to create a
-    /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) [`Service`].
-    /// with a custom [`config::Config`]
-    pub fn event_with_custom_config(self, config: &config::Config) -> event::Builder<S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, config),
-            Arc::new(config.clone()),
+            StaticConfig::new_event::<S::ServiceNameHasher>(&self.name, self.shared_node.config()),
+            self.shared_node,
         )
         .event()
     }
@@ -153,15 +141,15 @@ impl<S: Service> Builder<S> {
 #[derive(Debug)]
 pub struct BuilderWithServiceType<ServiceType: service::Service> {
     service_config: StaticConfig,
-    global_config: Arc<config::Config>,
+    shared_node: Arc<SharedNode<ServiceType>>,
     _phantom_data: PhantomData<ServiceType>,
 }
 
 impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
-    fn new(service_config: StaticConfig, global_config: Arc<config::Config>) -> Self {
+    fn new(service_config: StaticConfig, shared_node: Arc<SharedNode<ServiceType>>) -> Self {
         Self {
             service_config,
-            global_config,
+            shared_node,
             _phantom_data: PhantomData,
         }
     }
@@ -181,7 +169,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         let msg = "Unable to check if the service is available";
         let static_storage_config =
-            static_config_storage_config::<ServiceType>(self.global_config.as_ref());
+            static_config_storage_config::<ServiceType>(self.shared_node.config());
         let file_name_uuid = fatal_panic!(from self,
                         when FileName::new(self.service_config.uuid().as_bytes()),
                         "This should never happen! The uuid should be always a valid file name.");
@@ -257,7 +245,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         >>::Builder<'_> as NamedConceptBuilder<
             ServiceType::DynamicStorage,
         >>::new(&dynamic_config_storage_name(&self.service_config))
-            .config(&dynamic_config_storage_config::<ServiceType>(self.global_config.as_ref()))
+            .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(additional_size)
             .has_ownership(false)
             .initializer(Self::config_init_call)
@@ -279,7 +267,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage,
                 >>::new(&dynamic_config_storage_name(&self.service_config))
-                    .config(&dynamic_config_storage_config::<ServiceType>(self.global_config.as_ref()))
+                    .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
                 .open(),
             "{} since the dynamic storage could not be opened.", msg);
@@ -300,7 +288,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         ServiceType::StaticStorage,
                     >>::new(&static_config_storage_name(self.service_config.uuid()))
                     .config(&static_config_storage_config::<ServiceType>(
-                        self.global_config.as_ref(),
+                        self.shared_node.config(),
                     ))
                     .has_ownership(true)
                     .create_locked(),

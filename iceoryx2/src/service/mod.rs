@@ -18,9 +18,10 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service_builder(&service_name)
 //!     // define the messaging pattern
 //!     .publish_subscribe::<u64>()
 //!     // various QoS
@@ -45,9 +46,10 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
 //!
-//! let event = zero_copy::Service::new(&event_name)
+//! let event = node.service_builder(&event_name)
 //!     // define the messaging pattern
 //!     .event()
 //!     // various QoS
@@ -61,11 +63,10 @@
 //! # }
 //! ```
 //!
-//! ## Publish-Subscribe With Custom Configuration
+//! ## Service With Custom Configuration
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! use iceoryx2::config::Config;
 //! use iceoryx2_bb_system_types::path::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -73,32 +74,14 @@
 //!
 //! let mut custom_config = Config::default();
 //! // adjust the global root path under which every file/directory is stored
-//! custom_config.global.service.directory = Path::new(b"custom_path")?;
+//! custom_config.global.service.directory = "custom_path".try_into()?;
 //!
-//! let service = zero_copy::Service::new(&service_name)
-//!     .publish_subscribe_with_custom_config::<u64>(&custom_config)
-//!     .open_or_create()?;
+//! let node = NodeBuilder::new()
+//!     .config(&custom_config)
+//!     .create::<zero_copy::Service>()?;
 //!
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! ## Event With Custom Configuration
-//!
-//! ```
-//! use iceoryx2::prelude::*;
-//! use iceoryx2::config::Config;
-//! use iceoryx2_bb_system_types::path::*;
-//!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//!
-//! let mut custom_config = Config::default();
-//! // adjust the global service path under which service related files are stored
-//! custom_config.global.service.directory = Path::new(b"custom_services")?;
-//!
-//! let service = zero_copy::Service::new(&service_name)
-//!     .event_with_custom_config(&custom_config)
+//! let service = node.service_builder(&service_name)
+//!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
 //! # Ok(())
@@ -112,9 +95,10 @@
 //! use iceoryx2::config::Config;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service_creator = zero_copy::Service::new(&service_name)
+//! let service_creator = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .create_with_attributes(
 //!         // all attributes that are defined when creating a new service are stored in the
@@ -125,7 +109,7 @@
 //!             .define("another key", "another value")
 //!     )?;
 //!
-//! let service_open = zero_copy::Service::new(&service_name)
+//! let service_open = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_with_attributes(
 //!         // All attributes that are defined when opening a new service interpreted as
@@ -186,6 +170,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::config;
+use crate::node::SharedNode;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -202,7 +187,6 @@ use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 
-use self::builder::Builder;
 use self::dynamic_config::DecrementReferenceCounterResult;
 use self::service_name::ServiceName;
 
@@ -238,23 +222,23 @@ impl std::error::Error for ServiceListError {}
 
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
-pub struct ServiceState<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> {
+pub struct ServiceState<S: Service> {
     pub(crate) static_config: StaticConfig,
-    pub(crate) global_config: Arc<config::Config>,
-    pub(crate) dynamic_storage: Arc<Dynamic>,
-    pub(crate) static_storage: Static,
+    pub(crate) shared_node: Arc<SharedNode<S>>,
+    pub(crate) dynamic_storage: Arc<S::DynamicStorage>,
+    pub(crate) static_storage: S::StaticStorage,
 }
 
-impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> ServiceState<Static, Dynamic> {
+impl<S: Service> ServiceState<S> {
     pub(crate) fn new(
         static_config: StaticConfig,
-        global_config: Arc<config::Config>,
-        dynamic_storage: Arc<Dynamic>,
-        static_storage: Static,
+        shared_node: Arc<SharedNode<S>>,
+        dynamic_storage: Arc<S::DynamicStorage>,
+        static_storage: S::StaticStorage,
     ) -> Self {
         let new_self = Self {
             static_config,
-            global_config,
+            shared_node,
             dynamic_storage,
             static_storage,
         };
@@ -263,9 +247,7 @@ impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> ServiceState
     }
 }
 
-impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> Drop
-    for ServiceState<Static, Dynamic>
-{
+impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
         match self.dynamic_storage.get().decrement_reference_counter() {
             DecrementReferenceCounterResult::HasOwners => {
@@ -280,15 +262,11 @@ impl<Static: StaticStorage, Dynamic: DynamicStorage<DynamicConfig>> Drop
     }
 }
 
-/// Represents a service. Used to create or open new services with the [`Builder`].
+/// Represents a service. Used to create or open new services with the
+/// [`crate::node::Node::service_builder()`].
 /// Contains the building blocks a [`Service`] requires to create the underlying resources and
 /// establish communication.
 pub trait Service: Debug + Sized {
-    /// Creates a new [`Builder`] for a given service name
-    fn new(name: &ServiceName) -> Builder<Self> {
-        Builder::new(name)
-    }
-
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;
@@ -316,13 +294,13 @@ pub trait Service: Debug + Sized {
     type Monitoring: Monitoring;
 
     #[doc(hidden)]
-    fn from_state(state: ServiceState<Self::StaticStorage, Self::DynamicStorage>) -> Self;
+    fn from_state(state: ServiceState<Self>) -> Self;
 
     #[doc(hidden)]
-    fn state(&self) -> &ServiceState<Self::StaticStorage, Self::DynamicStorage>;
+    fn state(&self) -> &ServiceState<Self>;
 
     #[doc(hidden)]
-    fn state_mut(&mut self) -> &mut ServiceState<Self::StaticStorage, Self::DynamicStorage>;
+    fn state_mut(&mut self) -> &mut ServiceState<Self>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

@@ -15,6 +15,7 @@ mod publisher {
     use std::time::{Duration, Instant};
 
     use iceoryx2::port::publisher::PublisherLoanError;
+    use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::{service_name::ServiceName, Service};
     use iceoryx2_bb_posix::barrier::*;
@@ -52,7 +53,9 @@ mod publisher {
     #[test]
     fn publisher_loan_and_send_sample_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -68,7 +71,9 @@ mod publisher {
     #[test]
     fn publisher_loan_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<ComplexType>()
             .create()?;
 
@@ -84,7 +89,9 @@ mod publisher {
     fn publisher_loan_slice_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
         const NUMBER_OF_ELEMENTS: usize = 120;
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -105,7 +112,9 @@ mod publisher {
     fn publisher_loan_slice_up_to_max_elements_works<Sut: Service>() -> TestResult<()> {
         const NUMBER_OF_ELEMENTS: usize = 125;
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -126,7 +135,9 @@ mod publisher {
     fn publisher_loan_slice_more_than_max_elements_fails<Sut: Service>() -> TestResult<()> {
         const NUMBER_OF_ELEMENTS: usize = 125;
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -145,7 +156,9 @@ mod publisher {
     #[test]
     fn publisher_loan_unit_and_send_sample_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -161,7 +174,9 @@ mod publisher {
     #[test]
     fn publisher_can_borrow_multiple_sample_at_once<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -191,7 +206,9 @@ mod publisher {
     #[test]
     fn publisher_max_loaned_samples_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -210,7 +227,9 @@ mod publisher {
     #[test]
     fn publisher_sending_sample_reduces_loan_counter<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -232,7 +251,9 @@ mod publisher {
     #[test]
     fn publisher_dropping_sample_reduces_loan_counter<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -255,7 +276,9 @@ mod publisher {
     fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
         let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
-        let service = Sut::new(&service_name)
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
             .enable_safe_overflow(false)
@@ -271,7 +294,8 @@ mod publisher {
 
         std::thread::scope(|s| {
             s.spawn(|| {
-                let service = Sut::new(&service_name)
+                let service = node
+                    .service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .subscriber_max_buffer_size(1)
                     .open()

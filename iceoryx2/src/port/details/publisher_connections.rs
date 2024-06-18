@@ -13,7 +13,7 @@
 use std::{cell::UnsafeCell, sync::Arc};
 
 use crate::{
-    config,
+    node::SharedNode,
     port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},
     service::{
         self,
@@ -52,7 +52,7 @@ impl<Service: service::Service> Connection<Service> {
         let receiver = fail!(from this,
                         when <Service::Connection as ZeroCopyConnection>::
                             Builder::new( &connection_name(details.publisher_id, this.subscriber_id))
-                                    .config(&connection_config::<Service>(this.config.as_ref()))
+                                    .config(&connection_config::<Service>(this.shared_node.config()))
                                     .buffer_size(this.buffer_size)
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
@@ -63,7 +63,7 @@ impl<Service: service::Service> Connection<Service> {
         let data_segment = fail!(from this,
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
                                 Builder::new(&data_segment_name(details.publisher_id))
-                                .config(&data_segment_config::<Service>(this.config.as_ref()))
+                                .config(&data_segment_config::<Service>(this.shared_node.config()))
                                 .open(),
                             "{} since the publishers data segment could not be mapped into the process.", msg);
 
@@ -78,7 +78,7 @@ impl<Service: service::Service> Connection<Service> {
 pub(crate) struct PublisherConnections<Service: service::Service> {
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     subscriber_id: UniqueSubscriberId,
-    config: Arc<config::Config>,
+    shared_node: Arc<SharedNode<Service>>,
     pub(crate) static_config: StaticConfig,
     pub(crate) buffer_size: usize,
 }
@@ -87,14 +87,14 @@ impl<Service: service::Service> PublisherConnections<Service> {
     pub(crate) fn new(
         capacity: usize,
         subscriber_id: UniqueSubscriberId,
-        config: &Arc<config::Config>,
+        shared_node: Arc<SharedNode<Service>>,
         static_config: &StaticConfig,
         buffer_size: usize,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
             subscriber_id,
-            config: Arc::clone(config),
+            shared_node,
             static_config: static_config.clone(),
             buffer_size,
         }

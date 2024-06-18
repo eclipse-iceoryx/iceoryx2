@@ -16,8 +16,9 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -146,7 +147,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service,
         let publisher_connections = Arc::new(PublisherConnections::new(
             publisher_list.capacity(),
             port_id,
-            &service.state().global_config,
+            service.state().shared_node.clone(),
             static_config,
             buffer_size,
         ));

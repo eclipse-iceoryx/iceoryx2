@@ -112,7 +112,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Event(
-            static_config::event::StaticConfig::new(new_self.base.global_config.as_ref()),
+            static_config::event::StaticConfig::new(new_self.base.shared_node.config()),
         );
 
         new_self
@@ -237,7 +237,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     return Ok(event::PortFactory::new(ServiceType::from_state(
                         service::ServiceState::new(
                             static_config,
-                            self.base.global_config,
+                            self.base.shared_node,
                             dynamic_config,
                             static_storage,
                         ),
@@ -248,10 +248,18 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                                         with EventOpenError::InternalFailure,
                                         "{} since the adaptive wait failed.", msg);
 
-                    if timeout > self.base.global_config.global.service.creation_timeout {
+                    if timeout
+                        > self
+                            .base
+                            .shared_node
+                            .config()
+                            .global
+                            .service
+                            .creation_timeout
+                    {
                         fail!(from self, with EventOpenError::HangsInCreation,
                             "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded. Waited for {:?} but the state did not change.",
-                            msg, self.base.global_config.global.service.creation_timeout, timeout);
+                            msg, self.base.shared_node.config().global.service.creation_timeout, timeout);
                     }
                 }
                 Err(ServiceState::PermissionDenied) => {
@@ -349,7 +357,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 Ok(event::PortFactory::new(ServiceType::from_state(
                     service::ServiceState::new(
                         self.base.service_config.clone(),
-                        self.base.global_config.clone(),
+                        self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
                     ),

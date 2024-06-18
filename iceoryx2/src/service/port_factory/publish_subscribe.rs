@@ -16,8 +16,9 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! let pubsub = zero_copy::Service::new(&service_name)
+//! let pubsub = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -118,8 +119,9 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     /// use iceoryx2::prelude::*;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// let service_name = ServiceName::new("My/Funk/ServiceName")?;
-    /// let pubsub = zero_copy::Service::new(&service_name)
+    /// let pubsub = node.service_builder(&service_name)
     ///     .publish_subscribe::<u64>()
     ///     .open_or_create()?;
     ///
@@ -142,8 +144,9 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     /// use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// let service_name = ServiceName::new("My/Funk/ServiceName")?;
-    /// let pubsub = zero_copy::Service::new(&service_name)
+    /// let pubsub = node.service_builder(&service_name)
     ///     .publish_subscribe::<u64>()
     ///     .open_or_create()?;
     ///

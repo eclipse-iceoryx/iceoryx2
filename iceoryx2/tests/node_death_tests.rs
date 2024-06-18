@@ -26,7 +26,7 @@ mod node_death_tests {
             NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
         }
 
-        fn staged_death(node: Node<Self::Service>);
+        fn staged_death(node: &mut Node<Self::Service>);
     }
 
     struct ZeroCopy;
@@ -34,9 +34,9 @@ mod node_death_tests {
     impl Test for ZeroCopy {
         type Service = iceoryx2::service::zero_copy::Service;
 
-        fn staged_death(node: Node<Self::Service>) {
+        fn staged_death(node: &mut Node<Self::Service>) {
             use iceoryx2_cal::monitoring::testing::__InternalMonitoringTokenTestable;
-            let monitor = __internal_node_staged_death(node);
+            let monitor = unsafe { __internal_node_staged_death(node) };
             monitor.staged_death();
         }
     }
@@ -45,12 +45,12 @@ mod node_death_tests {
     fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
         let node_name = S::generate_node_name(0, "toby or no toby");
 
-        let sut = NodeBuilder::new()
+        let mut sut = NodeBuilder::new()
             .name(&node_name)
             .create::<S::Service>()
             .unwrap();
 
-        S::staged_death(sut);
+        S::staged_death(&mut sut);
 
         let mut node_list = Node::<S::Service>::list(Config::get_global_config()).unwrap();
         assert_that!(node_list, len 1);

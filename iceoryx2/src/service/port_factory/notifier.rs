@@ -17,8 +17,9 @@
 //! use iceoryx2::port::event_id::EventId;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! let event_name = ServiceName::new("MyEventName")?;
-//! let event = zero_copy::Service::new(&event_name)
+//! let event = node.service_builder(&event_name)
 //!     .event()
 //!     .open_or_create()?;
 //!

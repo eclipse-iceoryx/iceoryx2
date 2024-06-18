@@ -16,9 +16,11 @@ use iceoryx2::prelude::*;
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let service_name = ServiceName::new("Service With Dynamic Data")?;
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
-    let service = zero_copy::Service::new(&service_name)
+    let service_name = ServiceName::new("Service With Dynamic Data")?;
+    let service = node
+        .service_builder(&service_name)
         .publish_subscribe::<[u8]>()
         .open_or_create()?;
 

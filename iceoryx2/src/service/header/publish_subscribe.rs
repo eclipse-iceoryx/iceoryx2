@@ -17,8 +17,9 @@
 //! use iceoryx2::service::header::publish_subscribe::Header;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //! # let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! let service = zero_copy::Service::new(&service_name)
+//! let service = node.service_builder(&service_name)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
