@@ -122,8 +122,7 @@
     config.global.service.directory = "Some/Directory".into();
 
     // new
-    use iceoryx2_bb_system_types::path::*;
-    config.global.service.directory = Path::new(b"Some/Directory")?;
+    config.global.service.directory = "Some/Directory".try_into()?;
     ```
 
 4. Suffix/prefix entries in `Config` converted to type `FileName`
@@ -135,6 +134,5 @@
     config.global.prefix = "iox2_".into();
 
     // new
-    use iceoryx2_bb_system_types::file_name::*;
-    config.global.prefix = FileName::new(b"iox2_")?;
+    config.global.prefix = "iox2_".try_into()?;
     ```
