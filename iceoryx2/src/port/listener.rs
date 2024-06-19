@@ -28,7 +28,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! let mut listener = event.listener().create()?;
+//! let mut listener = event.listener_builder().create()?;
 //!
 //! for event_id in listener.try_wait_one()? {
 //!     println!("event was triggered with id: {:?}", event_id);
@@ -48,7 +48,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! let mut listener = event.listener().create()?;
+//! let mut listener = event.listener_builder().create()?;
 //!
 //! listener.try_wait_all(|id| {
 //!     println!("event was triggered with id: {:?}", id);

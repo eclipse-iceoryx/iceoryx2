@@ -24,7 +24,7 @@
 //!     .open_or_create()?;
 //!
 //! let publisher = service
-//!     .publisher()
+//!     .publisher_builder()
 //!     // defines how many samples can be loaned in parallel
 //!     .max_loaned_samples(5)
 //!     // defines behavior when subscriber queue is full in an non-overflowing service
@@ -67,7 +67,7 @@
 //!     .open_or_create()?;
 //!
 //! let publisher = service
-//!     .publisher()
+//!     .publisher_builder()
 //!     // defines the maximum length of a slice
 //!     .max_slice_len(128)
 //!     // defines how many samples can be loaned in parallel
@@ -712,7 +712,8 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder()
+    ///                          .create()?;
     ///
     /// publisher.send_copy(1234)?;
     /// # Ok(())
@@ -746,7 +747,8 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder()
+    ///                          .create()?;
     ///
     /// let sample = publisher.loan_uninit()?;
     /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<PayloadType>`
@@ -799,7 +801,7 @@ impl<Service: service::Service, PayloadType: Default + Debug + Sized>
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let mut sample = publisher.loan()?;
     /// *sample.payload_mut() = 42;
@@ -839,7 +841,9 @@ impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service,
     /// #     .publish_subscribe::<[u64]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().max_slice_len(120).create()?;
+    /// # let publisher = service.publisher_builder()
+    ///                          .max_slice_len(120)
+    ///                          .create()?;
     ///
     /// let slice_length = 5;
     /// let mut sample = publisher.loan_slice(slice_length)?;
@@ -876,7 +880,9 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().max_slice_len(120).create()?;
+    /// # let publisher = service.publisher_builder()
+    ///                          .max_slice_len(120)
+    ///                          .create()?;
     ///
     /// let slice_length = 5;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;

@@ -21,7 +21,7 @@
 //!     .open_or_create()?;
 //!
 //! let notifier = event
-//!     .notifier()
+//!     .notifier_builder()
 //!     .default_event_id(EventId::new(12))
 //!     .create()?;
 //!

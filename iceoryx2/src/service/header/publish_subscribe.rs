@@ -22,7 +22,7 @@
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
-//! let subscriber = service.subscriber().create()?;
+//! let subscriber = service.subscriber_builder().create()?;
 //!
 //! while let Some(sample) = subscriber.receive()? {
 //!     println!("header: {:?}", sample.header());

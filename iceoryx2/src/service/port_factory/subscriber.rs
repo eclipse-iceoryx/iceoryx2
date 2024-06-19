@@ -22,7 +22,7 @@
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
-//! let subscriber = pubsub.subscriber()
+//! let subscriber = pubsub.subscriber_builder()
 //!                     .create()?;
 //!
 //! # Ok(())

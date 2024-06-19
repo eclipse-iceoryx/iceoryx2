@@ -33,8 +33,8 @@
 //! println!("number of active publishers:      {:?}", pubsub.dynamic_config().number_of_publishers());
 //! println!("number of active subscribers:     {:?}", pubsub.dynamic_config().number_of_subscribers());
 //!
-//! let publisher = pubsub.publisher().create()?;
-//! let subscriber = pubsub.subscriber().create()?;
+//! let publisher = pubsub.publisher_builder().create()?;
+//! let subscriber = pubsub.subscriber_builder().create()?;
 //!
 //! # Ok(())
 //! # }

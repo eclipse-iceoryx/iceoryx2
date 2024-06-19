@@ -28,8 +28,8 @@
 //! println!("number of active listeners:   {:?}", event.dynamic_config().number_of_listeners());
 //! println!("number of active notifiers:   {:?}", event.dynamic_config().number_of_notifiers());
 //!
-//! let listener = event.listener().create()?;
-//! let notifier = event.notifier().create()?;
+//! let listener = event.listener_builder().create()?;
+//! let notifier = event.notifier_builder().create()?;
 //! # Ok(())
 //! # }
 //! ```

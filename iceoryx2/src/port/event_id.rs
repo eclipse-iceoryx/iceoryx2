@@ -20,8 +20,8 @@
 //! #     .event()
 //! #     .open_or_create()?;
 //!
-//! let mut listener = event.listener().create()?;
-//! let mut notifier = event.notifier()
+//! let mut listener = event.listener_builder().create()?;
+//! let mut notifier = event.notifier_builder()
 //!     .default_event_id(EventId::new(12))
 //!     .create()?;
 //!

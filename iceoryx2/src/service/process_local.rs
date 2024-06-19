@@ -23,8 +23,8 @@
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
-//! let publisher = service.publisher().create()?;
-//! let subscriber = service.subscriber().create()?;
+//! let publisher = service.publisher_builder().create()?;
+//! let subscriber = service.subscriber_builder().create()?;
 //!
 //! # Ok(())
 //! # }

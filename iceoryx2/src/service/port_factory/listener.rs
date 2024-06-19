@@ -21,7 +21,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! let listener = event.listener().create()?;
+//! let listener = event.listener_builder().create()?;
 //! # Ok(())
 //! # }
 //! ```
