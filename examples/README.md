@@ -41,7 +41,7 @@ they interact and exchange data.
 | [complex data types](rust/complex_data_types) | Send zero-copy compatible versions of `Vec` and `String`. Introduces `PlacementDefault` trait for large data types to perform an in place initialization where otherwise a stack overflow would be encountered.|
 | [discovery](rust/discovery) | List all available services in a system. |
 | [docker](rust/docker) | Communicate between different docker containers and the host. |
-| [event](rust/event) | Async API, exchanging event signals between multiple processes.|
+| [event](rust/event) | Push notifications - send event signals to wakeup processes that are waiting for them.|
 | [publish subscribe](rust/publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |
 | [publish subscribe dynamic data](rust/publish_subscribe_dynamic_data) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern) and payload data that has a dynamic size. |
 | [service attributes](rust/service_attributes) | Creates a service with custom attributes that are available to every endpoint. If the attributes are not compatible the service will not open. |
