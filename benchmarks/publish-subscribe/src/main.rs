@@ -15,6 +15,7 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_log::set_log_level;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_bb_posix::thread::ThreadBuilder;
 
 const ITERATIONS: u64 = 10000000;
 
@@ -46,51 +47,50 @@ fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::err
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            let sender_a2b = service_a2b.publisher_builder().create().unwrap();
-            let receiver_b2a = service_b2a.subscriber_builder().create().unwrap();
+    let t1 = ThreadBuilder::new().affinity(1).priority(255).spawn(|| {
+        let sender_a2b = service_a2b.publisher_builder().create().unwrap();
+        let receiver_b2a = service_b2a.subscriber_builder().create().unwrap();
 
-            barrier.wait();
-
-            let mut sample = sender_a2b.loan().unwrap();
-
-            for _ in 0..iterations {
-                sample.send().unwrap();
-                sample = sender_a2b.loan().unwrap();
-                while receiver_b2a.receive().unwrap().is_none() {}
-            }
-        });
-
-        let t2 = s.spawn(|| {
-            let sender_b2a = service_b2a.publisher_builder().create().unwrap();
-            let receiver_a2b = service_a2b.subscriber_builder().create().unwrap();
-
-            barrier.wait();
-
-            for _ in 0..iterations {
-                let sample = sender_b2a.loan().unwrap();
-                while receiver_a2b.receive().unwrap().is_none() {}
-
-                sample.send().unwrap();
-            }
-        });
-
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        let start = Time::now().expect("failed to acquire time");
         barrier.wait();
 
-        t1.join().expect("thread failure");
-        t2.join().expect("thread failure");
-        let stop = start.elapsed().expect("failed to measure time");
-        println!(
-            "{} ::: Iterations: {}, Time: {}, Latency: {} ns",
-            std::any::type_name::<T>(),
-            iterations,
-            stop.as_secs_f64(),
-            stop.as_nanos() / (iterations as u128 * 2)
-        );
+        let mut sample = sender_a2b.loan().unwrap();
+
+        for _ in 0..iterations {
+            sample.send().unwrap();
+            sample = sender_a2b.loan().unwrap();
+            while receiver_b2a.receive().unwrap().is_none() {}
+        }
     });
+
+    let t2 = ThreadBuilder::new().affinity(2).priority(255).spawn(|| {
+        let sender_b2a = service_b2a.publisher_builder().create().unwrap();
+        let receiver_a2b = service_a2b.subscriber_builder().create().unwrap();
+
+        barrier.wait();
+
+        for _ in 0..iterations {
+            let sample = sender_b2a.loan().unwrap();
+            while receiver_a2b.receive().unwrap().is_none() {}
+
+            sample.send().unwrap();
+        }
+    });
+
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    let start = Time::now().expect("failed to acquire time");
+    barrier.wait();
+
+    drop(t1);
+    drop(t2);
+
+    let stop = start.elapsed().expect("failed to measure time");
+    println!(
+        "{} ::: Iterations: {}, Time: {}, Latency: {} ns",
+        std::any::type_name::<T>(),
+        iterations,
+        stop.as_secs_f64(),
+        stop.as_nanos() / (iterations as u128 * 2)
+    );
 
     Ok(())
 }

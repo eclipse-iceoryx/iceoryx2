@@ -82,7 +82,7 @@
 //! println!("The thread {:?} was created.", thread);
 //! ```
 
-use std::{cell::UnsafeCell, fmt::Debug};
+use std::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
 
 use crate::handle_errno;
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
@@ -306,23 +306,23 @@ impl ThreadBuilder {
         }
     }
 
-    pub fn spawn<'a, T, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
+    pub fn spawn<'thread, T, F>(self, f: F) -> Result<Thread<'thread>, ThreadSpawnError>
     where
-        T: Debug + Send + 'static,
-        F: FnOnce() -> T + Send + 'static,
+        T: Debug + Send + 'thread,
+        F: FnOnce() -> T + Send + 'thread,
     {
         self.spawn_impl(f, None)
     }
 
     /// Creates a new thread with the provided callable `f`.
-    fn spawn_impl<'a, T, F>(
+    fn spawn_impl<'thread, T, F>(
         self,
         f: F,
-        stack: Option<&'a mut [u8]>,
-    ) -> Result<Thread<'a>, ThreadSpawnError>
+        stack: Option<&'thread mut [u8]>,
+    ) -> Result<Thread<'thread>, ThreadSpawnError>
     where
-        T: Debug + Send + 'static,
-        F: FnOnce() -> T + Send + 'static,
+        T: Debug + Send + 'thread,
+        F: FnOnce() -> T + Send + 'thread,
     {
         let mut attributes = ScopeGuardBuilder::new( posix::pthread_attr_t::new())
             .on_init(|attr| {
@@ -454,10 +454,10 @@ impl ThreadBuilder {
             );
         }
 
-        extern "C" fn start_routine<FF, TT>(args: *mut posix::void) -> *mut posix::void
+        extern "C" fn start_routine<'thread, FF, TT>(args: *mut posix::void) -> *mut posix::void
         where
-            TT: Send + Debug + 'static,
-            FF: FnOnce() -> TT + Send + 'static,
+            TT: Send + Debug + 'thread,
+            FF: FnOnce() -> TT + Send + 'thread,
         {
             let t: ThreadStartupArgs<TT, FF> =
                 unsafe { core::ptr::read(args as *const ThreadStartupArgs<TT, FF>) };
@@ -485,6 +485,7 @@ impl ThreadBuilder {
             startup_args.write(ThreadStartupArgs {
                 callback: f,
                 name: self.name,
+                _data: PhantomData,
             });
         }
 
@@ -519,7 +520,7 @@ impl ThreadBuilder {
             }
         };
 
-        Ok(Thread::<'a>::new(
+        Ok(Thread::<'thread>::new(
             ThreadHandle {
                 handle,
                 name: UnsafeCell::new(self.name),
@@ -561,7 +562,7 @@ impl ThreadGuardedStackBuilder {
     }
 
     /// See: [`ThreadBuilder::spawn()`]
-    pub fn spawn<'a, T, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
+    pub fn spawn<'thread, T, F>(self, f: F) -> Result<Thread<'thread>, ThreadSpawnError>
     where
         T: Debug + Send + 'static,
         F: FnOnce() -> T + Send + 'static,
@@ -573,14 +574,14 @@ impl ThreadGuardedStackBuilder {
 /// Creates a thread with a user provided stack. For an example take a look at the second example
 /// in [`ThreadBuilder`]
 #[derive(Debug)]
-pub struct ThreadCustomStackBuilder<'a> {
+pub struct ThreadCustomStackBuilder<'thread> {
     config: ThreadBuilder,
-    stack: &'a mut [u8],
+    stack: &'thread mut [u8],
 }
 
-impl<'a> ThreadCustomStackBuilder<'a> {
+impl<'thread> ThreadCustomStackBuilder<'thread> {
     /// See: [`ThreadBuilder::spawn()`]
-    pub fn spawn<T, F>(self, f: F) -> Result<Thread<'a>, ThreadSpawnError>
+    pub fn spawn<T, F>(self, f: F) -> Result<Thread<'thread>, ThreadSpawnError>
     where
         T: Debug + Send + 'static,
         F: FnOnce() -> T + Send + 'static,
@@ -720,9 +721,10 @@ impl ThreadProperties for ThreadHandle {
         );
     }
 }
-struct ThreadStartupArgs<T: Send + Debug + 'static, F: FnOnce() -> T + Send + 'static> {
+struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + Send + 'thread> {
     callback: F,
     name: ThreadName,
+    _data: PhantomData<&'thread ()>,
 }
 
 /// A POSIX thread which can be build with the [`ThreadBuilder`].
@@ -746,12 +748,12 @@ struct ThreadStartupArgs<T: Send + Debug + 'static, F: FnOnce() -> T + Send + 's
 ///
 /// println!("Created thread: {:?}", thread);
 /// ```
-pub struct Thread<'a> {
+pub struct Thread<'thread> {
     handle: ThreadHandle,
-    _stack: Option<&'a mut [u8]>,
+    _stack: Option<&'thread mut [u8]>,
 }
 
-impl<'a> Debug for Thread<'a> {
+impl<'thread> Debug for Thread<'thread> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Thread {{ handle: {:?} }}", self.handle)
     }
@@ -780,8 +782,8 @@ impl Drop for Thread<'_> {
     }
 }
 
-impl<'a> Thread<'a> {
-    fn new(handle: ThreadHandle, _stack: Option<&'a mut [u8]>) -> Self {
+impl<'thread> Thread<'thread> {
+    fn new(handle: ThreadHandle, _stack: Option<&'thread mut [u8]>) -> Self {
         Self { handle, _stack }
     }
 
@@ -802,7 +804,7 @@ impl<'a> Thread<'a> {
     }
 }
 
-impl<'a> ThreadProperties for Thread<'a> {
+impl<'thread> ThreadProperties for Thread<'thread> {
     fn get_name(&self) -> Result<&ThreadName, ThreadGetNameError> {
         self.handle.get_name()
     }
