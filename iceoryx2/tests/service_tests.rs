@@ -210,11 +210,11 @@ mod service {
         assert_that!(sut_event, is_ok);
         let sut_event = sut_event.unwrap();
 
-        let sut_subscriber = sut_pub_sub.subscriber().create().unwrap();
-        let sut_publisher = sut_pub_sub.publisher().create().unwrap();
+        let sut_subscriber = sut_pub_sub.subscriber_builder().create().unwrap();
+        let sut_publisher = sut_pub_sub.publisher_builder().create().unwrap();
 
-        let sut_listener = sut_event.listener().create().unwrap();
-        let sut_notifier = sut_event.notifier().create().unwrap();
+        let sut_listener = sut_event.listener_builder().create().unwrap();
+        let sut_notifier = sut_event.notifier_builder().create().unwrap();
 
         const SAMPLE_VALUE: u64 = 891231211;
         sut_publisher.send_copy(SAMPLE_VALUE).unwrap();

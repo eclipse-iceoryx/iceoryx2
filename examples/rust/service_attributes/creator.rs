@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .define("camera_resolution", "1920x1080"),
         )?;
 
-    let publisher = service.publisher().create()?;
+    let publisher = service.publisher_builder().create()?;
 
     println!("defined service attributes: {:?}", service.attributes());
     for attribute in service.attributes().iter() {

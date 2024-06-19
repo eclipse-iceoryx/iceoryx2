@@ -23,7 +23,7 @@
 //! #     .publish_subscribe::<u64>()
 //! #     .open_or_create()?;
 //! #
-//! # let publisher = service.publisher().create()?;
+//! # let publisher = service.publisher_builder().create()?;
 //!
 //! let sample = publisher.loan_uninit()?;
 //! // write 1234 into sample
@@ -49,7 +49,7 @@
 //! #     .publish_subscribe::<[usize]>()
 //! #     .create()?;
 //! #
-//! # let publisher = service.publisher().max_slice_len(16).create()?;
+//! # let publisher = service.publisher_builder().max_slice_len(16).create()?;
 //!
 //! let slice_length = 12;
 //! let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -171,7 +171,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let sample = publisher.loan_uninit()?;
     /// let sample = sample.write_payload(1234);
@@ -205,7 +205,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let mut sample = publisher.loan_uninit()?;
     /// sample.payload_mut().write(1234);
@@ -245,7 +245,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().max_slice_len(32).create()?;
+    /// # let publisher = service.publisher_builder().max_slice_len(32).create()?;
     ///
     /// let slice_length = 10;
     /// let mut sample = publisher.loan_slice_uninit(slice_length)?;
@@ -279,7 +279,7 @@ impl<PayloadType: Debug, Service: crate::service::Service>
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().max_slice_len(16).create()?;
+    /// # let publisher = service.publisher_builder().max_slice_len(16).create()?;
     ///
     /// let slice_length = 12;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -321,7 +321,7 @@ impl<
     /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let sample = publisher.loan()?;
     /// println!("Sample Publisher Origin {:?}", sample.header().publisher_id());
@@ -351,7 +351,7 @@ impl<
     /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let sample = publisher.loan()?;
     /// println!("Sample current payload {}", sample.payload());
@@ -381,7 +381,7 @@ impl<
     /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let mut sample = publisher.loan()?;
     /// *sample.payload_mut() = 4567;
@@ -415,7 +415,7 @@ impl<
     /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let mut sample = publisher.loan()?;
     /// *sample.payload_mut() = 4567;

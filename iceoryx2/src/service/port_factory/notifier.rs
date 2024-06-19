@@ -22,7 +22,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! let listener = event.notifier()
+//! let listener = event.notifier_builder()
 //!                     .default_event_id(EventId::new(1234))
 //!                     .create()?;
 //! # Ok(())

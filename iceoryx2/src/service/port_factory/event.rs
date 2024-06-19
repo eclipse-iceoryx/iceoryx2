@@ -28,8 +28,8 @@
 //! println!("number of active listeners:   {:?}", event.dynamic_config().number_of_listeners());
 //! println!("number of active notifiers:   {:?}", event.dynamic_config().number_of_notifiers());
 //!
-//! let listener = event.listener().create()?;
-//! let notifier = event.notifier().create()?;
+//! let listener = event.listener_builder().create()?;
+//! let notifier = event.notifier_builder().create()?;
 //! # Ok(())
 //! # }
 //! ```
@@ -93,16 +93,15 @@ impl<Service: service::Service> PortFactory<Service> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-    /// let event_name = ServiceName::new("MyEventName")?;
     /// let event = node.service_builder("MyEventName".try_into()?)
     ///     .event()
     ///     .open_or_create()?;
     ///
-    /// let notifier = event.notifier().create()?;
+    /// let notifier = event.notifier_builder().create()?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn notifier(&self) -> PortFactoryNotifier<Service> {
+    pub fn notifier_builder(&self) -> PortFactoryNotifier<Service> {
         PortFactoryNotifier::new(self)
     }
 
@@ -115,16 +114,15 @@ impl<Service: service::Service> PortFactory<Service> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-    /// let event_name = ServiceName::new("MyEventName")?;
     /// let event = node.service_builder("MyEventName".try_into()?)
     ///     .event()
     ///     .open_or_create()?;
     ///
-    /// let listener = event.listener().create()?;
+    /// let listener = event.listener_builder().create()?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn listener(&self) -> PortFactoryListener<Service> {
+    pub fn listener_builder(&self) -> PortFactoryListener<Service> {
         PortFactoryListener { factory: self }
     }
 }

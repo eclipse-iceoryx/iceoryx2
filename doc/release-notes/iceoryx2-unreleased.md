@@ -70,6 +70,7 @@
  * use `ClockMode::Performance` instead of `ClockMode::Safety` in default deployment [#207](https://github.com/eclipse-iceoryx/iceoryx2/issues/207)
  * Updated all dependencies and increased MSRV to 1.75 [#221](https://github.com/eclipse-iceoryx/iceoryx2/issues/221)
  * Remove `Service::does_exist_with_custom_config` and `Service::list_with_custom_config` [#238](https://github.com/eclipse-iceoryx/iceoryx2/issues/238)
+ * Renamed `PortFactory::{publisher|subscriber|listener|notifier}` to `PortFactory::{publisher|subscriber|listener|notifier}_builder` [#244](https://github.com/eclipse-iceoryx/iceoryx2/issues/244)
 
 ### Workflow
 
@@ -191,4 +192,28 @@
 
     // new
     let services = zero_copy::Service::does_exist(service_name, Config::get_global_config())?;
+    ```
+
+9. Creating pub-sub ports with `service.{publisher|subscriber}_builder()`.
+
+    ```rust
+    // old
+    let publisher = service.publisher().create()?;
+    let subscriber = service.subscriber().create()?;
+
+    // new
+    let publisher = service.publisher_builder().create()?;
+    let subscriber = service.subscriber_builder().create()?;
+    ```
+
+10. Creating event ports with `service.{listener|notifier}_builder()`.
+
+    ```rust
+    // old
+    let listener = service.listener().create()?;
+    let notifier = service.notifier().create()?;
+
+    // new
+    let listener = service.listener_builder().create()?;
+    let notifier = service.notifier_builder().create()?;
     ```

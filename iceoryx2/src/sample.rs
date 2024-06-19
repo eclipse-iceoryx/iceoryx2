@@ -19,7 +19,7 @@
 //! # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
 //! #   .publish_subscribe::<u64>()
 //! #   .open_or_create()?;
-//! # let subscriber = service.subscriber().create()?;
+//! # let subscriber = service.subscriber_builder().create()?;
 //!
 //! while let Some(sample) = subscriber.receive()? {
 //!     println!("received: {:?}", *sample);

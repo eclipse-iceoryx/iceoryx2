@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event()
         .open_or_create()?;
 
-    let listener = event.listener().create()?;
+    let listener = event.listener_builder().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {

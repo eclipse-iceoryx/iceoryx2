@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .publish_subscribe::<TransmissionData>()
         .open_or_create()?;
 
-    let subscriber = service.subscriber().create()?;
+    let subscriber = service.subscriber_builder().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         while let Some(sample) = subscriber.receive()? {

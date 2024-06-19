@@ -51,11 +51,11 @@ pub trait UpdateConnections {
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher().create()?;
+    /// # let publisher = service.publisher_builder().create()?;
     ///
     /// publisher.send_copy(1234)?;
     ///
-    /// let subscriber = service.subscriber().create()?;
+    /// let subscriber = service.subscriber_builder().create()?;
     ///
     /// // updates all connections and delivers history to new participants
     /// publisher.update_connections();

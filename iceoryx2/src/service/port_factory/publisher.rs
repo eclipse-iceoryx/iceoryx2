@@ -23,7 +23,7 @@
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
-//! let publisher = pubsub.publisher()
+//! let publisher = pubsub.publisher_builder()
 //!                     .max_loaned_samples(6)
 //!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
 //!                     .create()?;
@@ -43,7 +43,7 @@
 //!     .publish_subscribe::<[u64]>()
 //!     .open_or_create()?;
 //!
-//! let publisher = pubsub.publisher()
+//! let publisher = pubsub.publisher_builder()
 //!                     // allows to call Publisher::loan_slice() with up to 128 elements
 //!                     .max_slice_len(128)
 //!                     .create()?;

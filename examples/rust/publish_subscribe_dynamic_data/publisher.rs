@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let worst_case_memory_size = 1024;
     let publisher = service
-        .publisher()
+        .publisher_builder()
         .max_slice_len(worst_case_memory_size)
         .create()?;
 

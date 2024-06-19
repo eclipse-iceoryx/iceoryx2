@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .publish_subscribe::<TransmissionData>()
         .open_or_create()?;
 
-    let publisher = service.publisher().create()?;
+    let publisher = service.publisher_builder().create()?;
 
     let mut counter: u64 = 0;
 

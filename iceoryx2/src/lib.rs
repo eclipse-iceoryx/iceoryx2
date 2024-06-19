@@ -71,7 +71,7 @@
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
-//! let subscriber = service.subscriber().create()?;
+//! let subscriber = service.subscriber_builder().create()?;
 //!
 //! while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
 //!     while let Some(sample) = subscriber.receive()? {
@@ -98,7 +98,7 @@
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
-//! let publisher = service.publisher().create()?;
+//! let publisher = service.publisher_builder().create()?;
 //!
 //! while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
 //!     let sample = publisher.loan_uninit()?;
@@ -131,7 +131,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! let mut listener = event.listener().create()?;
+//! let mut listener = event.listener_builder().create()?;
 //!
 //! while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
 //!     if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
@@ -158,7 +158,7 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! let notifier = event.notifier().create()?;
+//! let notifier = event.notifier_builder().create()?;
 //!
 //! let mut counter: usize = 0;
 //! while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
@@ -251,7 +251,7 @@
 //!     .enable_safe_overflow(false)
 //!     .open_or_create()?;
 //!
-//! let publisher = service.publisher()
+//! let publisher = service.publisher_builder()
 //!     // the maximum amount of samples this publisher can loan in parallel
 //!     .max_loaned_samples(2)
 //!     // defines the behavior when a sample could not be delivered when the subscriber buffer is
