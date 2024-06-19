@@ -218,7 +218,6 @@ jobs:
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
 
       - name: Run cargo nextest
-        if: ${{ matrix.toolchain != 'stable-gnu' }}
         run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
 
       - name: Print native libs of FFI target

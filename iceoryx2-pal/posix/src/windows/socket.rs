@@ -99,9 +99,8 @@ pub unsafe fn setsockopt(
         }
     };
 
-    if win32call! {winsock windows_sys::Win32::Networking::WinSock::setsockopt(socket_handle, level, option_name, option_value as *const u8, option_len as _)}
-        == SOCKET_ERROR
-    {
+    let (sock_opt_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::setsockopt(socket_handle, level, option_name, option_value as *const u8, option_len as _)};
+    if sock_opt_result == SOCKET_ERROR {
         return -1;
     }
     0
@@ -123,9 +122,8 @@ pub unsafe fn getsockopt(
         }
     };
 
-    if win32call! {winsock windows_sys::Win32::Networking::WinSock::getsockopt(socket_handle, level, option_name, option_value as *mut u8, option_len as *mut i32)}
-        == SOCKET_ERROR
-    {
+    let (sock_opt_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::getsockopt(socket_handle, level, option_name, option_value as *mut u8, option_len as *mut i32)};
+    if sock_opt_result == SOCKET_ERROR {
         return -1;
     }
 
@@ -144,9 +142,8 @@ unsafe fn create_uds_address(port: u16) -> sockaddr_in {
 pub unsafe fn bind(socket: int, address: *const sockaddr, address_len: socklen_t) -> int {
     match HandleTranslator::get_instance().get(socket) {
         Some(FdHandleEntry::Socket(s)) => {
-            if win32call! {winsock windows_sys::Win32::Networking::WinSock::bind(s.fd, address as *const SOCKADDR, address_len as _)}
-                == SOCKET_ERROR
-            {
+            let (bind_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::bind(s.fd, address as *const SOCKADDR, address_len as _)};
+            if bind_result == SOCKET_ERROR {
                 return -1;
             }
 
@@ -161,9 +158,8 @@ pub unsafe fn bind(socket: int, address: *const sockaddr, address_len: socklen_t
 
             let udp_address = create_uds_address(0);
 
-            if win32call! {winsock windows_sys::Win32::Networking::WinSock::bind(s.fd, (&udp_address as *const sockaddr_in) as *const SOCKADDR, core::mem::size_of::<sockaddr_in>() as _)}
-                == SOCKET_ERROR
-            {
+            let (bind_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::bind(s.fd, (&udp_address as *const sockaddr_in) as *const SOCKADDR, core::mem::size_of::<sockaddr_in>() as _)};
+            if bind_result == SOCKET_ERROR {
                 return -1;
             }
 
@@ -195,9 +191,8 @@ pub unsafe fn bind(socket: int, address: *const sockaddr, address_len: socklen_t
 pub unsafe fn connect(socket: int, address: *const sockaddr, address_len: socklen_t) -> int {
     match HandleTranslator::get_instance().get(socket) {
         Some(FdHandleEntry::Socket(s)) => {
-            if win32call! {winsock windows_sys::Win32::Networking::WinSock::connect(s.fd, address as *const SOCKADDR, address_len as _)}
-                == SOCKET_ERROR
-            {
+            let (connect_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::connect(s.fd, address as *const SOCKADDR, address_len as _)};
+            if connect_result == SOCKET_ERROR {
                 return -1;
             }
             0
@@ -213,9 +208,8 @@ pub unsafe fn connect(socket: int, address: *const sockaddr, address_len: sockle
             let port = HandleTranslator::get_instance().get_uds_port(address);
             let udp_address = create_uds_address(port);
 
-            if win32call! {winsock windows_sys::Win32::Networking::WinSock::connect(s.fd, (&udp_address as *const sockaddr_in) as *const SOCKADDR, core::mem::size_of::<sockaddr_in>() as _)}
-                == SOCKET_ERROR
-            {
+            let (connect_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::connect(s.fd, (&udp_address as *const sockaddr_in) as *const SOCKADDR, core::mem::size_of::<sockaddr_in>() as _)};
+            if connect_result == SOCKET_ERROR {
                 return -1;
             }
             0
@@ -231,7 +225,7 @@ pub unsafe fn socket(domain: int, socket_type: int, protocol: int) -> int {
     GlobalWsaInitializer::init();
 
     if domain == PF_UNIX as _ && socket_type == SOCK_DGRAM {
-        let socket = win32call! { winsock windows_sys::Win32::Networking::WinSock::socket(PF_INET as _, SOCK_DGRAM, protocol)};
+        let (socket, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::socket(PF_INET as _, SOCK_DGRAM, protocol)};
 
         if socket == INVALID_SOCKET {
             return -1;
@@ -245,7 +239,7 @@ pub unsafe fn socket(domain: int, socket_type: int, protocol: int) -> int {
             },
         ))
     } else {
-        let socket = win32call! { winsock windows_sys::Win32::Networking::WinSock::socket(domain, socket_type, protocol)};
+        let (socket, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::socket(domain, socket_type, protocol)};
 
         if socket == INVALID_SOCKET {
             return -1;
@@ -270,7 +264,7 @@ pub unsafe fn sendto(
 ) -> ssize_t {
     match HandleTranslator::get_instance().get(socket) {
         Some(FdHandleEntry::Socket(s)) => {
-            let bytes_sent = win32call! {winsock windows_sys::Win32::Networking::WinSock::sendto(s.fd, message as *const u8, length as _, flags, dest_addr as *const SOCKADDR, dest_len as _) };
+            let (bytes_sent, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::sendto(s.fd, message as *const u8, length as _, flags, dest_addr as *const SOCKADDR, dest_len as _) };
 
             if bytes_sent == SOCKET_ERROR {
                 return -1;
@@ -278,7 +272,7 @@ pub unsafe fn sendto(
             bytes_sent as _
         }
         Some(FdHandleEntry::UdsDatagramSocket(s)) => {
-            let bytes_sent = win32call! {winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags)};
+            let (bytes_sent, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags)};
 
             if bytes_sent == SOCKET_ERROR {
                 return -1;
@@ -307,7 +301,7 @@ pub unsafe fn recvfrom(
 ) -> ssize_t {
     match HandleTranslator::get_instance().get(socket) {
         Some(FdHandleEntry::Socket(s)) => {
-            let bytes_received = win32call! {winsock windows_sys::Win32::Networking::WinSock::recvfrom(s.fd, buffer as *mut u8, length as _, flags, address as *mut SOCKADDR, address_len as _) };
+            let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recvfrom(s.fd, buffer as *mut u8, length as _, flags, address as *mut SOCKADDR, address_len as _) };
 
             if bytes_received == SOCKET_ERROR {
                 return -1;
@@ -325,7 +319,7 @@ pub unsafe fn recvfrom(
                     read_set.fd_count = 1;
                     read_set.fd_array[0] = s.fd;
 
-                    let number_of_triggered_fds = win32call! {select(
+                    let (number_of_triggered_fds, _) = win32call! {select(
                         (s.fd + 1) as _,
                         &mut read_set,
                         core::ptr::null_mut::<fd_set>(),
@@ -344,17 +338,16 @@ pub unsafe fn recvfrom(
                     }
 
                     if 0 < number_of_triggered_fds {
-                        let received_bytes = (win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK })
-                            as _;
+                        let (received_bytes, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK };
                         if 0 < received_bytes {
-                            return received_bytes;
+                            return received_bytes as _;
                         }
                     }
 
                     remaining_time -= elapsed_time;
                 }
             } else {
-                let bytes_received = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK };
+                let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK };
 
                 if bytes_received == SOCKET_ERROR {
                     return -1;
@@ -379,9 +372,8 @@ pub unsafe fn getsockname(socket: int, address: *mut sockaddr, address_len: *mut
         }
     };
 
-    if win32call! {winsock windows_sys::Win32::Networking::WinSock::getsockname(socket_fd, address as *mut SOCKADDR, address_len as _) }
-        == SOCKET_ERROR
-    {
+    let (sock_name_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::getsockname(socket_fd, address as *mut SOCKADDR, address_len as _) };
+    if sock_name_result == SOCKET_ERROR {
         return -1;
     }
     0
@@ -390,7 +382,7 @@ pub unsafe fn getsockname(socket: int, address: *mut sockaddr, address_len: *mut
 pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int) -> ssize_t {
     match HandleTranslator::get_instance().get_socket(socket) {
         Some(s) => {
-            let bytes_sent = win32call! {winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags)};
+            let (bytes_sent, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags)};
             if bytes_sent == SOCKET_ERROR {
                 return -1;
             }
@@ -406,7 +398,7 @@ pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int
 pub unsafe fn recv(socket: int, buffer: *mut void, length: size_t, flags: int) -> ssize_t {
     match HandleTranslator::get_instance().get_socket(socket) {
         Some(s) => {
-            let bytes_received = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags) };
+            let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags) };
             if bytes_received == SOCKET_ERROR {
                 return -1;
             }

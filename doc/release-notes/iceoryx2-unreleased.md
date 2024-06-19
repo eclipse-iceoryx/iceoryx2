@@ -60,6 +60,7 @@
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * Build failure for Windows 11 i686-pc-windows-msvc [#235](https://github.com/eclipse-iceoryx/iceoryx2/issues/235)
+ * 'win32call' needs to provide the last error [#241](https://github.com/eclipse-iceoryx/iceoryx2/issues/241)
 
 ### Refactoring
 

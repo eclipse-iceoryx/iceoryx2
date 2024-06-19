@@ -29,7 +29,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use windows_sys::Win32::{
     Foundation::{
         ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, ERROR_PATH_NOT_FOUND,
-        INVALID_HANDLE_VALUE,
+        FALSE, INVALID_HANDLE_VALUE,
     },
     Security::SECURITY_ATTRIBUTES,
     Storage::FileSystem::{
@@ -43,7 +43,7 @@ impl Struct for WIN32_FIND_DATAA {}
 
 unsafe fn number_of_directory_entries(path: &[u8]) -> usize {
     let mut data = WIN32_FIND_DATAA::new();
-    let handle =
+    let (handle, _) =
         win32call! { FindFirstFileA(path.as_ptr(), &mut data), ignore ERROR_FILE_NOT_FOUND};
 
     if handle == INVALID_HANDLE_VALUE {
@@ -52,7 +52,9 @@ unsafe fn number_of_directory_entries(path: &[u8]) -> usize {
 
     let mut number_of_entries = 0;
     loop {
-        if win32call! {FindNextFileA(handle, &mut data), ignore ERROR_NO_MORE_FILES} == 0 {
+        let (file_found, _) =
+            win32call! {FindNextFileA(handle, &mut data), ignore ERROR_NO_MORE_FILES};
+        if file_found == FALSE {
             break;
         }
         number_of_entries += 1;
@@ -83,7 +85,7 @@ pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> i
     let path = to_dir_search_string(path);
     let number_of_entries = number_of_directory_entries(&path) + uds_files.len();
     let mut data = WIN32_FIND_DATAA::new();
-    let handle =
+    let (handle, _) =
         win32call! { FindFirstFileA(path.as_ptr(), &mut data), ignore ERROR_FILE_NOT_FOUND};
 
     if handle == INVALID_HANDLE_VALUE {
@@ -108,9 +110,9 @@ pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> i
     }
 
     loop {
-        if win32call! {FindNextFileA(handle, &mut data), ignore ERROR_NO_MORE_FILES} == 0
-            || i >= number_of_entries
-        {
+        let (file_found, _) =
+            win32call! {FindNextFileA(handle, &mut data), ignore ERROR_NO_MORE_FILES};
+        if file_found == FALSE || i >= number_of_entries {
             break;
         }
 
@@ -128,10 +130,9 @@ pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> i
 }
 
 pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
-    if win32call! { CreateDirectoryA(pathname as *const u8, core::ptr::null::<SECURITY_ATTRIBUTES>()),
-    ignore ERROR_ALREADY_EXISTS, ERROR_PATH_NOT_FOUND}
-        == 0
-    {
+    let (dir_created, _) = win32call! { CreateDirectoryA(pathname as *const u8, core::ptr::null::<SECURITY_ATTRIBUTES>()),
+    ignore ERROR_ALREADY_EXISTS, ERROR_PATH_NOT_FOUND};
+    if dir_created == FALSE {
         return -1;
     }
     0

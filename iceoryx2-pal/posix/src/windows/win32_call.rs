@@ -90,6 +90,12 @@ pub unsafe fn wsa_to_errno(value: WSA_ERROR) {
     }
 }
 
+/// Helper macro to deal with win32 calls and the error handling
+///
+/// To suppress the printing of error messages for some errors errors, just append them with the `ignore` keyword after the function call.
+/// If the call function is a winsock function, the `winsock` keyword needs to be added in front of the function call.
+///
+/// Returns a tuple of the actual return value of the function call and the `GetLastError` value
 #[macro_export(local_inner_macros)]
 macro_rules! win32call {
    {$call:expr, ignore $($error:ident),*} => {
@@ -123,7 +129,7 @@ macro_rules! win32call {
 
            }
 
-            ret_val
+            (ret_val, last_error)
         }
     };
     {$call:expr} => {
@@ -164,7 +170,7 @@ macro_rules! win32call {
 
            }
 
-            ret_val
+           (ret_val, last_error)
         }
     };
     {winsock $call:expr} => {

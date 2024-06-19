@@ -31,7 +31,8 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
         return 0;
     }
 
-    let attr = win32call! { GetFileAttributesA(path as *const u8), ignore ERROR_FILE_NOT_FOUND};
+    let (attr, _) =
+        win32call! { GetFileAttributesA(path as *const u8), ignore ERROR_FILE_NOT_FOUND};
     if attr == INVALID_FILE_ATTRIBUTES {
         return -1;
     }

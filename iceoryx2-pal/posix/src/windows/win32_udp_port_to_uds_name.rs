@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use windows_sys::Win32::{
-    Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, HANDLE},
+    Foundation::{CloseHandle, ERROR_ALREADY_EXISTS, HANDLE},
     Security::SECURITY_ATTRIBUTES,
     System::Memory::{
         CreateFileMappingA, MapViewOfFile, UnmapViewOfFile, VirtualAlloc, FILE_MAP_ALL_ACCESS,
@@ -199,7 +199,7 @@ impl Drop for PortToUds {
 impl PortToUds {
     pub fn new() -> Option<Self> {
         let handle: HANDLE = 0;
-        let shm_handle = unsafe {
+        let (shm_handle, last_error) = unsafe {
             win32call! { CreateFileMappingA(handle, core::ptr::null::<SECURITY_ATTRIBUTES>(), PAGE_READWRITE | SEC_RESERVE, 0, SHM_SIZE as _, SHM_SEGMENT_NAME.as_ptr()), ignore ERROR_ALREADY_EXISTS}
         };
 
@@ -207,9 +207,9 @@ impl PortToUds {
             return None;
         }
 
-        let has_created_shm = unsafe { GetLastError() != ERROR_ALREADY_EXISTS };
+        let has_created_shm = last_error != ERROR_ALREADY_EXISTS;
 
-        let map_result = unsafe {
+        let (map_result, _) = unsafe {
             win32call! {MapViewOfFile(shm_handle, FILE_MAP_ALL_ACCESS, 0, 0, SHM_SIZE as _)}
         };
 
@@ -220,11 +220,12 @@ impl PortToUds {
             return None;
         }
 
-        if unsafe {
-            win32call! {VirtualAlloc(map_result as *const void, SHM_SIZE as _, MEM_COMMIT, PAGE_READWRITE).is_null()}
-        } {
+        let (base_address, _) = unsafe {
+            win32call! {VirtualAlloc(map_result as *const void, SHM_SIZE as _, MEM_COMMIT, PAGE_READWRITE)}
+        };
+        if base_address.is_null() {
             unsafe {
-                win32call! { UnmapViewOfFile(map_result as isize)};
+                win32call! { UnmapViewOfFile(map_result)};
                 win32call! { CloseHandle(shm_handle)};
             }
             return None;

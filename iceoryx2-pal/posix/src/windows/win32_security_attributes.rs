@@ -133,10 +133,10 @@ fn get_owner_sid(handle: HANDLE) -> [u8; SID_LENGTH] {
     let mut owner_sid = core::ptr::null_mut::<void>();
     let mut owner_defaulted = FALSE;
 
-    if unsafe {
+    let (has_read_owner, _) = unsafe {
         win32call! {GetSecurityDescriptorOwner(security_descriptor, &mut owner_sid, &mut owner_defaulted)}
-    } == 0
-    {
+    };
+    if has_read_owner == FALSE {
         unsafe {
             win32call! {LocalFree(security_descriptor as isize) }
         };
@@ -145,10 +145,10 @@ fn get_owner_sid(handle: HANDLE) -> [u8; SID_LENGTH] {
 
     let mut owner_str = core::ptr::null_mut::<u8>();
 
-    if unsafe {
+    let (convert_result, _) = unsafe {
         win32call! {ConvertSidToStringSidA(owner_sid, &mut owner_str)}
-    } == 0
-    {
+    };
+    if convert_result == FALSE {
         unsafe {
             win32call! {LocalFree(security_descriptor as isize) }
         };
@@ -261,15 +261,15 @@ pub fn from_mode_to_security_attributes(handle: HANDLE, mode: mode_t) -> SECURIT
     //add_to_ace_string!(&mut buffer, b";;;", &get_owner_sid(handle), b")");
     add_to_ace_string!(&mut buffer, b";;;", &IDENT_OWNER, b")");
 
-    if unsafe {
+    let (convert_result, _) = unsafe {
         win32call! { ConvertStringSecurityDescriptorToSecurityDescriptorA(
             buffer.as_ptr(),
             SDDL_REVISION_1,
             &mut attr.lpSecurityDescriptor,
             core::ptr::null_mut::<u32>(),
         ) }
-    } == 0
-    {
+    };
+    if convert_result == FALSE {
         return SECURITY_ATTRIBUTES {
             nLength: 0,
             lpSecurityDescriptor: core::ptr::null_mut::<void>(),
@@ -361,8 +361,8 @@ pub fn from_security_attributes_to_mode(value: &SECURITY_ATTRIBUTES) -> mode_t {
     let mut mode: mode_t = 0;
     let mut raw_string: *mut u8 = core::ptr::null_mut();
     let mut raw_string_length = 0;
-    if unsafe {
-        win32call! {  ConvertSecurityDescriptorToStringSecurityDescriptorA(
+    let (convert_result, _) = unsafe {
+        win32call! { ConvertSecurityDescriptorToStringSecurityDescriptorA(
                 value.lpSecurityDescriptor,
                 SDDL_REVISION_1,
                 DACL_SECURITY_INFORMATION,
@@ -370,8 +370,8 @@ pub fn from_security_attributes_to_mode(value: &SECURITY_ATTRIBUTES) -> mode_t {
                 &mut raw_string_length,
             )
         }
-    } == 0
-    {
+    };
+    if convert_result == FALSE {
         return mode;
     }
 

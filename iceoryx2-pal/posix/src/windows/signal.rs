@@ -118,8 +118,9 @@ pub unsafe fn sigaction(sig: int, act: *const sigaction_t, oact: *mut sigaction_
 pub unsafe fn kill(pid: pid_t, sig: int) -> int {
     if sig == 0 {
         let mut exit_code = 0;
-        let handle = win32call! { OpenProcess(PROCESS_ALL_ACCESS, TRUE, pid) };
-        return if win32call! { GetExitCodeProcess(handle, &mut exit_code) } == TRUE {
+        let (handle, _) = win32call! { OpenProcess(PROCESS_ALL_ACCESS, TRUE, pid) };
+        let (has_exit_code, _) = win32call! { GetExitCodeProcess(handle, &mut exit_code) };
+        return if has_exit_code == TRUE {
             0
         } else {
             Errno::set(Errno::ESRCH);

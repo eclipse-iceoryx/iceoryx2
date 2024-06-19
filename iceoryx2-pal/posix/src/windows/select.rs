@@ -25,7 +25,8 @@ pub unsafe fn select(
     errorfds: *mut fd_set,
     timeout: *mut timeval,
 ) -> int {
-    win32call! {winsock windows_sys::Win32::Networking::WinSock::select(nfds, readfds, writefds, errorfds, timeout)}
+    let (num_handles, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::select(nfds, readfds, writefds, errorfds, timeout) };
+    num_handles
 }
 
 pub const fn CMSG_ALIGN(len: usize) -> usize {
