@@ -67,7 +67,7 @@ endif()
 # run cargo
 add_custom_target(
     iceoryx2-build-step ALL
-    COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+    COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} --package iceoryx2-ffi --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
     BYPRODUCTS
         ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
         ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
