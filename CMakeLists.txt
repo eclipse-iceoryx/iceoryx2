@@ -37,6 +37,12 @@ endmacro()
 message(STATUS "iceoryx2 options:")
 
 add_option(
+    NAME BUILD_TESTING
+    DESCRIPTION "Build tests"
+    DEFAULT_VALUE OFF
+)
+
+add_option(
     NAME EXAMPLES
     DESCRIPTION "Build examples"
     DEFAULT_VALUE OFF

@@ -125,3 +125,7 @@ target_link_libraries(shared-lib INTERFACE
 )
 
 include(cmake/install.cmake)
+
+if(${BUILD_TESTING})
+    add_subdirectory(tests)
+endif()
