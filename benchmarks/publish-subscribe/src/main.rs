@@ -18,10 +18,10 @@ use iceoryx2_bb_posix::clock::Time;
 
 const ITERATIONS: u64 = 10000000;
 
-fn perform_benchmark<T: Service>(iterations: u64) {
-    let service_name_a2b = ServiceName::new("a2b").unwrap();
-    let service_name_b2a = ServiceName::new("b2a").unwrap();
-    let node = NodeBuilder::new().create::<T>().unwrap();
+fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::error::Error>> {
+    let service_name_a2b = ServiceName::new("a2b")?;
+    let service_name_b2a = ServiceName::new("b2a")?;
+    let node = NodeBuilder::new().create::<T>()?;
 
     let service_a2b = node
         .service_builder(service_name_a2b)
@@ -31,8 +31,7 @@ fn perform_benchmark<T: Service>(iterations: u64) {
         .history_size(0)
         .subscriber_max_buffer_size(1)
         .enable_safe_overflow(true)
-        .create()
-        .unwrap();
+        .create()?;
 
     let service_b2a = node
         .service_builder(service_name_b2a)
@@ -42,8 +41,7 @@ fn perform_benchmark<T: Service>(iterations: u64) {
         .history_size(0)
         .subscriber_max_buffer_size(1)
         .enable_safe_overflow(true)
-        .create()
-        .unwrap();
+        .create()?;
 
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
@@ -55,9 +53,11 @@ fn perform_benchmark<T: Service>(iterations: u64) {
 
             barrier.wait();
 
-            for i in 0..iterations {
-                while sender_a2b.send_copy(i).expect("failed to send") == 0 {}
+            let mut sample = sender_a2b.loan().unwrap();
 
+            for _ in 0..iterations {
+                sample.send().unwrap();
+                sample = sender_a2b.loan().unwrap();
                 while receiver_b2a.receive().unwrap().is_none() {}
             }
         });
@@ -68,10 +68,11 @@ fn perform_benchmark<T: Service>(iterations: u64) {
 
             barrier.wait();
 
-            for i in 0..iterations {
+            for _ in 0..iterations {
+                let sample = sender_b2a.loan().unwrap();
                 while receiver_a2b.receive().unwrap().is_none() {}
 
-                while sender_b2a.send_copy(i).expect("failed to send") == 0 {}
+                sample.send().unwrap();
             }
         });
 
@@ -90,6 +91,8 @@ fn perform_benchmark<T: Service>(iterations: u64) {
             stop.as_nanos() / (iterations as u128 * 2)
         );
     });
+
+    Ok(())
 }
 
 #[derive(Parser, Debug)]
@@ -109,19 +112,19 @@ struct Args {
     bench_process_local: bool,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     set_log_level(iceoryx2_bb_log::LogLevel::Error);
     let mut at_least_one_benchmark_did_run = false;
 
     if args.bench_zero_copy || args.bench_all {
-        perform_benchmark::<zero_copy::Service>(args.iterations);
+        perform_benchmark::<zero_copy::Service>(args.iterations)?;
         at_least_one_benchmark_did_run = true;
     }
 
     if args.bench_process_local || args.bench_all {
-        perform_benchmark::<process_local::Service>(args.iterations);
+        perform_benchmark::<process_local::Service>(args.iterations)?;
         at_least_one_benchmark_did_run = true;
     }
 
@@ -130,4 +133,6 @@ fn main() {
             "Please use either '--bench_all' or select a specific benchmark. See `--help` for details."
         );
     }
+
+    Ok(())
 }
