@@ -24,7 +24,7 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new()
-//!                 .name(&NodeName::new("my_little_node")?)
+//!                 .name("my_little_node".try_into()?)
 //!                 .create::<zero_copy::Service>()?;
 //!
 //! println!("created node {:?}", node);
@@ -391,7 +391,7 @@ impl<Service: service::Service> Node<Service> {
         &self.shared.id
     }
 
-    pub fn service_builder(&self, name: &ServiceName) -> Builder<Service> {
+    pub fn service_builder(&self, name: ServiceName) -> Builder<Service> {
         Builder::new(name, self.shared.clone())
     }
 
@@ -587,7 +587,7 @@ impl<Service: service::Service> Node<Service> {
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let node = NodeBuilder::new()
-///                 .name(&NodeName::new("my_little_node")?)
+///                 .name("my_little_node".try_into()?)
 ///                 .create::<zero_copy::Service>()?;
 ///
 /// // do things with your cool new node
@@ -607,8 +607,8 @@ impl NodeBuilder {
     }
 
     /// Sets the [`NodeName`] of the to be created [`Node`].
-    pub fn name(mut self, value: &NodeName) -> Self {
-        self.name = Some(value.clone());
+    pub fn name(mut self, value: NodeName) -> Self {
+        self.name = Some(value);
         self
     }
 

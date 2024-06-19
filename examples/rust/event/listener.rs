@@ -18,8 +18,10 @@ const CYCLE_TIME: Duration = Duration::from_secs(1);
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
-    let event_name = ServiceName::new("MyEventName")?;
-    let event = node.service_builder(&event_name).event().open_or_create()?;
+    let event = node
+        .service_builder("MyEventName".try_into()?)
+        .event()
+        .open_or_create()?;
 
     let listener = event.listener().create()?;
 

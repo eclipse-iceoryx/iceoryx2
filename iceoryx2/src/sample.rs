@@ -16,8 +16,7 @@
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! # let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! # let service = node.service_builder(&service_name)
+//! # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
 //! #   .publish_subscribe::<u64>()
 //! #   .open_or_create()?;
 //! # let subscriber = service.subscriber().create()?;

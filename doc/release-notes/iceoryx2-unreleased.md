@@ -23,8 +23,7 @@
 
     fn main() -> Result<(), Box<dyn std::error::Error>> {
         let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-        let service_name = ServiceName::new("My/Funk/ServiceName")?;
-        let service = node.service_builder(&service_name)
+        let service = node.service_builder("My/Funk/ServiceName".try_into()?)
             .publish_subscribe::<[usize]>()
             // set a custom alignment of 512, interesting for SIMD-operations
             .payload_alignment(Alignment::new(512).unwrap())
@@ -54,7 +53,7 @@
     * Implement Serialize,Deserialize for
         * `FixedSizeByteString`
         * `FixedSizeVec`
- * Remove `Service::does_exist_with_custom_config` and `Service::list_with_custom_config` [#238](https://github.com/eclipse-iceoryx/iceoryx2/issues/238)
+ * TryInto implemented for `{Node|Service}Name` [#243](https://github.com/eclipse-iceoryx/iceoryx2/issues/243)
 
 ### Bugfixes
 
@@ -69,6 +68,7 @@
  * `open`, `open_or_create` and `create` are untyped in pubsub-builder [#195](https://github.com/eclipse-iceoryx/iceoryx2/issues/195)
  * use `ClockMode::Performance` instead of `ClockMode::Safety` in default deployment [#207](https://github.com/eclipse-iceoryx/iceoryx2/issues/207)
  * Updated all dependencies and increased MSRV to 1.75 [#221](https://github.com/eclipse-iceoryx/iceoryx2/issues/221)
+ * Remove `Service::does_exist_with_custom_config` and `Service::list_with_custom_config` [#238](https://github.com/eclipse-iceoryx/iceoryx2/issues/238)
 
 ### Workflow
 
@@ -84,7 +84,7 @@
 
 ### API Breaking Changes
 
-1. Services are created via the `Node`
+1. Services are created via the `Node`, `service_builder` take `ServiceName` by value
 
     ```rust
     // old
@@ -94,7 +94,7 @@
 
     // new
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-    let service = node.service_builder(&service_name)
+    let service = node.service_builder(service_name) // service_name is moved into builder
         .event()
         .create()?;
     ```
@@ -113,7 +113,7 @@
                     .config(&custom_config)
                     .create::<zero_copy::Service>()?;
 
-    let service = node.service_builder(&service_name)
+    let service = node.service_builder(service_name)
         .publish_subscribe::<u64>()
         .open_or_create()?;
     ```
@@ -128,7 +128,7 @@
 
     // new
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-    let service = node.service_builder(&service_name)
+    let service = node.service_builder(service_name)
         .publish_subscribe::<u64>() // type is now up here
         .create()?; // or open(), or open_or_create()
     ```

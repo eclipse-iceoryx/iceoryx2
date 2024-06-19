@@ -17,10 +17,9 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<process_local::Service>()?;
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
 //! // use `process_local` as communication variant
-//! let service = node.service_builder(&service_name)
+//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!

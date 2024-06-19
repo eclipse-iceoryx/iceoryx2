@@ -22,9 +22,8 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service_creator = node.service_builder(&service_name)
+//! let service_creator = node.service_builder("My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .create_with_attributes(
 //!         // all attributes that are defined when creating a new service are stored in the
@@ -47,9 +46,8 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
 //!
-//! let service_open =  node.service_builder(&service_name)
+//! let service_open = node.service_builder("My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_with_attributes(
 //!         // All attributes that are defined when opening a new service interpreted as
@@ -73,8 +71,7 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let service_name = ServiceName::new("My/Funk/ServiceName")?;
-//! let service = node.service_builder(&service_name)
+//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open()?;
 //!

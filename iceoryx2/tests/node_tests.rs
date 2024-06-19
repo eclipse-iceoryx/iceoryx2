@@ -78,7 +78,10 @@ mod node {
     #[test]
     fn node_with_name_can_be_created<S: Service>() {
         let node_name = NodeName::new("photons taste like chicken").unwrap();
-        let sut = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+        let sut = NodeBuilder::new()
+            .name(node_name.clone())
+            .create::<S>()
+            .unwrap();
 
         assert_that!(*sut.name(), eq node_name);
     }
@@ -90,7 +93,12 @@ mod node {
 
         let mut nodes = vec![];
         for _ in 0..NUMBER_OF_NODES {
-            nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
+            nodes.push(
+                NodeBuilder::new()
+                    .name(node_name.clone())
+                    .create::<S>()
+                    .unwrap(),
+            );
         }
 
         for node in nodes {
@@ -113,7 +121,7 @@ mod node {
         let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "give me a bit");
-            let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+            let node = NodeBuilder::new().name(node_name).create::<S>().unwrap();
             node_details.push_back(Details::from_node(&node));
             nodes.push(node);
         }
@@ -129,7 +137,7 @@ mod node {
         let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "gravity should be illegal");
-            let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+            let node = NodeBuilder::new().name(node_name).create::<S>().unwrap();
             node_details.push_back(Details::from_node(&node));
             nodes.push(node);
         }
@@ -152,7 +160,7 @@ mod node {
                 i,
                 "its a bird, its a plane, no its the mountain goat jumping through the code",
             );
-            nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
+            nodes.push(NodeBuilder::new().name(node_name).create::<S>().unwrap());
             assert_that!(node_ids.insert(nodes.last().unwrap().id().value()), eq true);
         }
     }
@@ -172,10 +180,10 @@ mod node {
         for i in 0..NUMBER_OF_NODES {
             let node_name_1 = generate_node_name(i, "gravity should be illegal");
             let node_name_2 = generate_node_name(i, "i like to name it name it");
-            let node_1 = NodeBuilder::new().name(&node_name_1).create::<S>().unwrap();
+            let node_1 = NodeBuilder::new().name(node_name_1).create::<S>().unwrap();
             let node_2 = NodeBuilder::new()
                 .config(&config)
-                .name(&node_name_2)
+                .name(node_name_2)
                 .create::<S>()
                 .unwrap();
 

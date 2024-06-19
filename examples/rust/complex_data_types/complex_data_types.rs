@@ -43,9 +43,8 @@ const CYCLE_TIME: Duration = Duration::from_secs(1);
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
-    let service_name = ServiceName::new("Complex Data Type Example")?;
     let service = node
-        .service_builder(&service_name)
+        .service_builder("Complex Data Type Example".try_into()?)
         .publish_subscribe::<ComplexDataType>()
         .max_publishers(16)
         .max_subscribers(16)

@@ -86,7 +86,7 @@ mod service {
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
             self.node
-                .service_builder(&service_name)
+                .service_builder(service_name.clone())
                 .publish_subscribe::<u64>()
                 .create_with_attributes(attributes)
         }
@@ -97,7 +97,7 @@ mod service {
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
             self.node
-                .service_builder(&service_name)
+                .service_builder(service_name.clone())
                 .publish_subscribe::<u64>()
                 .open_with_attributes(attributes)
         }
@@ -149,7 +149,7 @@ mod service {
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
             self.node
-                .service_builder(&service_name)
+                .service_builder(service_name.clone())
                 .event()
                 .create_with_attributes(attributes)
         }
@@ -160,7 +160,7 @@ mod service {
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
             self.node
-                .service_builder(&service_name)
+                .service_builder(service_name.clone())
                 .event()
                 .open_with_attributes(attributes)
         }
@@ -200,13 +200,13 @@ mod service {
         let service_name = generate_name();
         let sut_pub_sub = test
             .node()
-            .service_builder(&service_name)
+            .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut_pub_sub, is_ok);
         let sut_pub_sub = sut_pub_sub.unwrap();
 
-        let sut_event = test.node().service_builder(&service_name).event().create();
+        let sut_event = test.node().service_builder(service_name).event().create();
         assert_that!(sut_event, is_ok);
         let sut_event = sut_event.unwrap();
 
