@@ -32,6 +32,19 @@ Take a look at the
 In this example the `PlacementDefault` trait is introduced that allows in place initialization
 and solves the stack overflow issue when the data type is larger than the available stack size.
 
+## Does iceoryx2 Offer An Async API?
+
+Yes, it does to some extent. Take a look at the [event example](examples/rust/event).
+We also have a more idiomatic
+[async API on our roadmap](https://github.com/eclipse-iceoryx/iceoryx2/issues/47).
+
+Events in iceoryx2 might look a bit different, and users need to perform some
+manual work. This is because events are sometimes triggered when multiple
+inter-process conditions coincide, which cannot be easily handled with callbacks.
+For instance, when you want to emit an event when data from multiple processes
+have arrived, if every process sends out an event when it has sent data, the
+waiting process may encounter many false wakeups, which can degrade performance.
+
 ## Application does not remove services/ports on shutdown or several application restarts lead to port count exceeded
 
 The structs of iceoryx2 need to be able to cleanup all resources when they
