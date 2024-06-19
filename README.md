@@ -149,7 +149,8 @@ cargo run --example publish_subscribe_subscriber
 
 ### Events
 
-This minimal example showcases an event notification between two processes.
+This minimal example showcases how async operations can be realized by using event notification
+between two processes. The `listener.rs` hereby waits for a notification from the `notifier.rs`.
 
 **notifier.rs**
 
