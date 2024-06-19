@@ -10,11 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{sync::Barrier, time::Instant};
-
 use clap::Parser;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_log::set_log_level;
+use iceoryx2_bb_posix::barrier::*;
+use iceoryx2_bb_posix::clock::Time;
+use iceoryx2_bb_posix::thread::ThreadBuilder;
 
 fn perform_benchmark<T: Service>(args: &Args) {
     let service_name_a2b = ServiceName::new("a2b").unwrap();
@@ -39,50 +40,49 @@ fn perform_benchmark<T: Service>(args: &Args) {
         .create()
         .unwrap();
 
-    let barrier = Barrier::new(3);
+    let barrier_handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
 
-    std::thread::scope(|s| {
-        let t1 = s.spawn(|| {
-            let notifier_a2b = service_a2b.notifier_builder().create().unwrap();
-            let listener_b2a = service_b2a.listener_builder().create().unwrap();
+    let t1 = ThreadBuilder::new().affinity(0).priority(255).spawn(|| {
+        let notifier_a2b = service_a2b.notifier_builder().create().unwrap();
+        let listener_b2a = service_b2a.listener_builder().create().unwrap();
 
-            barrier.wait();
-            notifier_a2b.notify().expect("failed to notify");
-
-            for _ in 0..args.iterations {
-                while listener_b2a.blocking_wait_one().unwrap().is_none() {}
-                notifier_a2b.notify().expect("failed to notify");
-            }
-        });
-
-        let t2 = s.spawn(|| {
-            let notifier_b2a = service_b2a.notifier_builder().create().unwrap();
-            let listener_a2b = service_a2b.listener_builder().create().unwrap();
-
-            barrier.wait();
-            for _ in 0..args.iterations {
-                while listener_a2b.blocking_wait_one().unwrap().is_none() {}
-                notifier_b2a.notify().expect("failed to notify");
-            }
-        });
-
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        let start = Instant::now();
         barrier.wait();
+        notifier_a2b.notify().expect("failed to notify");
 
-        t1.join().expect("thread failure");
-        t2.join().expect("thread failure");
-
-        let stop = start.elapsed();
-        println!(
-            "{} ::: MaxEventId: {}, Iterations: {}, Time: {}, Latency: {} ns",
-            std::any::type_name::<T>(),
-            args.max_event_id,
-            args.iterations,
-            stop.as_secs_f64(),
-            stop.as_nanos() / (args.iterations as u128 * 2)
-        );
+        for _ in 0..args.iterations {
+            while listener_b2a.blocking_wait_one().unwrap().is_none() {}
+            notifier_a2b.notify().expect("failed to notify");
+        }
     });
+
+    let t2 = ThreadBuilder::new().affinity(1).priority(255).spawn(|| {
+        let notifier_b2a = service_b2a.notifier_builder().create().unwrap();
+        let listener_a2b = service_a2b.listener_builder().create().unwrap();
+
+        barrier.wait();
+        for _ in 0..args.iterations {
+            while listener_a2b.blocking_wait_one().unwrap().is_none() {}
+            notifier_b2a.notify().expect("failed to notify");
+        }
+    });
+
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    let start = Time::now().expect("failed to acquire time");
+    barrier.wait();
+
+    drop(t1);
+    drop(t2);
+
+    let stop = start.elapsed().expect("failed to measure time");
+    println!(
+        "{} ::: MaxEventId: {}, Iterations: {}, Time: {}, Latency: {} ns",
+        std::any::type_name::<T>(),
+        args.max_event_id,
+        args.iterations,
+        stop.as_secs_f64(),
+        stop.as_nanos() / (args.iterations as u128 * 2)
+    );
 }
 
 const ITERATIONS: usize = 1000000;

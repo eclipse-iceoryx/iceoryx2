@@ -47,7 +47,7 @@ fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::err
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
 
-    let t1 = ThreadBuilder::new().affinity(1).priority(255).spawn(|| {
+    let t1 = ThreadBuilder::new().affinity(0).priority(255).spawn(|| {
         let sender_a2b = service_a2b.publisher_builder().create().unwrap();
         let receiver_b2a = service_b2a.subscriber_builder().create().unwrap();
 
@@ -62,7 +62,7 @@ fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::err
         }
     });
 
-    let t2 = ThreadBuilder::new().affinity(2).priority(255).spawn(|| {
+    let t2 = ThreadBuilder::new().affinity(1).priority(255).spawn(|| {
         let sender_b2a = service_b2a.publisher_builder().create().unwrap();
         let receiver_a2b = service_a2b.subscriber_builder().create().unwrap();
 
