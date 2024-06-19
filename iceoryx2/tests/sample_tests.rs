@@ -49,11 +49,11 @@ mod sample {
                 .create()
                 .unwrap();
 
-            let publisher_1 = service.publisher().create().unwrap();
+            let publisher_1 = service.publisher_builder().create().unwrap();
 
-            let publisher_2 = service.publisher().create().unwrap();
+            let publisher_2 = service.publisher_builder().create().unwrap();
 
-            let subscriber = service.subscriber().create().unwrap();
+            let subscriber = service.subscriber_builder().create().unwrap();
 
             Self {
                 node,
@@ -140,7 +140,7 @@ mod sample {
 
         const PAYLOAD_2: u64 = 123981235645;
 
-        let publisher = test_context.service.publisher().create().unwrap();
+        let publisher = test_context.service.publisher_builder().create().unwrap();
         assert_that!(publisher.send_copy(PAYLOAD_2), eq Ok(1));
         assert_that!(*sample, eq PAYLOAD_1);
         let sample_2 = test_context.subscriber.receive().unwrap().unwrap();
@@ -161,7 +161,7 @@ mod sample {
 
         const PAYLOAD_2: u64 = 123666645;
 
-        let subscriber = test_context.service.subscriber().create().unwrap();
+        let subscriber = test_context.service.subscriber_builder().create().unwrap();
         assert_that!(test_context.publisher_1.send_copy(PAYLOAD_2), eq Ok(1));
         let sample_1 = subscriber.receive().unwrap().unwrap();
         let sample_2 = subscriber.receive().unwrap().unwrap();

@@ -50,8 +50,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .max_subscribers(16)
         .open_or_create()?;
 
-    let publisher = service.publisher().create()?;
-    let subscriber = service.subscriber().create()?;
+    let publisher = service.publisher_builder().create()?;
+    let subscriber = service.subscriber_builder().create()?;
     let mut counter = 0;
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {

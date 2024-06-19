@@ -51,12 +51,12 @@ mod sample_mut {
                 .unwrap();
 
             let publisher = service
-                .publisher()
+                .publisher_builder()
                 .max_loaned_samples(MAX_LOANED_SAMPLES)
                 .create()
                 .unwrap();
 
-            let subscriber = service.subscriber().create().unwrap();
+            let subscriber = service.subscriber_builder().create().unwrap();
 
             Self {
                 node,
@@ -167,7 +167,7 @@ mod sample_mut {
 
         drop(publisher);
 
-        assert_that!(service.publisher().create(), is_ok);
+        assert_that!(service.publisher_builder().create(), is_ok);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

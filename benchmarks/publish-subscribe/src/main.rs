@@ -50,8 +50,8 @@ fn perform_benchmark<T: Service>(iterations: u64) {
 
     std::thread::scope(|s| {
         let t1 = s.spawn(|| {
-            let sender_a2b = service_a2b.publisher().create().unwrap();
-            let receiver_b2a = service_b2a.subscriber().create().unwrap();
+            let sender_a2b = service_a2b.publisher_builder().create().unwrap();
+            let receiver_b2a = service_b2a.subscriber_builder().create().unwrap();
 
             barrier.wait();
 
@@ -63,8 +63,8 @@ fn perform_benchmark<T: Service>(iterations: u64) {
         });
 
         let t2 = s.spawn(|| {
-            let sender_b2a = service_b2a.publisher().create().unwrap();
-            let receiver_a2b = service_a2b.subscriber().create().unwrap();
+            let sender_b2a = service_b2a.publisher_builder().create().unwrap();
+            let receiver_a2b = service_a2b.subscriber_builder().create().unwrap();
 
             barrier.wait();
 

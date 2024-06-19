@@ -624,13 +624,13 @@ mod service_publish_subscribe {
         let mut publishers = vec![];
 
         for i in 0..MAX_PUBLISHERS / 2 {
-            publishers.push(sut.publisher().create().unwrap());
+            publishers.push(sut.publisher_builder().create().unwrap());
             assert_that!(sut.dynamic_config().number_of_publishers(), eq 2 * i + 1);
             assert_that!(sut2.dynamic_config().number_of_publishers(), eq 2 * i + 1);
             assert_that!(sut.dynamic_config().number_of_subscribers(), eq 0);
             assert_that!(sut2.dynamic_config().number_of_subscribers(), eq 0);
 
-            publishers.push(sut2.publisher().create().unwrap());
+            publishers.push(sut2.publisher_builder().create().unwrap());
             assert_that!(sut.dynamic_config().number_of_publishers(), eq 2 * i + 2);
             assert_that!(sut2.dynamic_config().number_of_publishers(), eq 2 * i + 2);
             assert_that!(sut.dynamic_config().number_of_subscribers(), eq 0);
@@ -712,13 +712,13 @@ mod service_publish_subscribe {
         let mut subscribers = vec![];
 
         for i in 0..MAX_SUBSCRIBERS / 2 {
-            subscribers.push(sut.subscriber().create().unwrap());
+            subscribers.push(sut.subscriber_builder().create().unwrap());
             assert_that!(sut.dynamic_config().number_of_subscribers(), eq 2 * i + 1);
             assert_that!(sut2.dynamic_config().number_of_subscribers(), eq 2 * i + 1);
             assert_that!(sut.dynamic_config().number_of_publishers(), eq 0);
             assert_that!(sut2.dynamic_config().number_of_publishers(), eq 0);
 
-            subscribers.push(sut2.subscriber().create().unwrap());
+            subscribers.push(sut2.subscriber_builder().create().unwrap());
             assert_that!(sut.dynamic_config().number_of_subscribers(), eq 2 * i + 2);
             assert_that!(sut2.dynamic_config().number_of_subscribers(), eq 2 * i + 2);
             assert_that!(sut.dynamic_config().number_of_publishers(), eq 0);
@@ -749,8 +749,8 @@ mod service_publish_subscribe {
             .open()
             .unwrap();
 
-        let subscriber = sut.subscriber().create().unwrap();
-        let publisher = sut2.publisher().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut2.publisher_builder().create().unwrap();
         assert_that!(subscriber.update_connections(), is_ok);
 
         assert_that!(publisher.send_copy(1234), is_ok);
@@ -786,8 +786,8 @@ mod service_publish_subscribe {
             .open()
             .unwrap();
 
-        let publisher = sut.publisher().create().unwrap();
-        let subscriber = sut2.subscriber().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut2.subscriber_builder().create().unwrap();
         assert_that!(publisher.update_connections(), is_ok);
 
         assert_that!(publisher.send_copy(1234), is_ok);
@@ -839,8 +839,8 @@ mod service_publish_subscribe {
             .open()
             .unwrap();
 
-        let subscriber = service_sub.subscriber().create().unwrap();
-        let publisher = service_pub.publisher().create().unwrap();
+        let subscriber = service_sub.subscriber_builder().create().unwrap();
+        let publisher = service_pub.publisher_builder().create().unwrap();
 
         let mut samples = vec![];
         for n in 0..BUFFER_SIZE {
@@ -878,13 +878,13 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let publisher = sut.publisher().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
 
         for n in 0..MAX_SUBSCRIBERS {
             for _ in 0..RECONNECTIONS {
                 let mut subscribers = vec![];
                 for _ in 0..n {
-                    subscribers.push(sut.subscriber().create());
+                    subscribers.push(sut.subscriber_builder().create());
                 }
 
                 assert_that!(publisher.send_copy(1234), eq Ok(n));
@@ -915,13 +915,13 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let publisher = sut.publisher().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
 
         for n in 0..MAX_SUBSCRIBERS {
             for _ in 0..RECONNECTIONS {
                 let mut subscribers = vec![];
                 for _ in 0..n {
-                    subscribers.push(sut.subscriber().create().unwrap());
+                    subscribers.push(sut.subscriber_builder().create().unwrap());
                 }
 
                 assert_that!(publisher.send_copy(1234), eq Ok(n));
@@ -949,13 +949,13 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let subscriber = sut.subscriber().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
 
         for n in 0..MAX_PUBLISHERS {
             for k in 0..RECONNECTIONS {
                 let mut publishers = vec![];
                 for _ in 0..n {
-                    publishers.push(sut.publisher().create().unwrap());
+                    publishers.push(sut.publisher_builder().create().unwrap());
                 }
 
                 for publisher in publishers {
@@ -988,7 +988,7 @@ mod service_publish_subscribe {
                     .publish_subscribe::<u64>()
                     .create()
                     .unwrap();
-                let publisher = sut2.publisher().create().unwrap();
+                let publisher = sut2.publisher_builder().create().unwrap();
 
                 create_service_barrier.wait();
                 let mut counter = 1u64;
@@ -1011,7 +1011,7 @@ mod service_publish_subscribe {
 
                     let mut latest_counter = 0u64;
                     for _ in 0..NUMBER_OF_RECONNECTIONS {
-                        let subscriber = sut.subscriber().create().unwrap();
+                        let subscriber = sut.subscriber_builder().create().unwrap();
 
                         loop {
                             if let Some(counter) = subscriber.receive().unwrap() {
@@ -1053,7 +1053,7 @@ mod service_publish_subscribe {
                     .open_or_create()
                     .unwrap();
 
-                let subscriber = sut.subscriber().create().unwrap();
+                let subscriber = sut.subscriber_builder().create().unwrap();
                 create_service_barrier.wait();
 
                 while keep_running.load(Ordering::Relaxed) {
@@ -1079,7 +1079,7 @@ mod service_publish_subscribe {
                     create_service_barrier.wait();
 
                     while keep_running.load(Ordering::Relaxed) {
-                        let publisher = sut2.publisher().create().unwrap();
+                        let publisher = sut2.publisher_builder().create().unwrap();
 
                         let current_cycle = reconnection_cycle.load(Ordering::Relaxed);
                         let mut counter = 1u64;
@@ -1115,14 +1115,14 @@ mod service_publish_subscribe {
         publishers.reserve(MAX_PUB);
 
         for _ in 0..MAX_PUB {
-            publishers.push(sut.publisher().create().unwrap());
+            publishers.push(sut.publisher_builder().create().unwrap());
         }
 
         let mut subscribers = vec![];
         subscribers.reserve(MAX_SUB);
 
         for _ in 0..MAX_SUB {
-            subscribers.push(sut.subscriber().create().unwrap());
+            subscribers.push(sut.subscriber_builder().create().unwrap());
         }
 
         let mut counter = 0;
@@ -1172,14 +1172,14 @@ mod service_publish_subscribe {
         publishers.reserve(MAX_PUB);
 
         for c in channels.iter().take(MAX_PUB) {
-            publishers.push(c.publisher().create().unwrap());
+            publishers.push(c.publisher_builder().create().unwrap());
         }
 
         let mut subscribers = vec![];
         subscribers.reserve(MAX_SUB);
 
         for i in 0..MAX_SUB {
-            subscribers.push(channels[i + MAX_PUB].subscriber().create().unwrap());
+            subscribers.push(channels[i + MAX_PUB].subscriber_builder().create().unwrap());
         }
 
         let mut counter = 0;
@@ -1211,8 +1211,8 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let publisher = sut.publisher().create().unwrap();
-        let subscriber = sut.subscriber().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
 
         for i in 0..BUFFER_SIZE {
             assert_that!(publisher.send_copy(i), is_ok);
@@ -1243,11 +1243,11 @@ mod service_publish_subscribe {
             .unwrap();
 
         let publisher = sut
-            .publisher()
+            .publisher_builder()
             .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
             .create()
             .unwrap();
-        let subscriber = sut.subscriber().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
 
         for i in 0..BUFFER_SIZE {
             assert_that!(publisher.send_copy(i), is_ok);
@@ -1297,12 +1297,12 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let sut_publisher = sut.publisher().create().unwrap();
+        let sut_publisher = sut.publisher_builder().create().unwrap();
         assert_that!(sut_publisher.send_copy(29), is_ok);
         assert_that!(sut_publisher.send_copy(32), is_ok);
         assert_that!(sut_publisher.send_copy(35), is_ok);
 
-        let sut_subscriber = sut.subscriber().create().unwrap();
+        let sut_subscriber = sut.subscriber_builder().create().unwrap();
         assert_that!(sut_publisher.update_connections(), is_ok);
 
         for i in 0..BUFFER_SIZE {
@@ -1326,10 +1326,10 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let sut_publisher = sut.publisher().create().unwrap();
+        let sut_publisher = sut.publisher_builder().create().unwrap();
         assert_that!(sut_publisher.send_copy(29), is_ok);
 
-        let sut_subscriber = sut.subscriber().create().unwrap();
+        let sut_subscriber = sut.subscriber_builder().create().unwrap();
         assert_that!(sut_publisher.update_connections(), is_ok);
 
         let data = sut_subscriber.receive().unwrap();
@@ -1353,11 +1353,15 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let sut_publisher = sut.publisher().max_loaned_samples(1).create().unwrap();
+        let sut_publisher = sut
+            .publisher_builder()
+            .max_loaned_samples(1)
+            .create()
+            .unwrap();
 
         let mut subscribers = vec![];
         for _ in 0..2 {
-            let sut_subscriber = sut.subscriber().create();
+            let sut_subscriber = sut.subscriber_builder().create();
             subscribers.push(sut_subscriber);
         }
 
@@ -1390,14 +1394,14 @@ mod service_publish_subscribe {
             .unwrap();
 
         let sut_publisher = sut
-            .publisher()
+            .publisher_builder()
             .max_loaned_samples(max_loan)
             .create()
             .unwrap();
 
         let mut subscribers = vec![];
         for _ in 0..max_subscribers {
-            let sut_subscriber = sut.subscriber().create().unwrap();
+            let sut_subscriber = sut.subscriber_builder().create().unwrap();
             subscribers.push(sut_subscriber);
         }
 
@@ -1571,11 +1575,11 @@ mod service_publish_subscribe {
             .unwrap();
 
         let sut_publisher = sut
-            .publisher()
+            .publisher_builder()
             .max_loaned_samples(publisher_borrow_size)
             .create()
             .unwrap();
-        let sut_subscriber = sut.subscriber().create().unwrap();
+        let sut_subscriber = sut.subscriber_builder().create().unwrap();
 
         let mut borrowed_samples = vec![];
         let mut cached_samples = vec![];
@@ -1693,26 +1697,26 @@ mod service_publish_subscribe {
 
         // acquire all possible ports
         for _ in 0..MAX_PUBLISHERS {
-            let publisher = sut.publisher().create();
+            let publisher = sut.publisher_builder().create();
             assert_that!(publisher, is_ok);
             publishers.push(publisher);
         }
 
         for _ in 0..MAX_SUBSCRIBERS {
-            let subscriber = sut.subscriber().create();
+            let subscriber = sut.subscriber_builder().create();
             assert_that!(subscriber, is_ok);
             subscribers.push(subscriber);
         }
 
         // create additional ports and fail
-        let publisher = sut.publisher().create();
+        let publisher = sut.publisher_builder().create();
         assert_that!(publisher, is_err);
         assert_that!(
             publisher.err().unwrap(), eq
             PublisherCreateError::ExceedsMaxSupportedPublishers
         );
 
-        let subscriber = sut.subscriber().create();
+        let subscriber = sut.subscriber_builder().create();
         assert_that!(subscriber, is_err);
         assert_that!(
             subscriber.err().unwrap(), eq
@@ -1724,10 +1728,10 @@ mod service_publish_subscribe {
         assert_that!(subscribers.remove(0), is_ok);
 
         // create additional ports shall work again
-        let publisher = sut.publisher().create();
+        let publisher = sut.publisher_builder().create();
         assert_that!(publisher, is_ok);
 
-        let subscriber = sut.subscriber().create();
+        let subscriber = sut.subscriber_builder().create();
         assert_that!(subscriber, is_ok);
     }
 
@@ -1912,8 +1916,8 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let publisher = sut.publisher().create().unwrap();
-        let subscriber = sut.subscriber().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
 
         drop(sut);
         assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
@@ -1934,8 +1938,8 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let subscriber = sut.subscriber().create().unwrap();
-        let publisher = sut.publisher().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
 
         drop(sut);
 
@@ -1981,9 +1985,9 @@ mod service_publish_subscribe {
             .unwrap();
 
         for i in 1..=BUFFER_SIZE {
-            let publisher_before_sub = sut2.publisher().create().unwrap();
-            let subscriber = sut.subscriber().buffer_size(i).create().unwrap();
-            let publisher_after_sub = sut2.publisher().create().unwrap();
+            let publisher_before_sub = sut2.publisher_builder().create().unwrap();
+            let subscriber = sut.subscriber_builder().buffer_size(i).create().unwrap();
+            let publisher_after_sub = sut2.publisher_builder().create().unwrap();
 
             assert_that!(subscriber.buffer_size(), eq i);
 
@@ -2032,7 +2036,10 @@ mod service_publish_subscribe {
             .open()
             .unwrap();
 
-        let subscriber = sut2.subscriber().buffer_size(BUFFER_SIZE + 1).create();
+        let subscriber = sut2
+            .subscriber_builder()
+            .buffer_size(BUFFER_SIZE + 1)
+            .create();
         assert_that!(subscriber, is_err);
         assert_that!(subscriber.err().unwrap(), eq SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService);
     }
@@ -2047,7 +2054,7 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let subscriber = sut.subscriber().buffer_size(0).create().unwrap();
+        let subscriber = sut.subscriber_builder().buffer_size(0).create().unwrap();
         assert_that!(subscriber.buffer_size(), eq 1);
     }
 
@@ -2063,11 +2070,11 @@ mod service_publish_subscribe {
             .unwrap();
 
         let publisher = sut
-            .publisher()
+            .publisher_builder()
             .max_slice_len(MAX_ELEMENTS)
             .create()
             .unwrap();
-        let subscriber = sut.subscriber().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
 
         for n in 0..=MAX_ELEMENTS {
             let sample = publisher.loan_slice_uninit(n).unwrap();
@@ -2105,11 +2112,11 @@ mod service_publish_subscribe {
             .unwrap();
 
         let publisher = service_pub
-            .publisher()
+            .publisher_builder()
             .max_slice_len(MAX_ELEMENTS)
             .create()
             .unwrap();
-        let subscriber = service_sub.subscriber().create().unwrap();
+        let subscriber = service_sub.subscriber_builder().create().unwrap();
 
         let mut samples = vec![];
         for n in 0..=MAX_ELEMENTS {

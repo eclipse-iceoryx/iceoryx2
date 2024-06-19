@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event()
         .open_or_create()?;
 
-    let notifier = event.notifier().create()?;
+    let notifier = event.notifier_builder().create()?;
 
     let mut counter: usize = 0;
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {

@@ -123,12 +123,12 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     ///     .publish_subscribe::<u64>()
     ///     .open_or_create()?;
     ///
-    /// let subscriber = pubsub.subscriber().create()?;
+    /// let subscriber = pubsub.subscriber_builder().create()?;
     ///
     /// # Ok(())
     /// # }
     /// ```
-    pub fn subscriber(&self) -> PortFactorySubscriber<Service, PayloadType> {
+    pub fn subscriber_builder(&self) -> PortFactorySubscriber<Service, PayloadType> {
         PortFactorySubscriber::new(self)
     }
 
@@ -147,7 +147,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     ///     .publish_subscribe::<u64>()
     ///     .open_or_create()?;
     ///
-    /// let publisher = pubsub.publisher()
+    /// let publisher = pubsub.publisher_builder()
     ///                     .max_loaned_samples(6)
     ///                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
     ///                     .create()?;
@@ -155,7 +155,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     /// # Ok(())
     /// # }
     /// ```
-    pub fn publisher(&self) -> PortFactoryPublisher<Service, PayloadType> {
+    pub fn publisher_builder(&self) -> PortFactoryPublisher<Service, PayloadType> {
         PortFactoryPublisher::new(self)
     }
 }

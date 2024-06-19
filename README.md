@@ -92,7 +92,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .publish_subscribe::<usize>()
         .open_or_create()?;
 
-    let publisher = service.publisher().create()?;
+    let publisher = service.publisher_builder().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         let sample = publisher.loan_uninit()?;
@@ -119,7 +119,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .publish_subscribe::<usize>()
         .open_or_create()?;
 
-    let subscriber = service.subscriber().create()?;
+    let subscriber = service.subscriber_builder().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         while let Some(sample) = subscriber.receive()? {
@@ -166,7 +166,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event()
         .open_or_create()?;
 
-    let notifier = event.notifier().create()?;
+    let notifier = event.notifier_builder().create()?;
 
     let id = EventId::new(12);
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
@@ -194,7 +194,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event()
         .open_or_create()?;
 
-    let listener = event.listener().create()?;
+    let listener = event.listener_builder().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
@@ -221,7 +221,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .event()
         .open_or_create()?;
 
-    let listener = event.listener().create()?;
+    let listener = event.listener_builder().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
         listener.timed_wait_all(

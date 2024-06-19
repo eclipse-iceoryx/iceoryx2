@@ -41,7 +41,7 @@ pub extern "C" fn run_subscriber(seconds: u32) -> i32 {
 
     let service = service.unwrap();
 
-    let subscriber = service.subscriber().create();
+    let subscriber = service.subscriber_builder().create();
 
     if subscriber.is_err() {
         return -1;

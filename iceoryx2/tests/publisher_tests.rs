@@ -59,7 +59,7 @@ mod publisher {
             .publish_subscribe::<u64>()
             .create()?;
 
-        let sut = service.publisher().max_loaned_samples(2).create()?;
+        let sut = service.publisher_builder().max_loaned_samples(2).create()?;
 
         let sample = sut.loan()?;
 
@@ -77,7 +77,7 @@ mod publisher {
             .publish_subscribe::<ComplexType>()
             .create()?;
 
-        let publisher = service.publisher().create()?;
+        let publisher = service.publisher_builder().create()?;
         let sut = publisher.loan()?;
 
         assert_that!(sut.payload().data, eq COMPLEX_TYPE_DEFAULT_VALUE);
@@ -96,7 +96,7 @@ mod publisher {
             .create()?;
 
         let publisher = service
-            .publisher()
+            .publisher_builder()
             .max_slice_len(NUMBER_OF_ELEMENTS)
             .create()?;
         let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS)?;
@@ -119,7 +119,7 @@ mod publisher {
             .create()?;
 
         let publisher = service
-            .publisher()
+            .publisher_builder()
             .max_slice_len(NUMBER_OF_ELEMENTS)
             .create()?;
 
@@ -142,7 +142,7 @@ mod publisher {
             .create()?;
 
         let publisher = service
-            .publisher()
+            .publisher_builder()
             .max_slice_len(NUMBER_OF_ELEMENTS)
             .create()?;
 
@@ -162,7 +162,7 @@ mod publisher {
             .publish_subscribe::<u64>()
             .create()?;
 
-        let sut = service.publisher().max_loaned_samples(2).create()?;
+        let sut = service.publisher_builder().max_loaned_samples(2).create()?;
 
         let sample = sut.loan_uninit()?.write_payload(42);
 
@@ -180,13 +180,13 @@ mod publisher {
             .publish_subscribe::<u64>()
             .create()?;
 
-        let sut = service.publisher().max_loaned_samples(4).create()?;
+        let sut = service.publisher_builder().max_loaned_samples(4).create()?;
 
         let sample1 = sut.loan_uninit()?.write_payload(1);
         let sample2 = sut.loan_uninit()?.write_payload(2);
         let sample3 = sut.loan_uninit()?.write_payload(3);
 
-        let subscriber = service.subscriber().create()?;
+        let subscriber = service.subscriber_builder().create()?;
 
         assert_that!(sut.send_copy(4), is_ok);
         assert_that!(sample3.send(), is_ok);
@@ -212,7 +212,7 @@ mod publisher {
             .publish_subscribe::<u64>()
             .create()?;
 
-        let sut = service.publisher().max_loaned_samples(2).create()?;
+        let sut = service.publisher_builder().max_loaned_samples(2).create()?;
 
         let _sample1 = sut.loan_uninit()?;
         let _sample2 = sut.loan_uninit()?;
@@ -233,7 +233,7 @@ mod publisher {
             .publish_subscribe::<u64>()
             .create()?;
 
-        let sut = service.publisher().max_loaned_samples(2).create()?;
+        let sut = service.publisher_builder().max_loaned_samples(2).create()?;
 
         let _sample1 = sut.loan_uninit()?;
         let sample2 = sut.loan_uninit()?.write_payload(2);
@@ -257,7 +257,7 @@ mod publisher {
             .publish_subscribe::<u64>()
             .create()?;
 
-        let sut = service.publisher().max_loaned_samples(2).create()?;
+        let sut = service.publisher_builder().max_loaned_samples(2).create()?;
 
         let _sample1 = sut.loan_uninit()?;
         let sample2 = sut.loan_uninit()?;
@@ -285,7 +285,7 @@ mod publisher {
             .create()?;
 
         let sut = service
-            .publisher()
+            .publisher_builder()
             .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
             .create()?;
 
@@ -301,7 +301,7 @@ mod publisher {
                     .open()
                     .unwrap();
 
-                let subscriber = service.subscriber().create().unwrap();
+                let subscriber = service.subscriber_builder().create().unwrap();
                 let receive_sample = || loop {
                     if let Some(sample) = subscriber.receive().unwrap() {
                         return sample;

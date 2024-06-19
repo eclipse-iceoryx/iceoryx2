@@ -41,7 +41,7 @@ pub extern "C" fn run_publisher(seconds: u32) -> i32 {
 
     let service = service.unwrap();
 
-    let publisher = service.publisher().create();
+    let publisher = service.publisher_builder().create();
 
     if publisher.is_err() {
         return -1;

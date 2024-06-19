@@ -244,8 +244,12 @@ mod service_event {
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
 
-        let listener = sut.listener().create().unwrap();
-        let notifier = sut2.notifier().default_event_id(event_id).create().unwrap();
+        let listener = sut.listener_builder().create().unwrap();
+        let notifier = sut2
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
 
         assert_that!(notifier.notify(), is_ok);
 
@@ -271,8 +275,12 @@ mod service_event {
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
 
-        let notifier = sut2.notifier().default_event_id(event_id).create().unwrap();
-        let listener = sut.listener().create().unwrap();
+        let notifier = sut2
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+        let listener = sut.listener_builder().create().unwrap();
 
         assert_that!(notifier.notify(), is_ok);
 
@@ -304,12 +312,12 @@ mod service_event {
         let mut notifiers = vec![];
 
         for _ in 0..MAX_LISTENERS {
-            listeners.push(sut.listener().create().unwrap());
+            listeners.push(sut.listener_builder().create().unwrap());
         }
 
         for i in 0..MAX_NOTIFIERS {
             notifiers.push(
-                sut.notifier()
+                sut.notifier_builder()
                     .default_event_id(EventId::new(i + 3))
                     .create()
                     .unwrap(),
@@ -352,12 +360,12 @@ mod service_event {
         let mut notifiers = vec![];
 
         for _ in 0..MAX_LISTENERS {
-            listeners.push(sut.listener().create().unwrap());
+            listeners.push(sut.listener_builder().create().unwrap());
         }
 
         for i in 0..MAX_NOTIFIERS {
             notifiers.push(
-                sut.notifier()
+                sut.notifier_builder()
                     .default_event_id(EventId::new(i))
                     .create()
                     .unwrap(),
@@ -401,13 +409,13 @@ mod service_event {
         let mut notifiers = vec![];
 
         for i in 0..MAX_NOTIFIERS / 2 {
-            notifiers.push(sut.notifier().create().unwrap());
+            notifiers.push(sut.notifier_builder().create().unwrap());
             assert_that!(sut.dynamic_config().number_of_notifiers(), eq 2 * i + 1);
             assert_that!(sut2.dynamic_config().number_of_notifiers(), eq 2 * i + 1);
             assert_that!(sut.dynamic_config().number_of_listeners(), eq 0);
             assert_that!(sut2.dynamic_config().number_of_listeners(), eq 0);
 
-            notifiers.push(sut2.notifier().create().unwrap());
+            notifiers.push(sut2.notifier_builder().create().unwrap());
             assert_that!(sut.dynamic_config().number_of_notifiers(), eq 2 * i + 2);
             assert_that!(sut2.dynamic_config().number_of_notifiers(), eq 2 * i + 2);
             assert_that!(sut.dynamic_config().number_of_listeners(), eq 0);
@@ -439,13 +447,13 @@ mod service_event {
         let mut listeners = vec![];
 
         for i in 0..MAX_LISTENERS / 2 {
-            listeners.push(sut.listener().create().unwrap());
+            listeners.push(sut.listener_builder().create().unwrap());
             assert_that!(sut.dynamic_config().number_of_listeners(), eq 2 * i + 1);
             assert_that!(sut2.dynamic_config().number_of_listeners(), eq 2 * i + 1);
             assert_that!(sut.dynamic_config().number_of_notifiers(), eq 0);
             assert_that!(sut2.dynamic_config().number_of_notifiers(), eq 0);
 
-            listeners.push(sut2.listener().create().unwrap());
+            listeners.push(sut2.listener_builder().create().unwrap());
             assert_that!(sut.dynamic_config().number_of_listeners(), eq 2 * i + 2);
             assert_that!(sut2.dynamic_config().number_of_listeners(), eq 2 * i + 2);
             assert_that!(sut.dynamic_config().number_of_notifiers(), eq 0);
@@ -474,8 +482,8 @@ mod service_event {
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
 
-        let listener = sut.listener().create().unwrap();
-        let notifier = sut2.notifier().create().unwrap();
+        let listener = sut.listener_builder().create().unwrap();
+        let notifier = sut2.notifier_builder().create().unwrap();
 
         for i in 0..=EVENT_ID_MAX_VALUE {
             assert_that!(notifier
@@ -515,7 +523,7 @@ mod service_event {
             let mut listener_threads = vec![];
             for _ in 0..number_of_listener_threads {
                 listener_threads.push(s.spawn(|| {
-                    let listener = sut.listener().create().unwrap();
+                    let listener = sut.listener_builder().create().unwrap();
                     barrier.wait();
 
                     let mut counter = 0;
@@ -534,7 +542,7 @@ mod service_event {
                     barrier.wait();
 
                     while keep_running.load(Ordering::Relaxed) {
-                        let notifier = sut.notifier().create().unwrap();
+                        let notifier = sut.notifier_builder().create().unwrap();
                         assert_that!(notifier.notify_with_custom_event_id(EVENT_ID), is_ok);
                     }
                 });
@@ -577,13 +585,13 @@ mod service_event {
                     barrier.wait();
 
                     let mut counter = 0;
-                    let mut listener = sut.listener().create().unwrap();
+                    let mut listener = sut.listener_builder().create().unwrap();
                     while counter < NUMBER_OF_ITERATIONS {
                         let event_ids = listener.blocking_wait_one().unwrap();
                         if let Some(id) = event_ids {
                             counter += 1;
                             assert_that!(id, eq EVENT_ID);
-                            listener = sut.listener().create().unwrap();
+                            listener = sut.listener_builder().create().unwrap();
                         }
                     }
                 }));
@@ -591,7 +599,7 @@ mod service_event {
 
             for _ in 0..number_of_notifier_threads {
                 s.spawn(|| {
-                    let notifier = sut.notifier().create().unwrap();
+                    let notifier = sut.notifier_builder().create().unwrap();
                     barrier.wait();
 
                     while keep_running.load(Ordering::Relaxed) {
@@ -620,8 +628,12 @@ mod service_event {
             .create()
             .unwrap();
 
-        let notifier = sut.notifier().default_event_id(event_id).create().unwrap();
-        let listener = sut.listener().create().unwrap();
+        let notifier = sut
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+        let listener = sut.listener_builder().create().unwrap();
 
         assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(true));
         drop(sut);
@@ -649,8 +661,12 @@ mod service_event {
             .create()
             .unwrap();
 
-        let notifier = sut.notifier().default_event_id(event_id).create().unwrap();
-        let listener = sut.listener().create().unwrap();
+        let notifier = sut
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+        let listener = sut.listener_builder().create().unwrap();
 
         assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(true));
         drop(sut);
@@ -678,7 +694,7 @@ mod service_event {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node.service_builder(service_name).event().create().unwrap();
-        let listener = sut.listener().create().unwrap();
+        let listener = sut.listener_builder().create().unwrap();
 
         assert_that!(listener.try_wait_one(), is_ok);
     }
@@ -691,7 +707,7 @@ mod service_event {
 
         let sut = node.service_builder(service_name).event().create().unwrap();
 
-        let listener = sut.listener().create().unwrap();
+        let listener = sut.listener_builder().create().unwrap();
 
         let now = Instant::now();
         assert_that!(listener.timed_wait_one(TIMEOUT), is_ok);
@@ -706,13 +722,13 @@ mod service_event {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node.service_builder(service_name).event().create().unwrap();
-        let notifier = sut.notifier().create().unwrap();
+        let notifier = sut.notifier_builder().create().unwrap();
         let counter = AtomicU64::new(0);
         let barrier = Barrier::new(2);
 
         std::thread::scope(|s| {
             let t = s.spawn(|| {
-                let listener = sut.listener().create().unwrap();
+                let listener = sut.listener_builder().create().unwrap();
                 barrier.wait();
                 wait_call(&listener);
                 counter.fetch_add(1, Ordering::Relaxed);
@@ -784,7 +800,7 @@ mod service_event {
 
         let sut = node.service_builder(service_name).event().create().unwrap();
 
-        let listener = sut.listener().create().unwrap();
+        let listener = sut.listener_builder().create().unwrap();
 
         let mut callback_called = false;
         assert_that!(listener.try_wait_all(|_| callback_called = true), is_ok);
@@ -799,7 +815,7 @@ mod service_event {
 
         let sut = node.service_builder(service_name).event().create().unwrap();
 
-        let listener = sut.listener().create().unwrap();
+        let listener = sut.listener_builder().create().unwrap();
 
         let now = Instant::now();
         let mut callback_called = false;
@@ -861,8 +877,8 @@ mod service_event {
             .event_id_max_value(number_of_notifications)
             .create()
             .unwrap();
-        let listener = sut.listener().create().unwrap();
-        let notifier = sut.notifier().create().unwrap();
+        let listener = sut.listener_builder().create().unwrap();
+        let notifier = sut.notifier_builder().create().unwrap();
 
         for i in 0..number_of_notifications {
             assert_that!(notifier.notify_with_custom_event_id(EventId::new(i)).unwrap(), eq 1);

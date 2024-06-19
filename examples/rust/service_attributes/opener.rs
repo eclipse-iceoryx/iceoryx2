@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .require_key("dds_service_mapping"),
         )?;
 
-    let subscriber = service.subscriber().create()?;
+    let subscriber = service.subscriber_builder().create()?;
 
     println!("defined service attributes: {:?}", service.attributes());
 
