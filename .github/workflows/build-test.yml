@@ -144,7 +144,7 @@ jobs:
 
       - name: Build language bindings
         run: |
-          cmake . \
+          cmake -S . \
                 -B target/ffi/build \
                 -DCMAKE_INSTALL_PREFIX=target/ffi/install \
                 -DBUILD_EXAMPLES=ON \
@@ -162,7 +162,7 @@ jobs:
         if: false # out-of-tree cross-compilation is currently not supported
         run: |
           rm -rf target/ffi/build
-          cmake examples/c \
+          cmake -S examples/c \
                 -B target/ffi/out-of-tree \
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
                 -DCMAKE_C_FLAGS="-m32" \
@@ -232,7 +232,7 @@ jobs:
 
       - name: Build language bindings
         run: |
-          cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
+          cmake -S . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
 
@@ -248,7 +248,7 @@ jobs:
 
       - name: Build language binding examples in out-of-tree configuration
         run: |
-          cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
+          cmake -S examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
           cmake --build target/ffi/out-of-tree
 
   x86_64_unstable:
@@ -359,7 +359,7 @@ jobs:
             echo "###########################"
             echo "# Build language bindings #"
             echo "###########################"
-            cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON
+            cmake -S . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON
             cmake --build target/ffi/build
             cmake --install target/ffi/build
             echo "#############################"
@@ -370,7 +370,7 @@ jobs:
             echo "# Build language binding examples in out-of-tree configuration #"
             echo "################################################################"
             rm -rf target/ffi/build
-            cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install -DCMAKE_BUILD_TYPE=Release
+            cmake -S examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install -DCMAKE_BUILD_TYPE=Release
             cmake --build target/ffi/out-of-tree
 
   grcov:
