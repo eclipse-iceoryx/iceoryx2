@@ -105,6 +105,7 @@ impl std::error::Error for ConfigCreationError {}
 /// All configurable settings of a [`crate::service::Service`].
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub struct Service {
     /// The directory in which all service files are stored
     pub directory: Path,
@@ -124,6 +125,7 @@ pub struct Service {
 /// All configurable settings of a [`crate::node::Node`].
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub struct Node {
     /// The directory in which all node files are stored
     pub directory: Path,
@@ -136,6 +138,7 @@ pub struct Node {
 /// The global settings
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub struct Global {
     root_path_unix: Path,
     root_path_windows: Path,
@@ -183,6 +186,7 @@ impl Global {
 /// else.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub struct Defaults {
     /// Default settings for the messaging pattern publish-subscribe
     pub publish_subscribe: PublishSubscribe,
@@ -194,6 +198,7 @@ pub struct Defaults {
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub struct PublishSubscribe {
     /// The maximum amount of supported [`crate::port::subscriber::Subscriber`]
     pub max_subscribers: usize,
@@ -224,6 +229,7 @@ pub struct PublishSubscribe {
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub struct Event {
     /// The maximum amount of supported [`crate::port::listener::Listener`]
     pub max_listeners: usize,
@@ -239,6 +245,7 @@ pub struct Event {
 /// flexibility to override both sections.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub struct Config {
     /// Global settings for the iceoryx2 instance
     pub global: Global,
@@ -352,7 +359,7 @@ impl Config {
             })
             .is_err()
         {
-            warn!(from "Config::get_global_config()", "Unable to load default config file, populate config with default values.");
+            warn!(from "Config::get_global_config()", "Default config file found but unable to read data, populate config with default values.");
             ICEORYX2_CONFIG.set_value(Config::default());
         }
 
