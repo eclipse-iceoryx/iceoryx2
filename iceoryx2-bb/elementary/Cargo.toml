@@ -16,6 +16,3 @@ iceoryx2-pal-concurrency-sync = { workspace = true }
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
 
-generic-tests = { workspace = true }
-pin-init = { workspace = true }
-
