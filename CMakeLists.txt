@@ -37,8 +37,14 @@ endmacro()
 message(STATUS "iceoryx2 options:")
 
 add_option(
-    NAME EXAMPLES
+    NAME BUILD_EXAMPLES
     DESCRIPTION "Build examples"
+    DEFAULT_VALUE OFF
+)
+
+add_option(
+    NAME BUILD_TESTING
+    DESCRIPTION "Build tests"
     DEFAULT_VALUE OFF
 )
 
@@ -50,6 +56,6 @@ add_param(
 
 add_subdirectory(iceoryx2-ffi/c)
 
-if(EXAMPLES)
+if(BUILD_EXAMPLES)
     add_subdirectory(examples/c)
 endif()

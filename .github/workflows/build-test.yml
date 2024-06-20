@@ -144,21 +144,25 @@ jobs:
 
       - name: Build language bindings
         run: |
-          cmake . \
+          cmake -S . \
                 -B target/ffi/build \
                 -DCMAKE_INSTALL_PREFIX=target/ffi/install \
-                -DEXAMPLES=ON \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
                 -DRUST_TARGET_TRIPLET="i686-unknown-linux-gnu" \
                 -DCMAKE_C_FLAGS="-m32" \
                 ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
 
+      - name: Run language binding tests
+        run: target/ffi/build/tests/iceoryx2-c-tests
+
       - name: Build language binding examples in out-of-tree configuration
         if: false # out-of-tree cross-compilation is currently not supported
         run: |
           rm -rf target/ffi/build
-          cmake examples/c \
+          cmake -S examples/c \
                 -B target/ffi/out-of-tree \
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
                 -DCMAKE_C_FLAGS="-m32" \
@@ -228,9 +232,12 @@ jobs:
 
       - name: Build language bindings
         run: |
-          cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
+          cmake -S . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
+
+      - name: Run language binding tests
+        run: target/ffi/build/tests/iceoryx2-c-tests
 
       - name: Remove language binding build artifacts on Windows
         if: ${{ matrix.os == 'windows-latest' }}
@@ -241,12 +248,12 @@ jobs:
 
       - name: Build language binding examples in out-of-tree configuration
         run: |
-          cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
+          cmake -S examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
           cmake --build target/ffi/out-of-tree
 
   x86_64_unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
     continue-on-error: true
     strategy:
       matrix:
@@ -352,14 +359,18 @@ jobs:
             echo "###########################"
             echo "# Build language bindings #"
             echo "###########################"
-            cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_BUILD_TYPE=Release -DEXAMPLES=ON
+            cmake -S . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON
             cmake --build target/ffi/build
             cmake --install target/ffi/build
+            echo "#############################"
+            echo "# Run language binding tests #"
+            echo "#############################"
+            target/ffi/build/tests/iceoryx2-c-tests
             echo "################################################################"
             echo "# Build language binding examples in out-of-tree configuration #"
             echo "################################################################"
             rm -rf target/ffi/build
-            cmake examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install -DCMAKE_BUILD_TYPE=Release
+            cmake -S examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install -DCMAKE_BUILD_TYPE=Release
             cmake --build target/ffi/out-of-tree
 
   grcov:
