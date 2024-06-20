@@ -66,6 +66,7 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
+ * Kebab case for config file [#90](https://github.com/eclipse-iceoryx/iceoryx2/issues/90)
  * `open`, `open_or_create` and `create` are untyped in pubsub-builder [#195](https://github.com/eclipse-iceoryx/iceoryx2/issues/195)
  * use `ClockMode::Performance` instead of `ClockMode::Safety` in default deployment [#207](https://github.com/eclipse-iceoryx/iceoryx2/issues/207)
  * Updated all dependencies and increased MSRV to 1.75 [#221](https://github.com/eclipse-iceoryx/iceoryx2/issues/221)
@@ -216,4 +217,18 @@
     // new
     let listener = service.listener_builder().create()?;
     let notifier = service.notifier_builder().create()?;
+    ```
+
+11. The keys in the `iceoryx2.toml` config file are now kebab-case
+
+    ```toml
+    # old
+    [defaults.publish_subscribe]
+    max_subscribers                             = 8
+    max_publishers                              = 2
+
+    # new
+    [defaults.publish-subscribe]
+    max-subscribers                             = 8
+    max-publishers                              = 2
     ```
