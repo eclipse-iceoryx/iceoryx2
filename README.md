@@ -1,3 +1,5 @@
+[![CI](https://github.com/eclipse-iceoryx/iceoryx2/workflows/CI/badge.svg)](https://github.com/eclipse-iceoryx/iceoryx2/actions/workflows/build-test.yml?query=branch%3Amain++)
+[![Cirrus CI](https://img.shields.io/cirrus/github/eclipse-iceoryx/iceoryx2/main?label=Cirrus%20CI)](https://cirrus-ci.com/github/eclipse-iceoryx/iceoryx2/main)
 [![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx2/branch/main/graph/badge.svg?branch=main)](https://codecov.io/gh/eclipse-iceoryx/iceoryx2?branch=main)
 [![Benchmarks](https://img.shields.io/badge/Benchmarks-gray)](benchmarks/README.md)
 [![Changelog](https://img.shields.io/badge/Changelog-gray)](CHANGELOG.md)
