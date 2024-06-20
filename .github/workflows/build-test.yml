@@ -147,7 +147,7 @@ jobs:
           cmake . \
                 -B target/ffi/build \
                 -DCMAKE_INSTALL_PREFIX=target/ffi/install \
-                -DEXAMPLES=ON \
+                -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
                 -DRUST_TARGET_TRIPLET="i686-unknown-linux-gnu" \
                 -DCMAKE_C_FLAGS="-m32" \
@@ -232,7 +232,7 @@ jobs:
 
       - name: Build language bindings
         run: |
-          cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DEXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
+          cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
 
@@ -359,7 +359,7 @@ jobs:
             echo "###########################"
             echo "# Build language bindings #"
             echo "###########################"
-            cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_BUILD_TYPE=Release -DEXAMPLES=ON -DBUILD_TESTING=ON
+            cmake . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON
             cmake --build target/ffi/build
             cmake --install target/ffi/build
             echo "#############################"
