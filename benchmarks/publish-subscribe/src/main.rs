@@ -115,7 +115,7 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    set_log_level(iceoryx2_bb_log::LogLevel::Error);
+    set_log_level(iceoryx2_bb_log::LogLevel::Info);
     let mut at_least_one_benchmark_did_run = false;
 
     if args.bench_zero_copy || args.bench_all {

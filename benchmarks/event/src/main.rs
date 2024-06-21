@@ -101,7 +101,7 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    set_log_level(iceoryx2_bb_log::LogLevel::Error);
+    set_log_level(iceoryx2_bb_log::LogLevel::Info);
 
     perform_benchmark::<zero_copy::Service>(&args);
     perform_benchmark::<process_local::Service>(&args);
