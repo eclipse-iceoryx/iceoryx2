@@ -12,18 +12,23 @@
 
 use colored::*;
 use std::env;
+use std::ffi::OsStr;
 use std::fs;
 use std::io;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use thiserror::Error;
 
+#[derive(Clone, Debug, PartialEq)]
+enum CommandType {
+    Installed,
+    Development,
+}
+
 #[derive(Clone, Debug)]
 struct CommandInfo {
-    name: String,
     path: PathBuf,
-    is_development: bool,
+    command_type: CommandType,
 }
 
 #[derive(Error, Debug)]
@@ -36,25 +41,42 @@ pub enum ExecutionError {
 
 pub fn list() {
     println!("{}", "Installed Commands:".bright_green().bold());
-    let mut installed_commands = find();
-    installed_commands.sort_by_key(|command| command.name.clone());
-    installed_commands
-        .iter()
-        .map(|command| {
-            format!(
-                "  {} {}",
-                command.name.bold(),
-                if command.is_development {
-                    "(dev) ".italic()
-                } else {
-                    "".italic()
-                },
-            )
-        })
-        .for_each(|formatted_command| println!("{}", formatted_command));
+
+    if let Ok(mut commands) = find_command_binaries() {
+        commands.sort_by_key(|command| {
+            command
+                .path
+                .file_name()
+                .expect("Could not extract file name from command binary path")
+                .to_os_string()
+        });
+        commands
+            .iter()
+            .map(|command| {
+                format!(
+                    "  {} {}",
+                    // TODO: Simplify logic for extracting name to remove this duplication
+                    command
+                        .path
+                        .file_name()
+                        .and_then(|os_str| os_str.to_str())
+                        .and_then(|command_name| command_name.strip_prefix("iox2-"))
+                        .expect("Unable to extract command name from command path")
+                        .bold(),
+                    if command.command_type == CommandType::Development {
+                        "(dev) ".italic()
+                    } else {
+                        "".italic()
+                    },
+                )
+            })
+            .for_each(|formatted_command| println!("{}", formatted_command));
+    } else {
+        // handle error ...
+    }
 }
 
-fn get_build_path_dirs() -> Result<std::path::PathBuf, io::Error> {
+fn build_dirs() -> Result<Vec<PathBuf>, std::io::Error> {
     let current_exe = env::current_exe()?;
 
     let build_type = if cfg!(debug_assertions) {
@@ -63,115 +85,100 @@ fn get_build_path_dirs() -> Result<std::path::PathBuf, io::Error> {
         "release"
     };
 
-    let build_path = current_exe
+    let paths = current_exe
         .parent()
         .and_then(|p| p.parent())
         .map(|p| p.join(build_type))
+        .filter(|p| p.is_dir())
         .ok_or_else(|| {
             io::Error::new(
-                io::ErrorKind::Other,
-                "Failed to construct path of development dir",
+                io::ErrorKind::NotFound,
+                "Unable to determine build path from executable path",
             )
         })?;
 
-    Ok(build_path)
+    Ok(vec![paths])
 }
 
-fn get_install_path_dirs() -> impl Iterator<Item = std::path::PathBuf> {
+fn install_dirs() -> Result<Vec<PathBuf>, std::io::Error> {
     env::var("PATH")
-        .ok()
-        .into_iter()
-        .flat_map(|path_var| env::split_paths(&path_var).collect::<Vec<_>>())
+        .map(|paths| {
+            paths
+                .split(':')
+                .map(PathBuf::from)
+                .filter(|p| p.is_dir())
+                .collect()
+        })
+        .map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Unable to determine install path from environment",
+            )
+        })
 }
 
-fn find() -> Vec<CommandInfo> {
-    let development_commands = find_development_command_binaries();
-    let installed_commands = find_installed_command_binaries();
-
-    let mut all_commands = development_commands;
-    all_commands.extend(installed_commands.iter().cloned());
-    all_commands
-}
-
-fn find_development_command_binaries() -> Vec<CommandInfo> {
-    let development_binaries_dir = match get_build_path_dirs() {
-        Ok(location) => location,
-        Err(_) => return Vec::new(),
-    };
-
-    fs::read_dir(development_binaries_dir)
-        .ok()
-        .into_iter()
-        .flat_map(|entries| entries.filter_map(Result::ok))
+fn find_command_binaries_in_path(dirs: Vec<PathBuf>) -> Vec<PathBuf> {
+    dirs.into_iter()
+        .flat_map(|dir| fs::read_dir(dir).into_iter().flatten())
+        .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
-        .filter(|path_buf: &PathBuf| is_valid_command_binary(path_buf.as_path()))
-        .filter_map(|path| {
+        .filter(|path| path.is_file()) // filter out dirs
+        .filter(|path| path.extension().is_none()) // valid binaries have no extension (e.g. '.d')
+        .filter(|path| {
             path.file_name()
-                .and_then(|n| n.to_str())
-                .map(|command_name| {
-                    let stripped = command_name.strip_prefix("iox2-").unwrap_or(command_name);
-                    CommandInfo {
-                        name: stripped.to_string(),
-                        path: path.clone(),
-                        is_development: true,
-                    }
-                })
+                .and_then(OsStr::to_str)
+                .filter(|name| name.starts_with("iox2-")) // iox2 command start with 'iox2-'
+                .is_some()
         })
         .collect()
 }
 
-fn find_installed_command_binaries() -> Vec<CommandInfo> {
-    get_install_path_dirs()
-        .flat_map(|path: PathBuf| {
-            fs::read_dir(path)
-                .into_iter()
-                .flat_map(|read_dir| read_dir.filter_map(Result::ok))
-        })
-        .filter_map(|entry| {
-            let path = entry.path();
-            if is_valid_command_binary(&path) {
-                path.file_name()
-                    .and_then(|n| n.to_str())
-                    .map(|command_name| CommandInfo {
-                        name: command_name.to_string(),
-                        path: path.clone(),
-                        is_development: false,
-                    })
-            } else {
-                None
-            }
-        })
-        .collect()
-}
+fn find_command_binaries() -> Result<Vec<CommandInfo>, io::Error> {
+    let mut command_binaries: Vec<CommandInfo> = Vec::new();
 
-fn is_valid_command_binary(path: &Path) -> bool {
-    path.is_file()
-        && path
-            .file_stem()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .starts_with("iox2-")
-        && path.extension().is_none() // Exclude files with extensions (e.g. '.d')
+    // Find binaries in both build dirs and the install path
+    command_binaries.extend(
+        find_command_binaries_in_path(build_dirs()?)
+            .into_iter()
+            .map(|path| CommandInfo {
+                path,
+                command_type: CommandType::Development,
+            }),
+    );
+    command_binaries.extend(
+        find_command_binaries_in_path(install_dirs()?)
+            .into_iter()
+            .map(|path| CommandInfo {
+                path,
+                command_type: CommandType::Installed,
+            }),
+    );
+
+    Ok(command_binaries)
 }
 
 pub fn paths() {
-    let mut development_binaries_dirs = Vec::new();
-    development_binaries_dirs.extend(get_build_path_dirs().ok());
-
-    let mut installed_binaries_dirs = Vec::new();
-    installed_binaries_dirs.extend(get_install_path_dirs());
-
-    println!("{}", "Development Binary Paths:".bright_green().bold());
-    for dir in &development_binaries_dirs {
-        println!("  {}", dir.display().to_string().bold());
+    match build_dirs() {
+        Ok(dirs) => {
+            println!("{}", "Development Binary Paths:".bright_green().bold());
+            for dir in dirs {
+                println!("  {}", dir.display().to_string().bold());
+            }
+        }
+        Err(e) => {
+            println!("Error retrieving build dirs: {e}");
+        }
     }
-
-    println!();
-
-    println!("{}", "Installed Binary Paths:".bright_green().bold());
-    for dir in &installed_binaries_dirs {
-        println!("  {}", dir.display().to_string().bold());
+    match install_dirs() {
+        Ok(dirs) => {
+            println!("{}", "Installed Binary Paths:".bright_green().bold());
+            for dir in dirs {
+                println!("  {}", dir.display().to_string().bold());
+            }
+        }
+        Err(e) => {
+            println!("Error retrieving install dirs: {e}");
+        }
     }
 }
 
@@ -180,22 +187,28 @@ pub fn execute_external_command(
     args: &[String],
     dev_flag_present: bool,
 ) -> Result<(), ExecutionError> {
-    let available_commands = find();
-    if let Some(command_info) = available_commands.into_iter().find(|c| {
-        c.name == command_name
-            && if dev_flag_present {
-                c.is_development
-            } else {
-                if c.is_development {
-                    println!(
-                        "Development version of {} found but --dev flag is not set.",
-                        command_name
-                    )
+    if let Ok(commands) = find_command_binaries() {
+        let command_info = commands
+            .into_iter()
+            .filter(|command| {
+                if dev_flag_present {
+                    command.command_type == CommandType::Development
+                } else {
+                    command.command_type == CommandType::Installed
                 }
-                false
-            }
-    }) {
-        execute(&command_info, Some(args))
+            })
+            .find(|command| {
+                command
+                    // TODO: Simplify logic for extracting name to remove this duplication
+                    .path
+                    .file_name()
+                    .and_then(|os_str| os_str.to_str())
+                    .and_then(|command_name| command_name.strip_prefix("iox2-"))
+                    .expect("Unable to extract command name from command path")
+                    == command_name
+            })
+            .ok_or_else(|| ExecutionError::NotFound(command_name.to_string()))?;
+        execute(&command_info, Some(args)) // TODO: Remove Some()
     } else {
         Err(ExecutionError::NotFound(command_name.to_string()))
     }
