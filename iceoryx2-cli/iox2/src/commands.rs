@@ -43,7 +43,7 @@ pub fn list() {
     println!("{}", "Installed Commands:".bright_green().bold());
 
     if let Ok(mut commands) = find_command_binaries() {
-        commands.sort_by_key(|command| {
+        commands.sort_by_cached_key(|command| {
             command
                 .path
                 .file_name()
@@ -64,7 +64,7 @@ pub fn list() {
                         .expect("Unable to extract command name from command path")
                         .bold(),
                     if command.command_type == CommandType::Development {
-                        "(dev) ".italic()
+                        "(dev)".italic()
                     } else {
                         "".italic()
                     },
@@ -72,7 +72,7 @@ pub fn list() {
             })
             .for_each(|formatted_command| println!("{}", formatted_command));
     } else {
-        // handle error ...
+        // TODO: handle error ...
     }
 }
 
@@ -208,7 +208,7 @@ pub fn execute_external_command(
                     == command_name
             })
             .ok_or_else(|| ExecutionError::NotFound(command_name.to_string()))?;
-        execute(&command_info, Some(args)) // TODO: Remove Some()
+        execute(&command_info, Some(args)) // TODO: Remove Some() - pass optional directly
     } else {
         Err(ExecutionError::NotFound(command_name.to_string()))
     }
