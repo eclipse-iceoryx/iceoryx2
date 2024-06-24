@@ -24,34 +24,44 @@ pub enum TypeVariant {
     Dynamic,
 }
 
-/// Contains all type information to the header and payload type.
+/// Contains all type details required to connect to a [`crate::service::Service`]
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct TypeDetails {
+pub struct TypeDetail {
     pub variant: TypeVariant,
-    pub header_type_name: String,
-    pub header_size: usize,
-    pub header_alignment: usize,
-    pub payload_type_name: String,
-    pub payload_size: usize,
-    pub payload_alignment: usize,
+    pub type_name: String,
+    pub size: usize,
+    pub alignment: usize,
 }
 
-impl TypeDetails {
-    pub(crate) fn from<PayloadType, Header>(variant: TypeVariant) -> Self {
+impl TypeDetail {
+    fn new<T>(variant: TypeVariant) -> Self {
         Self {
             variant,
-            header_type_name: core::any::type_name::<Header>().to_string(),
-            header_size: core::mem::size_of::<Header>(),
-            header_alignment: core::mem::align_of::<Header>(),
-            payload_type_name: core::any::type_name::<PayloadType>().to_string(),
-            payload_size: core::mem::size_of::<PayloadType>(),
-            payload_alignment: core::mem::align_of::<PayloadType>(),
+            type_name: core::any::type_name::<T>().to_string(),
+            size: core::mem::size_of::<T>(),
+            alignment: core::mem::align_of::<T>(),
+        }
+    }
+}
+
+/// Contains all type information to the header and payload type.
+#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+pub struct MessageTypeDetails {
+    pub header: TypeDetail,
+    pub payload: TypeDetail,
+}
+
+impl MessageTypeDetails {
+    pub(crate) fn from<Payload, Header>(variant: TypeVariant) -> Self {
+        Self {
+            header: TypeDetail::new::<Header>(TypeVariant::FixedSize),
+            payload: TypeDetail::new::<Payload>(variant),
         }
     }
 
     pub(crate) fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
         let header = header as usize;
-        let payload_start = align(header + self.header_size, self.payload_alignment);
+        let payload_start = align(header + self.header.size, self.payload.alignment);
         payload_start as *const u8
     }
 
@@ -59,13 +69,13 @@ impl TypeDetails {
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
-                    self.header_size
-                        + self.payload_size * number_of_elements
-                        + self.payload_alignment
+                    self.header.size
+                        + self.payload.size * number_of_elements
+                        + self.payload.alignment
                         - 1,
-                    self.header_alignment,
+                    self.header.alignment,
                 ),
-                self.header_alignment,
+                self.header.alignment,
             )
         }
     }
@@ -73,19 +83,17 @@ impl TypeDetails {
     pub(crate) fn payload_layout(&self, number_of_elements: usize) -> Layout {
         unsafe {
             Layout::from_size_align_unchecked(
-                self.payload_size * number_of_elements,
-                self.payload_alignment,
+                self.payload.size * number_of_elements,
+                self.payload.alignment,
             )
         }
     }
 
     pub(crate) fn is_compatible_to(&self, rhs: &Self) -> bool {
-        self.variant == rhs.variant
-            && self.header_type_name == rhs.header_type_name
-            && self.header_size == rhs.header_size
-            && self.header_alignment == rhs.header_alignment
-            && self.payload_type_name == rhs.payload_type_name
-            && self.payload_size == rhs.payload_size
-            && self.payload_alignment <= rhs.payload_alignment
+        self.header == rhs.header
+            && self.payload.type_name == rhs.payload.type_name
+            && self.payload.variant == rhs.payload.variant
+            && self.payload.size == rhs.payload.size
+            && self.payload.alignment <= rhs.payload.alignment
     }
 }

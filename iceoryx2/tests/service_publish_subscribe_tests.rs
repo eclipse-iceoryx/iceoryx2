@@ -658,13 +658,15 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let d = sut.static_config().type_details();
-        assert_that!(d.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.header_size, eq std::mem::size_of::<Header>());
-        assert_that!(d.header_alignment, eq std::mem::align_of::<Header>());
-        assert_that!(d.payload_type_name, eq core::any::type_name::<PayloadType>());
-        assert_that!(d.payload_size, eq std::mem::size_of::<PayloadType>());
-        assert_that!(d.payload_alignment, eq std::mem::align_of::<PayloadType>());
+        let d = sut.static_config().message_type_details();
+        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
+        assert_that!(d.header.size, eq std::mem::size_of::<Header>());
+        assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
+        assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
+        assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
+        assert_that!(d.payload.alignment, eq std::mem::align_of::<PayloadType>());
     }
 
     #[test]
@@ -681,13 +683,15 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let d = sut.static_config().type_details();
-        assert_that!(d.variant, eq TypeVariant::Dynamic);
-        assert_that!(d.header_size, eq std::mem::size_of::<Header>());
-        assert_that!(d.header_alignment, eq std::mem::align_of::<Header>());
-        assert_that!(d.payload_type_name, eq core::any::type_name::<PayloadType>());
-        assert_that!(d.payload_size, eq std::mem::size_of::<PayloadType>());
-        assert_that!(d.payload_alignment, eq std::mem::align_of::<PayloadType>());
+        let d = sut.static_config().message_type_details();
+        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
+        assert_that!(d.header.size, eq std::mem::size_of::<Header>());
+        assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
+        assert_that!(d.payload.variant, eq TypeVariant::Dynamic);
+        assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
+        assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
+        assert_that!(d.payload.alignment, eq std::mem::align_of::<PayloadType>());
     }
 
     #[test]
@@ -814,7 +818,7 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(sut.static_config().type_details().payload_alignment, eq core::mem::align_of::<u64>());
+        assert_that!(sut.static_config().message_type_details().payload.alignment, eq core::mem::align_of::<u64>());
     }
 
     #[test]

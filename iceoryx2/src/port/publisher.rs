@@ -538,11 +538,11 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
             is_active: IoxAtomicBool::new(true),
             memory: data_segment,
             payload_size: static_config
-                .type_details()
+                .message_type_details()
                 .sample_layout(config.max_slice_len)
                 .size(),
             payload_type_layout: static_config
-                .type_details()
+                .message_type_details()
                 .payload_layout(config.max_slice_len),
             sample_reference_counter: {
                 let mut v = Vec::with_capacity(number_of_samples);
@@ -615,7 +615,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         config: &LocalPublisherConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
         let l = static_config
-            .type_details
+            .message_type_details
             .sample_layout(config.max_slice_len);
         let allocator_config = shm_allocator::pool_allocator::Config { bucket_layout: l };
 
@@ -671,7 +671,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         self.data_segment
             .subscriber_connections
             .static_config
-            .type_details
+            .message_type_details
             .sample_layout(number_of_elements)
     }
 
@@ -679,7 +679,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         self.data_segment
             .subscriber_connections
             .static_config
-            .type_details
+            .message_type_details
             .payload_layout(number_of_elements)
     }
 
@@ -687,7 +687,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         self.data_segment
             .subscriber_connections
             .static_config
-            .type_details
+            .message_type_details
             .payload_ptr_from_header(header.cast())
             .cast()
     }

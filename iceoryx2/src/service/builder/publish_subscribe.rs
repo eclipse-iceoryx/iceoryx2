@@ -31,7 +31,7 @@ use iceoryx2_cal::static_storage::StaticStorageLocked;
 
 use self::{
     attribute::{AttributeSpecifier, AttributeVerifier},
-    type_details::{TypeDetails, TypeVariant},
+    type_details::{MessageTypeDetails, TypeVariant},
 };
 
 use super::ServiceState;
@@ -115,7 +115,7 @@ impl std::error::Error for PublishSubscribeOpenOrCreateError {}
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Builder<PayloadType: Debug + ?Sized, ServiceType: service::Service> {
+pub struct Builder<Payload: Debug + ?Sized, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     override_alignment: Option<usize>,
     verify_number_of_subscribers: bool,
@@ -124,10 +124,10 @@ pub struct Builder<PayloadType: Debug + ?Sized, ServiceType: service::Service> {
     verify_subscriber_max_borrowed_samples: bool,
     verify_publisher_history_size: bool,
     verify_enable_safe_overflow: bool,
-    _data: PhantomData<PayloadType>,
+    _data: PhantomData<Payload>,
 }
 
-impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<PayloadType, ServiceType> {
+impl<Payload: Debug + ?Sized, ServiceType: service::Service> Builder<Payload, ServiceType> {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
@@ -174,12 +174,12 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
             Ok(Some((config, storage))) => {
                 if !self
                     .config_details()
-                    .type_details
-                    .is_compatible_to(&config.publish_subscribe().type_details)
+                    .message_type_details
+                    .is_compatible_to(&config.publish_subscribe().message_type_details)
                 {
                     fail!(from self, with ServiceAvailabilityState::IncompatibleTypes,
                         "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
-                        error_msg, &config.publish_subscribe().type_details , self.config_details().type_details);
+                        error_msg, &config.publish_subscribe().message_type_details , self.config_details().message_type_details);
                 }
 
                 Ok(Some((config, storage)))
@@ -191,8 +191,8 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     /// If the [`Service`] is created, it defines the [`Alignment`] of the payload for the service. If
     /// an existing [`Service`] is opened it requires the service to have at least the defined
-    /// [`Alignment`]. If the PayloadType [`Alignment`] is greater than the provided [`Alignment`]
-    /// then the PayloadType [`Alignment`] is used.
+    /// [`Alignment`]. If the Payload [`Alignment`] is greater than the provided [`Alignment`]
+    /// then the Payload [`Alignment`] is used.
     pub fn payload_alignment(mut self, alignment: Alignment) -> Self {
         self.override_alignment = Some(alignment.value());
         self
@@ -360,7 +360,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
     fn create_impl(
         &mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeCreateError>
     {
         self.adjust_attributes_to_meaningful_values();
 
@@ -472,7 +472,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
     fn open_impl(
         &mut self,
         attributes: &AttributeVerifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeOpenError>
     {
         let msg = "Unable to open publish subscribe service";
 
@@ -555,7 +555,7 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
         mut self,
         attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, PayloadType>,
+        publish_subscribe::PortFactory<ServiceType, Payload>,
         PublishSubscribeOpenOrCreateError,
     > {
         let msg = "Unable to open or create publish subscribe service";
@@ -604,19 +604,23 @@ impl<PayloadType: Debug + ?Sized, ServiceType: service::Service> Builder<Payload
 
     fn adjust_payload_alignment(&mut self) {
         if let Some(alignment) = self.override_alignment {
-            self.config_details_mut().type_details.payload_alignment = self
+            self.config_details_mut()
+                .message_type_details
+                .payload
+                .alignment = self
                 .config_details()
-                .type_details
-                .payload_alignment
+                .message_type_details
+                .payload
+                .alignment
                 .max(alignment);
         }
     }
 }
 
-impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, ServiceType> {
+impl<Payload: Debug, ServiceType: service::Service> Builder<Payload, ServiceType> {
     fn prepare_config_details(&mut self) {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<PayloadType, Header>(TypeVariant::FixedSize);
+        self.config_details_mut().message_type_details =
+            MessageTypeDetails::from::<Payload, Header>(TypeVariant::FixedSize);
         self.adjust_payload_alignment();
     }
 
@@ -625,7 +629,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
     pub fn open_or_create(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, PayloadType>,
+        publish_subscribe::PortFactory<ServiceType, Payload>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
@@ -639,7 +643,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
         mut self,
         required_attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, PayloadType>,
+        publish_subscribe::PortFactory<ServiceType, Payload>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
@@ -649,7 +653,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
     /// Opens an existing [`Service`].
     pub fn open(
         self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeOpenError>
     {
         self.open_with_attributes(&AttributeVerifier::new())
     }
@@ -659,7 +663,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
     pub fn open_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeOpenError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeOpenError>
     {
         self.prepare_config_details();
         self.open_impl(required_attributes)
@@ -668,7 +672,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
     /// Creates a new [`Service`].
     pub fn create(
         self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeCreateError>
     {
         self.create_with_attributes(&AttributeSpecifier::new())
     }
@@ -677,17 +681,17 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<PayloadType, Ser
     pub fn create_with_attributes(
         mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, PayloadType>, PublishSubscribeCreateError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeCreateError>
     {
         self.prepare_config_details();
         self.create_impl(attributes)
     }
 }
 
-impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], ServiceType> {
+impl<Payload: Debug, ServiceType: service::Service> Builder<[Payload], ServiceType> {
     fn prepare_config_details(&mut self) {
-        self.config_details_mut().type_details =
-            TypeDetails::from::<PayloadType, Header>(TypeVariant::Dynamic);
+        self.config_details_mut().message_type_details =
+            MessageTypeDetails::from::<Payload, Header>(TypeVariant::Dynamic);
         self.adjust_payload_alignment();
     }
 
@@ -696,7 +700,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
     pub fn open_or_create(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
+        publish_subscribe::PortFactory<ServiceType, [Payload]>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
@@ -710,7 +714,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
         mut self,
         attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
+        publish_subscribe::PortFactory<ServiceType, [Payload]>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
@@ -720,7 +724,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
     /// Opens an existing [`Service`].
     pub fn open(
         self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, [PayloadType]>, PublishSubscribeOpenError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, [Payload]>, PublishSubscribeOpenError>
     {
         self.open_with_attributes(&AttributeVerifier::new())
     }
@@ -730,7 +734,7 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
     pub fn open_with_attributes(
         mut self,
         attributes: &AttributeVerifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, [PayloadType]>, PublishSubscribeOpenError>
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, [Payload]>, PublishSubscribeOpenError>
     {
         self.prepare_config_details();
         self.open_impl(attributes)
@@ -739,10 +743,8 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
     /// Creates a new [`Service`].
     pub fn create(
         self,
-    ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
-        PublishSubscribeCreateError,
-    > {
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, [Payload]>, PublishSubscribeCreateError>
+    {
         self.create_with_attributes(&AttributeSpecifier::new())
     }
 
@@ -750,10 +752,8 @@ impl<PayloadType: Debug, ServiceType: service::Service> Builder<[PayloadType], S
     pub fn create_with_attributes(
         mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [PayloadType]>,
-        PublishSubscribeCreateError,
-    > {
+    ) -> Result<publish_subscribe::PortFactory<ServiceType, [Payload]>, PublishSubscribeCreateError>
+    {
         self.prepare_config_details();
         self.create_impl(attributes)
     }

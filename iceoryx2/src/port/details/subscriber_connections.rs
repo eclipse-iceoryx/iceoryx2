@@ -58,7 +58,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                 .number_of_samples(number_of_samples)
-                                .create_sender(this.static_config.type_details().sample_layout(max_slice_len).size()),
+                                .create_sender(this.static_config.message_type_details().sample_layout(max_slice_len).size()),
                         "{}.", msg);
 
         Ok(Self {

@@ -314,7 +314,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service,
     fn payload_ptr(&self, header: *const Header) -> *const u8 {
         self.publisher_connections
             .static_config
-            .type_details
+            .message_type_details
             .payload_ptr_from_header(header.cast())
             .cast()
     }
