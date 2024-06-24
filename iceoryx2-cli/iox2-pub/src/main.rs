@@ -11,5 +11,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 fn main() {
-    println!("Not implemented. Stay tuned !");
+    println!("Not implemented. Stay tuned!");
 }
