@@ -115,7 +115,7 @@ impl<S: Service> Builder<S> {
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
     pub fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
-    ) -> publish_subscribe::Builder<PayloadType, S> {
+    ) -> publish_subscribe::Builder<PayloadType, (), S> {
         BuilderWithServiceType::new(
             StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
                 &self.name,
@@ -156,7 +156,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
-    ) -> publish_subscribe::Builder<PayloadType, ServiceType> {
+    ) -> publish_subscribe::Builder<PayloadType, (), ServiceType> {
         publish_subscribe::Builder::new(self)
     }
 

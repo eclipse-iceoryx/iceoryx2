@@ -115,7 +115,7 @@ impl std::error::Error for PublishSubscribeOpenOrCreateError {}
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Builder<Payload: Debug + ?Sized, ServiceType: service::Service> {
+pub struct Builder<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     override_alignment: Option<usize>,
     verify_number_of_subscribers: bool,
@@ -125,9 +125,12 @@ pub struct Builder<Payload: Debug + ?Sized, ServiceType: service::Service> {
     verify_publisher_history_size: bool,
     verify_enable_safe_overflow: bool,
     _data: PhantomData<Payload>,
+    _metadata: PhantomData<Metadata>,
 }
 
-impl<Payload: Debug + ?Sized, ServiceType: service::Service> Builder<Payload, ServiceType> {
+impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
+    Builder<Payload, Metadata, ServiceType>
+{
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
             base,
@@ -139,6 +142,7 @@ impl<Payload: Debug + ?Sized, ServiceType: service::Service> Builder<Payload, Se
             verify_enable_safe_overflow: false,
             override_alignment: None,
             _data: PhantomData,
+            _metadata: PhantomData,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::PublishSubscribe(
@@ -187,6 +191,11 @@ impl<Payload: Debug + ?Sized, ServiceType: service::Service> Builder<Payload, Se
             Ok(None) => Ok(None),
             Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
         }
+    }
+
+    /// Sets the metadata type of the [`Service`].
+    pub fn metadata<M: Debug>(self) -> Builder<Payload, M, ServiceType> {
+        unsafe { core::mem::transmute::<Self, Builder<Payload, M, ServiceType>>(self) }
     }
 
     /// If the [`Service`] is created, it defines the [`Alignment`] of the payload for the service. If
@@ -617,10 +626,12 @@ impl<Payload: Debug + ?Sized, ServiceType: service::Service> Builder<Payload, Se
     }
 }
 
-impl<Payload: Debug, ServiceType: service::Service> Builder<Payload, ServiceType> {
+impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
+    Builder<Payload, Metadata, ServiceType>
+{
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =
-            MessageTypeDetails::from::<Payload, Header>(TypeVariant::FixedSize);
+            MessageTypeDetails::from::<Header, Metadata, Payload>(TypeVariant::FixedSize);
         self.adjust_payload_alignment();
     }
 
@@ -688,10 +699,12 @@ impl<Payload: Debug, ServiceType: service::Service> Builder<Payload, ServiceType
     }
 }
 
-impl<Payload: Debug, ServiceType: service::Service> Builder<[Payload], ServiceType> {
+impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
+    Builder<[Payload], Metadata, ServiceType>
+{
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =
-            MessageTypeDetails::from::<Payload, Header>(TypeVariant::Dynamic);
+            MessageTypeDetails::from::<Header, Metadata, Payload>(TypeVariant::Dynamic);
         self.adjust_payload_alignment();
     }
 

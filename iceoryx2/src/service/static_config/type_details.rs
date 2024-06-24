@@ -48,21 +48,29 @@ impl TypeDetail {
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct MessageTypeDetails {
     pub header: TypeDetail,
+    pub metadata: TypeDetail,
     pub payload: TypeDetail,
 }
 
 impl MessageTypeDetails {
-    pub(crate) fn from<Payload, Header>(variant: TypeVariant) -> Self {
+    pub(crate) fn from<Header, Metadata, Payload>(variant: TypeVariant) -> Self {
         Self {
             header: TypeDetail::new::<Header>(TypeVariant::FixedSize),
+            metadata: TypeDetail::new::<Metadata>(TypeVariant::FixedSize),
             payload: TypeDetail::new::<Payload>(variant),
         }
     }
 
     pub(crate) fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
-        let header = header as usize;
-        let payload_start = align(header + self.header.size, self.payload.alignment);
+        let metadata = self.metadata_ptr_from_header(header) as usize;
+        let payload_start = align(metadata + self.metadata.size, self.payload.alignment);
         payload_start as *const u8
+    }
+
+    pub(crate) fn metadata_ptr_from_header(&self, header: *const u8) -> *const u8 {
+        let header = header as usize;
+        let metadata_start = align(header + self.header.size, self.metadata.alignment);
+        metadata_start as *const u8
     }
 
     pub(crate) fn sample_layout(&self, number_of_elements: usize) -> Layout {
