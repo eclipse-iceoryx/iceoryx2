@@ -369,8 +369,10 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
     fn create_impl(
         &mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeCreateError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        PublishSubscribeCreateError,
+    > {
         self.adjust_attributes_to_meaningful_values();
 
         let msg = "Unable to create publish subscribe service";
@@ -481,8 +483,10 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
     fn open_impl(
         &mut self,
         attributes: &AttributeVerifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeOpenError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        PublishSubscribeOpenError,
+    > {
         let msg = "Unable to open publish subscribe service";
 
         let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
@@ -564,7 +568,7 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
         mut self,
         attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload>,
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
         PublishSubscribeOpenOrCreateError,
     > {
         let msg = "Unable to open or create publish subscribe service";
@@ -640,7 +644,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn open_or_create(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload>,
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
@@ -654,7 +658,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
         mut self,
         required_attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload>,
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
@@ -664,8 +668,10 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     /// Opens an existing [`Service`].
     pub fn open(
         self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeOpenError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        PublishSubscribeOpenError,
+    > {
         self.open_with_attributes(&AttributeVerifier::new())
     }
 
@@ -674,8 +680,10 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn open_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeOpenError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        PublishSubscribeOpenError,
+    > {
         self.prepare_config_details();
         self.open_impl(required_attributes)
     }
@@ -683,8 +691,10 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     /// Creates a new [`Service`].
     pub fn create(
         self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeCreateError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        PublishSubscribeCreateError,
+    > {
         self.create_with_attributes(&AttributeSpecifier::new())
     }
 
@@ -692,8 +702,10 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn create_with_attributes(
         mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, Payload>, PublishSubscribeCreateError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        PublishSubscribeCreateError,
+    > {
         self.prepare_config_details();
         self.create_impl(attributes)
     }
@@ -713,7 +725,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn open_or_create(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [Payload]>,
+        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
@@ -727,7 +739,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
         mut self,
         attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [Payload]>,
+        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
@@ -737,8 +749,10 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     /// Opens an existing [`Service`].
     pub fn open(
         self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, [Payload]>, PublishSubscribeOpenError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        PublishSubscribeOpenError,
+    > {
         self.open_with_attributes(&AttributeVerifier::new())
     }
 
@@ -747,8 +761,10 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn open_with_attributes(
         mut self,
         attributes: &AttributeVerifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, [Payload]>, PublishSubscribeOpenError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        PublishSubscribeOpenError,
+    > {
         self.prepare_config_details();
         self.open_impl(attributes)
     }
@@ -756,8 +772,10 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     /// Creates a new [`Service`].
     pub fn create(
         self,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, [Payload]>, PublishSubscribeCreateError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        PublishSubscribeCreateError,
+    > {
         self.create_with_attributes(&AttributeSpecifier::new())
     }
 
@@ -765,8 +783,10 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn create_with_attributes(
         mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<publish_subscribe::PortFactory<ServiceType, [Payload]>, PublishSubscribeCreateError>
-    {
+    ) -> Result<
+        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        PublishSubscribeCreateError,
+    > {
         self.prepare_config_details();
         self.create_impl(attributes)
     }

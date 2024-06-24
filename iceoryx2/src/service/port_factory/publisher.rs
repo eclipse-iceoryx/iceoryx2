@@ -137,15 +137,20 @@ pub(crate) struct LocalPublisherConfig {
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) based
 /// communication.
 #[derive(Debug)]
-pub struct PortFactoryPublisher<'factory, Service: service::Service, PayloadType: Debug + ?Sized> {
+pub struct PortFactoryPublisher<
+    'factory,
+    Service: service::Service,
+    Payload: Debug + ?Sized,
+    Metadata: Debug,
+> {
     config: LocalPublisherConfig,
-    pub(crate) factory: &'factory PortFactory<Service, PayloadType>,
+    pub(crate) factory: &'factory PortFactory<Service, Payload, Metadata>,
 }
 
-impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized>
-    PortFactoryPublisher<'factory, Service, PayloadType>
+impl<'factory, Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug>
+    PortFactoryPublisher<'factory, Service, Payload, Metadata>
 {
-    pub(crate) fn new(factory: &'factory PortFactory<Service, PayloadType>) -> Self {
+    pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, Metadata>) -> Self {
         Self {
             config: LocalPublisherConfig {
                 degration_callback: None,
@@ -208,7 +213,7 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized>
     }
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
-    pub fn create(self) -> Result<Publisher<Service, PayloadType>, PublisherCreateError> {
+    pub fn create(self) -> Result<Publisher<Service, Payload, Metadata>, PublisherCreateError> {
         let origin = format!("{:?}", self);
         Ok(
             fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),
@@ -217,8 +222,8 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized>
     }
 }
 
-impl<'factory, Service: service::Service, PayloadType: Debug>
-    PortFactoryPublisher<'factory, Service, [PayloadType]>
+impl<'factory, Service: service::Service, Payload: Debug, Metadata: Debug>
+    PortFactoryPublisher<'factory, Service, [Payload], Metadata>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].

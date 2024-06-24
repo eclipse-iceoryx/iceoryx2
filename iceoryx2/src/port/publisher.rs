@@ -42,7 +42,7 @@
 //! let sample = sample.write_payload(1337);
 //! sample.send()?;
 //!
-//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<PayloadType>`])
+//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<Payload>`])
 //! let mut sample = publisher.loan_uninit()?;
 //! sample.payload_mut().write(1337);
 //! let sample = unsafe { sample.assume_init() };
@@ -89,7 +89,7 @@
 //! let sample = sample.write_from_fn(|n| n * 123 );
 //! sample.send()?;
 //!
-//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<PayloadType>`])
+//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<Payload>`])
 //! let mut sample = publisher.loan_slice_uninit(42)?;
 //! for element in sample.payload_mut() {
 //!     element.write(1337);
@@ -485,14 +485,15 @@ impl<Service: service::Service> DataSegment<Service> {
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct Publisher<Service: service::Service, PayloadType: Debug + ?Sized> {
+pub struct Publisher<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug> {
     pub(crate) data_segment: Arc<DataSegment<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
-    _phantom_payload_type: PhantomData<PayloadType>,
+    _payload: PhantomData<Payload>,
+    _metadata: PhantomData<Metadata>,
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
-    for Publisher<Service, PayloadType>
+impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug> Drop
+    for Publisher<Service, Payload, Metadata>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_publisher_handle {
@@ -505,7 +506,9 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
     }
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, PayloadType> {
+impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug>
+    Publisher<Service, Payload, Metadata>
+{
     pub(crate) fn new(
         service: &Service,
         static_config: &publish_subscribe::StaticConfig,
@@ -573,7 +576,8 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         let mut new_self = Self {
             data_segment,
             dynamic_publisher_handle: None,
-            _phantom_payload_type: PhantomData,
+            _payload: PhantomData,
+            _metadata: PhantomData,
         };
 
         if let Err(e) = new_self.data_segment.populate_subscriber_channels() {
@@ -683,6 +687,15 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
             .payload_layout(number_of_elements)
     }
 
+    fn metadata_ptr(&self, header: *const Header) -> *const u8 {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .message_type_details
+            .metadata_ptr_from_header(header.cast())
+            .cast()
+    }
+
     fn payload_ptr(&self, header: *const Header) -> *const u8 {
         self.data_segment
             .subscriber_connections
@@ -696,7 +709,9 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
 ////////////////////////
 // BEGIN: typed API
 ////////////////////////
-impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, PayloadType> {
+impl<Service: service::Service, Payload: Debug + Sized, Metadata: Debug>
+    Publisher<Service, Payload, Metadata>
+{
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
@@ -719,7 +734,7 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// # Ok(())
     /// # }
     /// ```
-    pub fn send_copy(&self, value: PayloadType) -> Result<usize, PublisherSendError> {
+    pub fn send_copy(&self, value: Payload) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send copy of payload";
         let mut sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
@@ -751,7 +766,7 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     ///                          .create()?;
     ///
     /// let sample = publisher.loan_uninit()?;
-    /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<PayloadType>`
+    /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<Payload>`
     ///
     /// sample.send()?;
     ///
@@ -760,20 +775,21 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// ```
     pub fn loan_uninit(
         &self,
-    ) -> Result<SampleMut<MaybeUninit<PayloadType>, Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<MaybeUninit<Payload>, Metadata, Service>, PublisherLoanError> {
         let chunk = self.allocate(self.sample_layout(1))?;
         let header_ptr = chunk.data_ptr as *mut Header;
-        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<PayloadType>;
+        let metadata_ptr = self.metadata_ptr(header_ptr) as *mut Metadata;
+        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
 
         unsafe {
             header_ptr.write(Header::new(
                 self.data_segment.port_id,
-                Layout::new::<PayloadType>(),
+                Layout::new::<Payload>(),
             ))
         };
 
-        let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, payload_ptr) };
-        Ok(SampleMut::<MaybeUninit<PayloadType>, Service>::new(
+        let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, metadata_ptr, payload_ptr) };
+        Ok(SampleMut::<MaybeUninit<Payload>, Metadata, Service>::new(
             &self.data_segment,
             sample,
             chunk.offset,
@@ -781,12 +797,12 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     }
 }
 
-impl<Service: service::Service, PayloadType: Default + Debug + Sized>
-    Publisher<Service, PayloadType>
+impl<Service: service::Service, Payload: Default + Debug + Sized, Metadata: Debug>
+    Publisher<Service, Payload, Metadata>
 {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
-    /// can be used to loan a [`core::mem::MaybeUninit<PayloadType>`].
+    /// can be used to loan a [`core::mem::MaybeUninit<Payload>`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
     ///
@@ -811,8 +827,8 @@ impl<Service: service::Service, PayloadType: Default + Debug + Sized>
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<SampleMut<PayloadType, Service>, PublisherLoanError> {
-        Ok(self.loan_uninit()?.write_payload(PayloadType::default()))
+    pub fn loan(&self) -> Result<SampleMut<Payload, Metadata, Service>, PublisherLoanError> {
+        Ok(self.loan_uninit()?.write_payload(Payload::default()))
     }
 }
 ////////////////////////
@@ -822,11 +838,13 @@ impl<Service: service::Service, PayloadType: Default + Debug + Sized>
 ////////////////////////
 // BEGIN: sliced API
 ////////////////////////
-impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service, [PayloadType]> {
+impl<Service: service::Service, Payload: Default + Debug, Metadata: Debug>
+    Publisher<Service, [Payload], Metadata>
+{
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initializes all slice elements with the default value. This can be a performance hit
     /// and [`Publisher::loan_slice_uninit()`] can be used to loan a slice of
-    /// [`core::mem::MaybeUninit<PayloadType>`].
+    /// [`core::mem::MaybeUninit<Payload>`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
     ///
@@ -857,13 +875,15 @@ impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service,
     pub fn loan_slice(
         &self,
         number_of_elements: usize,
-    ) -> Result<SampleMut<[PayloadType], Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<[Payload], Metadata, Service>, PublisherLoanError> {
         let sample = self.loan_slice_uninit(number_of_elements)?;
-        Ok(sample.write_from_fn(|_| PayloadType::default()))
+        Ok(sample.write_from_fn(|_| Payload::default()))
     }
 }
 
-impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadType]> {
+impl<Service: service::Service, Payload: Debug, Metadata: Debug>
+    Publisher<Service, [Payload], Metadata>
+{
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
@@ -886,7 +906,7 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     ///
     /// let slice_length = 5;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;
-    /// let sample = sample.write_from_fn(|n| n * 2); // alternatively `sample.payload_mut()` can be use to access the `[MaybeUninit<PayloadType>]`
+    /// let sample = sample.write_from_fn(|n| n * 2); // alternatively `sample.payload_mut()` can be use to access the `[MaybeUninit<Payload>]`
     ///
     /// sample.send()?;
     /// # Ok::<_, Box<dyn std::error::Error>>(())
@@ -894,7 +914,7 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     pub fn loan_slice_uninit(
         &self,
         slice_len: usize,
-    ) -> Result<SampleMut<[MaybeUninit<PayloadType>], Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<[MaybeUninit<Payload>], Metadata, Service>, PublisherLoanError> {
         let max_slice_len = self.data_segment.config.max_slice_len;
         if max_slice_len < slice_len {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
@@ -904,7 +924,8 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
 
         let chunk = self.allocate(self.sample_layout(slice_len))?;
         let header_ptr = chunk.data_ptr as *mut Header;
-        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<PayloadType>;
+        let metadata_ptr = self.metadata_ptr(header_ptr) as *mut Metadata;
+        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
 
         unsafe {
             header_ptr.write(Header::new(
@@ -916,11 +937,12 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
         let sample = unsafe {
             RawSampleMut::new_unchecked(
                 header_ptr,
+                metadata_ptr,
                 core::slice::from_raw_parts_mut(payload_ptr, slice_len),
             )
         };
 
-        Ok(SampleMut::<[MaybeUninit<PayloadType>], Service>::new(
+        Ok(SampleMut::<[MaybeUninit<Payload>], Metadata, Service>::new(
             &self.data_segment,
             sample,
             chunk.offset,
@@ -931,8 +953,8 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
 // END: sliced API
 ////////////////////////
 
-impl<Service: service::Service, PayloadType: Debug> UpdateConnections
-    for Publisher<Service, PayloadType>
+impl<Service: service::Service, Payload: Debug, Metadata: Debug> UpdateConnections
+    for Publisher<Service, Payload, Metadata>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         self.data_segment.update_connections()

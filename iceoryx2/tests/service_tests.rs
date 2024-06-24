@@ -66,7 +66,7 @@ mod service {
     }
 
     impl<Sut: Service> SutFactory<Sut> for PubSubTests<Sut> {
-        type Factory = publish_subscribe::PortFactory<Sut, u64>;
+        type Factory = publish_subscribe::PortFactory<Sut, u64, ()>;
         type CreateError = PublishSubscribeCreateError;
         type OpenError = PublishSubscribeOpenError;
 

@@ -56,22 +56,23 @@ use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 /// [`crate::port::publisher::Publisher`]
 /// or [`crate::port::subscriber::Subscriber`] ports.
 #[derive(Debug)]
-pub struct PortFactory<Service: service::Service, PayloadType: Debug + ?Sized> {
+pub struct PortFactory<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug> {
     pub(crate) service: Service,
-    _phantom_payload_type: PhantomData<PayloadType>,
+    _payload: PhantomData<Payload>,
+    _metadata: PhantomData<Metadata>,
 }
 
-unsafe impl<Service: service::Service, PayloadType: Debug + ?Sized> Send
-    for PortFactory<Service, PayloadType>
+unsafe impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug> Send
+    for PortFactory<Service, Payload, Metadata>
 {
 }
-unsafe impl<Service: service::Service, PayloadType: Debug + ?Sized> Sync
-    for PortFactory<Service, PayloadType>
+unsafe impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug> Sync
+    for PortFactory<Service, Payload, Metadata>
 {
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized>
-    crate::service::port_factory::PortFactory for PortFactory<Service, PayloadType>
+impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug>
+    crate::service::port_factory::PortFactory for PortFactory<Service, Payload, Metadata>
 {
     type StaticConfig = static_config::publish_subscribe::StaticConfig;
     type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig;
@@ -101,11 +102,14 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized>
     }
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service, PayloadType> {
+impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug>
+    PortFactory<Service, Payload, Metadata>
+{
     pub(crate) fn new(service: Service) -> Self {
         Self {
             service,
-            _phantom_payload_type: PhantomData,
+            _payload: PhantomData,
+            _metadata: PhantomData,
         }
     }
 
@@ -128,7 +132,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     /// # Ok(())
     /// # }
     /// ```
-    pub fn subscriber_builder(&self) -> PortFactorySubscriber<Service, PayloadType> {
+    pub fn subscriber_builder(&self) -> PortFactorySubscriber<Service, Payload, Metadata> {
         PortFactorySubscriber::new(self)
     }
 
@@ -155,7 +159,11 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> PortFactory<Service
     /// # Ok(())
     /// # }
     /// ```
+<<<<<<< HEAD
     pub fn publisher_builder(&self) -> PortFactoryPublisher<Service, PayloadType> {
+=======
+    pub fn publisher(&self) -> PortFactoryPublisher<Service, Payload, Metadata> {
+>>>>>>> 8080b5e ([#253] Add metadata to ports and samples)
         PortFactoryPublisher::new(self)
     }
 }

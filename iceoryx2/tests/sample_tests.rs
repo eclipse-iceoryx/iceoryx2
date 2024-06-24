@@ -31,10 +31,10 @@ mod sample {
     struct TestContext<Sut: Service> {
         node: Node<Sut>,
         service_name: ServiceName,
-        service: PortFactory<Sut, u64>,
-        publisher_1: Publisher<Sut, u64>,
-        publisher_2: Publisher<Sut, u64>,
-        subscriber: Subscriber<Sut, u64>,
+        service: PortFactory<Sut, u64, ()>,
+        publisher_1: Publisher<Sut, u64, ()>,
+        publisher_2: Publisher<Sut, u64, ()>,
+        subscriber: Subscriber<Sut, u64, ()>,
     }
 
     impl<Sut: Service> TestContext<Sut> {

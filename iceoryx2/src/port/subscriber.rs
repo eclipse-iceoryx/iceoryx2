@@ -88,7 +88,7 @@ impl std::error::Error for SubscriberCreateError {}
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
-pub struct Subscriber<Service: service::Service, PayloadType: Debug + ?Sized> {
+pub struct Subscriber<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: Arc<PublisherConnections<Service>>,
     dynamic_storage: Arc<Service::DynamicStorage>,
@@ -96,11 +96,12 @@ pub struct Subscriber<Service: service::Service, PayloadType: Debug + ?Sized> {
     degration_callback: Option<DegrationCallback<'static>>,
 
     publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
-    _phantom_payload_type: PhantomData<PayloadType>,
+    _payload: PhantomData<Payload>,
+    _metadata: PhantomData<Metadata>,
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
-    for Subscriber<Service, PayloadType>
+impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug> Drop
+    for Subscriber<Service, Payload, Metadata>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
@@ -112,7 +113,9 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
     }
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service, PayloadType> {
+impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug>
+    Subscriber<Service, Payload, Metadata>
+{
     pub(crate) fn new(
         service: &Service,
         static_config: &StaticConfig,
@@ -158,7 +161,8 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
             static_config: service.state().static_config.clone(),
-            _phantom_payload_type: PhantomData,
+            _payload: PhantomData,
+            _metadata: PhantomData,
         };
 
         if let Err(e) = new_self.populate_publisher_channels() {
@@ -318,10 +322,18 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Subscriber<Service,
             .payload_ptr_from_header(header.cast())
             .cast()
     }
+
+    fn metadata_ptr(&self, header: *const Header) -> *const u8 {
+        self.publisher_connections
+            .static_config
+            .message_type_details
+            .metadata_ptr_from_header(header.cast())
+            .cast()
+    }
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized> UpdateConnections
-    for Subscriber<Service, PayloadType>
+impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug> UpdateConnections
+    for Subscriber<Service, Payload, Metadata>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
@@ -339,39 +351,48 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> UpdateConnections
     }
 }
 
-impl<Service: service::Service, PayloadType: Debug> Subscriber<Service, PayloadType> {
+impl<Service: service::Service, Payload: Debug, Metadata: Debug>
+    Subscriber<Service, Payload, Metadata>
+{
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive(&self) -> Result<Option<Sample<PayloadType, Service>>, SubscriberReceiveError> {
+    pub fn receive(
+        &self,
+    ) -> Result<Option<Sample<Payload, Metadata, Service>>, SubscriberReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
+            let metadata_ptr = self.metadata_ptr(header_ptr).cast();
             let payload_ptr = self.payload_ptr(header_ptr).cast();
             Sample {
                 details,
-                ptr: unsafe { RawSample::new_unchecked(header_ptr, payload_ptr) },
+                ptr: unsafe { RawSample::new_unchecked(header_ptr, metadata_ptr, payload_ptr) },
             }
         }))
     }
 }
 
-impl<Service: service::Service, PayloadType: Debug> Subscriber<Service, [PayloadType]> {
+impl<Service: service::Service, Payload: Debug, Metadata: Debug>
+    Subscriber<Service, [Payload], Metadata>
+{
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
     pub fn receive(
         &self,
-    ) -> Result<Option<Sample<[PayloadType], Service>>, SubscriberReceiveError> {
+    ) -> Result<Option<Sample<[Payload], Metadata, Service>>, SubscriberReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
+            let metadata_ptr = self.metadata_ptr(header_ptr).cast();
             let payload_ptr = self.payload_ptr(header_ptr).cast();
 
             let payload_layout = unsafe { (*header_ptr).payload_type_layout() };
-            let number_of_elements = payload_layout.size() / core::mem::size_of::<PayloadType>();
+            let number_of_elements = payload_layout.size() / core::mem::size_of::<Payload>();
 
             Sample {
                 details,
                 ptr: unsafe {
-                    RawSample::<Header, [PayloadType]>::new_slice_unchecked(
+                    RawSample::<Header, Metadata, [Payload]>::new_slice_unchecked(
                         header_ptr,
+                        metadata_ptr,
                         core::slice::from_raw_parts(payload_ptr, number_of_elements),
                     )
                 },

@@ -14,34 +14,41 @@ use core::fmt;
 
 /// Contains the pointer to the underlying header and payload of a sample.
 #[repr(C)]
-pub(crate) struct RawSample<Header, PayloadType: ?Sized> {
+pub(crate) struct RawSample<Header, Metadata, Payload: ?Sized> {
     header: *const Header,
-    payload: *const PayloadType,
+    metadata: *const Metadata,
+    payload: *const Payload,
 }
 
-impl<Header, PayloadType> RawSample<Header, [PayloadType]> {
+impl<Header, Metadata, Payload> RawSample<Header, Metadata, [Payload]> {
     /// Creates a new `RawSample`.
     ///
     /// # Safety
     ///
     /// * `header` must be non-null.
+    /// * `metadata` must be non-null.
     /// * `payload` must be non-null.
     ///
     #[inline]
     pub(crate) unsafe fn new_slice_unchecked(
         header: *const Header,
-        payload: *const [PayloadType],
+        metadata: *const Metadata,
+        payload: *const [Payload],
     ) -> Self {
         debug_assert!(
-            !header.is_null() && !payload.is_null(),
-            "RawSample::new_unchecked requires that the header- and payload-pointer is non-null"
+            !header.is_null() && !metadata.is_null() && !payload.is_null(),
+            "RawSample::new_unchecked requires that the header-, metadata- and payload-pointer is non-null"
         );
 
-        Self { header, payload }
+        Self {
+            header,
+            metadata,
+            payload,
+        }
     }
 }
 
-impl<Header, PayloadType: ?Sized> RawSample<Header, PayloadType> {
+impl<Header, Metadata, Payload: ?Sized> RawSample<Header, Metadata, Payload> {
     /// Acquires the underlying header as reference.
     #[must_use]
     #[inline(always)]
@@ -49,76 +56,105 @@ impl<Header, PayloadType: ?Sized> RawSample<Header, PayloadType> {
         unsafe { &*self.header }
     }
 
+    /// Acquires the underlying ,metadata as reference.
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn as_metadata_ref(&self) -> &Metadata {
+        unsafe { &*self.metadata }
+    }
+
     /// Acquires the underlying data as reference.
     #[must_use]
     #[inline(always)]
-    pub(crate) fn as_payload_ref(&self) -> &PayloadType {
+    pub(crate) fn as_payload_ref(&self) -> &Payload {
         unsafe { &*self.payload }
     }
 }
 
-impl<Header, PayloadType> RawSample<Header, PayloadType> {
+impl<Header, Metadata, Payload> RawSample<Header, Metadata, Payload> {
     /// Creates a new `RawSample`.
     ///
     /// # Safety
     ///
     /// * `header` must be non-null.
+    /// * `metadata` must be non-null.
     /// * `payload` must be non-null.
     ///
     #[inline]
-    pub(crate) unsafe fn new_unchecked(header: *const Header, payload: *const PayloadType) -> Self {
+    pub(crate) unsafe fn new_unchecked(
+        header: *const Header,
+        metadata: *const Metadata,
+        payload: *const Payload,
+    ) -> Self {
         debug_assert!(
-            !header.is_null() && !payload.is_null(),
-            "RawSample::new_unchecked requires that the header- and payload-pointer is non-null"
+            !header.is_null() && !metadata.is_null() && !payload.is_null(),
+            "RawSample::new_unchecked requires that the header-, metadata- and payload-pointer is non-null"
         );
 
-        Self { header, payload }
+        Self {
+            header,
+            metadata,
+            payload,
+        }
     }
 }
 
-impl<Header, PayloadType> Clone for RawSample<Header, PayloadType> {
+impl<Header, Metadata, Payload> Clone for RawSample<Header, Metadata, Payload> {
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<Header, PayloadType> Copy for RawSample<Header, PayloadType> {}
+impl<Header, Metadata, Payload> Copy for RawSample<Header, Metadata, Payload> {}
 
-impl<Header: fmt::Debug, PayloadType: fmt::Debug> fmt::Debug for RawSample<Header, PayloadType> {
+impl<Header, Metadata, Payload> fmt::Debug for RawSample<Header, Metadata, Payload> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&self.payload, f)
-    }
-}
-
-impl<Header, PayloadType> fmt::Pointer for RawSample<Header, PayloadType> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&self.payload, f)
+        write!(
+            f,
+            "RawSample<{}, {}, {}> {{ header: {:?}, metadata: {:?}, payload: {:?} }}",
+            core::any::type_name::<Header>(),
+            core::any::type_name::<Metadata>(),
+            core::any::type_name::<Payload>(),
+            self.header,
+            self.metadata,
+            self.payload
+        )
     }
 }
 
 /// Contains the mutable pointer to the underlying header and payload of a sample.
 #[repr(C)]
-pub(crate) struct RawSampleMut<Header, PayloadType: ?Sized> {
+pub(crate) struct RawSampleMut<Header, Metadata, Payload: ?Sized> {
     header: *mut Header,
-    payload: *mut PayloadType,
+    metadata: *mut Metadata,
+    payload: *mut Payload,
 }
 
-impl<Header, PayloadType: ?Sized> RawSampleMut<Header, PayloadType> {
+impl<Header, Metadata, Payload: ?Sized> RawSampleMut<Header, Metadata, Payload> {
     /// Creates a new `RawSampleMut`.
     ///
     /// # Safety
     ///
     ///  * `header` mut be non-null.
+    ///  * `metadata` mut be non-null.
     ///  * `payload` must be non-null.
     ///
     #[inline]
-    pub(crate) unsafe fn new_unchecked(header: *mut Header, payload: *mut PayloadType) -> Self {
+    pub(crate) unsafe fn new_unchecked(
+        header: *mut Header,
+        metadata: *mut Metadata,
+        payload: *mut Payload,
+    ) -> Self {
         debug_assert!(
-            !header.is_null() && !payload.is_null(),
-            "RawSampleMut::new_unchecked requires that the payload pointer is non-null"
+            !header.is_null() && !metadata.is_null() && !payload.is_null(),
+            "RawSampleMut::new_unchecked requires that the header-, metadata- and payload-pointer is non-null"
         );
-        Self { header, payload }
+        Self {
+            header,
+            metadata,
+            payload,
+        }
     }
 
     /// Acquires the underlying header as reference.
@@ -131,35 +167,52 @@ impl<Header, PayloadType: ?Sized> RawSampleMut<Header, PayloadType> {
     /// Acquires the underlying payload as reference.
     #[must_use]
     #[inline(always)]
-    pub(crate) fn as_payload_ref(&self) -> &PayloadType {
+    pub(crate) fn as_metadata_ref(&self) -> &Metadata {
+        unsafe { &*self.metadata }
+    }
+
+    /// Acquires the underlying payload as mutable reference.
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn as_metadata_mut(&mut self) -> &mut Metadata {
+        unsafe { &mut *self.metadata }
+    }
+
+    /// Acquires the underlying payload as reference.
+    #[must_use]
+    #[inline(always)]
+    pub(crate) fn as_payload_ref(&self) -> &Payload {
         unsafe { &*self.payload }
     }
 
     /// Acquires the underlying payload as mutable reference.
     #[must_use]
     #[inline(always)]
-    pub(crate) fn as_payload_mut(&mut self) -> &mut PayloadType {
+    pub(crate) fn as_payload_mut(&mut self) -> &mut Payload {
         unsafe { &mut *self.payload }
     }
 }
 
-impl<Header, PayloadType> Clone for RawSampleMut<Header, PayloadType> {
+impl<Header, Metadata, Payload> Clone for RawSampleMut<Header, Metadata, Payload> {
     #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<Header, PayloadType> Copy for RawSampleMut<Header, PayloadType> {}
+impl<Header, Metadata, Payload> Copy for RawSampleMut<Header, Metadata, Payload> {}
 
-impl<Header: fmt::Debug, PayloadType: fmt::Debug> fmt::Debug for RawSampleMut<Header, PayloadType> {
+impl<Header, Metadata, Payload> fmt::Debug for RawSampleMut<Header, Metadata, Payload> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&self.as_header_ref(), f)
-    }
-}
-
-impl<Header, PayloadType> fmt::Pointer for RawSampleMut<Header, PayloadType> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Pointer::fmt(&self.as_header_ref(), f)
+        write!(
+            f,
+            "RawSampleMut<{}, {}, {}> {{ header: {:?}, metadata: {:?}, payload: {:?} }}",
+            core::any::type_name::<Header>(),
+            core::any::type_name::<Metadata>(),
+            core::any::type_name::<Payload>(),
+            self.header,
+            self.metadata,
+            self.payload
+        )
     }
 }
