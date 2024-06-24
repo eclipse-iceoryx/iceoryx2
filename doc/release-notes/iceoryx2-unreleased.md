@@ -9,6 +9,8 @@
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * Subscriber buffer size can be reduced [#19](https://github.com/eclipse-iceoryx/iceoryx2/issues/19)
+ * CLI for iox2 [#98](https://github.com/eclipse-iceoryx/iceoryx2/issues/98)
+    * Add entrypoint CLI `iox2` in preparation for adding additional CLI commands
  * Introduce Nodes [#102](https://github.com/eclipse-iceoryx/iceoryx2/issues/102)
     * Implement Serialize,Deserialize for
         * `SemanticString`
