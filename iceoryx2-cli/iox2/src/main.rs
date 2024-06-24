@@ -56,5 +56,7 @@ fn main() {
                 println!("Command found but execution failed ...");
             }
         }
+    } else {
+        println!("No CLI command detected. Exiting.");
     }
 }
