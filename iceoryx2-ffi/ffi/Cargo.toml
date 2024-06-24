@@ -16,11 +16,15 @@ build = "build.rs"
 
 [lib]
 path = "src/lib.rs"
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["rlib", "cdylib", "staticlib"] # without "rlib" the doc examples are not run
 
 [build-dependencies]
 cbindgen = { workspace = true }
 
 [dependencies]
 iceoryx2 = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }

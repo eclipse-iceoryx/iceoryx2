@@ -13,11 +13,18 @@
 use iceoryx2::prelude::*;
 use iceoryx2_bb_log::set_log_level;
 
+use core::ffi::c_int;
+
+mod node;
 mod publisher;
 mod subscriber;
 
+pub use node::*;
 pub use publisher::*;
 pub use subscriber::*;
+
+/// This constant signals an successful function call
+pub const IOX2_OK: c_int = 0;
 
 #[no_mangle]
 pub extern "C" fn zero_copy_service_list() -> i32 {
@@ -36,4 +43,40 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
     }
 
     0
+}
+
+/// This is a trait to convert a Rust error enum into the corresponding C error enum and then to a c_int in one go
+///
+/// # Example
+///
+/// ```no_run
+/// use core::ffi::c_int;
+///
+/// trait IntoCInt {
+///     fn into_c_int(self) -> c_int;
+/// }
+///
+/// enum FooError {
+///     BAR,
+///     BAZ
+/// }
+///
+/// #[repr(C)]
+/// #[derive(Copy, Clone)]
+/// pub enum iox2_foo_error_e {
+///     BAR = 1, // start at 1 since IOX2_OK is already 0
+///     BAZ,
+/// }
+///
+/// impl IntoCInt for FooError {
+///     fn into_c_int(self) -> c_int {
+///         (match self {
+///             FooError::BAR => iox2_foo_error_e::BAR,
+///             FooError::BAZ => iox2_foo_error_e::BAZ,
+///         }) as c_int
+///     }
+/// }
+/// ```
+trait IntoCInt {
+    fn into_c_int(self) -> c_int;
 }

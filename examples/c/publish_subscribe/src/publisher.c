@@ -13,8 +13,21 @@
 #include "iox2/iceoryx2.h"
 
 #include <stdint.h>
+#include <stdio.h>
 
 int main(void) {
+    iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
+    iox2_node_h node_handle;
+    int ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_node_type_e_ZERO_COPY, &node_handle);
+    if(ret_val != IOX2_OK) {
+        printf("Could not create node! Error code: %i", ret_val);
+        return -1;
+    }
+
     const uint32_t NUMBER_OF_SECONDS_TO_RUN = 10;
-    return run_publisher(NUMBER_OF_SECONDS_TO_RUN);
+    ret_val = run_publisher(NUMBER_OF_SECONDS_TO_RUN);
+
+    iox2_node_drop(node_handle);
+
+    return ret_val;
 }

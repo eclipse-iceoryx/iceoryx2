@@ -63,7 +63,15 @@ no_includes = false
 cpp_compat = false
 
 # A list of lines to add verbatim after the includes block
-after_includes = ""
+after_includes = """
+
+// define alignment macros
+#ifdef _MSC_VER
+#define IOX2_REPR_ALIGNED(n) __declspec(align(n))
+#else
+#define IOX2_REPR_ALIGNED(n) __attribute__((aligned(n)))
+#endif
+"""
 
 
 ############################ Code Style Options ################################
