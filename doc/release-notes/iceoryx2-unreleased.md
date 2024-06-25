@@ -56,6 +56,7 @@
         * `FixedSizeByteString`
         * `FixedSizeVec`
  * TryInto implemented for `{Node|Service}Name` [#243](https://github.com/eclipse-iceoryx/iceoryx2/issues/243)
+ * Add custom user header [#253](https://github.com/eclipse-iceoryx/iceoryx2/issues/253)
 
 ### Bugfixes
 

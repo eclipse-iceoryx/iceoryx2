@@ -109,6 +109,10 @@ impl MessageTypeDetails {
 
     pub(crate) fn is_compatible_to(&self, rhs: &Self) -> bool {
         self.header == rhs.header
+            && self.user_header.type_name == rhs.user_header.type_name
+            && self.user_header.variant == rhs.user_header.variant
+            && self.user_header.size == rhs.user_header.size
+            && self.user_header.alignment <= rhs.user_header.alignment
             && self.payload.type_name == rhs.payload.type_name
             && self.payload.variant == rhs.payload.variant
             && self.payload.size == rhs.payload.size
