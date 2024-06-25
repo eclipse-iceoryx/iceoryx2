@@ -357,7 +357,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn user_header(&mut self) -> &UserHeader {
+    pub fn user_header(&self) -> &UserHeader {
         self.ptr.as_user_header_ref()
     }
 
@@ -377,8 +377,8 @@ impl<
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher_builder().create()?;
     ///
-    /// let sample = publisher.loan()?;
-    /// sample.user_header_mut() = 123;
+    /// let mut sample = publisher.loan()?;
+    /// *sample.user_header_mut() = 123;
     ///
     /// # Ok(())
     /// # }
