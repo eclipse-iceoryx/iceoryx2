@@ -219,7 +219,7 @@ mod publisher {
 
         let sample3 = sut.loan_uninit();
         assert_that!(sample3, is_err);
-        assert_that!(sample3.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
+        assert_that!(sample3.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
 
         Ok(())
     }
@@ -243,7 +243,7 @@ mod publisher {
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();
         assert_that!(sample4, is_err);
-        assert_that!(sample4.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
+        assert_that!(sample4.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
 
         Ok(())
     }
@@ -267,7 +267,7 @@ mod publisher {
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();
         assert_that!(sample4, is_err);
-        assert_that!(sample4.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
+        assert_that!(sample4.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
 
         Ok(())
     }

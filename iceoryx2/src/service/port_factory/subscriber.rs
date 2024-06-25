@@ -58,16 +58,16 @@ pub struct PortFactorySubscriber<
     'factory,
     Service: service::Service,
     PayloadType: Debug + ?Sized,
-    Metadata: Debug,
+    UserHeader: Debug,
 > {
     config: SubscriberConfig,
-    pub(crate) factory: &'factory PortFactory<Service, PayloadType, Metadata>,
+    pub(crate) factory: &'factory PortFactory<Service, PayloadType, UserHeader>,
 }
 
-impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized, Metadata: Debug>
-    PortFactorySubscriber<'factory, Service, PayloadType, Metadata>
+impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized, UserHeader: Debug>
+    PortFactorySubscriber<'factory, Service, PayloadType, UserHeader>
 {
-    pub(crate) fn new(factory: &'factory PortFactory<Service, PayloadType, Metadata>) -> Self {
+    pub(crate) fn new(factory: &'factory PortFactory<Service, PayloadType, UserHeader>) -> Self {
         Self {
             config: SubscriberConfig {
                 buffer_size: None,
@@ -108,7 +108,7 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized, Metadata:
     /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
     pub fn create(
         self,
-    ) -> Result<Subscriber<Service, PayloadType, Metadata>, SubscriberCreateError> {
+    ) -> Result<Subscriber<Service, PayloadType, UserHeader>, SubscriberCreateError> {
         let origin = format!("{:?}", self);
         Ok(
             fail!(from origin, when Subscriber::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),

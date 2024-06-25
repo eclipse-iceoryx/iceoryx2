@@ -152,7 +152,7 @@ impl std::error::Error for PublishSubscribeOpenOrCreateError {}
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Builder<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service> {
+pub struct Builder<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     override_alignment: Option<usize>,
     verify_number_of_subscribers: bool,
@@ -162,11 +162,11 @@ pub struct Builder<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: servic
     verify_publisher_history_size: bool,
     verify_enable_safe_overflow: bool,
     _data: PhantomData<Payload>,
-    _metadata: PhantomData<Metadata>,
+    _user_header: PhantomData<UserHeader>,
 }
 
-impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
-    Builder<Payload, Metadata, ServiceType>
+impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
+    Builder<Payload, UserHeader, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
@@ -179,7 +179,7 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
             verify_enable_safe_overflow: false,
             override_alignment: None,
             _data: PhantomData,
-            _metadata: PhantomData,
+            _user_header: PhantomData,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::PublishSubscribe(
@@ -230,8 +230,8 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
         }
     }
 
-    /// Sets the metadata type of the [`Service`].
-    pub fn metadata<M: Debug>(self) -> Builder<Payload, M, ServiceType> {
+    /// Sets the user header type of the [`Service`].
+    pub fn user_header<M: Debug>(self) -> Builder<Payload, M, ServiceType> {
         unsafe { core::mem::transmute::<Self, Builder<Payload, M, ServiceType>>(self) }
     }
 
@@ -407,7 +407,7 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
         &mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeCreateError,
     > {
         self.adjust_attributes_to_meaningful_values();
@@ -525,7 +525,7 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
         &mut self,
         attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenError,
     > {
         let msg = "Unable to open publish subscribe service";
@@ -609,7 +609,7 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
         mut self,
         attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
         let msg = "Unable to open or create publish subscribe service";
@@ -671,12 +671,12 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
-    Builder<Payload, Metadata, ServiceType>
+impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
+    Builder<Payload, UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =
-            MessageTypeDetails::from::<Header, Metadata, Payload>(TypeVariant::FixedSize);
+            MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::FixedSize);
         self.adjust_payload_alignment();
     }
 
@@ -685,7 +685,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn open_or_create(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
@@ -699,7 +699,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
         mut self,
         required_attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
@@ -710,7 +710,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn open(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenError,
     > {
         self.open_with_attributes(&AttributeVerifier::new())
@@ -722,7 +722,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
         mut self,
         required_attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenError,
     > {
         self.prepare_config_details();
@@ -733,7 +733,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn create(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeCreateError,
     > {
         self.create_with_attributes(&AttributeSpecifier::new())
@@ -744,7 +744,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
         mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, Payload, Metadata>,
+        publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeCreateError,
     > {
         self.prepare_config_details();
@@ -752,12 +752,12 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
-    Builder<[Payload], Metadata, ServiceType>
+impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
+    Builder<[Payload], UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =
-            MessageTypeDetails::from::<Header, Metadata, Payload>(TypeVariant::Dynamic);
+            MessageTypeDetails::from::<Header, UserHeader, Payload>(TypeVariant::Dynamic);
         self.adjust_payload_alignment();
     }
 
@@ -766,7 +766,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn open_or_create(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
@@ -780,7 +780,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
         mut self,
         attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
@@ -791,7 +791,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn open(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeOpenError,
     > {
         self.open_with_attributes(&AttributeVerifier::new())
@@ -803,7 +803,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
         mut self,
         attributes: &AttributeVerifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeOpenError,
     > {
         self.prepare_config_details();
@@ -814,7 +814,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
     pub fn create(
         self,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeCreateError,
     > {
         self.create_with_attributes(&AttributeSpecifier::new())
@@ -825,7 +825,7 @@ impl<Payload: Debug, Metadata: Debug, ServiceType: service::Service>
         mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<
-        publish_subscribe::PortFactory<ServiceType, [Payload], Metadata>,
+        publish_subscribe::PortFactory<ServiceType, [Payload], UserHeader>,
         PublishSubscribeCreateError,
     > {
         self.prepare_config_details();

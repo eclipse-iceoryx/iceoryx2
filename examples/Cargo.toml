@@ -60,15 +60,15 @@ path = "rust/publish_subscribe_dynamic_data/publisher.rs"
 name = "publish_subscribe_dyn_subscriber"
 path = "rust/publish_subscribe_dynamic_data/subscriber.rs"
 
-# publish_subscribe_with_metadata
+# publish_subscribe_with_user_header
 
 [[example]]
-name = "publish_subscribe_metadata_publisher"
-path = "rust/publish_subscribe_with_metadata/publisher.rs"
+name = "publish_subscribe_user_header_publisher"
+path = "rust/publish_subscribe_with_user_header/publisher.rs"
 
 [[example]]
-name = "publish_subscribe_metadata_subscriber"
-path = "rust/publish_subscribe_with_metadata/subscriber.rs"
+name = "publish_subscribe_user_header_subscriber"
+path = "rust/publish_subscribe_with_user_header/subscriber.rs"
 
 # service attributes
 

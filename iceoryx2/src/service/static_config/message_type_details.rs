@@ -55,39 +55,39 @@ impl TypeDetail {
 pub struct MessageTypeDetails {
     /// The [`TypeDetail`] of the header of a message, the first iceoryx2 internal part.
     pub header: TypeDetail,
-    /// The [`TypeDetail`] of the metadata or the custom header, is located directly after the
+    /// The [`TypeDetail`] of the user_header or the custom header, is located directly after the
     /// header.
-    pub metadata: TypeDetail,
+    pub user_header: TypeDetail,
     /// The [`TypeDetail`] of the payload of the message, the last part.
     pub payload: TypeDetail,
 }
 
 impl MessageTypeDetails {
-    pub(crate) fn from<Header, Metadata, Payload>(variant: TypeVariant) -> Self {
+    pub(crate) fn from<Header, UserHeader, Payload>(variant: TypeVariant) -> Self {
         Self {
             header: TypeDetail::new::<Header>(TypeVariant::FixedSize),
-            metadata: TypeDetail::new::<Metadata>(TypeVariant::FixedSize),
+            user_header: TypeDetail::new::<UserHeader>(TypeVariant::FixedSize),
             payload: TypeDetail::new::<Payload>(variant),
         }
     }
 
     pub(crate) fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
-        let metadata = self.metadata_ptr_from_header(header) as usize;
-        let payload_start = align(metadata + self.metadata.size, self.payload.alignment);
+        let user_header = self.user_header_ptr_from_header(header) as usize;
+        let payload_start = align(user_header + self.user_header.size, self.payload.alignment);
         payload_start as *const u8
     }
 
-    pub(crate) fn metadata_ptr_from_header(&self, header: *const u8) -> *const u8 {
+    pub(crate) fn user_header_ptr_from_header(&self, header: *const u8) -> *const u8 {
         let header = header as usize;
-        let metadata_start = align(header + self.header.size, self.metadata.alignment);
-        metadata_start as *const u8
+        let user_header_start = align(header + self.header.size, self.user_header.alignment);
+        user_header_start as *const u8
     }
 
     pub(crate) fn sample_layout(&self, number_of_elements: usize) -> Layout {
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
-                    self.header.size + self.metadata.size + self.metadata.alignment - 1
+                    self.header.size + self.user_header.size + self.user_header.alignment - 1
                         + self.payload.size * number_of_elements
                         + self.payload.alignment
                         - 1,

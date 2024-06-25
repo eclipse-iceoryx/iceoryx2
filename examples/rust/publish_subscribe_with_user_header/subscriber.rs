@@ -22,14 +22,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service = node
         .service_builder("My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<u64>()
-        .metadata::<CustomHeader>()
+        .user_header::<CustomHeader>()
         .open_or_create()?;
 
     let subscriber = service.subscriber_builder().create()?;
 
     while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
         while let Some(sample) = subscriber.receive()? {
-            println!("received: {:?}, metadata: {:?}", *sample, sample.metadata());
+            println!(
+                "received: {:?}, user_header: {:?}",
+                *sample,
+                sample.user_header()
+            );
         }
     }
 

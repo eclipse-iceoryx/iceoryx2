@@ -141,16 +141,16 @@ pub struct PortFactoryPublisher<
     'factory,
     Service: service::Service,
     Payload: Debug + ?Sized,
-    Metadata: Debug,
+    UserHeader: Debug,
 > {
     config: LocalPublisherConfig,
-    pub(crate) factory: &'factory PortFactory<Service, Payload, Metadata>,
+    pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
 
-impl<'factory, Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug>
-    PortFactoryPublisher<'factory, Service, Payload, Metadata>
+impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
+    PortFactoryPublisher<'factory, Service, Payload, UserHeader>
 {
-    pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, Metadata>) -> Self {
+    pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, UserHeader>) -> Self {
         Self {
             config: LocalPublisherConfig {
                 degration_callback: None,
@@ -213,7 +213,7 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, Metadata: Deb
     }
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
-    pub fn create(self) -> Result<Publisher<Service, Payload, Metadata>, PublisherCreateError> {
+    pub fn create(self) -> Result<Publisher<Service, Payload, UserHeader>, PublisherCreateError> {
         let origin = format!("{:?}", self);
         Ok(
             fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),
@@ -222,8 +222,8 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, Metadata: Deb
     }
 }
 
-impl<'factory, Service: service::Service, Payload: Debug, Metadata: Debug>
-    PortFactoryPublisher<'factory, Service, [Payload], Metadata>
+impl<'factory, Service: service::Service, Payload: Debug, UserHeader: Debug>
+    PortFactoryPublisher<'factory, Service, [Payload], UserHeader>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].

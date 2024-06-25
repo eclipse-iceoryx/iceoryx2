@@ -33,7 +33,7 @@ mod service_publish_subscribe {
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
     #[derive(Debug)]
-    struct SomeMetadata {
+    struct SomeUserHeader {
         value: [u8; 123],
     }
 
@@ -660,7 +660,7 @@ mod service_publish_subscribe {
         let sut = node
             .service_builder(service_name)
             .publish_subscribe::<PayloadType>()
-            .metadata::<SomeMetadata>()
+            .user_header::<SomeUserHeader>()
             .create()
             .unwrap();
 
@@ -669,10 +669,10 @@ mod service_publish_subscribe {
         assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
         assert_that!(d.header.size, eq std::mem::size_of::<Header>());
         assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
-        assert_that!(d.metadata.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.metadata.type_name, eq core::any::type_name::<SomeMetadata>());
-        assert_that!(d.metadata.size, eq std::mem::size_of::<SomeMetadata>());
-        assert_that!(d.metadata.alignment, eq std::mem::align_of::<SomeMetadata>());
+        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.user_header.type_name, eq core::any::type_name::<SomeUserHeader>());
+        assert_that!(d.user_header.size, eq std::mem::size_of::<SomeUserHeader>());
+        assert_that!(d.user_header.alignment, eq std::mem::align_of::<SomeUserHeader>());
         assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
         assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
         assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
@@ -698,10 +698,10 @@ mod service_publish_subscribe {
         assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
         assert_that!(d.header.size, eq std::mem::size_of::<Header>());
         assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
-        assert_that!(d.metadata.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.metadata.type_name, eq core::any::type_name::<()>());
-        assert_that!(d.metadata.size, eq std::mem::size_of::<()>());
-        assert_that!(d.metadata.alignment, eq std::mem::align_of::<()>());
+        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.user_header.type_name, eq core::any::type_name::<()>());
+        assert_that!(d.user_header.size, eq std::mem::size_of::<()>());
+        assert_that!(d.user_header.alignment, eq std::mem::align_of::<()>());
         assert_that!(d.payload.variant, eq TypeVariant::Dynamic);
         assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
         assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
@@ -1458,7 +1458,7 @@ mod service_publish_subscribe {
 
             let sample = sut_publisher.loan_uninit();
             assert_that!(sample, is_err);
-            assert_that!(sample.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
+            assert_that!(sample.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
 
             // cleanup
             borrowed_samples.clear();
@@ -2154,21 +2154,21 @@ mod service_publish_subscribe {
     }
 
     #[test]
-    fn simple_communication_with_metadata_works<Sut: Service>() {
+    fn simple_communication_with_user_header_works<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
-            .metadata::<SomeMetadata>()
+            .user_header::<SomeUserHeader>()
             .create()
             .unwrap();
 
         let sut2 = node
             .service_builder(service_name)
             .publish_subscribe::<u64>()
-            .metadata::<SomeMetadata>()
+            .user_header::<SomeUserHeader>()
             .open()
             .unwrap();
 
@@ -2178,7 +2178,7 @@ mod service_publish_subscribe {
         let mut sample = publisher.loan().unwrap();
 
         for i in 0..123 {
-            sample.metadata_mut().value[i] = i as u8;
+            sample.user_header_mut().value[i] = i as u8;
         }
         *sample.payload_mut() = 1829731;
         sample.send().unwrap();
@@ -2190,19 +2190,19 @@ mod service_publish_subscribe {
         assert_that!(*sample.payload(), eq 1829731);
 
         for i in 0..123 {
-            assert_that!(sample.metadata().value[i], eq i as u8);
+            assert_that!(sample.user_header().value[i], eq i as u8);
         }
     }
 
     #[test]
-    fn same_payload_type_but_different_metadata_does_not_connect<Sut: Service>() {
+    fn same_payload_type_but_different_user_header_does_not_connect<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let _sut = node
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
-            .metadata::<SomeMetadata>()
+            .user_header::<SomeUserHeader>()
             .create()
             .unwrap();
 

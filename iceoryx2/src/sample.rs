@@ -52,28 +52,28 @@ pub(crate) struct SampleDetails<Service: crate::service::Service> {
 /// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
 /// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
 /// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
-pub struct Sample<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> {
-    pub(crate) ptr: RawSample<Header, Metadata, Payload>,
+pub struct Sample<Payload: Debug + ?Sized, UserHeader, Service: crate::service::Service> {
+    pub(crate) ptr: RawSample<Header, UserHeader, Payload>,
     pub(crate) details: SampleDetails<Service>,
 }
 
-impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> Debug
-    for Sample<Payload, Metadata, Service>
+impl<Payload: Debug + ?Sized, UserHeader, Service: crate::service::Service> Debug
+    for Sample<Payload, UserHeader, Service>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "Sample<{}, {}, {}> {{ details: {:?} }}",
             core::any::type_name::<Payload>(),
-            core::any::type_name::<Metadata>(),
+            core::any::type_name::<UserHeader>(),
             core::any::type_name::<Service>(),
             self.details
         )
     }
 }
 
-impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> Deref
-    for Sample<Payload, Metadata, Service>
+impl<Payload: Debug + ?Sized, UserHeader, Service: crate::service::Service> Deref
+    for Sample<Payload, UserHeader, Service>
 {
     type Target = Payload;
     fn deref(&self) -> &Self::Target {
@@ -81,8 +81,8 @@ impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> Deref
     }
 }
 
-impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> Drop
-    for Sample<Payload, Metadata, Service>
+impl<Payload: Debug + ?Sized, UserHeader, Service: crate::service::Service> Drop
+    for Sample<Payload, UserHeader, Service>
 {
     fn drop(&mut self) {
         match self
@@ -107,17 +107,17 @@ impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> Drop
     }
 }
 
-impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service>
-    Sample<Payload, Metadata, Service>
+impl<Payload: Debug + ?Sized, UserHeader, Service: crate::service::Service>
+    Sample<Payload, UserHeader, Service>
 {
     /// Returns a reference to the payload of the [`Sample`]
     pub fn payload(&self) -> &Payload {
         self.ptr.as_payload_ref()
     }
 
-    /// Returns a reference to the metadata of the [`Sample`]
-    pub fn metadata(&self) -> &Metadata {
-        self.ptr.as_metadata_ref()
+    /// Returns a reference to the user_header of the [`Sample`]
+    pub fn user_header(&self) -> &UserHeader {
+        self.ptr.as_user_header_ref()
     }
 
     /// Returns a reference to the [`Header`] of the [`Sample`].

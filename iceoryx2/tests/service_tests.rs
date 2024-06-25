@@ -122,7 +122,6 @@ mod service {
                     PublishSubscribeOpenError::DoesNotExist,
                     PublishSubscribeOpenError::PermissionDenied,
                     PublishSubscribeOpenError::ServiceInCorruptedState,
-                    PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
                 ])
             );
         }
@@ -183,9 +182,8 @@ mod service {
                 error,
                 any_of([
                     EventOpenError::DoesNotExist,
-                    EventOpenError::PermissionDenied,
-                    EventOpenError::EventInCorruptedState,
-                    EventOpenError::UnableToOpenDynamicServiceInformation,
+                    EventOpenError::InsufficientPermissions,
+                    EventOpenError::ServiceInCorruptedState,
                 ])
             );
         }

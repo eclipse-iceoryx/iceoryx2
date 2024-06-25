@@ -1,12 +1,12 @@
-# Publish-Subscribe With Metadata
+# Publish-Subscribe With User Header
 
 ## Running The Example
 
 This example illustrates a publisher-subscriber communication pattern between two separate
-processes with additional metadata, referred to as a `CustomHeader`. The publisher sends messages
+processes with an additional user header, referred to as a `CustomHeader`. The publisher sends messages
 every second, each containing an incrementing number and the `CustomHeader`, which includes an
 additional version number and a timestamp. On the receiving end, the subscriber checks for new data
-every second and prints out the received payload and metadata.
+every second and prints out the received payload and the user header.
 
 To observe this dynamic communication in action, open two separate terminals and execute the
 following commands:
@@ -14,13 +14,13 @@ following commands:
 **Terminal 1**
 
 ```sh
-cargo run --example publish_subscribe_metadata_subscriber
+cargo run --example publish_subscribe_user_header_subscriber
 ```
 
 **Terminal 2**
 
 ```sh
-cargo run --example publish_subscribe_metadata_publisher
+cargo run --example publish_subscribe_user_header_publisher
 ```
 
 Feel free to run multiple instances of the publisher or subscriber processes simultaneously to

@@ -44,5 +44,5 @@ they interact and exchange data.
 | [event](rust/event) | Push notifications - send event signals to wakeup processes that are waiting for them.|
 | [publish subscribe](rust/publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |
 | [publish subscribe dynamic data](rust/publish_subscribe_dynamic_data) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern) and payload data that has a dynamic size. |
-| [publish subscribe with metadata](rust/publish_subscribe_with_metadata) | Add a metadata (custom header) to the payload (samples) to transfer additional information. |
+| [publish subscribe with user header](rust/publish_subscribe_with_user_header) | Add a user header to the payload (samples) to transfer additional information. |
 | [service attributes](rust/service_attributes) | Creates a service with custom attributes that are available to every endpoint. If the attributes are not compatible the service will not open. |

@@ -22,9 +22,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service = node
         .service_builder("My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<u64>()
-        // define the CustomHeader as metadata which is stored in the
+        // define the CustomHeader as user_header which is stored in the
         // beginning of every Sample
-        .metadata::<CustomHeader>()
+        .user_header::<CustomHeader>()
         .open_or_create()?;
 
     let publisher = service.publisher_builder().create()?;
@@ -35,9 +35,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         counter += 1;
         let mut sample = publisher.loan_uninit()?;
 
-        // set some metadata details
-        sample.metadata_mut().version = 123;
-        sample.metadata_mut().timestamp = 80337 + counter;
+        // set some user_header details
+        sample.user_header_mut().version = 123;
+        sample.user_header_mut().timestamp = 80337 + counter;
 
         let sample = sample.write_payload(counter);
 

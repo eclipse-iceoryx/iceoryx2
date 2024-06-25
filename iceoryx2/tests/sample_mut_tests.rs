@@ -83,7 +83,7 @@ mod sample_mut {
 
             let loan_result = test_context.publisher.loan();
             assert_that!(loan_result, is_err);
-            assert_that!(loan_result.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
+            assert_that!(loan_result.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
 
             sample_vec.clear();
 

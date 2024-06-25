@@ -94,21 +94,21 @@ use std::{
 ///
 /// The generic parameter `M` is either a `Payload` or a [`core::mem::MaybeUninit<Payload>`], depending
 /// which API is used to obtain the sample.
-pub struct SampleMut<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> {
+pub struct SampleMut<Payload: Debug + ?Sized, UserHeader, Service: crate::service::Service> {
     data_segment: Arc<DataSegment<Service>>,
-    ptr: RawSampleMut<Header, Metadata, Payload>,
+    ptr: RawSampleMut<Header, UserHeader, Payload>,
     pub(crate) offset_to_chunk: PointerOffset,
 }
 
-impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> Debug
-    for SampleMut<Payload, Metadata, Service>
+impl<Payload: Debug + ?Sized, UserHeader, Service: crate::service::Service> Debug
+    for SampleMut<Payload, UserHeader, Service>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "SampleMut<{}, {}, {}> {{ data_segment: {:?}, offset_to_chunk: {:?} }}",
             core::any::type_name::<Payload>(),
-            core::any::type_name::<Metadata>(),
+            core::any::type_name::<UserHeader>(),
             core::any::type_name::<Service>(),
             self.data_segment,
             self.offset_to_chunk
@@ -116,20 +116,20 @@ impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> Debug
     }
 }
 
-impl<Payload: Debug + ?Sized, Metadata, Service: crate::service::Service> Drop
-    for SampleMut<Payload, Metadata, Service>
+impl<Payload: Debug + ?Sized, UserHeader, Service: crate::service::Service> Drop
+    for SampleMut<Payload, UserHeader, Service>
 {
     fn drop(&mut self) {
         self.data_segment.return_loaned_sample(self.offset_to_chunk);
     }
 }
 
-impl<Payload: Debug, Metadata, Service: crate::service::Service>
-    SampleMut<MaybeUninit<Payload>, Metadata, Service>
+impl<Payload: Debug, UserHeader, Service: crate::service::Service>
+    SampleMut<MaybeUninit<Payload>, UserHeader, Service>
 {
     pub(crate) fn new(
         data_segment: &Arc<DataSegment<Service>>,
-        ptr: RawSampleMut<Header, Metadata, MaybeUninit<Payload>>,
+        ptr: RawSampleMut<Header, UserHeader, MaybeUninit<Payload>>,
         offset_to_chunk: PointerOffset,
     ) -> Self {
         Self {
@@ -140,12 +140,12 @@ impl<Payload: Debug, Metadata, Service: crate::service::Service>
     }
 }
 
-impl<Payload: Debug, Metadata, Service: crate::service::Service>
-    SampleMut<[MaybeUninit<Payload>], Metadata, Service>
+impl<Payload: Debug, UserHeader, Service: crate::service::Service>
+    SampleMut<[MaybeUninit<Payload>], UserHeader, Service>
 {
     pub(crate) fn new(
         data_segment: &Arc<DataSegment<Service>>,
-        ptr: RawSampleMut<Header, Metadata, [MaybeUninit<Payload>]>,
+        ptr: RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]>,
         offset_to_chunk: PointerOffset,
     ) -> Self {
         Self {
@@ -156,8 +156,8 @@ impl<Payload: Debug, Metadata, Service: crate::service::Service>
     }
 }
 
-impl<Payload: Debug, Metadata, Service: crate::service::Service>
-    SampleMut<MaybeUninit<Payload>, Metadata, Service>
+impl<Payload: Debug, UserHeader, Service: crate::service::Service>
+    SampleMut<MaybeUninit<Payload>, UserHeader, Service>
 {
     /// Writes the payload to the sample and labels the sample as initialized
     ///
@@ -182,7 +182,7 @@ impl<Payload: Debug, Metadata, Service: crate::service::Service>
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write_payload(mut self, value: Payload) -> SampleMut<Payload, Metadata, Service> {
+    pub fn write_payload(mut self, value: Payload) -> SampleMut<Payload, UserHeader, Service> {
         self.payload_mut().write(value);
         // SAFETY: this is safe since the payload was initialized on the line above
         unsafe { self.assume_init() }
@@ -217,14 +217,14 @@ impl<Payload: Debug, Metadata, Service: crate::service::Service>
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn assume_init(self) -> SampleMut<Payload, Metadata, Service> {
+    pub unsafe fn assume_init(self) -> SampleMut<Payload, UserHeader, Service> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
     }
 }
 
-impl<Payload: Debug, Metadata, Service: crate::service::Service>
-    SampleMut<[MaybeUninit<Payload>], Metadata, Service>
+impl<Payload: Debug, UserHeader, Service: crate::service::Service>
+    SampleMut<[MaybeUninit<Payload>], UserHeader, Service>
 {
     /// Extracts the value of the slice of [`core::mem::MaybeUninit<Payload>`] and labels the sample as initialized
     ///
@@ -262,7 +262,7 @@ impl<Payload: Debug, Metadata, Service: crate::service::Service>
     /// # Ok(())
     /// # }
     /// ```
-    pub unsafe fn assume_init(self) -> SampleMut<[Payload], Metadata, Service> {
+    pub unsafe fn assume_init(self) -> SampleMut<[Payload], UserHeader, Service> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         std::mem::transmute(self)
     }
@@ -294,7 +294,7 @@ impl<Payload: Debug, Metadata, Service: crate::service::Service>
     pub fn write_from_fn<F: FnMut(usize) -> Payload>(
         mut self,
         mut initializer: F,
-    ) -> SampleMut<[Payload], Metadata, Service> {
+    ) -> SampleMut<[Payload], UserHeader, Service> {
         for (i, element) in self.payload_mut().iter_mut().enumerate() {
             element.write(initializer(i));
         }
@@ -306,9 +306,9 @@ impl<Payload: Debug, Metadata, Service: crate::service::Service>
 
 impl<
         M: Debug + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
-        Metadata,
+        UserHeader,
         Service: crate::service::Service,
-    > SampleMut<M, Metadata, Service>
+    > SampleMut<M, UserHeader, Service>
 {
     /// Returns a reference to the header of the sample.
     ///
@@ -335,7 +335,7 @@ impl<
         self.ptr.as_header_ref()
     }
 
-    /// Returns a reference to the metadata of the sample.
+    /// Returns a reference to the user_header of the sample.
     ///
     /// # Example
     ///
@@ -347,21 +347,21 @@ impl<
     /// #
     /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
-    /// #     .metadata::<u64>()
+    /// #     .user_header::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let sample = publisher.loan()?;
-    /// println!("Sample Publisher Origin {:?}", sample.metadata());
+    /// println!("Sample Publisher Origin {:?}", sample.user_header());
     ///
     /// # Ok(())
     /// # }
     /// ```
-    pub fn metadata(&mut self) -> &Metadata {
-        self.ptr.as_metadata_ref()
+    pub fn user_header(&mut self) -> &UserHeader {
+        self.ptr.as_user_header_ref()
     }
 
-    /// Returns a mutable reference to the metadata of the sample.
+    /// Returns a mutable reference to the user_header of the sample.
     ///
     /// # Example
     ///
@@ -373,18 +373,18 @@ impl<
     /// #
     /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
-    /// #     .metadata::<u64>()
+    /// #     .user_header::<u64>()
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher_builder().create()?;
     ///
     /// let sample = publisher.loan()?;
-    /// sample.metadata_mut() = 123;
+    /// sample.user_header_mut() = 123;
     ///
     /// # Ok(())
     /// # }
     /// ```
-    pub fn metadata_mut(&mut self) -> &mut Metadata {
-        self.ptr.as_metadata_mut()
+    pub fn user_header_mut(&mut self) -> &mut UserHeader {
+        self.ptr.as_user_header_mut()
     }
 
     /// Returns a reference to the payload of the sample.
