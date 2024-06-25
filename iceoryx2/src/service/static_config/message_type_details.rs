@@ -20,16 +20,22 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum TypeVariant {
     #[default]
+    /// A fixed size type like [`u64`]
     FixedSize,
+    /// A dynamic sized type like a slice
     Dynamic,
 }
 
 /// Contains all type details required to connect to a [`crate::service::Service`]
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct TypeDetail {
+    /// The [`TypeVariant`] of the type
     pub variant: TypeVariant,
+    /// Contains the output of [`core::any::type_name()`].
     pub type_name: String,
+    /// The size of the underlying type.
     pub size: usize,
+    /// The alignment of the underlying type.
     pub alignment: usize,
 }
 
@@ -47,8 +53,12 @@ impl TypeDetail {
 /// Contains all type information to the header and payload type.
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct MessageTypeDetails {
+    /// The [`TypeDetail`] of the header of a message, the first iceoryx2 internal part.
     pub header: TypeDetail,
+    /// The [`TypeDetail`] of the metadata or the custom header, is located directly after the
+    /// header.
     pub metadata: TypeDetail,
+    /// The [`TypeDetail`] of the payload of the message, the last part.
     pub payload: TypeDetail,
 }
 

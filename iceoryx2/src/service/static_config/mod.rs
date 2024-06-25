@@ -22,7 +22,7 @@ pub mod publish_subscribe;
 
 /// Contains the size, alignment and name of the header and payload type
 /// and the type variant
-pub mod type_details;
+pub mod message_type_details;
 
 use crate::service::messaging_pattern::MessagingPattern;
 use iceoryx2_bb_log::fatal_panic;

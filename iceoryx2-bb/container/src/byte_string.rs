@@ -62,6 +62,8 @@ pub unsafe fn strnlen(ptr: *const core::ffi::c_char, len: usize) -> usize {
 /// Error which can occur when a [`FixedSizeByteString`] is modified.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum FixedSizeByteStringModificationError {
+    /// The content that shall be added would exceed the maximum capacity of the
+    /// [`FixedSizeByteString`].
     InsertWouldExceedCapacity,
 }
 

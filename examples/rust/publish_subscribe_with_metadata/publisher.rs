@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .metadata::<CustomHeader>()
         .open_or_create()?;
 
-    let publisher = service.publisher().create()?;
+    let publisher = service.publisher_builder().create()?;
 
     let mut counter: u64 = 0;
 

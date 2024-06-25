@@ -58,7 +58,13 @@ use super::DegrationCallback;
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SubscriberReceiveError {
+    /// The maximum amount of [`Sample`]s a user can borrow with [`Subscriber::receive()`] is
+    /// defined in [`crate::config::Config`]. When this is exceeded [`Subscriber::receive()`]
+    /// fails.
     ExceedsMaxBorrowedSamples,
+
+    /// Occurs when a [`Subscriber`] is unable to connect to a corresponding
+    /// [`Publisher`](crate::port::publisher::Publisher).
     ConnectionFailure(ConnectionFailure),
 }
 
@@ -74,7 +80,13 @@ impl std::error::Error for SubscriberReceiveError {}
 /// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SubscriberCreateError {
+    /// The maximum amount of [`Subscriber`]s that can connect to a
+    /// [`Service`](crate::service::Service) is
+    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Subscriber`]s
+    /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedSubscribers,
+    /// When the [`Subscriber`] requires a larger buffer size than the
+    /// [`Service`](crate::service::Service) offers the creation will fail.
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
 }
 

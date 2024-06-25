@@ -116,7 +116,6 @@ use crate::service::static_config::publish_subscribe::{self};
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -140,7 +139,12 @@ use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum PublisherCreateError {
+    /// The maximum amount of [`Publisher`]s that can connect to a
+    /// [`Service`](crate::service::Service) is
+    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Publisher`]s
+    /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedPublishers,
+    /// The datasegment in which the payload of the [`Publisher`] is stored, could not be created.
     UnableToCreateDataSegment,
 }
 
@@ -156,9 +160,18 @@ impl std::error::Error for PublisherCreateError {}
 /// or is part of [`PublisherSendError`] emitted in [`Publisher::send_copy()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum PublisherLoanError {
+    /// The [`Publisher`]s data segment does not have any more memory left
     OutOfMemory,
-    ExceedsMaxLoanedChunks,
+    /// The maximum amount of [`SampleMut`]s a user can borrow with [`Publisher::loan()`] or
+    /// [`Publisher::loan_uninit()`] is
+    /// defined in [`crate::config::Config`]. When this is exceeded those calls will fail.
+    ExceedsMaxLoanedSamples,
+    /// The provided slice size exceeds the configured max slice size of the [`Publisher`].
+    /// To send a [`SampleMut`] with this size a new [`Publisher`] has to be created with
+    /// a [`crate::service::port_factory::publisher::PortFactoryPublisher::max_slice_len()`]
+    /// greater or equal to the required len.
     ExceedsMaxLoanSize,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
 }
 
@@ -170,15 +183,32 @@ impl std::fmt::Display for PublisherLoanError {
 
 impl std::error::Error for PublisherLoanError {}
 
-enum_gen! {
-    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send()`].
-    PublisherSendError
-  entry:
+/// Failure that can be emitted when a [`SampleMut`] is sent via [`SampleMut::send()`].
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum PublisherSendError {
+    /// [`SampleMut::send()`] was called but the corresponding [`Publisher`] went already out of
+    /// scope.
     ConnectionBrokenSincePublisherNoLongerExists,
-    ConnectionCorrupted
-  mapping:
-    PublisherLoanError to LoanError,
-    ConnectionFailure to ConnectionError
+    /// A connection between a [`Subscriber`](crate::port::subscriber::Subscriber) and a
+    /// [`Publisher`] is corrupted.
+    ConnectionCorrupted,
+    /// A failure occurred while acquiring memory for the payload
+    LoanError(PublisherLoanError),
+    /// A failure occurred while establishing a connection to a
+    /// [`Subscriber`](crate::port::subscriber::Subscriber)
+    ConnectionError(ConnectionFailure),
+}
+
+impl From<PublisherLoanError> for PublisherSendError {
+    fn from(value: PublisherLoanError) -> Self {
+        PublisherSendError::LoanError(value)
+    }
+}
+
+impl From<ConnectionFailure> for PublisherSendError {
+    fn from(value: ConnectionFailure) -> Self {
+        PublisherSendError::ConnectionError(value)
+    }
 }
 
 impl std::fmt::Display for PublisherSendError {
@@ -644,7 +674,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug>
         if self.data_segment.loan_counter.load(Ordering::Relaxed)
             >= self.data_segment.config.max_loaned_samples
         {
-            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedSamples,
                 "{} {:?} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
                 msg, layout, self.data_segment.loan_counter.load(Ordering::Relaxed), self.data_segment.config.max_loaned_samples);
         }

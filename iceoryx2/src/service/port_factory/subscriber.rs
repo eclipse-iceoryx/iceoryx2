@@ -77,6 +77,7 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized, Metadata:
         }
     }
 
+    /// Defines the required buffer size of the [`Subscriber`]. Smallest possible value is `1`.
     pub fn buffer_size(mut self, value: usize) -> Self {
         self.config.buffer_size = Some(value.max(1));
         self

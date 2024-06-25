@@ -10,15 +10,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_cal::{
     shared_memory::SharedMemoryOpenError, zero_copy_connection::ZeroCopyCreationError,
 };
 
-enum_gen! { ConnectionFailure
-  mapping:
-    ZeroCopyCreationError to FailedToEstablishConnection,
-    SharedMemoryOpenError to UnableToMapPublishersDataSegment
+/// Describes the errors that can occur when a connection between two endpoints (ports) is
+/// established
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
+pub enum ConnectionFailure {
+    /// Failures when creating the connection
+    FailedToEstablishConnection(ZeroCopyCreationError),
+    /// Failures when mapping the corresponding data segment
+    UnableToMapPublishersDataSegment(SharedMemoryOpenError),
+}
+
+impl From<ZeroCopyCreationError> for ConnectionFailure {
+    fn from(value: ZeroCopyCreationError) -> Self {
+        ConnectionFailure::FailedToEstablishConnection(value)
+    }
+}
+
+impl From<SharedMemoryOpenError> for ConnectionFailure {
+    fn from(value: SharedMemoryOpenError) -> Self {
+        ConnectionFailure::UnableToMapPublishersDataSegment(value)
+    }
 }
 
 impl std::fmt::Display for ConnectionFailure {

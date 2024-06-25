@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(missing_docs)]
+
 //! # iceoryx2
 //!
 //! iceoryx2 is a cutting-edge service-oriented zero-copy lock-free inter-process communication

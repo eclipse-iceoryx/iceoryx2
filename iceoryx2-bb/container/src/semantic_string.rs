@@ -62,20 +62,24 @@
 
 use crate::byte_string::FixedSizeByteStringModificationError;
 use crate::byte_string::{as_escaped_string, strnlen, FixedSizeByteString};
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::ops::Deref;
 
-enum_gen! {
-    /// Failures that can occur when a [`SemanticString`] is created or modified
-    SemanticStringError
-  entry:
-    InvalidContent
+/// Failures that can occur when a [`SemanticString`] is created or modified
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum SemanticStringError {
+    /// The modification would lead to a [`SemanticString`] with invalid content.
+    InvalidContent,
+    /// The added content would exceed the maximum capacity of the [`SemanticString`]
+    ExceedsMaximumLength,
+}
 
-  generalization:
-    ExceedsMaximumLength <= FixedSizeByteStringModificationError
+impl From<FixedSizeByteStringModificationError> for SemanticStringError {
+    fn from(_value: FixedSizeByteStringModificationError) -> Self {
+        SemanticStringError::ExceedsMaximumLength
+    }
 }
 
 impl std::fmt::Display for SemanticStringError {

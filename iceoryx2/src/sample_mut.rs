@@ -335,10 +335,54 @@ impl<
         self.ptr.as_header_ref()
     }
 
+    /// Returns a reference to the metadata of the sample.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    /// #
+    /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<u64>()
+    /// #     .metadata::<u64>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let sample = publisher.loan()?;
+    /// println!("Sample Publisher Origin {:?}", sample.metadata());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn metadata(&mut self) -> &Metadata {
         self.ptr.as_metadata_ref()
     }
 
+    /// Returns a mutable reference to the metadata of the sample.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    /// #
+    /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<u64>()
+    /// #     .metadata::<u64>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let sample = publisher.loan()?;
+    /// sample.metadata_mut() = 123;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn metadata_mut(&mut self) -> &mut Metadata {
         self.ptr.as_metadata_mut()
     }

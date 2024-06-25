@@ -22,7 +22,7 @@ use crate::service::header::publish_subscribe::Header;
 use crate::service::messaging_pattern::MessagingPattern;
 use crate::service::port_factory::publish_subscribe;
 use crate::service::*;
-use iceoryx2_bb_elementary::{alignment::Alignment, enum_gen};
+use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -31,7 +31,7 @@ use iceoryx2_cal::static_storage::StaticStorageLocked;
 
 use self::{
     attribute::{AttributeSpecifier, AttributeVerifier},
-    type_details::{MessageTypeDetails, TypeVariant},
+    message_type_details::{MessageTypeDetails, TypeVariant},
 };
 
 use super::ServiceState;
@@ -39,22 +39,35 @@ use super::ServiceState;
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PublishSubscribeOpenError {
+    /// Service could not be openen since it does not exist
     DoesNotExist,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// The [`Service`] has the wrong payload type.
     IncompatibleTypes,
+    /// The [`Service`] has the wrong messaging pattern.
     IncompatibleMessagingPattern,
+    /// The [`AttributeVerifier`] required attributes that the [`Service`] does not satisfy.
     IncompatibleAttributes,
+    /// The [`Service`] has a lower minimum buffer size than requested.
     DoesNotSupportRequestedMinBufferSize,
+    /// The [`Service`] has a lower minimum history size than requested.
     DoesNotSupportRequestedMinHistorySize,
+    /// The [`Service`] has a lower minimum subscriber borrow size than requested.
     DoesNotSupportRequestedMinSubscriberBorrowedSamples,
+    /// The [`Service`] supports less [`Publisher`](crate::port::publisher::Publisher)s than requested.
     DoesNotSupportRequestedAmountOfPublishers,
+    /// The [`Service`] supports less [`Subscriber`](crate::port::subscriber::Subscriber)s than requested.
     DoesNotSupportRequestedAmountOfSubscribers,
+    /// The [`Service`] required overflow behavior is not compatible.
     IncompatibleOverflowBehavior,
-    Inaccessible,
+    /// The process has not enough permissions to open the [`Service`]
     PermissionDenied,
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
+    /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
+    /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
-    UnableToOpenDynamicServiceInformation,
 }
 
 impl std::fmt::Display for PublishSubscribeOpenError {
@@ -68,13 +81,24 @@ impl std::error::Error for PublishSubscribeOpenError {}
 /// Errors that can occur when a new [`MessagingPattern::PublishSubscribe`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PublishSubscribeCreateError {
-    Corrupted,
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    ServiceInCorruptedState,
+    /// Invalid [`Service`] configuration provided. The
+    /// [`Subscriber`](crate::port::subscriber::Subscriber)s buffer size must be at least the size
+    /// of the history. Otherwise, how could it hold the whole history?
     SubscriberBufferMustBeLargerThanHistorySize,
+    /// The [`Service`] already exists.
     AlreadyExists,
-    PermissionDenied,
+    /// The process has insufficient permissions to create the [`Service`].
+    InsufficientPermissions,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// Multiple processes are trying to create the same [`Service`].
     IsBeingCreatedByAnotherInstance,
-    UnableToCreateStaticServiceInformation,
+    /// The system has cleaned up the [`Service`] but there are still endpoints like
+    /// [`Publisher`](crate::port::publisher::Publisher) or
+    /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
+    /// [`Sample`](crate::sample::Sample) or [`SampleMut`](crate::sample_mut::SampleMut) in use.
     OldConnectionsStillActive,
 }
 
@@ -92,13 +116,26 @@ enum ServiceAvailabilityState {
     IncompatibleTypes,
 }
 
-enum_gen! {
-    /// Errors that can occur when a [`MessagingPattern::PublishSubscribe`] [`Service`] shall be
-    /// created or opened.
-    PublishSubscribeOpenOrCreateError
-  mapping:
-    PublishSubscribeOpenError,
-    PublishSubscribeCreateError
+/// Errors that can occur when a [`MessagingPattern::PublishSubscribe`] [`Service`] shall be
+/// created or opened.
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+pub enum PublishSubscribeOpenOrCreateError {
+    /// Failures that can occur when an existing [`Service`] could not be opened.
+    PublishSubscribeOpenError(PublishSubscribeOpenError),
+    /// Failures that can occur when a [`Service`] could not be created.
+    PublishSubscribeCreateError(PublishSubscribeCreateError),
+}
+
+impl From<PublishSubscribeOpenError> for PublishSubscribeOpenOrCreateError {
+    fn from(value: PublishSubscribeOpenError) -> Self {
+        Self::PublishSubscribeOpenError(value)
+    }
+}
+
+impl From<PublishSubscribeCreateError> for PublishSubscribeOpenOrCreateError {
+    fn from(value: PublishSubscribeCreateError) -> Self {
+        Self::PublishSubscribeCreateError(value)
+    }
 }
 
 impl std::fmt::Display for PublishSubscribeOpenOrCreateError {
@@ -398,9 +435,13 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
                         fail!(from self, with PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
                             "{} since the service is being created by another instance.", msg);
                     }
+                    Err(StaticStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with PublishSubscribeCreateError::InsufficientPermissions,
+                            "{} since the static service information could not be created due to insufficient permissions.", msg);
+                    }
                     Err(e) => {
-                        fail!(from self, with PublishSubscribeCreateError::UnableToCreateStaticServiceInformation,
-                            "{} since the static service information could not be created ({:?}).", msg, e);
+                        fail!(from self, with PublishSubscribeCreateError::InternalFailure,
+                            "{} since the static service information could not be created due to an internal failure ({:?}).", msg, e);
                     }
                 };
 
@@ -436,12 +477,12 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
                 self.base.service_config.attributes = attributes.0.clone();
                 let service_config = fail!(from self,
                             when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
-                            with PublishSubscribeCreateError::Corrupted,
+                            with PublishSubscribeCreateError::ServiceInCorruptedState,
                             "{} since the configuration could not be serialized.", msg);
 
                 // only unlock the static details when the service is successfully created
                 let mut unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
-                            with PublishSubscribeCreateError::Corrupted,
+                            with PublishSubscribeCreateError::ServiceInCorruptedState,
                             "{} since the configuration could not be written to the static storage.", msg);
 
                 unlocked_static_details.release_ownership();
@@ -464,11 +505,11 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
                     "{} since the service already exists.", msg);
             }
             Err(ServiceAvailabilityState::ServiceState(ServiceState::PermissionDenied)) => {
-                fail!(from self, with PublishSubscribeCreateError::PermissionDenied,
+                fail!(from self, with PublishSubscribeCreateError::InsufficientPermissions,
                     "{} due to possible insufficient permissions to access the underlying service details.", msg);
             }
             Err(ServiceAvailabilityState::ServiceState(ServiceState::Corrupted)) => {
-                fail!(from self, with PublishSubscribeCreateError::Corrupted,
+                fail!(from self, with PublishSubscribeCreateError::ServiceInCorruptedState,
                     "{} since a service in a corrupted state already exists. A cleanup of the service constructs may help.", msg);
             }
             Err(ServiceAvailabilityState::ServiceState(
@@ -505,7 +546,7 @@ impl<Payload: Debug + ?Sized, Metadata: Debug, ServiceType: service::Service>
 
                     let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
-                            with PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
+                            with PublishSubscribeOpenError::ServiceInCorruptedState,
                             "{} since the dynamic service information could not be opened.", msg),
                     );
 

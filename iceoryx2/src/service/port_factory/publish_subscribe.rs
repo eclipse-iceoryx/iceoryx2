@@ -159,11 +159,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, Metadata: Debug>
     /// # Ok(())
     /// # }
     /// ```
-<<<<<<< HEAD
-    pub fn publisher_builder(&self) -> PortFactoryPublisher<Service, PayloadType> {
-=======
-    pub fn publisher(&self) -> PortFactoryPublisher<Service, Payload, Metadata> {
->>>>>>> 8080b5e ([#253] Add metadata to ports and samples)
+    pub fn publisher_builder(&self) -> PortFactoryPublisher<Service, Payload, Metadata> {
         PortFactoryPublisher::new(self)
     }
 }

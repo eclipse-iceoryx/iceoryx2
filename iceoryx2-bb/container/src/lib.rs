@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(missing_docs)]
+
 //! # iceoryx2 Building Blocks (BB) Container
 //!
 //! This is a support library for iceoryx2 which comes with containers that are

@@ -37,7 +37,12 @@ pub mod subscriber;
 /// The trait that contains the interface of all port factories for any kind of
 /// [`crate::service::messaging_pattern::MessagingPattern`].
 pub trait PortFactory {
+    /// The underlying type that is used for all static configurations, meaning properties that
+    /// never change during the lifetime.
     type StaticConfig;
+
+    /// The underlying type that is used for all dynamic configurations, meaning properties that
+    /// change during the lifetime.
     type DynamicConfig;
 
     /// Returns the [`ServiceName`] of the service

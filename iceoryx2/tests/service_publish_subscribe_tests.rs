@@ -24,7 +24,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
-    use iceoryx2::service::static_config::type_details::TypeVariant;
+    use iceoryx2::service::static_config::message_type_details::TypeVariant;
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
     use iceoryx2_bb_elementary::alignment::Alignment;
@@ -2172,8 +2172,8 @@ mod service_publish_subscribe {
             .open()
             .unwrap();
 
-        let subscriber = sut.subscriber().create().unwrap();
-        let publisher = sut2.publisher().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut2.publisher_builder().create().unwrap();
         assert_that!(subscriber.update_connections(), is_ok);
         let mut sample = publisher.loan().unwrap();
 
@@ -2192,6 +2192,27 @@ mod service_publish_subscribe {
         for i in 0..123 {
             assert_that!(sample.metadata().value[i], eq i as u8);
         }
+    }
+
+    #[test]
+    fn same_payload_type_but_different_metadata_does_not_connect<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let _sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .metadata::<SomeMetadata>()
+            .create()
+            .unwrap();
+
+        let sut2 = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .open();
+
+        assert_that!(sut2, is_err);
+        assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

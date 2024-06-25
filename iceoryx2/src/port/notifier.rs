@@ -53,6 +53,10 @@ use std::{
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum NotifierCreateError {
+    /// The maximum amount of [`Notifier`]s that can connect to a
+    /// [`Service`](crate::service::Service) is
+    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Notifier`]s
+    /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedNotifiers,
 }
 
@@ -67,6 +71,9 @@ impl std::error::Error for NotifierCreateError {}
 /// Defines the failures that can occur while a [`Notifier::notify()`] call.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum NotifierNotifyError {
+    /// A [`Notifier::notify_with_custom_event_id()`] was called and the provided [`EventId`]
+    /// is greater than the maximum supported [`EventId`] by the
+    /// [`Service`](crate::service::Service)
     EventIdOutOfBounds,
 }
 

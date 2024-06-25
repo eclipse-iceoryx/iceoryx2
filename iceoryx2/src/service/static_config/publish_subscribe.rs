@@ -33,7 +33,7 @@
 //! # }
 //! ```
 
-use super::type_details::MessageTypeDetails;
+use super::message_type_details::MessageTypeDetails;
 use crate::config;
 use serde::{Deserialize, Serialize};
 
