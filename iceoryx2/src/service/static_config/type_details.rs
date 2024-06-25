@@ -77,7 +77,7 @@ impl MessageTypeDetails {
         unsafe {
             Layout::from_size_align_unchecked(
                 align(
-                    self.header.size
+                    self.header.size + self.metadata.size + self.metadata.alignment - 1
                         + self.payload.size * number_of_elements
                         + self.payload.alignment
                         - 1,

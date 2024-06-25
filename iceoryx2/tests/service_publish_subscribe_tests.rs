@@ -32,6 +32,11 @@ mod service_publish_subscribe {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
+    #[derive(Debug)]
+    struct SomeMetadata {
+        value: [u8; 123],
+    }
+
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
             "service_tests_{}",
@@ -655,6 +660,7 @@ mod service_publish_subscribe {
         let sut = node
             .service_builder(service_name)
             .publish_subscribe::<PayloadType>()
+            .metadata::<SomeMetadata>()
             .create()
             .unwrap();
 
@@ -663,6 +669,10 @@ mod service_publish_subscribe {
         assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
         assert_that!(d.header.size, eq std::mem::size_of::<Header>());
         assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
+        assert_that!(d.metadata.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.metadata.type_name, eq core::any::type_name::<SomeMetadata>());
+        assert_that!(d.metadata.size, eq std::mem::size_of::<SomeMetadata>());
+        assert_that!(d.metadata.alignment, eq std::mem::align_of::<SomeMetadata>());
         assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
         assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
         assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
@@ -688,6 +698,10 @@ mod service_publish_subscribe {
         assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
         assert_that!(d.header.size, eq std::mem::size_of::<Header>());
         assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
+        assert_that!(d.metadata.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.metadata.type_name, eq core::any::type_name::<()>());
+        assert_that!(d.metadata.size, eq std::mem::size_of::<()>());
+        assert_that!(d.metadata.alignment, eq std::mem::align_of::<()>());
         assert_that!(d.payload.variant, eq TypeVariant::Dynamic);
         assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
         assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
@@ -2136,6 +2150,47 @@ mod service_publish_subscribe {
                 assert_that!(*element, eq i as u64 * 25);
             }
             samples.push(recv_sample);
+        }
+    }
+
+    #[test]
+    fn simple_communication_with_metadata_works<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .metadata::<SomeMetadata>()
+            .create()
+            .unwrap();
+
+        let sut2 = node
+            .service_builder(service_name)
+            .publish_subscribe::<u64>()
+            .metadata::<SomeMetadata>()
+            .open()
+            .unwrap();
+
+        let subscriber = sut.subscriber().create().unwrap();
+        let publisher = sut2.publisher().create().unwrap();
+        assert_that!(subscriber.update_connections(), is_ok);
+        let mut sample = publisher.loan().unwrap();
+
+        for i in 0..123 {
+            sample.metadata_mut().value[i] = i as u8;
+        }
+        *sample.payload_mut() = 1829731;
+        sample.send().unwrap();
+
+        let result = subscriber.receive().unwrap();
+        assert_that!(result, is_some);
+        let sample = result.unwrap();
+        assert_that!(*sample, eq 1829731);
+        assert_that!(*sample.payload(), eq 1829731);
+
+        for i in 0..123 {
+            assert_that!(sample.metadata().value[i], eq i as u8);
         }
     }
 
