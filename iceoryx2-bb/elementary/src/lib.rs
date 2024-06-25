@@ -28,4 +28,5 @@ pub mod pointer_trait;
 pub mod relocatable_container;
 pub mod relocatable_ptr;
 pub mod scope_guard;
+pub mod static_assert;
 pub mod unique_id;
