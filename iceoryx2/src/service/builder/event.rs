@@ -222,7 +222,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::IncompatibleMessagingPattern),
                     "{} since the services messaging pattern does not match.", msg);
             }
-            Err(ServiceState::PermissionDenied) => {
+            Err(ServiceState::InsufficientPermissions) => {
                 fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::InsufficientPermissions),
                     "{} due to insufficient permissions.", msg);
             }
@@ -293,7 +293,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                             msg, self.base.shared_node.config().global.service.creation_timeout, timeout);
                     }
                 }
-                Err(ServiceState::PermissionDenied) => {
+                Err(ServiceState::InsufficientPermissions) => {
                     fail!(from self, with EventOpenError::InsufficientPermissions,
                         "{} due to insufficient permissions.", msg);
                 }
@@ -402,7 +402,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 fail!(from self, with EventCreateError::AlreadyExists,
                     "{} since the service already exists.", msg);
             }
-            Err(ServiceState::PermissionDenied) => {
+            Err(ServiceState::InsufficientPermissions) => {
                 fail!(from self, with EventCreateError::InsufficientPermissions,
                     "{} due to possible insufficient permissions to access the underlying service details.", msg);
             }

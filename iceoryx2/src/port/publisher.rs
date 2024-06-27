@@ -805,7 +805,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     /// ```
     pub fn loan_uninit(
         &self,
-    ) -> Result<SampleMut<MaybeUninit<Payload>, UserHeader, Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<Service, MaybeUninit<Payload>, UserHeader>, PublisherLoanError> {
         let chunk = self.allocate(self.sample_layout(1))?;
         let header_ptr = chunk.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
@@ -820,7 +820,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
 
         let sample =
             unsafe { RawSampleMut::new_unchecked(header_ptr, user_header_ptr, payload_ptr) };
-        Ok(SampleMut::<MaybeUninit<Payload>, UserHeader, Service>::new(
+        Ok(SampleMut::<Service, MaybeUninit<Payload>, UserHeader>::new(
             &self.data_segment,
             sample,
             chunk.offset,
@@ -858,7 +858,7 @@ impl<Service: service::Service, Payload: Default + Debug + Sized, UserHeader: De
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<SampleMut<Payload, UserHeader, Service>, PublisherLoanError> {
+    pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, PublisherLoanError> {
         Ok(self.loan_uninit()?.write_payload(Payload::default()))
     }
 }
@@ -906,7 +906,7 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
     pub fn loan_slice(
         &self,
         number_of_elements: usize,
-    ) -> Result<SampleMut<[Payload], UserHeader, Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<Service, [Payload], UserHeader>, PublisherLoanError> {
         let sample = self.loan_slice_uninit(number_of_elements)?;
         Ok(sample.write_from_fn(|_| Payload::default()))
     }
@@ -945,7 +945,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     pub fn loan_slice_uninit(
         &self,
         slice_len: usize,
-    ) -> Result<SampleMut<[MaybeUninit<Payload>], UserHeader, Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError> {
         let max_slice_len = self.data_segment.config.max_slice_len;
         if max_slice_len < slice_len {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
@@ -974,7 +974,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         };
 
         Ok(
-            SampleMut::<[MaybeUninit<Payload>], UserHeader, Service>::new(
+            SampleMut::<Service, [MaybeUninit<Payload>], UserHeader>::new(
                 &self.data_segment,
                 sample,
                 chunk.offset,

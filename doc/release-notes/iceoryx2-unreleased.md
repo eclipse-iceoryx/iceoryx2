@@ -235,3 +235,76 @@
     max-subscribers                             = 8
     max-publishers                              = 2
     ```
+
+12. Some error enum fields where removed or renamed.
+
+    ```
+    // old                                                                  new
+    EventOpenError::EventInCorruptedState                                   EventOpenError::ServiceInCorruptedState
+    EventOpenError::PermissionDenied                                        EventOpenError::InsufficientPermissions
+    EventOpenError::UnableToOpenDynamicServiceInformation                   EventOpenError::ServiceInCorruptedState
+
+    EventCreateError::PermissionDenied                                      EventCreateError::InsufficientPermissions
+    EventCreateError::UnableToCreateStaticServiceInformation                EventCreateError::ServiceInCorruptedState
+
+    PublishSubscribeOpenError::PermissionDenied                             PublishSubscribeOpenError::InsufficientPermissions
+    PublishSubscribeOpenError::Inaccessible                                 PublishSubscribeOpenError::InsufficientPermissions
+    PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation        PublishSubscribeOpenError::ServiceInCorruptedState
+
+    PublishSubscribeCreateError::PermissionDenied                           PublishSubscribeCreateError::InsufficientPermissions
+    PublishSubscribeCreateError::Corrupted                                  PublishSubscribeCreateError::ServiceInCorruptedState
+    PublishSubscribeCreateError::UnableToCreateStaticServiceInformation     PublishSubscribeCreateError::ServiceInCorruptedState
+
+    PublisherLoanError::ExceedsMaxLoanedChunks                              PublisherLoanError::ExceedsMaxLoanedSamples
+    ```
+
+13. Switch order of `Service` and `Payload` parameter in `Sample` and `SampleMut`
+    to be consistent with all other constructs. Add third parameter user header.
+
+    ```rust
+    // old
+    struct SomeSamples {
+        sample_mut: SampleMut<MyMessageType, zero_copy::Service>,
+        sample: Sample<MyMessageType, zero_copy::Service>,
+    }
+
+    // new
+    struct SomeSamples {
+        sample_mut: SampleMut<zero_copy::Service, MyMessageType, ()>,
+        sample: Sample<zero_copy::Service, MyMessageType, ()>,
+    }
+    ```
+
+14. The `Sample`, `SampleMut`, `Publisher`, `Subscriber` and the
+    `publish_subscribe::PortFactory` (the service ) have additional generic
+    argument that represents the user header type. By default the user header
+    is `()`.
+
+    ```rust
+    // old
+    struct SomeStruct {
+        service: publish_subscribe::PortFactory<zero_copy::Service, MyMessageType>,
+        subscriber: Subscriber<zero_copy::Service, MyMessageType>,
+        publisher: Publisher<zero_copy::Service, MyMessageType>,
+        list_of_mut_samples: Vec<SampleMut<MyMessageType, zero_copy::Service>>,
+        list_of_samples: Vec<Sample<MyMessageType, zero_copy::Service>>,
+    }
+
+    // new, no custom user header
+    struct SomeStruct {
+        service: publish_subscribe::PortFactory<zero_copy::Service, MyMessageType, ()>,
+        subscriber: Subscriber<zero_copy::Service, MyMessageType, ()>,
+        publisher: Publisher<zero_copy::Service, MyMessageType, ()>,
+        list_of_mut_samples: Vec<SampleMut<zero_copy::Service, MyMessageType, ()>>,
+        list_of_samples: Vec<Sample<zero_copy::Service, MyMessageType, ()>>,
+    }
+
+    // new, with custom user header
+    struct SomeStruct {
+        service: publish_subscribe::PortFactory<zero_copy::Service, MyMessageType, MyCustomHeader>,
+        subscriber: Subscriber<zero_copy::Service, MyMessageType, MyCustomHeader>,
+        publisher: Publisher<zero_copy::Service, MyMessageType, MyCustomHeader>,
+        list_of_mut_samples: Vec<SampleMut<zero_copy::Service, MyMessageType, MyCustomHeader>>,
+        list_of_samples: Vec<Sample<zero_copy::Service, MyMessageType, MyCustomHeader>>,
+    }
+    ```

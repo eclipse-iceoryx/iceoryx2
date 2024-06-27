@@ -120,7 +120,7 @@ mod service {
                 error,
                 any_of([
                     PublishSubscribeOpenError::DoesNotExist,
-                    PublishSubscribeOpenError::PermissionDenied,
+                    PublishSubscribeOpenError::InsufficientPermissions,
                     PublishSubscribeOpenError::ServiceInCorruptedState,
                 ])
             );

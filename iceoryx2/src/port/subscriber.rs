@@ -370,7 +370,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
     pub fn receive(
         &self,
-    ) -> Result<Option<Sample<Payload, UserHeader, Service>>, SubscriberReceiveError> {
+    ) -> Result<Option<Sample<Service, Payload, UserHeader>>, SubscriberReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
             let user_header_ptr = self.user_header_ptr(header_ptr).cast();
@@ -390,7 +390,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
     pub fn receive(
         &self,
-    ) -> Result<Option<Sample<[Payload], UserHeader, Service>>, SubscriberReceiveError> {
+    ) -> Result<Option<Sample<Service, [Payload], UserHeader>>, SubscriberReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
             let user_header_ptr = self.user_header_ptr(header_ptr).cast();

@@ -53,7 +53,7 @@ use super::Service;
 enum ServiceState {
     IsBeingCreatedByAnotherInstance,
     IncompatibleMessagingPattern,
-    PermissionDenied,
+    InsufficientPermissions,
     Corrupted,
 }
 
@@ -191,7 +191,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                                         .config(&static_storage_config)
                                         .open() { v }
                 else {
-                    fail!(from self, with ServiceState::PermissionDenied,
+                    fail!(from self, with ServiceState::InsufficientPermissions,
                             "{} since it is not possible to open the services underlying static details. Is the service accessible?", msg);
                 };
 
@@ -201,7 +201,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
                     .is_err()
                 {
-                    fail!(from self, with ServiceState::PermissionDenied,
+                    fail!(from self, with ServiceState::InsufficientPermissions,
                             "{} since it is not possible to read the services underlying static details. Is the service accessible?", msg);
                 }
 

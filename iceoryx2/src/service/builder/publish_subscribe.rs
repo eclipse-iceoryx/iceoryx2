@@ -62,7 +62,7 @@ pub enum PublishSubscribeOpenError {
     /// The [`Service`] required overflow behavior is not compatible.
     IncompatibleOverflowBehavior,
     /// The process has not enough permissions to open the [`Service`]
-    PermissionDenied,
+    InsufficientPermissions,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
@@ -504,7 +504,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                 fail!(from self, with PublishSubscribeCreateError::AlreadyExists,
                     "{} since the service already exists.", msg);
             }
-            Err(ServiceAvailabilityState::ServiceState(ServiceState::PermissionDenied)) => {
+            Err(ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions)) => {
                 fail!(from self, with PublishSubscribeCreateError::InsufficientPermissions,
                     "{} due to possible insufficient permissions to access the underlying service details.", msg);
             }
@@ -597,8 +597,10 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
                     "{} since the service is in a corrupted state.", msg);
                 }
-                Err(ServiceAvailabilityState::ServiceState(ServiceState::PermissionDenied)) => {
-                    fail!(from self, with PublishSubscribeOpenError::PermissionDenied,
+                Err(ServiceAvailabilityState::ServiceState(
+                    ServiceState::InsufficientPermissions,
+                )) => {
+                    fail!(from self, with PublishSubscribeOpenError::InsufficientPermissions,
                     "{} due to insufficient permissions to access the service.", msg);
                 }
             }
@@ -648,8 +650,10 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::ServiceInCorruptedState),
                     "{} since the service is in a corrupted state.", msg);
                 }
-                Err(ServiceAvailabilityState::ServiceState(ServiceState::PermissionDenied)) => {
-                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::PermissionDenied),
+                Err(ServiceAvailabilityState::ServiceState(
+                    ServiceState::InsufficientPermissions,
+                )) => {
+                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::InsufficientPermissions),
                     "{} due to insufficient permissions to access the service.", msg);
                 }
             }
