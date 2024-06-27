@@ -101,6 +101,8 @@ generate_html_report() {
           --output-type html \
           --branch \
           --ignore-not-existing \
+          --ignore "**/iceoryx2-cli/*" \
+          --ignore "**/iceoryx2-ffi/*" \
           --ignore "**/build.rs" \
           --ignore "**/tests/*" \
           --ignore "**/examples/*" \
@@ -124,6 +126,8 @@ generate_lcov_report() {
           --output-type lcov \
           --branch \
           --ignore-not-existing \
+          --ignore "**/iceoryx2-cli/*" \
+          --ignore "**/iceoryx2-ffi/*" \
           --ignore "**/build.rs" \
           --ignore "**/tests/*" \
           --ignore "**/examples/*" \
