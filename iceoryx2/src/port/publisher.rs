@@ -42,7 +42,7 @@
 //! let sample = sample.write_payload(1337);
 //! sample.send()?;
 //!
-//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<PayloadType>`])
+//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<Payload>`])
 //! let mut sample = publisher.loan_uninit()?;
 //! sample.payload_mut().write(1337);
 //! let sample = unsafe { sample.assume_init() };
@@ -89,7 +89,7 @@
 //! let sample = sample.write_from_fn(|n| n * 123 );
 //! sample.send()?;
 //!
-//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<PayloadType>`])
+//! // loan some uninitialized memory and send it (with direct access of [`core::mem::MaybeUninit<Payload>`])
 //! let mut sample = publisher.loan_slice_uninit(42)?;
 //! for element in sample.payload_mut() {
 //!     element.write(1337);
@@ -116,7 +116,6 @@ use crate::service::static_config::publish_subscribe::{self};
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -140,7 +139,12 @@ use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum PublisherCreateError {
+    /// The maximum amount of [`Publisher`]s that can connect to a
+    /// [`Service`](crate::service::Service) is
+    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Publisher`]s
+    /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedPublishers,
+    /// The datasegment in which the payload of the [`Publisher`] is stored, could not be created.
     UnableToCreateDataSegment,
 }
 
@@ -156,9 +160,18 @@ impl std::error::Error for PublisherCreateError {}
 /// or is part of [`PublisherSendError`] emitted in [`Publisher::send_copy()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum PublisherLoanError {
+    /// The [`Publisher`]s data segment does not have any more memory left
     OutOfMemory,
-    ExceedsMaxLoanedChunks,
+    /// The maximum amount of [`SampleMut`]s a user can borrow with [`Publisher::loan()`] or
+    /// [`Publisher::loan_uninit()`] is
+    /// defined in [`crate::config::Config`]. When this is exceeded those calls will fail.
+    ExceedsMaxLoanedSamples,
+    /// The provided slice size exceeds the configured max slice size of the [`Publisher`].
+    /// To send a [`SampleMut`] with this size a new [`Publisher`] has to be created with
+    /// a [`crate::service::port_factory::publisher::PortFactoryPublisher::max_slice_len()`]
+    /// greater or equal to the required len.
     ExceedsMaxLoanSize,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
 }
 
@@ -170,15 +183,32 @@ impl std::fmt::Display for PublisherLoanError {
 
 impl std::error::Error for PublisherLoanError {}
 
-enum_gen! {
-    /// Failure that can be emitted when a [`crate::sample::Sample`] is sent via [`Publisher::send()`].
-    PublisherSendError
-  entry:
+/// Failure that can be emitted when a [`SampleMut`] is sent via [`SampleMut::send()`].
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum PublisherSendError {
+    /// [`SampleMut::send()`] was called but the corresponding [`Publisher`] went already out of
+    /// scope.
     ConnectionBrokenSincePublisherNoLongerExists,
-    ConnectionCorrupted
-  mapping:
-    PublisherLoanError to LoanError,
-    ConnectionFailure to ConnectionError
+    /// A connection between a [`Subscriber`](crate::port::subscriber::Subscriber) and a
+    /// [`Publisher`] is corrupted.
+    ConnectionCorrupted,
+    /// A failure occurred while acquiring memory for the payload
+    LoanError(PublisherLoanError),
+    /// A failure occurred while establishing a connection to a
+    /// [`Subscriber`](crate::port::subscriber::Subscriber)
+    ConnectionError(ConnectionFailure),
+}
+
+impl From<PublisherLoanError> for PublisherSendError {
+    fn from(value: PublisherLoanError) -> Self {
+        PublisherSendError::LoanError(value)
+    }
+}
+
+impl From<ConnectionFailure> for PublisherSendError {
+    fn from(value: ConnectionFailure) -> Self {
+        PublisherSendError::ConnectionError(value)
+    }
 }
 
 impl std::fmt::Display for PublisherSendError {
@@ -485,14 +515,15 @@ impl<Service: service::Service> DataSegment<Service> {
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct Publisher<Service: service::Service, PayloadType: Debug + ?Sized> {
+pub struct Publisher<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> {
     pub(crate) data_segment: Arc<DataSegment<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
-    _phantom_payload_type: PhantomData<PayloadType>,
+    _payload: PhantomData<Payload>,
+    _user_header: PhantomData<UserHeader>,
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
-    for Publisher<Service, PayloadType>
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Drop
+    for Publisher<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_publisher_handle {
@@ -505,7 +536,9 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Drop
     }
 }
 
-impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, PayloadType> {
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
+    Publisher<Service, Payload, UserHeader>
+{
     pub(crate) fn new(
         service: &Service,
         static_config: &publish_subscribe::StaticConfig,
@@ -538,11 +571,11 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
             is_active: IoxAtomicBool::new(true),
             memory: data_segment,
             payload_size: static_config
-                .type_details()
+                .message_type_details()
                 .sample_layout(config.max_slice_len)
                 .size(),
             payload_type_layout: static_config
-                .type_details()
+                .message_type_details()
                 .payload_layout(config.max_slice_len),
             sample_reference_counter: {
                 let mut v = Vec::with_capacity(number_of_samples);
@@ -573,7 +606,8 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         let mut new_self = Self {
             data_segment,
             dynamic_publisher_handle: None,
-            _phantom_payload_type: PhantomData,
+            _payload: PhantomData,
+            _user_header: PhantomData,
         };
 
         if let Err(e) = new_self.data_segment.populate_subscriber_channels() {
@@ -615,7 +649,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         config: &LocalPublisherConfig,
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
         let l = static_config
-            .type_details
+            .message_type_details
             .sample_layout(config.max_slice_len);
         let allocator_config = shm_allocator::pool_allocator::Config { bucket_layout: l };
 
@@ -640,7 +674,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         if self.data_segment.loan_counter.load(Ordering::Relaxed)
             >= self.data_segment.config.max_loaned_samples
         {
-            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedChunks,
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedSamples,
                 "{} {:?} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
                 msg, layout, self.data_segment.loan_counter.load(Ordering::Relaxed), self.data_segment.config.max_loaned_samples);
         }
@@ -671,7 +705,7 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         self.data_segment
             .subscriber_connections
             .static_config
-            .type_details
+            .message_type_details
             .sample_layout(number_of_elements)
     }
 
@@ -679,15 +713,24 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
         self.data_segment
             .subscriber_connections
             .static_config
-            .type_details
+            .message_type_details
             .payload_layout(number_of_elements)
+    }
+
+    fn user_header_ptr(&self, header: *const Header) -> *const u8 {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .message_type_details
+            .user_header_ptr_from_header(header.cast())
+            .cast()
     }
 
     fn payload_ptr(&self, header: *const Header) -> *const u8 {
         self.data_segment
             .subscriber_connections
             .static_config
-            .type_details
+            .message_type_details
             .payload_ptr_from_header(header.cast())
             .cast()
     }
@@ -696,7 +739,9 @@ impl<Service: service::Service, PayloadType: Debug + ?Sized> Publisher<Service, 
 ////////////////////////
 // BEGIN: typed API
 ////////////////////////
-impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, PayloadType> {
+impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
+    Publisher<Service, Payload, UserHeader>
+{
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
@@ -719,7 +764,7 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// # Ok(())
     /// # }
     /// ```
-    pub fn send_copy(&self, value: PayloadType) -> Result<usize, PublisherSendError> {
+    pub fn send_copy(&self, value: Payload) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send copy of payload";
         let mut sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
@@ -751,7 +796,7 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     ///                          .create()?;
     ///
     /// let sample = publisher.loan_uninit()?;
-    /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<PayloadType>`
+    /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<Payload>`
     ///
     /// sample.send()?;
     ///
@@ -760,20 +805,22 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     /// ```
     pub fn loan_uninit(
         &self,
-    ) -> Result<SampleMut<MaybeUninit<PayloadType>, Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<Service, MaybeUninit<Payload>, UserHeader>, PublisherLoanError> {
         let chunk = self.allocate(self.sample_layout(1))?;
         let header_ptr = chunk.data_ptr as *mut Header;
-        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<PayloadType>;
+        let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
+        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
 
         unsafe {
             header_ptr.write(Header::new(
                 self.data_segment.port_id,
-                Layout::new::<PayloadType>(),
+                Layout::new::<Payload>(),
             ))
         };
 
-        let sample = unsafe { RawSampleMut::new_unchecked(header_ptr, payload_ptr) };
-        Ok(SampleMut::<MaybeUninit<PayloadType>, Service>::new(
+        let sample =
+            unsafe { RawSampleMut::new_unchecked(header_ptr, user_header_ptr, payload_ptr) };
+        Ok(SampleMut::<Service, MaybeUninit<Payload>, UserHeader>::new(
             &self.data_segment,
             sample,
             chunk.offset,
@@ -781,12 +828,12 @@ impl<Service: service::Service, PayloadType: Debug + Sized> Publisher<Service, P
     }
 }
 
-impl<Service: service::Service, PayloadType: Default + Debug + Sized>
-    Publisher<Service, PayloadType>
+impl<Service: service::Service, Payload: Default + Debug + Sized, UserHeader: Debug>
+    Publisher<Service, Payload, UserHeader>
 {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
-    /// can be used to loan a [`core::mem::MaybeUninit<PayloadType>`].
+    /// can be used to loan a [`core::mem::MaybeUninit<Payload>`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
     ///
@@ -811,8 +858,8 @@ impl<Service: service::Service, PayloadType: Default + Debug + Sized>
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<SampleMut<PayloadType, Service>, PublisherLoanError> {
-        Ok(self.loan_uninit()?.write_payload(PayloadType::default()))
+    pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, PublisherLoanError> {
+        Ok(self.loan_uninit()?.write_payload(Payload::default()))
     }
 }
 ////////////////////////
@@ -822,11 +869,13 @@ impl<Service: service::Service, PayloadType: Default + Debug + Sized>
 ////////////////////////
 // BEGIN: sliced API
 ////////////////////////
-impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service, [PayloadType]> {
+impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
+    Publisher<Service, [Payload], UserHeader>
+{
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initializes all slice elements with the default value. This can be a performance hit
     /// and [`Publisher::loan_slice_uninit()`] can be used to loan a slice of
-    /// [`core::mem::MaybeUninit<PayloadType>`].
+    /// [`core::mem::MaybeUninit<Payload>`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
     ///
@@ -857,13 +906,15 @@ impl<Service: service::Service, PayloadType: Default + Debug> Publisher<Service,
     pub fn loan_slice(
         &self,
         number_of_elements: usize,
-    ) -> Result<SampleMut<[PayloadType], Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<Service, [Payload], UserHeader>, PublisherLoanError> {
         let sample = self.loan_slice_uninit(number_of_elements)?;
-        Ok(sample.write_from_fn(|_| PayloadType::default()))
+        Ok(sample.write_from_fn(|_| Payload::default()))
     }
 }
 
-impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadType]> {
+impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
+    Publisher<Service, [Payload], UserHeader>
+{
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
@@ -886,7 +937,7 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     ///
     /// let slice_length = 5;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;
-    /// let sample = sample.write_from_fn(|n| n * 2); // alternatively `sample.payload_mut()` can be use to access the `[MaybeUninit<PayloadType>]`
+    /// let sample = sample.write_from_fn(|n| n * 2); // alternatively `sample.payload_mut()` can be use to access the `[MaybeUninit<Payload>]`
     ///
     /// sample.send()?;
     /// # Ok::<_, Box<dyn std::error::Error>>(())
@@ -894,7 +945,7 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
     pub fn loan_slice_uninit(
         &self,
         slice_len: usize,
-    ) -> Result<SampleMut<[MaybeUninit<PayloadType>], Service>, PublisherLoanError> {
+    ) -> Result<SampleMut<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError> {
         let max_slice_len = self.data_segment.config.max_slice_len;
         if max_slice_len < slice_len {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
@@ -904,7 +955,8 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
 
         let chunk = self.allocate(self.sample_layout(slice_len))?;
         let header_ptr = chunk.data_ptr as *mut Header;
-        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<PayloadType>;
+        let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
+        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
 
         unsafe {
             header_ptr.write(Header::new(
@@ -916,23 +968,26 @@ impl<Service: service::Service, PayloadType: Debug> Publisher<Service, [PayloadT
         let sample = unsafe {
             RawSampleMut::new_unchecked(
                 header_ptr,
+                user_header_ptr,
                 core::slice::from_raw_parts_mut(payload_ptr, slice_len),
             )
         };
 
-        Ok(SampleMut::<[MaybeUninit<PayloadType>], Service>::new(
-            &self.data_segment,
-            sample,
-            chunk.offset,
-        ))
+        Ok(
+            SampleMut::<Service, [MaybeUninit<Payload>], UserHeader>::new(
+                &self.data_segment,
+                sample,
+                chunk.offset,
+            ),
+        )
     }
 }
 ////////////////////////
 // END: sliced API
 ////////////////////////
 
-impl<Service: service::Service, PayloadType: Debug> UpdateConnections
-    for Publisher<Service, PayloadType>
+impl<Service: service::Service, Payload: Debug, UserHeader: Debug> UpdateConnections
+    for Publisher<Service, Payload, UserHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         self.data_segment.update_connections()

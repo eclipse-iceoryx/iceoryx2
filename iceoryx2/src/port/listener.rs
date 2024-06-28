@@ -76,7 +76,12 @@ use super::event_id::EventId;
 /// [`crate::service::port_factory::listener::PortFactoryListener`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ListenerCreateError {
+    /// The maximum amount of [`Listener`]s that can connect to a
+    /// [`Service`](crate::service::Service) is
+    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Listener`]s
+    /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedListeners,
+    /// An underlying resource of the [`Service`](crate::service::Service) could not be created
     ResourceCreationFailed,
 }
 

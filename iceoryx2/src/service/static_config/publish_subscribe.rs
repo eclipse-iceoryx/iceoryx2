@@ -21,7 +21,7 @@
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
-//! println!("type details:                     {:?}", pubsub.static_config().type_details());
+//! println!("type details:                     {:?}", pubsub.static_config().message_type_details());
 //! println!("max publishers:                   {:?}", pubsub.static_config().max_supported_publishers());
 //! println!("max subscribers:                  {:?}", pubsub.static_config().max_supported_subscribers());
 //! println!("subscriber buffer size:           {:?}", pubsub.static_config().subscriber_max_buffer_size());
@@ -33,7 +33,7 @@
 //! # }
 //! ```
 
-use super::type_details::TypeDetails;
+use super::message_type_details::MessageTypeDetails;
 use crate::config;
 use serde::{Deserialize, Serialize};
 
@@ -49,7 +49,7 @@ pub struct StaticConfig {
     pub(crate) subscriber_max_buffer_size: usize,
     pub(crate) subscriber_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
-    pub(crate) type_details: TypeDetails,
+    pub(crate) message_type_details: MessageTypeDetails,
 }
 
 impl StaticConfig {
@@ -67,7 +67,7 @@ impl StaticConfig {
                 .publish_subscribe
                 .subscriber_max_borrowed_samples,
             enable_safe_overflow: config.defaults.publish_subscribe.enable_safe_overflow,
-            type_details: TypeDetails::default(),
+            message_type_details: MessageTypeDetails::default(),
         }
     }
 
@@ -106,7 +106,7 @@ impl StaticConfig {
     }
 
     /// Returns the type details of the [`crate::service::Service`].
-    pub fn type_details(&self) -> &TypeDetails {
-        &self.type_details
+    pub fn message_type_details(&self) -> &MessageTypeDetails {
+        &self.message_type_details
     }
 }

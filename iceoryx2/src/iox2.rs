@@ -62,8 +62,11 @@ use iceoryx2_bb_posix::signal::SignalHandler;
 
 /// A complete list of all events that can occur in the main event loop, [`Iox2::wait()`].
 pub enum Iox2Event {
+    /// The timeout passed.
     Tick,
+    /// SIGTERM signal was received
     TerminationRequest,
+    /// SIGINT signal was received
     InterruptSignal,
 }
 

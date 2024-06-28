@@ -34,9 +34,9 @@ mod sample_mut {
     struct TestContext<Sut: Service> {
         node: Node<Sut>,
         service_name: ServiceName,
-        service: PortFactory<Sut, u64>,
-        publisher: Publisher<Sut, u64>,
-        subscriber: Subscriber<Sut, u64>,
+        service: PortFactory<Sut, u64, ()>,
+        publisher: Publisher<Sut, u64, ()>,
+        subscriber: Subscriber<Sut, u64, ()>,
     }
 
     impl<Sut: Service> TestContext<Sut> {
@@ -83,7 +83,7 @@ mod sample_mut {
 
             let loan_result = test_context.publisher.loan();
             assert_that!(loan_result, is_err);
-            assert_that!(loan_result.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
+            assert_that!(loan_result.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
 
             sample_vec.clear();
 

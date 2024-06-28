@@ -28,8 +28,8 @@ Feel free to run multiple instances of publisher or subscriber processes
 simultaneously to explore how iceoryx2 handles publisher-subscriber communication
 efficiently.
 
-You may hit the maximum supported number of ports when too many publisher or 
-subscriber processes run. Take a look at the [iceoryx2 config](config) to set the
-limits globally or at the 
+You may hit the maximum supported number of ports when too many publisher or
+subscriber processes run. Take a look at the [iceoryx2 config](../../../config) to set the
+limits globally or at the
 [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
 to set them for a single service.

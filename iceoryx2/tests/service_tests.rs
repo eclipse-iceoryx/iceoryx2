@@ -66,7 +66,7 @@ mod service {
     }
 
     impl<Sut: Service> SutFactory<Sut> for PubSubTests<Sut> {
-        type Factory = publish_subscribe::PortFactory<Sut, u64>;
+        type Factory = publish_subscribe::PortFactory<Sut, u64, ()>;
         type CreateError = PublishSubscribeCreateError;
         type OpenError = PublishSubscribeOpenError;
 
@@ -120,9 +120,8 @@ mod service {
                 error,
                 any_of([
                     PublishSubscribeOpenError::DoesNotExist,
-                    PublishSubscribeOpenError::PermissionDenied,
+                    PublishSubscribeOpenError::InsufficientPermissions,
                     PublishSubscribeOpenError::ServiceInCorruptedState,
-                    PublishSubscribeOpenError::UnableToOpenDynamicServiceInformation,
                 ])
             );
         }
@@ -183,9 +182,8 @@ mod service {
                 error,
                 any_of([
                     EventOpenError::DoesNotExist,
-                    EventOpenError::PermissionDenied,
-                    EventOpenError::EventInCorruptedState,
-                    EventOpenError::UnableToOpenDynamicServiceInformation,
+                    EventOpenError::InsufficientPermissions,
+                    EventOpenError::ServiceInCorruptedState,
                 ])
             );
         }

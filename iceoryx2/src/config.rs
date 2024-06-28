@@ -89,8 +89,11 @@ pub const DEFAULT_CONFIG_FILE: &[u8] = b"config/iceoryx2.toml";
 /// [`Config::setup_global_config_from_file()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ConfigCreationError {
+    /// The config file could not be opened.
     FailedToOpenConfigFile,
+    /// The config file could not be read.
     FailedToReadConfigFileContents,
+    /// Parts of the config file could not be deserialized. Indicates some kind of syntax error.
     UnableToDeserializeContents,
 }
 

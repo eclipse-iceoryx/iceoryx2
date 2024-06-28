@@ -24,13 +24,18 @@ mod service_publish_subscribe {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
-    use iceoryx2::service::static_config::type_details::TypeVariant;
+    use iceoryx2::service::static_config::message_type_details::TypeVariant;
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+
+    #[derive(Debug)]
+    struct SomeUserHeader {
+        value: [u8; 123],
+    }
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -655,16 +660,23 @@ mod service_publish_subscribe {
         let sut = node
             .service_builder(service_name)
             .publish_subscribe::<PayloadType>()
+            .user_header::<SomeUserHeader>()
             .create()
             .unwrap();
 
-        let d = sut.static_config().type_details();
-        assert_that!(d.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.header_size, eq std::mem::size_of::<Header>());
-        assert_that!(d.header_alignment, eq std::mem::align_of::<Header>());
-        assert_that!(d.payload_type_name, eq core::any::type_name::<PayloadType>());
-        assert_that!(d.payload_size, eq std::mem::size_of::<PayloadType>());
-        assert_that!(d.payload_alignment, eq std::mem::align_of::<PayloadType>());
+        let d = sut.static_config().message_type_details();
+        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
+        assert_that!(d.header.size, eq std::mem::size_of::<Header>());
+        assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
+        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.user_header.type_name, eq core::any::type_name::<SomeUserHeader>());
+        assert_that!(d.user_header.size, eq std::mem::size_of::<SomeUserHeader>());
+        assert_that!(d.user_header.alignment, eq std::mem::align_of::<SomeUserHeader>());
+        assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
+        assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
+        assert_that!(d.payload.alignment, eq std::mem::align_of::<PayloadType>());
     }
 
     #[test]
@@ -681,13 +693,19 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        let d = sut.static_config().type_details();
-        assert_that!(d.variant, eq TypeVariant::Dynamic);
-        assert_that!(d.header_size, eq std::mem::size_of::<Header>());
-        assert_that!(d.header_alignment, eq std::mem::align_of::<Header>());
-        assert_that!(d.payload_type_name, eq core::any::type_name::<PayloadType>());
-        assert_that!(d.payload_size, eq std::mem::size_of::<PayloadType>());
-        assert_that!(d.payload_alignment, eq std::mem::align_of::<PayloadType>());
+        let d = sut.static_config().message_type_details();
+        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
+        assert_that!(d.header.size, eq std::mem::size_of::<Header>());
+        assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
+        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.user_header.type_name, eq core::any::type_name::<()>());
+        assert_that!(d.user_header.size, eq std::mem::size_of::<()>());
+        assert_that!(d.user_header.alignment, eq std::mem::align_of::<()>());
+        assert_that!(d.payload.variant, eq TypeVariant::Dynamic);
+        assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
+        assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
+        assert_that!(d.payload.alignment, eq std::mem::align_of::<PayloadType>());
     }
 
     #[test]
@@ -814,7 +832,7 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(sut.static_config().type_details().payload_alignment, eq core::mem::align_of::<u64>());
+        assert_that!(sut.static_config().message_type_details().payload.alignment, eq core::mem::align_of::<u64>());
     }
 
     #[test]
@@ -1440,7 +1458,7 @@ mod service_publish_subscribe {
 
             let sample = sut_publisher.loan_uninit();
             assert_that!(sample, is_err);
-            assert_that!(sample.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedChunks);
+            assert_that!(sample.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
 
             // cleanup
             borrowed_samples.clear();
@@ -2133,6 +2151,68 @@ mod service_publish_subscribe {
             }
             samples.push(recv_sample);
         }
+    }
+
+    #[test]
+    fn simple_communication_with_user_header_works<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .user_header::<SomeUserHeader>()
+            .create()
+            .unwrap();
+
+        let sut2 = node
+            .service_builder(service_name)
+            .publish_subscribe::<u64>()
+            .user_header::<SomeUserHeader>()
+            .open()
+            .unwrap();
+
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut2.publisher_builder().create().unwrap();
+        assert_that!(subscriber.update_connections(), is_ok);
+        let mut sample = publisher.loan().unwrap();
+
+        for i in 0..123 {
+            sample.user_header_mut().value[i] = i as u8;
+        }
+        *sample.payload_mut() = 1829731;
+        sample.send().unwrap();
+
+        let result = subscriber.receive().unwrap();
+        assert_that!(result, is_some);
+        let sample = result.unwrap();
+        assert_that!(*sample, eq 1829731);
+        assert_that!(*sample.payload(), eq 1829731);
+
+        for i in 0..123 {
+            assert_that!(sample.user_header().value[i], eq i as u8);
+        }
+    }
+
+    #[test]
+    fn same_payload_type_but_different_user_header_does_not_connect<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let _sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .user_header::<SomeUserHeader>()
+            .create()
+            .unwrap();
+
+        let sut2 = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .open();
+
+        assert_that!(sut2, is_err);
+        assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

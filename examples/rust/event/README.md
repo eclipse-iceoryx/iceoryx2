@@ -28,3 +28,9 @@ cargo run --example event_notifier
 
 Feel free to run multiple listeners or notifiers concurrently to observe how
 iceoryx2 efficiently handles event signaling across processes.
+
+You may hit the maximum supported number of ports when too many listener or
+notifier processes run. Take a look at the [iceoryx2 config](../../../config) to set the
+limits globally or at the
+[API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
+to set them for a single service.

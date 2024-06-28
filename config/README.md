@@ -14,12 +14,19 @@ The configuration is organized into two main sections:
 
 Adjusting `global` settings ensures a non-interfering setup.
 
-## Entries
-
-### Global
+## Global
 
  * `global.root_path_{unix|windows}` - [string]: Defines the path for all iceoryx2 files and directories.
  * `global.prefix` - [string]: Prefix that is used for every file iceoryx2 creates.
+
+### Nodes
+
+ * `global.node.directory` - [string]: Specifies the path for node-related files under `global.root_path`.
+ * `global.node.monitor_suffix` - [string]: Suffix added to the node monitor.
+ * `global.node.static_config_suffix` - [string]: Suffix added to the static config of the node.
+
+### Services
+
  * `global.service.directory` - [string]: Specifies the path for service-related files under `global.root_path`.
  * `global.service.publisher_data_segment_suffix` - [string]: Suffix added to the publisher's data segment.
  * `global.service.static_config_storage_suffix` - [string]: Suffix for static service configuration files.
@@ -27,7 +34,15 @@ Adjusting `global` settings ensures a non-interfering setup.
  * `global.service.connection_suffix` - [string]: Suffix for one-to-one connections.
  * `global.service.creation_timeout.secs` & `global.service.creation_timeout.nanos` - [int]: Maximum time for service setup. Uncreated services after this are marked as stalled.
 
-### Defaults
+## Defaults
+
+### Service: Event Messaging Pattern
+
+ * `defaults.event.max_listeners` - [int]: Maximum number of listeners.
+ * `defaults.event.max_notifiers` - [int]: Maximum number of notifiers.
+ * `defaults.event.event_id_max_value` - [int]: Greatest value an [`EventId`] can have.
+
+### Service: Publish Subscribe Messaging Pattern
 
  * `defaults.publish_subscribe.max_subscribers` - [int]: Maximum number of subscribers.
  * `defaults.publish_subscribe.max_publishers` - [int]: Maximum number of publishers.
@@ -36,7 +51,4 @@ Adjusting `global` settings ensures a non-interfering setup.
  * `defaults.publish_subscribe.subscriber_max_borrowed_samples` - [int]: Maximum samples a subscriber can hold.
  * `defaults.publish_subscribe.publisher_max_loaned_samples` - [int]: Maximum samples a publisher can loan.
  * `defaults.publish_subscribe.enable_safe_overflow` - [`true`|`false`]: Default overflow behavior.
- * `defaults.publish_subscribe.unable_to_deliver_strategy` - [`block`|`discard_sample`]: Default strategy for non-overflowing setups when delivery fails.
- * `defaults.event.max_listeners` - [int]: Maximum number of listeners.
- * `defaults.event.max_notifiers` - [int]: Maximum number of notifiers.
- * `defaults.event.event_id_max_value` - [int]: Greatest value an [`EventId`] can have.
+ * `defaults.publish_subscribe.unable_to_deliver_strategy` - [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups when delivery fails.

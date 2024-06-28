@@ -114,6 +114,7 @@ pub type Queue<T> = details::Queue<T, OwningPointer<MaybeUninit<T>>>;
 /// **Non-movable** relocatable queue with runtime fixed size capacity.
 pub type RelocatableQueue<T> = details::Queue<T, RelocatablePointer<MaybeUninit<T>>>;
 
+#[doc(hidden)]
 pub mod details {
     use super::*;
     /// **Non-movable** relocatable queue with runtime fixed size capacity.

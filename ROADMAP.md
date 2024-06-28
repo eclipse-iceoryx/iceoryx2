@@ -73,6 +73,7 @@
 
 * [x] publish subscribe
 * [x] events
+* [ ] integrated serialization to send non-shm compatible types, see: https://github.com/rkyv/rkyv
 * [ ] Single Publisher Subscribe with history
 * [ ] Multi Publisher without history (except there is a brilliant idea on how to realize it with history)
 * [ ] Request Response Messaging Pattern

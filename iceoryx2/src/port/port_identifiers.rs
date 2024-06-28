@@ -30,6 +30,7 @@ macro_rules! generate_id {
         }
 
         impl $id_name {
+            /// Creates a new instance
             pub fn new() -> Self {
                 Self::default()
             }

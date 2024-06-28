@@ -188,7 +188,9 @@ use self::service_name::ServiceName;
 /// Failure that can be reported by [`Service::does_exist()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceDoesExistError {
+    /// The process has insufficient permissions to check if a [`Service`] exists.
     InsufficientPermissions,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
 }
 
@@ -203,7 +205,9 @@ impl std::error::Error for ServiceDoesExistError {}
 /// Failure that can be reported by [`Service::list()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceListError {
+    /// The process has insufficient permissions to list all [`Service`]s.
     InsufficientPermissions,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
 }
 

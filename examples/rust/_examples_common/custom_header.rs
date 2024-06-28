@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,8 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod custom_header;
-mod transmission_data;
-
-pub use custom_header::CustomHeader;
-pub use transmission_data::TransmissionData;
+#[derive(Default, Debug)]
+#[repr(C)]
+pub struct CustomHeader {
+    pub version: i32,
+    pub timestamp: u64,
+}

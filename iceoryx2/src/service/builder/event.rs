@@ -19,7 +19,6 @@ use crate::service::messaging_pattern::MessagingPattern;
 use crate::service::port_factory::event;
 use crate::service::*;
 use crate::service::{self, dynamic_config::event::DynamicConfigSettings};
-use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -31,17 +30,28 @@ use super::ServiceState;
 /// Failures that can occur when an existing [`MessagingPattern::Event`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventOpenError {
+    /// The [`Service`] does not exist.
     DoesNotExist,
-    PermissionDenied,
-    EventInCorruptedState,
+    /// The process has not enough permissions to open the [`Service`]
+    InsufficientPermissions,
+    /// Some underlying resources of the [`Service`] do not exist which indicate a corrupted
+    /// [`Service`]state.
+    ServiceInCorruptedState,
+    /// The [`Service`] has the wrong messaging pattern.
     IncompatibleMessagingPattern,
+    /// The [`AttributeVerifier`] required attributes that the [`Service`] does not satisfy.
     IncompatibleAttributes,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
+    /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
+    /// The [`Service`] supports less [`Notifier`](crate::port::notifier::Notifier)s than requested.
     DoesNotSupportRequestedAmountOfNotifiers,
+    /// The [`Service`] supports less [`Listener`](crate::port::listener::Listener)s than requested.
     DoesNotSupportRequestedAmountOfListeners,
+    /// The [`Service`] supported [`EventId`] is smaller than the requested max [`EventId`].
     DoesNotSupportRequestedMaxEventId,
-    UnableToOpenDynamicServiceInformation,
 }
 
 impl std::fmt::Display for EventOpenError {
@@ -55,12 +65,20 @@ impl std::error::Error for EventOpenError {}
 /// Failures that can occur when a new [`MessagingPattern::Event`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventCreateError {
-    Corrupted,
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
+    ServiceInCorruptedState,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// Multiple processes are trying to create the same [`Service`].
     IsBeingCreatedByAnotherInstance,
+    /// The [`Service`] already exists.
     AlreadyExists,
-    PermissionDenied,
-    UnableToCreateStaticServiceInformation,
+    /// The process has insufficient permissions to create the [`Service`].
+    InsufficientPermissions,
+    /// The system has cleaned up the [`Service`] but there are still endpoints like
+    /// [`Publisher`](crate::port::publisher::Publisher) or
+    /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
+    /// [`Sample`](crate::sample::Sample) or [`SampleMut`](crate::sample_mut::SampleMut) in use.
     OldConnectionsStillActive,
 }
 
@@ -72,13 +90,26 @@ impl std::fmt::Display for EventCreateError {
 
 impl std::error::Error for EventCreateError {}
 
-enum_gen! {
-    /// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
-    /// created.
-    EventOpenOrCreateError
-  mapping:
-    EventOpenError,
-    EventCreateError
+/// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
+/// created.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum EventOpenOrCreateError {
+    /// Failures that can occur when an event [`Service`] is opened.
+    EventOpenError(EventOpenError),
+    /// Failures that can occur when an event [`Service`] is created.
+    EventCreateError(EventCreateError),
+}
+
+impl From<EventOpenError> for EventOpenOrCreateError {
+    fn from(value: EventOpenError) -> Self {
+        EventOpenOrCreateError::EventOpenError(value)
+    }
+}
+
+impl From<EventCreateError> for EventOpenOrCreateError {
+    fn from(value: EventCreateError) -> Self {
+        EventOpenOrCreateError::EventCreateError(value)
+    }
 }
 
 impl std::fmt::Display for EventOpenOrCreateError {
@@ -184,15 +215,15 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             }
             Err(ServiceState::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
             Err(ServiceState::Corrupted) => {
-                fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::EventInCorruptedState),
+                fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::ServiceInCorruptedState),
                     "{} since the event is in a corrupted state.", msg);
             }
             Err(ServiceState::IncompatibleMessagingPattern) => {
                 fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::IncompatibleMessagingPattern),
                     "{} since the services messaging pattern does not match.", msg);
             }
-            Err(ServiceState::PermissionDenied) => {
-                fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::PermissionDenied),
+            Err(ServiceState::InsufficientPermissions) => {
+                fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::InsufficientPermissions),
                     "{} due to insufficient permissions.", msg);
             }
         }
@@ -227,7 +258,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
                     let dynamic_config = Arc::new(
                         fail!(from self, when self.base.open_dynamic_config_storage(),
-                            with EventOpenError::UnableToOpenDynamicServiceInformation,
+                            with EventOpenError::ServiceInCorruptedState,
                             "{} since the dynamic service informations could not be opened.", msg),
                     );
 
@@ -262,16 +293,16 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                             msg, self.base.shared_node.config().global.service.creation_timeout, timeout);
                     }
                 }
-                Err(ServiceState::PermissionDenied) => {
-                    fail!(from self, with EventOpenError::PermissionDenied,
+                Err(ServiceState::InsufficientPermissions) => {
+                    fail!(from self, with EventOpenError::InsufficientPermissions,
                         "{} due to insufficient permissions.", msg);
                 }
                 Err(ServiceState::IncompatibleMessagingPattern) => {
-                    fail!(from self, with EventOpenError::PermissionDenied,
+                    fail!(from self, with EventOpenError::InsufficientPermissions,
                         "{} since the services messaging pattern does not match.", msg);
                 }
                 Err(ServiceState::Corrupted) => {
-                    fail!(from self, with EventOpenError::EventInCorruptedState,
+                    fail!(from self, with EventOpenError::ServiceInCorruptedState,
                         "{} since the event is in a corrupted state.", msg);
                 }
             }
@@ -311,8 +342,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         fail!(from self, with EventCreateError::IsBeingCreatedByAnotherInstance,
                             "{} since the service is being created by another instance.", msg);
                     }
+                    Err(StaticStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with EventCreateError::InsufficientPermissions,
+                            "{} since the static service information could not be created due to insufficient permissions.", msg);
+                    }
                     Err(e) => {
-                        fail!(from self, with EventCreateError::UnableToCreateStaticServiceInformation,
+                        fail!(from self, with EventCreateError::InternalFailure,
                             "{} since the static service information could not be created ({:?}).", msg, e);
                     }
                 };
@@ -344,12 +379,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 self.base.service_config.attributes = attributes.0.clone();
 
                 let service_config = fail!(from self, when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
-                                            with EventCreateError::Corrupted,
+                                            with EventCreateError::ServiceInCorruptedState,
                                             "{} since the configuration could not be serialized.", msg);
 
                 // only unlock the static details when the service is successfully created
                 let mut unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
-                            with EventCreateError::Corrupted,
+                            with EventCreateError::ServiceInCorruptedState,
                             "{} since the configuration could not be written to the static storage.", msg);
 
                 unlocked_static_details.release_ownership();
@@ -367,12 +402,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 fail!(from self, with EventCreateError::AlreadyExists,
                     "{} since the service already exists.", msg);
             }
-            Err(ServiceState::PermissionDenied) => {
-                fail!(from self, with EventCreateError::PermissionDenied,
+            Err(ServiceState::InsufficientPermissions) => {
+                fail!(from self, with EventCreateError::InsufficientPermissions,
                     "{} due to possible insufficient permissions to access the underlying service details.", msg);
             }
             Err(ServiceState::Corrupted) => {
-                fail!(from self, with EventCreateError::Corrupted,
+                fail!(from self, with EventCreateError::ServiceInCorruptedState,
                     "{} since a service in a corrupted state already exists. A cleanup of the service constructs may help,", msg);
             }
             Err(ServiceState::IsBeingCreatedByAnotherInstance) => {

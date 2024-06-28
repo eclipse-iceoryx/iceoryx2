@@ -90,7 +90,9 @@ use std::sync::Arc;
 /// The failures that can occur when a [`Node`] is created with the [`NodeBuilder`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCreationFailure {
+    /// The [`Node`] could not be created since the process does not have sufficient permissions.
     InsufficientPermissions,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
 }
 
@@ -105,8 +107,11 @@ impl std::error::Error for NodeCreationFailure {}
 /// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeListFailure {
+    /// A list of all [`Node`]s could not be created since the process does not have sufficient permissions.
     InsufficientPermissions,
+    /// The process received an interrupt signal while acquiring the list of all [`Node`]s.
     Interrupt,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
 }
 
@@ -122,8 +127,11 @@ impl std::error::Error for NodeListFailure {}
 /// a dead [`Node`] are removed.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCleanupFailure {
+    /// The process received an interrupt signal while cleaning up all stale resources of a dead [`Node`].
     Interrupt,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
+    /// The stale resources of a dead [`Node`] could not be removed since the process does not have sufficient permissions.
     InsufficientPermissions,
 }
 
@@ -167,7 +175,10 @@ impl NodeDetails {
 /// with [`DeadNodeView::remove_stale_resources()`].
 #[derive(Debug, Clone)]
 pub enum NodeState<Service: service::Service> {
+    /// The [`Node`]s process is still alive.
     Alive(AliveNodeView<Service>),
+    /// The [`Node`]s process died without cleaning up the [`Node`]s resources. Another process has
+    /// now the responsibility to cleanup all the stale resources.
     Dead(DeadNodeView<Service>),
 }
 
@@ -391,6 +402,7 @@ impl<Service: service::Service> Node<Service> {
         &self.shared.id
     }
 
+    /// Instantiates a [`ServiceBuilder`](Builder) for a service with the provided name.
     pub fn service_builder(&self, name: ServiceName) -> Builder<Service> {
         Builder::new(name, self.shared.clone())
     }
