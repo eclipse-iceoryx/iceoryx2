@@ -54,6 +54,40 @@ fn mpmc_unique_index_set_when_created_contains_indices() {
 }
 
 #[test]
+fn mpmc_unique_index_release_mode_default_does_not_lock() {
+    let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
+
+    let idx = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx, is_some);
+    unsafe { sut.release_raw_index(idx.unwrap(), UniqueIndexReleaseMode::Default) };
+
+    let idx = sut.acquire();
+    assert_that!(idx, is_some);
+}
+
+#[test]
+fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
+    let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
+
+    let idx_1 = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx_1, is_some);
+
+    let idx_2 = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx_2, is_some);
+
+    unsafe { sut.release_raw_index(idx_1.unwrap(), UniqueIndexReleaseMode::LockIfLastIndex) };
+
+    let idx_3 = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx_3, is_some);
+
+    unsafe { sut.release_raw_index(idx_2.unwrap(), UniqueIndexReleaseMode::LockIfLastIndex) };
+    unsafe { sut.release_raw_index(idx_3.unwrap(), UniqueIndexReleaseMode::LockIfLastIndex) };
+
+    let idx_4 = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx_4, is_none);
+}
+
+#[test]
 fn mpmc_unique_index_set_acquire_and_release_works() {
     let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     let mut ids = vec![];

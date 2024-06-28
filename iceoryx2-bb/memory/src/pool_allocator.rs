@@ -206,7 +206,8 @@ impl BaseAllocator for PoolAllocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
         self.verify_init("deallocate");
 
-        self.buckets.release_raw_index(self.get_index(ptr));
+        self.buckets
+            .release_raw_index(self.get_index(ptr), UniqueIndexReleaseMode::Default);
     }
 }
 

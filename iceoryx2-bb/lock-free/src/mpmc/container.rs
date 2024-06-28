@@ -315,7 +315,8 @@ impl<T: Copy + Debug> Container<T> {
 
         unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
             .fetch_add(1, Ordering::Relaxed);
-        self.index_set.release_raw_index(handle.index);
+        self.index_set
+            .release_raw_index(handle.index, UniqueIndexReleaseMode::Default);
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
