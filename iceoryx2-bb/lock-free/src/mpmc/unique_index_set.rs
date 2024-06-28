@@ -105,6 +105,18 @@ enum_gen! { UniqueIndexCreationError
     ProvidedCapacityIsZero
 }
 
+/// Describes if indices can still be acquired after the call to
+/// [`UniqueIndexSet::release_raw_index()`].
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum UniqueIndexReleaseMode {
+    /// No more indices can be acquired with [`UniqueIndexSet::acquire_raw_index()`] if the
+    /// released index was the last one.
+    LockIfLastIndex,
+    /// Indices can still be acquired with [`UniqueIndexSet::acquire_raw_index()`] after the
+    /// operation
+    Default,
+}
+
 /// Represents a [`UniqueIndex`]. When it goes out of scope it releases the index in the
 /// corresponding [`UniqueIndexSet`] or [`FixedSizeUniqueIndexSet`].
 ///
@@ -138,7 +150,10 @@ impl Drop for UniqueIndex<'_> {
         if self.cleanup_callback.is_some() {
             self.cleanup_callback.as_ref().unwrap().call(self.value);
         }
-        unsafe { self.index_set.release_raw_index(self.value) };
+        unsafe {
+            self.index_set
+                .release_raw_index(self.value, UniqueIndexReleaseMode::Default)
+        };
     }
 }
 
@@ -207,6 +222,8 @@ pub struct UniqueIndexSet {
 
 unsafe impl Sync for UniqueIndexSet {}
 unsafe impl Send for UniqueIndexSet {}
+
+const LOCK_ACQUIRE: u32 = 0x00ffffff;
 
 struct HeadDetails {
     head: u32,
@@ -379,7 +396,7 @@ impl UniqueIndexSet {
         let mut old = HeadDetails::from(old_value);
 
         loop {
-            if old.head >= self.capacity {
+            if old.head >= self.capacity || old.borrowed_indices == LOCK_ACQUIRE {
                 return None;
             }
 
@@ -422,7 +439,7 @@ impl UniqueIndexSet {
     ///  * It must be ensured that the index was acquired before and is not released twice.
     ///  * Shall be only used when the index was acquired with
     ///    [`UniqueIndexSet::acquire_raw_index()`]
-    pub unsafe fn release_raw_index(&self, index: u32) {
+    pub unsafe fn release_raw_index(&self, index: u32, mode: UniqueIndexReleaseMode) {
         self.verify_init("release_raw_index");
         fence(Ordering::Release);
 
@@ -432,10 +449,17 @@ impl UniqueIndexSet {
         loop {
             *self.get_next_free_index(index) = old.head;
 
+            let borrowed_indices =
+                if mode == UniqueIndexReleaseMode::LockIfLastIndex && old.borrowed_indices == 1 {
+                    LOCK_ACQUIRE
+                } else {
+                    old.borrowed_indices - 1
+                };
+
             let new_value = HeadDetails {
                 head: index,
                 aba: old.aba.wrapping_add(1),
-                borrowed_indices: old.borrowed_indices - 1,
+                borrowed_indices,
             }
             .value();
 
@@ -577,8 +601,8 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///    [`FixedSizeUniqueIndexSet::acquire_raw_index()`]
     ///  * The index should not be released twice
     ///
-    pub unsafe fn release_raw_index(&self, index: u32) {
-        self.state.release_raw_index(index)
+    pub unsafe fn release_raw_index(&self, index: u32, mode: UniqueIndexReleaseMode) {
+        self.state.release_raw_index(index, mode)
     }
 
     /// Returns the current len.

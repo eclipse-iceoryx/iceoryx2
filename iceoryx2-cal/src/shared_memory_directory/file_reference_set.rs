@@ -16,6 +16,7 @@ use crate::shared_memory_directory::reference_counter::ReferenceCounter;
 use crate::shared_memory_directory::SharedMemoryDirectoryCreateFileError;
 use crate::shared_memory_directory::MAX_NUMBER_OF_ENTRIES;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::FixedSizeUniqueIndexSet;
+use iceoryx2_bb_lock_free::mpmc::unique_index_set::UniqueIndexReleaseMode;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
@@ -240,7 +241,10 @@ impl FileReferenceSet {
             // remove entry
             self.counter[id.0].reset();
             self.decision_counter[id.0].set_to_undecided();
-            unsafe { self.ids.release_raw_index(id.0 as u32) };
+            unsafe {
+                self.ids
+                    .release_raw_index(id.0 as u32, UniqueIndexReleaseMode::Default)
+            };
         }
     }
 }
