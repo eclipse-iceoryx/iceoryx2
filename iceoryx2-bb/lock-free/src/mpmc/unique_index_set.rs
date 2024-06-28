@@ -209,6 +209,24 @@ pub struct UniqueIndexSet {
 unsafe impl Sync for UniqueIndexSet {}
 unsafe impl Send for UniqueIndexSet {}
 
+struct HeadDetails {
+    head: u32,
+    aba: u32,
+}
+
+impl HeadDetails {
+    fn from(value: u64) -> Self {
+        Self {
+            head: (value >> 32) as u32,
+            aba: ((value << 32) >> 32) as u32,
+        }
+    }
+
+    fn value(&self) -> u64 {
+        ((self.head as u64) << 32) | self.aba as u64
+    }
+}
+
 impl RelocatableContainer for UniqueIndexSet {
     unsafe fn new_uninit(capacity: usize) -> Self {
         Self {
@@ -351,32 +369,35 @@ impl UniqueIndexSet {
     ///    otherwise the index is leaked.
     pub unsafe fn acquire_raw_index(&self) -> Option<u32> {
         self.verify_init("acquire_raw_index");
-        let mut old = self.head.load(Ordering::Acquire);
-        let (mut old_head, mut old_aba) = Self::extract_head_and_aba(old);
+        let mut old_value = self.head.load(Ordering::Acquire);
+        let mut old = HeadDetails::from(old_value);
 
         loop {
-            if old_head >= self.capacity {
+            if old.head >= self.capacity {
                 return None;
             }
 
-            let new_head = *self.get_next_free_index(old_head);
-            let new_aba = old_aba + 1;
-            let new = Self::pack_from_head_and_aba(new_head, new_aba);
+            let new_value = HeadDetails {
+                head: *self.get_next_free_index(old.head),
+                aba: old.aba + 1,
+            }
+            .value();
 
-            (old_head, old_aba) =
-                match self
-                    .head
-                    .compare_exchange(old, new, Ordering::AcqRel, Ordering::Acquire)
-                {
-                    Ok(_) => break,
-                    Err(v) => {
-                        old = v;
-                        Self::extract_head_and_aba(v)
-                    }
+            old = match self.head.compare_exchange(
+                old_value,
+                new_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => break,
+                Err(v) => {
+                    old_value = v;
+                    HeadDetails::from(v)
                 }
+            }
         }
 
-        let index = old_head;
+        let index = old.head;
         *self.get_next_free_index(index) = self.capacity + 1;
 
         fence(Ordering::Acquire);
@@ -399,29 +420,33 @@ impl UniqueIndexSet {
         self.verify_init("release_raw_index");
         fence(Ordering::Release);
 
-        let mut old = self.head.load(Ordering::Acquire);
-        let (mut old_head, mut old_aba) = Self::extract_head_and_aba(old);
+        let mut old_value = self.head.load(Ordering::Acquire);
+        let mut old = HeadDetails::from(old_value);
 
         loop {
-            *self.get_next_free_index(index) = old_head;
-            let new_head = index;
-            let new_aba = old_aba + 1;
-            let new = Self::pack_from_head_and_aba(new_head, new_aba);
+            *self.get_next_free_index(index) = old.head;
 
-            (old_head, old_aba) =
-                match self
-                    .head
-                    .compare_exchange(old, new, Ordering::AcqRel, Ordering::Acquire)
-                {
-                    Ok(_) => {
-                        self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
-                        return;
-                    }
-                    Err(v) => {
-                        old = v;
-                        Self::extract_head_and_aba(v)
-                    }
-                };
+            let new_value = HeadDetails {
+                head: index,
+                aba: old.aba + 1,
+            }
+            .value();
+
+            old = match self.head.compare_exchange(
+                old_value,
+                new_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => {
+                    self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
+                    return;
+                }
+                Err(v) => {
+                    old_value = v;
+                    HeadDetails::from(v)
+                }
+            };
         }
     }
 
@@ -432,14 +457,6 @@ impl UniqueIndexSet {
         unsafe {
             &mut *(*self.data_ptr.as_ptr().offset(index as isize)).get()
         }
-    }
-
-    fn extract_head_and_aba(value: u64) -> (u32, u32) {
-        ((value >> 32) as u32, ((value << 32) >> 32) as u32)
-    }
-
-    fn pack_from_head_and_aba(value1: u32, value2: u32) -> u64 {
-        ((value1 as u64) << 32) | value2 as u64
     }
 }
 
