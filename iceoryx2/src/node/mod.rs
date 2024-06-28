@@ -365,6 +365,10 @@ impl<Service: service::Service> SharedNode<Service> {
     pub(crate) fn config(&self) -> &Config {
         &self.details.config
     }
+
+    pub(crate) fn id(&self) -> &NodeId {
+        &self.id
+    }
 }
 
 impl<Service: service::Service> Drop for SharedNode<Service> {
