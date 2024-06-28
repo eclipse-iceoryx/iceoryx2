@@ -308,10 +308,10 @@ impl<T: Copy + Debug> Container<T> {
     ///
     pub unsafe fn remove(&self, handle: ContainerHandle) {
         self.verify_memory_initialization("remove_with_handle");
-        if handle.container_id != self.container_id.value() {
-            fatal_panic!(from self,
-                "The ContainerHandle used as handle was not created by this Container instance.");
-        }
+        debug_assert!(
+            handle.container_id == self.container_id.value(),
+            "The ContainerHandle used as handle was not created by this Container instance."
+        );
 
         unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
             .fetch_add(1, Ordering::Relaxed);
