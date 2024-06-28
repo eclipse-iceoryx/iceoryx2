@@ -211,19 +211,19 @@ unsafe impl Send for UniqueIndexSet {}
 
 struct HeadDetails {
     head: u32,
-    aba: u32,
+    aba: u16,
 }
 
 impl HeadDetails {
     fn from(value: u64) -> Self {
         Self {
-            head: (value >> 32) as u32,
-            aba: ((value << 32) >> 32) as u32,
+            head: (value >> 40) as u32,
+            aba: ((value | 0x000ff000) >> 24) as u16,
         }
     }
 
     fn value(&self) -> u64 {
-        ((self.head as u64) << 32) | self.aba as u64
+        ((self.head as u64) << 40) | (self.aba as u64) << 24
     }
 }
 
@@ -379,7 +379,7 @@ impl UniqueIndexSet {
 
             let new_value = HeadDetails {
                 head: *self.get_next_free_index(old.head),
-                aba: old.aba + 1,
+                aba: old.aba.wrapping_add(1),
             }
             .value();
 
@@ -428,7 +428,7 @@ impl UniqueIndexSet {
 
             let new_value = HeadDetails {
                 head: index,
-                aba: old.aba + 1,
+                aba: old.aba.wrapping_add(1),
             }
             .value();
 
