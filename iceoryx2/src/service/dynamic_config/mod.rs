@@ -20,10 +20,14 @@ pub mod event;
 /// based service.
 pub mod publish_subscribe;
 
+use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_lock_free::mpmc::container::Container;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use std::{fmt::Display, sync::atomic::Ordering};
+
+use crate::node::NodeId;
 
 const MARKED_FOR_DESTRUCTION: u64 = u64::MAX - 1;
 
@@ -44,6 +48,7 @@ pub(crate) enum MessagingPattern {
 pub struct DynamicConfig {
     messaging_pattern: MessagingPattern,
     reference_counter: IoxAtomicU64,
+    nodes: Container<NodeId>,
 }
 
 impl Display for DynamicConfig {
@@ -57,14 +62,24 @@ impl Display for DynamicConfig {
 }
 
 impl DynamicConfig {
-    pub(crate) fn new_uninit(messaging_pattern: MessagingPattern) -> Self {
+    pub(crate) fn new_uninit(
+        messaging_pattern: MessagingPattern,
+        max_number_of_nodes: usize,
+    ) -> Self {
         Self {
             messaging_pattern,
             reference_counter: IoxAtomicU64::new(1),
+            nodes: unsafe { Container::new_uninit(max_number_of_nodes) },
         }
     }
 
+    pub(crate) fn memory_size(max_number_of_nodes: usize) -> usize {
+        Container::<NodeId>::memory_size(max_number_of_nodes)
+    }
+
     pub(crate) unsafe fn init(&self, allocator: &BumpAllocator) {
+        fatal_panic!(from self, when self.nodes.init(allocator),
+            "This should never happen! Unable to initialize NodeId container.");
         match &self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref v) => v.init(allocator),
             MessagingPattern::Event(ref v) => v.init(allocator),

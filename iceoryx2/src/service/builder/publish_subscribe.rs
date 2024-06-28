@@ -464,6 +464,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     dynamic_config::publish_subscribe::DynamicConfig::memory_size(
                         &dynamic_config_setting,
                     ),
+                    pubsub_config.max_nodes,
                 ) {
                     Ok(c) => Arc::new(c),
                     Err(DynamicStorageCreateError::AlreadyExists) => {

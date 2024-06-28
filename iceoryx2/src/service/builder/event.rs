@@ -364,6 +364,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         dynamic_config::event::DynamicConfig::new(&dynamic_config_setting),
                     ),
                     dynamic_config::event::DynamicConfig::memory_size(&dynamic_config_setting),
+                    event_config.max_nodes,
                 ) {
                     Ok(c) => Arc::new(c),
                     Err(DynamicStorageCreateError::AlreadyExists) => {

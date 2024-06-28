@@ -239,17 +239,19 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         &self,
         messaging_pattern: super::dynamic_config::MessagingPattern,
         additional_size: usize,
+        max_number_of_nodes: usize,
     ) -> Result<ServiceType::DynamicStorage, DynamicStorageCreateError> {
+        let required_memory_size = DynamicConfig::memory_size(max_number_of_nodes);
         match <<ServiceType::DynamicStorage as DynamicStorage<
             DynamicConfig,
         >>::Builder<'_> as NamedConceptBuilder<
             ServiceType::DynamicStorage,
         >>::new(&dynamic_config_storage_name(&self.service_config))
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
-            .supplementary_size(additional_size)
+            .supplementary_size(additional_size + required_memory_size)
             .has_ownership(false)
             .initializer(Self::config_init_call)
-            .create(DynamicConfig::new_uninit(messaging_pattern) ) {
+            .create(DynamicConfig::new_uninit(messaging_pattern, max_number_of_nodes) ) {
                 Ok(dynamic_storage) => Ok(dynamic_storage),
                 Err(e) => {
                     fail!(from self, with e, "Failed to create dynamic storage for service.");

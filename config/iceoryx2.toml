@@ -20,6 +20,7 @@ creation-timeout.nanos                      = 500000000
 [defaults.publish-subscribe]
 max-subscribers                             = 8
 max-publishers                              = 2
+max-nodes                                   = 20
 publisher-history-size                      = 1
 subscriber-max-buffer-size                  = 2
 subscriber-max-borrowed-samples             = 2
@@ -30,4 +31,5 @@ unable-to-deliver-strategy                  = 'Block' # or 'DiscardSample'
 [defaults.event]
 max-listeners                               = 2
 max-notifiers                               = 16
+max-nodes                                   = 36
 event-id-max-value                          = 32
