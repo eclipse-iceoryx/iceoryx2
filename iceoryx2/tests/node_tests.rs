@@ -15,26 +15,25 @@ mod node {
     use std::collections::{HashSet, VecDeque};
 
     use iceoryx2::config::Config;
-    use iceoryx2::node::{NodeState, NodeView};
+    use iceoryx2::node::{NodeId, NodeState, NodeView};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::directory::Directory;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::assert_that;
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
         name: NodeName,
-        id: u128,
+        id: NodeId,
         config: Config,
     }
 
     impl Details {
-        fn new(name: &NodeName, id: &UniqueSystemId, config: &Config) -> Self {
+        fn new(name: &NodeName, id: &NodeId, config: &Config) -> Self {
             Self {
                 name: name.clone(),
-                id: id.value(),
+                id: id.clone(),
                 config: config.clone(),
             }
         }
@@ -161,7 +160,7 @@ mod node {
                 "its a bird, its a plane, no its the mountain goat jumping through the code",
             );
             nodes.push(NodeBuilder::new().name(node_name).create::<S>().unwrap());
-            assert_that!(node_ids.insert(nodes.last().unwrap().id().value()), eq true);
+            assert_that!(node_ids.insert(nodes.last().unwrap().id().clone()), eq true);
         }
     }
 

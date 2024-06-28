@@ -87,6 +87,10 @@ use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+/// The system-wide unique id of a [`Node`]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct NodeId(UniqueSystemId);
+
 /// The failures that can occur when a [`Node`] is created with the [`NodeBuilder`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NodeCreationFailure {
@@ -184,8 +188,8 @@ pub enum NodeState<Service: service::Service> {
 
 /// Contains all available details of a [`Node`].
 pub trait NodeView {
-    /// Returns the [`UniqueSystemId`] of the [`Node`].
-    fn id(&self) -> &UniqueSystemId;
+    /// Returns the [`NodeId`] of the [`Node`].
+    fn id(&self) -> &NodeId;
     /// Returns the [`NodeDetails`].
     fn details(&self) -> &Option<NodeDetails>;
 }
@@ -193,13 +197,13 @@ pub trait NodeView {
 /// All the informations of a [`Node`] that is alive.
 #[derive(Debug, Clone)]
 pub struct AliveNodeView<Service: service::Service> {
-    id: UniqueSystemId,
+    id: NodeId,
     details: Option<NodeDetails>,
     _service: PhantomData<Service>,
 }
 
 impl<Service: service::Service> NodeView for AliveNodeView<Service> {
-    fn id(&self) -> &UniqueSystemId {
+    fn id(&self) -> &NodeId {
         &self.id
     }
 
@@ -213,7 +217,7 @@ impl<Service: service::Service> NodeView for AliveNodeView<Service> {
 pub struct DeadNodeView<Service: service::Service>(AliveNodeView<Service>);
 
 impl<Service: service::Service> NodeView for DeadNodeView<Service> {
-    fn id(&self) -> &UniqueSystemId {
+    fn id(&self) -> &NodeId {
         self.0.id()
     }
 
@@ -226,8 +230,8 @@ impl<Service: service::Service> DeadNodeView<Service> {
     /// Removes all stale resources of a dead [`Node`].
     pub fn remove_stale_resources(self) -> Result<bool, NodeCleanupFailure> {
         let msg = "Unable to remove stale resources";
-        let monitor_name = fatal_panic!(from self, when FileName::new(self.id().value().to_string().as_bytes()),
-                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
+        let monitor_name = fatal_panic!(from self, when FileName::new(self.id().0.value().to_string().as_bytes()),
+                                "This should never happen! {msg} since the NodeId is not a valid file name.");
 
         let config = if let Some(d) = self.details() {
             d.config()
@@ -329,7 +333,7 @@ fn remove_node_details_directory<Service: service::Service>(
 }
 
 fn remove_node<Service: service::Service>(
-    id: UniqueSystemId,
+    id: NodeId,
     details: &NodeDetails,
 ) -> Result<bool, NodeCleanupFailure> {
     let origin = format!(
@@ -338,8 +342,8 @@ fn remove_node<Service: service::Service>(
         id
     );
     let msg = "Unable to remove node resources";
-    let monitor_name = fatal_panic!(from origin, when FileName::new(id.value().to_string().as_bytes()),
-                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
+    let monitor_name = fatal_panic!(from origin, when FileName::new(id.0.value().to_string().as_bytes()),
+                                "This should never happen! {msg} since the NodeId is not a valid file name.");
 
     let details_config = node_details_config::<Service>(&details.config, &monitor_name);
     let detail_storages = acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
@@ -351,7 +355,7 @@ fn remove_node<Service: service::Service>(
 
 #[derive(Debug)]
 pub(crate) struct SharedNode<Service: service::Service> {
-    id: UniqueSystemId,
+    id: NodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
     _details_storage: Service::StaticStorage,
@@ -397,8 +401,8 @@ impl<Service: service::Service> Node<Service> {
         &self.shared.details.config
     }
 
-    /// Returns the [`UniqueSystemId`] of the [`Node`].
-    pub fn id(&self) -> &UniqueSystemId {
+    /// Returns the [`NodeId`] of the [`Node`].
+    pub fn id(&self) -> &NodeId {
         &self.shared.id
     }
 
@@ -419,7 +423,7 @@ impl<Service: service::Service> Node<Service> {
             let details = Self::get_node_details(config, node_name).unwrap_or_default();
 
             let node_view = AliveNodeView::<Service> {
-                id: id_value.into(),
+                id: NodeId(id_value.into()),
                 details,
                 _service: PhantomData,
             };
@@ -649,7 +653,7 @@ impl NodeBuilder {
 
         Ok(Node {
             shared: Arc::new(SharedNode {
-                id: node_id,
+                id: NodeId(node_id),
                 monitoring_token: UnsafeCell::new(Some(monitoring_token)),
                 _details_storage: details_storage,
                 details,
