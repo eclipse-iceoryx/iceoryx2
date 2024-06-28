@@ -88,7 +88,7 @@ use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 use std::alloc::Layout;
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
@@ -201,7 +201,6 @@ impl Drop for UniqueIndex<'_> {
 pub struct UniqueIndexSet {
     data_ptr: RelocatablePointer<UnsafeCell<u32>>,
     capacity: u32,
-    borrowed_indices: IoxAtomicUsize,
     pub(crate) head: IoxAtomicU64,
     is_memory_initialized: IoxAtomicBool,
 }
@@ -212,27 +211,35 @@ unsafe impl Send for UniqueIndexSet {}
 struct HeadDetails {
     head: u32,
     aba: u16,
+    borrowed_indices: u32,
 }
 
 impl HeadDetails {
     fn from(value: u64) -> Self {
         Self {
-            head: (value >> 40) as u32,
-            aba: ((value | 0x000ff000) >> 24) as u16,
+            head: ((value & 0xffffff0000000000) >> 40) as u32,
+            aba: ((value & 0x000000ffff000000) >> 24) as u16,
+            borrowed_indices: (value & 0x0000000000ffffff) as u32,
         }
     }
 
     fn value(&self) -> u64 {
-        ((self.head as u64) << 40) | (self.aba as u64) << 24
+        (((self.head & 0x00ffffff) as u64) << 40)
+            | (self.aba as u64) << 24
+            | ((self.borrowed_indices & 0x00ffffff) as u64)
     }
 }
 
 impl RelocatableContainer for UniqueIndexSet {
     unsafe fn new_uninit(capacity: usize) -> Self {
+        debug_assert!(
+            capacity < 2usize.pow(24) - 1,
+            "The provided capacity exceeds the maximum supported capacity of the UniqueIndexSet"
+        );
+
         Self {
             data_ptr: RelocatablePointer::new_uninit(),
             capacity: capacity as u32,
-            borrowed_indices: IoxAtomicUsize::new(0),
             head: IoxAtomicU64::new(0),
             is_memory_initialized: IoxAtomicBool::new(false),
         }
@@ -264,7 +271,6 @@ impl RelocatableContainer for UniqueIndexSet {
         Self {
             data_ptr: RelocatablePointer::new(distance_to_data),
             capacity: capacity as u32,
-            borrowed_indices: IoxAtomicUsize::new(0),
             head: IoxAtomicU64::new(0),
             is_memory_initialized: IoxAtomicBool::new(true),
         }
@@ -334,7 +340,7 @@ impl UniqueIndexSet {
 
     /// Returns the current len.
     pub fn borrowed_indices(&self) -> usize {
-        self.borrowed_indices.load(Ordering::Relaxed)
+        HeadDetails::from(self.head.load(Ordering::Relaxed)).borrowed_indices as usize
     }
 
     /// Acquires a raw ([`u32`]) index from the [`UniqueIndexSet`]. Returns [`None`] when no more
@@ -380,6 +386,7 @@ impl UniqueIndexSet {
             let new_value = HeadDetails {
                 head: *self.get_next_free_index(old.head),
                 aba: old.aba.wrapping_add(1),
+                borrowed_indices: old.borrowed_indices + 1,
             }
             .value();
 
@@ -401,7 +408,6 @@ impl UniqueIndexSet {
         *self.get_next_free_index(index) = self.capacity + 1;
 
         fence(Ordering::Acquire);
-        self.borrowed_indices.fetch_add(1, Ordering::Relaxed);
         Some(index)
     }
 
@@ -429,6 +435,7 @@ impl UniqueIndexSet {
             let new_value = HeadDetails {
                 head: index,
                 aba: old.aba.wrapping_add(1),
+                borrowed_indices: old.borrowed_indices - 1,
             }
             .value();
 
@@ -439,7 +446,6 @@ impl UniqueIndexSet {
                 Ordering::Acquire,
             ) {
                 Ok(_) => {
-                    self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
                     return;
                 }
                 Err(v) => {
@@ -578,5 +584,28 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     /// Returns the current len.
     pub fn borrowed_indices(&self) -> usize {
         self.state.borrowed_indices()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use iceoryx2_bb_testing::assert_that;
+
+    use super::HeadDetails;
+
+    #[test]
+    fn head_details() {
+        let sut_value = HeadDetails {
+            head: 12345,
+            aba: 6789,
+            borrowed_indices: 54321,
+        }
+        .value();
+
+        let sut = HeadDetails::from(sut_value);
+
+        assert_that!(sut.head, eq 12345);
+        assert_that!(sut.aba, eq 6789);
+        assert_that!(sut.borrowed_indices, eq 54321);
     }
 }
