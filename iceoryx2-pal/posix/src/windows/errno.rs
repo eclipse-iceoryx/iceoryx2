@@ -193,7 +193,7 @@ ErrnoEnumGenerator!(
 );
 
 thread_local! {
-    pub static GLOBAL_ERRNO_VALUE: Cell<u32> = Cell::new(Errno::ESUCCES as _);
+    pub static GLOBAL_ERRNO_VALUE: Cell<u32> = const { Cell::new(Errno::ESUCCES as _) };
 }
 
 impl Errno {
