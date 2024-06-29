@@ -181,19 +181,19 @@ fn thread_cancel_works() {
 
 #[test]
 fn thread_exit_works() {
-    let barrier = Arc::new(Barrier::new(2));
     let _thread = {
-        let barrier = barrier.clone();
         ThreadBuilder::new()
             .affinity(0)
             .spawn(move || {
-                barrier.wait();
+                // TODO: [#258] This sleep prevents a 'SIGABRT' on Linux with release builds with rustc v1.81.0-nightly!
+                #[cfg(target_os = "linux")]
+                std::thread::sleep(std::time::Duration::from_nanos(1));
                 thread_exit();
-                // if exit wouldn't work we would observe a deadlock here
-                barrier.wait();
+                #[allow(unreachable_code)]
+                {
+                    panic!("This should not happen when 'thread_exit' works as intended");
+                }
             })
             .unwrap()
     };
-    // if the thread is not executed we observe a deadlock here
-    barrier.wait();
 }

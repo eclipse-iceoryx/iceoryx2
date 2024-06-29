@@ -361,7 +361,7 @@ pub unsafe fn pthread_cancel(thread: pthread_t) -> int {
     crate::internal::pthread_cancel(thread)
 }
 
-pub unsafe fn pthread_exit(value_ptr: *mut void) {
+pub unsafe fn pthread_exit(value_ptr: *mut void) -> ! {
     crate::internal::pthread_exit(value_ptr)
 }
 
