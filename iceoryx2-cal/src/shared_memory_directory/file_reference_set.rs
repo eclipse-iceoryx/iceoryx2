@@ -86,8 +86,8 @@ impl FileReferenceSet {
     ) -> Result<FileReferenceSetId, SharedMemoryDirectoryCreateFileError> {
         let msg = "Unable to insert file";
         let id = match unsafe { self.ids.acquire_raw_index() } {
-            Some(id) => id as usize,
-            None => {
+            Ok(id) => id as usize,
+            Err(_) => {
                 fail!(from self,
                            with SharedMemoryDirectoryCreateFileError::FileLimitExceeded,
                            "{} \"{}\" into the set since there are no more entries available.", msg, *name);

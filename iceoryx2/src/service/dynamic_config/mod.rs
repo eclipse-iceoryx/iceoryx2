@@ -21,7 +21,7 @@ pub mod event;
 pub mod publish_subscribe;
 
 use iceoryx2_bb_container::queue::RelocatableContainer;
-use iceoryx2_bb_lock_free::mpmc::container::Container;
+use iceoryx2_bb_lock_free::mpmc::container::{Container, ContainerHandle};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
@@ -35,6 +35,11 @@ const MARKED_FOR_DESTRUCTION: u64 = u64::MAX - 1;
 pub(crate) enum DecrementReferenceCounterResult {
     HasOwners,
     NoMoreOwners,
+}
+
+pub(crate) enum RegisterNodeResult {
+    MarkedForDestruction,
+    MaximumNodesExceeded,
 }
 
 #[derive(Debug)]
