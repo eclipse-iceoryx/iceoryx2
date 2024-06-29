@@ -84,7 +84,7 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_listener_handle(&self, handle: ContainerHandle) {
-        unsafe { self.listeners.remove(handle, ReleaseMode::Default) }
+        unsafe { self.listeners.remove(handle, ReleaseMode::Default) };
     }
 
     pub(crate) fn add_notifier_id(&self, id: UniqueNotifierId) -> Option<ContainerHandle> {
@@ -92,6 +92,6 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_notifier_handle(&self, handle: ContainerHandle) {
-        unsafe { self.notifiers.remove(handle, ReleaseMode::Default) }
+        unsafe { self.notifiers.remove(handle, ReleaseMode::Default) };
     }
 }

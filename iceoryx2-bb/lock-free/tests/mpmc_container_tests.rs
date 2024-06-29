@@ -49,6 +49,7 @@ mod mpmc_container {
     use iceoryx2_bb_lock_free::mpmc::container::ContainerAddFailure;
     use iceoryx2_bb_lock_free::mpmc::container::*;
     use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
+    use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseState;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashMap;
@@ -240,7 +241,7 @@ mod mpmc_container {
 
         let mut state = sut.get_state();
         for i in &stored_indices {
-            unsafe { sut.remove(*i, ReleaseMode::Default) }
+            assert_that!(unsafe { sut.remove(*i, ReleaseMode::Default) }, eq ReleaseState::Unlocked);
         }
         stored_indices.clear();
 
@@ -266,7 +267,7 @@ mod mpmc_container {
 
         let mut state = sut.get_state();
         for i in stored_indices {
-            unsafe { sut.remove(i, ReleaseMode::Default) }
+            assert_that!(unsafe { sut.remove(i, ReleaseMode::Default) }, eq ReleaseState::Unlocked);
         }
 
         let mut results = HashMap::<u32, usize>::new();
