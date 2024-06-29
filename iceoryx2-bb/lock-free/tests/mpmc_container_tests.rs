@@ -47,6 +47,7 @@ mod mpmc_container {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::mpmc::container::*;
+    use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashMap;
@@ -93,7 +94,12 @@ mod mpmc_container {
             assert_that!(index, is_some);
             stored_indices.push(index.unwrap());
 
-            unsafe { sut.remove(stored_indices.remove(stored_indices.len() - 2)) };
+            unsafe {
+                sut.remove(
+                    stored_indices.remove(stored_indices.len() - 2),
+                    ReleaseMode::Default,
+                )
+            };
         }
 
         let state = sut.get_state();
@@ -126,7 +132,12 @@ mod mpmc_container {
             assert_that!(index, is_some);
             stored_indices.push(index.unwrap());
 
-            unsafe { sut.remove(stored_indices.remove(stored_indices.len() - 2)) };
+            unsafe {
+                sut.remove(
+                    stored_indices.remove(stored_indices.len() - 2),
+                    ReleaseMode::Default,
+                )
+            };
         }
 
         let state = unsafe { sut.get_state() };
@@ -154,7 +165,12 @@ mod mpmc_container {
             assert_that!(handle, is_some);
             stored_handles.push(handle.unwrap());
 
-            unsafe { sut.remove(stored_handles[stored_handles.len() - 2].clone()) };
+            unsafe {
+                sut.remove(
+                    stored_handles[stored_handles.len() - 2].clone(),
+                    ReleaseMode::Default,
+                )
+            };
         }
 
         let state = sut.get_state();
@@ -222,7 +238,7 @@ mod mpmc_container {
 
         let mut state = sut.get_state();
         for i in &stored_indices {
-            unsafe { sut.remove(*i) }
+            unsafe { sut.remove(*i, ReleaseMode::Default) }
         }
         stored_indices.clear();
 
@@ -248,7 +264,7 @@ mod mpmc_container {
 
         let mut state = sut.get_state();
         for i in stored_indices {
-            unsafe { sut.remove(i) }
+            unsafe { sut.remove(i, ReleaseMode::Default) }
         }
 
         let mut results = HashMap::<u32, usize>::new();
@@ -294,7 +310,7 @@ mod mpmc_container {
         }
 
         for _ in 0..CAPACITY {
-            unsafe { sut.remove(stored_indices.pop().unwrap()) };
+            unsafe { sut.remove(stored_indices.pop().unwrap(), ReleaseMode::Default) };
             stored_values.pop();
 
             unsafe { sut.update_state(&mut state) };
@@ -316,7 +332,7 @@ mod mpmc_container {
         let mut state = sut.get_state();
 
         let index = unsafe { sut.add(123.into()) }.unwrap();
-        unsafe { sut.remove(index) };
+        unsafe { sut.remove(index, ReleaseMode::Default) };
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
     }
 
@@ -367,7 +383,7 @@ mod mpmc_container {
                             None => {
                                 repetition += 1;
                                 for id in &ids {
-                                    unsafe { sut.remove(*id) };
+                                    unsafe { sut.remove(*id, ReleaseMode::Default) };
                                 }
                                 ids.clear();
                             }

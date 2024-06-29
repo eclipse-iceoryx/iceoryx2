@@ -59,7 +59,7 @@ fn mpmc_unique_index_release_mode_default_does_not_lock() {
 
     let idx = unsafe { sut.acquire_raw_index() };
     assert_that!(idx, is_some);
-    unsafe { sut.release_raw_index(idx.unwrap(), UniqueIndexReleaseMode::Default) };
+    unsafe { sut.release_raw_index(idx.unwrap(), ReleaseMode::Default) };
 
     let idx = sut.acquire();
     assert_that!(idx, is_some);
@@ -75,13 +75,13 @@ fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
     let idx_2 = unsafe { sut.acquire_raw_index() };
     assert_that!(idx_2, is_some);
 
-    unsafe { sut.release_raw_index(idx_1.unwrap(), UniqueIndexReleaseMode::LockIfLastIndex) };
+    unsafe { sut.release_raw_index(idx_1.unwrap(), ReleaseMode::LockIfLastIndex) };
 
     let idx_3 = unsafe { sut.acquire_raw_index() };
     assert_that!(idx_3, is_some);
 
-    unsafe { sut.release_raw_index(idx_2.unwrap(), UniqueIndexReleaseMode::LockIfLastIndex) };
-    unsafe { sut.release_raw_index(idx_3.unwrap(), UniqueIndexReleaseMode::LockIfLastIndex) };
+    unsafe { sut.release_raw_index(idx_2.unwrap(), ReleaseMode::LockIfLastIndex) };
+    unsafe { sut.release_raw_index(idx_3.unwrap(), ReleaseMode::LockIfLastIndex) };
 
     let idx_4 = unsafe { sut.acquire_raw_index() };
     assert_that!(idx_4, is_none);

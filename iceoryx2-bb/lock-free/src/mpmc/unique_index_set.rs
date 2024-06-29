@@ -108,7 +108,7 @@ enum_gen! { UniqueIndexCreationError
 /// Describes if indices can still be acquired after the call to
 /// [`UniqueIndexSet::release_raw_index()`].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum UniqueIndexReleaseMode {
+pub enum ReleaseMode {
     /// No more indices can be acquired with [`UniqueIndexSet::acquire_raw_index()`] if the
     /// released index was the last one.
     LockIfLastIndex,
@@ -152,7 +152,7 @@ impl Drop for UniqueIndex<'_> {
         }
         unsafe {
             self.index_set
-                .release_raw_index(self.value, UniqueIndexReleaseMode::Default)
+                .release_raw_index(self.value, ReleaseMode::Default)
         };
     }
 }
@@ -439,7 +439,7 @@ impl UniqueIndexSet {
     ///  * It must be ensured that the index was acquired before and is not released twice.
     ///  * Shall be only used when the index was acquired with
     ///    [`UniqueIndexSet::acquire_raw_index()`]
-    pub unsafe fn release_raw_index(&self, index: u32, mode: UniqueIndexReleaseMode) {
+    pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) {
         self.verify_init("release_raw_index");
         fence(Ordering::Release);
 
@@ -450,7 +450,7 @@ impl UniqueIndexSet {
             *self.get_next_free_index(index) = old.head;
 
             let borrowed_indices =
-                if mode == UniqueIndexReleaseMode::LockIfLastIndex && old.borrowed_indices == 1 {
+                if mode == ReleaseMode::LockIfLastIndex && old.borrowed_indices == 1 {
                     LOCK_ACQUIRE
                 } else {
                     old.borrowed_indices - 1
@@ -601,7 +601,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///    [`FixedSizeUniqueIndexSet::acquire_raw_index()`]
     ///  * The index should not be released twice
     ///
-    pub unsafe fn release_raw_index(&self, index: u32, mode: UniqueIndexReleaseMode) {
+    pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) {
         self.state.release_raw_index(index, mode)
     }
 

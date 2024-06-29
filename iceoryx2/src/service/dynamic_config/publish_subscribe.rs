@@ -27,7 +27,7 @@
 //! # }
 //! ```
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_lock_free::mpmc::container::*;
+use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
@@ -97,7 +97,7 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
-        unsafe { self.subscribers.remove(handle) }
+        unsafe { self.subscribers.remove(handle, ReleaseMode::Default) }
     }
 
     pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
@@ -105,6 +105,6 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
-        unsafe { self.publishers.remove(handle) }
+        unsafe { self.publishers.remove(handle, ReleaseMode::Default) }
     }
 }
