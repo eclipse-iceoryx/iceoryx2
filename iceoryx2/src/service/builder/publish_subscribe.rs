@@ -455,7 +455,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     number_of_subscribers: pubsub_config.max_subscribers,
                 };
 
-                let dynamic_config = match self.base.create_dynamic_config_storage(
+                let (dynamic_config, node_handle) = match self.base.create_dynamic_config_storage(
                     dynamic_config::MessagingPattern::PublishSubscribe(
                         dynamic_config::publish_subscribe::DynamicConfig::new(
                             &dynamic_config_setting,
@@ -466,7 +466,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     ),
                     pubsub_config.max_nodes,
                 ) {
-                    Ok(c) => Arc::new(c),
+                    Ok((dynamic_config, node_handle)) => (Arc::new(dynamic_config), node_handle),
                     Err(DynamicStorageCreateError::AlreadyExists) => {
                         fail!(from self, with PublishSubscribeCreateError::OldConnectionsStillActive,
                             "{} since there are still Publishers, Subscribers or active Samples.", msg);
@@ -494,6 +494,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     ServiceType::from_state(service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),
+                        node_handle,
                         dynamic_config,
                         unlocked_static_details,
                     )),
@@ -547,11 +548,10 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     let pub_sub_static_config =
                         self.verify_service_attributes(&static_config, attributes)?;
 
-                    let dynamic_config = Arc::new(
-                        fail!(from self, when self.base.open_dynamic_config_storage(),
+                    let (dynamic_config, node_handle) = fail!(from self, when self.base.open_dynamic_config_storage(),
                             with PublishSubscribeOpenError::ServiceInCorruptedState,
-                            "{} since the dynamic service information could not be opened.", msg),
-                    );
+                            "{} since the dynamic service information could not be opened.", msg);
+                    let dynamic_config = Arc::new(dynamic_config);
 
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::PublishSubscribe(pub_sub_static_config.clone());
@@ -560,6 +560,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                         ServiceType::from_state(service::ServiceState::new(
                             static_config,
                             self.base.shared_node.clone(),
+                            node_handle,
                             dynamic_config,
                             static_storage,
                         )),

@@ -256,11 +256,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     let event_static_config =
                         self.verify_service_attributes(&static_config, required_attributes)?;
 
-                    let dynamic_config = Arc::new(
-                        fail!(from self, when self.base.open_dynamic_config_storage(),
+                    let (dynamic_config, node_handle) = fail!(from self, when self.base.open_dynamic_config_storage(),
                             with EventOpenError::ServiceInCorruptedState,
-                            "{} since the dynamic service informations could not be opened.", msg),
-                    );
+                            "{} since the dynamic service informations could not be opened.", msg);
+                    let dynamic_config = Arc::new(dynamic_config);
 
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::Event(event_static_config);
@@ -269,6 +268,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         service::ServiceState::new(
                             static_config,
                             self.base.shared_node,
+                            node_handle,
                             dynamic_config,
                             static_storage,
                         ),
@@ -359,14 +359,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     number_of_notifiers: event_config.max_notifiers,
                 };
 
-                let dynamic_config = match self.base.create_dynamic_config_storage(
+                let (dynamic_config, node_handle) = match self.base.create_dynamic_config_storage(
                     dynamic_config::MessagingPattern::Event(
                         dynamic_config::event::DynamicConfig::new(&dynamic_config_setting),
                     ),
                     dynamic_config::event::DynamicConfig::memory_size(&dynamic_config_setting),
                     event_config.max_nodes,
                 ) {
-                    Ok(c) => Arc::new(c),
+                    Ok((dynamic_config, node_handle)) => (Arc::new(dynamic_config), node_handle),
                     Err(DynamicStorageCreateError::AlreadyExists) => {
                         fail!(from self, with EventCreateError::OldConnectionsStillActive,
                             "{} since there are still active Listeners or Notifiers.", msg);
@@ -394,6 +394,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),
+                        node_handle,
                         dynamic_config,
                         unlocked_static_details,
                     ),
