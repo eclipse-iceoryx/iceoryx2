@@ -117,6 +117,13 @@ pub enum ReleaseMode {
     Default,
 }
 
+/// Defines the state of the [`UniqueIndexSet`] after the release operation
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ReleaseState {
+    Locked,
+    Unlocked,
+}
+
 /// It states the reason if an index could not be acquired.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum UniqueIndexSetAcquireFailure {
@@ -364,7 +371,12 @@ impl UniqueIndexSet {
 
     /// Returns the current len.
     pub fn borrowed_indices(&self) -> usize {
-        HeadDetails::from(self.head.load(Ordering::Relaxed)).borrowed_indices as usize
+        let s = HeadDetails::from(self.head.load(Ordering::Relaxed)).borrowed_indices;
+        if s == LOCK_ACQUIRE {
+            0
+        } else {
+            s as usize
+        }
     }
 
     /// Acquires a raw ([`u32`]) index from the [`UniqueIndexSet`]. Returns [`None`] when no more
@@ -450,10 +462,11 @@ impl UniqueIndexSet {
     ///  * It must be ensured that the index was acquired before and is not released twice.
     ///  * Shall be only used when the index was acquired with
     ///    [`UniqueIndexSet::acquire_raw_index()`]
-    pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) {
+    pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) -> ReleaseState {
         self.verify_init("release_raw_index");
         fence(Ordering::Release);
 
+        let mut release_state;
         let mut old_value = self.head.load(Ordering::Acquire);
         let mut old = HeadDetails::from(old_value);
 
@@ -462,8 +475,10 @@ impl UniqueIndexSet {
 
             let borrowed_indices =
                 if mode == ReleaseMode::LockIfLastIndex && old.borrowed_indices == 1 {
+                    release_state = ReleaseState::Locked;
                     LOCK_ACQUIRE
                 } else {
+                    release_state = ReleaseState::Unlocked;
                     old.borrowed_indices - 1
                 };
 
@@ -481,7 +496,7 @@ impl UniqueIndexSet {
                 Ordering::Acquire,
             ) {
                 Ok(_) => {
-                    return;
+                    return release_state;
                 }
                 Err(v) => {
                     old_value = v;
@@ -612,7 +627,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///    [`FixedSizeUniqueIndexSet::acquire_raw_index()`]
     ///  * The index should not be released twice
     ///
-    pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) {
+    pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) -> ReleaseState {
         self.state.release_raw_index(index, mode)
     }
 

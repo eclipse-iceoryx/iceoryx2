@@ -23,22 +23,13 @@ pub mod publish_subscribe;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{
     container::{Container, ContainerAddFailure, ContainerHandle},
-    unique_index_set::ReleaseMode,
+    unique_index_set::{ReleaseMode, ReleaseState},
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::{fmt::Display, sync::atomic::Ordering};
+use std::fmt::Display;
 
 use crate::node::NodeId;
-
-const MARKED_FOR_DESTRUCTION: u64 = u64::MAX - 1;
-
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub(crate) enum DecrementReferenceCounterResult {
-    HasOwners,
-    NoMoreOwners,
-}
 
 pub(crate) enum RegisterNodeResult {
     MarkedForDestruction,
@@ -60,7 +51,6 @@ pub(crate) enum MessagingPattern {
 #[derive(Debug)]
 pub struct DynamicConfig {
     messaging_pattern: MessagingPattern,
-    reference_counter: IoxAtomicU64,
     nodes: Container<NodeId>,
 }
 
@@ -81,7 +71,6 @@ impl DynamicConfig {
     ) -> Self {
         Self {
             messaging_pattern,
-            reference_counter: IoxAtomicU64::new(1),
             nodes: unsafe { Container::new_uninit(max_number_of_nodes) },
         }
     }
@@ -117,60 +106,21 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn deregister_node(&self, handle: ContainerHandle) -> DeregisterNodeState {
-        unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) };
-        if self.nodes.len() == 0 {
+    pub(crate) fn list_node_ids(&self) -> Vec<NodeId> {
+        let mut node_ids = vec![];
+        let state = unsafe { self.nodes.get_state() };
+        state.for_each(|_, node_id| node_ids.push(*node_id));
+        node_ids
+    }
+
+    pub(crate) fn deregister_node_id(&self, handle: ContainerHandle) -> DeregisterNodeState {
+        if unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) }
+            == ReleaseState::Locked
+        {
             DeregisterNodeState::NoMoreOwners
         } else {
             DeregisterNodeState::HasOwners
         }
-    }
-
-    pub(crate) fn increment_reference_counter(&self) -> Result<(), ()> {
-        let mut current_value = self.reference_counter.load(Ordering::Relaxed);
-        loop {
-            if current_value == MARKED_FOR_DESTRUCTION {
-                fail!(from self, with (),
-                    "Unable to increment reference counter for dynamic config since it is marked for destruction.");
-            }
-
-            match self.reference_counter.compare_exchange(
-                current_value,
-                current_value + 1,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break,
-                Err(v) => current_value = v,
-            }
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn decrement_reference_counter(&self) -> DecrementReferenceCounterResult {
-        let mut result;
-        let mut current_value = self.reference_counter.load(Ordering::Relaxed);
-
-        loop {
-            result = DecrementReferenceCounterResult::HasOwners;
-            match self.reference_counter.compare_exchange(
-                current_value,
-                if current_value == 1 {
-                    result = DecrementReferenceCounterResult::NoMoreOwners;
-                    MARKED_FOR_DESTRUCTION
-                } else {
-                    current_value - 1
-                },
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break,
-                Err(v) => current_value = v,
-            }
-        }
-
-        result
     }
 
     pub(crate) fn publish_subscribe(&self) -> &publish_subscribe::DynamicConfig {

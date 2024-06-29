@@ -287,10 +287,6 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 with OpenDynamicStorageFailure::IsMarkedForDestruction,
                 "{} since the dynamic storage is marked for destruction.", msg);
 
-        fail!(from self, when storage.get().increment_reference_counter(),
-                with OpenDynamicStorageFailure::IsMarkedForDestruction,
-                "{} since the dynamic storage is marked for destruction.", msg);
-
         Ok((storage, node_handle))
     }
 

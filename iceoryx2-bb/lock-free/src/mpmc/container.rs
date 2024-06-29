@@ -317,7 +317,7 @@ impl<T: Copy + Debug> Container<T> {
     /// **Important:** If the UniqueIndex still exists it causes double frees or freeing an index
     /// which was allocated afterwards
     ///
-    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) {
+    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
         self.verify_memory_initialization("remove_with_handle");
         debug_assert!(
             handle.container_id == self.container_id.value(),
@@ -326,10 +326,11 @@ impl<T: Copy + Debug> Container<T> {
 
         unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
             .fetch_add(1, Ordering::Relaxed);
-        self.index_set.release_raw_index(handle.index, mode);
+        let release_state = self.index_set.release_raw_index(handle.index, mode);
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
+        release_state
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that
@@ -504,7 +505,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     ///  * If the UniqueIndex still exists it causes double frees or freeing an index
     ///    which was allocated afterwards
-    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) {
+    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
         self.container.remove(handle, mode)
     }
 

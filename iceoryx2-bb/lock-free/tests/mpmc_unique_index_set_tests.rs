@@ -76,13 +76,13 @@ fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
     let idx_2 = unsafe { sut.acquire_raw_index() };
     assert_that!(idx_2, is_ok);
 
-    unsafe { sut.release_raw_index(idx_1.unwrap(), ReleaseMode::LockIfLastIndex) };
+    assert_that!( unsafe { sut.release_raw_index(idx_1.unwrap(), ReleaseMode::LockIfLastIndex) }, eq ReleaseState::Unlocked);
 
     let idx_3 = unsafe { sut.acquire_raw_index() };
     assert_that!(idx_3, is_ok);
 
-    unsafe { sut.release_raw_index(idx_2.unwrap(), ReleaseMode::LockIfLastIndex) };
-    unsafe { sut.release_raw_index(idx_3.unwrap(), ReleaseMode::LockIfLastIndex) };
+    assert_that!(unsafe { sut.release_raw_index(idx_2.unwrap(), ReleaseMode::LockIfLastIndex) }, eq ReleaseState::Unlocked);
+    assert_that!(unsafe { sut.release_raw_index(idx_3.unwrap(), ReleaseMode::LockIfLastIndex) }, eq ReleaseState::Locked);
 
     let idx_4 = unsafe { sut.acquire_raw_index() };
     assert_that!(idx_4, is_err);

@@ -97,7 +97,7 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
-        unsafe { self.subscribers.remove(handle, ReleaseMode::Default) }
+        unsafe { self.subscribers.remove(handle, ReleaseMode::Default) };
     }
 
     pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
@@ -105,6 +105,6 @@ impl DynamicConfig {
     }
 
     pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
-        unsafe { self.publishers.remove(handle, ReleaseMode::Default) }
+        unsafe { self.publishers.remove(handle, ReleaseMode::Default) };
     }
 }
