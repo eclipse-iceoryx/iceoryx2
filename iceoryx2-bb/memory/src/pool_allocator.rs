@@ -207,7 +207,7 @@ impl BaseAllocator for PoolAllocator {
         self.verify_init("deallocate");
 
         self.buckets
-            .release_raw_index(self.get_index(ptr), UniqueIndexReleaseMode::Default);
+            .release_raw_index(self.get_index(ptr), ReleaseMode::Default);
     }
 }
 
