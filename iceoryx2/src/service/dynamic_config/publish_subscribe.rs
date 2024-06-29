@@ -93,7 +93,7 @@ impl DynamicConfig {
     }
 
     pub(crate) fn add_subscriber_id(&self, details: SubscriberDetails) -> Option<ContainerHandle> {
-        unsafe { self.subscribers.add(details) }
+        unsafe { self.subscribers.add(details).ok() }
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
@@ -101,7 +101,7 @@ impl DynamicConfig {
     }
 
     pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
-        unsafe { self.publishers.add(details) }
+        unsafe { self.publishers.add(details).ok() }
     }
 
     pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {

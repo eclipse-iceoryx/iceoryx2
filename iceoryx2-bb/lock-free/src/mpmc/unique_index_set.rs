@@ -117,6 +117,13 @@ pub enum ReleaseMode {
     Default,
 }
 
+/// It states the reason if an index could not be acquired.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum UniqueIndexSetAcquireFailure {
+    OutOfIndices,
+    IsLocked,
+}
+
 /// Represents a [`UniqueIndex`]. When it goes out of scope it releases the index in the
 /// corresponding [`UniqueIndexSet`] or [`FixedSizeUniqueIndexSet`].
 ///
@@ -321,7 +328,7 @@ impl UniqueIndexSet {
     /// * Ensure that either the [`UniqueIndexSet`] was created with [`UniqueIndexSet::new()`] or
     ///     [`UniqueIndexSet::init()`] was called.
     ///
-    pub unsafe fn acquire(&self) -> Option<UniqueIndex<'_>> {
+    pub unsafe fn acquire(&self) -> Result<UniqueIndex<'_>, UniqueIndexSetAcquireFailure> {
         self.verify_init("acquire");
         unsafe { self.acquire_raw_index() }.map(|v| UniqueIndex {
             value: v,
@@ -341,7 +348,7 @@ impl UniqueIndexSet {
     pub unsafe fn acquire_with_additional_cleanup<'a, F: Fn(u32) + 'a>(
         &'a self,
         cleanup_callback: F,
-    ) -> Option<UniqueIndex<'a>> {
+    ) -> Result<UniqueIndex<'a>, UniqueIndexSetAcquireFailure> {
         self.verify_init("acquire_with_additional_cleanup");
         unsafe { self.acquire_raw_index() }.map(|v| UniqueIndex {
             value: v,
@@ -390,14 +397,18 @@ impl UniqueIndexSet {
     ///     [`UniqueIndexSet::init()`] was called.
     ///  * The index must be manually released with [`UniqueIndexSet::release_raw_index()`]
     ///    otherwise the index is leaked.
-    pub unsafe fn acquire_raw_index(&self) -> Option<u32> {
+    pub unsafe fn acquire_raw_index(&self) -> Result<u32, UniqueIndexSetAcquireFailure> {
         self.verify_init("acquire_raw_index");
         let mut old_value = self.head.load(Ordering::Acquire);
         let mut old = HeadDetails::from(old_value);
 
         loop {
-            if old.head >= self.capacity || old.borrowed_indices == LOCK_ACQUIRE {
-                return None;
+            if old.head >= self.capacity {
+                return Err(UniqueIndexSetAcquireFailure::OutOfIndices);
+            }
+
+            if old.borrowed_indices == LOCK_ACQUIRE {
+                return Err(UniqueIndexSetAcquireFailure::IsLocked);
             }
 
             let new_value = HeadDetails {
@@ -425,7 +436,7 @@ impl UniqueIndexSet {
         *self.get_next_free_index(index) = self.capacity + 1;
 
         fence(Ordering::Acquire);
-        Some(index)
+        Ok(index)
     }
 
     /// Releases a raw index.
@@ -565,7 +576,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     }
 
     /// See [`UniqueIndexSet::acquire()`]
-    pub fn acquire(&self) -> Option<UniqueIndex<'_>> {
+    pub fn acquire(&self) -> Result<UniqueIndex<'_>, UniqueIndexSetAcquireFailure> {
         unsafe { self.state.acquire() }
     }
 
@@ -573,7 +584,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     pub fn acquire_with_additional_cleanup<'a, F: Fn(u32) + 'a>(
         &'a self,
         cleanup_callback: F,
-    ) -> Option<UniqueIndex<'a>> {
+    ) -> Result<UniqueIndex<'a>, UniqueIndexSetAcquireFailure> {
         unsafe { self.state.acquire_with_additional_cleanup(cleanup_callback) }
     }
 
@@ -589,7 +600,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///  * The acquired index must be returned manually with
     ///    [`FixedSizeUniqueIndexSet::release_raw_index()`]
     ///
-    pub unsafe fn acquire_raw_index(&self) -> Option<u32> {
+    pub unsafe fn acquire_raw_index(&self) -> Result<u32, UniqueIndexSetAcquireFailure> {
         self.state.acquire_raw_index()
     }
 

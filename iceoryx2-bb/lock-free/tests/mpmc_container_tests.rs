@@ -46,6 +46,7 @@ unsafe impl Send for TestType {}
 mod mpmc_container {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_lock_free::mpmc::container::ContainerAddFailure;
     use iceoryx2_bb_lock_free::mpmc::container::*;
     use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
@@ -66,10 +67,11 @@ mod mpmc_container {
         assert_that!(sut.capacity(), eq CAPACITY);
         for i in 0..CAPACITY {
             let index = unsafe { sut.add((i * 5 + 2).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
         }
         let index = unsafe { sut.add(0.into()) };
-        assert_that!(index, is_none);
+        assert_that!(index, is_err);
+        assert_that!(index.err().unwrap(), eq ContainerAddFailure::OutOfSpace);
 
         let state = sut.get_state();
         let mut contained_values: Vec<(u32, usize)> = vec![];
@@ -87,11 +89,11 @@ mod mpmc_container {
         let mut stored_indices = vec![];
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 3 + 1).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
 
             let index = unsafe { sut.add((i * 7 + 5).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
 
             unsafe {
@@ -125,11 +127,11 @@ mod mpmc_container {
         let mut stored_indices = vec![];
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 3 + 1).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
 
             let index = unsafe { sut.add((i * 7 + 5).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
 
             unsafe {
@@ -158,11 +160,11 @@ mod mpmc_container {
 
         for i in 0..CAPACITY - 1 {
             let handle = unsafe { sut.add((i * 3 + 1).into()) };
-            assert_that!(handle, is_some);
+            assert_that!(handle, is_ok);
             stored_handles.push(handle.unwrap());
 
             let handle = unsafe { sut.add((i * 7 + 5).into()) };
-            assert_that!(handle, is_some);
+            assert_that!(handle, is_ok);
             stored_handles.push(handle.unwrap());
 
             unsafe {
@@ -206,7 +208,7 @@ mod mpmc_container {
 
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 3 + 1).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
         }
 
         let mut state = sut.get_state();
@@ -232,7 +234,7 @@ mod mpmc_container {
 
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 3 + 1).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
         }
 
@@ -258,7 +260,7 @@ mod mpmc_container {
 
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 3 + 1).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
             stored_indices.push(index.unwrap());
         }
 
@@ -270,7 +272,7 @@ mod mpmc_container {
         let mut results = HashMap::<u32, usize>::new();
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 81 + 56).into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
             results.insert(index.as_ref().unwrap().index(), i * 81 + 56);
         }
 
@@ -295,7 +297,7 @@ mod mpmc_container {
         for i in 0..CAPACITY {
             let v = i * 3 + 1;
             let index = unsafe { sut.add(v.into()) };
-            assert_that!(index, is_some);
+            assert_that!(index, is_ok);
             stored_values.push((index.as_ref().unwrap().index(), v));
             stored_indices.push(index.unwrap());
 
@@ -372,7 +374,7 @@ mod mpmc_container {
                         let value = counter * number_of_threads_per_op + thread_number;
 
                         match unsafe { sut.add(value.into()) } {
-                            Some(index) => {
+                            Ok(index) => {
                                 let index_value = index.index();
                                 ids.push(index);
                                 added_content[thread_number]
@@ -380,12 +382,15 @@ mod mpmc_container {
                                     .unwrap()
                                     .push((index_value, value.into()));
                             }
-                            None => {
+                            Err(ContainerAddFailure::OutOfSpace) => {
                                 repetition += 1;
                                 for id in &ids {
                                     unsafe { sut.remove(*id, ReleaseMode::Default) };
                                 }
                                 ids.clear();
+                            }
+                            Err(ContainerAddFailure::IsLocked) => {
+                                assert_that!(true, eq false);
                             }
                         }
                     }
