@@ -169,6 +169,7 @@ use crate::node::SharedNode;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::Event;
@@ -182,7 +183,7 @@ use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 
-use self::dynamic_config::DecrementReferenceCounterResult;
+use self::dynamic_config::{DecrementReferenceCounterResult, DeregisterNodeState};
 use self::service_name::ServiceName;
 
 /// Failure that can be reported by [`Service::does_exist()`].
@@ -224,6 +225,7 @@ impl std::error::Error for ServiceListError {}
 pub struct ServiceState<S: Service> {
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: Arc<SharedNode<S>>,
+    pub(crate) node_handle: ContainerHandle,
     pub(crate) dynamic_storage: Arc<S::DynamicStorage>,
     pub(crate) static_storage: S::StaticStorage,
 }
@@ -232,12 +234,14 @@ impl<S: Service> ServiceState<S> {
     pub(crate) fn new(
         static_config: StaticConfig,
         shared_node: Arc<SharedNode<S>>,
+        node_handle: ContainerHandle,
         dynamic_storage: Arc<S::DynamicStorage>,
         static_storage: S::StaticStorage,
     ) -> Self {
         let new_self = Self {
             static_config,
             shared_node,
+            node_handle,
             dynamic_storage,
             static_storage,
         };
@@ -248,6 +252,16 @@ impl<S: Service> ServiceState<S> {
 
 impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
+        match self.dynamic_storage.get().deregister_node(self.node_handle) {
+            DeregisterNodeState::HasOwners => {
+                trace!(from self, "close service");
+            }
+            DeregisterNodeState::NoMoreOwners => {
+                self.static_storage.acquire_ownership();
+                self.dynamic_storage.acquire_ownership();
+                trace!(from self, "close and remove service");
+            }
+        }
         match self.dynamic_storage.get().decrement_reference_counter() {
             DecrementReferenceCounterResult::HasOwners => {
                 trace!(from self, "close service");

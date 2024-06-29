@@ -21,7 +21,10 @@ pub mod event;
 pub mod publish_subscribe;
 
 use iceoryx2_bb_container::queue::RelocatableContainer;
-use iceoryx2_bb_lock_free::mpmc::container::{Container, ContainerHandle};
+use iceoryx2_bb_lock_free::mpmc::{
+    container::{Container, ContainerAddFailure, ContainerHandle},
+    unique_index_set::ReleaseMode,
+};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
@@ -40,6 +43,11 @@ pub(crate) enum DecrementReferenceCounterResult {
 pub(crate) enum RegisterNodeResult {
     MarkedForDestruction,
     MaximumNodesExceeded,
+}
+
+pub(crate) enum DeregisterNodeState {
+    HasOwners,
+    NoMoreOwners,
 }
 
 #[derive(Debug)]
@@ -88,6 +96,33 @@ impl DynamicConfig {
         match &self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref v) => v.init(allocator),
             MessagingPattern::Event(ref v) => v.init(allocator),
+        }
+    }
+
+    pub(crate) fn register_node_id(
+        &self,
+        node_id: NodeId,
+    ) -> Result<ContainerHandle, RegisterNodeResult> {
+        let msg = "Unable to register NodeId in service";
+        match unsafe { self.nodes.add(node_id) } {
+            Ok(handle) => Ok(handle),
+            Err(ContainerAddFailure::IsLocked) => {
+                fail!(from self, with RegisterNodeResult::MarkedForDestruction,
+                    "{msg} since the service is already marked for destruction.");
+            }
+            Err(ContainerAddFailure::OutOfSpace) => {
+                fail!(from self, with RegisterNodeResult::MaximumNodesExceeded,
+                    "{msg} since it would exceed the maximum supported nodes of {}.", self.nodes.capacity());
+            }
+        }
+    }
+
+    pub(crate) fn deregister_node(&self, handle: ContainerHandle) -> DeregisterNodeState {
+        unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) };
+        if self.nodes.len() == 0 {
+            DeregisterNodeState::NoMoreOwners
+        } else {
+            DeregisterNodeState::HasOwners
         }
     }
 
