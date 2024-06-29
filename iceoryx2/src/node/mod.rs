@@ -416,10 +416,7 @@ impl<Service: service::Service> Node<Service> {
             let id_value = core::str::from_utf8(node_name.as_bytes()).unwrap();
             let id_value = id_value.parse::<u128>().unwrap();
 
-            let details = match Self::get_node_details(config, node_name) {
-                Ok(v) => v,
-                Err(_) => None,
-            };
+            let details = Self::get_node_details(config, node_name).unwrap_or_default();
 
             let node_view = AliveNodeView::<Service> {
                 id: id_value.into(),
