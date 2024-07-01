@@ -30,3 +30,9 @@ pub mod relocatable_ptr;
 pub mod scope_guard;
 pub mod static_assert;
 pub mod unique_id;
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum CallbackProgression {
+    Stop,
+    Continue,
+}
