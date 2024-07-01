@@ -10,9 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::config;
+use crate::{config, node::NodeId};
 use iceoryx2_bb_log::fatal_panic;
-use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
 
 pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
@@ -69,21 +68,21 @@ pub(crate) fn node_monitoring_config<Service: crate::service::Service>(
 
 pub(crate) fn node_details_path(
     global_config: &config::Config,
-    monitor_name: &FileName,
+    node_id: &NodeId,
 ) -> iceoryx2_bb_system_types::path::Path {
     let origin = "node_details_path";
     let mut path = global_config.global.node_dir();
-    fatal_panic!(from origin, when path.add_path_entry(&monitor_name.into()),
+    fatal_panic!(from origin, when path.add_path_entry(&node_id.as_file_name().into()),
                     "The node path exceeds the maximum path length.");
     path
 }
 
 pub(crate) fn node_details_config<Service: crate::service::Service>(
     global_config: &config::Config,
-    monitor_name: &FileName,
+    node_id: &NodeId,
 ) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
     <<Service::StaticStorage as NamedConceptMgmt>::Configuration>::default()
         .prefix(global_config.global.prefix)
         .suffix(global_config.global.node.static_config_suffix)
-        .path_hint(node_details_path(global_config, monitor_name))
+        .path_hint(node_details_path(global_config, node_id))
 }
