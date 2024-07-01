@@ -26,7 +26,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::static_config::StaticConfig;
-    use iceoryx2::service::Service;
+    use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -1879,11 +1879,11 @@ mod service_publish_subscribe {
         let mut services = vec![];
         let mut service_names = vec![];
 
-        let contains_service_names = |names, state: Vec<StaticConfig>| {
+        let contains_service_names = |names, state: Vec<ServiceDetails<Sut>>| {
             for n in names {
                 let mut name_found = false;
                 for s in &state {
-                    if *s.name() == n {
+                    if *s.static_details.name() == n {
                         name_found = true;
                         break;
                     }
