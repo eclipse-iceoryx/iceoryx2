@@ -19,11 +19,13 @@ use iceoryx2_bb_log::set_log_level;
 use core::ffi::c_int;
 
 mod node;
+mod node_builder;
 mod node_name;
 mod publisher;
 mod subscriber;
 
 pub use node::*;
+pub use node_builder::*;
 pub use node_name::*;
 pub use publisher::*;
 pub use subscriber::*;

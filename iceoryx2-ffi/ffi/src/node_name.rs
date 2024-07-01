@@ -12,8 +12,6 @@
 
 #![allow(non_camel_case_types)]
 
-// use super::{IntoCInt, IOX2_OK};
-
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 
@@ -83,7 +81,8 @@ pub unsafe extern "C" fn iox2_node_name_new(
     assert!(!node_name_handle_ptr.is_null());
 
     unimplemented!() // TODO: [#210] implement
-                     // IOX2_OK
+
+    // IOX2_OK
 }
 
 /// This function needs to be called to destroy the node name!
