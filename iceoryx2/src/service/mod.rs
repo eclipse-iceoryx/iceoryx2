@@ -165,7 +165,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::config;
-use crate::node::SharedNode;
+use crate::node::{NodeState, SharedNode};
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -202,6 +202,20 @@ impl std::fmt::Display for ServiceListError {
 }
 
 impl std::error::Error for ServiceListError {}
+
+/// Represents all the [`Service`] information that one can acquire with [`Service::list()`]
+/// when the [`Service`] is accessible by the current process.
+#[derive(Debug)]
+pub struct ServiceDynamicDetails<S: Service> {
+    pub nodes: Vec<NodeState<S>>,
+}
+
+/// Represents all the [`Service`] information that one can acquire with [`Service::list()`].
+#[derive(Debug)]
+pub struct ServiceDetails<S: Service> {
+    pub static_details: StaticConfig,
+    pub dynamic_details: Option<ServiceDynamicDetails<S>>,
+}
 
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
@@ -312,7 +326,7 @@ pub trait Service: Debug + Sized {
         config: &config::Config,
     ) -> Result<bool, ServiceListError> {
         for service in Self::list(config)? {
-            if service.name() == service_name {
+            if service.static_details.name() == service_name {
                 return Ok(true);
             }
         }
@@ -337,7 +351,7 @@ pub trait Service: Debug + Sized {
     /// # Ok(())
     /// # }
     /// ```
-    fn list(config: &config::Config) -> Result<Vec<StaticConfig>, ServiceListError> {
+    fn list(config: &config::Config) -> Result<Vec<ServiceDetails<Self>>, ServiceListError> {
         let msg = "Unable to list all services";
         let origin = "Service::list_from_config()";
         let static_storage_config = config_scheme::static_config_storage_config::<Self>(config);
@@ -390,7 +404,10 @@ pub trait Service: Debug + Sized {
                 continue;
             }
 
-            service_vec.push(service_config);
+            service_vec.push(ServiceDetails {
+                static_details: service_config,
+                dynamic_details: None,
+            });
         }
 
         Ok(service_vec)
