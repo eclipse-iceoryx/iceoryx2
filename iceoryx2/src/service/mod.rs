@@ -186,23 +186,6 @@ use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use self::dynamic_config::DeregisterNodeState;
 use self::service_name::ServiceName;
 
-/// Failure that can be reported by [`Service::does_exist()`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ServiceDoesExistError {
-    /// The process has insufficient permissions to check if a [`Service`] exists.
-    InsufficientPermissions,
-    /// Errors that indicate either an implementation issue or a wrongly configured system.
-    InternalError,
-}
-
-impl std::fmt::Display for ServiceDoesExistError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "ServiceDoesExistError::{:?}", self)
-    }
-}
-
-impl std::error::Error for ServiceDoesExistError {}
-
 /// Failure that can be reported by [`Service::list()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceListError {
@@ -327,58 +310,9 @@ pub trait Service: Debug + Sized {
     fn does_exist(
         service_name: &ServiceName,
         config: &config::Config,
-    ) -> Result<bool, ServiceDoesExistError> {
-        let msg = format!("Unable to verify if \"{}\" exists", service_name);
-        let origin = "Service::does_exist_from_config()";
-        let static_storage_config = config_scheme::static_config_storage_config::<Self>(config);
-
-        let services = fail!(from origin,
-                 when <Self::StaticStorage as NamedConceptMgmt>::list_cfg(&static_storage_config),
-                 map NamedConceptListError::InsufficientPermissions => ServiceDoesExistError::InsufficientPermissions,
-                 unmatched ServiceDoesExistError::InternalError,
-                 "{} due to a failure while collecting all active services for config: {:?}", msg, config);
-
-        for service_storage in services {
-            let reader =
-                match <<Self::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
-                    Self::StaticStorage,
-                >>::new(&service_storage)
-                .config(&static_storage_config.clone())
-                .has_ownership(false)
-                .open()
-                {
-                    Ok(reader) => reader,
-                    Err(e) => {
-                        warn!(from origin, "Unable to open service static info \"{}\" for reading ({:?}). Maybe unable to determin if the service \"{}\" exists.",
-                            service_storage, e, service_name);
-                        continue;
-                    }
-                };
-
-            let mut content = String::from_utf8(vec![b' '; reader.len() as usize]).unwrap();
-            if let Err(e) = reader.read(unsafe { content.as_mut_vec().as_mut_slice() }) {
-                warn!(from origin, "Unable to read service static info \"{}\" - error ({:?}). Maybe unable to determin if the service \"{}\" exists.",
-                            service_storage, e, service_name);
-            }
-
-            let service_config = match Self::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
-                content.as_mut_vec()
-            }) {
-                Ok(service_config) => service_config,
-                Err(e) => {
-                    warn!(from origin, "Unable to deserialize service static info \"{}\" - error ({:?}). Maybe unable to determin if the service \"{}\" exists.",
-                            service_storage, e, service_name);
-                    continue;
-                }
-            };
-
-            if service_storage.as_bytes() != service_config.uuid().as_bytes() {
-                warn!(from origin, "Detected service {:?} with an inconsistent hash of {} when acquiring services according to config {:?}",
-                    service_config, service_storage, config);
-                continue;
-            }
-
-            if service_config.name() == service_name {
+    ) -> Result<bool, ServiceListError> {
+        for service in Self::list(config)? {
+            if service.name() == service_name {
                 return Ok(true);
             }
         }
