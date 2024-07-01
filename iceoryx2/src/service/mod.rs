@@ -395,8 +395,7 @@ pub trait Service: Debug + Sized {
     /// use iceoryx2::config::Config;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut custom_config = Config::default();
-    /// let services = zero_copy::Service::list(&custom_config)?;
+    /// let services = zero_copy::Service::list(Config::get_global_config())?;
     ///
     /// for service in services {
     ///     println!("\n{:#?}", &service);
