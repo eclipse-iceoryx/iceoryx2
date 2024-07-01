@@ -24,7 +24,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
-    use iceoryx2::service::static_config::message_type_details::TypeVariant;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::Service;
     use iceoryx2_bb_elementary::alignment::Alignment;
@@ -2213,6 +2213,72 @@ mod service_publish_subscribe {
 
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+    }
+
+    #[test]
+    fn create_with_custom_payload_type_works<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let _sut = unsafe {
+            node.service_builder(service_name.clone())
+                .publish_subscribe::<[u8]>()
+                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u64>(
+                    TypeVariant::FixedSize,
+                ))
+                .create()
+                .unwrap()
+        };
+
+        let sut2 = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .open();
+
+        assert_that!(sut2, is_ok);
+
+        let sut3 = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u32>()
+            .open();
+
+        assert_that!(sut3, is_err);
+        assert_that!(sut3.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+    }
+
+    #[test]
+    fn open_with_custom_payload_type_works<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let _sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u128>()
+            .create()
+            .unwrap();
+
+        let sut2 = unsafe {
+            node.service_builder(service_name.clone())
+                .publish_subscribe::<[u8]>()
+                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u128>(
+                    TypeVariant::FixedSize,
+                ))
+                .open()
+        };
+
+        assert_that!(sut2, is_ok);
+
+        let sut3 = unsafe {
+            node.service_builder(service_name.clone())
+                .publish_subscribe::<[u8]>()
+                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u64>(
+                    TypeVariant::FixedSize,
+                ))
+                .open()
+        };
+
+        assert_that!(sut3, is_err);
+        assert_that!(sut3.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
