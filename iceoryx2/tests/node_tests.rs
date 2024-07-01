@@ -44,7 +44,10 @@ mod node {
     }
 
     fn assert_node_presence<S: Service>(node_details: &VecDeque<Details>, config: &Config) {
-        let node_list = Node::<S>::list(config).unwrap();
+        let mut node_list = vec![];
+        Node::<S>::list(config, |node_state| {
+            node_list.push(node_state.unwrap());
+        });
 
         assert_that!(node_list, len node_details.len());
         for node in node_list {
