@@ -40,6 +40,7 @@ use crate::service::{self, static_config};
 use crate::service::{dynamic_config, ServiceName};
 
 use super::listener::PortFactoryListener;
+use super::nodes;
 use super::notifier::PortFactoryNotifier;
 
 /// The factory for
@@ -55,6 +56,7 @@ unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
 unsafe impl<Service: service::Service> Sync for PortFactory<Service> {}
 
 impl<Service: service::Service> crate::service::port_factory::PortFactory for PortFactory<Service> {
+    type Service = Service;
     type StaticConfig = static_config::event::StaticConfig;
     type DynamicConfig = dynamic_config::event::DynamicConfig;
 
@@ -80,6 +82,17 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
             .dynamic_storage
             .get()
             .event()
+    }
+
+    fn nodes<F: FnMut(Result<crate::node::NodeState<Service>, crate::node::NodeListFailure>)>(
+        &self,
+        callback: F,
+    ) {
+        nodes(
+            self.service.__internal_state().dynamic_storage.get(),
+            self.service.__internal_state().shared_node.config(),
+            callback,
+        )
     }
 }
 

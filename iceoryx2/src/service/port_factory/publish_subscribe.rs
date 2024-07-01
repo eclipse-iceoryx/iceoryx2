@@ -48,6 +48,7 @@ use crate::service::attribute::AttributeSet;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config};
 
+use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 
 /// The factory for
@@ -74,6 +75,7 @@ unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debu
 impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     crate::service::port_factory::PortFactory for PortFactory<Service, Payload, UserHeader>
 {
+    type Service = Service;
     type StaticConfig = static_config::publish_subscribe::StaticConfig;
     type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig;
 
@@ -102,6 +104,17 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .dynamic_storage
             .get()
             .publish_subscribe()
+    }
+
+    fn nodes<F: FnMut(Result<crate::node::NodeState<Service>, crate::node::NodeListFailure>)>(
+        &self,
+        callback: F,
+    ) {
+        nodes(
+            self.service.__internal_state().dynamic_storage.get(),
+            self.service.__internal_state().shared_node.config(),
+            callback,
+        )
     }
 }
 

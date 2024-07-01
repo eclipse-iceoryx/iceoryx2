@@ -106,11 +106,9 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn list_node_ids(&self) -> Vec<NodeId> {
-        let mut node_ids = vec![];
+    pub(crate) fn list_node_ids<F: FnMut(&NodeId)>(&self, mut callback: F) {
         let state = unsafe { self.nodes.get_state() };
-        state.for_each(|_, node_id| node_ids.push(*node_id));
-        node_ids
+        state.for_each(|_, node_id| callback(node_id));
     }
 
     pub(crate) fn deregister_node_id(&self, handle: ContainerHandle) -> DeregisterNodeState {

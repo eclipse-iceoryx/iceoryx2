@@ -196,7 +196,7 @@ pub enum NodeState<Service: service::Service> {
 }
 
 impl<Service: service::Service> NodeState<Service> {
-    fn new(node_id: &NodeId, config: &Config) -> Result<Option<Self>, NodeListFailure> {
+    pub(crate) fn new(node_id: &NodeId, config: &Config) -> Result<Option<Self>, NodeListFailure> {
         let details = match Node::<Service>::get_node_details(config, node_id) {
             Ok(v) => v,
             Err(_) => None,
