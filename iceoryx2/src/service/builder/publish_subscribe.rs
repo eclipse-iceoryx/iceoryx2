@@ -495,7 +495,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                 unlocked_static_details.release_ownership();
 
                 Ok(publish_subscribe::PortFactory::new(
-                    ServiceType::from_state(service::ServiceState::new(
+                    ServiceType::__internal_from_state(service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),
                         node_id_handle,
@@ -561,7 +561,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                         MessagingPattern::PublishSubscribe(pub_sub_static_config.clone());
 
                     return Ok(publish_subscribe::PortFactory::new(
-                        ServiceType::from_state(service::ServiceState::new(
+                        ServiceType::__internal_from_state(service::ServiceState::new(
                             static_config,
                             self.base.shared_node.clone(),
                             node_id_handle,

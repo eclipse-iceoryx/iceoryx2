@@ -111,7 +111,7 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized, UserHeade
     ) -> Result<Subscriber<Service, PayloadType, UserHeader>, SubscriberCreateError> {
         let origin = format!("{:?}", self);
         Ok(
-            fail!(from origin, when Subscriber::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),
+            fail!(from origin, when Subscriber::new(&self.factory.service, self.factory.service.__internal_state().static_config.publish_subscribe(), self.config),
                 "Failed to create new Subscriber port."),
         )
     }

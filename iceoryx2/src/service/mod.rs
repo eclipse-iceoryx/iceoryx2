@@ -301,13 +301,13 @@ pub trait Service: Debug + Sized {
     type Monitoring: Monitoring;
 
     #[doc(hidden)]
-    fn from_state(state: ServiceState<Self>) -> Self;
+    fn __internal_from_state(state: ServiceState<Self>) -> Self;
 
     #[doc(hidden)]
-    fn state(&self) -> &ServiceState<Self>;
+    fn __internal_state(&self) -> &ServiceState<Self>;
 
     #[doc(hidden)]
-    fn state_mut(&mut self) -> &mut ServiceState<Self>;
+    fn __internal_state_mut(&mut self) -> &mut ServiceState<Self>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

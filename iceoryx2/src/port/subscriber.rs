@@ -138,13 +138,13 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let port_id = UniqueSubscriberId::new();
 
         let publisher_list = &service
-            .state()
+            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()
             .publishers;
 
-        let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
+        let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
 
         let buffer_size = match config.buffer_size {
             Some(buffer_size) => {
@@ -161,7 +161,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let publisher_connections = Arc::new(PublisherConnections::new(
             publisher_list.capacity(),
             port_id,
-            service.state().shared_node.clone(),
+            service.__internal_state().shared_node.clone(),
             static_config,
             buffer_size,
         ));
@@ -172,7 +172,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             dynamic_storage,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
-            static_config: service.state().static_config.clone(),
+            static_config: service.__internal_state().static_config.clone(),
             _payload: PhantomData,
             _user_header: PhantomData,
         };
@@ -186,7 +186,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels
         let dynamic_subscriber_handle = match service
-            .state()
+            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()
@@ -198,7 +198,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             None => {
                 fail!(from new_self, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
                                 "{} since it would exceed the maximum supported amount of subscribers of {}.",
-                                msg, service.state().static_config.publish_subscribe().max_subscribers);
+                                msg, service.__internal_state().static_config.publish_subscribe().max_subscribers);
             }
         };
 

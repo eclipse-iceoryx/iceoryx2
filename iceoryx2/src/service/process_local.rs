@@ -54,15 +54,15 @@ impl crate::service::Service for Service {
     type Event = event::sem_bitset_process_local::Event;
     type Monitoring = monitoring::process_local::ProcessLocalMonitoring;
 
-    fn from_state(state: ServiceState<Self>) -> Self {
+    fn __internal_from_state(state: ServiceState<Self>) -> Self {
         Self { state }
     }
 
-    fn state(&self) -> &ServiceState<Self> {
+    fn __internal_state(&self) -> &ServiceState<Self> {
         &self.state
     }
 
-    fn state_mut(&mut self) -> &mut ServiceState<Self> {
+    fn __internal_state_mut(&mut self) -> &mut ServiceState<Self> {
         &mut self.state
     }
 }

@@ -78,24 +78,27 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.state().static_config.name()
+        self.service.__internal_state().static_config.name()
     }
 
     fn uuid(&self) -> &str {
-        self.service.state().static_config.uuid()
+        self.service.__internal_state().static_config.uuid()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.state().static_config.attributes()
+        self.service.__internal_state().static_config.attributes()
     }
 
     fn static_config(&self) -> &static_config::publish_subscribe::StaticConfig {
-        self.service.state().static_config.publish_subscribe()
+        self.service
+            .__internal_state()
+            .static_config
+            .publish_subscribe()
     }
 
     fn dynamic_config(&self) -> &dynamic_config::publish_subscribe::DynamicConfig {
         self.service
-            .state()
+            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()

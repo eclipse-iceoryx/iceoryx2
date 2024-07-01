@@ -157,7 +157,7 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
                 max_slice_len: 1,
                 max_loaned_samples: factory
                     .service
-                    .state()
+                    .__internal_state()
                     .shared_node
                     .config()
                     .defaults
@@ -165,7 +165,7 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
                     .publisher_max_loaned_samples,
                 unable_to_deliver_strategy: factory
                     .service
-                    .state()
+                    .__internal_state()
                     .shared_node
                     .config()
                     .defaults
@@ -216,7 +216,7 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
     pub fn create(self) -> Result<Publisher<Service, Payload, UserHeader>, PublisherCreateError> {
         let origin = format!("{:?}", self);
         Ok(
-            fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.state().static_config.publish_subscribe(), self.config),
+            fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.__internal_state().static_config.publish_subscribe(), self.config),
                 "Failed to create new Publisher port."),
         )
     }

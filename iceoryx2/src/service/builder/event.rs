@@ -264,7 +264,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::Event(event_static_config);
 
-                    return Ok(event::PortFactory::new(ServiceType::from_state(
+                    return Ok(event::PortFactory::new(ServiceType::__internal_from_state(
                         service::ServiceState::new(
                             static_config,
                             self.base.shared_node,
@@ -394,7 +394,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
                 unlocked_static_details.release_ownership();
 
-                Ok(event::PortFactory::new(ServiceType::from_state(
+                Ok(event::PortFactory::new(ServiceType::__internal_from_state(
                     service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),
