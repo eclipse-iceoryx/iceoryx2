@@ -62,7 +62,7 @@ pub struct iox2_node_builder_storage_t {
 pub type iox2_node_builder_h = *mut iox2_node_builder_storage_t;
 
 impl iox2_node_builder_storage_t {
-    fn node_builder_maybe_uninit(&mut self) -> &mut MaybeUninit<NodeBuilder> {
+    const fn assert_storage_layout() {
         static_assert_gt_or_equal::<
             { align_of::<iox2_node_builder_storage_internal_t>() },
             { align_of::<NodeBuilder>() },
@@ -71,6 +71,10 @@ impl iox2_node_builder_storage_t {
             { size_of::<iox2_node_builder_storage_internal_t>() },
             { size_of::<NodeBuilder>() },
         >();
+    }
+
+    fn node_builder_maybe_uninit(&mut self) -> &mut MaybeUninit<NodeBuilder> {
+        iox2_node_builder_storage_t::assert_storage_layout();
 
         unsafe {
             &mut *(&mut self.internal as *mut iox2_node_builder_storage_internal_t)
@@ -124,7 +128,7 @@ pub struct iox2_node_storage_t {
 pub type iox2_node_h = *mut iox2_node_storage_t;
 
 impl iox2_node_storage_t {
-    const fn assert_node_storage_t_size() {
+    const fn assert_storage_layout() {
         const MAX_NODE_ALIGNMENT: usize = max(
             align_of::<Node<zero_copy::Service>>(),
             align_of::<Node<process_local::Service>>(),
@@ -142,7 +146,7 @@ impl iox2_node_storage_t {
     }
 
     fn node_maybe_uninit<Service: service::Service>(&mut self) -> &mut MaybeUninit<Node<Service>> {
-        iox2_node_storage_t::assert_node_storage_t_size();
+        iox2_node_storage_t::assert_storage_layout();
 
         unsafe {
             &mut *(&mut self.internal as *mut iox2_node_storage_internal_t)
@@ -319,6 +323,14 @@ pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
 mod test {
     use super::*;
     use iceoryx2_bb_testing::assert_that;
+
+    #[test]
+    fn assert_storage_sizes() {
+        // all const functions; if it compiles, the storage size is sufficient
+        const _NODE_BUILDER_STORAGE_LAYOUT_CHECK: () =
+            iox2_node_builder_storage_t::assert_storage_layout();
+        const _NODE_STORAGE_LAYOUT_CHECK: () = iox2_node_storage_t::assert_storage_layout();
+    }
 
     #[test]
     fn basic_node_api_test() {
