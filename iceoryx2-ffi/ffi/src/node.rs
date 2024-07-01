@@ -16,6 +16,7 @@ use super::{IntoCInt, IOX2_OK};
 
 use iceoryx2::prelude::*;
 use iceoryx2::{node::NodeCreationFailure, service};
+use iceoryx2_bb_elementary::math::max;
 use iceoryx2_bb_elementary::static_assert::*;
 
 use core::ffi::c_int;
@@ -123,20 +124,12 @@ pub struct iox2_node_storage_t {
 pub type iox2_node_h = *mut iox2_node_storage_t;
 
 impl iox2_node_storage_t {
-    const fn max(a: usize, b: usize) -> usize {
-        if a > b {
-            a
-        } else {
-            b
-        }
-    }
-
     const fn assert_node_storage_t_size() {
-        const MAX_NODE_ALIGNMENT: usize = iox2_node_storage_t::max(
+        const MAX_NODE_ALIGNMENT: usize = max(
             align_of::<Node<zero_copy::Service>>(),
             align_of::<Node<process_local::Service>>(),
         );
-        const MAX_NODE_SIZE: usize = iox2_node_storage_t::max(
+        const MAX_NODE_SIZE: usize = max(
             size_of::<Node<zero_copy::Service>>(),
             size_of::<Node<process_local::Service>>(),
         );
