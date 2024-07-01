@@ -75,6 +75,7 @@ use crate::service::config_scheme::{node_details_path, node_monitoring_config};
 use crate::service::service_name::ServiceName;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -445,10 +446,14 @@ impl<Service: service::Service> Node<Service> {
     ///     }
     /// });
     /// ```
-    pub fn list<F: FnMut(Result<NodeState<Service>, NodeListFailure>)>(
+    pub fn list<
+        F: FnMut(
+            Result<NodeState<Service>, NodeListFailure>,
+        ) -> Result<CallbackProgression, NodeListFailure>,
+    >(
         config: &Config,
         mut callback: F,
-    ) {
+    ) -> Result<(), NodeListFailure> {
         let msg = "Unable to iterate over Node list";
         let origin = "Node::list()";
         let monitoring_config = node_monitoring_config::<Service>(config);
@@ -460,20 +465,28 @@ impl<Service: service::Service> Node<Service> {
                     let node_id = NodeId(node_id.parse::<u128>().unwrap().into());
 
                     match NodeState::new(&node_id, config) {
-                        Ok(Some(node_state)) => callback(Ok(node_state)),
+                        Ok(Some(node_state)) => {
+                            if callback(Ok(node_state))? == CallbackProgression::Stop {
+                                break;
+                            }
+                        }
                         Ok(None) => (),
                         Err(e) => {
                             debug!(from origin, "{msg} since the corresponding NodeState could not be acquired.");
-                            callback(Err(e));
+                            if callback(Err(e))? == CallbackProgression::Stop {
+                                break;
+                            }
                         }
                     }
                 }
             }
             Err(e) => {
                 debug!(from origin, "{msg} since the node list could not be acquired.");
-                callback(Err(e));
+                callback(Err(e))?;
             }
         }
+
+        Ok(())
     }
 
     /// # Safety
