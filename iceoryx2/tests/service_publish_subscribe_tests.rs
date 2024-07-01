@@ -2223,7 +2223,9 @@ mod service_publish_subscribe {
         let _sut = unsafe {
             node.service_builder(service_name.clone())
                 .publish_subscribe::<[u8]>()
-                .__set_payload_type_details(TypeDetail::__new::<u64>(TypeVariant::FixedSize))
+                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u64>(
+                    TypeVariant::FixedSize,
+                ))
                 .create()
                 .unwrap()
         };
@@ -2258,7 +2260,9 @@ mod service_publish_subscribe {
         let sut2 = unsafe {
             node.service_builder(service_name.clone())
                 .publish_subscribe::<[u8]>()
-                .__set_payload_type_details(TypeDetail::__new::<u128>(TypeVariant::FixedSize))
+                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u128>(
+                    TypeVariant::FixedSize,
+                ))
                 .open()
         };
 
@@ -2267,7 +2271,9 @@ mod service_publish_subscribe {
         let sut3 = unsafe {
             node.service_builder(service_name.clone())
                 .publish_subscribe::<[u8]>()
-                .__set_payload_type_details(TypeDetail::__new::<u64>(TypeVariant::FixedSize))
+                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u64>(
+                    TypeVariant::FixedSize,
+                ))
                 .open()
         };
 

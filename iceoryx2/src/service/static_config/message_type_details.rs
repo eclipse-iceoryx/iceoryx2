@@ -41,7 +41,7 @@ pub struct TypeDetail {
 
 impl TypeDetail {
     #[doc(hidden)]
-    pub fn __new<T>(variant: TypeVariant) -> Self {
+    pub fn __internal_new<T>(variant: TypeVariant) -> Self {
         Self {
             variant,
             type_name: core::any::type_name::<T>().to_string(),
@@ -66,9 +66,9 @@ pub struct MessageTypeDetails {
 impl MessageTypeDetails {
     pub(crate) fn from<Header, UserHeader, Payload>(variant: TypeVariant) -> Self {
         Self {
-            header: TypeDetail::__new::<Header>(TypeVariant::FixedSize),
-            user_header: TypeDetail::__new::<UserHeader>(TypeVariant::FixedSize),
-            payload: TypeDetail::__new::<Payload>(variant),
+            header: TypeDetail::__internal_new::<Header>(TypeVariant::FixedSize),
+            user_header: TypeDetail::__internal_new::<UserHeader>(TypeVariant::FixedSize),
+            payload: TypeDetail::__internal_new::<Payload>(variant),
         }
     }
 
