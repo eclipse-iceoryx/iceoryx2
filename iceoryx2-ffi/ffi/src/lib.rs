@@ -57,19 +57,13 @@ impl IntoCInt for SemanticStringError {
 pub extern "C" fn zero_copy_service_list() -> i32 {
     set_log_level(iceoryx2_bb_log::LogLevel::Info);
 
-    let services = zero_copy::Service::list(Config::get_global_config());
-
-    if services.is_err() {
-        return -1;
+    match zero_copy::Service::list(Config::get_global_config(), |service| {
+        println!("\n{:#?}", service?);
+        Ok(CallbackProgression::Continue)
+    }) {
+        Ok(_) => 0,
+        Err(_) => -1,
     }
-
-    let services = services.unwrap();
-
-    for service in services {
-        println!("\n{:#?}", &service);
-    }
-
-    0
 }
 
 /// This is a trait to convert a Rust error enum into the corresponding C error enum and then to a c_int in one go

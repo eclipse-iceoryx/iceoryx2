@@ -169,8 +169,9 @@ use crate::node::{NodeState, SharedNode};
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_log::{fail, trace, warn};
+use iceoryx2_bb_log::{debug, fail, trace, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::Event;
 use iceoryx2_cal::hash::Hash;
@@ -325,13 +326,24 @@ pub trait Service: Debug + Sized {
         service_name: &ServiceName,
         config: &config::Config,
     ) -> Result<bool, ServiceListError> {
-        for service in Self::list(config)? {
-            if service.static_details.name() == service_name {
-                return Ok(true);
-            }
-        }
+        let mut result = false;
+        Self::list(config, |service| {
+            match service {
+                Ok(s) => {
+                    if s.static_details.name() == service_name {
+                        result = true;
+                        return Ok(CallbackProgression::Stop);
+                    }
+                }
+                Err(e) => {
+                    debug!(from "Service::does_exist()",
+                        "Service search will be incomplete since some Services cannot be accessed ({:?}).", e);
+                }
+            };
+            Ok(CallbackProgression::Continue)
+        })?;
 
-        Ok(false)
+        Ok(result)
     }
 
     /// Returns a list of all services created under a given [`config::Config`].
@@ -351,7 +363,14 @@ pub trait Service: Debug + Sized {
     /// # Ok(())
     /// # }
     /// ```
-    fn list(config: &config::Config) -> Result<Vec<ServiceDetails<Self>>, ServiceListError> {
+    fn list<
+        F: FnMut(
+            Result<ServiceDetails<Self>, ServiceListError>,
+        ) -> Result<CallbackProgression, ServiceListError>,
+    >(
+        config: &config::Config,
+        mut callback: F,
+    ) -> Result<(), ServiceListError> {
         let msg = "Unable to list all services";
         let origin = "Service::list_from_config()";
         let static_storage_config = config_scheme::static_config_storage_config::<Self>(config);
@@ -362,7 +381,6 @@ pub trait Service: Debug + Sized {
                 unmatched ServiceListError::InternalError,
                 "{} due to a failure while collecting all active services for config: {:?}", msg, config);
 
-        let mut service_vec = vec![];
         for service_storage in services {
             let reader =
                 match <<Self::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
@@ -404,12 +422,15 @@ pub trait Service: Debug + Sized {
                 continue;
             }
 
-            service_vec.push(ServiceDetails {
+            if callback(Ok(ServiceDetails {
                 static_details: service_config,
                 dynamic_details: None,
-            });
+            }))? == CallbackProgression::Stop
+            {
+                break;
+            }
         }
 
-        Ok(service_vec)
+        Ok(())
     }
 }

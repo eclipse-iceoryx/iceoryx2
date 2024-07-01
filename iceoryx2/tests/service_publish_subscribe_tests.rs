@@ -25,9 +25,9 @@ mod service_publish_subscribe {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2_bb_elementary::alignment::Alignment;
+    use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -1908,7 +1908,12 @@ mod service_publish_subscribe {
             );
             service_names.push(service_name);
 
-            let service_list = Sut::list(Config::get_global_config()).unwrap();
+            let mut service_list = vec![];
+            Sut::list(Config::get_global_config(), |s| {
+                service_list.push(s.unwrap());
+                Ok(CallbackProgression::Continue)
+            })
+            .unwrap();
             assert_that!(service_list, len i + 1);
 
             assert_that!(contains_service_names(service_names.clone(), service_list), eq true);
@@ -1918,7 +1923,12 @@ mod service_publish_subscribe {
             services.pop();
             service_names.pop();
 
-            let service_list = Sut::list(Config::get_global_config()).unwrap();
+            let mut service_list = vec![];
+            Sut::list(Config::get_global_config(), |s| {
+                service_list.push(s.unwrap());
+                Ok(CallbackProgression::Continue)
+            })
+            .unwrap();
             assert_that!(service_list, len NUMBER_OF_SERVICES - i - 1);
             assert_that!(contains_service_names(service_names.clone(), service_list), eq true);
         }
