@@ -37,14 +37,11 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node_state_list = Node::<zero_copy::Service>::list(Config::get_global_config())?;
-//!
-//! for node_state in node_state_list {
-//!     println!("found node {:?}", node_state);
-//! }
-//! # Ok(())
-//! # }
+//! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
+//!     if Ok(node_state) = node_state {
+//!         println!("found node {:?}", node_state);
+//!     }
+//! });
 //! ```
 //!
 //! # Cleanup stale resources of all dead [`Node`](crate::node::Node)s
@@ -78,7 +75,7 @@ use crate::service::config_scheme::{node_details_path, node_monitoring_config};
 use crate::service::service_name::ServiceName;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
@@ -439,20 +436,44 @@ impl<Service: service::Service> Node<Service> {
     }
 
     /// Returns a list of [`NodeState`] of all [`Node`]s in the system under a given [`Config`].
-    pub fn list(config: &Config) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
+    ///     if let Ok(node_state) = node_state {
+    ///         println!("found node {:?}", node_state);
+    ///     }
+    /// });
+    /// ```
+    pub fn list<F: FnMut(Result<NodeState<Service>, NodeListFailure>)>(
+        config: &Config,
+        mut callback: F,
+    ) {
+        let msg = "Unable to iterate over Node list";
+        let origin = "Node::list()";
         let monitoring_config = node_monitoring_config::<Service>(config);
-        let mut nodes = vec![];
 
-        for node_name in &Self::list_all_nodes(&monitoring_config)? {
-            let node_id = core::str::from_utf8(node_name.as_bytes()).unwrap();
-            let node_id = NodeId(node_id.parse::<u128>().unwrap().into());
+        match Self::list_all_nodes(&monitoring_config) {
+            Ok(node_list) => {
+                for node_name in node_list {
+                    let node_id = core::str::from_utf8(node_name.as_bytes()).unwrap();
+                    let node_id = NodeId(node_id.parse::<u128>().unwrap().into());
 
-            if let Some(node_state) = NodeState::new(&node_id, config)? {
-                nodes.push(node_state);
+                    match NodeState::new(&node_id, config) {
+                        Ok(Some(node_state)) => callback(Ok(node_state)),
+                        Ok(None) => (),
+                        Err(e) => {
+                            debug!(from origin, "{msg} since the corresponding NodeState could not be acquired.");
+                            callback(Err(e));
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                debug!(from origin, "{msg} since the node list could not be acquired.");
+                callback(Err(e));
             }
         }
-
-        Ok(nodes)
     }
 
     /// # Safety

@@ -52,7 +52,10 @@ mod node_death_tests {
 
         S::staged_death(&mut sut);
 
-        let mut node_list = Node::<S::Service>::list(Config::get_global_config()).unwrap();
+        let mut node_list = vec![];
+        Node::<S::Service>::list(Config::get_global_config(), |node_state| {
+            node_list.push(node_state.unwrap())
+        });
         assert_that!(node_list, len 1);
 
         if let Some(NodeState::Dead(state)) = node_list.pop() {
@@ -62,7 +65,10 @@ mod node_death_tests {
             assert_that!(true, eq false);
         }
 
-        let node_list = Node::<S::Service>::list(Config::get_global_config()).unwrap();
+        node_list.clear();
+        Node::<S::Service>::list(Config::get_global_config(), |node_state| {
+            node_list.push(node_state.unwrap())
+        });
         assert_that!(node_list, len 0);
     }
 
