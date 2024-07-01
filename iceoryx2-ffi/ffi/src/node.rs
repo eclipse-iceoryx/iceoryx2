@@ -23,15 +23,12 @@ use core::ffi::c_int;
 use core::mem::{align_of, size_of, MaybeUninit};
 use std::alloc::{alloc, dealloc, Layout};
 
-// TODO: [#210] Add structs iox2_node_name_storage_internal_t, iox2_node_name_storage_t and iox2_node_name_h
-// TODO: [#210] Add API iox2_node_name_new and iox2_node_name_set
-
 // BEGIN iox2_node_builder_* types
 
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_node_creation_failure_e {
-    INSUFFICIENT_PERMISSIONS = 1, // start at 1 since IOX2_OK is already 0
+    INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
 }
 
@@ -137,12 +134,9 @@ impl iox2_node_storage_t {
             size_of::<Node<zero_copy::Service>>(),
             size_of::<Node<process_local::Service>>(),
         );
-        static_assert_ge::<
-            { align_of::<iox2_node_storage_internal_t>() },
-            { MAX_NODE_ALIGNMENT },
-        >();
-        static_assert_ge::<{ size_of::<iox2_node_storage_internal_t>() }, { MAX_NODE_SIZE }>(
+        static_assert_ge::<{ align_of::<iox2_node_storage_internal_t>() }, { MAX_NODE_ALIGNMENT }>(
         );
+        static_assert_ge::<{ size_of::<iox2_node_storage_internal_t>() }, { MAX_NODE_SIZE }>();
     }
 
     fn node_maybe_uninit<Service: service::Service>(&mut self) -> &mut MaybeUninit<Node<Service>> {
@@ -220,7 +214,7 @@ pub unsafe extern "C" fn iox2_node_builder_new(
 /// * `node_builder_handle` - Must be a valid [`iox2_node_builder_h`] obtained by [`iox2_node_builder_new`].
 /// * `node_storage` - Must be either a NULL pointer or a pointer to a valid [`iox2_node_storage_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `node_type` - The [`iox2_node_type_e`] for the node to be created.
-/// * `node_handle_ptr` - A dangling [`iox2_node_h`] handle which will be initialized by this function call.
+/// * `node_handle_ptr` - An uninitialized or dangling [`iox2_node_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_node_creation_failure_e`] otherwise.
 ///

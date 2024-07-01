@@ -10,21 +10,44 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(non_camel_case_types)]
+
 use iceoryx2::prelude::*;
+use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_log::set_log_level;
 
 use core::ffi::c_int;
 
 mod node;
+mod node_name;
 mod publisher;
 mod subscriber;
 
 pub use node::*;
+pub use node_name::*;
 pub use publisher::*;
 pub use subscriber::*;
 
 /// This constant signals an successful function call
 pub const IOX2_OK: c_int = 0;
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_semantic_string_error_e {
+    INVALID_CONTENT = IOX2_OK as isize + 1,
+    EXCEEDS_MAXIMUM_LENGTH,
+}
+
+impl IntoCInt for SemanticStringError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            SemanticStringError::InvalidContent => iox2_semantic_string_error_e::INVALID_CONTENT,
+            SemanticStringError::ExceedsMaximumLength => {
+                iox2_semantic_string_error_e::EXCEEDS_MAXIMUM_LENGTH
+            }
+        }) as c_int
+    }
+}
 
 #[no_mangle]
 pub extern "C" fn zero_copy_service_list() -> i32 {
