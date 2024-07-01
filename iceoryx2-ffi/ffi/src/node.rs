@@ -63,11 +63,11 @@ pub type iox2_node_builder_h = *mut iox2_node_builder_storage_t;
 
 impl iox2_node_builder_storage_t {
     const fn assert_storage_layout() {
-        static_assert_gt_or_equal::<
+        static_assert_ge::<
             { align_of::<iox2_node_builder_storage_internal_t>() },
             { align_of::<NodeBuilder>() },
         >();
-        static_assert_gt_or_equal::<
+        static_assert_ge::<
             { size_of::<iox2_node_builder_storage_internal_t>() },
             { size_of::<NodeBuilder>() },
         >();
@@ -137,11 +137,11 @@ impl iox2_node_storage_t {
             size_of::<Node<zero_copy::Service>>(),
             size_of::<Node<process_local::Service>>(),
         );
-        static_assert_gt_or_equal::<
+        static_assert_ge::<
             { align_of::<iox2_node_storage_internal_t>() },
             { MAX_NODE_ALIGNMENT },
         >();
-        static_assert_gt_or_equal::<{ size_of::<iox2_node_storage_internal_t>() }, { MAX_NODE_SIZE }>(
+        static_assert_ge::<{ size_of::<iox2_node_storage_internal_t>() }, { MAX_NODE_SIZE }>(
         );
     }
 
