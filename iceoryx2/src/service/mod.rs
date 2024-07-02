@@ -165,14 +165,18 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::config;
-use crate::node::{NodeState, SharedNode};
+use crate::node::{NodeListFailure, NodeState, SharedNode};
+use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
+use crate::service::naming_scheme::dynamic_config_storage_name;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_log::{fail, trace, warn};
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_bb_log::{debug, fail, trace, warn};
+use iceoryx2_cal::dynamic_storage::{
+    DynamicStorage, DynamicStorageBuilder, DynamicStorageOpenError,
+};
 use iceoryx2_cal::event::Event;
 use iceoryx2_cal::hash::*;
 use iceoryx2_cal::monitoring::Monitoring;
@@ -195,6 +199,9 @@ pub enum ServiceDetailsError {
     FailedToReadStaticServiceInfo,
     FailedToDeserializeStaticServiceInfo,
     ServiceInInconsistentState,
+    VersionMismatch,
+    InternalError,
+    FailedToAcquireNodeState,
 }
 
 /// Failure that can be reported by [`Service::list()`].
@@ -484,8 +491,47 @@ fn details<S: Service>(
                 msg, service_config, uuid, config);
     }
 
+    let storage = match
+            <<S::DynamicStorage as DynamicStorage<
+                    DynamicConfig,
+                >>::Builder<'_> as NamedConceptBuilder<
+                    S::DynamicStorage,
+                >>::new(&dynamic_config_storage_name(&service_config))
+                    .config(&dynamic_config_storage_config::<S>(config))
+                .has_ownership(false)
+                .open() {
+            Ok(storage) => Some(storage),
+            Err(DynamicStorageOpenError::DoesNotExist) | Err(DynamicStorageOpenError::InitializationNotYetFinalized) => None,
+            Err(DynamicStorageOpenError::VersionMismatch) => {
+                fail!(from origin, with ServiceDetailsError::VersionMismatch,
+                    "{} since there is a version mismatch. Please use the same iceoryx2 version for the whole system.", msg);
+            }
+            Err(DynamicStorageOpenError::InternalError) => {
+                fail!(from origin, with ServiceDetailsError::VersionMismatch,
+                    "{} due to an internal failure while opening the services dynamic config.", msg);
+            }
+    };
+
+    let dynamic_details = if let Some(storage) = storage {
+        let mut nodes = vec![];
+        storage.get().list_node_ids(|node_id| {
+            match NodeState::new(node_id, config) {
+                Ok(Some(state)) => nodes.push(state),
+                Ok(None)
+                | Err(NodeListFailure::InsufficientPermissions)
+                | Err(NodeListFailure::Interrupt) => (),
+                Err(NodeListFailure::InternalError) => {
+                    debug!(from origin, "Unable to acquire NodeState for service \"{:?}\"", uuid);
+                }
+            };
+        });
+        Some(ServiceDynamicDetails { nodes })
+    } else {
+        None
+    };
+
     Ok(Some(ServiceDetails {
         static_details: service_config,
-        dynamic_details: None,
+        dynamic_details,
     }))
 }
