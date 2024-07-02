@@ -185,7 +185,7 @@ use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 
 use self::dynamic_config::DeregisterNodeState;
-use self::messaging_pattern::MessagingPatternId;
+use self::messaging_pattern::MessagingPattern;
 use self::service_name::ServiceName;
 
 /// Failure that can be reported when the [`ServiceDetails`] are acquired with [`Service::details()`].
@@ -332,20 +332,19 @@ pub trait Service: Debug + Sized {
     ///     zero_copy::Service::does_exist(
     ///                 &name,
     ///                 &custom_config,
-    ///                 MessagingPattern::event_id())?;
+    ///                 MessagingPattern::Event)?;
     /// # Ok(())
     /// # }
     /// ```
     fn does_exist(
         service_name: &ServiceName,
         config: &config::Config,
-        messaging_pattern_id: MessagingPatternId,
+        messaging_pattern: MessagingPattern,
     ) -> Result<bool, ServiceDetailsError> {
         let uuid = unsafe {
             FileName::new_unchecked(
                 <HashValue as Into<String>>::into(
-                    create_uuid::<Self::ServiceNameHasher>(service_name, &messaging_pattern_id)
-                        .value(),
+                    create_uuid::<Self::ServiceNameHasher>(service_name, messaging_pattern).value(),
                 )
                 .as_bytes(),
             )
