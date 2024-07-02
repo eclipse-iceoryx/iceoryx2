@@ -104,7 +104,7 @@ impl iox2_node_storage_t {
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_name_t {
     debug_assert!(!node_handle.is_null());
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 }
 
 pub type iox2_config_t = *const (); // TODO: [#210] implement in config.rs
@@ -116,7 +116,7 @@ pub type iox2_config_t = *const (); // TODO: [#210] implement in config.rs
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_t {
     debug_assert!(!node_handle.is_null());
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 }
 
 pub type iox2_unique_system_id_t = *const (); // TODO: [#210] implement in unique_system_id.rs
@@ -128,7 +128,7 @@ pub type iox2_unique_system_id_t = *const (); // TODO: [#210] implement in uniqu
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_unique_system_id_t {
     debug_assert!(!node_handle.is_null());
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 }
 
 pub type iox2_node_state_t = *mut (); // TODO: [#210] implement in node_state.rs
@@ -154,7 +154,7 @@ pub unsafe extern "C" fn iox2_nodel_list(
 ) -> c_int {
     debug_assert!(!node_handle.is_null());
     debug_assert!(!config_handle.is_null());
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 
     // IOX2_OK
 }
@@ -175,7 +175,7 @@ pub unsafe extern "C" fn iox2_node_service_builder(
 ) -> iox2_service_builder_h {
     debug_assert!(!node_handle.is_null());
     debug_assert!(!service_name_handle.is_null());
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 }
 
 /// This function needs to be called to destroy the node!

@@ -80,7 +80,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
     debug_assert!(!node_name.is_null());
     debug_assert!(!node_name_handle_ptr.is_null());
 
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 
     // IOX2_OK
 }
@@ -101,7 +101,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
     debug_assert!(!node_name_handle.is_null());
 
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 }
 
 // END C API

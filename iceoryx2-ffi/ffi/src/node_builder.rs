@@ -148,7 +148,7 @@ pub extern "C" fn iox2_node_builder_set_name(
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!node_name_handle.is_null());
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 
     // IOX2_OK
 }
@@ -156,7 +156,7 @@ pub extern "C" fn iox2_node_builder_set_name(
 #[no_mangle]
 pub extern "C" fn iox2_node_builder_set_config(node_builder_handle: iox2_node_builder_h) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
-    unimplemented!() // TODO: [#210] implement
+    todo!() // TODO: [#210] implement
 
     // IOX2_OK
 }
