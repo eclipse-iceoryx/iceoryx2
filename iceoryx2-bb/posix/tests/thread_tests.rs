@@ -159,35 +159,43 @@ fn thread_set_affinity_from_thread_works() {
 
 #[test]
 fn thread_destructor_does_not_block_on_empty_thread() {
+    let barrier = Arc::new(Barrier::new(2));
+    let thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
+            .spawn(move || {
+                barrier.wait();
+                // nothing to see, move along
+            })
+            .unwrap()
+    };
+
+    barrier.wait();
     let start = Instant::now();
-    {
-        let _thread = {
-            ThreadBuilder::new()
-                .spawn(|| {
-                    // nothing to see, move along
-                })
-                .unwrap()
-        };
-    }
+    drop(thread);
     assert_that!(start.elapsed(), lt(Duration::from_millis(10)));
 }
 
 #[test]
 fn thread_destructor_does_block_on_busy_thread() {
     const SLEEP_DURATION: Duration = Duration::from_millis(100);
+    let barrier = Arc::new(Barrier::new(2));
+    let thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
+            .spawn(move || {
+                barrier.wait();
+                let start = Instant::now();
+                while start.elapsed() < SLEEP_DURATION {
+                    std::thread::sleep(SLEEP_DURATION - start.elapsed());
+                }
+            })
+            .unwrap()
+    };
+
+    barrier.wait();
     let start = Instant::now();
-    {
-        let _thread = {
-            ThreadBuilder::new()
-                .spawn(|| {
-                    let start = Instant::now();
-                    while start.elapsed() < SLEEP_DURATION {
-                        std::thread::sleep(SLEEP_DURATION - start.elapsed());
-                    }
-                })
-                .unwrap()
-        };
-    }
+    drop(thread);
     assert_that!(start.elapsed(), gt(SLEEP_DURATION));
 }
 
