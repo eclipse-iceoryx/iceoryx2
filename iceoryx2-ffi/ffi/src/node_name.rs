@@ -77,8 +77,8 @@ pub unsafe extern "C" fn iox2_node_name_new(
     _node_name_len: c_int,
     node_name_handle_ptr: *mut iox2_node_name_h,
 ) -> c_int {
-    assert!(!node_name.is_null());
-    assert!(!node_name_handle_ptr.is_null());
+    debug_assert!(!node_name.is_null());
+    debug_assert!(!node_name_handle_ptr.is_null());
 
     unimplemented!() // TODO: [#210] implement
 
@@ -99,7 +99,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
 /// The corresponding [`iox2_node_name_storage_t`] can be re-used with a call to [`iox2_node_name_new`]!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
-    assert!(!node_name_handle.is_null());
+    debug_assert!(!node_name_handle.is_null());
 
     unimplemented!() // TODO: [#210] implement
 }

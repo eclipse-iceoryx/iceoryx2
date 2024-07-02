@@ -103,7 +103,7 @@ impl iox2_node_storage_t {
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_name_t {
-    assert!(!node_handle.is_null());
+    debug_assert!(!node_handle.is_null());
     unimplemented!() // TODO: [#210] implement
 }
 
@@ -115,7 +115,7 @@ pub type iox2_config_t = *const (); // TODO: [#210] implement in config.rs
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_t {
-    assert!(!node_handle.is_null());
+    debug_assert!(!node_handle.is_null());
     unimplemented!() // TODO: [#210] implement
 }
 
@@ -127,7 +127,7 @@ pub type iox2_unique_system_id_t = *const (); // TODO: [#210] implement in uniqu
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_unique_system_id_t {
-    assert!(!node_handle.is_null());
+    debug_assert!(!node_handle.is_null());
     unimplemented!() // TODO: [#210] implement
 }
 
@@ -152,8 +152,8 @@ pub unsafe extern "C" fn iox2_nodel_list(
     node_handle: iox2_node_h,
     config_handle: iox2_config_t,
 ) -> c_int {
-    assert!(!node_handle.is_null());
-    assert!(!config_handle.is_null());
+    debug_assert!(!node_handle.is_null());
+    debug_assert!(!config_handle.is_null());
     unimplemented!() // TODO: [#210] implement
 
     // IOX2_OK
@@ -173,8 +173,8 @@ pub unsafe extern "C" fn iox2_node_service_builder(
     _service_builder_storage: *mut iox2_service_builder_storage_t,
     service_name_handle: iox2_service_name_h,
 ) -> iox2_service_builder_h {
-    assert!(!node_handle.is_null());
-    assert!(!service_name_handle.is_null());
+    debug_assert!(!node_handle.is_null());
+    debug_assert!(!service_name_handle.is_null());
     unimplemented!() // TODO: [#210] implement
 }
 
@@ -190,7 +190,7 @@ pub unsafe extern "C" fn iox2_node_service_builder(
 /// The corresponding [`iox2_node_storage_t`] can be re-used with a call to [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
-    assert!(!node_handle.is_null());
+    debug_assert!(!node_handle.is_null());
 
     unsafe {
         match (*node_handle).node_type {

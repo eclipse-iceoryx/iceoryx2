@@ -126,7 +126,7 @@ pub unsafe extern "C" fn iox2_node_builder_new(
         handle = iox2_node_builder_storage_t::alloc();
         deleter = iox2_node_builder_storage_t::dealloc;
     }
-    assert!(!handle.is_null());
+    debug_assert!(!handle.is_null());
 
     unsafe {
         (*handle).deleter = deleter;
@@ -146,8 +146,8 @@ pub extern "C" fn iox2_node_builder_set_name(
     node_builder_handle: iox2_node_builder_h,
     node_name_handle: iox2_node_name_h,
 ) -> c_int {
-    assert!(!node_builder_handle.is_null());
-    assert!(!node_name_handle.is_null());
+    debug_assert!(!node_builder_handle.is_null());
+    debug_assert!(!node_name_handle.is_null());
     unimplemented!() // TODO: [#210] implement
 
     // IOX2_OK
@@ -155,7 +155,7 @@ pub extern "C" fn iox2_node_builder_set_name(
 
 #[no_mangle]
 pub extern "C" fn iox2_node_builder_set_config(node_builder_handle: iox2_node_builder_h) -> c_int {
-    assert!(!node_builder_handle.is_null());
+    debug_assert!(!node_builder_handle.is_null());
     unimplemented!() // TODO: [#210] implement
 
     // IOX2_OK
@@ -183,8 +183,8 @@ pub unsafe extern "C" fn iox2_node_builder_create(
     node_type: iox2_node_type_e,
     node_handle_ptr: *mut iox2_node_h,
 ) -> c_int {
-    assert!(!node_builder_handle.is_null());
-    assert!(!node_handle_ptr.is_null());
+    debug_assert!(!node_builder_handle.is_null());
+    debug_assert!(!node_handle_ptr.is_null());
 
     let node_builder = std::mem::take(unsafe { (*node_builder_handle).node_builder_assume_init() });
     unsafe {
@@ -199,7 +199,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
         node_handle = iox2_node_storage_t::alloc();
         deleter = iox2_node_storage_t::dealloc;
     }
-    assert!(!node_handle.is_null());
+    debug_assert!(!node_handle.is_null());
 
     unsafe {
         (*node_handle).node_type = node_type;
