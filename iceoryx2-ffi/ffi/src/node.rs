@@ -12,7 +12,9 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::iox2_node_name_t;
+use crate::{
+    iox2_node_name_t, iox2_service_builder_h, iox2_service_builder_storage_t, iox2_service_name_h,
+};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service;
@@ -117,7 +119,7 @@ pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_conf
     unimplemented!() // TODO: [#210] implement
 }
 
-pub type iox2_unique_system_id_t = *const(); // TODO: [#210] implement in unique_system_id.rs
+pub type iox2_unique_system_id_t = *const (); // TODO: [#210] implement in unique_system_id.rs
 /// Returns the immutable [`iox2_unique_system_id_t`] handle of the [`iox2_node_h`].
 ///
 /// # Safety
@@ -129,7 +131,7 @@ pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_unique_s
     unimplemented!() // TODO: [#210] implement
 }
 
-pub type iox2_node_state_t = *mut (); // TODO: [#210] implement in service_builder.rs
+pub type iox2_node_state_t = *mut (); // TODO: [#210] implement in node_state.rs
 pub type iox2_node_list_failure_e = c_int; // TODO: [#210] implement in this file
 /// Call the callback repeatedly with an immutable [`iox2_node_state_t`] handle for all [`Node`](iceoryx2::node::Node)s
 /// in the system under a given [`Config`](iceoryx2::config::Config).
@@ -146,7 +148,10 @@ pub type iox2_node_list_failure_e = c_int; // TODO: [#210] implement in this fil
 ///
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_nodel_list(node_handle: iox2_node_h, config_handle: iox2_config_t) -> c_int {
+pub unsafe extern "C" fn iox2_nodel_list(
+    node_handle: iox2_node_h,
+    config_handle: iox2_config_t,
+) -> c_int {
     assert!(!node_handle.is_null());
     assert!(!config_handle.is_null());
     unimplemented!() // TODO: [#210] implement
@@ -154,9 +159,6 @@ pub unsafe extern "C" fn iox2_nodel_list(node_handle: iox2_node_h, config_handle
     // IOX2_OK
 }
 
-pub type iox2_service_builder_storage_t = *mut (); // TODO: [#210] implement in service_builder.rs
-pub type iox2_service_builder_h = *mut (); // TODO: [#210] implement in service_builder.rs
-pub type iox2_service_name_h = *mut (); // TODO: [#210] implement in service_builder.rs
 #[no_mangle]
 pub extern "C" fn iox2_service_name_new() {}
 /// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.
@@ -174,8 +176,6 @@ pub unsafe extern "C" fn iox2_node_service_builder(
     assert!(!node_handle.is_null());
     assert!(!service_name_handle.is_null());
     unimplemented!() // TODO: [#210] implement
-
-    // IOX2_OK
 }
 
 /// This function needs to be called to destroy the node!
