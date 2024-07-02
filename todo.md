@@ -1,4 +1,14 @@
-# POSIX
+# TODO
+
+ * SharedNode has list with ref-count for all registered/attached services
+ * event
+    * list nodes
+    * max nodes supported
+    * one node can open same service as many times as it wants
+    * node requirements when service is opened
+ * publish subscribe
+    * list nodes
+    * one node can open same service as many times as it wants
 
 # BUGS
 

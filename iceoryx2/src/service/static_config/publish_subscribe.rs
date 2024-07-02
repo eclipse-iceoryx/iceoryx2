@@ -80,12 +80,12 @@ impl StaticConfig {
     }
 
     /// Returns the maximum supported amount of [`crate::port::publisher::Publisher`] ports
-    pub fn max_supported_publishers(&self) -> usize {
+    pub fn max_publishers(&self) -> usize {
         self.max_publishers
     }
 
     /// Returns the maximum supported amount of [`crate::port::subscriber::Subscriber`] ports
-    pub fn max_supported_subscribers(&self) -> usize {
+    pub fn max_subscribers(&self) -> usize {
         self.max_subscribers
     }
 

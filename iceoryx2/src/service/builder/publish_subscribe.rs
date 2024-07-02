@@ -59,6 +59,8 @@ pub enum PublishSubscribeOpenError {
     DoesNotSupportRequestedAmountOfPublishers,
     /// The [`Service`] supports less [`Subscriber`](crate::port::subscriber::Subscriber)s than requested.
     DoesNotSupportRequestedAmountOfSubscribers,
+    /// The [`Service`] supports less [`Node`](crate::node::Node)s than requested.
+    DoesNotSupportRequestedAmountOfNodes,
     /// The [`Service`] required overflow behavior is not compatible.
     IncompatibleOverflowBehavior,
     /// The process has not enough permissions to open the [`Service`]
@@ -426,7 +428,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         }
 
         if self.verify_max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
-            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples,
+            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes,
                                 "{} since the service supports only {} nodes but {} are required.",
                                 msg, existing_settings.max_nodes, required_settings.max_nodes);
         }

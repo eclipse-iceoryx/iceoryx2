@@ -13,7 +13,7 @@
 #[generic_tests::define]
 mod service {
     use std::sync::atomic::{AtomicU64, Ordering};
-    use std::sync::Barrier;
+    use std::sync::{Barrier, Mutex};
 
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
@@ -41,7 +41,7 @@ mod service {
         type OpenError: std::fmt::Debug;
 
         fn new() -> Self;
-        fn node(&self) -> &Node<Sut>;
+        fn node(&self) -> &Mutex<Node<Sut>>;
         fn create(
             &self,
             service_name: &ServiceName,
@@ -59,11 +59,11 @@ mod service {
     }
 
     struct PubSubTests<Sut: Service> {
-        node: Node<Sut>,
+        node: Mutex<Node<Sut>>,
     }
 
     struct EventTests<Sut: Service> {
-        node: Node<Sut>,
+        node: Mutex<Node<Sut>>,
     }
 
     impl<Sut: Service> SutFactory<Sut> for PubSubTests<Sut> {
@@ -73,11 +73,11 @@ mod service {
 
         fn new() -> Self {
             Self {
-                node: NodeBuilder::new().create().unwrap(),
+                node: Mutex::new(NodeBuilder::new().create().unwrap()),
             }
         }
 
-        fn node(&self) -> &Node<Sut> {
+        fn node(&self) -> &Mutex<Node<Sut>> {
             &self.node
         }
 
@@ -87,6 +87,8 @@ mod service {
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
             self.node
+                .lock()
+                .unwrap()
                 .service_builder(service_name.clone())
                 .publish_subscribe::<u64>()
                 .create_with_attributes(attributes)
@@ -98,6 +100,8 @@ mod service {
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
             self.node
+                .lock()
+                .unwrap()
                 .service_builder(service_name.clone())
                 .publish_subscribe::<u64>()
                 .open_with_attributes(attributes)
@@ -135,11 +139,11 @@ mod service {
 
         fn new() -> Self {
             Self {
-                node: NodeBuilder::new().create().unwrap(),
+                node: Mutex::new(NodeBuilder::new().create().unwrap()),
             }
         }
 
-        fn node(&self) -> &Node<Sut> {
+        fn node(&self) -> &Mutex<Node<Sut>> {
             &self.node
         }
 
@@ -149,6 +153,8 @@ mod service {
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
             self.node
+                .lock()
+                .unwrap()
                 .service_builder(service_name.clone())
                 .event()
                 .create_with_attributes(attributes)
@@ -160,6 +166,8 @@ mod service {
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
             self.node
+                .lock()
+                .unwrap()
                 .service_builder(service_name.clone())
                 .event()
                 .open_with_attributes(attributes)
@@ -199,13 +207,21 @@ mod service {
         let service_name = generate_name();
         let sut_pub_sub = test
             .node()
+            .lock()
+            .unwrap()
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut_pub_sub, is_ok);
         let sut_pub_sub = sut_pub_sub.unwrap();
 
-        let sut_event = test.node().service_builder(service_name).event().create();
+        let sut_event = test
+            .node()
+            .lock()
+            .unwrap()
+            .service_builder(service_name)
+            .event()
+            .create();
         assert_that!(sut_event, is_ok);
         let sut_event = sut_event.unwrap();
 

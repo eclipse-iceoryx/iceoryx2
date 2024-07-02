@@ -207,12 +207,12 @@ mod service_event {
             .max_listeners(5)
             .create()
             .unwrap();
-        assert_that!(sut.static_config().max_supported_notifiers(), eq 4);
-        assert_that!(sut.static_config().max_supported_listeners(), eq 5);
+        assert_that!(sut.static_config().max_notifiers(), eq 4);
+        assert_that!(sut.static_config().max_listeners(), eq 5);
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
-        assert_that!(sut2.static_config().max_supported_notifiers(), eq 4);
-        assert_that!(sut2.static_config().max_supported_listeners(), eq 5);
+        assert_that!(sut2.static_config().max_notifiers(), eq 4);
+        assert_that!(sut2.static_config().max_listeners(), eq 5);
     }
 
     #[test]
@@ -231,12 +231,12 @@ mod service_event {
             .event()
             .create()
             .unwrap();
-        assert_that!(sut.static_config().max_supported_notifiers(), eq 9);
-        assert_that!(sut.static_config().max_supported_listeners(), eq 10);
+        assert_that!(sut.static_config().max_notifiers(), eq 9);
+        assert_that!(sut.static_config().max_listeners(), eq 10);
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
-        assert_that!(sut2.static_config().max_supported_notifiers(), eq 9);
-        assert_that!(sut2.static_config().max_supported_listeners(), eq 10);
+        assert_that!(sut2.static_config().max_notifiers(), eq 9);
+        assert_that!(sut2.static_config().max_listeners(), eq 10);
     }
 
     #[test]

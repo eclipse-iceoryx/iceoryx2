@@ -52,13 +52,19 @@ impl StaticConfig {
         }
     }
 
+    /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the
+    /// [`Service`](crate::service::Service) in parallel.
+    pub fn max_nodes(&self) -> usize {
+        self.max_nodes
+    }
+
     /// Returns the maximum supported amount of [`crate::port::notifier::Notifier`] ports
-    pub fn max_supported_notifiers(&self) -> usize {
+    pub fn max_notifiers(&self) -> usize {
         self.max_notifiers
     }
 
     /// Returns the maximum supported amount of [`crate::port::listener::Listener`] ports
-    pub fn max_supported_listeners(&self) -> usize {
+    pub fn max_listeners(&self) -> usize {
         self.max_listeners
     }
 

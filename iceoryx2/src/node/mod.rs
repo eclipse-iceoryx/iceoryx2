@@ -413,7 +413,6 @@ pub struct Node<Service: service::Service> {
 }
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}
-unsafe impl<Service: service::Service> Sync for Node<Service> {}
 
 impl<Service: service::Service> Node<Service> {
     /// Returns the [`NodeName`].

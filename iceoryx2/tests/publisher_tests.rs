@@ -13,6 +13,7 @@
 #[generic_tests::define]
 mod publisher {
     use std::collections::HashSet;
+    use std::sync::Mutex;
     use std::time::{Duration, Instant};
 
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
@@ -277,8 +278,10 @@ mod publisher {
     fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
         let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let node = Mutex::new(NodeBuilder::new().create::<Sut>().unwrap());
         let service = node
+            .lock()
+            .unwrap()
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
@@ -296,6 +299,8 @@ mod publisher {
         std::thread::scope(|s| {
             s.spawn(|| {
                 let service = node
+                    .lock()
+                    .unwrap()
                     .service_builder(service_name)
                     .publish_subscribe::<u64>()
                     .subscriber_max_buffer_size(1)

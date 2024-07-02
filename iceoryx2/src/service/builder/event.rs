@@ -52,6 +52,8 @@ pub enum EventOpenError {
     DoesNotSupportRequestedAmountOfListeners,
     /// The [`Service`] supported [`EventId`] is smaller than the requested max [`EventId`].
     DoesNotSupportRequestedMaxEventId,
+    /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
+    ExceedsMaxNumberOfNodes,
 }
 
 impl std::fmt::Display for EventOpenError {
@@ -130,6 +132,7 @@ pub struct Builder<ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_notifiers: bool,
     verify_max_listeners: bool,
+    verify_max_nodes: bool,
     verify_event_id_max_value: bool,
 }
 
@@ -139,6 +142,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             base,
             verify_max_notifiers: false,
             verify_max_listeners: false,
+            verify_max_nodes: false,
             verify_event_id_max_value: false,
         };
 
@@ -156,6 +160,15 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 fatal_panic!(from self, "This should never happen! Accessing wrong messaging pattern in Event builder!");
             }
         }
+    }
+
+    /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
+    /// be able to open it in parallel. If an existing [`Service`] is opened it defines how many
+    /// [`Node`](crate::node::Node)s must be at least supported.
+    pub fn max_nodes(mut self, value: usize) -> Self {
+        self.config_details().max_nodes = value;
+        self.verify_max_nodes = true;
+        self
     }
 
     /// If the [`Service`] is created it defines how many [`crate::port::notifier::Notifier`] shall
@@ -436,6 +449,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             warn!(from origin, "Setting the maximum amount of listeners to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_listeners = 1;
         }
+
+        if settings.max_nodes == 0 {
+            warn!(from origin, "Setting the maximum amount of nodes to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_nodes = 1;
+        }
     }
 
     fn verify_service_attributes(
@@ -484,6 +502,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             fail!(from self, with EventOpenError::DoesNotSupportRequestedMaxEventId,
                 "{} since the event supports only EventIds with a value of at most {} a support of {} was requested.",
                 msg, existing_settings.event_id_max_value, required_settings.event_id_max_value);
+        }
+
+        if self.verify_max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
+            fail!(from self, with EventOpenError::ExceedsMaxNumberOfNodes,
+                "{} since the event supports only {} nodes but {} are required.",
+                msg, existing_settings.max_nodes, required_settings.max_nodes);
         }
 
         Ok(*existing_settings)
