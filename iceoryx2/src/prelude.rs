@@ -15,6 +15,7 @@ pub use crate::iox2::Iox2;
 pub use crate::iox2::Iox2Event;
 pub use crate::node::{node_name::NodeName, Node, NodeBuilder, NodeState};
 pub use crate::port::event_id::EventId;
+pub use crate::service::messaging_pattern::MessagingPattern;
 pub use crate::service::{
     attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier,
     port_factory::publisher::UnableToDeliverStrategy, port_factory::PortFactory, process_local,

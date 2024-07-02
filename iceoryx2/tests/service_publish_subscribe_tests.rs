@@ -1814,7 +1814,7 @@ mod service_publish_subscribe {
     fn does_exist_works_single<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
         let _sut = node
             .service_builder(service_name.clone())
@@ -1822,12 +1822,12 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq true);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq true);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
 
         drop(_sut);
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
     }
 
     #[test]
@@ -1840,7 +1840,7 @@ mod service_publish_subscribe {
 
         for i in 0..NUMBER_OF_SERVICES {
             let service_name = generate_name();
-            assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq false);
+            assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
             services.push(
                 node.service_builder(service_name.clone())
@@ -1851,13 +1851,13 @@ mod service_publish_subscribe {
             service_names.push(service_name);
 
             for s in service_names.iter().take(i + 1) {
-                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq true);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
             }
         }
 
         for i in 0..NUMBER_OF_SERVICES {
             for s in service_names.iter().take(NUMBER_OF_SERVICES - i) {
-                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq true);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
             }
 
             for s in service_names
@@ -1865,7 +1865,7 @@ mod service_publish_subscribe {
                 .take(NUMBER_OF_SERVICES)
                 .skip(NUMBER_OF_SERVICES - i)
             {
-                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq false);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
             }
 
             services.pop();
@@ -1949,7 +1949,7 @@ mod service_publish_subscribe {
         let subscriber = sut.subscriber_builder().create().unwrap();
 
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::publish_subscribe_id()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
         const PAYLOAD: u64 = 98129312938;
 

@@ -15,8 +15,8 @@
 //! See [`crate::service`]
 //!
 pub use crate::port::event_id::EventId;
-use crate::service::messaging_pattern::MessagingPattern;
 use crate::service::port_factory::event;
+use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::event::DynamicConfigSettings};
 use iceoryx2_bb_log::{fail, fatal_panic};
