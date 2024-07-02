@@ -327,11 +327,10 @@ pub trait Service: Debug + Sized {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let name = ServiceName::new("Some/Name")?;
-    /// let mut custom_config = Config::default();
     /// let does_name_exist =
     ///     zero_copy::Service::does_exist(
     ///                 &name,
-    ///                 &custom_config,
+    ///                 Config::get_global_config(),
     ///                 MessagingPattern::Event)?;
     /// # Ok(())
     /// # }
@@ -341,6 +340,36 @@ pub trait Service: Debug + Sized {
         config: &config::Config,
         messaging_pattern: MessagingPattern,
     ) -> Result<bool, ServiceDetailsError> {
+        Ok(Self::details(service_name, config, messaging_pattern)?.is_some())
+    }
+
+    /// Acquires the [`ServiceDetails`] of a [`Service`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// use iceoryx2::config::Config;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let name = ServiceName::new("Some/Name")?;
+    /// let details =
+    ///     zero_copy::Service::details(
+    ///                 &name,
+    ///                 Config::get_global_config(),
+    ///                 MessagingPattern::Event)?;
+    ///
+    /// if let Some(details) = details {
+    ///     println!("Service details: {:?}", details);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn details(
+        service_name: &ServiceName,
+        config: &config::Config,
+        messaging_pattern: MessagingPattern,
+    ) -> Result<Option<ServiceDetails<Self>>, ServiceDetailsError> {
         let uuid = unsafe {
             FileName::new_unchecked(
                 <HashValue as Into<String>>::into(
@@ -350,7 +379,7 @@ pub trait Service: Debug + Sized {
             )
         };
 
-        Ok(details::<Self>(config, &uuid)?.is_some())
+        details::<Self>(config, &uuid)
     }
 
     /// Returns a list of all services created under a given [`config::Config`].
