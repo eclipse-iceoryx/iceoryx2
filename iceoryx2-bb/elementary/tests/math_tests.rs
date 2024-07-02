@@ -47,3 +47,19 @@ fn math_dec_to_64() {
     assert_that!(262143u64.to_b64(), eq "___");
     assert_that!(262144u64.to_b64(), eq "0001");
 }
+
+#[test]
+fn const_max_works() {
+    const MIN_VALUE: usize = 13;
+    const MAX_VALUE: usize = 42;
+
+    const CHECK_1: usize = max(MIN_VALUE, MIN_VALUE);
+    const CHECK_2: usize = max(MIN_VALUE, MAX_VALUE);
+    const CHECK_3: usize = max(MAX_VALUE, MIN_VALUE);
+    const CHECK_4: usize = max(MAX_VALUE, MAX_VALUE);
+
+    assert_that!(CHECK_1, eq(MIN_VALUE));
+    assert_that!(CHECK_2, eq(MAX_VALUE));
+    assert_that!(CHECK_3, eq(MAX_VALUE));
+    assert_that!(CHECK_4, eq(MAX_VALUE));
+}

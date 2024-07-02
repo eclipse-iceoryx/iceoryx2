@@ -401,7 +401,7 @@ pub unsafe fn pthread_cancel(thread: pthread_t) -> int {
     Errno::ESUCCES as int
 }
 
-pub unsafe fn pthread_exit(value_ptr: *mut void) {
+pub unsafe fn pthread_exit(value_ptr: *mut void) -> ! {
     ExitThread(0);
 }
 

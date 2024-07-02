@@ -117,6 +117,7 @@ target_link_libraries(static-lib INTERFACE
     $<$<PLATFORM_ID:Windows>:userenv ntdll ws2_32 wsock32>
     $<$<AND:$<PLATFORM_ID:Windows>,$<C_COMPILER_ID:MSVC>>:bcrypt synchronization>
     $<$<PLATFORM_ID:Darwin>:stdc++>
+    $<$<PLATFORM_ID:FreeBSD>:rt>
 )
 target_link_libraries(shared-lib INTERFACE
     iceoryx2-c::includes-only

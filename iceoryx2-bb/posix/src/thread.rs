@@ -160,7 +160,7 @@ enum_gen! {
 }
 
 /// Terminates the callers thread
-pub fn thread_exit() {
+pub fn thread_exit() -> ! {
     unsafe { posix::pthread_exit(std::ptr::null_mut::<posix::void>()) }
 }
 

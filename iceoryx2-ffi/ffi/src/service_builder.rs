@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod bump_allocator;
-pub mod heap_allocator;
-pub mod one_chunk_allocator;
-pub mod pool_allocator;
+#![allow(non_camel_case_types)]
+
+pub type iox2_service_builder_storage_t = *mut (); // TODO: [#210] implement
+pub type iox2_service_builder_h = *mut (); // TODO: [#210] implement
+pub type iox2_service_name_h = *mut (); // TODO: [#210] implement

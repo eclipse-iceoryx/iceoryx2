@@ -18,29 +18,39 @@ mod event_id_tracker {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::event::{id_tracker::IdTracker, TriggerId};
 
+    use core::ptr::NonNull;
     use iceoryx2_bb_memory::bump_allocator::*;
-    use iceoryx2_bb_memory::memory::Memory;
-    use pin_init::PtrPinWith;
 
     const MEMORY_SIZE: usize = 1024 * 1024;
 
+    fn memory() -> Box<[u8; MEMORY_SIZE]> {
+        Box::new([0u8; MEMORY_SIZE])
+    }
+
+    fn allocator(memory: &mut [u8]) -> BumpAllocator {
+        BumpAllocator::new(
+            NonNull::new(memory.as_mut_ptr() as *mut u8).unwrap(),
+            memory.len(),
+        )
+    }
+
     #[test]
     fn max_trigger_id_must_be_at_least_capacity<Sut: IdTracker>() {
-        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
         const CAPACITY: usize = 5234;
+        let mut memory = memory();
 
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
-        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+        assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
         assert_that!(sut.trigger_id_max().as_value(), lt CAPACITY);
     }
 
     #[test]
     fn add_and_acquire_works<Sut: IdTracker>() {
-        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
+        let mut memory = memory();
         const CAPACITY: usize = 1234;
 
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
-        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+        assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         assert_that!(unsafe { sut.acquire() }, eq None);
         for i in 0..CAPACITY {
@@ -53,11 +63,11 @@ mod event_id_tracker {
 
     #[test]
     fn add_until_full_and_then_acquire_works<Sut: IdTracker>() {
-        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
+        let mut memory = memory();
         const CAPACITY: usize = 1234;
 
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
-        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+        assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         for i in 0..CAPACITY {
             let id = TriggerId::new((i).min(sut.trigger_id_max().as_value()));
@@ -76,11 +86,11 @@ mod event_id_tracker {
 
     #[test]
     fn add_and_acquire_all_works<Sut: IdTracker>() {
-        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
+        let mut memory = memory();
         const CAPACITY: usize = 3234;
 
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
-        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+        assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         for i in 0..CAPACITY {
             let id = TriggerId::new((i).min(sut.trigger_id_max().as_value()));
@@ -104,11 +114,11 @@ mod event_id_tracker {
 
     #[test]
     fn add_acquire_and_acquire_all_works<Sut: IdTracker>() {
-        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
+        let mut memory = memory();
         const CAPACITY: usize = 234;
 
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
-        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+        assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         for i in 0..CAPACITY {
             let id = TriggerId::new(i.min(sut.trigger_id_max().as_value()));
@@ -134,11 +144,11 @@ mod event_id_tracker {
 
     #[test]
     fn add_max_trigger_id_and_acquire_works<Sut: IdTracker>() {
-        let memory = Box::pin_with(Memory::<MEMORY_SIZE, BumpAllocator>::new()).unwrap();
+        let mut memory = memory();
         const CAPACITY: usize = 1234;
 
         let sut = unsafe { Sut::new_uninit(CAPACITY) };
-        assert_that!(unsafe { sut.init(memory.allocator()) }, is_ok);
+        assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         assert_that!(unsafe { sut.acquire() }, eq None);
         let id = sut.trigger_id_max();

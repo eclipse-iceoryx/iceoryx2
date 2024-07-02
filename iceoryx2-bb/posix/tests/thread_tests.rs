@@ -14,7 +14,7 @@ use iceoryx2_bb_posix::thread::*;
 use iceoryx2_bb_testing::assert_that;
 use std::sync::Arc;
 use std::sync::Barrier;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[test]
 fn thread_set_name_works() {
@@ -158,6 +158,48 @@ fn thread_set_affinity_from_thread_works() {
 }
 
 #[test]
+fn thread_destructor_does_not_block_on_empty_thread() {
+    let barrier = Arc::new(Barrier::new(2));
+    let thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
+            .spawn(move || {
+                barrier.wait();
+                // nothing to see, move along
+            })
+            .unwrap()
+    };
+
+    barrier.wait();
+    let start = Instant::now();
+    drop(thread);
+    assert_that!(start.elapsed(), lt(Duration::from_millis(10)));
+}
+
+#[test]
+fn thread_destructor_does_block_on_busy_thread() {
+    const SLEEP_DURATION: Duration = Duration::from_millis(100);
+    let barrier = Arc::new(Barrier::new(2));
+    let thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
+            .spawn(move || {
+                barrier.wait();
+                let start = Instant::now();
+                while start.elapsed() < SLEEP_DURATION {
+                    std::thread::sleep(SLEEP_DURATION - start.elapsed());
+                }
+            })
+            .unwrap()
+    };
+
+    barrier.wait();
+    let start = Instant::now();
+    drop(thread);
+    assert_that!(start.elapsed(), gt(SLEEP_DURATION));
+}
+
+#[test]
 fn thread_cancel_works() {
     let barrier = Arc::new(Barrier::new(2));
     let mut thread = {
@@ -181,19 +223,19 @@ fn thread_cancel_works() {
 
 #[test]
 fn thread_exit_works() {
-    let barrier = Arc::new(Barrier::new(2));
     let _thread = {
-        let barrier = barrier.clone();
         ThreadBuilder::new()
             .affinity(0)
             .spawn(move || {
-                barrier.wait();
+                // TODO: [#258] This sleep prevents a 'SIGABRT' on Linux with release builds with rustc v1.81.0-nightly!
+                #[cfg(target_os = "linux")]
+                std::thread::sleep(Duration::from_nanos(1));
                 thread_exit();
-                // if exit wouldn't work we would observe a deadlock here
-                barrier.wait();
+                #[allow(unreachable_code)]
+                {
+                    panic!("This should not happen when 'thread_exit' works as intended");
+                }
             })
             .unwrap()
     };
-    // if the thread is not executed we observe a deadlock here
-    barrier.wait();
 }

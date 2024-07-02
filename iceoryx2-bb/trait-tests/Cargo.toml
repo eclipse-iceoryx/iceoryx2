@@ -22,4 +22,3 @@ iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-cal = { workspace = true }
 
 generic-tests = { workspace = true }
-pin-init = { workspace = true }

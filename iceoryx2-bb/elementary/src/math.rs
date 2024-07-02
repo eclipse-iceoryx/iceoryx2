@@ -127,3 +127,24 @@ impl<const N: usize> ToB64 for [u8; N] {
         result
     }
 }
+
+/// Returns the larger of the two provided numbers
+///
+/// # Example
+///
+/// ```
+/// use iceoryx2_bb_elementary::math::max;
+///
+/// const SIZE: usize = max(std::mem::size_of::<u32>(), std::mem::size_of::<u32>());
+/// ```
+///
+/// # Note
+///
+/// Once const traits are stable, this should become a generic implementation for `T: PartialOrd`
+pub const fn max(a: usize, b: usize) -> usize {
+    if a > b {
+        a
+    } else {
+        b
+    }
+}

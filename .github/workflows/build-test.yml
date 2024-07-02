@@ -57,10 +57,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
         with:
-          # TODO iox2-172: cargo clippy receives a SIGABRT with macOS-latest x64 but
-          # works in this version
-          # toolchain: stable
-          toolchain: 1.76.0
+          toolchain: stable
           components: rustfmt, clippy
 
       - name: Run cargo fmt
