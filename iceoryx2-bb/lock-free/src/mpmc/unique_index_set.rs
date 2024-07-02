@@ -120,14 +120,19 @@ pub enum ReleaseMode {
 /// Defines the state of the [`UniqueIndexSet`] after the release operation
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ReleaseState {
+    /// The [`UniqueIndexSet`] is in locked mode since the last index was released. New indices
+    /// can no longer acquired from the [`UniqueIndexSet`].
     Locked,
+    /// New indices can still be acquired from the [`UniqueIndexSet`]
     Unlocked,
 }
 
 /// It states the reason if an index could not be acquired.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum UniqueIndexSetAcquireFailure {
+    /// The [`UniqueIndexSet`] does not contain any more indices
     OutOfIndices,
+    /// The [`UniqueIndexSet`] is in a locked state and indices can no longer be acquired.
     IsLocked,
 }
 

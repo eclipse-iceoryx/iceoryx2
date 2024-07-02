@@ -65,7 +65,11 @@ use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 /// States the reason why an element could not be added to the [`Container`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContainerAddFailure {
+    /// The new element would exceed the maximum [`Container::capacity()`].
     OutOfSpace,
+    /// The last element was removed from the [`Container`] with the option
+    /// [`ReleaseMode::LockIfLastIndex`] which prevents adding new elements when the [`Container`]
+    /// reached the [`Container::is_empty()`] state.
     IsLocked,
 }
 

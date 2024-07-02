@@ -15,7 +15,9 @@ mod node {
     use std::collections::{HashSet, VecDeque};
 
     use iceoryx2::config::Config;
-    use iceoryx2::node::{NodeId, NodeState, NodeView};
+    use iceoryx2::node::{
+        NodeCleanupFailure, NodeCreationFailure, NodeId, NodeListFailure, NodeState, NodeView,
+    };
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::directory::Directory;
@@ -210,6 +212,34 @@ mod node {
         let mut path = config.global.root_path();
         path.add_path_entry(&config.global.node.directory).unwrap();
         let _ = Directory::remove(&path);
+    }
+
+    #[test]
+    fn node_creation_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeCreationFailure::InsufficientPermissions), eq "NodeCreationFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeCreationFailure::InternalError), eq "NodeCreationFailure::InternalError");
+    }
+
+    #[test]
+    fn node_list_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeListFailure::InsufficientPermissions), eq "NodeListFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeListFailure::Interrupt), eq "NodeListFailure::Interrupt");
+        assert_that!(
+            format!("{}", NodeListFailure::InternalError), eq "NodeListFailure::InternalError");
+    }
+
+    #[test]
+    fn node_cleanup_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeCleanupFailure::InsufficientPermissions), eq "NodeCleanupFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeCleanupFailure::Interrupt), eq "NodeCleanupFailure::Interrupt");
+        assert_that!(
+            format!("{}", NodeCleanupFailure::InternalError), eq "NodeCleanupFailure::InternalError");
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

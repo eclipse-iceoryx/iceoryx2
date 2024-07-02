@@ -308,3 +308,21 @@
         list_of_samples: Vec<Sample<zero_copy::Service, MyMessageType, MyCustomHeader>>,
     }
     ```
+
+15. To avoid heap allocations, `Service::list()` requires a callback that is called for every
+        service entry instead of returning a `Vec`.
+
+    ```rust
+    // old
+    let services = zero_copy::Service::list(Config::get_global_config())?;
+
+    for service in services {
+        println!("\n{:#?}", &service);
+    }
+
+    // new
+    zero_copy::Service::list(Config::get_global_config(), |service| {
+        println!("\n{:#?}", &service?);
+        Ok(CallbackProgression::Continue)
+    })?;
+    ```
