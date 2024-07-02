@@ -838,6 +838,32 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn node_can_open_same_service_without_limits<Sut: Service>() {
+        let service_name = generate_name();
+        const REPETITIONS: usize = 128;
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .max_nodes(1)
+            .create();
+        assert_that!(sut, is_ok);
+
+        let mut services = vec![];
+        services.push(sut.unwrap());
+
+        for _ in 0..REPETITIONS {
+            let sut = node
+                .service_builder(service_name.clone())
+                .publish_subscribe::<u64>()
+                .open();
+            assert_that!(sut, is_ok);
+            services.push(sut.unwrap());
+        }
+    }
+
+    #[test]
     fn simple_communication_works_subscriber_created_first<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();

@@ -21,8 +21,8 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! println!("max listeners:                {:?}", event.static_config().max_supported_listeners());
-//! println!("max notifiers:                {:?}", event.static_config().max_supported_notifiers());
+//! println!("max listeners:                {:?}", event.static_config().max_listeners());
+//! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("event id max value:           {:?}", event.static_config().event_id_max_value());
 //!
 //! # Ok(())

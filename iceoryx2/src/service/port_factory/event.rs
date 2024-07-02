@@ -23,8 +23,8 @@
 //!
 //! println!("name:                         {:?}", event.name());
 //! println!("uuid:                         {:?}", event.uuid());
-//! println!("max listeners:                {:?}", event.static_config().max_supported_listeners());
-//! println!("max notifiers:                {:?}", event.static_config().max_supported_notifiers());
+//! println!("max listeners:                {:?}", event.static_config().max_listeners());
+//! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("number of active listeners:   {:?}", event.dynamic_config().number_of_listeners());
 //! println!("number of active notifiers:   {:?}", event.dynamic_config().number_of_notifiers());
 //!

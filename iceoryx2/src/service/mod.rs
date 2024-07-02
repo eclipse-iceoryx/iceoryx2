@@ -280,7 +280,8 @@ impl<S: Service> ServiceState<S> {
             dynamic_storage,
             static_storage,
         };
-        trace!(from new_self, "open service");
+        trace!(from "Service::open()", "open service: {} (uuid={:?})",
+            new_self.static_config.name(), new_self.static_config.uuid());
         new_self
     }
 }
@@ -293,12 +294,14 @@ impl<S: Service> Drop for ServiceState<S> {
             .deregister_node_id(self.node_id_handle)
         {
             DeregisterNodeState::HasOwners => {
-                trace!(from self, "close service");
+                trace!(from "Service::close()", "close service: {} (uuid={:?})",
+                    self.static_config.name(), self.static_config.uuid());
             }
             DeregisterNodeState::NoMoreOwners => {
                 self.static_storage.acquire_ownership();
                 self.dynamic_storage.acquire_ownership();
-                trace!(from self, "close and remove service");
+                trace!(from "Service::remove()", "close and remove service: {} (uuid={:?})",
+                    self.static_config.name(), self.static_config.uuid());
             }
         }
     }
