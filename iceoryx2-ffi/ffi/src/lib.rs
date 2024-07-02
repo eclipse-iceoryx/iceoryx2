@@ -57,10 +57,12 @@ impl IntoCInt for SemanticStringError {
 pub extern "C" fn zero_copy_service_list() -> i32 {
     set_log_level(iceoryx2_bb_log::LogLevel::Info);
 
-    match zero_copy::Service::list(Config::get_global_config(), |service| {
+    let callback = |service| {
         println!("\n{:#?}", service?);
         Ok(CallbackProgression::Continue)
-    }) {
+    };
+
+    match zero_copy::Service::list(Config::get_global_config(), callback) {
         Ok(_) => 0,
         Err(_) => -1,
     }
