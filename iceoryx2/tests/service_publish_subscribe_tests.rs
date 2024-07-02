@@ -517,7 +517,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
             .service_builder(service_name)
-            .publish_subscribe::<u64>()
+            .publish_subscribe::<[u64]>()
             .open_or_create();
 
         assert_that!(sut, is_ok);
@@ -2424,6 +2424,62 @@ mod service_publish_subscribe {
 
         assert_that!(sut3, is_err);
         assert_that!(sut3.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+    }
+
+    #[test]
+    fn open_error_display_works<Sut: Service>() {
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotExist), eq
+                                  "PublishSubscribeOpenError::DoesNotExist");
+        assert_that!(format!("{}", PublishSubscribeOpenError::InternalFailure), eq
+                                  "PublishSubscribeOpenError::InternalFailure");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IncompatibleTypes), eq
+                                  "PublishSubscribeOpenError::IncompatibleTypes");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IncompatibleMessagingPattern), eq
+                                  "PublishSubscribeOpenError::IncompatibleMessagingPattern");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IncompatibleAttributes), eq
+                                  "PublishSubscribeOpenError::IncompatibleAttributes");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IncompatibleOverflowBehavior), eq
+                                  "PublishSubscribeOpenError::IncompatibleOverflowBehavior");
+        assert_that!(format!("{}", PublishSubscribeOpenError::InsufficientPermissions), eq
+                                  "PublishSubscribeOpenError::InsufficientPermissions");
+        assert_that!(format!("{}", PublishSubscribeOpenError::ServiceInCorruptedState), eq
+                                  "PublishSubscribeOpenError::ServiceInCorruptedState");
+        assert_that!(format!("{}", PublishSubscribeOpenError::HangsInCreation), eq
+                                  "PublishSubscribeOpenError::HangsInCreation");
+        assert_that!(format!("{}", PublishSubscribeOpenError::ExceedsMaxNumberOfNodes), eq
+                                  "PublishSubscribeOpenError::ExceedsMaxNumberOfNodes");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IsMarkedForDestruction), eq
+                                  "PublishSubscribeOpenError::IsMarkedForDestruction");
+    }
+
+    #[test]
+    fn create_error_display_works<Sut: Service>() {
+        assert_that!(format!("{}", PublishSubscribeCreateError::ServiceInCorruptedState), eq
+                                  "PublishSubscribeCreateError::ServiceInCorruptedState");
+        assert_that!(format!("{}", PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize), eq
+                                  "PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize");
+        assert_that!(format!("{}", PublishSubscribeCreateError::AlreadyExists), eq
+                                  "PublishSubscribeCreateError::AlreadyExists");
+        assert_that!(format!("{}", PublishSubscribeCreateError::InsufficientPermissions), eq
+                                  "PublishSubscribeCreateError::InsufficientPermissions");
+        assert_that!(format!("{}", PublishSubscribeCreateError::InternalFailure), eq
+                                  "PublishSubscribeCreateError::InternalFailure");
+        assert_that!(format!("{}", PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance), eq
+                                  "PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance");
+        assert_that!(format!("{}", PublishSubscribeCreateError::OldConnectionsStillActive), eq
+                                  "PublishSubscribeCreateError::OldConnectionsStillActive");
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

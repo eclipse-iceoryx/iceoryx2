@@ -268,7 +268,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     /// [`crate::port::subscriber::Subscriber`] can borrow at most in parallel. If an existing
     /// [`Service`] is opened it defines the minimum required.
     pub fn subscriber_max_borrowed_samples(mut self, value: usize) -> Self {
-        self.config_details_mut().subscriber_max_borrowed_samples = std::cmp::max(value, 1);
+        self.config_details_mut().subscriber_max_borrowed_samples = value;
         self.verify_subscriber_max_borrowed_samples = true;
         self
     }

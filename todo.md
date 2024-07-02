@@ -1,16 +1,15 @@
 # TODO
 
- * SharedNode has list with ref-count for all registered/attached services
+ * concurrent service creation test must run with unique nodes
+ * list all nodes via service directly Service::details
  * event
     * list nodes
     * max nodes supported
     * one node can open same service as many times as it wants
     * node requirements when service is opened
-    * concurrent service creation test must run with unique nodes
  * publish subscribe
     * list nodes
-    * one node can open same service as many times as it wants
-    * concurrent service creation test must run with unique nodes
+    * node deregistration removes node
 
 # BUGS
 
