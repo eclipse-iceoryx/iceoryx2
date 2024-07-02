@@ -12,14 +12,14 @@
 
 #![allow(non_camel_case_types)]
 
-// use super::{IntoCInt, IOX2_OK};
+use crate::iox2_node_name_t;
 
 use iceoryx2::prelude::*;
 use iceoryx2::service;
 use iceoryx2_bb_elementary::math::max;
 use iceoryx2_bb_elementary::static_assert::*;
 
-// use core::ffi::c_int;
+use core::ffi::c_int;
 use core::mem::{align_of, size_of, MaybeUninit};
 use std::alloc::{alloc, dealloc, Layout};
 
@@ -93,6 +93,90 @@ impl iox2_node_storage_t {
 // END type definition
 
 // BEGIN C API
+
+/// Returns the [`iox2_node_name_t`](crate::iox2_node_name_t), an immutable handle to the node name.
+///
+/// # Safety
+///
+/// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_name_t {
+    assert!(!node_handle.is_null());
+    unimplemented!() // TODO: [#210] implement
+}
+
+pub type iox2_config_t = *const (); // TODO: [#210] implement in config.rs
+/// Returns the immutable [`iox2_config_t`] handle that the [`iox2_node_h`] will use to create any iceoryx2 entity.
+///
+/// # Safety
+///
+/// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_t {
+    assert!(!node_handle.is_null());
+    unimplemented!() // TODO: [#210] implement
+}
+
+pub type iox2_unique_system_id_t = *const(); // TODO: [#210] implement in unique_system_id.rs
+/// Returns the immutable [`iox2_unique_system_id_t`] handle of the [`iox2_node_h`].
+///
+/// # Safety
+///
+/// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_unique_system_id_t {
+    assert!(!node_handle.is_null());
+    unimplemented!() // TODO: [#210] implement
+}
+
+pub type iox2_node_state_t = *mut (); // TODO: [#210] implement in service_builder.rs
+pub type iox2_node_list_failure_e = c_int; // TODO: [#210] implement in this file
+/// Call the callback repeatedly with an immutable [`iox2_node_state_t`] handle for all [`Node`](iceoryx2::node::Node)s
+/// in the system under a given [`Config`](iceoryx2::config::Config).
+///
+/// # Arguments
+///
+/// * `node_handle` - A valid [`iox2_node_h`]
+/// * `config_handle` - A valid [`iox2_config_t`]
+/// * `callback` - A valid callback with ??? signature
+///
+/// Returns IOX2_OK on success, an [`iox2_node_list_failure_e`] otherwise.
+///
+/// # Safety
+///
+/// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_nodel_list(node_handle: iox2_node_h, config_handle: iox2_config_t) -> c_int {
+    assert!(!node_handle.is_null());
+    assert!(!config_handle.is_null());
+    unimplemented!() // TODO: [#210] implement
+
+    // IOX2_OK
+}
+
+pub type iox2_service_builder_storage_t = *mut (); // TODO: [#210] implement in service_builder.rs
+pub type iox2_service_builder_h = *mut (); // TODO: [#210] implement in service_builder.rs
+pub type iox2_service_name_h = *mut (); // TODO: [#210] implement in service_builder.rs
+#[no_mangle]
+pub extern "C" fn iox2_service_name_new() {}
+/// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.
+///
+/// # Safety
+///
+/// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// The `service_name_handle` must be valid and obtained by [`iox2_service_name_new`]!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_node_service_builder(
+    node_handle: iox2_node_h,
+    _service_builder_storage: *mut iox2_service_builder_storage_t,
+    service_name_handle: iox2_service_name_h,
+) -> iox2_service_builder_h {
+    assert!(!node_handle.is_null());
+    assert!(!service_name_handle.is_null());
+    unimplemented!() // TODO: [#210] implement
+
+    // IOX2_OK
+}
 
 /// This function needs to be called to destroy the node!
 ///
