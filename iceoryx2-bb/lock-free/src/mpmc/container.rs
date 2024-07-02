@@ -62,6 +62,26 @@ use std::alloc::Layout;
 use std::fmt::Debug;
 use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 
+/// States the reason why an element could not be added to the [`Container`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContainerAddFailure {
+    /// The new element would exceed the maximum [`Container::capacity()`].
+    OutOfSpace,
+    /// The last element was removed from the [`Container`] with the option
+    /// [`ReleaseMode::LockIfLastIndex`] which prevents adding new elements when the [`Container`]
+    /// reached the [`Container::is_empty()`] state.
+    IsLocked,
+}
+
+impl From<UniqueIndexSetAcquireFailure> for ContainerAddFailure {
+    fn from(value: UniqueIndexSetAcquireFailure) -> Self {
+        match value {
+            UniqueIndexSetAcquireFailure::IsLocked => ContainerAddFailure::IsLocked,
+            UniqueIndexSetAcquireFailure::OutOfIndices => ContainerAddFailure::OutOfSpace,
+        }
+    }
+}
+
 /// A handle that corresponds to an element inside the [`Container`]. Will be acquired when using
 /// [`Container::add()`] and can be released with [`Container::remove()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -264,32 +284,27 @@ impl<T: Copy + Debug> Container<T> {
     ///  * Use [`Container::remove()`] to release the acquired index again. Otherwise, the
     ///     element will leak.
     ///
-    pub unsafe fn add(&self, value: T) -> Option<ContainerHandle> {
+    pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
         self.verify_memory_initialization("add");
 
-        match self.index_set.acquire_raw_index() {
-            Some(index) => {
-                core::ptr::copy_nonoverlapping(
-                    &value,
-                    (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
-                    1,
-                );
+        let index = self.index_set.acquire_raw_index()?;
+        core::ptr::copy_nonoverlapping(
+            &value,
+            (*self.data_ptr.as_ptr().add(index as _)).get().cast(),
+            1,
+        );
 
-                //////////////////////////////////////
-                // SYNC POINT with reading data values
-                //////////////////////////////////////
-                unsafe { &*self.active_index_ptr.as_ptr().add(index as _) }
-                    .fetch_add(1, Ordering::Release);
+        //////////////////////////////////////
+        // SYNC POINT with reading data values
+        //////////////////////////////////////
+        unsafe { &*self.active_index_ptr.as_ptr().add(index as _) }.fetch_add(1, Ordering::Release);
 
-                // MUST HAPPEN AFTER all other operations
-                self.change_counter.fetch_add(1, Ordering::Release);
-                Some(ContainerHandle {
-                    index,
-                    container_id: self.container_id.value(),
-                })
-            }
-            None => None,
-        }
+        // MUST HAPPEN AFTER all other operations
+        self.change_counter.fetch_add(1, Ordering::Release);
+        Ok(ContainerHandle {
+            index,
+            container_id: self.container_id.value(),
+        })
     }
 
     /// Useful in IPC context when an application holding the UniqueIndex has died.
@@ -306,19 +321,20 @@ impl<T: Copy + Debug> Container<T> {
     /// **Important:** If the UniqueIndex still exists it causes double frees or freeing an index
     /// which was allocated afterwards
     ///
-    pub unsafe fn remove(&self, handle: ContainerHandle) {
+    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
         self.verify_memory_initialization("remove_with_handle");
-        if handle.container_id != self.container_id.value() {
-            fatal_panic!(from self,
-                "The ContainerHandle used as handle was not created by this Container instance.");
-        }
+        debug_assert!(
+            handle.container_id == self.container_id.value(),
+            "The ContainerHandle used as handle was not created by this Container instance."
+        );
 
         unsafe { &*self.active_index_ptr.as_ptr().add(handle.index as _) }
             .fetch_add(1, Ordering::Relaxed);
-        self.index_set.release_raw_index(handle.index);
+        let release_state = self.index_set.release_raw_index(handle.index, mode);
 
         // MUST HAPPEN AFTER all other operations
         self.change_counter.fetch_add(1, Ordering::Release);
+        release_state
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that
@@ -483,7 +499,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///  * Use [`FixedSizeContainer::remove()`] to release the acquired index again. Otherwise,
     ///     the element will leak.
     ///
-    pub unsafe fn add(&self, value: T) -> Option<ContainerHandle> {
+    pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
         self.container.add(value)
     }
 
@@ -493,8 +509,8 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     ///
     ///  * If the UniqueIndex still exists it causes double frees or freeing an index
     ///    which was allocated afterwards
-    pub unsafe fn remove(&self, handle: ContainerHandle) {
-        self.container.remove(handle)
+    pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
+        self.container.remove(handle, mode)
     }
 
     /// Returns [`ContainerState`] which contains all elements of this container. Be aware that

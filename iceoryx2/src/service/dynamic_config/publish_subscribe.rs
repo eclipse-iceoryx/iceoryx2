@@ -27,7 +27,7 @@
 //! # }
 //! ```
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_lock_free::mpmc::container::*;
+use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
@@ -69,10 +69,10 @@ impl DynamicConfig {
     }
 
     pub(crate) unsafe fn init(&self, allocator: &BumpAllocator) {
-        fatal_panic!(from "publish_subscribe::DynamicConfig::init",
+        fatal_panic!(from self,
             when self.subscribers.init(allocator),
             "This should never happen! Unable to initialize subscriber port id container.");
-        fatal_panic!(from "publish_subscribe::DynamicConfig::init",
+        fatal_panic!(from self,
             when self.publishers.init(allocator),
             "This should never happen! Unable to initialize publisher port id container.");
     }
@@ -93,18 +93,18 @@ impl DynamicConfig {
     }
 
     pub(crate) fn add_subscriber_id(&self, details: SubscriberDetails) -> Option<ContainerHandle> {
-        unsafe { self.subscribers.add(details) }
+        unsafe { self.subscribers.add(details).ok() }
     }
 
     pub(crate) fn release_subscriber_handle(&self, handle: ContainerHandle) {
-        unsafe { self.subscribers.remove(handle) }
+        unsafe { self.subscribers.remove(handle, ReleaseMode::Default) };
     }
 
     pub(crate) fn add_publisher_id(&self, details: PublisherDetails) -> Option<ContainerHandle> {
-        unsafe { self.publishers.add(details) }
+        unsafe { self.publishers.add(details).ok() }
     }
 
     pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
-        unsafe { self.publishers.remove(handle) }
+        unsafe { self.publishers.remove(handle, ReleaseMode::Default) };
     }
 }

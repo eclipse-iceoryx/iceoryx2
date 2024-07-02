@@ -23,11 +23,12 @@ mod service_publish_subscribe {
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::service::static_config::StaticConfig;
-    use iceoryx2::service::Service;
+    use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2_bb_elementary::alignment::Alignment;
+    use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -1813,7 +1814,7 @@ mod service_publish_subscribe {
     fn does_exist_works_single<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
         let _sut = node
             .service_builder(service_name.clone())
@@ -1821,12 +1822,12 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq true);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq true);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
 
         drop(_sut);
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
     }
 
     #[test]
@@ -1839,7 +1840,7 @@ mod service_publish_subscribe {
 
         for i in 0..NUMBER_OF_SERVICES {
             let service_name = generate_name();
-            assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
+            assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
             services.push(
                 node.service_builder(service_name.clone())
@@ -1850,13 +1851,13 @@ mod service_publish_subscribe {
             service_names.push(service_name);
 
             for s in service_names.iter().take(i + 1) {
-                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq true);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
             }
         }
 
         for i in 0..NUMBER_OF_SERVICES {
             for s in service_names.iter().take(NUMBER_OF_SERVICES - i) {
-                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq true);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
             }
 
             for s in service_names
@@ -1864,7 +1865,7 @@ mod service_publish_subscribe {
                 .take(NUMBER_OF_SERVICES)
                 .skip(NUMBER_OF_SERVICES - i)
             {
-                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq false);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
             }
 
             services.pop();
@@ -1879,11 +1880,11 @@ mod service_publish_subscribe {
         let mut services = vec![];
         let mut service_names = vec![];
 
-        let contains_service_names = |names, state: Vec<StaticConfig>| {
+        let contains_service_names = |names, state: Vec<ServiceDetails<Sut>>| {
             for n in names {
                 let mut name_found = false;
                 for s in &state {
-                    if *s.name() == n {
+                    if *s.static_details.name() == n {
                         name_found = true;
                         break;
                     }
@@ -1908,7 +1909,12 @@ mod service_publish_subscribe {
             );
             service_names.push(service_name);
 
-            let service_list = Sut::list(Config::get_global_config()).unwrap();
+            let mut service_list = vec![];
+            Sut::list(Config::get_global_config(), |s| {
+                service_list.push(s.unwrap());
+                Ok(CallbackProgression::Continue)
+            })
+            .unwrap();
             assert_that!(service_list, len i + 1);
 
             assert_that!(contains_service_names(service_names.clone(), service_list), eq true);
@@ -1918,7 +1924,12 @@ mod service_publish_subscribe {
             services.pop();
             service_names.pop();
 
-            let service_list = Sut::list(Config::get_global_config()).unwrap();
+            let mut service_list = vec![];
+            Sut::list(Config::get_global_config(), |s| {
+                service_list.push(s.unwrap());
+                Ok(CallbackProgression::Continue)
+            })
+            .unwrap();
             assert_that!(service_list, len NUMBER_OF_SERVICES - i - 1);
             assert_that!(contains_service_names(service_names.clone(), service_list), eq true);
         }
@@ -1938,7 +1949,7 @@ mod service_publish_subscribe {
         let subscriber = sut.subscriber_builder().create().unwrap();
 
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
         const PAYLOAD: u64 = 98129312938;
 

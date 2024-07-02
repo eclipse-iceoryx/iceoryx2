@@ -193,15 +193,24 @@ impl<Service: service::Service> Notifier<Service> {
         let origin = "Notifier::new()";
         let port_id = UniqueNotifierId::new();
 
-        let listener_list = &service.state().dynamic_storage.get().event().listeners;
-        let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
+        let listener_list = &service
+            .__internal_state()
+            .dynamic_storage
+            .get()
+            .event()
+            .listeners;
+        let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
 
         let mut new_self = Self {
             listener_connections: ListenerConnections::new(listener_list.capacity()),
             default_event_id,
             listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
             dynamic_storage,
-            event_id_max_value: service.state().static_config.event().event_id_max_value,
+            event_id_max_value: service
+                .__internal_state()
+                .static_config
+                .event()
+                .event_id_max_value,
             dynamic_notifier_handle: None,
             port_id,
         };
@@ -222,7 +231,7 @@ impl<Service: service::Service> Notifier<Service> {
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
                             "{} since it would exceed the maximum supported amount of notifiers of {}.",
-                            msg, service.state().static_config.event().max_notifiers);
+                            msg, service.__internal_state().static_config.event().max_notifiers);
             }
         };
         new_self.dynamic_notifier_handle = Some(dynamic_notifier_handle);

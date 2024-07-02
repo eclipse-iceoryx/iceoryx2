@@ -24,12 +24,15 @@ pub mod publish_subscribe;
 /// and the type variant
 pub mod message_type_details;
 
-use crate::service::messaging_pattern::MessagingPattern;
+pub mod messaging_pattern;
+
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;
 use serde::{Deserialize, Serialize};
 
 use crate::config;
+
+use self::messaging_pattern::MessagingPattern;
 
 use super::{attribute::AttributeSet, service_name::ServiceName};
 
@@ -42,13 +45,11 @@ pub struct StaticConfig {
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
-fn create_uuid<Hasher: Hash>(
+pub(crate) fn create_uuid<Hasher: Hash>(
     service_name: &ServiceName,
-    messaging_pattern: &MessagingPattern,
+    messaging_pattern: crate::service::messaging_pattern::MessagingPattern,
 ) -> Hasher {
-    let pattern_and_service = (<MessagingPattern as Into<u32>>::into(messaging_pattern.clone()))
-        .to_string()
-        + service_name.as_str();
+    let pattern_and_service = (messaging_pattern as u32).to_string() + service_name.as_str();
     Hasher::new(pattern_and_service.as_bytes())
 }
 
@@ -59,9 +60,12 @@ impl StaticConfig {
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
-            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
-                .value()
-                .into(),
+            uuid: create_uuid::<Hasher>(
+                service_name,
+                crate::service::messaging_pattern::MessagingPattern::Event,
+            )
+            .value()
+            .into(),
             service_name: service_name.clone(),
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -75,9 +79,12 @@ impl StaticConfig {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
         Self {
-            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
-                .value()
-                .into(),
+            uuid: create_uuid::<Hasher>(
+                service_name,
+                crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
+            )
+            .value()
+            .into(),
             service_name: service_name.clone(),
             messaging_pattern,
             attributes: AttributeSet::new(),

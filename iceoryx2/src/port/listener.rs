@@ -120,11 +120,11 @@ impl<Service: service::Service> Listener<Service> {
         let port_id = UniqueListenerId::new();
 
         let event_name = event_concept_name(&port_id);
-        let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
+        let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
 
         let listener = fail!(from origin,
                              when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name)
-                                .trigger_id_max(TriggerId::new(service.state().static_config.event().event_id_max_value))
+                                .trigger_id_max(TriggerId::new(service.__internal_state().static_config.event().event_id_max_value))
                                 .create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
@@ -141,7 +141,7 @@ impl<Service: service::Service> Listener<Service> {
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
         let dynamic_listener_handle = match service
-            .state()
+            .__internal_state()
             .dynamic_storage
             .get()
             .event()
@@ -151,7 +151,7 @@ impl<Service: service::Service> Listener<Service> {
             None => {
                 fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,
                                  "{} since it would exceed the maximum supported amount of listeners of {}.",
-                                 msg, service.state().static_config.event().max_listeners);
+                                 msg, service.__internal_state().static_config.event().max_listeners);
             }
         };
 

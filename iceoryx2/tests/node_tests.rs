@@ -15,26 +15,27 @@ mod node {
     use std::collections::{HashSet, VecDeque};
 
     use iceoryx2::config::Config;
-    use iceoryx2::node::{NodeState, NodeView};
+    use iceoryx2::node::{
+        NodeCleanupFailure, NodeCreationFailure, NodeId, NodeListFailure, NodeState, NodeView,
+    };
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::directory::Directory;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::assert_that;
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
         name: NodeName,
-        id: u128,
+        id: NodeId,
         config: Config,
     }
 
     impl Details {
-        fn new(name: &NodeName, id: &UniqueSystemId, config: &Config) -> Self {
+        fn new(name: &NodeName, id: &NodeId, config: &Config) -> Self {
             Self {
                 name: name.clone(),
-                id: id.value(),
+                id: id.clone(),
                 config: config.clone(),
             }
         }
@@ -45,7 +46,12 @@ mod node {
     }
 
     fn assert_node_presence<S: Service>(node_details: &VecDeque<Details>, config: &Config) {
-        let node_list = Node::<S>::list(config).unwrap();
+        let mut node_list = vec![];
+        Node::<S>::list(config, |node_state| {
+            node_list.push(node_state?);
+            Ok(CallbackProgression::Continue)
+        })
+        .unwrap();
 
         assert_that!(node_list, len node_details.len());
         for node in node_list {
@@ -161,7 +167,7 @@ mod node {
                 "its a bird, its a plane, no its the mountain goat jumping through the code",
             );
             nodes.push(NodeBuilder::new().name(node_name).create::<S>().unwrap());
-            assert_that!(node_ids.insert(nodes.last().unwrap().id().value()), eq true);
+            assert_that!(node_ids.insert(nodes.last().unwrap().id().clone()), eq true);
         }
     }
 
@@ -206,6 +212,34 @@ mod node {
         let mut path = config.global.root_path();
         path.add_path_entry(&config.global.node.directory).unwrap();
         let _ = Directory::remove(&path);
+    }
+
+    #[test]
+    fn node_creation_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeCreationFailure::InsufficientPermissions), eq "NodeCreationFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeCreationFailure::InternalError), eq "NodeCreationFailure::InternalError");
+    }
+
+    #[test]
+    fn node_list_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeListFailure::InsufficientPermissions), eq "NodeListFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeListFailure::Interrupt), eq "NodeListFailure::Interrupt");
+        assert_that!(
+            format!("{}", NodeListFailure::InternalError), eq "NodeListFailure::InternalError");
+    }
+
+    #[test]
+    fn node_cleanup_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeCleanupFailure::InsufficientPermissions), eq "NodeCleanupFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeCleanupFailure::Interrupt), eq "NodeCleanupFailure::Interrupt");
+        assert_that!(
+            format!("{}", NodeCleanupFailure::InternalError), eq "NodeCleanupFailure::InternalError");
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

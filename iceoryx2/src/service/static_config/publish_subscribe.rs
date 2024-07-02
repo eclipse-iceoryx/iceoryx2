@@ -45,6 +45,7 @@ use serde::{Deserialize, Serialize};
 pub struct StaticConfig {
     pub(crate) max_subscribers: usize,
     pub(crate) max_publishers: usize,
+    pub(crate) max_nodes: usize,
     pub(crate) history_size: usize,
     pub(crate) subscriber_max_buffer_size: usize,
     pub(crate) subscriber_max_borrowed_samples: usize,
@@ -57,6 +58,7 @@ impl StaticConfig {
         Self {
             max_subscribers: config.defaults.publish_subscribe.max_subscribers,
             max_publishers: config.defaults.publish_subscribe.max_publishers,
+            max_nodes: config.defaults.publish_subscribe.max_nodes,
             history_size: config.defaults.publish_subscribe.publisher_history_size,
             subscriber_max_buffer_size: config
                 .defaults

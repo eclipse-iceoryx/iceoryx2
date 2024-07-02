@@ -19,8 +19,8 @@ use std::marker::PhantomData;
 use crate::service;
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
-use crate::service::messaging_pattern::MessagingPattern;
 use crate::service::port_factory::publish_subscribe;
+use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
@@ -455,17 +455,22 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     number_of_subscribers: pubsub_config.max_subscribers,
                 };
 
-                let dynamic_config = match self.base.create_dynamic_config_storage(
-                    dynamic_config::MessagingPattern::PublishSubscribe(
-                        dynamic_config::publish_subscribe::DynamicConfig::new(
+                let (dynamic_config, node_id_handle) = match self
+                    .base
+                    .create_dynamic_config_storage(
+                        dynamic_config::MessagingPattern::PublishSubscribe(
+                            dynamic_config::publish_subscribe::DynamicConfig::new(
+                                &dynamic_config_setting,
+                            ),
+                        ),
+                        dynamic_config::publish_subscribe::DynamicConfig::memory_size(
                             &dynamic_config_setting,
                         ),
-                    ),
-                    dynamic_config::publish_subscribe::DynamicConfig::memory_size(
-                        &dynamic_config_setting,
-                    ),
-                ) {
-                    Ok(c) => Arc::new(c),
+                        pubsub_config.max_nodes,
+                    ) {
+                    Ok((dynamic_config, node_id_handle)) => {
+                        (Arc::new(dynamic_config), node_id_handle)
+                    }
                     Err(DynamicStorageCreateError::AlreadyExists) => {
                         fail!(from self, with PublishSubscribeCreateError::OldConnectionsStillActive,
                             "{} since there are still Publishers, Subscribers or active Samples.", msg);
@@ -490,9 +495,10 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                 unlocked_static_details.release_ownership();
 
                 Ok(publish_subscribe::PortFactory::new(
-                    ServiceType::from_state(service::ServiceState::new(
+                    ServiceType::__internal_from_state(service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),
+                        node_id_handle,
                         dynamic_config,
                         unlocked_static_details,
                     )),
@@ -546,19 +552,19 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     let pub_sub_static_config =
                         self.verify_service_attributes(&static_config, attributes)?;
 
-                    let dynamic_config = Arc::new(
-                        fail!(from self, when self.base.open_dynamic_config_storage(),
+                    let (dynamic_config, node_id_handle) = fail!(from self, when self.base.open_dynamic_config_storage(),
                             with PublishSubscribeOpenError::ServiceInCorruptedState,
-                            "{} since the dynamic service information could not be opened.", msg),
-                    );
+                            "{} since the dynamic service information could not be opened.", msg);
+                    let dynamic_config = Arc::new(dynamic_config);
 
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::PublishSubscribe(pub_sub_static_config.clone());
 
                     return Ok(publish_subscribe::PortFactory::new(
-                        ServiceType::from_state(service::ServiceState::new(
+                        ServiceType::__internal_from_state(service::ServiceState::new(
                             static_config,
                             self.base.shared_node.clone(),
+                            node_id_handle,
                             dynamic_config,
                             static_storage,
                         )),

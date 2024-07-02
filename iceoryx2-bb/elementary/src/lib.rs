@@ -30,3 +30,27 @@ pub mod relocatable_ptr;
 pub mod scope_guard;
 pub mod static_assert;
 pub mod unique_id;
+
+/// Defines how a callback based iteration shall progress after the calling the callback. Either
+/// stop the iteration with [`CallbackProgression::Stop`] or continue with
+/// [`CallbackProgression::Continue`].
+///
+/// ```rust
+/// use iceoryx2_bb_elementary::CallbackProgression;
+///
+/// fn iterate_over_something<F: FnMut(usize) -> CallbackProgression>(mut callback: F) {
+///     for i in 0..123 {
+///         match callback(i) {
+///             CallbackProgression::Stop => break,
+///             CallbackProgression::Continue => continue
+///         }
+///     }
+/// }
+/// ```
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum CallbackProgression {
+    /// Stops the iteration
+    Stop,
+    /// Continues the iteration
+    Continue,
+}
