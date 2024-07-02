@@ -87,6 +87,7 @@ mod mpmc_container {
     #[test]
     fn mpmc_container_add_and_remove_elements_works<T: Debug + Copy + From<usize> + Into<usize>>() {
         let sut = FixedSizeContainer::<T, CAPACITY>::new();
+        assert_that!(sut.is_empty(), eq true);
         let mut stored_indices = vec![];
         for i in 0..CAPACITY - 1 {
             let index = unsafe { sut.add((i * 3 + 1).into()) };
@@ -104,6 +105,7 @@ mod mpmc_container {
                 )
             };
         }
+        assert_that!(sut.is_empty(), eq false);
 
         let state = sut.get_state();
         let mut contained_values = vec![];

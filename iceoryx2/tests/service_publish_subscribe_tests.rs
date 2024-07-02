@@ -228,7 +228,7 @@ mod service_publish_subscribe {
             .service_builder(service_name)
             .publish_subscribe::<u64>()
             .max_publishers(1)
-            .open();
+            .open_or_create();
 
         assert_that!(sut2, is_ok);
     }

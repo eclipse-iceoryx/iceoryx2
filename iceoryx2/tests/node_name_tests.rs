@@ -30,4 +30,13 @@ mod node_name {
 
         assert_that!(format!("{}", sut), eq value);
     }
+
+    #[test]
+    fn try_into_works() {
+        let value = "all glory to david hypnotoad";
+        let sut: NodeName = value.try_into().unwrap();
+
+        assert_that!(sut, eq value);
+        assert_that!(&sut, eq value);
+    }
 }

@@ -341,9 +341,6 @@ pub trait Service: Debug + Sized {
     #[doc(hidden)]
     fn __internal_state(&self) -> &ServiceState<Self>;
 
-    #[doc(hidden)]
-    fn __internal_state_mut(&mut self) -> &mut ServiceState<Self>;
-
     /// Checks if a service under a given [`config::Config`] does exist
     ///
     /// # Example

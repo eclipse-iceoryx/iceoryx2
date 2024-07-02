@@ -65,7 +65,11 @@ use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 /// States the reason why an element could not be added to the [`Container`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContainerAddFailure {
+    /// The new element would exceed the maximum [`Container::capacity()`].
     OutOfSpace,
+    /// The last element was removed from the [`Container`] with the option
+    /// [`ReleaseMode::LockIfLastIndex`] which prevents adding new elements when the [`Container`]
+    /// reached the [`Container::is_empty()`] state.
     IsLocked,
 }
 
@@ -469,6 +473,11 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// Returns the capacity of the container
     pub fn capacity(&self) -> usize {
         self.container.capacity()
+    }
+
+    /// Returns true if the container is empty, otherwise false
+    pub fn is_empty(&self) -> bool {
+        self.container.is_empty()
     }
 
     /// Adds a new element to the [`FixedSizeContainer`]. If there is no more space available it returns

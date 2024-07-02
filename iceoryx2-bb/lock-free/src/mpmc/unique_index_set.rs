@@ -120,14 +120,19 @@ pub enum ReleaseMode {
 /// Defines the state of the [`UniqueIndexSet`] after the release operation
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ReleaseState {
+    /// The [`UniqueIndexSet`] is in locked mode since the last index was released. New indices
+    /// can no longer acquired from the [`UniqueIndexSet`].
     Locked,
+    /// New indices can still be acquired from the [`UniqueIndexSet`]
     Unlocked,
 }
 
 /// It states the reason if an index could not be acquired.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum UniqueIndexSetAcquireFailure {
+    /// The [`UniqueIndexSet`] does not contain any more indices
     OutOfIndices,
+    /// The [`UniqueIndexSet`] is in a locked state and indices can no longer be acquired.
     IsLocked,
 }
 
@@ -138,7 +143,6 @@ pub enum UniqueIndexSetAcquireFailure {
 pub struct UniqueIndex<'a> {
     value: u32,
     index_set: &'a UniqueIndexSet,
-    cleanup_callback: Option<CleanupCallback<'a>>,
 }
 
 impl<'a> Debug for UniqueIndex<'a> {
@@ -161,9 +165,6 @@ impl UniqueIndex<'_> {
 
 impl Drop for UniqueIndex<'_> {
     fn drop(&mut self) {
-        if self.cleanup_callback.is_some() {
-            self.cleanup_callback.as_ref().unwrap().call(self.value);
-        }
         unsafe {
             self.index_set
                 .release_raw_index(self.value, ReleaseMode::Default)
@@ -340,27 +341,6 @@ impl UniqueIndexSet {
         unsafe { self.acquire_raw_index() }.map(|v| UniqueIndex {
             value: v,
             index_set: self,
-            cleanup_callback: None,
-        })
-    }
-
-    /// Acquires a new [`UniqueIndex`] with an additional callback which is called when the
-    /// index goes out of scope and returned to the [`UniqueIndexSet`].
-    ///
-    /// # Safety
-    ///
-    /// * Ensure that either the [`UniqueIndexSet`] was created with [`UniqueIndexSet::new()`] or
-    ///     [`UniqueIndexSet::init()`] was called.
-    ///
-    pub unsafe fn acquire_with_additional_cleanup<'a, F: Fn(u32) + 'a>(
-        &'a self,
-        cleanup_callback: F,
-    ) -> Result<UniqueIndex<'a>, UniqueIndexSetAcquireFailure> {
-        self.verify_init("acquire_with_additional_cleanup");
-        unsafe { self.acquire_raw_index() }.map(|v| UniqueIndex {
-            value: v,
-            index_set: self,
-            cleanup_callback: Some(CleanupCallback::new(cleanup_callback)),
         })
     }
 
@@ -593,14 +573,6 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     /// See [`UniqueIndexSet::acquire()`]
     pub fn acquire(&self) -> Result<UniqueIndex<'_>, UniqueIndexSetAcquireFailure> {
         unsafe { self.state.acquire() }
-    }
-
-    /// See [`UniqueIndexSet::acquire_with_additional_cleanup()`]
-    pub fn acquire_with_additional_cleanup<'a, F: Fn(u32) + 'a>(
-        &'a self,
-        cleanup_callback: F,
-    ) -> Result<UniqueIndex<'a>, UniqueIndexSetAcquireFailure> {
-        unsafe { self.state.acquire_with_additional_cleanup(cleanup_callback) }
     }
 
     /// See [`UniqueIndexSet::capacity()`]

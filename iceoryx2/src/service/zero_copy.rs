@@ -61,8 +61,4 @@ impl crate::service::Service for Service {
     fn __internal_state(&self) -> &ServiceState<Self> {
         &self.state
     }
-
-    fn __internal_state_mut(&mut self) -> &mut ServiceState<Self> {
-        &mut self.state
-    }
 }

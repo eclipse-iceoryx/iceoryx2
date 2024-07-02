@@ -18,8 +18,8 @@ mod service_event {
     use std::time::{Duration, Instant};
 
     use iceoryx2::config::Config;
-    use iceoryx2::port::listener::Listener;
-    use iceoryx2::port::notifier::NotifierNotifyError;
+    use iceoryx2::port::listener::{Listener, ListenerCreateError};
+    use iceoryx2::port::notifier::{NotifierCreateError, NotifierNotifyError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::service::messaging_pattern::MessagingPattern;
@@ -31,6 +31,14 @@ mod service_event {
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
+            "service_tests_{}",
+            UniqueSystemId::new().unwrap().value()
+        ))
+        .unwrap()
+    }
+
+    fn generate_node_name() -> NodeName {
+        NodeName::new(&format!(
             "service_tests_{}",
             UniqueSystemId::new().unwrap().value()
         ))
@@ -123,7 +131,7 @@ mod service_event {
             .service_builder(service_name)
             .event()
             .max_notifiers(1)
-            .open();
+            .open_or_create();
         assert_that!(sut2, is_ok);
     }
 
@@ -260,6 +268,22 @@ mod service_event {
             received_events += 1;
         }
         assert_that!(received_events, eq 1);
+    }
+
+    #[test]
+    fn uuid_is_equal_in_within_all_opened_instances<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(service_name.clone())
+            .event()
+            .create()
+            .unwrap();
+
+        let sut2 = node.service_builder(service_name).event().open().unwrap();
+
+        assert_that!(sut.uuid(), eq sut2.uuid());
     }
 
     #[test]
@@ -423,6 +447,10 @@ mod service_event {
             assert_that!(sut2.dynamic_config().number_of_listeners(), eq 0);
         }
 
+        let notifier = sut.notifier_builder().create();
+        assert_that!(notifier, is_err);
+        assert_that!(notifier.err().unwrap(), eq NotifierCreateError::ExceedsMaxSupportedNotifiers);
+
         for i in 0..MAX_NOTIFIERS {
             notifiers.pop();
             assert_that!(sut.dynamic_config().number_of_notifiers(), eq MAX_NOTIFIERS - i - 1);
@@ -460,6 +488,10 @@ mod service_event {
             assert_that!(sut.dynamic_config().number_of_notifiers(), eq 0);
             assert_that!(sut2.dynamic_config().number_of_notifiers(), eq 0);
         }
+
+        let listener = sut.listener_builder().create();
+        assert_that!(listener, is_err);
+        assert_that!(listener.err().unwrap(), eq ListenerCreateError::ExceedsMaxSupportedListeners);
 
         for i in 0..MAX_LISTENERS {
             listeners.pop();
@@ -914,6 +946,44 @@ mod service_event {
             let result = l.blocking_wait_all(|id| assert_that!(ids.insert(id), eq true));
             assert_that!(result, is_ok);
         });
+    }
+
+    #[test]
+    fn open_error_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", EventOpenError::DoesNotExist), eq "EventOpenError::DoesNotExist");
+        assert_that!(
+            format!("{}", EventOpenError::InsufficientPermissions), eq "EventOpenError::InsufficientPermissions");
+        assert_that!(
+            format!("{}", EventOpenError::ServiceInCorruptedState), eq "EventOpenError::ServiceInCorruptedState");
+        assert_that!(
+            format!("{}", EventOpenError::IncompatibleMessagingPattern), eq "EventOpenError::IncompatibleMessagingPattern");
+        assert_that!(
+            format!("{}", EventOpenError::IncompatibleAttributes), eq "EventOpenError::IncompatibleAttributes");
+        assert_that!(
+            format!("{}", EventOpenError::InternalFailure), eq "EventOpenError::InternalFailure");
+        assert_that!(
+            format!("{}", EventOpenError::HangsInCreation), eq "EventOpenError::HangsInCreation");
+        assert_that!(
+            format!("{}", EventOpenError::DoesNotSupportRequestedAmountOfNotifiers), eq "EventOpenError::DoesNotSupportRequestedAmountOfNotifiers");
+        assert_that!(
+            format!("{}", EventOpenError::DoesNotSupportRequestedAmountOfListeners), eq "EventOpenError::DoesNotSupportRequestedAmountOfListeners");
+        assert_that!(
+            format!("{}", EventOpenError::DoesNotSupportRequestedMaxEventId), eq "EventOpenError::DoesNotSupportRequestedMaxEventId");
+    }
+
+    #[test]
+    fn create_error_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", EventCreateError::ServiceInCorruptedState), eq "EventCreateError::ServiceInCorruptedState");
+        assert_that!(
+            format!("{}", EventCreateError::InternalFailure), eq "EventCreateError::InternalFailure");
+        assert_that!(
+            format!("{}", EventCreateError::InsufficientPermissions), eq "EventCreateError::InsufficientPermissions");
+        assert_that!(
+            format!("{}", EventCreateError::IsBeingCreatedByAnotherInstance), eq "EventCreateError::IsBeingCreatedByAnotherInstance");
+        assert_that!(
+            format!("{}", EventCreateError::OldConnectionsStillActive), eq "EventCreateError::OldConnectionsStillActive");
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

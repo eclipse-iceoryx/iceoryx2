@@ -126,14 +126,14 @@ pub struct AttributeSpecifier(pub(crate) AttributeSet);
 
 impl Default for AttributeSpecifier {
     fn default() -> Self {
-        Self::new()
+        Self(AttributeSet::new())
     }
 }
 
 impl AttributeSpecifier {
     /// Creates a new empty set of [`Attribute`]s
     pub fn new() -> Self {
-        Self(AttributeSet::new())
+        Self::default()
     }
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
@@ -158,17 +158,17 @@ pub struct AttributeVerifier {
 
 impl Default for AttributeVerifier {
     fn default() -> Self {
-        Self::new()
+        Self {
+            attribute_set: AttributeSet::new(),
+            required_keys: Vec::new(),
+        }
     }
 }
 
 impl AttributeVerifier {
     /// Creates a new empty set of [`Attribute`]s
     pub fn new() -> Self {
-        Self {
-            attribute_set: AttributeSet::new(),
-            required_keys: Vec::new(),
-        }
+        Self::default()
     }
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.

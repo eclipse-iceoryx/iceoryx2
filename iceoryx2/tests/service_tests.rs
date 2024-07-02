@@ -21,6 +21,7 @@ mod service {
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
     use iceoryx2::service::port_factory::{event, publish_subscribe};
+    use iceoryx2::service::{ServiceDetailsError, ServiceListError};
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -508,6 +509,39 @@ mod service {
         );
 
         assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
+    fn details_error_display_works<Sut: Service, Factory: SutFactory<Sut>>() {
+        assert_that!(format!("{}", ServiceDetailsError::FailedToOpenStaticServiceInfo), eq
+                                  "ServiceDetailsError::FailedToOpenStaticServiceInfo");
+
+        assert_that!(format!("{}", ServiceDetailsError::FailedToReadStaticServiceInfo), eq
+                                  "ServiceDetailsError::FailedToReadStaticServiceInfo");
+
+        assert_that!(format!("{}", ServiceDetailsError::FailedToDeserializeStaticServiceInfo), eq
+                                  "ServiceDetailsError::FailedToDeserializeStaticServiceInfo");
+
+        assert_that!(format!("{}", ServiceDetailsError::ServiceInInconsistentState), eq
+                                  "ServiceDetailsError::ServiceInInconsistentState");
+
+        assert_that!(format!("{}", ServiceDetailsError::VersionMismatch), eq
+                                  "ServiceDetailsError::VersionMismatch");
+
+        assert_that!(format!("{}", ServiceDetailsError::InternalError), eq
+                                  "ServiceDetailsError::InternalError");
+
+        assert_that!(format!("{}", ServiceDetailsError::FailedToAcquireNodeState), eq
+                                  "ServiceDetailsError::FailedToAcquireNodeState");
+    }
+
+    #[test]
+    fn list_error_display_works<Sut: Service, Factory: SutFactory<Sut>>() {
+        assert_that!(format!("{}", ServiceListError::InsufficientPermissions), eq
+                                  "ServiceListError::InsufficientPermissions");
+
+        assert_that!(format!("{}", ServiceListError::InternalError), eq
+                                  "ServiceListError::InternalError");
     }
 
     mod zero_copy {
