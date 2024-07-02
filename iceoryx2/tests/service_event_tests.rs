@@ -22,6 +22,7 @@ mod service_event {
     use iceoryx2::port::notifier::NotifierNotifyError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -635,9 +636,9 @@ mod service_event {
             .unwrap();
         let listener = sut.listener_builder().create().unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(true));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::event_id()), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(false));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::event_id()), eq Ok(false));
 
         assert_that!(notifier.notify(), eq Ok(1));
 
@@ -668,9 +669,9 @@ mod service_event {
             .unwrap();
         let listener = sut.listener_builder().create().unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(true));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::event_id()), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(false));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::event_id()), eq Ok(false));
 
         let sut = node.service_builder(service_name.clone()).event().create();
         assert_that!(sut, is_err);

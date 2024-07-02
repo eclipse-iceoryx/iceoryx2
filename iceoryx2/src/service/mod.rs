@@ -171,10 +171,10 @@ use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_log::{debug, fail, trace, warn};
+use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::Event;
-use iceoryx2_cal::hash::Hash;
+use iceoryx2_cal::hash::*;
 use iceoryx2_cal::monitoring::Monitoring;
 use iceoryx2_cal::named_concept::NamedConceptListError;
 use iceoryx2_cal::named_concept::*;
@@ -185,7 +185,17 @@ use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 
 use self::dynamic_config::DeregisterNodeState;
+use self::messaging_pattern::MessagingPatternId;
 use self::service_name::ServiceName;
+
+/// Failure that can be reported when the [`ServiceDetails`] are acquired with [`Service::details()`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ServiceDetailsError {
+    FailedToOpenStaticServiceInfo,
+    FailedToReadStaticServiceInfo,
+    FailedToDeserializeStaticServiceInfo,
+    ServiceInInconsistentState,
+}
 
 /// Failure that can be reported by [`Service::list()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -318,32 +328,30 @@ pub trait Service: Debug + Sized {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let name = ServiceName::new("Some/Name")?;
     /// let mut custom_config = Config::default();
-    /// let does_name_exist = zero_copy::Service::does_exist(&name, &custom_config)?;
+    /// let does_name_exist =
+    ///     zero_copy::Service::does_exist(
+    ///                 &name,
+    ///                 &custom_config,
+    ///                 MessagingPattern::event_id())?;
     /// # Ok(())
     /// # }
     /// ```
     fn does_exist(
         service_name: &ServiceName,
         config: &config::Config,
-    ) -> Result<bool, ServiceListError> {
-        let mut result = false;
-        Self::list(config, |service| {
-            match service {
-                Ok(s) => {
-                    if s.static_details.name() == service_name {
-                        result = true;
-                        return Ok(CallbackProgression::Stop);
-                    }
-                }
-                Err(e) => {
-                    debug!(from "Service::does_exist()",
-                        "Service search will be incomplete since some Services cannot be accessed ({:?}).", e);
-                }
-            };
-            Ok(CallbackProgression::Continue)
-        })?;
+        messaging_pattern_id: MessagingPatternId,
+    ) -> Result<bool, ServiceDetailsError> {
+        let uuid = unsafe {
+            FileName::new_unchecked(
+                <HashValue as Into<String>>::into(
+                    create_uuid::<Self::ServiceNameHasher>(service_name, &messaging_pattern_id)
+                        .value(),
+                )
+                .as_bytes(),
+            )
+        };
 
-        Ok(result)
+        Ok(details::<Self>(config, &uuid)?.is_some())
     }
 
     /// Returns a list of all services created under a given [`config::Config`].
@@ -375,62 +383,81 @@ pub trait Service: Debug + Sized {
         let origin = "Service::list_from_config()";
         let static_storage_config = config_scheme::static_config_storage_config::<Self>(config);
 
-        let services = fail!(from origin,
+        let service_uuids = fail!(from origin,
                 when <Self::StaticStorage as NamedConceptMgmt>::list_cfg(&static_storage_config),
                 map NamedConceptListError::InsufficientPermissions => ServiceListError::InsufficientPermissions,
                 unmatched ServiceListError::InternalError,
                 "{} due to a failure while collecting all active services for config: {:?}", msg, config);
 
-        for service_storage in services {
-            let reader =
-                match <<Self::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
-                    Self::StaticStorage,
-                >>::new(&service_storage)
-                .config(&static_storage_config.clone())
-                .has_ownership(false)
-                .open()
-                {
-                    Ok(reader) => reader,
-                    Err(e) => {
-                        warn!(from origin, "Unable to acquire a list of all service since the static service info \"{}\" could not be opened for reading ({:?}).",
-                           service_storage, e );
-                        continue;
+        for uuid in &service_uuids {
+            match details::<Self>(&config, uuid) {
+                Ok(Some(service_details)) => {
+                    if callback(Ok(service_details))? == CallbackProgression::Stop {
+                        break;
                     }
-                };
-
-            let mut content = String::from_utf8(vec![b' '; reader.len() as usize]).unwrap();
-            if let Err(e) = reader.read(unsafe { content.as_mut_vec().as_mut_slice() }) {
-                warn!(from origin, "Unable to acquire a list of all service since the static service info \"{}\" could not be read ({:?}).",
-                           service_storage, e );
-                continue;
-            }
-
-            let service_config = match Self::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
-                content.as_mut_vec()
-            }) {
-                Ok(service_config) => service_config,
-                Err(e) => {
-                    warn!(from origin, "Unable to acquire a list of all service since the static service info \"{}\" could not be deserialized ({:?}).",
-                       service_storage, e );
-                    continue;
                 }
-            };
-
-            if service_storage.as_bytes() != service_config.uuid().as_bytes() {
-                warn!(from origin, "Detected service {:?} with an inconsistent hash of {} when acquiring services according to config {:?}",
-                    service_config, service_storage, config);
-                continue;
-            }
-
-            if callback(Ok(ServiceDetails {
-                static_details: service_config,
-                dynamic_details: None,
-            }))? == CallbackProgression::Stop
-            {
-                break;
+                Ok(None) => (),
+                Err(e) => {
+                    warn!(from origin,
+                        "The service list is incomplete since the service with the UUID {:?} could not be read ({:?}).",
+                        uuid, e);
+                }
             }
         }
 
         Ok(())
     }
+}
+
+fn details<S: Service>(
+    config: &config::Config,
+    uuid: &FileName,
+) -> Result<Option<ServiceDetails<S>>, ServiceDetailsError> {
+    let msg = "Unable to acquire servic details";
+    let origin = "Service::details()";
+    let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
+
+    let reader = match <<S::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+        S::StaticStorage,
+    >>::new(&uuid)
+    .config(&static_storage_config.clone())
+    .has_ownership(false)
+    .open()
+    {
+        Ok(reader) => reader,
+        Err(StaticStorageOpenError::DoesNotExist) => return Ok(None),
+        Err(e) => {
+            fail!(from origin, with ServiceDetailsError::FailedToOpenStaticServiceInfo,
+                        "{} due to a failure while opening the static service info \"{}\" for reading ({:?})",
+                        msg, uuid, e);
+        }
+    };
+
+    let mut content = String::from_utf8(vec![b' '; reader.len() as usize]).unwrap();
+    if let Err(e) = reader.read(unsafe { content.as_mut_vec().as_mut_slice() }) {
+        fail!(from origin, with ServiceDetailsError::FailedToReadStaticServiceInfo,
+                "{} since the static service info \"{}\" could not be read ({:?}).",
+                msg, uuid, e );
+    }
+
+    let service_config =
+        match S::ConfigSerializer::deserialize::<StaticConfig>(unsafe { content.as_mut_vec() }) {
+            Ok(service_config) => service_config,
+            Err(e) => {
+                fail!(from origin, with ServiceDetailsError::FailedToDeserializeStaticServiceInfo,
+                    "{} since the static service info \"{}\" could not be deserialized ({:?}).",
+                       msg, uuid, e );
+            }
+        };
+
+    if uuid.as_bytes() != service_config.uuid().as_bytes() {
+        fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,
+                "{} since the service {:?} has an inconsistent hash of {} according to config {:?}",
+                msg, service_config, uuid, config);
+    }
+
+    Ok(Some(ServiceDetails {
+        static_details: service_config,
+        dynamic_details: None,
+    }))
 }

@@ -37,6 +37,17 @@ use crate::service::static_config::event;
 use crate::service::static_config::publish_subscribe;
 use serde::{Deserialize, Serialize};
 
+/// Every [`MessagingPattern`] has its own unique id, the [`MessagingPatternId`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MessagingPatternId(u32);
+
+impl MessagingPatternId {
+    /// Returns the underlying value of the [`MessagingPatternId`]
+    pub fn value(&self) -> u32 {
+        self.0
+    }
+}
+
 /// Contains the static config of the corresponding messaging pattern.
 #[non_exhaustive]
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -63,16 +74,25 @@ impl Display for MessagingPattern {
     }
 }
 
-impl From<MessagingPattern> for u32 {
-    fn from(value: MessagingPattern) -> Self {
-        match value {
-            MessagingPattern::Event(_) => 0,
-            MessagingPattern::PublishSubscribe(_) => 1,
+impl MessagingPattern {
+    /// Returns the unique [`MessagingPatternId`] of the [`MessagingPattern::Event`]
+    pub const fn event_id() -> MessagingPatternId {
+        MessagingPatternId(0)
+    }
+
+    /// Returns the unique [`MessagingPatternId`] of the [`MessagingPattern::PublishSubscribe`]
+    pub const fn publish_subscribe_id() -> MessagingPatternId {
+        MessagingPatternId(1)
+    }
+
+    /// Returns the unique [`MessagingPatternId`] of the [`MessagingPattern`]
+    pub fn as_messaging_pattern_id(&self) -> MessagingPatternId {
+        match self {
+            MessagingPattern::Event(_) => MessagingPattern::event_id(),
+            MessagingPattern::PublishSubscribe(_) => MessagingPattern::publish_subscribe_id(),
         }
     }
-}
 
-impl MessagingPattern {
     pub(crate) fn is_same_pattern(&self, rhs: &MessagingPattern) -> bool {
         match self {
             MessagingPattern::PublishSubscribe(_) => {

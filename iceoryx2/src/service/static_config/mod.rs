@@ -31,7 +31,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::config;
 
-use super::{attribute::AttributeSet, service_name::ServiceName};
+use super::{
+    attribute::AttributeSet, messaging_pattern::MessagingPatternId, service_name::ServiceName,
+};
 
 /// Defines a common set of static service configuration details every service shares.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
@@ -42,13 +44,11 @@ pub struct StaticConfig {
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
-fn create_uuid<Hasher: Hash>(
+pub(crate) fn create_uuid<Hasher: Hash>(
     service_name: &ServiceName,
-    messaging_pattern: &MessagingPattern,
+    messaging_pattern_id: &MessagingPatternId,
 ) -> Hasher {
-    let pattern_and_service = (<MessagingPattern as Into<u32>>::into(messaging_pattern.clone()))
-        .to_string()
-        + service_name.as_str();
+    let pattern_and_service = messaging_pattern_id.value().to_string() + service_name.as_str();
     Hasher::new(pattern_and_service.as_bytes())
 }
 
@@ -59,7 +59,7 @@ impl StaticConfig {
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
-            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
+            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern.as_messaging_pattern_id())
                 .value()
                 .into(),
             service_name: service_name.clone(),
@@ -75,7 +75,7 @@ impl StaticConfig {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
         Self {
-            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern)
+            uuid: create_uuid::<Hasher>(service_name, &messaging_pattern.as_messaging_pattern_id())
                 .value()
                 .into(),
             service_name: service_name.clone(),
