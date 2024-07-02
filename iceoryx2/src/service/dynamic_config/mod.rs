@@ -33,7 +33,7 @@ use crate::node::NodeId;
 
 pub(crate) enum RegisterNodeResult {
     MarkedForDestruction,
-    MaximumNodesExceeded,
+    ExceedsMaxNumberOfNodes,
 }
 
 pub(crate) enum DeregisterNodeState {
@@ -100,7 +100,7 @@ impl DynamicConfig {
                     "{msg} since the service is already marked for destruction.");
             }
             Err(ContainerAddFailure::OutOfSpace) => {
-                fail!(from self, with RegisterNodeResult::MaximumNodesExceeded,
+                fail!(from self, with RegisterNodeResult::ExceedsMaxNumberOfNodes,
                     "{msg} since it would exceed the maximum supported nodes of {}.", self.nodes.capacity());
             }
         }

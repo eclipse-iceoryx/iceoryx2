@@ -73,6 +73,12 @@ impl StaticConfig {
         }
     }
 
+    /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the
+    /// [`Service`](crate::service::Service) in parallel.
+    pub fn max_nodes(&self) -> usize {
+        self.max_nodes
+    }
+
     /// Returns the maximum supported amount of [`crate::port::publisher::Publisher`] ports
     pub fn max_supported_publishers(&self) -> usize {
         self.max_publishers

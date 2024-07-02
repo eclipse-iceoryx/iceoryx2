@@ -34,7 +34,7 @@ use self::{
     message_type_details::{MessageTypeDetails, TypeDetail, TypeVariant},
 };
 
-use super::ServiceState;
+use super::{OpenDynamicStorageFailure, ServiceState};
 
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -68,6 +68,12 @@ pub enum PublishSubscribeOpenError {
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
+    /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
+    ExceedsMaxNumberOfNodes,
+    /// The [`Service`] is marked for destruction and currently cleaning up since no one is using it anymore.
+    /// When the call creation call is repeated with a little delay the [`Service`] should be
+    /// recreatable.
+    IsMarkedForDestruction,
 }
 
 impl std::fmt::Display for PublishSubscribeOpenError {
@@ -162,6 +168,7 @@ pub struct Builder<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: serv
     verify_subscriber_max_borrowed_samples: bool,
     verify_publisher_history_size: bool,
     verify_enable_safe_overflow: bool,
+    verify_max_nodes: bool,
     _data: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -178,6 +185,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
             verify_publisher_history_size: false,
             verify_subscriber_max_borrowed_samples: false,
             verify_enable_safe_overflow: false,
+            verify_max_nodes: false,
             override_alignment: None,
             override_payload_type: None,
             _data: PhantomData,
@@ -299,6 +307,15 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         self
     }
 
+    /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
+    /// be able to open it in parallel. If an existing [`Service`] is opened it defines how many
+    /// [`Node`](crate::node::Node)s must be at least supported.
+    pub fn max_nodes(mut self, value: usize) -> Self {
+        self.config_details_mut().max_nodes = value;
+        self.verify_max_nodes = true;
+        self
+    }
+
     fn adjust_attributes_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.publish_subscribe_mut();
@@ -325,6 +342,12 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
             warn!(from origin,
                 "Setting the maximum amount of publishers to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_publishers = 1;
+        }
+
+        if settings.max_nodes == 0 {
+            warn!(from origin,
+                "Setting the maximum amount of nodes to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_nodes = 1;
         }
     }
 
@@ -400,6 +423,12 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
             fail!(from self, with PublishSubscribeOpenError::IncompatibleOverflowBehavior,
                                 "{} since the service has an incompatible safe overflow behavior.",
                                 msg);
+        }
+
+        if self.verify_max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
+            fail!(from self, with PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples,
+                                "{} since the service supports only {} nodes but {} are required.",
+                                msg, existing_settings.max_nodes, required_settings.max_nodes);
         }
 
         Ok(existing_settings.clone())
@@ -552,9 +581,26 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     let pub_sub_static_config =
                         self.verify_service_attributes(&static_config, attributes)?;
 
-                    let (dynamic_config, node_id_handle) = fail!(from self, when self.base.open_dynamic_config_storage(),
-                            with PublishSubscribeOpenError::ServiceInCorruptedState,
-                            "{} since the dynamic service information could not be opened.", msg);
+                    let (dynamic_config, node_id_handle) = match self
+                        .base
+                        .open_dynamic_config_storage()
+                    {
+                        Ok(v) => v,
+                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
+                            fail!(from self, with PublishSubscribeOpenError::IsMarkedForDestruction,
+                                "{} since the dynamic service information could not be opened.", msg);
+                        }
+                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
+                            fail!(from self, with PublishSubscribeOpenError::ExceedsMaxNumberOfNodes,
+                                "{} since the dynamic service information could not be opened.", msg);
+                        }
+                        Err(e) => {
+                            fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
+                                "{} since the dynamic service information could not be opened ({:?}).",
+                                msg, e);
+                        }
+                    };
+
                     let dynamic_config = Arc::new(dynamic_config);
 
                     self.base.service_config.messaging_pattern =

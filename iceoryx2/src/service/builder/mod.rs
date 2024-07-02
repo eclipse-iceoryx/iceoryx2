@@ -23,6 +23,7 @@ pub mod publish_subscribe;
 use crate::node::SharedNode;
 use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
+use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
@@ -62,7 +63,8 @@ enum_gen! {
 #[doc(hidden)]
     OpenDynamicStorageFailure
   entry:
-    IsMarkedForDestruction
+    IsMarkedForDestruction,
+    ExceedsMaxNumberOfNodes
   mapping:
     DynamicStorageOpenError
 }
@@ -283,9 +285,17 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             "{} since the dynamic storage could not be opened.", msg);
 
         let node_id = self.shared_node.id();
-        let node_handle = fail!(from self, when storage.get().register_node_id(*node_id),
-                with OpenDynamicStorageFailure::IsMarkedForDestruction,
-                "{} since the dynamic storage is marked for destruction.", msg);
+        let node_handle = match storage.get().register_node_id(*node_id) {
+            Ok(handle) => handle,
+            Err(RegisterNodeResult::MarkedForDestruction) => {
+                fail!(from self, with OpenDynamicStorageFailure::IsMarkedForDestruction,
+                    "{} since the dynamic storage is marked for destruction.", msg);
+            }
+            Err(RegisterNodeResult::ExceedsMaxNumberOfNodes) => {
+                fail!(from self, with OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes,
+                    "{} since the dynamic storage is marked for destruction.", msg);
+            }
+        };
 
         Ok((storage, node_handle))
     }
