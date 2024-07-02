@@ -15,16 +15,19 @@ cmake --build target/ffi/build
 
 Run in two separate terminals. Note, currently the examples run for 10 seconds.
 
+<!-- TODO -->
 ```bash
-target/ffi/build/examples/c/publish_subscribe/example_c_publisher
+target/ffi/build/examples/cxx/publish_subscribe/example_cxx_publisher
 ```
 
+<!-- TODO -->
 ```bash
-target/ffi/build/examples/c/publish_subscribe/example_c_subscriber
+target/ffi/build/examples/cxx/publish_subscribe/example_cxx_subscriber
 ```
 
 ### Discovery
 
+<!-- TODO -->
 ```bash
-target/ffi/build/examples/c/discovery/example_c_discovery
+target/ffi/build/examples/cxx/discovery/example_cxx_discovery
 ```

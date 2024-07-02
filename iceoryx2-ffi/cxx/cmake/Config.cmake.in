@@ -10,11 +10,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#!/bin/bash
+@PACKAGE_INIT@
 
-sudo apt-get update
-sudo apt-get install -y clang cmake curl gcc g++ git libacl1-dev build-essential flex libelf-dev binutils-dev libdwarf-dev libc6-dev libc6-dev-i386 gcc-multilib-i686-linux-gnu libc6-dev-i386-cross libstdc++6:i386
-sudo useradd testuser1
-sudo useradd testuser2
-sudo groupadd testgroup1
-sudo groupadd testgroup2
+include(CMakeFindDependencyMacro)
+
+find_dependency(iceoryx_hoofs)
+find_dependency(iceoryx2-c)
+
+include("${CMAKE_CURRENT_LIST_DIR}/@TARGETS_EXPORT_NAME@.cmake")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+check_required_components("@PROJECT_NAME@")

@@ -1,10 +1,8 @@
 ## Build instructions
 
-```console
-cmake -B target/lang-c
-cmake --build target/lang-c
+In the repository root folder, execute this steps.
+
+```bash
+cmake -S . -B target/ffi/build
+cmake --build target/ffi/build
 ```
-
-# Helpful iceoryx dev crates
-
-- https://github.com/corrosion-rs/corrosion

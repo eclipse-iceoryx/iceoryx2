@@ -10,11 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#!/bin/bash
+cmake_minimum_required(VERSION 3.22)
+project(examples_cxx LANGUAGES CXX)
 
-sudo apt-get update
-sudo apt-get install -y clang cmake curl gcc g++ git libacl1-dev build-essential flex libelf-dev binutils-dev libdwarf-dev libc6-dev libc6-dev-i386 gcc-multilib-i686-linux-gnu libc6-dev-i386-cross libstdc++6:i386
-sudo useradd testuser1
-sudo useradd testuser2
-sudo groupadd testgroup1
-sudo groupadd testgroup2
+add_subdirectory(publish_subscribe)

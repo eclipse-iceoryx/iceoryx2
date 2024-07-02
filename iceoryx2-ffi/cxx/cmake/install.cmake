@@ -22,7 +22,7 @@ include(GNUInstallDirs)
 set(PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake" )
 set(PACKAGE_CONFIG_FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" )
 set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets" )
-set(PROJECT_NAMESPACE "iceoryx2-c" )
+set(PROJECT_NAMESPACE "iceoryx2-cxx" )
 
 set(DESTINATION_BINDIR ${CMAKE_INSTALL_BINDIR})
 set(DESTINATION_LIBDIR ${CMAKE_INSTALL_LIBDIR})
@@ -49,7 +49,7 @@ configure_package_config_file(
 
 # target directories
 install(
-    TARGETS includes-only static-lib shared-lib
+    TARGETS includes-only-cxx static-lib-cxx shared-lib-cxx
     EXPORT ${TARGETS_EXPORT_NAME}
     RUNTIME DESTINATION ${DESTINATION_BINDIR} COMPONENT bin
     LIBRARY DESTINATION ${DESTINATION_LIBDIR} COMPONENT lib
@@ -59,16 +59,9 @@ install(
 # header
 install(
     # the '/' at the end is important in order to not have the 'include' folder installed but only the content
-    DIRECTORY ${ICEORYX2_C_INCLUDE_DIR}/
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
     DESTINATION ${DESTINATION_INCLUDEDIR}
     COMPONENT dev
-)
-
-# lib
-install(
-    FILES ${ICEORYX2_C_LIB_ARTIFACTS}
-    DESTINATION ${DESTINATION_LIBDIR}
-    COMPONENT lib
 )
 
 # license

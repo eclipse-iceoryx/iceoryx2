@@ -148,6 +148,7 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DRUST_TARGET_TRIPLET="i686-unknown-linux-gnu" \
                 -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
                 ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
@@ -163,6 +164,7 @@ jobs:
                 -B target/ffi/out-of-tree \
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
                 -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
                 -${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/out-of-tree
 
