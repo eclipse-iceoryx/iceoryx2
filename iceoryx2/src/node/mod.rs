@@ -38,9 +38,8 @@
 //! use iceoryx2::prelude::*;
 //!
 //! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
-//!     if Ok(node_state) = node_state {
-//!         println!("found node {:?}", node_state);
-//!     }
+//!     println!("found node {:?}", node_state?);
+//!     Ok(CallbackProgression::Continue)
 //! });
 //! ```
 //!
@@ -50,14 +49,15 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node_state_list = Node::<zero_copy::Service>::list(Config::get_global_config())?;
-//!
-//! for node_state in node_state_list {
-//!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state {
+//! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
+//!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state? {
 //!         println!("cleanup resources of dead node {:?}", view);
-//!         view.remove_stale_resources()?;
+//!         if let Err(e) = view.remove_stale_resources() {
+//!             println!("failed to cleanup resources due to {:?}", e);
+//!         }
 //!     }
-//! }
+//!     Ok(CallbackProgression::Continue)
+//! })?;
 //! # Ok(())
 //! # }
 //! ```
@@ -201,12 +201,12 @@ impl<Service: service::Service> NodeState<Service> {
         };
 
         let node_view = AliveNodeView::<Service> {
-            id: node_id.clone(),
+            id: *node_id,
             details,
             _service: PhantomData,
         };
 
-        match Node::<Service>::get_node_state(&config, node_id)? {
+        match Node::<Service>::get_node_state(config, node_id)? {
             State::DoesNotExist => Ok(None),
             State::Alive => Ok(Some(NodeState::Alive(node_view))),
             State::Dead => Ok(Some(NodeState::Dead(DeadNodeView(node_view)))),
@@ -441,9 +441,8 @@ impl<Service: service::Service> Node<Service> {
     /// ```
     /// # use iceoryx2::prelude::*;
     /// Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
-    ///     if let Ok(node_state) = node_state {
-    ///         println!("found node {:?}", node_state);
-    ///     }
+    ///     println!("found node {:?}", node_state?);
+    ///     Ok(CallbackProgression::Continue)
     /// });
     /// ```
     pub fn list<
@@ -752,7 +751,7 @@ impl NodeBuilder {
             config: config.clone(),
         };
 
-        let details_config = node_details_config::<Service>(&details.config, &node_id);
+        let details_config = node_details_config::<Service>(&details.config, node_id);
         let serialized_details = match <Service::ConfigSerializer>::serialize(&details) {
             Ok(serialized_details) => serialized_details,
             Err(SerializeError::InternalError) => {

@@ -195,14 +195,30 @@ use self::service_name::ServiceName;
 /// Failure that can be reported when the [`ServiceDetails`] are acquired with [`Service::details()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceDetailsError {
+    /// The underlying static [`Service`] information could not be opened.
     FailedToOpenStaticServiceInfo,
+    /// The underlying static [`Service`] information could not be read.
     FailedToReadStaticServiceInfo,
+    /// The underlying static [`Service`] information could not be deserialized. Can be caused by
+    /// version mismatch or a corrupted file.
     FailedToDeserializeStaticServiceInfo,
+    /// Required [`Service`] resources are not available or corrupted.
     ServiceInInconsistentState,
+    /// The [`Service`] was created with a different iceoryx2 version.
     VersionMismatch,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
+    /// The [`NodeState`] could not be acquired.
     FailedToAcquireNodeState,
 }
+
+impl std::fmt::Display for ServiceDetailsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "ServiceDetailsError::{:?}", self)
+    }
+}
+
+impl std::error::Error for ServiceDetailsError {}
 
 /// Failure that can be reported by [`Service::list()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -225,13 +241,17 @@ impl std::error::Error for ServiceListError {}
 /// when the [`Service`] is accessible by the current process.
 #[derive(Debug)]
 pub struct ServiceDynamicDetails<S: Service> {
+    /// A list of all [`Node`](crate::node::Node)s that a registered at the [`Service`]
     pub nodes: Vec<NodeState<S>>,
 }
 
 /// Represents all the [`Service`] information that one can acquire with [`Service::list()`].
 #[derive(Debug)]
 pub struct ServiceDetails<S: Service> {
+    /// The static configuration of the [`Service`] that never changes during the [`Service`]
+    /// lifetime.
     pub static_details: StaticConfig,
+    /// The dynamic configuration of the [`Service`] that can conaints runtime informations.
     pub dynamic_details: Option<ServiceDynamicDetails<S>>,
 }
 
@@ -398,11 +418,10 @@ pub trait Service: Debug + Sized {
     /// use iceoryx2::config::Config;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let services = zero_copy::Service::list(Config::get_global_config())?;
-    ///
-    /// for service in services {
-    ///     println!("\n{:#?}", &service);
-    /// }
+    /// zero_copy::Service::list(Config::get_global_config(), |service| {
+    ///     println!("\n{:#?}", &service?);
+    ///     Ok(CallbackProgression::Continue)
+    /// })?;
     /// # Ok(())
     /// # }
     /// ```
@@ -425,7 +444,7 @@ pub trait Service: Debug + Sized {
                 "{} due to a failure while collecting all active services for config: {:?}", msg, config);
 
         for uuid in &service_uuids {
-            match details::<Self>(&config, uuid) {
+            match details::<Self>(config, uuid) {
                 Ok(Some(service_details)) => {
                     if callback(Ok(service_details))? == CallbackProgression::Stop {
                         break;
@@ -454,7 +473,7 @@ fn details<S: Service>(
 
     let reader = match <<S::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
         S::StaticStorage,
-    >>::new(&uuid)
+    >>::new(uuid)
     .config(&static_storage_config.clone())
     .has_ownership(false)
     .open()
