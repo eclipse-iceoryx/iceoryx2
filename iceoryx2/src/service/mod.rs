@@ -172,7 +172,6 @@ use crate::service::naming_scheme::dynamic_config_storage_name;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{debug, fail, trace, warn};
 use iceoryx2_cal::dynamic_storage::{
     DynamicStorage, DynamicStorageBuilder, DynamicStorageOpenError,
@@ -260,7 +259,6 @@ pub struct ServiceDetails<S: Service> {
 pub struct ServiceState<S: Service> {
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: Arc<SharedNode<S>>,
-    pub(crate) node_id_handle: ContainerHandle,
     pub(crate) dynamic_storage: Arc<S::DynamicStorage>,
     pub(crate) static_storage: S::StaticStorage,
 }
@@ -269,14 +267,12 @@ impl<S: Service> ServiceState<S> {
     pub(crate) fn new(
         static_config: StaticConfig,
         shared_node: Arc<SharedNode<S>>,
-        node_id_handle: ContainerHandle,
         dynamic_storage: Arc<S::DynamicStorage>,
         static_storage: S::StaticStorage,
     ) -> Self {
         let new_self = Self {
             static_config,
             shared_node,
-            node_id_handle,
             dynamic_storage,
             static_storage,
         };
@@ -288,22 +284,22 @@ impl<S: Service> ServiceState<S> {
 
 impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
-        match self
-            .dynamic_storage
-            .get()
-            .deregister_node_id(self.node_id_handle)
-        {
-            DeregisterNodeState::HasOwners => {
-                trace!(from "Service::close()", "close service: {} (uuid={:?})",
-                    self.static_config.name(), self.static_config.uuid());
-            }
-            DeregisterNodeState::NoMoreOwners => {
-                self.static_storage.acquire_ownership();
-                self.dynamic_storage.acquire_ownership();
-                trace!(from "Service::remove()", "close and remove service: {} (uuid={:?})",
-                    self.static_config.name(), self.static_config.uuid());
-            }
-        }
+        self.shared_node
+            .registered_services
+            .remove(self.static_config.uuid(), |handle| {
+                match self.dynamic_storage.get().deregister_node_id(handle) {
+                    DeregisterNodeState::HasOwners => {
+                        trace!(from "Service::close()", "close service: {} (uuid={:?})",
+                            self.static_config.name(), self.static_config.uuid());
+                    }
+                    DeregisterNodeState::NoMoreOwners => {
+                        self.static_storage.acquire_ownership();
+                        self.dynamic_storage.acquire_ownership();
+                        trace!(from "Service::remove()", "close and remove service: {} (uuid={:?})",
+                            self.static_config.name(), self.static_config.uuid());
+                    }
+                }
+            });
     }
 }
 

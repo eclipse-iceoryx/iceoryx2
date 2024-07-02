@@ -70,12 +70,13 @@ pub mod testing;
 
 use crate::node::node_name::NodeName;
 use crate::service;
-use crate::service::builder::Builder;
+use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{node_details_path, node_monitoring_config};
 use crate::service::service_name::ServiceName;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -84,8 +85,9 @@ use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
 use std::cell::UnsafeCell;
+use std::collections::HashMap;
 use std::marker::PhantomData;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// The system-wide unique id of a [`Node`]
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -375,10 +377,64 @@ fn remove_node<Service: service::Service>(
 }
 
 #[derive(Debug)]
+pub(crate) struct RegisteredServices {
+    data: Mutex<HashMap<String, (ContainerHandle, u64)>>,
+}
+
+impl RegisteredServices {
+    pub(crate) fn add(&self, uuid: &str, handle: ContainerHandle) {
+        if self
+            .data
+            .lock()
+            .unwrap()
+            .insert(uuid.to_string(), (handle, 1))
+            .is_some()
+        {
+            fatal_panic!(from "RegisteredServices::add()",
+                "This should never happen! The service with the uuid {} was already registered.", uuid);
+        }
+    }
+
+    pub(crate) fn add_or<F: FnMut() -> Result<ContainerHandle, OpenDynamicStorageFailure>>(
+        &self,
+        uuid: &str,
+        mut or_callback: F,
+    ) -> Result<(), OpenDynamicStorageFailure> {
+        let mut data = self.data.lock().unwrap();
+        match data.get_mut(uuid) {
+            Some(handle) => {
+                handle.1 += 1;
+            }
+            None => {
+                drop(data);
+                let handle = or_callback()?;
+                self.add(uuid, handle);
+            }
+        };
+        Ok(())
+    }
+
+    pub(crate) fn remove<F: FnMut(ContainerHandle)>(&self, uuid: &str, mut cleanup_call: F) {
+        let mut data = self.data.lock().unwrap();
+        if let Some(entry) = data.get_mut(uuid) {
+            entry.1 -= 1;
+            if entry.1 == 0 {
+                cleanup_call(entry.0);
+                data.remove(uuid);
+            }
+        } else {
+            fatal_panic!(from "RegisteredServices::remove()",
+                "This should never happen! The service with the uuid {} was not registered.", uuid);
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct SharedNode<Service: service::Service> {
     id: NodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
+    pub(crate) registered_services: RegisteredServices,
     _details_storage: Service::StaticStorage,
 }
 
@@ -702,6 +758,9 @@ impl NodeBuilder {
             shared: Arc::new(SharedNode {
                 id: NodeId(node_id),
                 monitoring_token: UnsafeCell::new(Some(monitoring_token)),
+                registered_services: RegisteredServices {
+                    data: Mutex::new(HashMap::new()),
+                },
                 _details_storage: details_storage,
                 details,
             }),

@@ -31,6 +31,7 @@ use std::fmt::Display;
 
 use crate::node::NodeId;
 
+#[derive(Debug)]
 pub(crate) enum RegisterNodeResult {
     MarkedForDestruction,
     ExceedsMaxNumberOfNodes,

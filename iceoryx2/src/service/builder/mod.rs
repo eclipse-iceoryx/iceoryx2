@@ -27,7 +27,6 @@ use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -243,7 +242,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         messaging_pattern: super::dynamic_config::MessagingPattern,
         additional_size: usize,
         max_number_of_nodes: usize,
-    ) -> Result<(ServiceType::DynamicStorage, ContainerHandle), DynamicStorageCreateError> {
+    ) -> Result<ServiceType::DynamicStorage, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage for service";
         let required_memory_size = DynamicConfig::memory_size(max_number_of_nodes);
         match <<ServiceType::DynamicStorage as DynamicStorage<
@@ -261,7 +260,8 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     let node_handle = fatal_panic!(from self,
                             when dynamic_storage.get().register_node_id(*node_id),
                             "{} since event the first NodeId could not be registered.", msg);
-                    Ok((dynamic_storage, node_handle))
+                    self.shared_node.registered_services.add(self.service_config.uuid(), node_handle);
+                    Ok(dynamic_storage)
                 },
                 Err(e) => {
                     fail!(from self, with e, "Failed to create dynamic storage for service.");
@@ -271,7 +271,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn open_dynamic_config_storage(
         &self,
-    ) -> Result<(ServiceType::DynamicStorage, ContainerHandle), OpenDynamicStorageFailure> {
+    ) -> Result<ServiceType::DynamicStorage, OpenDynamicStorageFailure> {
         let msg = "Failed to open dynamic service information";
         let storage = fail!(from self, when
             <<ServiceType::DynamicStorage as DynamicStorage<
@@ -284,20 +284,24 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 .open(),
             "{} since the dynamic storage could not be opened.", msg);
 
-        let node_id = self.shared_node.id();
-        let node_handle = match storage.get().register_node_id(*node_id) {
-            Ok(handle) => handle,
-            Err(RegisterNodeResult::MarkedForDestruction) => {
-                fail!(from self, with OpenDynamicStorageFailure::IsMarkedForDestruction,
-                    "{} since the dynamic storage is marked for destruction.", msg);
-            }
-            Err(RegisterNodeResult::ExceedsMaxNumberOfNodes) => {
-                fail!(from self, with OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes,
-                    "{} since the dynamic storage is marked for destruction.", msg);
-            }
-        };
+        self.shared_node
+            .registered_services
+            .add_or(self.service_config.uuid(), || {
+                let node_id = self.shared_node.id();
+                match storage.get().register_node_id(*node_id) {
+                    Ok(handle) => Ok(handle),
+                    Err(RegisterNodeResult::MarkedForDestruction) => {
+                        fail!(from self, with OpenDynamicStorageFailure::IsMarkedForDestruction,
+                            "{} since the dynamic storage is marked for destruction.", msg);
+                    }
+                    Err(RegisterNodeResult::ExceedsMaxNumberOfNodes) => {
+                        fail!(from self, with OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes,
+                            "{} since the dynamic storage is marked for destruction.", msg);
+                    }
+                }
+            })?;
 
-        Ok((storage, node_handle))
+        Ok(storage)
     }
 
     fn create_static_config_storage(

@@ -6,9 +6,11 @@
     * max nodes supported
     * one node can open same service as many times as it wants
     * node requirements when service is opened
+    * concurrent service creation test must run with unique nodes
  * publish subscribe
     * list nodes
     * one node can open same service as many times as it wants
+    * concurrent service creation test must run with unique nodes
 
 # BUGS
 
