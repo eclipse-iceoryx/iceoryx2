@@ -899,6 +899,22 @@ mod service {
         }
     }
 
+    #[test]
+    fn uuid_is_equal_in_within_all_opened_instances<Sut: Service, Factory: SutFactory<Sut>>() {
+        let test = Factory::new();
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = test
+            .create(&node, &service_name, &AttributeSpecifier::new())
+            .unwrap();
+        let sut2 = test
+            .open(&node, &service_name, &AttributeVerifier::new())
+            .unwrap();
+
+        assert_that!(sut.uuid(), eq sut2.uuid());
+    }
+
     mod zero_copy {
         use iceoryx2::service::zero_copy::Service;
 

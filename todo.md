@@ -1,10 +1,4 @@
-# TODO
-
- * test all CallbackProgression usages
- * concurrent iceoryx2_cal monitoring tests
- * concurrent iceoryx2_bb process state tests
- * concurrent NamedConcept list and create test
- * concurrent NamedConcept create and open test
+# POSIX
 
 # BUGS
 

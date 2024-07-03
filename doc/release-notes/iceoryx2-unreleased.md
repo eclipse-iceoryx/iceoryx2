@@ -326,3 +326,31 @@
         Ok(CallbackProgression::Continue)
     })?;
     ```
+
+16. Rename `max_supported_{publisher,subscriber,notifier,listener}` into
+        `max_{publisher,subscriber,notifier,lister}` in the services `PortFactory`.
+
+    ```rust
+    let event_service = node.service_builder("MyEventName".try_into()?)
+                     .event()
+                     .open_or_create()?;
+
+    let pubsub_service = node.service_builder("MyPubSubName".try_into()?)
+                     .publish_subscribe<u64>()
+                     .open_or_create()?;
+
+    // old
+    event_service.static_config().max_supported_listeners();
+    event_service.static_config().max_supported_notifier();
+
+    pubsub_service.static_config().max_supported_publisher();
+    pubsub_service.static_config().max_supported_subscriber();
+
+    // new
+    event_service.static_config().max_listeners();
+    event_service.static_config().max_notifier();
+
+    pubsub_service.static_config().max_publisher();
+    pubsub_service.static_config().max_subscriber();
+    ```
+

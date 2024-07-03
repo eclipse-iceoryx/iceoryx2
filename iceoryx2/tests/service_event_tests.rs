@@ -342,22 +342,6 @@ mod service_event {
     }
 
     #[test]
-    fn uuid_is_equal_in_within_all_opened_instances<Sut: Service>() {
-        let service_name = generate_name();
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
-
-        let sut = node
-            .service_builder(service_name.clone())
-            .event()
-            .create()
-            .unwrap();
-
-        let sut2 = node.service_builder(service_name).event().open().unwrap();
-
-        assert_that!(sut.uuid(), eq sut2.uuid());
-    }
-
-    #[test]
     fn simple_communication_works_notifier_created_first<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
