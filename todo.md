@@ -1,6 +1,5 @@
 # TODO
 
- * concurrent service creation test must run with unique nodes
  * list all nodes via service directly Service::details
  * event
     * list nodes

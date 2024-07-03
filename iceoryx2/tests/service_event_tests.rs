@@ -37,14 +37,6 @@ mod service_event {
         .unwrap()
     }
 
-    fn generate_node_name() -> NodeName {
-        NodeName::new(&format!(
-            "service_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
-
     #[test]
     fn creating_non_existing_service_works<Sut: Service>() {
         let service_name = generate_name();

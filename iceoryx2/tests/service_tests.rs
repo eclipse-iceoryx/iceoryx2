@@ -12,8 +12,9 @@
 
 #[generic_tests::define]
 mod service {
+    use std::marker::PhantomData;
     use std::sync::atomic::{AtomicU64, Ordering};
-    use std::sync::{Barrier, Mutex};
+    use std::sync::Barrier;
 
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
@@ -41,14 +42,15 @@ mod service {
         type OpenError: std::fmt::Debug;
 
         fn new() -> Self;
-        fn node(&self) -> &Mutex<Node<Sut>>;
-        fn create(
+        fn create1(
             &self,
+            node: &Node<Sut>,
             service_name: &ServiceName,
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError>;
-        fn open(
+        fn open1(
             &self,
+            node: &Node<Sut>,
             service_name: &ServiceName,
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError>;
@@ -59,12 +61,18 @@ mod service {
     }
 
     struct PubSubTests<Sut: Service> {
-        node: Mutex<Node<Sut>>,
+        _data: PhantomData<Sut>,
     }
 
+    unsafe impl<Sut: Service> Send for PubSubTests<Sut> {}
+    unsafe impl<Sut: Service> Sync for PubSubTests<Sut> {}
+
     struct EventTests<Sut: Service> {
-        node: Mutex<Node<Sut>>,
+        _data: PhantomData<Sut>,
     }
+
+    unsafe impl<Sut: Service> Send for EventTests<Sut> {}
+    unsafe impl<Sut: Service> Sync for EventTests<Sut> {}
 
     impl<Sut: Service> SutFactory<Sut> for PubSubTests<Sut> {
         type Factory = publish_subscribe::PortFactory<Sut, u64, ()>;
@@ -72,39 +80,29 @@ mod service {
         type OpenError = PublishSubscribeOpenError;
 
         fn new() -> Self {
-            Self {
-                node: Mutex::new(NodeBuilder::new().create().unwrap()),
-            }
+            Self { _data: PhantomData }
         }
 
-        fn node(&self) -> &Mutex<Node<Sut>> {
-            &self.node
-        }
-
-        fn create(
+        fn open1(
             &self,
-            service_name: &ServiceName,
-            attributes: &AttributeSpecifier,
-        ) -> Result<Self::Factory, Self::CreateError> {
-            self.node
-                .lock()
-                .unwrap()
-                .service_builder(service_name.clone())
-                .publish_subscribe::<u64>()
-                .create_with_attributes(attributes)
-        }
-
-        fn open(
-            &self,
+            node: &Node<Sut>,
             service_name: &ServiceName,
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
-            self.node
-                .lock()
-                .unwrap()
-                .service_builder(service_name.clone())
+            node.service_builder(service_name.clone())
                 .publish_subscribe::<u64>()
                 .open_with_attributes(attributes)
+        }
+
+        fn create1(
+            &self,
+            node: &Node<Sut>,
+            service_name: &ServiceName,
+            attributes: &AttributeSpecifier,
+        ) -> Result<Self::Factory, Self::CreateError> {
+            node.service_builder(service_name.clone())
+                .publish_subscribe::<u64>()
+                .create_with_attributes(attributes)
         }
 
         fn assert_attribute_error(error: Self::OpenError) {
@@ -138,39 +136,29 @@ mod service {
         type OpenError = EventOpenError;
 
         fn new() -> Self {
-            Self {
-                node: Mutex::new(NodeBuilder::new().create().unwrap()),
-            }
+            Self { _data: PhantomData }
         }
 
-        fn node(&self) -> &Mutex<Node<Sut>> {
-            &self.node
-        }
-
-        fn create(
+        fn open1(
             &self,
-            service_name: &ServiceName,
-            attributes: &AttributeSpecifier,
-        ) -> Result<Self::Factory, Self::CreateError> {
-            self.node
-                .lock()
-                .unwrap()
-                .service_builder(service_name.clone())
-                .event()
-                .create_with_attributes(attributes)
-        }
-
-        fn open(
-            &self,
+            node: &Node<Sut>,
             service_name: &ServiceName,
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
-            self.node
-                .lock()
-                .unwrap()
-                .service_builder(service_name.clone())
+            node.service_builder(service_name.clone())
                 .event()
                 .open_with_attributes(attributes)
+        }
+
+        fn create1(
+            &self,
+            node: &Node<Sut>,
+            service_name: &ServiceName,
+            attributes: &AttributeSpecifier,
+        ) -> Result<Self::Factory, Self::CreateError> {
+            node.service_builder(service_name.clone())
+                .event()
+                .create_with_attributes(attributes)
         }
 
         fn assert_attribute_error(error: Self::OpenError) {
@@ -203,25 +191,17 @@ mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let test = Factory::new();
         let service_name = generate_name();
-        let sut_pub_sub = test
-            .node()
-            .lock()
-            .unwrap()
+        let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut_pub_sub = node_1
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut_pub_sub, is_ok);
         let sut_pub_sub = sut_pub_sub.unwrap();
 
-        let sut_event = test
-            .node()
-            .lock()
-            .unwrap()
-            .service_builder(service_name)
-            .event()
-            .create();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut_event = node_2.service_builder(service_name).event().create();
         assert_that!(sut_event, is_ok);
         let sut_event = sut_event.unwrap();
 
@@ -259,12 +239,13 @@ mod service {
             let mut threads = vec![];
             for _ in 0..number_of_threads {
                 threads.push(s.spawn(|| {
+                    let node = NodeBuilder::new().create::<Sut>().unwrap();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         let service_name = generate_name();
                         barrier_enter.wait();
 
                         let _sut = test
-                            .create(&service_name, &AttributeSpecifier::new())
+                            .create1(&node, &service_name, &AttributeSpecifier::new())
                             .unwrap();
 
                         barrier_exit.wait();
@@ -297,10 +278,11 @@ mod service {
             let mut threads = vec![];
             for _ in 0..number_of_threads {
                 threads.push(s.spawn(|| {
+                    let node = NodeBuilder::new().create::<Sut>().unwrap();
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
 
-                        let sut = test.create(&service_name, &AttributeSpecifier::new());
+                        let sut = test.create1(&node, &service_name, &AttributeSpecifier::new());
                         match sut {
                             Ok(_) => {
                                 success_counter.fetch_add(1, Ordering::Relaxed);
@@ -347,9 +329,10 @@ mod service {
         std::thread::scope(|s| {
             let mut threads = vec![];
             threads.push(s.spawn(|| {
+                let node = NodeBuilder::new().create::<Sut>().unwrap();
                 for service_name in service_names {
                     let sut = test
-                        .create(&service_name, &AttributeSpecifier::new())
+                        .create1(&node, &service_name, &AttributeSpecifier::new())
                         .unwrap();
                     barrier_enter.wait();
 
@@ -361,10 +344,11 @@ mod service {
 
             for _ in 0..number_of_open_threads {
                 threads.push(s.spawn(|| {
+                    let node = NodeBuilder::new().create::<Sut>().unwrap();
                     for service_name in service_names {
                         barrier_enter.wait();
 
-                        let sut = test.open(&service_name, &AttributeVerifier::new());
+                        let sut = test.open1(&node, &service_name, &AttributeVerifier::new());
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
@@ -394,11 +378,17 @@ mod service {
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee")
             .define("3. Just have a", "lick on the toad");
-        let sut_create = test.create(&service_name, &defined_attributes).unwrap();
+        let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut_create = test
+            .create1(&node_1, &service_name, &defined_attributes)
+            .unwrap();
 
         assert_that!(sut_create.attributes(), eq defined_attributes.attributes());
 
-        let sut_open = test.open(&service_name, &AttributeVerifier::new()).unwrap();
+        let sut_open = test
+            .open1(&node_2, &service_name, &AttributeVerifier::new())
+            .unwrap();
 
         assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
     }
@@ -407,15 +397,20 @@ mod service {
     fn opener_succeeds_when_attributes_do_match<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let service_name = generate_name();
+        let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("1. Hello", "Take a number")
             .define("2. No more", "Coffee")
             .define("3. Just have a", "lick on the toad");
 
-        let _sut_create = test.create(&service_name, &defined_attributes).unwrap();
+        let _sut_create = test
+            .create1(&node_1, &service_name, &defined_attributes)
+            .unwrap();
 
-        let sut_open = test.open(
+        let sut_open = test.open1(
+            &node_2,
             &service_name,
             &AttributeVerifier::new()
                 .require("1. Hello", "Hypnotoad")
@@ -433,12 +428,17 @@ mod service {
     fn opener_fails_when_attribute_value_does_not_match<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let service_name = generate_name();
+        let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
-        let _sut_create = test.create(&service_name, &defined_attributes).unwrap();
+        let _sut_create = test
+            .create1(&node_1, &service_name, &defined_attributes)
+            .unwrap();
 
-        let sut_open = test.open(
+        let sut_open = test.open1(
+            &node_2,
             &service_name,
             &AttributeVerifier::new().require("1. Hello", "lick on the toad"),
         );
@@ -451,12 +451,17 @@ mod service {
     fn opener_fails_when_attribute_key_does_not_exist<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let service_name = generate_name();
+        let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
-        let _sut_create = test.create(&service_name, &defined_attributes).unwrap();
+        let _sut_create = test
+            .create1(&node_1, &service_name, &defined_attributes)
+            .unwrap();
 
-        let sut_open = test.open(
+        let sut_open = test.open1(
+            &node_2,
             &service_name,
             &AttributeVerifier::new().require("Whatever", "lick on the toad"),
         );
@@ -469,13 +474,18 @@ mod service {
     fn opener_fails_when_attribute_value_does_not_exist<Sut: Service, Factory: SutFactory<Sut>>() {
         let test = Factory::new();
         let service_name = generate_name();
+        let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("1. Hello", "Number Two")
             .define("2. No more", "Coffee");
-        let _sut_create = test.create(&service_name, &defined_attributes).unwrap();
+        let _sut_create = test
+            .create1(&node_1, &service_name, &defined_attributes)
+            .unwrap();
 
-        let sut_open = test.open(
+        let sut_open = test.open1(
+            &node_2,
             &service_name,
             &AttributeVerifier::new()
                 .require("1. Hello", "lick on the toad")
@@ -493,12 +503,17 @@ mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_name();
+        let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
-        let _sut_create = test.create(&service_name, &defined_attributes).unwrap();
+        let _sut_create = test
+            .create1(&node_1, &service_name, &defined_attributes)
+            .unwrap();
 
-        let sut_open = test.open(
+        let sut_open = test.open1(
+            &node_2,
             &service_name,
             &AttributeVerifier::new().require_key("i do not exist"),
         );
@@ -514,12 +529,17 @@ mod service {
     >() {
         let test = Factory::new();
         let service_name = generate_name();
+        let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
-        let _sut_create = test.create(&service_name, &defined_attributes).unwrap();
+        let _sut_create = test
+            .create1(&node_1, &service_name, &defined_attributes)
+            .unwrap();
 
-        let sut_open = test.open(
+        let sut_open = test.open1(
+            &node_2,
             &service_name,
             &AttributeVerifier::new().require_key("2. No more"),
         );
