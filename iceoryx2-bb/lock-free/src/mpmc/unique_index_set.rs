@@ -31,8 +31,8 @@
 //! unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
 //!
 //! let new_index = match unsafe { index_set.acquire() } {
-//!     None => panic!("Out of indices"),
-//!     Some(i) => i,
+//!     Err(_) => panic!("Out of indices"),
+//!     Ok(i) => i,
 //! };
 //!
 //! println!("Acquired index {}", new_index.value());
@@ -51,8 +51,8 @@
 //! let index_set = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 //!
 //! let new_index = match index_set.acquire() {
-//!     None => panic!("Out of indices"),
-//!     Some(i) => i,
+//!     Err(_) => panic!("Out of indices"),
+//!     Ok(i) => i,
 //! };
 //!
 //! println!("Acquired index {}", new_index.value());
@@ -71,14 +71,14 @@
 //! let index_set = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 //!
 //! let new_index = match unsafe { index_set.acquire_raw_index() } {
-//!     None => panic!("Out of indices"),
-//!     Some(i) => i,
+//!     Err(_) => panic!("Out of indices"),
+//!     Ok(i) => i,
 //! };
 //!
 //! println!("Acquired index {}", new_index);
 //!
 //! // return the index to the index set
-//! unsafe { index_set.release_raw_index(new_index) };
+//! unsafe { index_set.release_raw_index(new_index, ReleaseMode::Default) };
 //! ```
 
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
@@ -191,8 +191,8 @@ impl Drop for UniqueIndex<'_> {
 /// unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
 ///
 /// let new_index = match unsafe { index_set.acquire() } {
-///     None => panic!("Out of indices"),
-///     Some(i) => i,
+///     Err(_) => panic!("Out of indices"),
+///     Ok(i) => i,
 /// };
 /// ```
 ///
@@ -373,14 +373,14 @@ impl UniqueIndexSet {
     /// let index_set = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     ///
     /// let new_index = match unsafe { index_set.acquire_raw_index() } {
-    ///     None => panic!("Out of indices"),
-    ///     Some(i) => i,
+    ///     Err(_) => panic!("Out of indices"),
+    ///     Ok(i) => i,
     /// };
     ///
     /// println!("Acquired index {}", new_index);
     ///
     /// // return the index to the index set
-    /// unsafe { index_set.release_raw_index(new_index) };
+    /// unsafe { index_set.release_raw_index(new_index, ReleaseMode::Default) };
     /// ```
     ///
     /// # Safety
@@ -508,8 +508,8 @@ impl UniqueIndexSet {
 /// let index_set = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 ///
 /// let new_index = match index_set.acquire() {
-///     None => panic!("Out of indices"),
-///     Some(i) => i,
+///     Err(_) => panic!("Out of indices"),
+///     Ok(i) => i,
 /// };
 /// ```
 #[derive(Debug)]

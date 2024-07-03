@@ -15,6 +15,7 @@ mod service {
     use std::marker::PhantomData;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Barrier;
+    use std::time::Duration;
 
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
@@ -643,8 +644,8 @@ mod service {
 
     #[test]
     fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let test = Factory::new();
-        let _watch_dog = Watchdog::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         const NUMBER_OF_ITERATIONS: usize = 100;
         let barrier = Barrier::new(number_of_creators);

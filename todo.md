@@ -1,6 +1,7 @@
 # TODO
 
  * list all nodes via service directly Service::details
+
  * test all CallbackProgression usages
  * concurrent iceoryx2_cal monitoring tests
  * concurrent iceoryx2_bb process state tests

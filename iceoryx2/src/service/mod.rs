@@ -127,7 +127,7 @@ pub mod builder;
 pub mod dynamic_config;
 
 /// Defines the sample headers for various
-/// [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern)s
+/// [`MessagingPattern`]s
 pub mod header;
 
 /// The messaging patterns with their custom
@@ -135,7 +135,7 @@ pub mod header;
 pub mod messaging_pattern;
 
 /// After the [`Service`] is created the user owns this factory to create the endpoints of the
-/// [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern), also known as ports.
+/// [`MessagingPattern`], also known as ports.
 pub mod port_factory;
 
 /// Represents the name of a [`Service`]

@@ -32,20 +32,29 @@
 //! let mut stored_indices = vec![];
 //!
 //! match unsafe { container.add(1234567) } {
-//!     Some(index) => stored_indices.push(index),
-//!     None => println!("container is full"),
+//!     Ok(index) => stored_indices.push(index),
+//!     Err(_) => println!("container is full"),
 //! };
 //!
 //! let mut state = container.get_state();
-//! state.for_each(|index: u32, value: &u32| println!("index: {}, value: {}", index, value));
+//! state.for_each(|index: u32, value: &u32| {
+//!     println!("index: {}, value: {}", index, value);
+//!     CallbackProgression::Continue
+//! });
 //!
 //! stored_indices.clear();
 //!
 //! if unsafe { container.update_state(&mut state) } {
 //!     println!("container state has changed");
-//!     state.for_each(|index: u32, value: &u32| println!("index: {}, value: {}", index, value));
+//!     state.for_each(|index: u32, value: &u32| {
+//!         println!("index: {}, value: {}", index, value);
+//!         CallbackProgression::Continue
+//!     });
 //! }
 //! ```
+
+pub use crate::mpmc::unique_index_set::ReleaseMode;
+pub use iceoryx2_bb_elementary::CallbackProgression;
 
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
@@ -53,7 +62,6 @@ use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary::unique_id::UniqueId;
-use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, math::align_to};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
@@ -128,16 +136,18 @@ impl<T: Copy + Debug> ContainerState<T> {
     /// let container = FixedSizeContainer::<u128, 128>::new();
     ///
     /// let mut state = container.get_state();
-    /// state.for_each(|index: u32, value: &u128| println!("index: {}, value: {}", index, value));
+    /// state.for_each(|index: u32, value: &u128| {
+    ///     println!("index: {}, value: {}", index, value);
+    ///     CallbackProgression::Continue
+    /// });
     /// ```
     pub fn for_each<F: FnMut(u32, &T) -> CallbackProgression>(&self, mut callback: F) {
         for i in 0..self.data.len() {
-            if self.active_index[i] % 2 == 1 {
-                if callback(i as _, unsafe { self.data[i].assume_init_ref() })
+            if self.active_index[i] % 2 == 1
+                && callback(i as _, unsafe { self.data[i].assume_init_ref() })
                     == CallbackProgression::Stop
-                {
-                    return;
-                }
+            {
+                return;
             }
         }
     }
@@ -495,11 +505,11 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// let container = FixedSizeContainer::<u128, CAPACITY>::new();
     ///
     /// match unsafe { container.add(1234567) } {
-    ///     Some(index) => {
+    ///     Ok(index) => {
     ///         println!("added at index {:?}", index);
-    ///         unsafe { container.remove(index) };
+    ///         unsafe { container.remove(index, ReleaseMode::Default) };
     ///     },
-    ///     None => println!("container is full"),
+    ///     Err(_) => println!("container is full"),
     /// };
     ///
     /// ```

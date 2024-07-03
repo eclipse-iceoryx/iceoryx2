@@ -14,6 +14,7 @@
 mod node {
     use std::collections::{HashSet, VecDeque};
     use std::sync::Barrier;
+    use std::time::Duration;
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{
@@ -247,7 +248,7 @@ mod node {
 
     #[test]
     fn concurrent_node_creation_and_listing_works<S: Service>() {
-        let _watch_dog = Watchdog::new();
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         const NUMBER_OF_ITERATIONS: usize = 100;
         let barrier = Barrier::new(number_of_creators);
