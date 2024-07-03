@@ -12,6 +12,8 @@
 
 #!/bin/bash
 
+set -e
+
 COLOR_OFF='\033[0m'
 COLOR_RED='\033[1;31m'
 COLOR_GREEN='\033[1;32m'

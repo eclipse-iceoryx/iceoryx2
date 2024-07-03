@@ -144,6 +144,7 @@ jobs:
           cmake -S . \
                 -B target/ffi/build \
                 -DCMAKE_INSTALL_PREFIX=target/ffi/install \
+                -DBUILD_CXX_BINDING=OFF \
                 -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
                 -DRUST_TARGET_TRIPLET="i686-unknown-linux-gnu" \
@@ -156,17 +157,28 @@ jobs:
       - name: Run language binding tests
         run: target/ffi/build/tests/iceoryx2-c-tests
 
-      - name: Build language binding examples in out-of-tree configuration
-        if: false # out-of-tree cross-compilation is currently not supported
+      - name: Build C language binding examples in out-of-tree configuration
+        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
         run: |
           rm -rf target/ffi/build
           cmake -S examples/c \
-                -B target/ffi/out-of-tree \
+                -B target/ffi/out-of-tree-c \
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
                 -${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ffi/out-of-tree
+          cmake --build target/ffi/out-of-tree-c
+
+      - name: Build C++ language binding examples in out-of-tree configuration
+        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
+        run: |
+          cmake -S examples/cxx \
+                -B target/ffi/out-of-tree-cxx \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
+                -${{ matrix.mode.cmake-build-type }}
+          cmake --build target/ffi/out-of-tree-cxx
 
   x86_64:
     needs: [preflight-check, static-code-analysis, cargo-nextest]

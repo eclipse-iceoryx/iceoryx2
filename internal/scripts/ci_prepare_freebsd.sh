@@ -12,6 +12,8 @@
 
 #!/bin/sh
 
+set -e
+
 export ASSUME_ALWAYS_YES=yes
 
 pkg update

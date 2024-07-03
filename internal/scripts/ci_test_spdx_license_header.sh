@@ -12,6 +12,8 @@
 
 #!/bin/bash
 
+set -e
+
 COLOR_RESET='\033[0m'
 COLOR_GREEN='\033[1;32m'
 COLOR_YELLOW='\033[1;33m'
