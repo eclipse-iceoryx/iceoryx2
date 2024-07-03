@@ -17,11 +17,13 @@ mod service {
     use std::sync::Barrier;
     use std::time::Duration;
 
+    use iceoryx2::node::NodeView;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::service::builder::publish_subscribe::{
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::{event, publish_subscribe};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
@@ -55,6 +57,7 @@ mod service {
             service_name: &ServiceName,
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError>;
+        fn messaging_pattern() -> MessagingPattern;
 
         fn assert_create_error(error: Self::CreateError);
         fn assert_open_error(error: Self::OpenError);
@@ -101,8 +104,10 @@ mod service {
             service_name: &ServiceName,
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
+            let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
             node.service_builder(service_name.clone())
                 .publish_subscribe::<u64>()
+                .max_nodes(number_of_nodes)
                 .create_with_attributes(attributes)
         }
 
@@ -128,6 +133,10 @@ mod service {
                     PublishSubscribeOpenError::ServiceInCorruptedState,
                 ])
             );
+        }
+
+        fn messaging_pattern() -> MessagingPattern {
+            MessagingPattern::PublishSubscribe
         }
     }
 
@@ -157,8 +166,10 @@ mod service {
             service_name: &ServiceName,
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
+            let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
             node.service_builder(service_name.clone())
                 .event()
+                .max_nodes(number_of_nodes)
                 .create_with_attributes(attributes)
         }
 
@@ -184,6 +195,10 @@ mod service {
                     EventOpenError::ServiceInCorruptedState,
                 ])
             );
+        }
+
+        fn messaging_pattern() -> MessagingPattern {
+            MessagingPattern::Event
         }
     }
 
@@ -682,6 +697,186 @@ mod service {
                 t.join().unwrap();
             }
         });
+    }
+
+    #[test]
+    fn concurrent_node_attaching_to_service_and_listing_works<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        let test = Factory::new();
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        const NUMBER_OF_ITERATIONS: usize = 30;
+        let barrier = Barrier::new(number_of_creators);
+
+        let main_node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service_name = generate_name();
+        let attributes = AttributeVerifier::new();
+        let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
+
+        std::thread::scope(|s| {
+            let mut threads = vec![];
+            for _ in 0..number_of_creators {
+                threads.push(s.spawn(|| {
+                    barrier.wait();
+
+                    for _ in 0..NUMBER_OF_ITERATIONS {
+                        let node = NodeBuilder::new().create::<Sut>().unwrap();
+                        let service = test.open(&node, &service_name, &attributes).unwrap();
+
+                        let mut found_me = false;
+                        let result = service.nodes(|node_state| {
+                            let node_state = node_state?;
+                            match node_state {
+                                NodeState::Alive(view) => {
+                                    if view.id() == node.id() {
+                                        found_me = true;
+                                    }
+                                }
+                                NodeState::Dead(view) => {
+                                    if view.id() == node.id() {
+                                        found_me = true;
+                                    }
+                                }
+                            }
+                            Ok(CallbackProgression::Continue)
+                        });
+
+                        assert_that!(result, is_ok);
+                        assert_that!(found_me, eq true);
+                    }
+                }));
+            }
+
+            for thread in threads {
+                thread.join().unwrap();
+            }
+        });
+    }
+
+    #[test]
+    fn concurrent_node_attaching_to_service_and_details_node_listing_works<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        let test = Factory::new();
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        const NUMBER_OF_ITERATIONS: usize = 30;
+        let barrier = Barrier::new(number_of_creators);
+
+        let main_node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service_name = generate_name();
+        let attributes = AttributeVerifier::new();
+        let _service = test.create(&main_node, &service_name, &AttributeSpecifier::new());
+
+        std::thread::scope(|s| {
+            let mut threads = vec![];
+            for _ in 0..number_of_creators {
+                threads.push(s.spawn(|| {
+                    barrier.wait();
+
+                    for _ in 0..NUMBER_OF_ITERATIONS {
+                        let node = NodeBuilder::new().create::<Sut>().unwrap();
+                        let _service = test.open(&node, &service_name, &attributes).unwrap();
+
+                        let service_details = Sut::details(
+                            &service_name,
+                            Config::get_global_config(),
+                            Factory::messaging_pattern(),
+                        )
+                        .unwrap()
+                        .unwrap();
+
+                        assert_that!(service_details.dynamic_details, is_some);
+                        let dynamic_details = service_details.dynamic_details.unwrap();
+
+                        let mut found_me = false;
+                        for node_state in dynamic_details.nodes {
+                            match node_state {
+                                NodeState::Alive(view) => {
+                                    if view.id() == node.id() {
+                                        found_me = true;
+                                    }
+                                }
+                                NodeState::Dead(view) => {
+                                    if view.id() == node.id() {
+                                        found_me = true;
+                                    }
+                                }
+                            }
+                        }
+                        assert_that!(found_me, eq true);
+                    }
+                }));
+            }
+
+            for thread in threads {
+                thread.join().unwrap();
+            }
+        });
+    }
+
+    #[test]
+    fn node_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
+        let test = Factory::new();
+        const NUMBER_OF_NODES: usize = 5;
+
+        let main_node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service_name = generate_name();
+        let attributes = AttributeVerifier::new();
+        let main_service = test
+            .create(&main_node, &service_name, &AttributeSpecifier::new())
+            .unwrap();
+
+        let mut nodes = vec![];
+        let mut node_ids = vec![];
+        let mut services = vec![];
+        node_ids.push(main_node.id().clone());
+
+        let get_registered_node_ids = |service: &Factory::Factory| {
+            let mut registered_node_ids = vec![];
+            service
+                .nodes(|node_state| {
+                    let node_state = node_state?;
+                    match node_state {
+                        NodeState::Alive(view) => registered_node_ids.push(view.id().clone()),
+                        NodeState::Dead(view) => registered_node_ids.push(view.id().clone()),
+                    }
+                    Ok(CallbackProgression::Continue)
+                })
+                .unwrap();
+            registered_node_ids
+        };
+
+        for _ in 0..NUMBER_OF_NODES {
+            let node = NodeBuilder::new().create::<Sut>().unwrap();
+            let service = test.open(&node, &service_name, &attributes).unwrap();
+
+            let registered_node_ids = get_registered_node_ids(&service);
+
+            node_ids.push(node.id().clone());
+            nodes.push(node);
+            services.push(service);
+
+            assert_that!(registered_node_ids, len node_ids.len());
+            for id in registered_node_ids {
+                assert_that!(node_ids, contains id);
+            }
+        }
+
+        for _ in 0..NUMBER_OF_NODES {
+            services.pop();
+            nodes.pop();
+            node_ids.pop();
+
+            let registered_node_ids = get_registered_node_ids(&main_service);
+            assert_that!(registered_node_ids, len node_ids.len());
+            for id in registered_node_ids {
+                assert_that!(node_ids, contains id);
+            }
+        }
     }
 
     mod zero_copy {

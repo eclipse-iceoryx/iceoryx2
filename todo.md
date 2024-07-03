@@ -1,20 +1,15 @@
 # TODO
 
- * list all nodes via service directly Service::details
-
  * test all CallbackProgression usages
  * concurrent iceoryx2_cal monitoring tests
  * concurrent iceoryx2_bb process state tests
  * concurrent NamedConcept list and create test
  * concurrent NamedConcept create and open test
  * event
-    * list nodes
     * max nodes supported
     * one node can open same service as many times as it wants
     * node requirements when service is opened
  * publish subscribe
-    * list nodes
-    * node deregistration removes node
 
 # BUGS
 
