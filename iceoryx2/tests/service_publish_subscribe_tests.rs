@@ -559,32 +559,40 @@ mod service_publish_subscribe {
     fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let _sut = node
+        let sut = node
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
-            .max_nodes(11)
+            .max_nodes(89)
             .max_publishers(4)
             .max_subscribers(5)
             .enable_safe_overflow(false)
             .history_size(6)
             .subscriber_max_borrowed_samples(7)
             .subscriber_max_buffer_size(8)
-            .create();
-        assert_that!(_sut, is_ok);
-
-        let sut = node
-            .service_builder(service_name)
-            .publish_subscribe::<u64>()
-            .open()
+            .create()
             .unwrap();
 
-        assert_that!(sut.static_config().max_nodes(), eq 11);
+        assert_that!(sut.static_config().max_nodes(), eq 89);
         assert_that!(sut.static_config().max_publishers(), eq 4);
         assert_that!(sut.static_config().max_subscribers(), eq 5);
         assert_that!(sut.static_config().has_safe_overflow(), eq false);
         assert_that!(sut.static_config().history_size(), eq 6);
         assert_that!(sut.static_config().subscriber_max_borrowed_samples(), eq 7);
         assert_that!(sut.static_config().subscriber_max_buffer_size(), eq 8);
+
+        let sut2 = node
+            .service_builder(service_name)
+            .publish_subscribe::<u64>()
+            .open()
+            .unwrap();
+
+        assert_that!(sut2.static_config().max_nodes(), eq 89);
+        assert_that!(sut2.static_config().max_publishers(), eq 4);
+        assert_that!(sut2.static_config().max_subscribers(), eq 5);
+        assert_that!(sut2.static_config().has_safe_overflow(), eq false);
+        assert_that!(sut2.static_config().history_size(), eq 6);
+        assert_that!(sut2.static_config().subscriber_max_borrowed_samples(), eq 7);
+        assert_that!(sut2.static_config().subscriber_max_buffer_size(), eq 8);
     }
 
     #[test]
@@ -827,32 +835,17 @@ mod service_publish_subscribe {
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq PublishSubscribeOpenError::ExceedsMaxNumberOfNodes);
-    }
 
-    #[test]
-    fn node_can_open_same_service_without_limits<Sut: Service>() {
-        let service_name = generate_name();
-        const REPETITIONS: usize = 128;
+        nodes.pop();
+        services.pop();
 
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
-            .max_nodes(1)
-            .create();
+            .open();
+
         assert_that!(sut, is_ok);
-
-        let mut services = vec![];
-        services.push(sut.unwrap());
-
-        for _ in 0..REPETITIONS {
-            let sut = node
-                .service_builder(service_name.clone())
-                .publish_subscribe::<u64>()
-                .open();
-            assert_that!(sut, is_ok);
-            services.push(sut.unwrap());
-        }
     }
 
     #[test]

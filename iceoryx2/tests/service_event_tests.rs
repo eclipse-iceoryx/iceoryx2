@@ -159,6 +159,79 @@ mod service_event {
     }
 
     #[test]
+    fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name)
+            .event()
+            .max_nodes(0)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().max_nodes(), eq 1);
+    }
+
+    #[test]
+    fn set_max_listeners_to_zero_adjusts_it_to_one<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name)
+            .event()
+            .max_listeners(0)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().max_listeners(), eq 1);
+    }
+
+    #[test]
+    fn set_max_notifiers_to_zero_adjusts_it_to_one<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name)
+            .event()
+            .max_notifiers(0)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().max_notifiers(), eq 1);
+    }
+
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_opener_node_requirements<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name.clone())
+            .event()
+            .max_nodes(2)
+            .create();
+        assert_that!(sut, is_ok);
+
+        let sut2 = node
+            .service_builder(service_name.clone())
+            .event()
+            .max_nodes(3)
+            .open();
+
+        assert_that!(sut2, is_err);
+        assert_that!(
+            sut2.err().unwrap(), eq
+            EventOpenError::DoesNotSupportRequestedAmountOfNodes
+        );
+
+        let sut2 = node
+            .service_builder(service_name)
+            .event()
+            .max_nodes(1)
+            .open();
+        assert_that!(sut2, is_ok);
+    }
+
+    #[test]
     fn open_fails_when_service_does_not_satisfy_event_id_requirements<Sut: Service>() {
         let service_name = generate_name();
         const EVENT_ID_MAX_VALUE: usize = 78;
@@ -195,14 +268,17 @@ mod service_event {
         let sut = node
             .service_builder(service_name.clone())
             .event()
+            .max_nodes(7)
             .max_notifiers(4)
             .max_listeners(5)
             .create()
             .unwrap();
+        assert_that!(sut.static_config().max_nodes(), eq 7);
         assert_that!(sut.static_config().max_notifiers(), eq 4);
         assert_that!(sut.static_config().max_listeners(), eq 5);
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
+        assert_that!(sut2.static_config().max_nodes(), eq 7);
         assert_that!(sut2.static_config().max_notifiers(), eq 4);
         assert_that!(sut2.static_config().max_listeners(), eq 5);
     }
@@ -211,6 +287,7 @@ mod service_event {
     fn settings_can_be_modified_via_custom_config<Sut: Service>() {
         let service_name = generate_name();
         let mut custom_config = Config::default();
+        custom_config.defaults.event.max_nodes = 13;
         custom_config.defaults.event.max_notifiers = 9;
         custom_config.defaults.event.max_listeners = 10;
         let node = NodeBuilder::new()
@@ -223,10 +300,12 @@ mod service_event {
             .event()
             .create()
             .unwrap();
+        assert_that!(sut.static_config().max_nodes(), eq 13);
         assert_that!(sut.static_config().max_notifiers(), eq 9);
         assert_that!(sut.static_config().max_listeners(), eq 10);
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
+        assert_that!(sut2.static_config().max_nodes(), eq 13);
         assert_that!(sut2.static_config().max_notifiers(), eq 9);
         assert_that!(sut2.static_config().max_listeners(), eq 10);
     }
@@ -490,6 +569,43 @@ mod service_event {
             assert_that!(sut.dynamic_config().number_of_listeners(), eq MAX_LISTENERS - i - 1);
             assert_that!(sut2.dynamic_config().number_of_listeners(), eq MAX_LISTENERS - i - 1);
         }
+    }
+
+    #[test]
+    fn number_of_nodes_works<Sut: Service>() {
+        let service_name = generate_name();
+        let main_node = NodeBuilder::new().create::<Sut>().unwrap();
+        const MAX_NODES: usize = 8;
+
+        let _sut = main_node
+            .service_builder(service_name.clone())
+            .event()
+            .max_nodes(MAX_NODES)
+            .create()
+            .unwrap();
+
+        let mut nodes = vec![];
+        let mut services = vec![];
+
+        for _ in 1..MAX_NODES {
+            let node = NodeBuilder::new().create::<Sut>().unwrap();
+            let service = node.service_builder(service_name.clone()).event().open();
+            assert_that!(service, is_ok);
+            nodes.push(node);
+            services.push(service);
+        }
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node.service_builder(service_name.clone()).event().open();
+        assert_that!(service, is_err);
+        assert_that!(service.err().unwrap(), eq EventOpenError::ExceedsMaxNumberOfNodes);
+
+        nodes.pop();
+        services.pop();
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node.service_builder(service_name.clone()).event().open();
+        assert_that!(service, is_ok);
     }
 
     #[test]

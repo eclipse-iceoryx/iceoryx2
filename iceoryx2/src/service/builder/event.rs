@@ -15,6 +15,7 @@
 //! See [`crate::service`]
 //!
 pub use crate::port::event_id::EventId;
+use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::port_factory::event;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
@@ -52,8 +53,14 @@ pub enum EventOpenError {
     DoesNotSupportRequestedAmountOfListeners,
     /// The [`Service`] supported [`EventId`] is smaller than the requested max [`EventId`].
     DoesNotSupportRequestedMaxEventId,
+    /// The [`Service`] supports less [`Node`](crate::node::Node)s than requested.
+    DoesNotSupportRequestedAmountOfNodes,
     /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
     ExceedsMaxNumberOfNodes,
+    /// The [`Service`] is marked for destruction and currently cleaning up since no one is using it anymore.
+    /// When the call creation call is repeated with a little delay the [`Service`] should be
+    /// recreatable.
+    IsMarkedForDestruction,
 }
 
 impl std::fmt::Display for EventOpenError {
@@ -269,9 +276,23 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     let event_static_config =
                         self.verify_service_attributes(&static_config, required_attributes)?;
 
-                    let dynamic_config = fail!(from self, when self.base.open_dynamic_config_storage(),
-                            with EventOpenError::ServiceInCorruptedState,
-                            "{} since the dynamic service informations could not be opened.", msg);
+                    let dynamic_config = match self.base.open_dynamic_config_storage() {
+                        Ok(v) => v,
+                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
+                            fail!(from self, with EventOpenError::IsMarkedForDestruction,
+                                "{} since the service is marked for destruction.", msg);
+                        }
+                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
+                            fail!(from self, with EventOpenError::ExceedsMaxNumberOfNodes,
+                                "{} since it would exceed the maximum number of supported nodes.", msg);
+                        }
+                        Err(e) => {
+                            fail!(from self, with EventOpenError::ServiceInCorruptedState,
+                                "{} since the dynamic service information could not be opened ({:?}).",
+                                msg, e);
+                        }
+                    };
+
                     let dynamic_config = Arc::new(dynamic_config);
 
                     self.base.service_config.messaging_pattern =
@@ -499,7 +520,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
 
         if self.verify_max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
-            fail!(from self, with EventOpenError::ExceedsMaxNumberOfNodes,
+            fail!(from self, with EventOpenError::DoesNotSupportRequestedAmountOfNodes,
                 "{} since the event supports only {} nodes but {} are required.",
                 msg, existing_settings.max_nodes, required_settings.max_nodes);
         }

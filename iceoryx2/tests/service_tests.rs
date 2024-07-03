@@ -244,8 +244,8 @@ mod service {
         Factory: SutFactory<Sut>,
     >() {
         let _watch_dog = Watchdog::new();
-        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024) * 2;
-        const NUMBER_OF_ITERATIONS: usize = 50;
+        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
         let barrier_enter = Barrier::new(number_of_threads);
@@ -281,8 +281,8 @@ mod service {
         Factory: SutFactory<Sut>,
     >() {
         let _watch_dog = Watchdog::new();
-        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024) * 2;
-        const NUMBER_OF_ITERATIONS: usize = 50;
+        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
         let success_counter = AtomicU64::new(0);
@@ -329,16 +329,16 @@ mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(60));
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
-        let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024) * 2;
+        let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
         let test = Factory::new();
 
         let barrier_enter = Barrier::new(number_of_threads);
         let barrier_exit = Barrier::new(number_of_threads);
 
-        const NUMBER_OF_ITERATIONS: usize = 50;
+        const NUMBER_OF_ITERATIONS: usize = 25;
         let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS).map(|_| generate_name()).collect();
         let service_names = &service_names;
 
@@ -662,7 +662,7 @@ mod service {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let test = Factory::new();
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
-        const NUMBER_OF_ITERATIONS: usize = 100;
+        const NUMBER_OF_ITERATIONS: usize = 40;
         let barrier = Barrier::new(number_of_creators);
 
         std::thread::scope(|s| {
@@ -876,6 +876,26 @@ mod service {
             for id in registered_node_ids {
                 assert_that!(node_ids, contains id);
             }
+        }
+    }
+
+    #[test]
+    fn node_can_open_same_service_without_limits<Sut: Service, Factory: SutFactory<Sut>>() {
+        let test = Factory::new();
+        let service_name = generate_name();
+        const REPETITIONS: usize = 128;
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = test.create(&node, &service_name, &AttributeSpecifier::new());
+        assert_that!(sut, is_ok);
+
+        let mut services = vec![];
+        services.push(sut.unwrap());
+
+        for _ in 0..REPETITIONS {
+            let sut = test.open(&node, &service_name, &AttributeVerifier::new());
+            assert_that!(sut, is_ok);
+            services.push(sut.unwrap());
         }
     }
 

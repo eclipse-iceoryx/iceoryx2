@@ -582,11 +582,11 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                         Ok(v) => v,
                         Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
                             fail!(from self, with PublishSubscribeOpenError::IsMarkedForDestruction,
-                                "{} since the dynamic service information could not be opened.", msg);
+                                "{} since the service is marked for destruction.", msg);
                         }
                         Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
                             fail!(from self, with PublishSubscribeOpenError::ExceedsMaxNumberOfNodes,
-                                "{} since the dynamic service information could not be opened.", msg);
+                                "{} since it would exceed the maximum number of supported nodes.", msg);
                         }
                         Err(e) => {
                             fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,

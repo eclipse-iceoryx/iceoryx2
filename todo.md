@@ -5,11 +5,6 @@
  * concurrent iceoryx2_bb process state tests
  * concurrent NamedConcept list and create test
  * concurrent NamedConcept create and open test
- * event
-    * max nodes supported
-    * one node can open same service as many times as it wants
-    * node requirements when service is opened
- * publish subscribe
 
 # BUGS
 
