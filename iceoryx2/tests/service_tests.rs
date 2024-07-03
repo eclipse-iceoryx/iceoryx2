@@ -314,7 +314,7 @@ mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new();
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(60));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024) * 2;
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
