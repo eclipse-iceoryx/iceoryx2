@@ -15,6 +15,7 @@
     * Implement Serialize,Deserialize for
         * `SemanticString`
         * `UniqueSystemId`
+ * Nodes register in service to enable monitoring [#103](https://github.com/eclipse-iceoryx/iceoryx2/issues/103)
  * Multiple features from [#195](https://github.com/eclipse-iceoryx/iceoryx2/issues/195)
     * Introduce `payload_alignment` in `publish_subscribe` builder to increase alignment of payload for all service samples
     * Introduce support for slice-types with dynamic sizes.
