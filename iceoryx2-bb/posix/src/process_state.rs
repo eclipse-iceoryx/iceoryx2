@@ -677,11 +677,21 @@ impl ProcessMonitor {
 
                                 Ok(ProcessState::Dead)
                             }
-                            None => {
-                                fail!(from self, with ProcessMonitorStateError::CorruptedState,
+                            None => match File::does_exist(&self.path) {
+                                Ok(true) => {
+                                    fail!(from self, with ProcessMonitorStateError::CorruptedState,
                                     "{} since the corresponding owner_lock file \"{}\" does not exist. This indicates a corrupted state.",
                                     msg, self.owner_lock_path);
-                            }
+                                }
+                                Ok(false) => {
+                                    self.file.set(None);
+                                    Ok(ProcessState::DoesNotExist)
+                                }
+                                Err(v) => {
+                                    fail!(from self, with ProcessMonitorStateError::UnknownError(0),
+                                        "{} since an unknown failure occurred while checking if the process state file exists ({:?}).", msg, v);
+                                }
+                            },
                         }
                     }
                 },

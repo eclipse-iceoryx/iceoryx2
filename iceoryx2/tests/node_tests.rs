@@ -13,6 +13,7 @@
 #[generic_tests::define]
 mod node {
     use std::collections::{HashSet, VecDeque};
+    use std::sync::Barrier;
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{
@@ -21,8 +22,10 @@ mod node {
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::directory::Directory;
+    use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
@@ -240,6 +243,50 @@ mod node {
             format!("{}", NodeCleanupFailure::Interrupt), eq "NodeCleanupFailure::Interrupt");
         assert_that!(
             format!("{}", NodeCleanupFailure::InternalError), eq "NodeCleanupFailure::InternalError");
+    }
+
+    #[test]
+    fn concurrent_node_creation_and_listing_works<S: Service>() {
+        let _watch_dog = Watchdog::new();
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        const NUMBER_OF_ITERATIONS: usize = 100;
+        let barrier = Barrier::new(number_of_creators);
+
+        std::thread::scope(|s| {
+            let mut threads = vec![];
+            for _ in 0..number_of_creators {
+                threads.push(s.spawn(|| {
+                    barrier.wait();
+                    for _ in 0..NUMBER_OF_ITERATIONS {
+                        let node = NodeBuilder::new().create::<S>().unwrap();
+
+                        let mut found_self = false;
+                        let result = Node::<S>::list(node.config(), |node_state| {
+                            assert_that!(node_state, is_ok);
+
+                            let node_state = node_state?;
+                            if let NodeState::Alive(view) = node_state {
+                                if view.id() == node.id() {
+                                    found_self = true;
+                                }
+                            } else if let NodeState::Dead(view) = node_state {
+                                if view.id() == node.id() {
+                                    found_self = true;
+                                }
+                            }
+                            Ok(CallbackProgression::Continue)
+                        });
+
+                        assert_that!(found_self, eq true);
+                        assert_that!(result, is_ok);
+                    }
+                }));
+            }
+
+            for thread in threads {
+                thread.join().unwrap();
+            }
+        });
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

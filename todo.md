@@ -2,6 +2,8 @@
 
  * list all nodes via service directly Service::details
  * test all CallbackProgression usages
+ * concurrent iceoryx2_cal monitoring tests
+ * concurrent service list node tests
  * event
     * list nodes
     * max nodes supported
