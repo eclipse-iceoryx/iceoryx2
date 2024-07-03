@@ -42,13 +42,13 @@ mod service {
         type OpenError: std::fmt::Debug;
 
         fn new() -> Self;
-        fn create1(
+        fn create(
             &self,
             node: &Node<Sut>,
             service_name: &ServiceName,
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError>;
-        fn open1(
+        fn open(
             &self,
             node: &Node<Sut>,
             service_name: &ServiceName,
@@ -83,7 +83,7 @@ mod service {
             Self { _data: PhantomData }
         }
 
-        fn open1(
+        fn open(
             &self,
             node: &Node<Sut>,
             service_name: &ServiceName,
@@ -94,7 +94,7 @@ mod service {
                 .open_with_attributes(attributes)
         }
 
-        fn create1(
+        fn create(
             &self,
             node: &Node<Sut>,
             service_name: &ServiceName,
@@ -139,7 +139,7 @@ mod service {
             Self { _data: PhantomData }
         }
 
-        fn open1(
+        fn open(
             &self,
             node: &Node<Sut>,
             service_name: &ServiceName,
@@ -150,7 +150,7 @@ mod service {
                 .open_with_attributes(attributes)
         }
 
-        fn create1(
+        fn create(
             &self,
             node: &Node<Sut>,
             service_name: &ServiceName,
@@ -245,7 +245,7 @@ mod service {
                         barrier_enter.wait();
 
                         let _sut = test
-                            .create1(&node, &service_name, &AttributeSpecifier::new())
+                            .create(&node, &service_name, &AttributeSpecifier::new())
                             .unwrap();
 
                         barrier_exit.wait();
@@ -282,7 +282,7 @@ mod service {
                     for _ in 0..NUMBER_OF_ITERATIONS {
                         barrier_enter.wait();
 
-                        let sut = test.create1(&node, &service_name, &AttributeSpecifier::new());
+                        let sut = test.create(&node, &service_name, &AttributeSpecifier::new());
                         match sut {
                             Ok(_) => {
                                 success_counter.fetch_add(1, Ordering::Relaxed);
@@ -332,7 +332,7 @@ mod service {
                 let node = NodeBuilder::new().create::<Sut>().unwrap();
                 for service_name in service_names {
                     let sut = test
-                        .create1(&node, &service_name, &AttributeSpecifier::new())
+                        .create(&node, &service_name, &AttributeSpecifier::new())
                         .unwrap();
                     barrier_enter.wait();
 
@@ -348,7 +348,7 @@ mod service {
                     for service_name in service_names {
                         barrier_enter.wait();
 
-                        let sut = test.open1(&node, &service_name, &AttributeVerifier::new());
+                        let sut = test.open(&node, &service_name, &AttributeVerifier::new());
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
@@ -381,13 +381,13 @@ mod service {
         let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
         let sut_create = test
-            .create1(&node_1, &service_name, &defined_attributes)
+            .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
 
         assert_that!(sut_create.attributes(), eq defined_attributes.attributes());
 
         let sut_open = test
-            .open1(&node_2, &service_name, &AttributeVerifier::new())
+            .open(&node_2, &service_name, &AttributeVerifier::new())
             .unwrap();
 
         assert_that!(sut_open.attributes(), eq defined_attributes.attributes());
@@ -406,10 +406,10 @@ mod service {
             .define("3. Just have a", "lick on the toad");
 
         let _sut_create = test
-            .create1(&node_1, &service_name, &defined_attributes)
+            .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
 
-        let sut_open = test.open1(
+        let sut_open = test.open(
             &node_2,
             &service_name,
             &AttributeVerifier::new()
@@ -434,10 +434,10 @@ mod service {
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
         let _sut_create = test
-            .create1(&node_1, &service_name, &defined_attributes)
+            .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
 
-        let sut_open = test.open1(
+        let sut_open = test.open(
             &node_2,
             &service_name,
             &AttributeVerifier::new().require("1. Hello", "lick on the toad"),
@@ -457,10 +457,10 @@ mod service {
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
         let _sut_create = test
-            .create1(&node_1, &service_name, &defined_attributes)
+            .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
 
-        let sut_open = test.open1(
+        let sut_open = test.open(
             &node_2,
             &service_name,
             &AttributeVerifier::new().require("Whatever", "lick on the toad"),
@@ -481,10 +481,10 @@ mod service {
             .define("1. Hello", "Number Two")
             .define("2. No more", "Coffee");
         let _sut_create = test
-            .create1(&node_1, &service_name, &defined_attributes)
+            .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
 
-        let sut_open = test.open1(
+        let sut_open = test.open(
             &node_2,
             &service_name,
             &AttributeVerifier::new()
@@ -509,10 +509,10 @@ mod service {
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
         let _sut_create = test
-            .create1(&node_1, &service_name, &defined_attributes)
+            .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
 
-        let sut_open = test.open1(
+        let sut_open = test.open(
             &node_2,
             &service_name,
             &AttributeVerifier::new().require_key("i do not exist"),
@@ -535,10 +535,10 @@ mod service {
             .define("1. Hello", "Hypnotoad")
             .define("2. No more", "Coffee");
         let _sut_create = test
-            .create1(&node_1, &service_name, &defined_attributes)
+            .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
 
-        let sut_open = test.open1(
+        let sut_open = test.open(
             &node_2,
             &service_name,
             &AttributeVerifier::new().require_key("2. No more"),

@@ -539,6 +539,7 @@ fn details<S: Service>(
                     debug!(from origin, "Unable to acquire NodeState for service \"{:?}\"", uuid);
                 }
             };
+            CallbackProgression::Continue
         });
         Some(ServiceDynamicDetails { nodes })
     } else {

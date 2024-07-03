@@ -33,8 +33,10 @@
 //! # Ok(())
 //! # }
 //! ```
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::{self, static_config};
 use crate::service::{dynamic_config, ServiceName};
@@ -84,10 +86,14 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
             .event()
     }
 
-    fn nodes<F: FnMut(Result<crate::node::NodeState<Service>, crate::node::NodeListFailure>)>(
+    fn nodes<
+        F: FnMut(
+            Result<crate::node::NodeState<Service>, NodeListFailure>,
+        ) -> Result<CallbackProgression, NodeListFailure>,
+    >(
         &self,
         callback: F,
-    ) {
+    ) -> Result<(), NodeListFailure> {
         nodes(
             self.service.__internal_state().dynamic_storage.get(),
             self.service.__internal_state().shared_node.config(),

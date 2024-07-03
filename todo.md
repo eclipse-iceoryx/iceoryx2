@@ -1,6 +1,7 @@
 # TODO
 
  * list all nodes via service directly Service::details
+ * test all CallbackProgression usages
  * event
     * list nodes
     * max nodes supported

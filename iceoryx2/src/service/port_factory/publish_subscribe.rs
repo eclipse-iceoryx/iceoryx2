@@ -42,8 +42,10 @@
 
 use std::{fmt::Debug, marker::PhantomData};
 
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config};
@@ -106,10 +108,14 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .publish_subscribe()
     }
 
-    fn nodes<F: FnMut(Result<crate::node::NodeState<Service>, crate::node::NodeListFailure>)>(
+    fn nodes<
+        F: FnMut(
+            Result<crate::node::NodeState<Service>, NodeListFailure>,
+        ) -> Result<CallbackProgression, NodeListFailure>,
+    >(
         &self,
         callback: F,
-    ) {
+    ) -> Result<(), NodeListFailure> {
         nodes(
             self.service.__internal_state().dynamic_storage.get(),
             self.service.__internal_state().shared_node.config(),

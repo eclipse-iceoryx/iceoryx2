@@ -116,6 +116,7 @@ use crate::service::static_config::publish_subscribe::{self};
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -400,6 +401,7 @@ impl<Service: service::Service> DataSegment<Service> {
         unsafe {
             (*self.subscriber_list_state.get()).for_each(|index, subscriber_id| {
                 visited_indices[index as usize] = Some(*subscriber_id);
+                CallbackProgression::Continue
             })
         };
 

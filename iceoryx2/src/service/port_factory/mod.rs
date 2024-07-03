@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_elementary::CallbackProgression;
+
 use crate::config::Config;
 use crate::node::{NodeListFailure, NodeState};
 
@@ -73,22 +75,46 @@ pub trait PortFactory {
     /// and calls for every [`Node`](crate::node::Node) the provided callback. If an error occurs
     /// while acquiring the [`Node`](crate::node::Node)s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    fn nodes<F: FnMut(Result<NodeState<Self::Service>, NodeListFailure>)>(&self, callback: F);
+    fn nodes<
+        F: FnMut(
+            Result<NodeState<Self::Service>, NodeListFailure>,
+        ) -> Result<CallbackProgression, NodeListFailure>,
+    >(
+        &self,
+        callback: F,
+    ) -> Result<(), NodeListFailure>;
 }
 
 pub(crate) fn nodes<
     Service: crate::service::Service,
-    F: FnMut(Result<NodeState<Service>, NodeListFailure>),
+    F: FnMut(
+        Result<NodeState<Service>, NodeListFailure>,
+    ) -> Result<CallbackProgression, NodeListFailure>,
 >(
     dynamic_config: &DynamicConfig,
     config: &Config,
     mut callback: F,
-) {
+) -> Result<(), NodeListFailure> {
+    let mut ret_val = Ok(());
     dynamic_config.list_node_ids(|node_id| {
         match crate::node::NodeState::<Service>::new(node_id, config) {
-            Ok(Some(node_state)) => callback(Ok(node_state)),
-            Ok(None) => (),
-            Err(e) => callback(Err(e)),
+            Ok(Some(node_state)) => match callback(Ok(node_state)) {
+                Ok(c) => c,
+                Err(e) => {
+                    ret_val = Err(e);
+                    CallbackProgression::Stop
+                }
+            },
+            Ok(None) => CallbackProgression::Continue,
+            Err(e) => match callback(Err(e)) {
+                Ok(c) => c,
+                Err(e) => {
+                    ret_val = Err(e);
+                    CallbackProgression::Stop
+                }
+            },
         }
     });
+
+    ret_val
 }

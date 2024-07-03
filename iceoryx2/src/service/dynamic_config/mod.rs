@@ -21,6 +21,7 @@ pub mod event;
 pub mod publish_subscribe;
 
 use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::{
     container::{Container, ContainerAddFailure, ContainerHandle},
     unique_index_set::{ReleaseMode, ReleaseState},
@@ -107,7 +108,7 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) fn list_node_ids<F: FnMut(&NodeId)>(&self, mut callback: F) {
+    pub(crate) fn list_node_ids<F: FnMut(&NodeId) -> CallbackProgression>(&self, mut callback: F) {
         let state = unsafe { self.nodes.get_state() };
         state.for_each(|_, node_id| callback(node_id));
     }

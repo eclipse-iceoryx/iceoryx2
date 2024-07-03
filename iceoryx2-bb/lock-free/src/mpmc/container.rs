@@ -53,6 +53,7 @@ use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_elementary::unique_id::UniqueId;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, math::align_to};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
@@ -129,10 +130,14 @@ impl<T: Copy + Debug> ContainerState<T> {
     /// let mut state = container.get_state();
     /// state.for_each(|index: u32, value: &u128| println!("index: {}, value: {}", index, value));
     /// ```
-    pub fn for_each<F: FnMut(u32, &T)>(&self, mut callback: F) {
+    pub fn for_each<F: FnMut(u32, &T) -> CallbackProgression>(&self, mut callback: F) {
         for i in 0..self.data.len() {
             if self.active_index[i] % 2 == 1 {
-                callback(i as _, unsafe { self.data[i].assume_init_ref() });
+                if callback(i as _, unsafe { self.data[i].assume_init_ref() })
+                    == CallbackProgression::Stop
+                {
+                    return;
+                }
             }
         }
     }

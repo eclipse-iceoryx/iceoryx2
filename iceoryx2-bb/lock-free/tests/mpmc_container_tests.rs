@@ -46,6 +46,7 @@ unsafe impl Send for TestType {}
 mod mpmc_container {
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_lock_free::mpmc::container::ContainerAddFailure;
     use iceoryx2_bb_lock_free::mpmc::container::*;
     use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
@@ -76,7 +77,10 @@ mod mpmc_container {
 
         let state = sut.get_state();
         let mut contained_values: Vec<(u32, usize)> = vec![];
-        state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
+        state.for_each(|index: u32, value: &T| {
+            contained_values.push((index, (*value).into()));
+            CallbackProgression::Continue
+        });
 
         for i in 0..CAPACITY {
             assert_that!(contained_values[i].0, eq i as u32);
@@ -109,7 +113,10 @@ mod mpmc_container {
 
         let state = sut.get_state();
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
+        state.for_each(|_: u32, value: &T| {
+            contained_values.push((*value).into());
+            CallbackProgression::Continue
+        });
 
         for i in 0..CAPACITY - 1 {
             assert_that!(contained_values[i], eq i * 7 + 5);
@@ -147,7 +154,10 @@ mod mpmc_container {
 
         let state = unsafe { sut.get_state() };
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
+        state.for_each(|_: u32, value: &T| {
+            contained_values.push((*value).into());
+            CallbackProgression::Continue
+        });
 
         for i in 0..CAPACITY - 1 {
             assert_that!(contained_values[i], eq i * 7 + 5);
@@ -180,7 +190,10 @@ mod mpmc_container {
 
         let state = sut.get_state();
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
+        state.for_each(|_: u32, value: &T| {
+            contained_values.push((*value).into());
+            CallbackProgression::Continue
+        });
 
         for i in 0..CAPACITY - 1 {
             assert_that!(contained_values[i], eq i * 7 + 5);
@@ -195,11 +208,17 @@ mod mpmc_container {
         let mut counter = 0;
 
         let mut state = sut.get_state();
-        state.for_each(|_, _| counter += 1);
+        state.for_each(|_, _| {
+            counter += 1;
+            CallbackProgression::Continue
+        });
         assert_that!(counter, eq 0);
 
         unsafe { sut.update_state(&mut state) };
-        state.for_each(|_, _| counter += 1);
+        state.for_each(|_, _| {
+            counter += 1;
+            CallbackProgression::Continue
+        });
         assert_that!(counter, eq 0);
     }
 
@@ -216,11 +235,17 @@ mod mpmc_container {
 
         let mut state = sut.get_state();
         let mut contained_values1 = vec![];
-        state.for_each(|_: u32, value: &T| contained_values1.push((*value).into()));
+        state.for_each(|_: u32, value: &T| {
+            contained_values1.push((*value).into());
+            CallbackProgression::Continue
+        });
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq false);
         let mut contained_values2 = vec![];
-        state.for_each(|_: u32, value: &T| contained_values2.push((*value).into()));
+        state.for_each(|_: u32, value: &T| {
+            contained_values2.push((*value).into());
+            CallbackProgression::Continue
+        });
 
         for i in 0..CAPACITY - 1 {
             assert_that!(contained_values1[i], eq i * 3 + 1);
@@ -249,7 +274,10 @@ mod mpmc_container {
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
+        state.for_each(|_: u32, value: &T| {
+            contained_values.push((*value).into());
+            CallbackProgression::Continue
+        });
 
         assert_that!(contained_values, is_empty);
     }
@@ -281,7 +309,10 @@ mod mpmc_container {
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| contained_values.push((*value).into()));
+        state.for_each(|_: u32, value: &T| {
+            contained_values.push((*value).into());
+            CallbackProgression::Continue
+        });
 
         for i in 0..CAPACITY - 1 {
             assert_that!(contained_values[i], eq * results.get(&(i as u32)).unwrap());
@@ -306,7 +337,10 @@ mod mpmc_container {
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
-            state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
+            state.for_each(|index: u32, value: &T| {
+                contained_values.push((index, (*value).into()));
+                CallbackProgression::Continue
+            });
 
             assert_that!(contained_values, len stored_values.len());
             for e in &stored_values {
@@ -320,7 +354,10 @@ mod mpmc_container {
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
-            state.for_each(|index: u32, value: &T| contained_values.push((index, (*value).into())));
+            state.for_each(|index: u32, value: &T| {
+                contained_values.push((index, (*value).into()));
+                CallbackProgression::Continue
+            });
 
             assert_that!(contained_values, len stored_values.len());
             for e in &stored_values {
@@ -420,6 +457,7 @@ mod mpmc_container {
                                     .lock()
                                     .unwrap()
                                     .push((index, *value));
+                                CallbackProgression::Continue
                             })
                         }
                     }

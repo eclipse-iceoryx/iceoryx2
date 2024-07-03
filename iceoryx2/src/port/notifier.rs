@@ -40,6 +40,7 @@ use crate::{
     port::port_identifiers::UniqueNotifierId,
     service::{self, naming_scheme::event_concept_name},
 };
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, fail, warn};
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
@@ -258,6 +259,7 @@ impl<Service: service::Service> Notifier<Service> {
         unsafe {
             (*self.listener_list_state.get()).for_each(|index, listener_id| {
                 visited_indices[index as usize] = Some(*listener_id);
+                CallbackProgression::Continue
             })
         };
 

@@ -37,6 +37,7 @@ use std::marker::PhantomData;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -214,6 +215,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         unsafe {
             (*self.publisher_list_state.get()).for_each(|index, details| {
                 visited_indices[index as usize] = Some(*details);
+                CallbackProgression::Continue
             })
         };
 
