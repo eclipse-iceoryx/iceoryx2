@@ -289,6 +289,22 @@ mod node {
         });
     }
 
+    #[test]
+    fn node_listing_stops_when_callback_progression_signals_stop<S: Service>() {
+        let node_1 = NodeBuilder::new().create::<S>().unwrap();
+        let _node_2 = NodeBuilder::new().create::<S>().unwrap();
+
+        let mut node_counter = 0;
+        let result = Node::<S>::list(node_1.config(), |node_state| {
+            assert_that!(node_state, is_ok);
+            node_counter += 1;
+            Ok(CallbackProgression::Stop)
+        });
+
+        assert_that!(result, is_ok);
+        assert_that!(node_counter, eq 1);
+    }
+
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
     mod zero_copy {}
 

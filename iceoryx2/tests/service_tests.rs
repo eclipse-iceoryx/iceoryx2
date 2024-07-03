@@ -580,6 +580,109 @@ mod service {
                                   "ServiceListError::InternalError");
     }
 
+    #[test]
+    fn list_services_works<Sut: Service, Factory: SutFactory<Sut>>() {
+        const NUMBER_OF_SERVICES: usize = 16;
+        let test = Factory::new();
+
+        let mut services = vec![];
+        let mut service_ids = vec![];
+        let mut nodes = vec![];
+        for _ in 0..NUMBER_OF_SERVICES {
+            let service_name = generate_name();
+            let node = NodeBuilder::new().create::<Sut>().unwrap();
+            let sut = test
+                .create(&node, &service_name, &AttributeSpecifier::new())
+                .unwrap();
+
+            service_ids.push(sut.uuid().to_string());
+            services.push(sut);
+            nodes.push(node);
+        }
+
+        let mut listed_services = vec![];
+        let result = Sut::list(Config::get_global_config(), |service| {
+            listed_services.push(service?.static_details.uuid().to_string());
+            Ok(CallbackProgression::Continue)
+        });
+        assert_that!(result, is_ok);
+
+        for s in listed_services {
+            assert_that!(service_ids, contains s);
+        }
+    }
+
+    #[test]
+    fn list_services_stops_when_callback_progression_states_stop<
+        Sut: Service,
+        Factory: SutFactory<Sut>,
+    >() {
+        const NUMBER_OF_SERVICES: usize = 16;
+        let test = Factory::new();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let mut services = vec![];
+        for _ in 0..NUMBER_OF_SERVICES {
+            let service_name = generate_name();
+            let sut = test
+                .create(&node, &service_name, &AttributeSpecifier::new())
+                .unwrap();
+
+            services.push(sut);
+        }
+
+        let mut service_counter = 0;
+        let result = Sut::list(Config::get_global_config(), |service| {
+            assert_that!(service, is_ok);
+            service_counter += 1;
+            Ok(CallbackProgression::Stop)
+        });
+        assert_that!(result, is_ok);
+        assert_that!(service_counter, eq 1);
+    }
+
+    #[test]
+    fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
+        let test = Factory::new();
+        let _watch_dog = Watchdog::new();
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        const NUMBER_OF_ITERATIONS: usize = 100;
+        let barrier = Barrier::new(number_of_creators);
+
+        std::thread::scope(|s| {
+            let mut threads = vec![];
+            for _ in 0..number_of_creators {
+                threads.push(s.spawn(|| {
+                    let node = NodeBuilder::new().create::<Sut>().unwrap();
+                    barrier.wait();
+
+                    for _ in 0..NUMBER_OF_ITERATIONS {
+                        let service_name = generate_name();
+                        let sut = test
+                            .create(&node, &service_name, &AttributeSpecifier::new())
+                            .unwrap();
+
+                        let mut found_me = false;
+                        let result = Sut::list(Config::get_global_config(), |s| {
+                            assert_that!(s, is_ok);
+                            if sut.uuid() == s?.static_details.uuid() {
+                                found_me = true;
+                            }
+                            Ok(CallbackProgression::Continue)
+                        });
+
+                        assert_that!(result, is_ok);
+                        assert_that!(found_me, eq true);
+                    }
+                }));
+            }
+
+            for t in threads {
+                t.join().unwrap();
+            }
+        });
+    }
+
     mod zero_copy {
         use iceoryx2::service::zero_copy::Service;
 
