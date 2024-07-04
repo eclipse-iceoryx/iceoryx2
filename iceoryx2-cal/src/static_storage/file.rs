@@ -253,17 +253,25 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
 
         let adjusted_path = config.path_for(storage_name);
 
-        match File::does_exist(&adjusted_path) {
-            Ok(true) => (),
-            Ok(false) => return Ok(false),
+        let does_exist = || match File::does_exist(&adjusted_path) {
+            Ok(true) => Ok(true),
+            Ok(false) => Ok(false),
             Err(v) => {
                 fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesCorrupted,
                     "{} due to an internal failure ({:?}), is the static storage in a corrupted state?", msg, v);
             }
         };
 
+        if !does_exist()? {
+            return Ok(false);
+        }
+
         let file = FileBuilder::new(&adjusted_path).open_existing(AccessMode::Read);
         if file.is_err() {
+            if !does_exist()? {
+                return Ok(false);
+            }
+
             fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesCorrupted,
                 "{} since the file could not be opened for reading ({:?}), is static storage in a corrupted state?", msg, file.err().unwrap() );
         }
@@ -271,6 +279,10 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
         let file = file.unwrap();
         let metadata = file.metadata();
         if metadata.is_err() {
+            if !does_exist()? {
+                return Ok(false);
+            }
+
             fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesCorrupted,
                 "{} due to an internal failure ({:?}) while acquiring underlying file informations, is static storage in a corrupted state?",
                 msg, metadata.err().unwrap());

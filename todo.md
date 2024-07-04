@@ -1,5 +1,8 @@
 # POSIX
 
+ * cargo nextest run -p iceoryx2 --test service_tests gracefully
+    * service should not be in corrupted state when listed and currently being removed
+
 # BUGS
 
 * posix::Mutex
