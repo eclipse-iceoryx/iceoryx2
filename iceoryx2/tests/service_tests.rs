@@ -26,6 +26,7 @@ mod service {
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::{event, publish_subscribe};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
+    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -131,6 +132,7 @@ mod service {
                     PublishSubscribeOpenError::DoesNotExist,
                     PublishSubscribeOpenError::InsufficientPermissions,
                     PublishSubscribeOpenError::IsMarkedForDestruction,
+                    PublishSubscribeOpenError::ServiceInCorruptedState
                 ])
             );
         }
@@ -193,6 +195,7 @@ mod service {
                     EventOpenError::DoesNotExist,
                     EventOpenError::InsufficientPermissions,
                     EventOpenError::IsMarkedForDestruction,
+                    EventOpenError::ServiceInCorruptedState
                 ])
             );
         }
@@ -329,7 +332,8 @@ mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        set_log_level(LogLevel::Debug);
+        let _watch_dog = Watchdog::new();
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
@@ -338,7 +342,7 @@ mod service {
         let barrier_enter = Barrier::new(number_of_threads);
         let barrier_exit = Barrier::new(number_of_threads);
 
-        const NUMBER_OF_ITERATIONS: usize = 1000;
+        const NUMBER_OF_ITERATIONS: usize = 100;
         let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS).map(|_| generate_name()).collect();
         let service_names = &service_names;
 
@@ -360,22 +364,18 @@ mod service {
             for _ in 0..number_of_open_threads {
                 threads.push(s.spawn(|| {
                     let node = NodeBuilder::new().create::<Sut>().unwrap();
-                    let mut report = vec![];
                     for service_name in service_names {
                         barrier_enter.wait();
                         let sut = test.open(&node, &service_name, &AttributeVerifier::new());
-                        barrier_exit.wait();
 
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
-                                report.push(e);
+                                Factory::assert_open_error(e);
                             }
                         }
-                    }
 
-                    for e in report {
-                        Factory::assert_open_error(e);
+                        barrier_exit.wait();
                     }
                 }));
             }

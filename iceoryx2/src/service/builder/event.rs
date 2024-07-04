@@ -285,52 +285,62 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         mut self,
         required_attributes: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
+        const OPEN_RETRY_LIMIT: usize = 5;
         let msg = "Unable to open event service";
 
-        match self.base.is_service_available(msg)? {
-            None => {
-                fail!(from self, with EventOpenError::DoesNotExist,
+        let mut service_open_retry_count = 0;
+        loop {
+            match self.base.is_service_available(msg)? {
+                None => {
+                    fail!(from self, with EventOpenError::DoesNotExist,
                         "{} since the event does not exist.", msg);
-            }
-            Some((static_config, static_storage)) => {
-                let event_static_config =
-                    self.verify_service_attributes(&static_config, required_attributes)?;
+                }
+                Some((static_config, static_storage)) => {
+                    let event_static_config =
+                        self.verify_service_attributes(&static_config, required_attributes)?;
 
-                let dynamic_config = match self.base.open_dynamic_config_storage() {
-                    Ok(v) => v,
-                    Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
-                        fail!(from self, with EventOpenError::IsMarkedForDestruction,
+                    let dynamic_config = match self.base.open_dynamic_config_storage() {
+                        Ok(v) => v,
+                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
+                            fail!(from self, with EventOpenError::IsMarkedForDestruction,
                                 "{} since the service is marked for destruction.", msg);
-                    }
-                    Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
-                        fail!(from self, with EventOpenError::ExceedsMaxNumberOfNodes,
-                                "{} since it would exceed the maximum number of supported nodes.", msg);
-                    }
-                    Err(e) => {
-                        if self.base.is_service_available(msg)?.is_none() {
-                            fail!(from self, with EventOpenError::DoesNotExist,
-                                    "{} since the event does not exist.", msg);
                         }
+                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
+                            fail!(from self, with EventOpenError::ExceedsMaxNumberOfNodes,
+                                "{} since it would exceed the maximum number of supported nodes.", msg);
+                        }
+                        Err(e) => {
+                            if self.base.is_service_available(msg)?.is_none() {
+                                fail!(from self, with EventOpenError::DoesNotExist,
+                                    "{} since the event does not exist.", msg);
+                            }
 
-                        fail!(from self, with EventOpenError::ServiceInCorruptedState,
-                                "{} since the dynamic service information could not be opened ({:?}).",
+                            service_open_retry_count += 1;
+
+                            if OPEN_RETRY_LIMIT < service_open_retry_count {
+                                fail!(from self, with EventOpenError::ServiceInCorruptedState,
+                                "{} since the dynamic service information could not be opened ({:?}). This could indicate a corrupted system or a misconfigured system where services are created/removed with a high frequency.",
                                 msg, e);
-                    }
-                };
+                            }
 
-                let dynamic_config = Arc::new(dynamic_config);
+                            continue;
+                        }
+                    };
 
-                self.base.service_config.messaging_pattern =
-                    MessagingPattern::Event(event_static_config);
+                    let dynamic_config = Arc::new(dynamic_config);
 
-                Ok(event::PortFactory::new(ServiceType::__internal_from_state(
-                    service::ServiceState::new(
-                        static_config,
-                        self.base.shared_node,
-                        dynamic_config,
-                        static_storage,
-                    ),
-                )))
+                    self.base.service_config.messaging_pattern =
+                        MessagingPattern::Event(event_static_config);
+
+                    return Ok(event::PortFactory::new(ServiceType::__internal_from_state(
+                        service::ServiceState::new(
+                            static_config,
+                            self.base.shared_node,
+                            dynamic_config,
+                            static_storage,
+                        ),
+                    )));
+                }
             }
         }
     }
