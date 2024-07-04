@@ -24,7 +24,6 @@ use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::StaticStorageLocked;
@@ -86,6 +85,31 @@ impl std::fmt::Display for PublishSubscribeOpenError {
 
 impl std::error::Error for PublishSubscribeOpenError {}
 
+impl From<ServiceAvailabilityState> for PublishSubscribeOpenError {
+    fn from(value: ServiceAvailabilityState) -> Self {
+        match value {
+            ServiceAvailabilityState::IncompatibleTypes => {
+                PublishSubscribeOpenError::IncompatibleTypes
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+                PublishSubscribeOpenError::IncompatibleMessagingPattern
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+                PublishSubscribeOpenError::InsufficientPermissions
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
+                PublishSubscribeOpenError::HangsInCreation
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
+                PublishSubscribeOpenError::ServiceInCorruptedState
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::InternalFailure) => {
+                PublishSubscribeOpenError::InternalFailure
+            }
+        }
+    }
+}
+
 /// Errors that can occur when a new [`MessagingPattern::PublishSubscribe`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PublishSubscribeCreateError {
@@ -108,6 +132,9 @@ pub enum PublishSubscribeCreateError {
     /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
     /// [`Sample`](crate::sample::Sample) or [`SampleMut`](crate::sample_mut::SampleMut) in use.
     OldConnectionsStillActive,
+    /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
+    /// by a process that crashed during [`Service`] creation.
+    HangsInCreation,
 }
 
 impl std::fmt::Display for PublishSubscribeCreateError {
@@ -117,6 +144,29 @@ impl std::fmt::Display for PublishSubscribeCreateError {
 }
 
 impl std::error::Error for PublishSubscribeCreateError {}
+
+impl From<ServiceAvailabilityState> for PublishSubscribeCreateError {
+    fn from(value: ServiceAvailabilityState) -> Self {
+        match value {
+            ServiceAvailabilityState::IncompatibleTypes
+            | ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+                PublishSubscribeCreateError::AlreadyExists
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+                PublishSubscribeCreateError::InsufficientPermissions
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
+                PublishSubscribeCreateError::HangsInCreation
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
+                PublishSubscribeCreateError::ServiceInCorruptedState
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::InternalFailure) => {
+                PublishSubscribeCreateError::InternalFailure
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceAvailabilityState {
@@ -132,6 +182,12 @@ pub enum PublishSubscribeOpenOrCreateError {
     PublishSubscribeOpenError(PublishSubscribeOpenError),
     /// Failures that can occur when a [`Service`] could not be created.
     PublishSubscribeCreateError(PublishSubscribeCreateError),
+}
+
+impl From<ServiceAvailabilityState> for PublishSubscribeOpenOrCreateError {
+    fn from(value: ServiceAvailabilityState) -> Self {
+        PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(value.into())
+    }
 }
 
 impl From<PublishSubscribeOpenError> for PublishSubscribeOpenOrCreateError {
@@ -223,7 +279,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         &mut self,
         error_msg: &str,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceAvailabilityState> {
-        match self.base.is_service_available() {
+        match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
                 if !self
                     .config_details()
@@ -455,8 +511,8 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                 "{} since the history size is greater than the subscriber buffer size. The subscriber buffer size must be always greater or equal to the history size in the non-overflowing setup.", msg);
         }
 
-        match self.is_service_available(msg) {
-            Ok(None) => {
+        match self.is_service_available(msg)? {
+            None => {
                 // create static config
                 let static_config = match self.base.create_static_config_storage() {
                     Ok(c) => c,
@@ -530,27 +586,9 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     )),
                 ))
             }
-            Ok(Some(_))
-            | Err(ServiceAvailabilityState::IncompatibleTypes)
-            | Err(ServiceAvailabilityState::ServiceState(
-                ServiceState::IncompatibleMessagingPattern,
-            )) => {
+            Some(_) => {
                 fail!(from self, with PublishSubscribeCreateError::AlreadyExists,
                     "{} since the service already exists.", msg);
-            }
-            Err(ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions)) => {
-                fail!(from self, with PublishSubscribeCreateError::InsufficientPermissions,
-                    "{} due to possible insufficient permissions to access the underlying service details.", msg);
-            }
-            Err(ServiceAvailabilityState::ServiceState(ServiceState::Corrupted)) => {
-                fail!(from self, with PublishSubscribeCreateError::ServiceInCorruptedState,
-                    "{} since a service in a corrupted state already exists. A cleanup of the service constructs may help.", msg);
-            }
-            Err(ServiceAvailabilityState::ServiceState(
-                ServiceState::IsBeingCreatedByAnotherInstance,
-            )) => {
-                fail!(from self, with PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
-                    "{} since the service is being created by another instance.", msg);
             }
         }
     }
@@ -564,17 +602,13 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     > {
         let msg = "Unable to open publish subscribe service";
 
-        let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
-                                        with PublishSubscribeOpenError::InternalFailure,
-                                        "{} since the adaptive wait could not be created.", msg);
-
         loop {
-            match self.is_service_available(msg) {
-                Ok(None) => {
+            match self.is_service_available(msg)? {
+                None => {
                     fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
                         "{} since the service does not exist.", msg);
                 }
-                Ok(Some((static_config, static_storage))) => {
+                Some((static_config, static_storage)) => {
                     let pub_sub_static_config =
                         self.verify_service_attributes(&static_config, attributes)?;
 
@@ -589,6 +623,11 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                                 "{} since it would exceed the maximum number of supported nodes.", msg);
                         }
                         Err(e) => {
+                            if self.is_service_available(msg)?.is_none() {
+                                fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
+                                    "{} since the service does not exist.", msg);
+                            }
+
                             fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
                                 "{} since the dynamic service information could not be opened ({:?}).",
                                 msg, e);
@@ -609,47 +648,6 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                         )),
                     ));
                 }
-                Err(ServiceAvailabilityState::ServiceState(
-                    ServiceState::IsBeingCreatedByAnotherInstance,
-                )) => {
-                    let timeout = fail!(from self, when adaptive_wait.wait(),
-                                        with PublishSubscribeOpenError::InternalFailure,
-                                        "{} since the adaptive wait failed.", msg);
-
-                    if timeout
-                        > self
-                            .base
-                            .shared_node
-                            .config()
-                            .global
-                            .service
-                            .creation_timeout
-                    {
-                        fail!(from self, with PublishSubscribeOpenError::HangsInCreation,
-                            "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded. Waited for {:?} but the state did not change.",
-                            msg, self.base.shared_node.config().global.service.creation_timeout, timeout);
-                    }
-                }
-                Err(ServiceAvailabilityState::IncompatibleTypes) => {
-                    fail!(from self, with PublishSubscribeOpenError::IncompatibleTypes,
-                    "{} since the service is not type compatible.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(
-                    ServiceState::IncompatibleMessagingPattern,
-                )) => {
-                    fail!(from self, with PublishSubscribeOpenError::IncompatibleMessagingPattern,
-                    "{} since the services messaging pattern does not match.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(ServiceState::Corrupted)) => {
-                    fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
-                    "{} since the service is in a corrupted state.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(
-                    ServiceState::InsufficientPermissions,
-                )) => {
-                    fail!(from self, with PublishSubscribeOpenError::InsufficientPermissions,
-                    "{} due to insufficient permissions to access the service.", msg);
-                }
             }
         }
     }
@@ -664,13 +662,13 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         let msg = "Unable to open or create publish subscribe service";
 
         loop {
-            match self.is_service_available(msg) {
-                Ok(Some(_)) => match self.open_impl(attributes) {
+            match self.is_service_available(msg)? {
+                Some(_) => match self.open_impl(attributes) {
                     Ok(factory) => return Ok(factory),
                     Err(PublishSubscribeOpenError::DoesNotExist) => continue,
                     Err(e) => return Err(e.into()),
                 },
-                Ok(None) => {
+                None => {
                     match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
                         Ok(factory) => return Ok(factory),
                         Err(PublishSubscribeCreateError::AlreadyExists)
@@ -679,29 +677,6 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                         }
                         Err(e) => return Err(e.into()),
                     }
-                }
-                Err(ServiceAvailabilityState::ServiceState(
-                    ServiceState::IsBeingCreatedByAnotherInstance,
-                )) => continue,
-                Err(ServiceAvailabilityState::IncompatibleTypes) => {
-                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::IncompatibleTypes),
-                    "{} since the service is not type compatible.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(
-                    ServiceState::IncompatibleMessagingPattern,
-                )) => {
-                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::IncompatibleMessagingPattern),
-                    "{} since the services messaging pattern does not match.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(ServiceState::Corrupted)) => {
-                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::ServiceInCorruptedState),
-                    "{} since the service is in a corrupted state.", msg);
-                }
-                Err(ServiceAvailabilityState::ServiceState(
-                    ServiceState::InsufficientPermissions,
-                )) => {
-                    fail!(from self, with PublishSubscribeOpenOrCreateError::PublishSubscribeOpenError(PublishSubscribeOpenError::InsufficientPermissions),
-                    "{} due to insufficient permissions to access the service.", msg);
                 }
             }
         }

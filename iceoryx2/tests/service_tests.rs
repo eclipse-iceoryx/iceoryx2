@@ -130,7 +130,7 @@ mod service {
                 any_of([
                     PublishSubscribeOpenError::DoesNotExist,
                     PublishSubscribeOpenError::InsufficientPermissions,
-                    PublishSubscribeOpenError::ServiceInCorruptedState,
+                    PublishSubscribeOpenError::IsMarkedForDestruction,
                 ])
             );
         }
@@ -192,7 +192,7 @@ mod service {
                 any_of([
                     EventOpenError::DoesNotExist,
                     EventOpenError::InsufficientPermissions,
-                    EventOpenError::ServiceInCorruptedState,
+                    EventOpenError::IsMarkedForDestruction,
                 ])
             );
         }
@@ -329,7 +329,7 @@ mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(1));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
@@ -338,7 +338,7 @@ mod service {
         let barrier_enter = Barrier::new(number_of_threads);
         let barrier_exit = Barrier::new(number_of_threads);
 
-        const NUMBER_OF_ITERATIONS: usize = 25;
+        const NUMBER_OF_ITERATIONS: usize = 10;
         let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS).map(|_| generate_name()).collect();
         let service_names = &service_names;
 

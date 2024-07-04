@@ -21,7 +21,6 @@ use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::event::DynamicConfigSettings};
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
@@ -71,6 +70,20 @@ impl std::fmt::Display for EventOpenError {
 
 impl std::error::Error for EventOpenError {}
 
+impl From<ServiceState> for EventOpenError {
+    fn from(value: ServiceState) -> Self {
+        match value {
+            ServiceState::IncompatibleMessagingPattern => {
+                EventOpenError::IncompatibleMessagingPattern
+            }
+            ServiceState::InsufficientPermissions => EventOpenError::InsufficientPermissions,
+            ServiceState::HangsInCreation => EventOpenError::HangsInCreation,
+            ServiceState::Corrupted => EventOpenError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => EventOpenError::InternalFailure,
+        }
+    }
+}
+
 /// Failures that can occur when a new [`MessagingPattern::Event`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventCreateError {
@@ -82,6 +95,9 @@ pub enum EventCreateError {
     IsBeingCreatedByAnotherInstance,
     /// The [`Service`] already exists.
     AlreadyExists,
+    /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
+    /// by a process that crashed during [`Service`] creation.
+    HangsInCreation,
     /// The process has insufficient permissions to create the [`Service`].
     InsufficientPermissions,
     /// The system has cleaned up the [`Service`] but there are still endpoints like
@@ -98,6 +114,18 @@ impl std::fmt::Display for EventCreateError {
 }
 
 impl std::error::Error for EventCreateError {}
+
+impl From<ServiceState> for EventCreateError {
+    fn from(value: ServiceState) -> Self {
+        match value {
+            ServiceState::IncompatibleMessagingPattern => EventCreateError::AlreadyExists,
+            ServiceState::InsufficientPermissions => EventCreateError::InsufficientPermissions,
+            ServiceState::HangsInCreation => EventCreateError::HangsInCreation,
+            ServiceState::Corrupted => EventCreateError::ServiceInCorruptedState,
+            ServiceState::InternalFailure => EventCreateError::InternalFailure,
+        }
+    }
+}
 
 /// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
 /// created.
@@ -128,6 +156,12 @@ impl std::fmt::Display for EventOpenOrCreateError {
 }
 
 impl std::error::Error for EventOpenOrCreateError {}
+
+impl From<ServiceState> for EventOpenOrCreateError {
+    fn from(value: ServiceState) -> Self {
+        EventOpenOrCreateError::EventOpenError(value.into())
+    }
+}
 
 /// Builder to create new [`MessagingPattern::Event`] based [`Service`]s
 ///
@@ -221,30 +255,21 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
         let msg = "Unable to open or create event service";
 
-        match self.base.is_service_available() {
-            Ok(Some(_)) => Ok(self.open_with_attributes(required_attributes)?),
-            Ok(None) => {
-                match self.create_impl(&AttributeSpecifier(
-                    required_attributes.attributes().clone(),
-                )) {
-                    Ok(factory) => Ok(factory),
-                    Err(EventCreateError::AlreadyExists)
-                    | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
-                    Err(e) => Err(e.into()),
+        loop {
+            match self.base.is_service_available(msg)? {
+                Some(_) => return Ok(self.open_with_attributes(required_attributes)?),
+                None => {
+                    match self.create_impl(&AttributeSpecifier(
+                        required_attributes.attributes().clone(),
+                    )) {
+                        Ok(factory) => return Ok(factory),
+                        Err(EventCreateError::AlreadyExists)
+                        | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => {
+                            continue;
+                        }
+                        Err(e) => return Err(e.into()),
+                    }
                 }
-            }
-            Err(ServiceState::IsBeingCreatedByAnotherInstance) => Ok(self.open()?),
-            Err(ServiceState::Corrupted) => {
-                fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::ServiceInCorruptedState),
-                    "{} since the event is in a corrupted state.", msg);
-            }
-            Err(ServiceState::IncompatibleMessagingPattern) => {
-                fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::IncompatibleMessagingPattern),
-                    "{} since the services messaging pattern does not match.", msg);
-            }
-            Err(ServiceState::InsufficientPermissions) => {
-                fail!(from self, with EventOpenOrCreateError::EventOpenError(EventOpenError::InsufficientPermissions),
-                    "{} due to insufficient permissions.", msg);
             }
         }
     }
@@ -262,17 +287,13 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         let msg = "Unable to open event service";
 
-        let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
-                                        with EventOpenError::InternalFailure,
-                                        "{} since the adaptive wait could not be created.", msg);
-
         loop {
-            match self.base.is_service_available() {
-                Ok(None) => {
+            match self.base.is_service_available(msg)? {
+                None => {
                     fail!(from self, with EventOpenError::DoesNotExist,
                         "{} since the event does not exist.", msg);
                 }
-                Ok(Some((static_config, static_storage))) => {
+                Some((static_config, static_storage)) => {
                     let event_static_config =
                         self.verify_service_attributes(&static_config, required_attributes)?;
 
@@ -287,6 +308,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                                 "{} since it would exceed the maximum number of supported nodes.", msg);
                         }
                         Err(e) => {
+                            if self.base.is_service_available(msg)?.is_none() {
+                                fail!(from self, with EventOpenError::DoesNotExist,
+                                    "{} since the event does not exist.", msg);
+                            }
+
                             fail!(from self, with EventOpenError::ServiceInCorruptedState,
                                 "{} since the dynamic service information could not be opened ({:?}).",
                                 msg, e);
@@ -306,37 +332,6 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                             static_storage,
                         ),
                     )));
-                }
-                Err(ServiceState::IsBeingCreatedByAnotherInstance) => {
-                    let timeout = fail!(from self, when adaptive_wait.wait(),
-                                        with EventOpenError::InternalFailure,
-                                        "{} since the adaptive wait failed.", msg);
-
-                    if timeout
-                        > self
-                            .base
-                            .shared_node
-                            .config()
-                            .global
-                            .service
-                            .creation_timeout
-                    {
-                        fail!(from self, with EventOpenError::HangsInCreation,
-                            "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded. Waited for {:?} but the state did not change.",
-                            msg, self.base.shared_node.config().global.service.creation_timeout, timeout);
-                    }
-                }
-                Err(ServiceState::InsufficientPermissions) => {
-                    fail!(from self, with EventOpenError::InsufficientPermissions,
-                        "{} due to insufficient permissions.", msg);
-                }
-                Err(ServiceState::IncompatibleMessagingPattern) => {
-                    fail!(from self, with EventOpenError::InsufficientPermissions,
-                        "{} since the services messaging pattern does not match.", msg);
-                }
-                Err(ServiceState::Corrupted) => {
-                    fail!(from self, with EventOpenError::ServiceInCorruptedState,
-                        "{} since the event is in a corrupted state.", msg);
                 }
             }
         }
@@ -363,8 +358,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
         let msg = "Unable to create event service";
 
-        match self.base.is_service_available() {
-            Ok(None) => {
+        match self.base.is_service_available(msg)? {
+            None => {
                 let static_config = match self.base.create_static_config_storage() {
                     Ok(c) => c,
                     Err(StaticStorageCreateError::AlreadyExists) => {
@@ -432,21 +427,9 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     ),
                 )))
             }
-            Ok(Some(_)) | Err(ServiceState::IncompatibleMessagingPattern) => {
+            Some(_) => {
                 fail!(from self, with EventCreateError::AlreadyExists,
                     "{} since the service already exists.", msg);
-            }
-            Err(ServiceState::InsufficientPermissions) => {
-                fail!(from self, with EventCreateError::InsufficientPermissions,
-                    "{} due to possible insufficient permissions to access the underlying service details.", msg);
-            }
-            Err(ServiceState::Corrupted) => {
-                fail!(from self, with EventCreateError::ServiceInCorruptedState,
-                    "{} since a service in a corrupted state already exists. A cleanup of the service constructs may help,", msg);
-            }
-            Err(ServiceState::IsBeingCreatedByAnotherInstance) => {
-                fail!(from self, with EventCreateError::IsBeingCreatedByAnotherInstance,
-                    "{} since the service is being created by another instance.", msg);
             }
         }
     }

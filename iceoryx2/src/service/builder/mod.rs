@@ -30,6 +30,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
@@ -52,10 +53,11 @@ use super::Service;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceState {
-    IsBeingCreatedByAnotherInstance,
     IncompatibleMessagingPattern,
     InsufficientPermissions,
+    HangsInCreation,
     Corrupted,
+    InternalFailure,
 }
 
 enum_gen! {
@@ -168,25 +170,36 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn is_service_available(
         &self,
+        msg: &str,
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
-        let msg = "Unable to check if the service is available";
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());
         let file_name_uuid = fatal_panic!(from self,
                         when FileName::new(self.service_config.uuid().as_bytes()),
                         "This should never happen! The uuid should be always a valid file name.");
+        let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
+                                        with ServiceState::InternalFailure,
+                                        "{} since the adaptive wait could not be created.", msg);
 
-        match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
-            &file_name_uuid,
-            &static_storage_config,
-        ) {
-            Ok(false) => Ok(None),
-            Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp) => {
-                fail!(from self, with ServiceState::IsBeingCreatedByAnotherInstance,
-                        "{} since it is currently being created.", msg);
-            }
-            Ok(true) => {
-                let storage = if let Ok(v) = <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+        loop {
+            match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
+                &file_name_uuid,
+                &static_storage_config,
+            ) {
+                Ok(false) => return Ok(None),
+                Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp) => {
+                    let timeout = fail!(from self, when adaptive_wait.wait(),
+                                        with ServiceState::InternalFailure,
+                                        "{} since the adaptive wait failed.", msg);
+
+                    if timeout > self.shared_node.config().global.service.creation_timeout {
+                        fail!(from self, with ServiceState::HangsInCreation,
+                            "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded. Waited for {:?} but the state did not change.",
+                            msg, self.shared_node.config().global.service.creation_timeout, timeout);
+                    }
+                }
+                Ok(true) => {
+                    let storage = if let Ok(v) = <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
                                        ServiceType::StaticStorage>>
                                        ::new(&file_name_uuid)
                                         .has_ownership(false)
@@ -197,37 +210,38 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                             "{} since it is not possible to open the services underlying static details. Is the service accessible?", msg);
                 };
 
-                let mut read_content =
-                    String::from_utf8(vec![b' '; storage.len() as usize]).expect("");
-                if storage
-                    .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
-                    .is_err()
-                {
-                    fail!(from self, with ServiceState::InsufficientPermissions,
+                    let mut read_content =
+                        String::from_utf8(vec![b' '; storage.len() as usize]).expect("");
+                    if storage
+                        .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
+                        .is_err()
+                    {
+                        fail!(from self, with ServiceState::InsufficientPermissions,
                             "{} since it is not possible to read the services underlying static details. Is the service accessible?", msg);
-                }
+                    }
 
-                let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
+                    let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
                                             read_content.as_mut_vec() }),
                                      with ServiceState::Corrupted, "Unable to deserialize the service config. Is the service corrupted?");
 
-                if service_config.uuid() != self.service_config.uuid() {
-                    fail!(from self, with ServiceState::Corrupted,
+                    if service_config.uuid() != self.service_config.uuid() {
+                        fail!(from self, with ServiceState::Corrupted,
                         "{} a service with that name exist but different uuid.", msg);
-                }
+                    }
 
-                let msg = "Service exist but is not compatible";
-                if !service_config.has_same_messaging_pattern(&self.service_config) {
-                    fail!(from self, with ServiceState::IncompatibleMessagingPattern,
+                    let msg = "Service exist but is not compatible";
+                    if !service_config.has_same_messaging_pattern(&self.service_config) {
+                        fail!(from self, with ServiceState::IncompatibleMessagingPattern,
                         "{} since the messaging pattern \"{:?}\" does not fit the requested pattern \"{:?}\".",
                         msg, service_config.messaging_pattern(), self.service_config.messaging_pattern());
-                }
+                    }
 
-                Ok(Some((service_config, storage)))
-            }
-            Err(v) => {
-                fail!(from self, with ServiceState::Corrupted,
+                    return Ok(Some((service_config, storage)));
+                }
+                Err(v) => {
+                    fail!(from self, with ServiceState::Corrupted,
                     "{} since the service seems to be in a corrupted/inaccessible state ({:?}).", msg, v);
+                }
             }
         }
     }
