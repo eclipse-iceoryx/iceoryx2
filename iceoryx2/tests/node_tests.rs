@@ -263,6 +263,7 @@ mod node {
 
                         let mut found_self = false;
                         let result = Node::<S>::list(node.config(), |node_state| {
+                            #[cfg(target_os = "windows")]
                             if node_state.is_err() {
                                 assert_that!(node_state.err().unwrap(), eq NodeListFailure::InsufficientPermissions);
                                 return Ok(CallbackProgression::Continue);

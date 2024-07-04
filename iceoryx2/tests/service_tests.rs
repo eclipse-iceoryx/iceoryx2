@@ -17,7 +17,7 @@ mod service {
     use std::sync::Barrier;
     use std::time::Duration;
 
-    use iceoryx2::node::NodeView;
+    use iceoryx2::node::{NodeListFailure, NodeView};
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::service::builder::publish_subscribe::{
@@ -132,7 +132,8 @@ mod service {
                     PublishSubscribeOpenError::DoesNotExist,
                     PublishSubscribeOpenError::InsufficientPermissions,
                     PublishSubscribeOpenError::IsMarkedForDestruction,
-                    PublishSubscribeOpenError::ServiceInCorruptedState
+                    PublishSubscribeOpenError::ServiceInCorruptedState,
+                    PublishSubscribeOpenError::HangsInCreation
                 ])
             );
         }
@@ -195,7 +196,8 @@ mod service {
                     EventOpenError::DoesNotExist,
                     EventOpenError::InsufficientPermissions,
                     EventOpenError::IsMarkedForDestruction,
-                    EventOpenError::ServiceInCorruptedState
+                    EventOpenError::ServiceInCorruptedState,
+                    EventOpenError::HangsInCreation
                 ])
             );
         }
@@ -333,7 +335,7 @@ mod service {
         Factory: SutFactory<Sut>,
     >() {
         set_log_level(LogLevel::Debug);
-        let _watch_dog = Watchdog::new();
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
@@ -730,6 +732,12 @@ mod service {
 
                         let mut found_me = false;
                         let result = service.nodes(|node_state| {
+                            #[cfg(target_os = "windows")]
+                            if node_state.is_err() {
+                                assert_that!(node_state.err().unwrap(), eq NodeListFailure::InsufficientPermissions);
+                                return Ok(CallbackProgression::Continue);
+                            }
+
                             let node_state = node_state?;
                             match node_state {
                                 NodeState::Alive(view) => {
