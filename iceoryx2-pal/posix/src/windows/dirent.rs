@@ -41,29 +41,6 @@ use super::settings::MAX_PATH_LENGTH;
 
 impl Struct for WIN32_FIND_DATAA {}
 
-unsafe fn number_of_directory_entries(path: &[u8]) -> usize {
-    let mut data = WIN32_FIND_DATAA::new();
-    let (handle, _) =
-        win32call! { FindFirstFileA(path.as_ptr(), &mut data), ignore ERROR_FILE_NOT_FOUND};
-
-    if handle == INVALID_HANDLE_VALUE {
-        return 0;
-    }
-
-    let mut number_of_entries = 0;
-    loop {
-        let (file_found, _) =
-            win32call! {FindNextFileA(handle, &mut data), ignore ERROR_NO_MORE_FILES};
-        if file_found == FALSE {
-            break;
-        }
-        number_of_entries += 1;
-    }
-
-    win32call! {FindClose(handle)};
-    number_of_entries
-}
-
 pub(crate) unsafe fn to_dir_search_string(path: *const c_char) -> [u8; MAX_PATH_LENGTH] {
     let mut buffer = [0u8; MAX_PATH_LENGTH];
 
@@ -83,7 +60,6 @@ pub(crate) unsafe fn to_dir_search_string(path: *const c_char) -> [u8; MAX_PATH_
 pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> int {
     let uds_files = HandleTranslator::get_instance().list_all_uds(path);
     let path = to_dir_search_string(path);
-    let number_of_entries = number_of_directory_entries(&path) + uds_files.len();
     let mut data = WIN32_FIND_DATAA::new();
     let (handle, _) =
         win32call! { FindFirstFileA(path.as_ptr(), &mut data), ignore ERROR_FILE_NOT_FOUND};
@@ -92,10 +68,9 @@ pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> i
         return -1;
     }
 
-    *namelist =
-        posix::malloc(core::mem::size_of::<*mut dirent>() * number_of_entries) as *mut *mut dirent;
+    let mut temp_namelist = vec![];
 
-    let mut i = 0;
+    let mut number_of_files = 0;
     for file in &uds_files {
         let entry_ptr: *mut dirent = posix::malloc(core::mem::size_of::<dirent>()) as *mut dirent;
         let entry = &mut *entry_ptr;
@@ -104,15 +79,15 @@ pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> i
             &[u8; MAX_UDS_NAME_LEN],
             &[i8; MAX_UDS_NAME_LEN],
         >(file));
-        *(*namelist).add(i) = entry_ptr;
 
-        i += 1;
+        temp_namelist.push(entry_ptr);
+        number_of_files += 1;
     }
 
     loop {
         let (file_found, _) =
             win32call! {FindNextFileA(handle, &mut data), ignore ERROR_NO_MORE_FILES};
-        if file_found == FALSE || i >= number_of_entries {
+        if file_found == FALSE {
             break;
         }
 
@@ -121,12 +96,19 @@ pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> i
 
         entry.d_name = core::array::from_fn(|i| data.cFileName[i] as i8);
 
-        *(*namelist).add(i) = entry_ptr;
-        i += 1;
+        temp_namelist.push(entry_ptr);
+        number_of_files += 1;
+    }
+
+    *namelist =
+        posix::malloc(core::mem::size_of::<*mut dirent>() * number_of_files) as *mut *mut dirent;
+
+    for (i, entry) in temp_namelist.iter().enumerate() {
+        *(*namelist).add(i) = *entry;
     }
 
     win32call! {FindClose(handle)};
-    number_of_entries as int
+    number_of_files as int
 }
 
 pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
