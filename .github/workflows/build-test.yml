@@ -368,7 +368,9 @@ jobs:
           release: ${{ matrix.freebsd_version }}
           mem: 8192
           copyback: false
+          prepare: pkg install -y cmake curl gcc git llvm
           run: |
+            git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
             ./internal/scripts/ci_prepare_freebsd.sh
             ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
 

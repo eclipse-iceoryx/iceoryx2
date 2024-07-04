@@ -80,11 +80,12 @@ cmake -S . -B target/ffi/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=ON -DBUIL
 cmake --build target/ffi/build
 cmake --install target/ffi/build
 
-echo "#############################"
+echo "##############################"
 echo "# Run language binding tests #"
-echo "#############################"
+echo "##############################"
 
 target/ffi/build/tests/iceoryx2-c-tests
+target/ffi/build/tests/iceoryx2-cxx-tests
 
 echo "################################################################"
 echo "# Build language binding examples in out-of-tree configuration #"
