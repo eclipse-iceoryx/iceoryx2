@@ -17,7 +17,7 @@ mod service {
     use std::sync::Barrier;
     use std::time::Duration;
 
-    use iceoryx2::node::{NodeListFailure, NodeView};
+    use iceoryx2::node::NodeView;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::service::builder::publish_subscribe::{
@@ -122,6 +122,7 @@ mod service {
                 any_of([
                     PublishSubscribeCreateError::AlreadyExists,
                     PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
+                    PublishSubscribeCreateError::HangsInCreation
                 ])
             );
         }
@@ -186,6 +187,7 @@ mod service {
                 any_of([
                     EventCreateError::AlreadyExists,
                     EventCreateError::IsBeingCreatedByAnotherInstance,
+                    EventCreateError::HangsInCreation,
                 ])
             );
         }
@@ -734,7 +736,7 @@ mod service {
                         let result = service.nodes(|node_state| {
                             #[cfg(target_os = "windows")]
                             if node_state.is_err() {
-                                assert_that!(node_state.err().unwrap(), eq NodeListFailure::InsufficientPermissions);
+                                assert_that!(node_state.err().unwrap(), eq iceoryx2::node::NodeListFailure::InsufficientPermissions);
                                 return Ok(CallbackProgression::Continue);
                             }
 

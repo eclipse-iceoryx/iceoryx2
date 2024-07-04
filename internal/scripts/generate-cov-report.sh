@@ -44,7 +44,7 @@ cleanup() {
 }
 
 generate_profile() {
-    cargo nextest run --workspace --test-threads 1
+    cargo test --workspace -- --test-threads=1
 }
 
 merge_report() {
