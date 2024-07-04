@@ -126,7 +126,7 @@ jobs:
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: internal\scripts\ci_prepare_windows.bat
+        run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -199,6 +199,9 @@ jobs:
         include:
           - toolchain: stable-gnu
             cmake-build-system-generator: '-G "MinGW Makefiles"'
+          - os: windows-latest
+            toolchain: stable
+            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
         exclude:
           - os: ubuntu-latest
             toolchain: stable-gnu
@@ -224,7 +227,7 @@ jobs:
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: internal\scripts\ci_prepare_windows.bat
+        run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -239,7 +242,7 @@ jobs:
 
       - name: Build iceoryx_hoofs on Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: echo "TODO 262 create bat or powershell file"
+        run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ matrix.mode.name }} -toolchain ${{ matrix.toolchain }}
       - name: Build iceoryx_hoofs on non-Windows
         if: ${{ matrix.os != 'windows-latest' }}
         run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
@@ -252,7 +255,7 @@ jobs:
 
       - name: Build language bindings
         run: |
-          cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install"
+          cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install"
           cmake --build target/ffi/build ${{ matrix.mode.cmake-build-config }}
           cmake --install target/ffi/build ${{ matrix.mode.cmake-build-config }}
 
@@ -271,12 +274,12 @@ jobs:
 
       - name: Build C language binding examples in out-of-tree configuration
         run: |
-          cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install"
+          cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install"
           cmake --build target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
         run: |
-          cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install;${{ github.workspace }}/target/iceoryx/install"
+          cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install;${{ github.workspace }}/target/iceoryx/install"
           cmake --build target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
 
   x86_64_unstable:
@@ -312,7 +315,7 @@ jobs:
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: internal\scripts\ci_prepare_windows.bat
+        run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
