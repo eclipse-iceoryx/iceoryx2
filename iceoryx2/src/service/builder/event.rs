@@ -287,52 +287,50 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         let msg = "Unable to open event service";
 
-        loop {
-            match self.base.is_service_available(msg)? {
-                None => {
-                    fail!(from self, with EventOpenError::DoesNotExist,
+        match self.base.is_service_available(msg)? {
+            None => {
+                fail!(from self, with EventOpenError::DoesNotExist,
                         "{} since the event does not exist.", msg);
-                }
-                Some((static_config, static_storage)) => {
-                    let event_static_config =
-                        self.verify_service_attributes(&static_config, required_attributes)?;
+            }
+            Some((static_config, static_storage)) => {
+                let event_static_config =
+                    self.verify_service_attributes(&static_config, required_attributes)?;
 
-                    let dynamic_config = match self.base.open_dynamic_config_storage() {
-                        Ok(v) => v,
-                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
-                            fail!(from self, with EventOpenError::IsMarkedForDestruction,
+                let dynamic_config = match self.base.open_dynamic_config_storage() {
+                    Ok(v) => v,
+                    Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
+                        fail!(from self, with EventOpenError::IsMarkedForDestruction,
                                 "{} since the service is marked for destruction.", msg);
-                        }
-                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
-                            fail!(from self, with EventOpenError::ExceedsMaxNumberOfNodes,
+                    }
+                    Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
+                        fail!(from self, with EventOpenError::ExceedsMaxNumberOfNodes,
                                 "{} since it would exceed the maximum number of supported nodes.", msg);
-                        }
-                        Err(e) => {
-                            if self.base.is_service_available(msg)?.is_none() {
-                                fail!(from self, with EventOpenError::DoesNotExist,
+                    }
+                    Err(e) => {
+                        if self.base.is_service_available(msg)?.is_none() {
+                            fail!(from self, with EventOpenError::DoesNotExist,
                                     "{} since the event does not exist.", msg);
-                            }
+                        }
 
-                            fail!(from self, with EventOpenError::ServiceInCorruptedState,
+                        fail!(from self, with EventOpenError::ServiceInCorruptedState,
                                 "{} since the dynamic service information could not be opened ({:?}).",
                                 msg, e);
-                        }
-                    };
+                    }
+                };
 
-                    let dynamic_config = Arc::new(dynamic_config);
+                let dynamic_config = Arc::new(dynamic_config);
 
-                    self.base.service_config.messaging_pattern =
-                        MessagingPattern::Event(event_static_config);
+                self.base.service_config.messaging_pattern =
+                    MessagingPattern::Event(event_static_config);
 
-                    return Ok(event::PortFactory::new(ServiceType::__internal_from_state(
-                        service::ServiceState::new(
-                            static_config,
-                            self.base.shared_node,
-                            dynamic_config,
-                            static_storage,
-                        ),
-                    )));
-                }
+                Ok(event::PortFactory::new(ServiceType::__internal_from_state(
+                    service::ServiceState::new(
+                        static_config,
+                        self.base.shared_node,
+                        dynamic_config,
+                        static_storage,
+                    ),
+                )))
             }
         }
     }

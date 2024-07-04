@@ -602,52 +602,50 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     > {
         let msg = "Unable to open publish subscribe service";
 
-        loop {
-            match self.is_service_available(msg)? {
-                None => {
-                    fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
+        match self.is_service_available(msg)? {
+            None => {
+                fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
                         "{} since the service does not exist.", msg);
-                }
-                Some((static_config, static_storage)) => {
-                    let pub_sub_static_config =
-                        self.verify_service_attributes(&static_config, attributes)?;
+            }
+            Some((static_config, static_storage)) => {
+                let pub_sub_static_config =
+                    self.verify_service_attributes(&static_config, attributes)?;
 
-                    let dynamic_config = match self.base.open_dynamic_config_storage() {
-                        Ok(v) => v,
-                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
-                            fail!(from self, with PublishSubscribeOpenError::IsMarkedForDestruction,
+                let dynamic_config = match self.base.open_dynamic_config_storage() {
+                    Ok(v) => v,
+                    Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
+                        fail!(from self, with PublishSubscribeOpenError::IsMarkedForDestruction,
                                 "{} since the service is marked for destruction.", msg);
-                        }
-                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
-                            fail!(from self, with PublishSubscribeOpenError::ExceedsMaxNumberOfNodes,
+                    }
+                    Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
+                        fail!(from self, with PublishSubscribeOpenError::ExceedsMaxNumberOfNodes,
                                 "{} since it would exceed the maximum number of supported nodes.", msg);
-                        }
-                        Err(e) => {
-                            if self.is_service_available(msg)?.is_none() {
-                                fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
+                    }
+                    Err(e) => {
+                        if self.is_service_available(msg)?.is_none() {
+                            fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
                                     "{} since the service does not exist.", msg);
-                            }
+                        }
 
-                            fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
+                        fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
                                 "{} since the dynamic service information could not be opened ({:?}).",
                                 msg, e);
-                        }
-                    };
+                    }
+                };
 
-                    let dynamic_config = Arc::new(dynamic_config);
+                let dynamic_config = Arc::new(dynamic_config);
 
-                    self.base.service_config.messaging_pattern =
-                        MessagingPattern::PublishSubscribe(pub_sub_static_config.clone());
+                self.base.service_config.messaging_pattern =
+                    MessagingPattern::PublishSubscribe(pub_sub_static_config.clone());
 
-                    return Ok(publish_subscribe::PortFactory::new(
-                        ServiceType::__internal_from_state(service::ServiceState::new(
-                            static_config,
-                            self.base.shared_node.clone(),
-                            dynamic_config,
-                            static_storage,
-                        )),
-                    ));
-                }
+                Ok(publish_subscribe::PortFactory::new(
+                    ServiceType::__internal_from_state(service::ServiceState::new(
+                        static_config,
+                        self.base.shared_node.clone(),
+                        dynamic_config,
+                        static_storage,
+                    )),
+                ))
             }
         }
     }

@@ -385,9 +385,13 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
             with StaticStorageCreateError::Creation,
                "{} since the system is unable to determine if the directory even exists.", msg)
         {
-            fail!(from self, when Directory::create(&self.config.path, directory_permission ),
-                with StaticStorageCreateError::Creation,
-                "{} due to a failure while creating the service root directory.", msg);
+            match Directory::create(&self.config.path, directory_permission) {
+                Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+                Err(e) => {
+                    fail!(from self, with StaticStorageCreateError::Creation,
+                        "{} due to a failure while creating the service root directory ({:?}).", msg, e);
+                }
+            }
             trace!(from self, "Created service root directory \"{}\" since it did not exist before.", self.config.path);
         }
 

@@ -329,7 +329,7 @@ mod service {
         Sut: Service,
         Factory: SutFactory<Sut>,
     >() {
-        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(1));
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
         let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
@@ -338,7 +338,7 @@ mod service {
         let barrier_enter = Barrier::new(number_of_threads);
         let barrier_exit = Barrier::new(number_of_threads);
 
-        const NUMBER_OF_ITERATIONS: usize = 10;
+        const NUMBER_OF_ITERATIONS: usize = 1000;
         let service_names: Vec<_> = (0..NUMBER_OF_ITERATIONS).map(|_| generate_name()).collect();
         let service_names = &service_names;
 
@@ -350,10 +350,9 @@ mod service {
                     let sut = test
                         .create(&node, &service_name, &AttributeSpecifier::new())
                         .unwrap();
+
                     barrier_enter.wait();
-
                     drop(sut);
-
                     barrier_exit.wait();
                 }
             }));
@@ -361,18 +360,22 @@ mod service {
             for _ in 0..number_of_open_threads {
                 threads.push(s.spawn(|| {
                     let node = NodeBuilder::new().create::<Sut>().unwrap();
+                    let mut report = vec![];
                     for service_name in service_names {
                         barrier_enter.wait();
-
                         let sut = test.open(&node, &service_name, &AttributeVerifier::new());
+                        barrier_exit.wait();
+
                         match sut {
                             Ok(_) => (),
                             Err(e) => {
-                                Factory::assert_open_error(e);
+                                report.push(e);
                             }
                         }
+                    }
 
-                        barrier_exit.wait();
+                    for e in report {
+                        Factory::assert_open_error(e);
                     }
                 }));
             }

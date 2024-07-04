@@ -199,16 +199,34 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     }
                 }
                 Ok(true) => {
-                    let storage = if let Ok(v) = <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+                    let storage = match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
                                        ServiceType::StaticStorage>>
                                        ::new(&file_name_uuid)
                                         .has_ownership(false)
                                         .config(&static_storage_config)
-                                        .open() { v }
-                else {
-                    fail!(from self, with ServiceState::InsufficientPermissions,
-                            "{} since it is not possible to open the services underlying static details. Is the service accessible?", msg);
-                };
+                                        .open() {
+                        Ok(storage) => storage,
+                        Err(StaticStorageOpenError::DoesNotExist) => return Ok(None),
+                        Err(StaticStorageOpenError::IsLocked) => {
+                            let timeout = fail!(from self, when adaptive_wait.wait(),
+                                                with ServiceState::InternalFailure,
+                                                "{} since the adaptive wait failed.", msg);
+
+                            if timeout > self.shared_node.config().global.service.creation_timeout {
+                                fail!(from self, with ServiceState::HangsInCreation,
+                                    "{} since the service hangs while being created, max timeout for service creation of {:?} exceeded. Waited for {:?} but the state did not change.",
+                                    msg, self.shared_node.config().global.service.creation_timeout, timeout);
+                            }
+
+                            continue
+                        },
+                        Err(e) =>
+                        {
+                            fail!(from self, with ServiceState::InsufficientPermissions,
+                                    "{} since it is not possible to open the services underlying static details ({:?}). Is the service accessible?",
+                                    msg, e);
+                        }
+                    };
 
                     let mut read_content =
                         String::from_utf8(vec![b' '; storage.len() as usize]).expect("");
@@ -310,7 +328,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     }
                     Err(RegisterNodeResult::ExceedsMaxNumberOfNodes) => {
                         fail!(from self, with OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes,
-                            "{} since the dynamic storage is marked for destruction.", msg);
+                            "{} since it would exceed the maxium supported number of nodes.", msg);
                     }
                 }
             })?;
