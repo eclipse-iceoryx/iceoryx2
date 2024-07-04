@@ -49,6 +49,7 @@ while (( "$#" )); do
   esac
 done
 
+cd $(git rev-parse --show-toplevel)
 
 export PATH=$PATH:$HOME/.cargo/bin
 export LIBCLANG_PATH=/usr/local/llvm15/lib/
@@ -73,7 +74,9 @@ echo "###########################"
 echo "# Build language bindings #"
 echo "###########################"
 
-cmake -S . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON
+./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+
+cmake -S . -B target/ffi/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install"
 cmake --build target/ffi/build
 cmake --install target/ffi/build
 
@@ -88,5 +91,8 @@ echo "# Build language binding examples in out-of-tree configuration #"
 echo "################################################################"
 
 rm -rf target/ffi/build
-cmake -S examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/install $CMAKE_BUILD_TYPE_FLAG
-cmake --build target/ffi/out-of-tree
+cmake -S examples/c -B target/ffi/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install"
+cmake --build target/ffi/out-of-tree-c
+
+cmake -S examples/cxx -B target/ffi/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install;$( pwd )/target/iceoryx/install"
+cmake --build target/ffi/out-of-tree-cxx
