@@ -263,7 +263,10 @@ mod node {
 
                         let mut found_self = false;
                         let result = Node::<S>::list(node.config(), |node_state| {
-                            assert_that!(node_state, is_ok);
+                            if node_state.is_err() {
+                                assert_that!(node_state.err().unwrap(), eq NodeListFailure::InsufficientPermissions);
+                                return Ok(CallbackProgression::Continue);
+                            }
 
                             let node_state = node_state?;
                             if let NodeState::Alive(view) = node_state {
