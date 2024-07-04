@@ -50,19 +50,38 @@ generate_profile() {
 merge_report() {
     dependency_check llvm-profdata
 
-    mkdir -p ./${COVERAGE_DIR}/
-    local FILES=$(find . -name "*profraw")
-    llvm-profdata merge -sparse $FILES -o ./${COVERAGE_DIR}/json5format.profdata
+    if [[ ! -f "./${COVERAGE_DIR}/json5format.profdata" ]]; then
+        # get LLVM versions of llvm-profdata and rustc
+        LLVM_PROFDATA_VERSION_OUTPUT=$( llvm-profdata merge --version )
+        LLVM_VERSION=$(echo "$LLVM_PROFDATA_VERSION_OUTPUT" | grep -oP 'LLVM version \K[0-9]+')
+
+        RUSTC_VERSION_OUTPUT=$( rustc --version --verbose )
+        RUSTC_LLVM_VERSION=$(echo "$RUSTC_VERSION_OUTPUT" | grep -oP 'LLVM version: \K[0-9]+')
+
+        # check LLVM versions for compatibility
+        if [[ "$LLVM_VERSION" -ne "$RUSTC_LLVM_VERSION" ]]; then
+            echo -e "llvm-profdata LLVM version: $LLVM_VERSION"
+            echo -e "rustc LLVM version: $RUSTC_LLVM_VERSION"
+            echo -e "${COLOR_RED}error: LLVM major versions do not match${COLOR_OFF}"
+            exit 1
+        fi
+
+        # create report
+        mkdir -p ./${COVERAGE_DIR}/
+        local FILES=$(find . -name "*profraw")
+        llvm-profdata merge --sparse $FILES -o ./${COVERAGE_DIR}/json5format.profdata
+    fi
 }
 
 generate() {
     cleanup
     generate_profile
-    merge_report
 }
 
 show_overview() {
     dependency_check llvm-cov
+
+    merge_report
 
     local FILES=$(find ./target/debug/deps/ -type f -executable)
     CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${COVERAGE_DIR}/json5format.profdata"
@@ -78,6 +97,8 @@ show_overview() {
 show_report() {
     dependency_check llvm-cov
     dependency_check rustfilt
+
+    merge_report
 
     local FILES=$(find ./target/debug/deps/ -type f -executable)
     CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${COVERAGE_DIR}/json5format.profdata"
