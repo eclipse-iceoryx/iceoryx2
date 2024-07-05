@@ -13,8 +13,8 @@
 # NOTE the file is included in '../CMakeLists.txt' and therefore all relative paths must be relative to '../'
 
 # check if iceoryx is in CMAKE_PREFIX_PATH
-find_package(iceoryx_platform QUIET)
-find_package(iceoryx_hoofs QUIET)
+find_package(iceoryx_platform ${ICEORYX_HOOFS_VERSION} QUIET)
+find_package(iceoryx_hoofs ${ICEORYX_HOOFS_VERSION} QUIET)
 
 # fetch iceoryx if not found
 if(NOT iceoryx_platform_FOUND OR NOT iceoryx_hoofs_FOUND)
@@ -29,7 +29,7 @@ if(NOT iceoryx_platform_FOUND OR NOT iceoryx_hoofs_FOUND)
     FetchContent_Declare(
         iceoryx
         GIT_REPOSITORY https://github.com/eclipse-iceoryx/iceoryx.git
-        GIT_TAG d0b16dd7e #v${ICEORYX_HOOFS_VERSION}
+        GIT_TAG v${ICEORYX_HOOFS_VERSION}
         EXCLUDE_FROM_ALL
     )
     FetchContent_GetProperties(iceoryx)
@@ -52,8 +52,8 @@ if(ICEORYX_WITH_FETCH_CONTENT)
     add_subdirectory(${iceoryx_SOURCE_DIR}/iceoryx_platform  ${iceoryx_BINARY_DIR}/iceoryx_platform EXCLUDE_FROM_ALL)
     add_subdirectory(${iceoryx_SOURCE_DIR}/iceoryx_hoofs ${iceoryx_BINARY_DIR}/iceoryx_hoofs EXCLUDE_FROM_ALL)
 
-    find_package(iceoryx_platform REQUIRED)
-    find_package(iceoryx_hoofs REQUIRED)
+    find_package(iceoryx_platform ${ICEORYX_HOOFS_VERSION} REQUIRED)
+    find_package(iceoryx_hoofs ${ICEORYX_HOOFS_VERSION} REQUIRED)
 endif()
 
 if(ICEORYX_WITH_FETCH_CONTENT)

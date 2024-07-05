@@ -12,15 +12,14 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-# TODO use this in fetch-iceoryx-hoofs.cmake
-set(ICEORYX_HOOFS_VERSION 2.90.0)
+set(ICEORYX_HOOFS_VERSION 2.95.0)
 include(cmake/fetch-iceoryx-hoofs.cmake)
 
 project(iceoryx2-cxx VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
 
-find_package(iceoryx_hoofs REQUIRED)
+find_package(iceoryx_hoofs ${ICEORYX_HOOFS_VERSION} REQUIRED)
 find_package(iceoryx2-c REQUIRED)
 
 # include only lib -> includes are installed only once despite being used in static lib as well as shared lib
