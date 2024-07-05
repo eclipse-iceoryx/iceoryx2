@@ -10,13 +10,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-cmake_minimum_required(VERSION 3.22)
-project(example_c_publish_subscribe LANGUAGES C)
+#
+########## dummyConfig.cmake to be able to use find_package with a specific version with the source tree ##########
+#
 
-find_package(iceoryx2-c 0.3.0 REQUIRED)
+set(IOX2_VERSION_STRING "0.3.0")
+set(PACKAGE_VERSION ${IOX2_VERSION_STRING})
 
-add_executable(example_c_publisher src/publisher.c)
-target_link_libraries(example_c_publisher iceoryx2-c::static-lib)
-
-add_executable(example_c_subscriber src/subscriber.c)
-target_link_libraries(example_c_subscriber iceoryx2-c::static-lib)
+if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)
+    set(PACKAGE_VERSION_COMPATIBLE FALSE)
+else()
+    set(PACKAGE_VERSION_COMPATIBLE TRUE)
+    if(PACKAGE_FIND_VERSION STREQUAL PACKAGE_VERSION)
+        set(PACKAGE_VERSION_EXACT TRUE)
+    endif()
+endif()
