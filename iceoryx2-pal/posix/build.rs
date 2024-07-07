@@ -74,4 +74,9 @@ fn main() {
     cc::Build::new()
         .file("src/c/socket_macros.c")
         .compile("libsocket_macros.a");
+
+    println!("cargo:rerun-if-changed=src/c/dirent.c");
+    cc::Build::new()
+        .file("src/c/dirent.c")
+        .compile("libdirent.a");
 }
