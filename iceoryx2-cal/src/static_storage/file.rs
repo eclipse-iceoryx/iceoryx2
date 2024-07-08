@@ -253,13 +253,11 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
 
         let adjusted_path = config.path_for(storage_name);
 
-        let does_exist = || match File::does_exist(&adjusted_path) {
-            Ok(true) => Ok(true),
-            Ok(false) => Ok(false),
-            Err(v) => {
+        let does_exist = || {
+            File::does_exist(&adjusted_path).or_else(|v| {
                 fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesCorrupted,
                     "{} due to an internal failure ({:?}), is the static storage in a corrupted state?", msg, v);
-            }
+        })
         };
 
         if !does_exist()? {
