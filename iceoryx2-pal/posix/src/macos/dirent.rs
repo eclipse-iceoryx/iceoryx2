@@ -32,7 +32,7 @@ pub unsafe fn closedir(dirp: *mut DIR) -> int {
 }
 
 pub unsafe fn dirfd(dirp: *mut DIR) -> int {
-    crate::internal::dirfd(dirp)
+    internal::iox2_dirfd(dirp)
 }
 
 mod internal {
@@ -40,5 +40,6 @@ mod internal {
 
     extern "C" {
         pub(super) fn scandir_ext(path: *const c_char, namelist: *mut *mut *mut dirent) -> int;
+        pub(super) fn iox2_dirfd(dir: *mut DIR) -> int;
     }
 }
