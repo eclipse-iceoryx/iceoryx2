@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "test.hpp"
+#ifndef IOX2_CXX_TESTS_TEST_HPP
+#define IOX2_CXX_TESTS_TEST_HPP
 
-namespace {
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-TEST(Node, CreatingNodeWorks) {
-    ASSERT_THAT(true, Eq(true));
-}
+using namespace ::testing;
 
-} // namespace
+#endif // IOX2_CXX_TESTS_TEST_HPP

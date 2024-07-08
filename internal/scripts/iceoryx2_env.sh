@@ -30,6 +30,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set -e
+
 CONTAINER_NAME_PREFIX="iceoryx2_env_"
 CONTAINER_MEMORY_SIZE="8g"
 CONTAINER_SHM_MEMORY_SIZE="4g"

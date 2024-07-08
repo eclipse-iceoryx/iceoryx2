@@ -37,6 +37,12 @@ endmacro()
 message(STATUS "iceoryx2 options:")
 
 add_option(
+    NAME BUILD_CXX_BINDING
+    DESCRIPTION "Build C++ binding"
+    DEFAULT_VALUE ON
+)
+
+add_option(
     NAME BUILD_EXAMPLES
     DESCRIPTION "Build examples"
     DEFAULT_VALUE OFF
@@ -54,8 +60,18 @@ add_param(
     DEFAULT_VALUE ""
 )
 
+# C binding
 add_subdirectory(iceoryx2-ffi/c)
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples/c)
+endif()
+
+# C++ binding
+if(BUILD_CXX_BINDING)
+    add_subdirectory(iceoryx2-ffi/cxx)
+
+    if(BUILD_EXAMPLES)
+        add_subdirectory(examples/cxx)
+    endif()
 endif()

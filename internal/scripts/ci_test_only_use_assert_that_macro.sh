@@ -12,6 +12,8 @@
 
 #!/bin/bash
 
+set -e
+
 cd $(git rev-parse --show-toplevel)
 
 RETVAL=0

@@ -10,17 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-include(FetchContent)
+cmake_minimum_required(VERSION 3.22)
+project(examples_cxx LANGUAGES CXX)
 
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        v1.14.0
-    EXCLUDE_FROM_ALL
-)
-
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-    message(STATUS "googletest not found! Using FetchContent!")
-endif()
-FetchContent_MakeAvailable(googletest)
+add_subdirectory(publish_subscribe)

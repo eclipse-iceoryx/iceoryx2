@@ -12,6 +12,8 @@
 
 #!/bin/bash
 
+set -e
+
 cd $(git rev-parse --show-toplevel)
 
 set_license_header() {

@@ -12,6 +12,8 @@
 
 #!/bin/bash
 
+set -e
+
 pacman -Syu --noconfirm clang cmake gcc git rustup
 pacman -Scc --noconfirm 
 rustup toolchain add beta nightly stable 1.75.0

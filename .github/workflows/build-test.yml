@@ -126,7 +126,7 @@ jobs:
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: internal\scripts\ci_prepare_windows.bat
+        run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -144,10 +144,12 @@ jobs:
           cmake -S . \
                 -B target/ffi/build \
                 -DCMAKE_INSTALL_PREFIX=target/ffi/install \
+                -DBUILD_CXX_BINDING=OFF \
                 -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
                 -DRUST_TARGET_TRIPLET="i686-unknown-linux-gnu" \
                 -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
                 ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
@@ -155,16 +157,28 @@ jobs:
       - name: Run language binding tests
         run: target/ffi/build/tests/iceoryx2-c-tests
 
-      - name: Build language binding examples in out-of-tree configuration
-        if: false # out-of-tree cross-compilation is currently not supported
+      - name: Build C language binding examples in out-of-tree configuration
+        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
         run: |
           rm -rf target/ffi/build
           cmake -S examples/c \
-                -B target/ffi/out-of-tree \
+                -B target/ffi/out-of-tree-c \
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
                 -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
                 -${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ffi/out-of-tree
+          cmake --build target/ffi/out-of-tree-c
+
+      - name: Build C++ language binding examples in out-of-tree configuration
+        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
+        run: |
+          cmake -S examples/cxx \
+                -B target/ffi/out-of-tree-cxx \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
+                -${{ matrix.mode.cmake-build-type }}
+          cmake --build target/ffi/out-of-tree-cxx
 
   x86_64:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
@@ -176,13 +190,18 @@ jobs:
         mode:
           - name: "release"
             arg: "--release"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
           - name: "debug"
             arg: ""
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
+            cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
         include:
           - toolchain: stable-gnu
             cmake-build-system-generator: '-G "MinGW Makefiles"'
+          - os: windows-latest
+            toolchain: stable
+            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
         exclude:
           - os: ubuntu-latest
             toolchain: stable-gnu
@@ -208,7 +227,7 @@ jobs:
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: internal\scripts\ci_prepare_windows.bat
+        run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -221,6 +240,13 @@ jobs:
       - name: Run cargo nextest
         run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
 
+      - name: Build iceoryx_hoofs on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ matrix.mode.name }} -toolchain ${{ matrix.toolchain }}
+      - name: Build iceoryx_hoofs on non-Windows
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+
       - name: Print native libs of FFI target
         if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
         run: |
@@ -229,12 +255,15 @@ jobs:
 
       - name: Build language bindings
         run: |
-          cmake -S . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
-          cmake --build target/ffi/build
-          cmake --install target/ffi/build
+          cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install"
+          cmake --build target/ffi/build ${{ matrix.mode.cmake-build-config }}
+          cmake --install target/ffi/build ${{ matrix.mode.cmake-build-config }}
 
-      - name: Run language binding tests
+      - name: Run C language binding tests
         run: target/ffi/build/tests/iceoryx2-c-tests
+
+      - name: Run C++ language binding tests
+        run: target/ffi/build/tests/iceoryx2-cxx-tests
 
       - name: Remove language binding build artifacts on Windows
         if: ${{ matrix.os == 'windows-latest' }}
@@ -243,10 +272,15 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
         run: rm -rf target/ffi/build
 
-      - name: Build language binding examples in out-of-tree configuration
+      - name: Build C language binding examples in out-of-tree configuration
         run: |
-          cmake -S examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }}
-          cmake --build target/ffi/out-of-tree
+          cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install"
+          cmake --build target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
+
+      - name: Build C++ language binding examples in out-of-tree configuration
+        run: |
+          cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install;${{ github.workspace }}/target/iceoryx/install"
+          cmake --build target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
 
   x86_64_unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
@@ -281,7 +315,7 @@ jobs:
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: internal\scripts\ci_prepare_windows.bat
+        run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -329,7 +363,7 @@ jobs:
       matrix:
         freebsd_version: [ "14.0" ] 
         toolchain: [ "stable", "1.75.0" ] # [stable, 1.75.0, beta, nightly]
-        mode: [""] # ["--release", ""]
+        mode: ["debug"] # ["release", "debug"]
     steps:
       - uses: actions/checkout@v4
       - uses: vmactions/freebsd-vm@v1
@@ -337,38 +371,11 @@ jobs:
           release: ${{ matrix.freebsd_version }}
           mem: 8192
           copyback: false
+          prepare: pkg install -y cmake curl gcc git llvm
           run: |
+            git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
             ./internal/scripts/ci_prepare_freebsd.sh
-            export PATH=$PATH:$HOME/.cargo/bin
-            export LIBCLANG_PATH=/usr/local/llvm15/lib/
-            rustup default ${{ matrix.toolchain }}
-            export RUSTFLAGS="-C debug-assertions"
-            cargo fmt --all -- --check
-            cargo clippy -- -D warnings
-            echo "###################"
-            echo "# Run cargo build #"
-            echo "###################"
-            cargo build --workspace --all-targets ${{ matrix.mode }}
-            echo "######################"
-            echo "# Run cargo nextest #"
-            echo "#####################"
-            cargo nextest run --workspace --no-fail-fast ${{ matrix.mode }}
-            echo "###########################"
-            echo "# Build language bindings #"
-            echo "###########################"
-            cmake -S . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON
-            cmake --build target/ffi/build
-            cmake --install target/ffi/build
-            echo "#############################"
-            echo "# Run language binding tests #"
-            echo "#############################"
-            target/ffi/build/tests/iceoryx2-c-tests
-            echo "################################################################"
-            echo "# Build language binding examples in out-of-tree configuration #"
-            echo "################################################################"
-            rm -rf target/ffi/build
-            cmake -S examples/c -B target/ffi/out-of-tree -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install -DCMAKE_BUILD_TYPE=Release
-            cmake --build target/ffi/out-of-tree
+            ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
 
   grcov:
     needs: [preflight-check, static-code-analysis]

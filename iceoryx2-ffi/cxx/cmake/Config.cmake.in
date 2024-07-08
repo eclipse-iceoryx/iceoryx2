@@ -10,17 +10,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-include(FetchContent)
+@PACKAGE_INIT@
 
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        v1.14.0
-    EXCLUDE_FROM_ALL
-)
+include(CMakeFindDependencyMacro)
 
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-    message(STATUS "googletest not found! Using FetchContent!")
-endif()
-FetchContent_MakeAvailable(googletest)
+find_dependency(iceoryx_hoofs)
+find_dependency(iceoryx2-c)
+
+include("${CMAKE_CURRENT_LIST_DIR}/@TARGETS_EXPORT_NAME@.cmake")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+check_required_components("@PROJECT_NAME@")

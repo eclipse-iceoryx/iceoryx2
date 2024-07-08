@@ -100,6 +100,8 @@ target_include_directories(includes-only
 add_library(static-lib INTERFACE)
 add_library(iceoryx2-c::static-lib ALIAS static-lib)
 
+# shared lib
+
 add_library(shared-lib INTERFACE)
 add_library(iceoryx2-c::shared-lib ALIAS shared-lib)
 
