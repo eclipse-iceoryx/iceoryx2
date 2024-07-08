@@ -734,12 +734,6 @@ mod service {
 
                         let mut found_me = false;
                         let result = service.nodes(|node_state| {
-                            #[cfg(target_os = "windows")]
-                            if node_state.is_err() {
-                                assert_that!(node_state.err().unwrap(), eq iceoryx2::node::NodeListFailure::InsufficientPermissions);
-                                return Ok(CallbackProgression::Continue);
-                            }
-
                             let node_state = node_state?;
                             match node_state {
                                 NodeState::Alive(view) => {
@@ -751,6 +745,14 @@ mod service {
                                     if view.id() == node.id() {
                                         found_me = true;
                                     }
+                                }
+                                NodeState::Inaccessible(node_id) => {
+                                    if node_id == *node.id() {
+                                        found_me = true;
+                                    }
+                                }
+                                NodeState::Undefined(_) => {
+                                    assert_that!(true, eq false);
                                 }
                             }
                             Ok(CallbackProgression::Continue)
@@ -818,6 +820,14 @@ mod service {
                                         found_me = true;
                                     }
                                 }
+                                NodeState::Inaccessible(node_id) => {
+                                    if node_id == *node.id() {
+                                        found_me = true;
+                                    }
+                                }
+                                NodeState::Undefined(_) => {
+                                    assert_that!(true, eq false);
+                                }
                             }
                         }
                         assert_that!(found_me, eq true);
@@ -856,6 +866,9 @@ mod service {
                     match node_state {
                         NodeState::Alive(view) => registered_node_ids.push(view.id().clone()),
                         NodeState::Dead(view) => registered_node_ids.push(view.id().clone()),
+                        NodeState::Inaccessible(_) | NodeState::Undefined(_) => {
+                            assert_that!(true, eq false)
+                        }
                     }
                     Ok(CallbackProgression::Continue)
                 })

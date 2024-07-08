@@ -38,8 +38,8 @@
 //! use iceoryx2::prelude::*;
 //!
 //! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
-//!     println!("found node {:?}", node_state?);
-//!     Ok(CallbackProgression::Continue)
+//!     println!("found node {:?}", node_state);
+//!     CallbackProgression::Continue
 //! });
 //! ```
 //!
@@ -50,13 +50,13 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
-//!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state? {
+//!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state {
 //!         println!("cleanup resources of dead node {:?}", view);
 //!         if let Err(e) = view.remove_stale_resources() {
 //!             println!("failed to cleanup resources due to {:?}", e);
 //!         }
 //!     }
-//!     Ok(CallbackProgression::Continue)
+//!     CallbackProgression::Continue
 //! })?;
 //! # Ok(())
 //! # }
@@ -77,7 +77,7 @@ use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
@@ -193,6 +193,12 @@ pub enum NodeState<Service: service::Service> {
     /// The [`Node`]s process died without cleaning up the [`Node`]s resources. Another process has
     /// now the responsibility to cleanup all the stale resources.
     Dead(DeadNodeView<Service>),
+    /// The process does not have sufficient permissions to identify the [`Node`] as dead or alive.
+    Inaccessible(NodeId),
+    /// The [`Node`] is in an undefined state, meaning that certain elements are missing,
+    /// misconfigured or inconsistent. This can only happen due to an implementation failure or
+    /// when the corresponding [`Node`] resources were altered.
+    Undefined(NodeId),
 }
 
 impl<Service: service::Service> NodeState<Service> {
@@ -208,10 +214,15 @@ impl<Service: service::Service> NodeState<Service> {
             _service: PhantomData,
         };
 
-        match Node::<Service>::get_node_state(config, node_id)? {
-            State::DoesNotExist => Ok(None),
-            State::Alive => Ok(Some(NodeState::Alive(node_view))),
-            State::Dead => Ok(Some(NodeState::Dead(DeadNodeView(node_view)))),
+        match Node::<Service>::get_node_state(config, node_id) {
+            Ok(State::DoesNotExist) => Ok(None),
+            Ok(State::Alive) => Ok(Some(NodeState::Alive(node_view))),
+            Ok(State::Dead) => Ok(Some(NodeState::Dead(DeadNodeView(node_view)))),
+            Err(NodeListFailure::InsufficientPermissions) => {
+                Ok(Some(NodeState::Inaccessible(*node_id)))
+            }
+            Err(NodeListFailure::InternalError) => Ok(Some(NodeState::Undefined(*node_id))),
+            Err(e) => Err(e),
         }
     }
 }
@@ -491,20 +502,18 @@ impl<Service: service::Service> Node<Service> {
         Builder::new(name, self.shared.clone())
     }
 
-    /// Returns a list of [`NodeState`] of all [`Node`]s in the system under a given [`Config`].
-    ///
+    /// Calls the provided callback for all [`Node`]s in the system under a given [`Config`] and
+    /// provides [`NodeState<Service>`] as input argument. With every iteration the callback has to
+    /// return [`CallbackProgression::Continue`] to perform the next iteration or
+    /// [`CallbackProgression::Stop`] to stop the iteration immediately.
     /// ```
     /// # use iceoryx2::prelude::*;
     /// Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
-    ///     println!("found node {:?}", node_state?);
-    ///     Ok(CallbackProgression::Continue)
+    ///     println!("found node {:?}", node_state);
+    ///     CallbackProgression::Continue
     /// });
     /// ```
-    pub fn list<
-        F: FnMut(
-            Result<NodeState<Service>, NodeListFailure>,
-        ) -> Result<CallbackProgression, NodeListFailure>,
-    >(
+    pub fn list<F: FnMut(NodeState<Service>) -> CallbackProgression>(
         config: &Config,
         mut callback: F,
     ) -> Result<(), NodeListFailure> {
@@ -520,23 +529,21 @@ impl<Service: service::Service> Node<Service> {
 
                     match NodeState::new(&node_id, config) {
                         Ok(Some(node_state)) => {
-                            if callback(Ok(node_state))? == CallbackProgression::Stop {
+                            if callback(node_state) == CallbackProgression::Stop {
                                 break;
                             }
                         }
                         Ok(None) => (),
                         Err(e) => {
-                            debug!(from origin, "{msg} since the corresponding NodeState could not be acquired.");
-                            if callback(Err(e))? == CallbackProgression::Stop {
-                                break;
-                            }
+                            fail!(from origin, with e,
+                                "{msg} since the following error occurred ({:?}).", e);
                         }
                     }
                 }
             }
             Err(e) => {
-                debug!(from origin, "{msg} since the node list could not be acquired.");
-                callback(Err(e))?;
+                fail!(from origin, with e,
+                    "{msg} since the node list could not be acquired ({:?}).", e);
             }
         }
 

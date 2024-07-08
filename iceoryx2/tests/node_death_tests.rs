@@ -54,8 +54,8 @@ mod node_death_tests {
 
         let mut node_list = vec![];
         Node::<S::Service>::list(Config::get_global_config(), |node_state| {
-            node_list.push(node_state?);
-            Ok(CallbackProgression::Continue)
+            node_list.push(node_state);
+            CallbackProgression::Continue
         })
         .unwrap();
         assert_that!(node_list, len 1);
@@ -69,8 +69,8 @@ mod node_death_tests {
 
         node_list.clear();
         Node::<S::Service>::list(Config::get_global_config(), |node_state| {
-            node_list.push(node_state?);
-            Ok(CallbackProgression::Continue)
+            node_list.push(node_state);
+            CallbackProgression::Continue
         })
         .unwrap();
         assert_that!(node_list, len 0);

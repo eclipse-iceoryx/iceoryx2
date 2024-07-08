@@ -52,8 +52,8 @@ mod node {
     fn assert_node_presence<S: Service>(node_details: &VecDeque<Details>, config: &Config) {
         let mut node_list = vec![];
         Node::<S>::list(config, |node_state| {
-            node_list.push(node_state?);
-            Ok(CallbackProgression::Continue)
+            node_list.push(node_state);
+            CallbackProgression::Continue
         })
         .unwrap();
 
@@ -62,6 +62,10 @@ mod node {
             let view = match node {
                 NodeState::<S>::Alive(ref view) => view as &dyn NodeView,
                 NodeState::<S>::Dead(ref view) => view as &dyn NodeView,
+                NodeState::<S>::Inaccessible(_) | NodeState::<S>::Undefined(_) => {
+                    assert_that!(true, eq false);
+                    panic!();
+                }
             };
 
             let details = view.details().as_ref().unwrap();
@@ -263,23 +267,28 @@ mod node {
 
                         let mut found_self = false;
                         let result = Node::<S>::list(node.config(), |node_state| {
-                            #[cfg(target_os = "windows")]
-                            if node_state.is_err() {
-                                assert_that!(node_state.err().unwrap(), eq NodeListFailure::InsufficientPermissions);
-                                return Ok(CallbackProgression::Continue);
-                            }
+                            match node_state {
+                                NodeState::Alive(view) => {
+                                    if view.id() == node.id() {
+                                        found_self = true;
+                                    }
+                                }
+                                NodeState::Dead(view) => {
+                                    if view.id() == node.id() {
+                                        found_self = true;
+                                    }
+                                }
+                                NodeState::Inaccessible(node_id) => {
+                                    if node_id == *node.id() {
+                                        found_self = true;
+                                    }
+                                }
+                                NodeState::Undefined(_) => {
+                                    assert_that!(true, eq false);
+                                }
+                            };
 
-                            let node_state = node_state?;
-                            if let NodeState::Alive(view) = node_state {
-                                if view.id() == node.id() {
-                                    found_self = true;
-                                }
-                            } else if let NodeState::Dead(view) = node_state {
-                                if view.id() == node.id() {
-                                    found_self = true;
-                                }
-                            }
-                            Ok(CallbackProgression::Continue)
+                            CallbackProgression::Continue
                         });
 
                         assert_that!(found_self, eq true);
@@ -300,10 +309,9 @@ mod node {
         let _node_2 = NodeBuilder::new().create::<S>().unwrap();
 
         let mut node_counter = 0;
-        let result = Node::<S>::list(node_1.config(), |node_state| {
-            assert_that!(node_state, is_ok);
+        let result = Node::<S>::list(node_1.config(), |_| {
             node_counter += 1;
-            Ok(CallbackProgression::Stop)
+            CallbackProgression::Stop
         });
 
         assert_that!(result, is_ok);
