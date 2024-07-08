@@ -10,19 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/node.hpp"
+#include "iox2/node_name.hpp"
 
-int main() {
-    using namespace iox2;
-    auto node =
-        NodeBuilder()
-            .name(NodeName::create("hello world").expect("valid node name"))
-            .template create<NodeType::ZERO_COPY>()
-            .expect("successful node creation");
+namespace iox2 {
+iox::expected<NodeName, SemanticStringError> NodeName::create(
+    const char* value) {}
 
-    // Node<NodeType::ZERO_COPY>::list(
-    //     Config{}, [](auto) { return iox::ok(CallbackProgression::Continue);
-    //     });
+const std::string& NodeName::as_string() const {}
 
-    return 0;
-}
+}  // namespace iox2

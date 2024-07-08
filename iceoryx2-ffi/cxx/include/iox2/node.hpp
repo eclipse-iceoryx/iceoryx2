@@ -12,22 +12,21 @@
 #ifndef IOX2_NODE_HPP_
 #define IOX2_NODE_HPP_
 
-#include <iox2/iceoryx2.h>
-
 #include <iox/builder.hpp>
 #include <iox/expected.hpp>
 #include <iox/function.hpp>
 #include <iox/optional.hpp>
-#include <string>
+
+#include "internal/iceoryx2.hpp"
+#include "node_name.hpp"
 
 namespace iox2 {
-enum class SemanticStringError {};
 
 enum class NodeListFailure {};
 
 enum class CallbackProgression { Continue, Stop };
 
-enum class NodeCreationFailure {};
+enum class NodeCreationFailure { InsufficientPermissions, InternalError };
 
 enum class NodeCleanupFailure {};
 
@@ -36,18 +35,6 @@ enum class NodeType { PROCESS_LOCAL, ZERO_COPY };
 class Config {};
 
 class NodeId {};
-
-class NodeName {
-   public:
-    static iox::expected<NodeName, SemanticStringError> create(
-        const char* value);
-
-    const std::string& as_string() const;
-
-   private:
-    iox2_node_name_storage_t value;
-};
-
 class ServiceName {
    public:
     static iox::expected<ServiceName, SemanticStringError> create(
@@ -99,6 +86,11 @@ class Node {
             iox::expected<NodeState<T>, NodeListFailure>)>& callback);
 
    private:
+    friend class NodeBuilder;
+
+    Node(iox2_node_h handle);
+
+    iox2_node_h m_handle;
 };
 
 class NodeBuilder {

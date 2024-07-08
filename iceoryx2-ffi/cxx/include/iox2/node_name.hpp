@@ -9,20 +9,26 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+#ifndef IOX2_NODE_NAME_HPP_
+#define IOX2_NODE_NAME_HPP_
 
-#include "iox2/node.hpp"
+#include <string>
 
-int main() {
-    using namespace iox2;
-    auto node =
-        NodeBuilder()
-            .name(NodeName::create("hello world").expect("valid node name"))
-            .template create<NodeType::ZERO_COPY>()
-            .expect("successful node creation");
+#include "internal/iceoryx2.hpp"
+#include "iox/expected.hpp"
+#include "semantic_string.hpp"
 
-    // Node<NodeType::ZERO_COPY>::list(
-    //     Config{}, [](auto) { return iox::ok(CallbackProgression::Continue);
-    //     });
+namespace iox2 {
+class NodeName {
+   public:
+    static iox::expected<NodeName, SemanticStringError> create(
+        const char* value);
 
-    return 0;
-}
+    const std::string& as_string() const;
+
+   private:
+    iox2_node_name_storage_t value;
+};
+}  // namespace iox2
+
+#endif

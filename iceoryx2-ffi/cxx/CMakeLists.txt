@@ -38,6 +38,7 @@ target_include_directories(includes-only-cxx
 add_library(iceoryx2-cxx-object-lib OBJECT
     src/dummy.cpp
     src/node.cpp
+    src/node_name.cpp
 )
 
 set_target_properties(iceoryx2-cxx-object-lib
