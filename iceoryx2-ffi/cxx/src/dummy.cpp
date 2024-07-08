@@ -10,16 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// NOTE: dummy source file to create static and shared libraries; can be removed once we have real cpp files
-// or the libraries need to become an INTERFACE library in cmake
-
-#include "iox2/node.hpp"
-
-#include "iox2/iceoryx2.h"
+// NOTE: dummy source file to create static and shared libraries; can be removed
+// once we have real cpp files or the libraries need to become an INTERFACE
+// library in cmake
 
 #include <iostream>
 #include <iox/logging.hpp>
 
+#include "iox2/iceoryx2.h"
+
 void hypnotoad() {
     IOX_LOG(INFO, "All glory to the hypnotoad!");
+    iox2_node_builder_new(nullptr);
 }

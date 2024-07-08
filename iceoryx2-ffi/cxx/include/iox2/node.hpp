@@ -45,7 +45,7 @@ class NodeName {
     const std::string& as_string() const;
 
    private:
-    std::string value;
+    iox2_node_name_storage_t value;
 };
 
 class ServiceName {
@@ -106,8 +106,13 @@ class NodeBuilder {
     IOX_BUILDER_PARAMETER(Config, config, Config{})
 
    public:
+    NodeBuilder();
+
     template <NodeType T>
-    iox::expected<Node<T>, NodeCreationFailure> create() const;
+    iox::expected<Node<T>, NodeCreationFailure> create() const&&;
+
+   private:
+    iox2_node_builder_h m_handle;
 };
 }  // namespace iox2
 

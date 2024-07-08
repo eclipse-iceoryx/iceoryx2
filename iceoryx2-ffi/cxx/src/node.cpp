@@ -12,16 +12,16 @@
 
 #include "iox2/node.hpp"
 
-int main() {
-    using namespace iox2;
-    auto node = NodeBuilder();
-    //         .name(NodeName::create("hello world").expect("valid node name"))
-    //         .template create<NodeType::ZERO_COPY>()
-    //         .expect("successful node creation");
+#include <iox2/iceoryx2.h>
 
-    // Node<NodeType::ZERO_COPY>::list(
-    //     Config{}, [](auto) { return iox::ok(CallbackProgression::Continue);
-    //     });
+namespace iox2 {
+iox::expected<NodeName, SemanticStringError> NodeName::create(
+    const char* value) {}
 
-    return 0;
-}
+const std::string& NodeName::as_string() const {}
+
+NodeBuilder::NodeBuilder() : m_handle{iox2_node_builder_new(nullptr)} {}
+
+template <NodeType T>
+iox::expected<Node<T>, NodeCreationFailure> NodeBuilder::create() const&& {}
+}  // namespace iox2
