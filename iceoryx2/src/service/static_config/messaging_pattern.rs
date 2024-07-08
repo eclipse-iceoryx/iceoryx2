@@ -63,7 +63,6 @@ impl MessagingPattern {
                     * (v.subscriber_max_buffer_size + v.subscriber_max_borrowed_samples)
                     + v.history_size
                     + publisher_max_loaned_samples
-                    + 1
             }
             _ => 0,
         }

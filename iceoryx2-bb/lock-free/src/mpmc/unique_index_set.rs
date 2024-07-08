@@ -249,9 +249,9 @@ struct HeadDetails {
 impl HeadDetails {
     fn from(value: u64) -> Self {
         Self {
-            head: ((value & 0xffffff0000000000) >> 40) as u32,
-            aba: ((value & 0x000000ffff000000) >> 24) as u16,
-            borrowed_indices: (value & 0x0000000000ffffff) as u32,
+            head: ((value >> 40) as u32) & 0xffffff,
+            aba: (value >> 24) as u16,
+            borrowed_indices: (value as u32) & 0xffffff,
         }
     }
 
@@ -629,5 +629,53 @@ mod test {
         assert_that!(sut.head, eq 12345);
         assert_that!(sut.aba, eq 6789);
         assert_that!(sut.borrowed_indices, eq 54321);
+    }
+
+    #[test]
+    fn head_details_head_field_is_non_overlapping() {
+        let sut = HeadDetails::from(
+            HeadDetails {
+                head: 2u32.pow(24) - 1,
+                aba: 0,
+                borrowed_indices: 0,
+            }
+            .value(),
+        );
+
+        assert_that!(sut.head, eq 2u32.pow(24) - 1);
+        assert_that!(sut.aba, eq 0);
+        assert_that!(sut.borrowed_indices, eq 0);
+    }
+
+    #[test]
+    fn head_details_aba_field_is_non_overlapping() {
+        let sut = HeadDetails::from(
+            HeadDetails {
+                head: 0,
+                aba: u16::MAX,
+                borrowed_indices: 0,
+            }
+            .value(),
+        );
+
+        assert_that!(sut.head, eq 0);
+        assert_that!(sut.aba, eq u16::MAX);
+        assert_that!(sut.borrowed_indices, eq 0);
+    }
+
+    #[test]
+    fn head_details_borrowed_indices_field_is_non_overlapping() {
+        let sut = HeadDetails::from(
+            HeadDetails {
+                head: 0,
+                aba: 0,
+                borrowed_indices: 2u32.pow(24) - 1,
+            }
+            .value(),
+        );
+
+        assert_that!(sut.head, eq 0);
+        assert_that!(sut.aba, eq 0);
+        assert_that!(sut.borrowed_indices, eq 2u32.pow(24) - 1);
     }
 }
