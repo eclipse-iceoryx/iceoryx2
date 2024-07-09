@@ -14,9 +14,10 @@
 
 use crate::{
     iox2_config_t, iox2_node_name_t, iox2_service_builder_h, iox2_service_builder_storage_t,
-    iox2_service_name_h,
+    iox2_service_name_h, IntoCInt, IOX2_OK,
 };
 
+use iceoryx2::node::NodeListFailure;
 use iceoryx2::prelude::*;
 use iceoryx2::service;
 use iceoryx2_bb_elementary::math::max;
@@ -39,6 +40,26 @@ pub enum iox2_node_type_e {
 #[repr(align(8))] // magic number; the larger one of align_of::<Node<zero_copy::Service>>() and align_of::<Node<process_local::Service>>()
 pub struct iox2_node_storage_internal_t {
     internal: [u8; 8], // magic number; the larger one of size_of::<Node<zero_copy::Service>>() and size_of::<Node<process_local::Service>>()
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_node_list_failure_e {
+    INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
+    INTERRUPT,
+    INTERNAL_ERROR,
+}
+
+impl IntoCInt for NodeListFailure {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            NodeListFailure::InsufficientPermissions => {
+                iox2_node_list_failure_e::INSUFFICIENT_PERMISSIONS
+            }
+            NodeListFailure::Interrupt => iox2_node_list_failure_e::INTERRUPT,
+            NodeListFailure::InternalError => iox2_node_list_failure_e::INTERNAL_ERROR,
+        }) as c_int
+    }
 }
 
 #[repr(C)]
@@ -132,7 +153,6 @@ pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_unique_s
 }
 
 pub type iox2_node_state_t = *mut (); // TODO: [#210] implement in node_state.rs
-pub type iox2_node_list_failure_e = c_int; // TODO: [#210] implement in this file
 /// Call the callback repeatedly with an immutable [`iox2_node_state_t`] handle for all [`Node`](iceoryx2::node::Node)s
 /// in the system under a given [`Config`](iceoryx2::config::Config).
 ///
