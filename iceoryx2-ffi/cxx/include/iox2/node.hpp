@@ -20,49 +20,14 @@
 #include "callback_progression.hpp"
 #include "config.hpp"
 #include "internal/iceoryx2.hpp"
+#include "node_id.hpp"
 #include "node_name.hpp"
+#include "node_state.hpp"
 #include "service_builder.hpp"
 #include "service_name.hpp"
 #include "service_type.hpp"
 
 namespace iox2 {
-enum class NodeListFailure {};
-
-enum class NodeCreationFailure { InsufficientPermissions, InternalError };
-
-enum class NodeCleanupFailure {};
-
-class NodeId {};
-class NodeDetails {
-   public:
-    const NodeName& name() const;
-    const Config& config() const;
-};
-
-template <ServiceType>
-class AliveNodeView {
-   public:
-    const NodeId& id() const;
-    const iox::optional<NodeDetails> details() const;
-};
-
-template <ServiceType>
-class DeadNodeView {
-   public:
-    const NodeId& id() const;
-    const iox::optional<NodeDetails> details() const;
-    iox::expected<bool, NodeCleanupFailure> remove_stale_resources();
-};
-
-template <ServiceType T>
-class NodeState {
-   public:
-    NodeState& if_alive(const iox::function<void(AliveNodeView<T>&)>& callback);
-    NodeState& is_dead(const iox::function<void(DeadNodeView<T>&)>& callback);
-    NodeState& is_inaccessible(const iox::function<void(NodeId&)>& callback);
-    NodeState& is_undefined(const iox::function<void(NodeId&)>& callback);
-};
-
 template <ServiceType T>
 class Node {
    public:

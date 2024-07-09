@@ -25,6 +25,9 @@ int main() {
             .open_or_create()
             .expect("successful service creation/opening");
 
+    auto publisher = service.publisher_builder().create().expect(
+        "successful publisher creation");
+
     // Node<NodeType::ZERO_COPY>::list(
     //     Config{}, [](auto) { return iox::ok(CallbackProgression::Continue);
     //     });
