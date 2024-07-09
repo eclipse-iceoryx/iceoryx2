@@ -15,8 +15,15 @@
 
 int main() {
     using namespace iox2;
-    auto node = NodeBuilder().template create<NodeType::ZERO_COPY>().expect(
+    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect(
         "successful node creation");
+
+    auto service =
+        node.service_builder(ServiceName::create("My/Funk/ServiceName")
+                                 .expect("valid service name"))
+            .publish_subscribe<TransmissionData>()
+            .open_or_create()
+            .expect("successful service creation/opening");
 
     // Node<NodeType::ZERO_COPY>::list(
     //     Config{}, [](auto) { return iox::ok(CallbackProgression::Continue);

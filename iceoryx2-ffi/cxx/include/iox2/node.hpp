@@ -21,6 +21,9 @@
 #include "config.hpp"
 #include "internal/iceoryx2.hpp"
 #include "node_name.hpp"
+#include "service_builder.hpp"
+#include "service_name.hpp"
+#include "service_type.hpp"
 
 namespace iox2 {
 enum class NodeListFailure {};
@@ -29,33 +32,21 @@ enum class NodeCreationFailure { InsufficientPermissions, InternalError };
 
 enum class NodeCleanupFailure {};
 
-enum class NodeType { PROCESS_LOCAL, ZERO_COPY };
-
 class NodeId {};
-class ServiceName {
-   public:
-    static iox::expected<ServiceName, SemanticStringError> create(
-        const char* value);
-    const std::string& as_string() const;
-};
-
-template <NodeType>
-class Builder {};
-
 class NodeDetails {
    public:
     const NodeName& name() const;
     const Config& config() const;
 };
 
-template <NodeType>
+template <ServiceType>
 class AliveNodeView {
    public:
     const NodeId& id() const;
     const iox::optional<NodeDetails> details() const;
 };
 
-template <NodeType>
+template <ServiceType>
 class DeadNodeView {
    public:
     const NodeId& id() const;
@@ -63,7 +54,7 @@ class DeadNodeView {
     iox::expected<bool, NodeCleanupFailure> remove_stale_resources();
 };
 
-template <NodeType T>
+template <ServiceType T>
 class NodeState {
    public:
     NodeState& if_alive(const iox::function<void(AliveNodeView<T>&)>& callback);
@@ -72,12 +63,12 @@ class NodeState {
     NodeState& is_undefined(const iox::function<void(NodeId&)>& callback);
 };
 
-template <NodeType T>
+template <ServiceType T>
 class Node {
    public:
-    NodeName& name() const;
-    NodeId& id() const;
-    Builder<T> service_builder(const ServiceName& name) const;
+    NodeName& name() const {}
+    NodeId& id() const {}
+    ServiceBuilder<T> service_builder(const ServiceName& name) const {}
 
     static iox::expected<void, NodeListFailure> list(
         const Config& config,
@@ -98,7 +89,7 @@ class NodeBuilder {
    public:
     NodeBuilder();
 
-    template <NodeType T>
+    template <ServiceType T>
     iox::expected<Node<T>, NodeCreationFailure> create() const&&;
 
    private:

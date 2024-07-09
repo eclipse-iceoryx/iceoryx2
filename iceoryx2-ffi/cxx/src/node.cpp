@@ -34,12 +34,12 @@ from<iox2_node_creation_failure_e, NodeCreationFailure>(
 }  // namespace iox
 
 namespace iox2 {
-template <NodeType T>
+template <ServiceType T>
 Node<T>::Node(iox2_node_h handle) : m_handle{handle} {}
 
 NodeBuilder::NodeBuilder() : m_handle{iox2_node_builder_new(nullptr)} {}
 
-template <NodeType T>
+template <ServiceType T>
 iox::expected<Node<T>, NodeCreationFailure> NodeBuilder::create() const&& {
     iox2_node_h node_handle;
     int ret_val = iox2_node_builder_create(
@@ -54,9 +54,9 @@ iox::expected<Node<T>, NodeCreationFailure> NodeBuilder::create() const&& {
     return iox::ok(Node<T>(node_handle));
 }
 
-template iox::expected<Node<NodeType::ZERO_COPY>, NodeCreationFailure>
+template iox::expected<Node<ServiceType::Ipc>, NodeCreationFailure>
 NodeBuilder::create() const&&;
 
-template iox::expected<Node<NodeType::PROCESS_LOCAL>, NodeCreationFailure>
+template iox::expected<Node<ServiceType::Local>, NodeCreationFailure>
 NodeBuilder::create() const&&;
 }  // namespace iox2
