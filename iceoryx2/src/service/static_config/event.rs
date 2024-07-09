@@ -21,8 +21,8 @@
 //!     .event()
 //!     .open_or_create()?;
 //!
-//! println!("max listeners:                {:?}", event.static_config().max_supported_listeners());
-//! println!("max notifiers:                {:?}", event.static_config().max_supported_notifiers());
+//! println!("max listeners:                {:?}", event.static_config().max_listeners());
+//! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("event id max value:           {:?}", event.static_config().event_id_max_value());
 //!
 //! # Ok(())
@@ -38,6 +38,7 @@ use serde::{Deserialize, Serialize};
 pub struct StaticConfig {
     pub(crate) max_notifiers: usize,
     pub(crate) max_listeners: usize,
+    pub(crate) max_nodes: usize,
     pub(crate) event_id_max_value: usize,
 }
 
@@ -46,17 +47,24 @@ impl StaticConfig {
         Self {
             max_notifiers: config.defaults.event.max_notifiers,
             max_listeners: config.defaults.event.max_listeners,
+            max_nodes: config.defaults.event.max_nodes,
             event_id_max_value: config.defaults.event.event_id_max_value,
         }
     }
 
+    /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the
+    /// [`Service`](crate::service::Service) in parallel.
+    pub fn max_nodes(&self) -> usize {
+        self.max_nodes
+    }
+
     /// Returns the maximum supported amount of [`crate::port::notifier::Notifier`] ports
-    pub fn max_supported_notifiers(&self) -> usize {
+    pub fn max_notifiers(&self) -> usize {
         self.max_notifiers
     }
 
     /// Returns the maximum supported amount of [`crate::port::listener::Listener`] ports
-    pub fn max_supported_listeners(&self) -> usize {
+    pub fn max_listeners(&self) -> usize {
         self.max_listeners
     }
 

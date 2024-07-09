@@ -13,28 +13,33 @@
 #[generic_tests::define]
 mod node {
     use std::collections::{HashSet, VecDeque};
+    use std::sync::Barrier;
+    use std::time::Duration;
 
     use iceoryx2::config::Config;
-    use iceoryx2::node::{NodeState, NodeView};
+    use iceoryx2::node::{
+        NodeCleanupFailure, NodeCreationFailure, NodeId, NodeListFailure, NodeState, NodeView,
+    };
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::directory::Directory;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+    use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
         name: NodeName,
-        id: u128,
+        id: NodeId,
         config: Config,
     }
 
     impl Details {
-        fn new(name: &NodeName, id: &UniqueSystemId, config: &Config) -> Self {
+        fn new(name: &NodeName, id: &NodeId, config: &Config) -> Self {
             Self {
                 name: name.clone(),
-                id: id.value(),
+                id: id.clone(),
                 config: config.clone(),
             }
         }
@@ -45,13 +50,22 @@ mod node {
     }
 
     fn assert_node_presence<S: Service>(node_details: &VecDeque<Details>, config: &Config) {
-        let node_list = Node::<S>::list(config).unwrap();
+        let mut node_list = vec![];
+        Node::<S>::list(config, |node_state| {
+            node_list.push(node_state);
+            CallbackProgression::Continue
+        })
+        .unwrap();
 
         assert_that!(node_list, len node_details.len());
         for node in node_list {
             let view = match node {
                 NodeState::<S>::Alive(ref view) => view as &dyn NodeView,
                 NodeState::<S>::Dead(ref view) => view as &dyn NodeView,
+                NodeState::<S>::Inaccessible(_) | NodeState::<S>::Undefined(_) => {
+                    assert_that!(true, eq false);
+                    panic!();
+                }
             };
 
             let details = view.details().as_ref().unwrap();
@@ -161,7 +175,7 @@ mod node {
                 "its a bird, its a plane, no its the mountain goat jumping through the code",
             );
             nodes.push(NodeBuilder::new().name(node_name).create::<S>().unwrap());
-            assert_that!(node_ids.insert(nodes.last().unwrap().id().value()), eq true);
+            assert_that!(node_ids.insert(nodes.last().unwrap().id().clone()), eq true);
         }
     }
 
@@ -206,6 +220,102 @@ mod node {
         let mut path = config.global.root_path();
         path.add_path_entry(&config.global.node.directory).unwrap();
         let _ = Directory::remove(&path);
+    }
+
+    #[test]
+    fn node_creation_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeCreationFailure::InsufficientPermissions), eq "NodeCreationFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeCreationFailure::InternalError), eq "NodeCreationFailure::InternalError");
+    }
+
+    #[test]
+    fn node_list_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeListFailure::InsufficientPermissions), eq "NodeListFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeListFailure::Interrupt), eq "NodeListFailure::Interrupt");
+        assert_that!(
+            format!("{}", NodeListFailure::InternalError), eq "NodeListFailure::InternalError");
+    }
+
+    #[test]
+    fn node_cleanup_failure_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", NodeCleanupFailure::InsufficientPermissions), eq "NodeCleanupFailure::InsufficientPermissions");
+        assert_that!(
+            format!("{}", NodeCleanupFailure::Interrupt), eq "NodeCleanupFailure::Interrupt");
+        assert_that!(
+            format!("{}", NodeCleanupFailure::InternalError), eq "NodeCleanupFailure::InternalError");
+    }
+
+    #[test]
+    fn concurrent_node_creation_and_listing_works<S: Service>() {
+        let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        const NUMBER_OF_ITERATIONS: usize = 100;
+        let barrier = Barrier::new(number_of_creators);
+
+        std::thread::scope(|s| {
+            let mut threads = vec![];
+            for _ in 0..number_of_creators {
+                threads.push(s.spawn(|| {
+                    barrier.wait();
+                    for _ in 0..NUMBER_OF_ITERATIONS {
+                        let node = NodeBuilder::new().create::<S>().unwrap();
+
+                        let mut found_self = false;
+                        let result = Node::<S>::list(node.config(), |node_state| {
+                            match node_state {
+                                NodeState::Alive(view) => {
+                                    if view.id() == node.id() {
+                                        found_self = true;
+                                    }
+                                }
+                                NodeState::Dead(view) => {
+                                    if view.id() == node.id() {
+                                        found_self = true;
+                                    }
+                                }
+                                NodeState::Inaccessible(node_id) => {
+                                    if node_id == *node.id() {
+                                        found_self = true;
+                                    }
+                                }
+                                NodeState::Undefined(_) => {
+                                    assert_that!(true, eq false);
+                                }
+                            };
+
+                            CallbackProgression::Continue
+                        });
+
+                        assert_that!(found_self, eq true);
+                        assert_that!(result, is_ok);
+                    }
+                }));
+            }
+
+            for thread in threads {
+                thread.join().unwrap();
+            }
+        });
+    }
+
+    #[test]
+    fn node_listing_stops_when_callback_progression_signals_stop<S: Service>() {
+        let node_1 = NodeBuilder::new().create::<S>().unwrap();
+        let _node_2 = NodeBuilder::new().create::<S>().unwrap();
+
+        let mut node_counter = 0;
+        let result = Node::<S>::list(node_1.config(), |_| {
+            node_counter += 1;
+            CallbackProgression::Stop
+        });
+
+        assert_that!(result, is_ok);
+        assert_that!(node_counter, eq 1);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

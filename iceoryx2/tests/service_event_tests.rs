@@ -18,10 +18,11 @@ mod service_event {
     use std::time::{Duration, Instant};
 
     use iceoryx2::config::Config;
-    use iceoryx2::port::listener::Listener;
-    use iceoryx2::port::notifier::NotifierNotifyError;
+    use iceoryx2::port::listener::{Listener, ListenerCreateError};
+    use iceoryx2::port::notifier::{NotifierCreateError, NotifierNotifyError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -122,7 +123,7 @@ mod service_event {
             .service_builder(service_name)
             .event()
             .max_notifiers(1)
-            .open();
+            .open_or_create();
         assert_that!(sut2, is_ok);
     }
 
@@ -153,6 +154,79 @@ mod service_event {
             .service_builder(service_name)
             .event()
             .max_listeners(1)
+            .open();
+        assert_that!(sut2, is_ok);
+    }
+
+    #[test]
+    fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name)
+            .event()
+            .max_nodes(0)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().max_nodes(), eq 1);
+    }
+
+    #[test]
+    fn set_max_listeners_to_zero_adjusts_it_to_one<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name)
+            .event()
+            .max_listeners(0)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().max_listeners(), eq 1);
+    }
+
+    #[test]
+    fn set_max_notifiers_to_zero_adjusts_it_to_one<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name)
+            .event()
+            .max_notifiers(0)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().max_notifiers(), eq 1);
+    }
+
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_opener_node_requirements<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name.clone())
+            .event()
+            .max_nodes(2)
+            .create();
+        assert_that!(sut, is_ok);
+
+        let sut2 = node
+            .service_builder(service_name.clone())
+            .event()
+            .max_nodes(3)
+            .open();
+
+        assert_that!(sut2, is_err);
+        assert_that!(
+            sut2.err().unwrap(), eq
+            EventOpenError::DoesNotSupportRequestedAmountOfNodes
+        );
+
+        let sut2 = node
+            .service_builder(service_name)
+            .event()
+            .max_nodes(1)
             .open();
         assert_that!(sut2, is_ok);
     }
@@ -194,22 +268,26 @@ mod service_event {
         let sut = node
             .service_builder(service_name.clone())
             .event()
+            .max_nodes(7)
             .max_notifiers(4)
             .max_listeners(5)
             .create()
             .unwrap();
-        assert_that!(sut.static_config().max_supported_notifiers(), eq 4);
-        assert_that!(sut.static_config().max_supported_listeners(), eq 5);
+        assert_that!(sut.static_config().max_nodes(), eq 7);
+        assert_that!(sut.static_config().max_notifiers(), eq 4);
+        assert_that!(sut.static_config().max_listeners(), eq 5);
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
-        assert_that!(sut2.static_config().max_supported_notifiers(), eq 4);
-        assert_that!(sut2.static_config().max_supported_listeners(), eq 5);
+        assert_that!(sut2.static_config().max_nodes(), eq 7);
+        assert_that!(sut2.static_config().max_notifiers(), eq 4);
+        assert_that!(sut2.static_config().max_listeners(), eq 5);
     }
 
     #[test]
     fn settings_can_be_modified_via_custom_config<Sut: Service>() {
         let service_name = generate_name();
         let mut custom_config = Config::default();
+        custom_config.defaults.event.max_nodes = 13;
         custom_config.defaults.event.max_notifiers = 9;
         custom_config.defaults.event.max_listeners = 10;
         let node = NodeBuilder::new()
@@ -222,12 +300,14 @@ mod service_event {
             .event()
             .create()
             .unwrap();
-        assert_that!(sut.static_config().max_supported_notifiers(), eq 9);
-        assert_that!(sut.static_config().max_supported_listeners(), eq 10);
+        assert_that!(sut.static_config().max_nodes(), eq 13);
+        assert_that!(sut.static_config().max_notifiers(), eq 9);
+        assert_that!(sut.static_config().max_listeners(), eq 10);
 
         let sut2 = node.service_builder(service_name).event().open().unwrap();
-        assert_that!(sut2.static_config().max_supported_notifiers(), eq 9);
-        assert_that!(sut2.static_config().max_supported_listeners(), eq 10);
+        assert_that!(sut2.static_config().max_nodes(), eq 13);
+        assert_that!(sut2.static_config().max_notifiers(), eq 9);
+        assert_that!(sut2.static_config().max_listeners(), eq 10);
     }
 
     #[test]
@@ -422,6 +502,10 @@ mod service_event {
             assert_that!(sut2.dynamic_config().number_of_listeners(), eq 0);
         }
 
+        let notifier = sut.notifier_builder().create();
+        assert_that!(notifier, is_err);
+        assert_that!(notifier.err().unwrap(), eq NotifierCreateError::ExceedsMaxSupportedNotifiers);
+
         for i in 0..MAX_NOTIFIERS {
             notifiers.pop();
             assert_that!(sut.dynamic_config().number_of_notifiers(), eq MAX_NOTIFIERS - i - 1);
@@ -460,11 +544,52 @@ mod service_event {
             assert_that!(sut2.dynamic_config().number_of_notifiers(), eq 0);
         }
 
+        let listener = sut.listener_builder().create();
+        assert_that!(listener, is_err);
+        assert_that!(listener.err().unwrap(), eq ListenerCreateError::ExceedsMaxSupportedListeners);
+
         for i in 0..MAX_LISTENERS {
             listeners.pop();
             assert_that!(sut.dynamic_config().number_of_listeners(), eq MAX_LISTENERS - i - 1);
             assert_that!(sut2.dynamic_config().number_of_listeners(), eq MAX_LISTENERS - i - 1);
         }
+    }
+
+    #[test]
+    fn number_of_nodes_works<Sut: Service>() {
+        let service_name = generate_name();
+        let main_node = NodeBuilder::new().create::<Sut>().unwrap();
+        const MAX_NODES: usize = 8;
+
+        let _sut = main_node
+            .service_builder(service_name.clone())
+            .event()
+            .max_nodes(MAX_NODES)
+            .create()
+            .unwrap();
+
+        let mut nodes = vec![];
+        let mut services = vec![];
+
+        for _ in 1..MAX_NODES {
+            let node = NodeBuilder::new().create::<Sut>().unwrap();
+            let service = node.service_builder(service_name.clone()).event().open();
+            assert_that!(service, is_ok);
+            nodes.push(node);
+            services.push(service);
+        }
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node.service_builder(service_name.clone()).event().open();
+        assert_that!(service, is_err);
+        assert_that!(service.err().unwrap(), eq EventOpenError::ExceedsMaxNumberOfNodes);
+
+        nodes.pop();
+        services.pop();
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service = node.service_builder(service_name.clone()).event().open();
+        assert_that!(service, is_ok);
     }
 
     #[test]
@@ -635,9 +760,9 @@ mod service_event {
             .unwrap();
         let listener = sut.listener_builder().create().unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(true));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::Event), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(false));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::Event), eq Ok(false));
 
         assert_that!(notifier.notify(), eq Ok(1));
 
@@ -668,9 +793,9 @@ mod service_event {
             .unwrap();
         let listener = sut.listener_builder().create().unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(true));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::Event), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()), eq Ok(false));
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::Event), eq Ok(false));
 
         let sut = node.service_builder(service_name.clone()).event().create();
         assert_that!(sut, is_err);
@@ -913,6 +1038,44 @@ mod service_event {
             let result = l.blocking_wait_all(|id| assert_that!(ids.insert(id), eq true));
             assert_that!(result, is_ok);
         });
+    }
+
+    #[test]
+    fn open_error_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", EventOpenError::DoesNotExist), eq "EventOpenError::DoesNotExist");
+        assert_that!(
+            format!("{}", EventOpenError::InsufficientPermissions), eq "EventOpenError::InsufficientPermissions");
+        assert_that!(
+            format!("{}", EventOpenError::ServiceInCorruptedState), eq "EventOpenError::ServiceInCorruptedState");
+        assert_that!(
+            format!("{}", EventOpenError::IncompatibleMessagingPattern), eq "EventOpenError::IncompatibleMessagingPattern");
+        assert_that!(
+            format!("{}", EventOpenError::IncompatibleAttributes), eq "EventOpenError::IncompatibleAttributes");
+        assert_that!(
+            format!("{}", EventOpenError::InternalFailure), eq "EventOpenError::InternalFailure");
+        assert_that!(
+            format!("{}", EventOpenError::HangsInCreation), eq "EventOpenError::HangsInCreation");
+        assert_that!(
+            format!("{}", EventOpenError::DoesNotSupportRequestedAmountOfNotifiers), eq "EventOpenError::DoesNotSupportRequestedAmountOfNotifiers");
+        assert_that!(
+            format!("{}", EventOpenError::DoesNotSupportRequestedAmountOfListeners), eq "EventOpenError::DoesNotSupportRequestedAmountOfListeners");
+        assert_that!(
+            format!("{}", EventOpenError::DoesNotSupportRequestedMaxEventId), eq "EventOpenError::DoesNotSupportRequestedMaxEventId");
+    }
+
+    #[test]
+    fn create_error_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", EventCreateError::ServiceInCorruptedState), eq "EventCreateError::ServiceInCorruptedState");
+        assert_that!(
+            format!("{}", EventCreateError::InternalFailure), eq "EventCreateError::InternalFailure");
+        assert_that!(
+            format!("{}", EventCreateError::InsufficientPermissions), eq "EventCreateError::InsufficientPermissions");
+        assert_that!(
+            format!("{}", EventCreateError::IsBeingCreatedByAnotherInstance), eq "EventCreateError::IsBeingCreatedByAnotherInstance");
+        assert_that!(
+            format!("{}", EventCreateError::OldConnectionsStillActive), eq "EventCreateError::OldConnectionsStillActive");
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

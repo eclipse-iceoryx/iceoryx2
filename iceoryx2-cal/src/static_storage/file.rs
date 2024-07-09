@@ -253,17 +253,23 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
 
         let adjusted_path = config.path_for(storage_name);
 
-        match File::does_exist(&adjusted_path) {
-            Ok(true) => (),
-            Ok(false) => return Ok(false),
-            Err(v) => {
+        let does_exist = || {
+            File::does_exist(&adjusted_path).or_else(|v| {
                 fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesCorrupted,
                     "{} due to an internal failure ({:?}), is the static storage in a corrupted state?", msg, v);
-            }
+        })
         };
+
+        if !does_exist()? {
+            return Ok(false);
+        }
 
         let file = FileBuilder::new(&adjusted_path).open_existing(AccessMode::Read);
         if file.is_err() {
+            if !does_exist()? {
+                return Ok(false);
+            }
+
             fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesCorrupted,
                 "{} since the file could not be opened for reading ({:?}), is static storage in a corrupted state?", msg, file.err().unwrap() );
         }
@@ -271,6 +277,10 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
         let file = file.unwrap();
         let metadata = file.metadata();
         if metadata.is_err() {
+            if !does_exist()? {
+                return Ok(false);
+            }
+
             fail!(from origin, with NamedConceptDoesExistError::UnderlyingResourcesCorrupted,
                 "{} due to an internal failure ({:?}) while acquiring underlying file informations, is static storage in a corrupted state?",
                 msg, metadata.err().unwrap());
@@ -373,9 +383,13 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
             with StaticStorageCreateError::Creation,
                "{} since the system is unable to determine if the directory even exists.", msg)
         {
-            fail!(from self, when Directory::create(&self.config.path, directory_permission ),
-                with StaticStorageCreateError::Creation,
-                "{} due to a failure while creating the service root directory.", msg);
+            match Directory::create(&self.config.path, directory_permission) {
+                Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+                Err(e) => {
+                    fail!(from self, with StaticStorageCreateError::Creation,
+                        "{} due to a failure while creating the service root directory ({:?}).", msg, e);
+                }
+            }
             trace!(from self, "Created service root directory \"{}\" since it did not exist before.", self.config.path);
         }
 

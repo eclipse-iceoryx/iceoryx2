@@ -22,8 +22,8 @@
 //!     .open_or_create()?;
 //!
 //! println!("type details:                     {:?}", pubsub.static_config().message_type_details());
-//! println!("max publishers:                   {:?}", pubsub.static_config().max_supported_publishers());
-//! println!("max subscribers:                  {:?}", pubsub.static_config().max_supported_subscribers());
+//! println!("max publishers:                   {:?}", pubsub.static_config().max_publishers());
+//! println!("max subscribers:                  {:?}", pubsub.static_config().max_subscribers());
 //! println!("subscriber buffer size:           {:?}", pubsub.static_config().subscriber_max_buffer_size());
 //! println!("history size:                     {:?}", pubsub.static_config().history_size());
 //! println!("subscriber max borrowed samples:  {:?}", pubsub.static_config().subscriber_max_borrowed_samples());
@@ -45,6 +45,7 @@ use serde::{Deserialize, Serialize};
 pub struct StaticConfig {
     pub(crate) max_subscribers: usize,
     pub(crate) max_publishers: usize,
+    pub(crate) max_nodes: usize,
     pub(crate) history_size: usize,
     pub(crate) subscriber_max_buffer_size: usize,
     pub(crate) subscriber_max_borrowed_samples: usize,
@@ -57,6 +58,7 @@ impl StaticConfig {
         Self {
             max_subscribers: config.defaults.publish_subscribe.max_subscribers,
             max_publishers: config.defaults.publish_subscribe.max_publishers,
+            max_nodes: config.defaults.publish_subscribe.max_nodes,
             history_size: config.defaults.publish_subscribe.publisher_history_size,
             subscriber_max_buffer_size: config
                 .defaults
@@ -71,13 +73,19 @@ impl StaticConfig {
         }
     }
 
+    /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the
+    /// [`Service`](crate::service::Service) in parallel.
+    pub fn max_nodes(&self) -> usize {
+        self.max_nodes
+    }
+
     /// Returns the maximum supported amount of [`crate::port::publisher::Publisher`] ports
-    pub fn max_supported_publishers(&self) -> usize {
+    pub fn max_publishers(&self) -> usize {
         self.max_publishers
     }
 
     /// Returns the maximum supported amount of [`crate::port::subscriber::Subscriber`] ports
-    pub fn max_supported_subscribers(&self) -> usize {
+    pub fn max_subscribers(&self) -> usize {
         self.max_subscribers
     }
 

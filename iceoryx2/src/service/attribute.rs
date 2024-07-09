@@ -89,12 +89,10 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let services = zero_copy::Service::list(Config::get_global_config())?;
-//!
-//! for service in services {
-//!     println!("\n{:#?}", &service.attributes());
-//! }
-//!
+//! let services = zero_copy::Service::list(Config::get_global_config(), |service| {
+//!     println!("\n{:#?}", &service?.static_details.attributes());
+//!     Ok(CallbackProgression::Continue)
+//! })?;
 //! # Ok(())
 //! # }
 //! ```
@@ -128,14 +126,14 @@ pub struct AttributeSpecifier(pub(crate) AttributeSet);
 
 impl Default for AttributeSpecifier {
     fn default() -> Self {
-        Self::new()
+        Self(AttributeSet::new())
     }
 }
 
 impl AttributeSpecifier {
     /// Creates a new empty set of [`Attribute`]s
     pub fn new() -> Self {
-        Self(AttributeSet::new())
+        Self::default()
     }
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
@@ -160,17 +158,17 @@ pub struct AttributeVerifier {
 
 impl Default for AttributeVerifier {
     fn default() -> Self {
-        Self::new()
+        Self {
+            attribute_set: AttributeSet::new(),
+            required_keys: Vec::new(),
+        }
     }
 }
 
 impl AttributeVerifier {
     /// Creates a new empty set of [`Attribute`]s
     pub fn new() -> Self {
-        Self {
-            attribute_set: AttributeSet::new(),
-            required_keys: Vec::new(),
-        }
+        Self::default()
     }
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.

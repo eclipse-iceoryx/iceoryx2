@@ -142,23 +142,15 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
         }
     };
 
-    let file_path = match handle_to_file_path(permission_handle) {
-        Some(v) => v,
-        None => {
-            Errno::set(Errno::EINVAL);
-            return -1;
+    if let Some(file_path) = handle_to_file_path(permission_handle) {
+        if let Some(mode) = acquire_mode_from_path(&file_path) {
+            file_stat.st_mode |= mode;
         }
     };
 
-    match acquire_mode_from_path(&file_path) {
-        None => -1,
-        Some(mode) => {
-            file_stat.st_mode |= mode;
-            buf.write(file_stat);
+    buf.write(file_stat);
 
-            0
-        }
-    }
+    0
 }
 
 pub(crate) unsafe fn acquire_mode_from_path(file_path: &[u8]) -> Option<mode_t> {

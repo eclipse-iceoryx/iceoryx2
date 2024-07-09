@@ -24,8 +24,8 @@
 //! println!("name:                             {:?}", pubsub.name());
 //! println!("uuid:                             {:?}", pubsub.uuid());
 //! println!("type details:                     {:?}", pubsub.static_config().message_type_details());
-//! println!("max publishers:                   {:?}", pubsub.static_config().max_supported_publishers());
-//! println!("max subscribers:                  {:?}", pubsub.static_config().max_supported_subscribers());
+//! println!("max publishers:                   {:?}", pubsub.static_config().max_publishers());
+//! println!("max subscribers:                  {:?}", pubsub.static_config().max_subscribers());
 //! println!("subscriber buffer size:           {:?}", pubsub.static_config().subscriber_max_buffer_size());
 //! println!("history size:                     {:?}", pubsub.static_config().history_size());
 //! println!("subscriber max borrowed samples:  {:?}", pubsub.static_config().subscriber_max_borrowed_samples());
@@ -42,12 +42,15 @@
 
 use std::{fmt::Debug, marker::PhantomData};
 
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config};
 
+use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
 
 /// The factory for
@@ -74,31 +77,50 @@ unsafe impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debu
 impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     crate::service::port_factory::PortFactory for PortFactory<Service, Payload, UserHeader>
 {
+    type Service = Service;
     type StaticConfig = static_config::publish_subscribe::StaticConfig;
     type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.state().static_config.name()
+        self.service.__internal_state().static_config.name()
     }
 
     fn uuid(&self) -> &str {
-        self.service.state().static_config.uuid()
+        self.service.__internal_state().static_config.uuid()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.state().static_config.attributes()
+        self.service.__internal_state().static_config.attributes()
     }
 
     fn static_config(&self) -> &static_config::publish_subscribe::StaticConfig {
-        self.service.state().static_config.publish_subscribe()
+        self.service
+            .__internal_state()
+            .static_config
+            .publish_subscribe()
     }
 
     fn dynamic_config(&self) -> &dynamic_config::publish_subscribe::DynamicConfig {
         self.service
-            .state()
+            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()
+    }
+
+    fn nodes<
+        F: FnMut(
+            Result<crate::node::NodeState<Service>, NodeListFailure>,
+        ) -> Result<CallbackProgression, NodeListFailure>,
+    >(
+        &self,
+        callback: F,
+    ) -> Result<(), NodeListFailure> {
+        nodes(
+            self.service.__internal_state().dynamic_storage.get(),
+            self.service.__internal_state().shared_node.config(),
+            callback,
+        )
     }
 }
 

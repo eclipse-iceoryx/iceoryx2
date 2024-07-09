@@ -207,6 +207,9 @@ pub struct PublishSubscribe {
     pub max_subscribers: usize,
     /// The maximum amount of supported [`crate::port::publisher::Publisher`]
     pub max_publishers: usize,
+    /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
+    /// processes can open the service in parallel.
+    pub max_nodes: usize,
     /// The maximum buffer size a [`crate::port::subscriber::Subscriber`] can have
     pub subscriber_max_buffer_size: usize,
     /// The maximum amount of [`crate::sample::Sample`]s a [`crate::port::subscriber::Subscriber`] can
@@ -238,6 +241,9 @@ pub struct Event {
     pub max_listeners: usize,
     /// The maximum amount of supported [`crate::port::notifier::Notifier`]
     pub max_notifiers: usize,
+    /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
+    /// processes can open the service in parallel.
+    pub max_nodes: usize,
     /// The largest event id supported by the event service
     pub event_id_max_value: usize,
 }
@@ -283,6 +289,7 @@ impl Default for Config {
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,
                     max_publishers: 2,
+                    max_nodes: 20,
                     publisher_history_size: 1,
                     subscriber_max_buffer_size: 2,
                     subscriber_max_borrowed_samples: 2,
@@ -293,6 +300,7 @@ impl Default for Config {
                 event: Event {
                     max_listeners: 1,
                     max_notifiers: 16,
+                    max_nodes: 36,
                     event_id_max_value: 32,
                 },
             },

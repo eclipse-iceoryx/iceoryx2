@@ -34,6 +34,7 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
     let (attr, _) =
         win32call! { GetFileAttributesA(path as *const u8), ignore ERROR_FILE_NOT_FOUND};
     if attr == INVALID_FILE_ATTRIBUTES {
+        Errno::set(Errno::ENOENT);
         return -1;
     }
 
@@ -43,20 +44,17 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
         (*buf).st_mode = S_IFREG;
     }
 
-    match acquire_mode_from_path(core::slice::from_raw_parts(
+    if let Some(mode) = acquire_mode_from_path(core::slice::from_raw_parts(
         path as *const u8,
         c_string_length(path),
     )) {
-        None => {
-            Errno::set(Errno::EOVERFLOW);
-            -1
-        }
-        Some(mode) => {
-            (*buf).st_mode |= mode;
-
-            0
-        }
+        (*buf).st_mode |= mode;
+    } else {
+        Errno::set(Errno::ENOENT);
+        return -1;
     }
+
+    0
 }
 
 pub unsafe fn umask(mask: mode_t) -> mode_t {

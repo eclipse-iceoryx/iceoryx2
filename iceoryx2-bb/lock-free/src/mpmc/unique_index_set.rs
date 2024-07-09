@@ -31,8 +31,8 @@
 //! unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
 //!
 //! let new_index = match unsafe { index_set.acquire() } {
-//!     None => panic!("Out of indices"),
-//!     Some(i) => i,
+//!     Err(_) => panic!("Out of indices"),
+//!     Ok(i) => i,
 //! };
 //!
 //! println!("Acquired index {}", new_index.value());
@@ -51,8 +51,8 @@
 //! let index_set = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 //!
 //! let new_index = match index_set.acquire() {
-//!     None => panic!("Out of indices"),
-//!     Some(i) => i,
+//!     Err(_) => panic!("Out of indices"),
+//!     Ok(i) => i,
 //! };
 //!
 //! println!("Acquired index {}", new_index.value());
@@ -71,14 +71,14 @@
 //! let index_set = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 //!
 //! let new_index = match unsafe { index_set.acquire_raw_index() } {
-//!     None => panic!("Out of indices"),
-//!     Some(i) => i,
+//!     Err(_) => panic!("Out of indices"),
+//!     Ok(i) => i,
 //! };
 //!
 //! println!("Acquired index {}", new_index);
 //!
 //! // return the index to the index set
-//! unsafe { index_set.release_raw_index(new_index) };
+//! unsafe { index_set.release_raw_index(new_index, ReleaseMode::Default) };
 //! ```
 
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
@@ -88,7 +88,7 @@ use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 use std::alloc::Layout;
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
@@ -105,6 +105,37 @@ enum_gen! { UniqueIndexCreationError
     ProvidedCapacityIsZero
 }
 
+/// Describes if indices can still be acquired after the call to
+/// [`UniqueIndexSet::release_raw_index()`].
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ReleaseMode {
+    /// No more indices can be acquired with [`UniqueIndexSet::acquire_raw_index()`] if the
+    /// released index was the last one.
+    LockIfLastIndex,
+    /// Indices can still be acquired with [`UniqueIndexSet::acquire_raw_index()`] after the
+    /// operation
+    Default,
+}
+
+/// Defines the state of the [`UniqueIndexSet`] after the release operation
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ReleaseState {
+    /// The [`UniqueIndexSet`] is in locked mode since the last index was released. New indices
+    /// can no longer acquired from the [`UniqueIndexSet`].
+    Locked,
+    /// New indices can still be acquired from the [`UniqueIndexSet`]
+    Unlocked,
+}
+
+/// It states the reason if an index could not be acquired.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum UniqueIndexSetAcquireFailure {
+    /// The [`UniqueIndexSet`] does not contain any more indices
+    OutOfIndices,
+    /// The [`UniqueIndexSet`] is in a locked state and indices can no longer be acquired.
+    IsLocked,
+}
+
 /// Represents a [`UniqueIndex`]. When it goes out of scope it releases the index in the
 /// corresponding [`UniqueIndexSet`] or [`FixedSizeUniqueIndexSet`].
 ///
@@ -112,7 +143,6 @@ enum_gen! { UniqueIndexCreationError
 pub struct UniqueIndex<'a> {
     value: u32,
     index_set: &'a UniqueIndexSet,
-    cleanup_callback: Option<CleanupCallback<'a>>,
 }
 
 impl<'a> Debug for UniqueIndex<'a> {
@@ -135,10 +165,10 @@ impl UniqueIndex<'_> {
 
 impl Drop for UniqueIndex<'_> {
     fn drop(&mut self) {
-        if self.cleanup_callback.is_some() {
-            self.cleanup_callback.as_ref().unwrap().call(self.value);
-        }
-        unsafe { self.index_set.release_raw_index(self.value) };
+        unsafe {
+            self.index_set
+                .release_raw_index(self.value, ReleaseMode::Default)
+        };
     }
 }
 
@@ -161,8 +191,8 @@ impl Drop for UniqueIndex<'_> {
 /// unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
 ///
 /// let new_index = match unsafe { index_set.acquire() } {
-///     None => panic!("Out of indices"),
-///     Some(i) => i,
+///     Err(_) => panic!("Out of indices"),
+///     Ok(i) => i,
 /// };
 /// ```
 ///
@@ -201,7 +231,6 @@ impl Drop for UniqueIndex<'_> {
 pub struct UniqueIndexSet {
     data_ptr: RelocatablePointer<UnsafeCell<u32>>,
     capacity: u32,
-    borrowed_indices: IoxAtomicUsize,
     pub(crate) head: IoxAtomicU64,
     is_memory_initialized: IoxAtomicBool,
 }
@@ -209,12 +238,40 @@ pub struct UniqueIndexSet {
 unsafe impl Sync for UniqueIndexSet {}
 unsafe impl Send for UniqueIndexSet {}
 
+const LOCK_ACQUIRE: u32 = 0x00ffffff;
+
+struct HeadDetails {
+    head: u32,
+    aba: u16,
+    borrowed_indices: u32,
+}
+
+impl HeadDetails {
+    fn from(value: u64) -> Self {
+        Self {
+            head: ((value >> 40) as u32) & 0xffffff,
+            aba: (value >> 24) as u16,
+            borrowed_indices: (value as u32) & 0xffffff,
+        }
+    }
+
+    fn value(&self) -> u64 {
+        (((self.head & 0x00ffffff) as u64) << 40)
+            | (self.aba as u64) << 24
+            | ((self.borrowed_indices & 0x00ffffff) as u64)
+    }
+}
+
 impl RelocatableContainer for UniqueIndexSet {
     unsafe fn new_uninit(capacity: usize) -> Self {
+        debug_assert!(
+            capacity < 2usize.pow(24) - 1,
+            "The provided capacity exceeds the maximum supported capacity of the UniqueIndexSet"
+        );
+
         Self {
             data_ptr: RelocatablePointer::new_uninit(),
             capacity: capacity as u32,
-            borrowed_indices: IoxAtomicUsize::new(0),
             head: IoxAtomicU64::new(0),
             is_memory_initialized: IoxAtomicBool::new(false),
         }
@@ -246,7 +303,6 @@ impl RelocatableContainer for UniqueIndexSet {
         Self {
             data_ptr: RelocatablePointer::new(distance_to_data),
             capacity: capacity as u32,
-            borrowed_indices: IoxAtomicUsize::new(0),
             head: IoxAtomicU64::new(0),
             is_memory_initialized: IoxAtomicBool::new(true),
         }
@@ -280,32 +336,11 @@ impl UniqueIndexSet {
     /// * Ensure that either the [`UniqueIndexSet`] was created with [`UniqueIndexSet::new()`] or
     ///     [`UniqueIndexSet::init()`] was called.
     ///
-    pub unsafe fn acquire(&self) -> Option<UniqueIndex<'_>> {
+    pub unsafe fn acquire(&self) -> Result<UniqueIndex<'_>, UniqueIndexSetAcquireFailure> {
         self.verify_init("acquire");
         unsafe { self.acquire_raw_index() }.map(|v| UniqueIndex {
             value: v,
             index_set: self,
-            cleanup_callback: None,
-        })
-    }
-
-    /// Acquires a new [`UniqueIndex`] with an additional callback which is called when the
-    /// index goes out of scope and returned to the [`UniqueIndexSet`].
-    ///
-    /// # Safety
-    ///
-    /// * Ensure that either the [`UniqueIndexSet`] was created with [`UniqueIndexSet::new()`] or
-    ///     [`UniqueIndexSet::init()`] was called.
-    ///
-    pub unsafe fn acquire_with_additional_cleanup<'a, F: Fn(u32) + 'a>(
-        &'a self,
-        cleanup_callback: F,
-    ) -> Option<UniqueIndex<'a>> {
-        self.verify_init("acquire_with_additional_cleanup");
-        unsafe { self.acquire_raw_index() }.map(|v| UniqueIndex {
-            value: v,
-            index_set: self,
-            cleanup_callback: Some(CleanupCallback::new(cleanup_callback)),
         })
     }
 
@@ -316,7 +351,12 @@ impl UniqueIndexSet {
 
     /// Returns the current len.
     pub fn borrowed_indices(&self) -> usize {
-        self.borrowed_indices.load(Ordering::Relaxed)
+        let s = HeadDetails::from(self.head.load(Ordering::Relaxed)).borrowed_indices;
+        if s == LOCK_ACQUIRE {
+            0
+        } else {
+            s as usize
+        }
     }
 
     /// Acquires a raw ([`u32`]) index from the [`UniqueIndexSet`]. Returns [`None`] when no more
@@ -333,14 +373,14 @@ impl UniqueIndexSet {
     /// let index_set = FixedSizeUniqueIndexSet::<CAPACITY>::new();
     ///
     /// let new_index = match unsafe { index_set.acquire_raw_index() } {
-    ///     None => panic!("Out of indices"),
-    ///     Some(i) => i,
+    ///     Err(_) => panic!("Out of indices"),
+    ///     Ok(i) => i,
     /// };
     ///
     /// println!("Acquired index {}", new_index);
     ///
     /// // return the index to the index set
-    /// unsafe { index_set.release_raw_index(new_index) };
+    /// unsafe { index_set.release_raw_index(new_index, ReleaseMode::Default) };
     /// ```
     ///
     /// # Safety
@@ -349,39 +389,46 @@ impl UniqueIndexSet {
     ///     [`UniqueIndexSet::init()`] was called.
     ///  * The index must be manually released with [`UniqueIndexSet::release_raw_index()`]
     ///    otherwise the index is leaked.
-    pub unsafe fn acquire_raw_index(&self) -> Option<u32> {
+    pub unsafe fn acquire_raw_index(&self) -> Result<u32, UniqueIndexSetAcquireFailure> {
         self.verify_init("acquire_raw_index");
-        let mut old = self.head.load(Ordering::Acquire);
-        let (mut old_head, mut old_aba) = Self::extract_head_and_aba(old);
+        let mut old_value = self.head.load(Ordering::Acquire);
+        let mut old = HeadDetails::from(old_value);
 
         loop {
-            if old_head >= self.capacity {
-                return None;
+            if old.head >= self.capacity {
+                return Err(UniqueIndexSetAcquireFailure::OutOfIndices);
             }
 
-            let new_head = *self.get_next_free_index(old_head);
-            let new_aba = old_aba + 1;
-            let new = Self::pack_from_head_and_aba(new_head, new_aba);
+            if old.borrowed_indices == LOCK_ACQUIRE {
+                return Err(UniqueIndexSetAcquireFailure::IsLocked);
+            }
 
-            (old_head, old_aba) =
-                match self
-                    .head
-                    .compare_exchange(old, new, Ordering::AcqRel, Ordering::Acquire)
-                {
-                    Ok(_) => break,
-                    Err(v) => {
-                        old = v;
-                        Self::extract_head_and_aba(v)
-                    }
+            let new_value = HeadDetails {
+                head: *self.get_next_free_index(old.head),
+                aba: old.aba.wrapping_add(1),
+                borrowed_indices: old.borrowed_indices + 1,
+            }
+            .value();
+
+            old = match self.head.compare_exchange(
+                old_value,
+                new_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => break,
+                Err(v) => {
+                    old_value = v;
+                    HeadDetails::from(v)
                 }
+            }
         }
 
-        let index = old_head;
+        let index = old.head;
         *self.get_next_free_index(index) = self.capacity + 1;
 
         fence(Ordering::Acquire);
-        self.borrowed_indices.fetch_add(1, Ordering::Relaxed);
-        Some(index)
+        Ok(index)
     }
 
     /// Releases a raw index.
@@ -395,33 +442,47 @@ impl UniqueIndexSet {
     ///  * It must be ensured that the index was acquired before and is not released twice.
     ///  * Shall be only used when the index was acquired with
     ///    [`UniqueIndexSet::acquire_raw_index()`]
-    pub unsafe fn release_raw_index(&self, index: u32) {
+    pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) -> ReleaseState {
         self.verify_init("release_raw_index");
         fence(Ordering::Release);
 
-        let mut old = self.head.load(Ordering::Acquire);
-        let (mut old_head, mut old_aba) = Self::extract_head_and_aba(old);
+        let mut release_state;
+        let mut old_value = self.head.load(Ordering::Acquire);
+        let mut old = HeadDetails::from(old_value);
 
         loop {
-            *self.get_next_free_index(index) = old_head;
-            let new_head = index;
-            let new_aba = old_aba + 1;
-            let new = Self::pack_from_head_and_aba(new_head, new_aba);
+            *self.get_next_free_index(index) = old.head;
 
-            (old_head, old_aba) =
-                match self
-                    .head
-                    .compare_exchange(old, new, Ordering::AcqRel, Ordering::Acquire)
-                {
-                    Ok(_) => {
-                        self.borrowed_indices.fetch_sub(1, Ordering::Relaxed);
-                        return;
-                    }
-                    Err(v) => {
-                        old = v;
-                        Self::extract_head_and_aba(v)
-                    }
+            let borrowed_indices =
+                if mode == ReleaseMode::LockIfLastIndex && old.borrowed_indices == 1 {
+                    release_state = ReleaseState::Locked;
+                    LOCK_ACQUIRE
+                } else {
+                    release_state = ReleaseState::Unlocked;
+                    old.borrowed_indices - 1
                 };
+
+            let new_value = HeadDetails {
+                head: index,
+                aba: old.aba.wrapping_add(1),
+                borrowed_indices,
+            }
+            .value();
+
+            old = match self.head.compare_exchange(
+                old_value,
+                new_value,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => {
+                    return release_state;
+                }
+                Err(v) => {
+                    old_value = v;
+                    HeadDetails::from(v)
+                }
+            };
         }
     }
 
@@ -432,14 +493,6 @@ impl UniqueIndexSet {
         unsafe {
             &mut *(*self.data_ptr.as_ptr().offset(index as isize)).get()
         }
-    }
-
-    fn extract_head_and_aba(value: u64) -> (u32, u32) {
-        ((value >> 32) as u32, ((value << 32) >> 32) as u32)
-    }
-
-    fn pack_from_head_and_aba(value1: u32, value2: u32) -> u64 {
-        ((value1 as u64) << 32) | value2 as u64
     }
 }
 
@@ -455,8 +508,8 @@ impl UniqueIndexSet {
 /// let index_set = FixedSizeUniqueIndexSet::<CAPACITY>::new();
 ///
 /// let new_index = match index_set.acquire() {
-///     None => panic!("Out of indices"),
-///     Some(i) => i,
+///     Err(_) => panic!("Out of indices"),
+///     Ok(i) => i,
 /// };
 /// ```
 #[derive(Debug)]
@@ -518,16 +571,8 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     }
 
     /// See [`UniqueIndexSet::acquire()`]
-    pub fn acquire(&self) -> Option<UniqueIndex<'_>> {
+    pub fn acquire(&self) -> Result<UniqueIndex<'_>, UniqueIndexSetAcquireFailure> {
         unsafe { self.state.acquire() }
-    }
-
-    /// See [`UniqueIndexSet::acquire_with_additional_cleanup()`]
-    pub fn acquire_with_additional_cleanup<'a, F: Fn(u32) + 'a>(
-        &'a self,
-        cleanup_callback: F,
-    ) -> Option<UniqueIndex<'a>> {
-        unsafe { self.state.acquire_with_additional_cleanup(cleanup_callback) }
     }
 
     /// See [`UniqueIndexSet::capacity()`]
@@ -542,7 +587,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///  * The acquired index must be returned manually with
     ///    [`FixedSizeUniqueIndexSet::release_raw_index()`]
     ///
-    pub unsafe fn acquire_raw_index(&self) -> Option<u32> {
+    pub unsafe fn acquire_raw_index(&self) -> Result<u32, UniqueIndexSetAcquireFailure> {
         self.state.acquire_raw_index()
     }
 
@@ -554,12 +599,83 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     ///    [`FixedSizeUniqueIndexSet::acquire_raw_index()`]
     ///  * The index should not be released twice
     ///
-    pub unsafe fn release_raw_index(&self, index: u32) {
-        self.state.release_raw_index(index)
+    pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) -> ReleaseState {
+        self.state.release_raw_index(index, mode)
     }
 
     /// Returns the current len.
     pub fn borrowed_indices(&self) -> usize {
         self.state.borrowed_indices()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use iceoryx2_bb_testing::assert_that;
+
+    use super::HeadDetails;
+
+    #[test]
+    fn head_details() {
+        let sut_value = HeadDetails {
+            head: 12345,
+            aba: 6789,
+            borrowed_indices: 54321,
+        }
+        .value();
+
+        let sut = HeadDetails::from(sut_value);
+
+        assert_that!(sut.head, eq 12345);
+        assert_that!(sut.aba, eq 6789);
+        assert_that!(sut.borrowed_indices, eq 54321);
+    }
+
+    #[test]
+    fn head_details_head_field_is_non_overlapping() {
+        let sut = HeadDetails::from(
+            HeadDetails {
+                head: 2u32.pow(24) - 1,
+                aba: 0,
+                borrowed_indices: 0,
+            }
+            .value(),
+        );
+
+        assert_that!(sut.head, eq 2u32.pow(24) - 1);
+        assert_that!(sut.aba, eq 0);
+        assert_that!(sut.borrowed_indices, eq 0);
+    }
+
+    #[test]
+    fn head_details_aba_field_is_non_overlapping() {
+        let sut = HeadDetails::from(
+            HeadDetails {
+                head: 0,
+                aba: u16::MAX,
+                borrowed_indices: 0,
+            }
+            .value(),
+        );
+
+        assert_that!(sut.head, eq 0);
+        assert_that!(sut.aba, eq u16::MAX);
+        assert_that!(sut.borrowed_indices, eq 0);
+    }
+
+    #[test]
+    fn head_details_borrowed_indices_field_is_non_overlapping() {
+        let sut = HeadDetails::from(
+            HeadDetails {
+                head: 0,
+                aba: 0,
+                borrowed_indices: 2u32.pow(24) - 1,
+            }
+            .value(),
+        );
+
+        assert_that!(sut.head, eq 0);
+        assert_that!(sut.aba, eq 0);
+        assert_that!(sut.borrowed_indices, eq 2u32.pow(24) - 1);
     }
 }

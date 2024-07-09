@@ -23,8 +23,8 @@
 //!
 //! println!("name:                         {:?}", event.name());
 //! println!("uuid:                         {:?}", event.uuid());
-//! println!("max listeners:                {:?}", event.static_config().max_supported_listeners());
-//! println!("max notifiers:                {:?}", event.static_config().max_supported_notifiers());
+//! println!("max listeners:                {:?}", event.static_config().max_listeners());
+//! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("number of active listeners:   {:?}", event.dynamic_config().number_of_listeners());
 //! println!("number of active notifiers:   {:?}", event.dynamic_config().number_of_notifiers());
 //!
@@ -33,13 +33,16 @@
 //! # Ok(())
 //! # }
 //! ```
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::{self, static_config};
 use crate::service::{dynamic_config, ServiceName};
 
 use super::listener::PortFactoryListener;
+use super::nodes;
 use super::notifier::PortFactoryNotifier;
 
 /// The factory for
@@ -55,27 +58,47 @@ unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
 unsafe impl<Service: service::Service> Sync for PortFactory<Service> {}
 
 impl<Service: service::Service> crate::service::port_factory::PortFactory for PortFactory<Service> {
+    type Service = Service;
     type StaticConfig = static_config::event::StaticConfig;
     type DynamicConfig = dynamic_config::event::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.state().static_config.name()
+        self.service.__internal_state().static_config.name()
     }
 
     fn uuid(&self) -> &str {
-        self.service.state().static_config.uuid()
+        self.service.__internal_state().static_config.uuid()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.state().static_config.attributes()
+        self.service.__internal_state().static_config.attributes()
     }
 
     fn static_config(&self) -> &static_config::event::StaticConfig {
-        self.service.state().static_config.event()
+        self.service.__internal_state().static_config.event()
     }
 
     fn dynamic_config(&self) -> &dynamic_config::event::DynamicConfig {
-        self.service.state().dynamic_storage.get().event()
+        self.service
+            .__internal_state()
+            .dynamic_storage
+            .get()
+            .event()
+    }
+
+    fn nodes<
+        F: FnMut(
+            Result<crate::node::NodeState<Service>, NodeListFailure>,
+        ) -> Result<CallbackProgression, NodeListFailure>,
+    >(
+        &self,
+        callback: F,
+    ) -> Result<(), NodeListFailure> {
+        nodes(
+            self.service.__internal_state().dynamic_storage.get(),
+            self.service.__internal_state().shared_node.config(),
+            callback,
+        )
     }
 }
 

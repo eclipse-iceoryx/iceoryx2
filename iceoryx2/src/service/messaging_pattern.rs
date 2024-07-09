@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -31,72 +31,19 @@
 //! [`Listener`](crate::port::listener::Listener)s.
 //!
 //! **Note:** This does **not** send or receive POSIX signals nor is it based on them.
-use std::fmt::Display;
 
-use crate::service::static_config::event;
-use crate::service::static_config::publish_subscribe;
-use serde::{Deserialize, Serialize};
-
-/// Contains the static config of the corresponding messaging pattern.
-#[non_exhaustive]
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "messaging_pattern")]
+/// Identifies the kind of messaging pattern the [`Service`](crate::service::Service) will use.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[repr(u32)]
 pub enum MessagingPattern {
     /// Unidirectional communication pattern where the
     /// [`Publisher`](crate::port::publisher::Publisher) sends arbitrary data to the
     /// [`Subscriber`](crate::port::subscriber::Subscriber)
-    PublishSubscribe(publish_subscribe::StaticConfig),
+    PublishSubscribe = 0,
 
     /// Unidirectional communication pattern where the [`Notifier`](crate::port::notifier::Notifier)
     /// sends signals/events to the [`Listener`](crate::port::listener::Listener) which has the
     /// ability to sleep until a signal/event arrives.
     /// Building block to realize push-notifications.
-    Event(event::StaticConfig),
-}
-
-impl Display for MessagingPattern {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MessagingPattern::Event(_) => write!(f, "Event"),
-            MessagingPattern::PublishSubscribe(_) => write!(f, "PublishSubscribe"),
-        }
-    }
-}
-
-impl From<MessagingPattern> for u32 {
-    fn from(value: MessagingPattern) -> Self {
-        match value {
-            MessagingPattern::Event(_) => 0,
-            MessagingPattern::PublishSubscribe(_) => 1,
-        }
-    }
-}
-
-impl MessagingPattern {
-    pub(crate) fn is_same_pattern(&self, rhs: &MessagingPattern) -> bool {
-        match self {
-            MessagingPattern::PublishSubscribe(_) => {
-                matches!(rhs, MessagingPattern::PublishSubscribe(_))
-            }
-            MessagingPattern::Event(_) => {
-                matches!(rhs, MessagingPattern::Event(_))
-            }
-        }
-    }
-
-    pub(crate) fn required_amount_of_samples_per_data_segment(
-        &self,
-        publisher_max_loaned_samples: usize,
-    ) -> usize {
-        match self {
-            MessagingPattern::PublishSubscribe(v) => {
-                v.max_subscribers
-                    * (v.subscriber_max_buffer_size + v.subscriber_max_borrowed_samples)
-                    + v.history_size
-                    + publisher_max_loaned_samples
-                    + 1
-            }
-            _ => 0,
-        }
-    }
+    Event,
 }

@@ -13,7 +13,7 @@
 #[generic_tests::define]
 mod service_publish_subscribe {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-    use std::sync::Barrier;
+    use std::sync::{Barrier, Mutex};
     use std::thread;
 
     use iceoryx2::config::Config;
@@ -23,11 +23,12 @@ mod service_publish_subscribe {
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
+    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::service::static_config::StaticConfig;
-    use iceoryx2::service::Service;
+    use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2_bb_elementary::alignment::Alignment;
+    use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -201,6 +202,38 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn open_fails_when_service_does_not_satisfy_max_nodes_requirement<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .max_nodes(2)
+            .create();
+        assert_that!(sut, is_ok);
+
+        let sut2 = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .max_nodes(3)
+            .open();
+
+        assert_that!(sut2, is_err);
+        assert_that!(
+            sut2.err().unwrap(), eq
+            PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes
+        );
+
+        let sut2 = node
+            .service_builder(service_name)
+            .publish_subscribe::<u64>()
+            .max_nodes(1)
+            .open();
+
+        assert_that!(sut2, is_ok);
+    }
+
+    #[test]
     fn open_fails_when_service_does_not_satisfy_max_publishers_requirement<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
@@ -227,7 +260,7 @@ mod service_publish_subscribe {
             .service_builder(service_name)
             .publish_subscribe::<u64>()
             .max_publishers(1)
-            .open();
+            .open_or_create();
 
         assert_that!(sut2, is_ok);
     }
@@ -476,7 +509,7 @@ mod service_publish_subscribe {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
             .service_builder(service_name)
-            .publish_subscribe::<u64>()
+            .publish_subscribe::<[u64]>()
             .open_or_create();
 
         assert_that!(sut, is_ok);
@@ -513,11 +546,11 @@ mod service_publish_subscribe {
         let defaults = &Config::get_global_config().defaults;
 
         assert_that!(
-            sut.static_config().max_supported_publishers(), eq
+            sut.static_config().max_publishers(), eq
             defaults.publish_subscribe.max_publishers
         );
         assert_that!(
-            sut.static_config().max_supported_subscribers(), eq
+            sut.static_config().max_subscribers(), eq
             defaults.publish_subscribe.max_subscribers
         );
     }
@@ -526,36 +559,47 @@ mod service_publish_subscribe {
     fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let _sut = node
+        let sut = node
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
+            .max_nodes(89)
             .max_publishers(4)
             .max_subscribers(5)
             .enable_safe_overflow(false)
             .history_size(6)
             .subscriber_max_borrowed_samples(7)
             .subscriber_max_buffer_size(8)
-            .create();
-        assert_that!(_sut, is_ok);
+            .create()
+            .unwrap();
 
-        let sut = node
+        assert_that!(sut.static_config().max_nodes(), eq 89);
+        assert_that!(sut.static_config().max_publishers(), eq 4);
+        assert_that!(sut.static_config().max_subscribers(), eq 5);
+        assert_that!(sut.static_config().has_safe_overflow(), eq false);
+        assert_that!(sut.static_config().history_size(), eq 6);
+        assert_that!(sut.static_config().subscriber_max_borrowed_samples(), eq 7);
+        assert_that!(sut.static_config().subscriber_max_buffer_size(), eq 8);
+
+        let sut2 = node
             .service_builder(service_name)
             .publish_subscribe::<u64>()
             .open()
             .unwrap();
 
-        assert_that!(sut.static_config().max_supported_publishers(), eq 4);
-        assert_that!(sut.static_config().max_supported_subscribers(), eq 5);
-        assert_that!(sut.static_config().has_safe_overflow(), eq false);
-        assert_that!(sut.static_config().history_size(), eq 6);
-        assert_that!(sut.static_config().subscriber_max_borrowed_samples(), eq 7);
-        assert_that!(sut.static_config().subscriber_max_buffer_size(), eq 8);
+        assert_that!(sut2.static_config().max_nodes(), eq 89);
+        assert_that!(sut2.static_config().max_publishers(), eq 4);
+        assert_that!(sut2.static_config().max_subscribers(), eq 5);
+        assert_that!(sut2.static_config().has_safe_overflow(), eq false);
+        assert_that!(sut2.static_config().history_size(), eq 6);
+        assert_that!(sut2.static_config().subscriber_max_borrowed_samples(), eq 7);
+        assert_that!(sut2.static_config().subscriber_max_buffer_size(), eq 8);
     }
 
     #[test]
     fn settings_can_be_modified_via_custom_config<Sut: Service>() {
         let service_name = generate_name();
         let mut custom_config = Config::default();
+        custom_config.defaults.publish_subscribe.max_nodes = 2;
         custom_config.defaults.publish_subscribe.max_publishers = 9;
         custom_config.defaults.publish_subscribe.max_subscribers = 10;
         custom_config
@@ -586,8 +630,9 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(sut.static_config().max_supported_publishers(), eq 9);
-        assert_that!(sut.static_config().max_supported_subscribers(), eq 10);
+        assert_that!(sut.static_config().max_nodes(), eq 2);
+        assert_that!(sut.static_config().max_publishers(), eq 9);
+        assert_that!(sut.static_config().max_subscribers(), eq 10);
         assert_that!(sut.static_config().has_safe_overflow(), eq false);
         assert_that!(sut.static_config().history_size(), eq 11);
         assert_that!(sut.static_config().subscriber_max_borrowed_samples(), eq 12);
@@ -599,8 +644,9 @@ mod service_publish_subscribe {
             .open()
             .unwrap();
 
-        assert_that!(sut2.static_config().max_supported_publishers(), eq 9);
-        assert_that!(sut2.static_config().max_supported_subscribers(), eq 10);
+        assert_that!(sut2.static_config().max_nodes(), eq 2);
+        assert_that!(sut2.static_config().max_publishers(), eq 9);
+        assert_that!(sut2.static_config().max_subscribers(), eq 10);
         assert_that!(sut2.static_config().has_safe_overflow(), eq false);
         assert_that!(sut2.static_config().history_size(), eq 11);
         assert_that!(sut2.static_config().subscriber_max_borrowed_samples(), eq 12);
@@ -748,6 +794,58 @@ mod service_publish_subscribe {
             assert_that!(sut.dynamic_config().number_of_subscribers(), eq MAX_SUBSCRIBERS - i - 1);
             assert_that!(sut2.dynamic_config().number_of_subscribers(), eq MAX_SUBSCRIBERS - i - 1);
         }
+    }
+
+    #[test]
+    fn max_number_of_nodes_works<Sut: Service>() {
+        let service_name = generate_name();
+        const MAX_NODES: usize = 8;
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .max_nodes(MAX_NODES)
+            .create();
+        assert_that!(sut, is_ok);
+
+        let mut nodes = vec![];
+        let mut services = vec![];
+
+        nodes.push(node);
+        services.push(sut.unwrap());
+
+        for _ in 1..MAX_NODES {
+            let node = NodeBuilder::new().create::<Sut>().unwrap();
+            let sut = node
+                .service_builder(service_name.clone())
+                .publish_subscribe::<u64>()
+                .open();
+            assert_that!(sut, is_ok);
+
+            nodes.push(node);
+            services.push(sut.unwrap());
+        }
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .open();
+
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq PublishSubscribeOpenError::ExceedsMaxNumberOfNodes);
+
+        nodes.pop();
+        services.pop();
+
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .open();
+
+        assert_that!(sut, is_ok);
     }
 
     #[test]
@@ -997,11 +1095,13 @@ mod service_publish_subscribe {
         let create_service_barrier = Barrier::new(2);
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let node = Mutex::new(NodeBuilder::new().create::<Sut>().unwrap());
 
         thread::scope(|s| {
             s.spawn(|| {
                 let sut2 = node
+                    .lock()
+                    .unwrap()
                     .service_builder(service_name.clone())
                     .publish_subscribe::<u64>()
                     .create()
@@ -1022,6 +1122,8 @@ mod service_publish_subscribe {
             for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
                 threads.push(s.spawn(|| {
                     let sut = node
+                        .lock()
+                        .unwrap()
                         .service_builder(service_name.clone())
                         .publish_subscribe::<u64>()
                         .open()
@@ -1060,11 +1162,13 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
         let reconnection_cycle = AtomicUsize::new(0);
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let node = Mutex::new(NodeBuilder::new().create::<Sut>().unwrap());
 
         thread::scope(|s| {
             s.spawn(|| {
                 let sut = node
+                    .lock()
+                    .unwrap()
                     .service_builder(service_name.clone())
                     .publish_subscribe::<u64>()
                     .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
@@ -1088,6 +1192,8 @@ mod service_publish_subscribe {
             for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
                 s.spawn(|| {
                     let sut2 = node
+                        .lock()
+                        .unwrap()
                         .service_builder(service_name.clone())
                         .publish_subscribe::<u64>()
                         .max_publishers(NUMBER_OF_PUBLISHER_THREADS)
@@ -1754,6 +1860,20 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(service_name)
+            .publish_subscribe::<u64>()
+            .max_nodes(0)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().max_nodes(), eq 1);
+    }
+
+    #[test]
     fn set_max_publishers_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
@@ -1764,7 +1884,7 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(sut.static_config().max_supported_publishers(), eq 1);
+        assert_that!(sut.static_config().max_publishers(), eq 1);
     }
 
     #[test]
@@ -1778,7 +1898,7 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(sut.static_config().max_supported_subscribers(), eq 1);
+        assert_that!(sut.static_config().max_subscribers(), eq 1);
     }
 
     #[test]
@@ -1813,7 +1933,7 @@ mod service_publish_subscribe {
     fn does_exist_works_single<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
         let _sut = node
             .service_builder(service_name.clone())
@@ -1821,12 +1941,12 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq true);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq true);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
 
         drop(_sut);
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
     }
 
     #[test]
@@ -1839,7 +1959,7 @@ mod service_publish_subscribe {
 
         for i in 0..NUMBER_OF_SERVICES {
             let service_name = generate_name();
-            assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
+            assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
             services.push(
                 node.service_builder(service_name.clone())
@@ -1850,13 +1970,13 @@ mod service_publish_subscribe {
             service_names.push(service_name);
 
             for s in service_names.iter().take(i + 1) {
-                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq true);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
             }
         }
 
         for i in 0..NUMBER_OF_SERVICES {
             for s in service_names.iter().take(NUMBER_OF_SERVICES - i) {
-                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq true);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq true);
             }
 
             for s in service_names
@@ -1864,7 +1984,7 @@ mod service_publish_subscribe {
                 .take(NUMBER_OF_SERVICES)
                 .skip(NUMBER_OF_SERVICES - i)
             {
-                assert_that!(Sut::does_exist(s, Config::get_global_config()).unwrap(), eq false);
+                assert_that!(Sut::does_exist(s, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
             }
 
             services.pop();
@@ -1879,11 +1999,11 @@ mod service_publish_subscribe {
         let mut services = vec![];
         let mut service_names = vec![];
 
-        let contains_service_names = |names, state: Vec<StaticConfig>| {
+        let contains_service_names = |names, state: Vec<ServiceDetails<Sut>>| {
             for n in names {
                 let mut name_found = false;
                 for s in &state {
-                    if *s.name() == n {
+                    if *s.static_details.name() == n {
                         name_found = true;
                         break;
                     }
@@ -1908,7 +2028,12 @@ mod service_publish_subscribe {
             );
             service_names.push(service_name);
 
-            let service_list = Sut::list(Config::get_global_config()).unwrap();
+            let mut service_list = vec![];
+            Sut::list(Config::get_global_config(), |s| {
+                service_list.push(s.unwrap());
+                Ok(CallbackProgression::Continue)
+            })
+            .unwrap();
             assert_that!(service_list, len i + 1);
 
             assert_that!(contains_service_names(service_names.clone(), service_list), eq true);
@@ -1918,7 +2043,12 @@ mod service_publish_subscribe {
             services.pop();
             service_names.pop();
 
-            let service_list = Sut::list(Config::get_global_config()).unwrap();
+            let mut service_list = vec![];
+            Sut::list(Config::get_global_config(), |s| {
+                service_list.push(s.unwrap());
+                Ok(CallbackProgression::Continue)
+            })
+            .unwrap();
             assert_that!(service_list, len NUMBER_OF_SERVICES - i - 1);
             assert_that!(contains_service_names(service_names.clone(), service_list), eq true);
         }
@@ -1938,7 +2068,7 @@ mod service_publish_subscribe {
         let subscriber = sut.subscriber_builder().create().unwrap();
 
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config()).unwrap(), eq false);
+        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
         const PAYLOAD: u64 = 98129312938;
 
@@ -2279,6 +2409,62 @@ mod service_publish_subscribe {
 
         assert_that!(sut3, is_err);
         assert_that!(sut3.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+    }
+
+    #[test]
+    fn open_error_display_works<Sut: Service>() {
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotExist), eq
+                                  "PublishSubscribeOpenError::DoesNotExist");
+        assert_that!(format!("{}", PublishSubscribeOpenError::InternalFailure), eq
+                                  "PublishSubscribeOpenError::InternalFailure");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IncompatibleTypes), eq
+                                  "PublishSubscribeOpenError::IncompatibleTypes");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IncompatibleMessagingPattern), eq
+                                  "PublishSubscribeOpenError::IncompatibleMessagingPattern");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IncompatibleAttributes), eq
+                                  "PublishSubscribeOpenError::IncompatibleAttributes");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers");
+        assert_that!(format!("{}", PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes), eq
+                                  "PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IncompatibleOverflowBehavior), eq
+                                  "PublishSubscribeOpenError::IncompatibleOverflowBehavior");
+        assert_that!(format!("{}", PublishSubscribeOpenError::InsufficientPermissions), eq
+                                  "PublishSubscribeOpenError::InsufficientPermissions");
+        assert_that!(format!("{}", PublishSubscribeOpenError::ServiceInCorruptedState), eq
+                                  "PublishSubscribeOpenError::ServiceInCorruptedState");
+        assert_that!(format!("{}", PublishSubscribeOpenError::HangsInCreation), eq
+                                  "PublishSubscribeOpenError::HangsInCreation");
+        assert_that!(format!("{}", PublishSubscribeOpenError::ExceedsMaxNumberOfNodes), eq
+                                  "PublishSubscribeOpenError::ExceedsMaxNumberOfNodes");
+        assert_that!(format!("{}", PublishSubscribeOpenError::IsMarkedForDestruction), eq
+                                  "PublishSubscribeOpenError::IsMarkedForDestruction");
+    }
+
+    #[test]
+    fn create_error_display_works<Sut: Service>() {
+        assert_that!(format!("{}", PublishSubscribeCreateError::ServiceInCorruptedState), eq
+                                  "PublishSubscribeCreateError::ServiceInCorruptedState");
+        assert_that!(format!("{}", PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize), eq
+                                  "PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize");
+        assert_that!(format!("{}", PublishSubscribeCreateError::AlreadyExists), eq
+                                  "PublishSubscribeCreateError::AlreadyExists");
+        assert_that!(format!("{}", PublishSubscribeCreateError::InsufficientPermissions), eq
+                                  "PublishSubscribeCreateError::InsufficientPermissions");
+        assert_that!(format!("{}", PublishSubscribeCreateError::InternalFailure), eq
+                                  "PublishSubscribeCreateError::InternalFailure");
+        assert_that!(format!("{}", PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance), eq
+                                  "PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance");
+        assert_that!(format!("{}", PublishSubscribeCreateError::OldConnectionsStillActive), eq
+                                  "PublishSubscribeCreateError::OldConnectionsStillActive");
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

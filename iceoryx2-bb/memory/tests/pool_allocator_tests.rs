@@ -57,6 +57,19 @@ impl TestFixture {
 }
 
 #[test]
+fn pool_allocator_set_up_correctly() {
+    let mut test = TestFixture::new();
+    const BUCKET_SIZE: usize = 128;
+    const BUCKET_ALIGNMENT: usize = 1;
+
+    let sut = test.create_pool_allocator(BUCKET_SIZE, BUCKET_ALIGNMENT);
+
+    assert_that!(sut.bucket_size(), eq BUCKET_SIZE);
+    assert_that!(sut.max_alignment(), eq BUCKET_ALIGNMENT);
+    assert_that!(sut.number_of_buckets() as usize, le TestFixture::memory_size() / BUCKET_SIZE);
+}
+
+#[test]
 fn pool_allocator_acquire_all_memory_works() {
     let mut test = TestFixture::new();
     const BUCKET_SIZE: usize = 128;

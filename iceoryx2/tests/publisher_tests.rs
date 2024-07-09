@@ -12,9 +12,11 @@
 
 #[generic_tests::define]
 mod publisher {
+    use std::collections::HashSet;
+    use std::sync::Mutex;
     use std::time::{Duration, Instant};
 
-    use iceoryx2::port::publisher::PublisherLoanError;
+    use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::{service_name::ServiceName, Service};
@@ -276,8 +278,10 @@ mod publisher {
     fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
         let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let node = Mutex::new(NodeBuilder::new().create::<Sut>().unwrap());
         let service = node
+            .lock()
+            .unwrap()
             .service_builder(service_name.clone())
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
@@ -295,6 +299,8 @@ mod publisher {
         std::thread::scope(|s| {
             s.spawn(|| {
                 let service = node
+                    .lock()
+                    .unwrap()
                     .service_builder(service_name)
                     .publish_subscribe::<u64>()
                     .subscriber_max_buffer_size(1)
@@ -326,6 +332,49 @@ mod publisher {
         });
 
         Ok(())
+    }
+
+    #[test]
+    fn create_error_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", PublisherCreateError::ExceedsMaxSupportedPublishers), eq "PublisherCreateError::ExceedsMaxSupportedPublishers");
+        assert_that!(
+            format!("{}", PublisherCreateError::UnableToCreateDataSegment), eq "PublisherCreateError::UnableToCreateDataSegment");
+    }
+
+    #[test]
+    fn loan_error_display_works<S: Service>() {
+        assert_that!(
+            format!("{}", PublisherLoanError::OutOfMemory), eq "PublisherLoanError::OutOfMemory");
+        assert_that!(
+            format!("{}", PublisherLoanError::ExceedsMaxLoanedSamples), eq "PublisherLoanError::ExceedsMaxLoanedSamples");
+        assert_that!(
+            format!("{}", PublisherLoanError::ExceedsMaxLoanSize), eq "PublisherLoanError::ExceedsMaxLoanSize");
+        assert_that!(
+            format!("{}", PublisherLoanError::InternalFailure), eq "PublisherLoanError::InternalFailure");
+    }
+
+    #[test]
+    fn id_is_unique<Sut: Service>() {
+        let service_name = generate_name().unwrap();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        const MAX_PUBLISHERS: usize = 8;
+
+        let sut = node
+            .service_builder(service_name.clone())
+            .publish_subscribe::<u64>()
+            .max_publishers(MAX_PUBLISHERS)
+            .create()
+            .unwrap();
+
+        let mut publishers = vec![];
+        let mut publisher_id_set = HashSet::new();
+
+        for _ in 0..MAX_PUBLISHERS {
+            let publisher = sut.publisher_builder().create().unwrap();
+            assert_that!(publisher_id_set.insert(publisher.id()), eq true);
+            publishers.push(publisher);
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

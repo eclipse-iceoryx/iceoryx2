@@ -44,13 +44,49 @@ fn mpmc_unique_index_set_when_created_contains_indices() {
 
     for i in 0..CAPACITY {
         let e = sut.acquire();
-        assert_that!(e, is_some);
+        assert_that!(e, is_ok);
         assert_that!(e.as_ref().unwrap().value(), eq i as u32);
         ids.push(e.unwrap());
     }
 
     let e = sut.acquire();
-    assert_that!(e, is_none);
+    assert_that!(e, is_err);
+    assert_that!(e.err().unwrap(), eq UniqueIndexSetAcquireFailure::OutOfIndices);
+}
+
+#[test]
+fn mpmc_unique_index_release_mode_default_does_not_lock() {
+    let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
+
+    let idx = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx, is_ok);
+    unsafe { sut.release_raw_index(idx.unwrap(), ReleaseMode::Default) };
+
+    let idx = sut.acquire();
+    assert_that!(idx, is_ok);
+}
+
+#[test]
+fn mpmc_unique_index_release_mode_lock_if_last_index_works() {
+    let sut = FixedSizeUniqueIndexSet::<CAPACITY>::new();
+
+    let idx_1 = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx_1, is_ok);
+
+    let idx_2 = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx_2, is_ok);
+
+    assert_that!( unsafe { sut.release_raw_index(idx_1.unwrap(), ReleaseMode::LockIfLastIndex) }, eq ReleaseState::Unlocked);
+
+    let idx_3 = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx_3, is_ok);
+
+    assert_that!(unsafe { sut.release_raw_index(idx_2.unwrap(), ReleaseMode::LockIfLastIndex) }, eq ReleaseState::Unlocked);
+    assert_that!(unsafe { sut.release_raw_index(idx_3.unwrap(), ReleaseMode::LockIfLastIndex) }, eq ReleaseState::Locked);
+
+    let idx_4 = unsafe { sut.acquire_raw_index() };
+    assert_that!(idx_4, is_err);
+    assert_that!(idx_4.err().unwrap(), eq UniqueIndexSetAcquireFailure::IsLocked);
 }
 
 #[test]
@@ -60,20 +96,20 @@ fn mpmc_unique_index_set_acquire_and_release_works() {
 
     for _ in 0..CAPACITY {
         let e = sut.acquire();
-        assert_that!(e, is_some);
+        assert_that!(e, is_ok);
         ids.push(e.unwrap());
     }
 
     for i in 0..CAPACITY {
         ids.remove(CAPACITY - i - 1);
         let e = sut.acquire();
-        assert_that!(e, is_some);
+        assert_that!(e, is_ok);
         assert_that!(e.unwrap().value(), eq(CAPACITY - i - 1) as u32);
     }
 
     for i in 0..CAPACITY {
         let e = sut.acquire();
-        assert_that!(e, is_some);
+        assert_that!(e, is_ok);
         assert_that!(e.as_ref().unwrap().value(), eq i as u32);
         ids.push(e.unwrap());
     }
@@ -86,7 +122,7 @@ fn mpmc_unique_index_set_borrowed_indices_works() {
 
     for i in 0..CAPACITY {
         let e = sut.acquire();
-        assert_that!(e, is_some);
+        assert_that!(e, is_ok);
         ids.push(e.unwrap());
         assert_that!(sut.borrowed_indices(), eq i + 1);
     }
@@ -109,20 +145,20 @@ fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory() {
     unsafe {
         for _ in 0..CAPACITY {
             let e = sut.acquire();
-            assert_that!(e, is_some);
+            assert_that!(e, is_ok);
             ids.push(e.unwrap());
         }
 
         for i in 0..CAPACITY {
             ids.remove(CAPACITY - i - 1);
             let e = sut.acquire();
-            assert_that!(e, is_some);
+            assert_that!(e, is_ok);
             assert_that!(e.unwrap().value(), eq(CAPACITY - i - 1) as u32);
         }
 
         for i in 0..CAPACITY {
             let e = sut.acquire();
-            assert_that!(e, is_some);
+            assert_that!(e, is_ok);
             assert_that!(e.as_ref().unwrap().value(), eq i as u32);
             ids.push(e.unwrap());
         }
@@ -136,7 +172,7 @@ fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
 
     for _ in 0..CAPACITY {
         let e = sut.acquire();
-        assert_that!(e, is_some);
+        assert_that!(e, is_ok);
         ids.push(e.unwrap());
     }
 
@@ -146,7 +182,7 @@ fn mpmc_unique_index_set_acquire_release_as_lifo_behavior() {
 
     for i in 0..CAPACITY {
         let e = sut.acquire();
-        assert_that!(e, is_some);
+        assert_that!(e, is_ok);
         assert_that!(e.as_ref().unwrap().value(), eq(CAPACITY - i - 1) as u32);
         ids.push(e.unwrap());
     }
@@ -178,16 +214,19 @@ fn mpmc_unique_index_set_concurrent_acquire_release() {
                 barrier.wait();
                 loop {
                     match sut.acquire() {
-                        Some(e) => {
+                        Ok(e) => {
                             guard[e.value() as usize] += 1;
                             ids.push(e);
                         }
-                        None => {
+                        Err(UniqueIndexSetAcquireFailure::OutOfIndices) => {
                             repetition += 1;
                             ids.clear();
                             if repetition == REPETITIONS {
                                 break;
                             }
+                        }
+                        Err(UniqueIndexSetAcquireFailure::IsLocked) => {
+                            assert_that!(true, eq false);
                         }
                     }
                 }
@@ -201,7 +240,7 @@ fn mpmc_unique_index_set_concurrent_acquire_release() {
 
     for i in 0..CAPACITY {
         let e = sut.acquire();
-        assert_that!(e, is_some);
+        assert_that!(e, is_ok);
         id_counter[i] += 1;
         ids.push(e.unwrap());
     }
@@ -211,5 +250,6 @@ fn mpmc_unique_index_set_concurrent_acquire_release() {
     }
 
     let e = sut.acquire();
-    assert_that!(e, is_none);
+    assert_that!(e, is_err);
+    assert_that!(e.err().unwrap(), eq UniqueIndexSetAcquireFailure::OutOfIndices);
 }

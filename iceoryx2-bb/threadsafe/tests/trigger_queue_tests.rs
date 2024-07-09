@@ -264,7 +264,7 @@ fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
         for _ in 0..NUMBER_OF_THREADS {
             s.spawn(|| {
                 barrier.wait();
-                sut.timed_push(0, TIMEOUT * 1000);
+                assert_that!(sut.timed_push(0, TIMEOUT * 1000), eq true);
                 counter.fetch_add(1, Ordering::Relaxed);
             });
         }

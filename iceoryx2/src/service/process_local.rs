@@ -51,18 +51,14 @@ impl crate::service::Service for Service {
     type ServiceNameHasher = hash::sha1::Sha1;
     type SharedMemory = shared_memory::process_local::Memory<PoolAllocator>;
     type Connection = zero_copy_connection::process_local::Connection;
-    type Event = event::sem_bitset_process_local::Event;
+    type Event = event::process_local::EventImpl;
     type Monitoring = monitoring::process_local::ProcessLocalMonitoring;
 
-    fn from_state(state: ServiceState<Self>) -> Self {
+    fn __internal_from_state(state: ServiceState<Self>) -> Self {
         Self { state }
     }
 
-    fn state(&self) -> &ServiceState<Self> {
+    fn __internal_state(&self) -> &ServiceState<Self> {
         &self.state
-    }
-
-    fn state_mut(&mut self) -> &mut ServiceState<Self> {
-        &mut self.state
     }
 }

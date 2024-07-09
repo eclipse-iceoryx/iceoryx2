@@ -37,14 +37,10 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node_state_list = Node::<zero_copy::Service>::list(Config::get_global_config())?;
-//!
-//! for node_state in node_state_list {
+//! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
 //!     println!("found node {:?}", node_state);
-//! }
-//! # Ok(())
-//! # }
+//!     CallbackProgression::Continue
+//! });
 //! ```
 //!
 //! # Cleanup stale resources of all dead [`Node`](crate::node::Node)s
@@ -53,14 +49,15 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node_state_list = Node::<zero_copy::Service>::list(Config::get_global_config())?;
-//!
-//! for node_state in node_state_list {
+//! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
 //!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state {
 //!         println!("cleanup resources of dead node {:?}", view);
-//!         view.remove_stale_resources()?;
+//!         if let Err(e) = view.remove_stale_resources() {
+//!             println!("failed to cleanup resources due to {:?}", e);
+//!         }
 //!     }
-//! }
+//!     CallbackProgression::Continue
+//! })?;
 //! # Ok(())
 //! # }
 //! ```
@@ -73,19 +70,35 @@ pub mod testing;
 
 use crate::node::node_name::NodeName;
 use crate::service;
-use crate::service::builder::Builder;
+use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{node_details_path, node_monitoring_config};
 use crate::service::service_name::ServiceName;
 use crate::{config::Config, service::config_scheme::node_details_config};
+use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
 use std::cell::UnsafeCell;
+use std::collections::HashMap;
 use std::marker::PhantomData;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+
+/// The system-wide unique id of a [`Node`]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct NodeId(UniqueSystemId);
+
+impl NodeId {
+    pub(crate) fn as_file_name(&self) -> FileName {
+        fatal_panic!(from self, when FileName::new(self.0.to_string().as_bytes()),
+                        "This should never happen! The NodeId shall be always a valid FileName.")
+    }
+}
 
 /// The failures that can occur when a [`Node`] is created with the [`NodeBuilder`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -180,12 +193,44 @@ pub enum NodeState<Service: service::Service> {
     /// The [`Node`]s process died without cleaning up the [`Node`]s resources. Another process has
     /// now the responsibility to cleanup all the stale resources.
     Dead(DeadNodeView<Service>),
+    /// The process does not have sufficient permissions to identify the [`Node`] as dead or alive.
+    Inaccessible(NodeId),
+    /// The [`Node`] is in an undefined state, meaning that certain elements are missing,
+    /// misconfigured or inconsistent. This can only happen due to an implementation failure or
+    /// when the corresponding [`Node`] resources were altered.
+    Undefined(NodeId),
+}
+
+impl<Service: service::Service> NodeState<Service> {
+    pub(crate) fn new(node_id: &NodeId, config: &Config) -> Result<Option<Self>, NodeListFailure> {
+        let details = match Node::<Service>::get_node_details(config, node_id) {
+            Ok(v) => v,
+            Err(_) => None,
+        };
+
+        let node_view = AliveNodeView::<Service> {
+            id: *node_id,
+            details,
+            _service: PhantomData,
+        };
+
+        match Node::<Service>::get_node_state(config, node_id) {
+            Ok(State::DoesNotExist) => Ok(None),
+            Ok(State::Alive) => Ok(Some(NodeState::Alive(node_view))),
+            Ok(State::Dead) => Ok(Some(NodeState::Dead(DeadNodeView(node_view)))),
+            Err(NodeListFailure::InsufficientPermissions) => {
+                Ok(Some(NodeState::Inaccessible(*node_id)))
+            }
+            Err(NodeListFailure::InternalError) => Ok(Some(NodeState::Undefined(*node_id))),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 /// Contains all available details of a [`Node`].
 pub trait NodeView {
-    /// Returns the [`UniqueSystemId`] of the [`Node`].
-    fn id(&self) -> &UniqueSystemId;
+    /// Returns the [`NodeId`] of the [`Node`].
+    fn id(&self) -> &NodeId;
     /// Returns the [`NodeDetails`].
     fn details(&self) -> &Option<NodeDetails>;
 }
@@ -193,13 +238,13 @@ pub trait NodeView {
 /// All the informations of a [`Node`] that is alive.
 #[derive(Debug, Clone)]
 pub struct AliveNodeView<Service: service::Service> {
-    id: UniqueSystemId,
+    id: NodeId,
     details: Option<NodeDetails>,
     _service: PhantomData<Service>,
 }
 
 impl<Service: service::Service> NodeView for AliveNodeView<Service> {
-    fn id(&self) -> &UniqueSystemId {
+    fn id(&self) -> &NodeId {
         &self.id
     }
 
@@ -213,7 +258,7 @@ impl<Service: service::Service> NodeView for AliveNodeView<Service> {
 pub struct DeadNodeView<Service: service::Service>(AliveNodeView<Service>);
 
 impl<Service: service::Service> NodeView for DeadNodeView<Service> {
-    fn id(&self) -> &UniqueSystemId {
+    fn id(&self) -> &NodeId {
         self.0.id()
     }
 
@@ -226,8 +271,8 @@ impl<Service: service::Service> DeadNodeView<Service> {
     /// Removes all stale resources of a dead [`Node`].
     pub fn remove_stale_resources(self) -> Result<bool, NodeCleanupFailure> {
         let msg = "Unable to remove stale resources";
-        let monitor_name = fatal_panic!(from self, when FileName::new(self.id().value().to_string().as_bytes()),
-                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
+        let monitor_name = fatal_panic!(from self, when FileName::new(self.id().0.value().to_string().as_bytes()),
+                                "This should never happen! {msg} since the NodeId is not a valid file name.");
 
         let config = if let Some(d) = self.details() {
             d.config()
@@ -307,14 +352,11 @@ fn remove_detail_storages<Service: service::Service>(
 
 fn remove_node_details_directory<Service: service::Service>(
     config: &Config,
-    monitor_name: &FileName,
+    node_id: &NodeId,
 ) -> Result<(), NodeCleanupFailure> {
-    let origin = format!(
-        "remove_node_details_directory({:?}, {:?})",
-        config, monitor_name
-    );
+    let origin = format!("remove_node_details_directory({:?}, {:?})", config, node_id);
     let msg = "Unable to remove node details directory";
-    let path = node_details_path(config, monitor_name);
+    let path = node_details_path(config, node_id);
     match <Service::StaticStorage as NamedConceptMgmt>::remove_path_hint(&path) {
         Ok(()) => Ok(()),
         Err(NamedConceptPathHintRemoveError::InsufficientPermissions) => {
@@ -329,7 +371,7 @@ fn remove_node_details_directory<Service: service::Service>(
 }
 
 fn remove_node<Service: service::Service>(
-    id: UniqueSystemId,
+    id: NodeId,
     details: &NodeDetails,
 ) -> Result<bool, NodeCleanupFailure> {
     let origin = format!(
@@ -337,29 +379,83 @@ fn remove_node<Service: service::Service>(
         core::any::type_name::<Service>(),
         id
     );
-    let msg = "Unable to remove node resources";
-    let monitor_name = fatal_panic!(from origin, when FileName::new(id.value().to_string().as_bytes()),
-                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
-
-    let details_config = node_details_config::<Service>(&details.config, &monitor_name);
+    let details_config = node_details_config::<Service>(&details.config, &id);
     let detail_storages = acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
     remove_detail_storages::<Service>(&origin, detail_storages, &details_config)?;
-    remove_node_details_directory::<Service>(details.config(), &monitor_name)?;
+    remove_node_details_directory::<Service>(details.config(), &id)?;
 
     Ok(true)
 }
 
 #[derive(Debug)]
+pub(crate) struct RegisteredServices {
+    data: Mutex<HashMap<String, (ContainerHandle, u64)>>,
+}
+
+impl RegisteredServices {
+    pub(crate) fn add(&self, uuid: &str, handle: ContainerHandle) {
+        if self
+            .data
+            .lock()
+            .unwrap()
+            .insert(uuid.to_string(), (handle, 1))
+            .is_some()
+        {
+            fatal_panic!(from "RegisteredServices::add()",
+                "This should never happen! The service with the uuid {} was already registered.", uuid);
+        }
+    }
+
+    pub(crate) fn add_or<F: FnMut() -> Result<ContainerHandle, OpenDynamicStorageFailure>>(
+        &self,
+        uuid: &str,
+        mut or_callback: F,
+    ) -> Result<(), OpenDynamicStorageFailure> {
+        let mut data = self.data.lock().unwrap();
+        match data.get_mut(uuid) {
+            Some(handle) => {
+                handle.1 += 1;
+            }
+            None => {
+                drop(data);
+                let handle = or_callback()?;
+                self.add(uuid, handle);
+            }
+        };
+        Ok(())
+    }
+
+    pub(crate) fn remove<F: FnMut(ContainerHandle)>(&self, uuid: &str, mut cleanup_call: F) {
+        let mut data = self.data.lock().unwrap();
+        if let Some(entry) = data.get_mut(uuid) {
+            entry.1 -= 1;
+            if entry.1 == 0 {
+                cleanup_call(entry.0);
+                data.remove(uuid);
+            }
+        } else {
+            fatal_panic!(from "RegisteredServices::remove()",
+                "This should never happen! The service with the uuid {} was not registered.", uuid);
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct SharedNode<Service: service::Service> {
-    id: UniqueSystemId,
+    id: NodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
+    pub(crate) registered_services: RegisteredServices,
     _details_storage: Service::StaticStorage,
 }
 
 impl<Service: service::Service> SharedNode<Service> {
     pub(crate) fn config(&self) -> &Config {
         &self.details.config
+    }
+
+    pub(crate) fn id(&self) -> &NodeId {
+        &self.id
     }
 }
 
@@ -384,7 +480,6 @@ pub struct Node<Service: service::Service> {
 }
 
 unsafe impl<Service: service::Service> Send for Node<Service> {}
-unsafe impl<Service: service::Service> Sync for Node<Service> {}
 
 impl<Service: service::Service> Node<Service> {
     /// Returns the [`NodeName`].
@@ -397,8 +492,8 @@ impl<Service: service::Service> Node<Service> {
         &self.shared.details.config
     }
 
-    /// Returns the [`UniqueSystemId`] of the [`Node`].
-    pub fn id(&self) -> &UniqueSystemId {
+    /// Returns the [`NodeId`] of the [`Node`].
+    pub fn id(&self) -> &NodeId {
         &self.shared.id
     }
 
@@ -407,31 +502,52 @@ impl<Service: service::Service> Node<Service> {
         Builder::new(name, self.shared.clone())
     }
 
-    /// Returns a list of [`NodeState`] of all [`Node`]s in the system under a given [`Config`].
-    pub fn list(config: &Config) -> Result<Vec<NodeState<Service>>, NodeListFailure> {
+    /// Calls the provided callback for all [`Node`]s in the system under a given [`Config`] and
+    /// provides [`NodeState<Service>`] as input argument. With every iteration the callback has to
+    /// return [`CallbackProgression::Continue`] to perform the next iteration or
+    /// [`CallbackProgression::Stop`] to stop the iteration immediately.
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
+    ///     println!("found node {:?}", node_state);
+    ///     CallbackProgression::Continue
+    /// });
+    /// ```
+    pub fn list<F: FnMut(NodeState<Service>) -> CallbackProgression>(
+        config: &Config,
+        mut callback: F,
+    ) -> Result<(), NodeListFailure> {
+        let msg = "Unable to iterate over Node list";
+        let origin = "Node::list()";
         let monitoring_config = node_monitoring_config::<Service>(config);
-        let mut nodes = vec![];
 
-        for node_name in &Self::list_all_nodes(&monitoring_config)? {
-            let id_value = core::str::from_utf8(node_name.as_bytes()).unwrap();
-            let id_value = id_value.parse::<u128>().unwrap();
+        match Self::list_all_nodes(&monitoring_config) {
+            Ok(node_list) => {
+                for node_name in node_list {
+                    let node_id = core::str::from_utf8(node_name.as_bytes()).unwrap();
+                    let node_id = NodeId(node_id.parse::<u128>().unwrap().into());
 
-            let details = Self::get_node_details(config, node_name).unwrap_or_default();
-
-            let node_view = AliveNodeView::<Service> {
-                id: id_value.into(),
-                details,
-                _service: PhantomData,
-            };
-
-            match Self::get_node_state(&monitoring_config, node_name)? {
-                State::DoesNotExist => (),
-                State::Alive => nodes.push(NodeState::Alive(node_view)),
-                State::Dead => nodes.push(NodeState::Dead(DeadNodeView(node_view))),
-            };
+                    match NodeState::new(&node_id, config) {
+                        Ok(Some(node_state)) => {
+                            if callback(node_state) == CallbackProgression::Stop {
+                                break;
+                            }
+                        }
+                        Ok(None) => (),
+                        Err(e) => {
+                            fail!(from origin, with e,
+                                "{msg} since the following error occurred ({:?}).", e);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{msg} since the node list could not be acquired ({:?}).", e);
+            }
         }
 
-        Ok(nodes)
+        Ok(())
     }
 
     /// # Safety
@@ -490,12 +606,10 @@ impl<Service: service::Service> Node<Service> {
         }
     }
 
-    fn get_node_state(
-        config: &<Service::Monitoring as NamedConceptMgmt>::Configuration,
-        name: &FileName,
-    ) -> Result<State, NodeListFailure> {
-        let result = <Service::Monitoring as Monitoring>::Builder::new(name)
-            .config(config)
+    fn get_node_state(config: &Config, node_id: &NodeId) -> Result<State, NodeListFailure> {
+        let config = node_monitoring_config::<Service>(config);
+        let result = <Service::Monitoring as Monitoring>::Builder::new(&node_id.as_file_name())
+            .config(&config)
             .monitor();
 
         if let Ok(result) = result {
@@ -503,7 +617,7 @@ impl<Service: service::Service> Node<Service> {
         }
 
         let msg = "Unable to acquire node monitor";
-        let origin = format!("Node::get_node_state({:?}, {:?})", config, name);
+        let origin = format!("Node::get_node_state({:?}, {:?})", config, node_id);
         match result.err().unwrap() {
             MonitoringCreateMonitorError::InsufficientPermissions => {
                 fail!(from origin, with NodeListFailure::InsufficientPermissions,
@@ -522,9 +636,9 @@ impl<Service: service::Service> Node<Service> {
 
     fn open_node_storage(
         config: &Config,
-        node_name: &FileName,
+        node_id: &NodeId,
     ) -> Result<Option<Service::StaticStorage>, NodeReadStorageFailure> {
-        let details_config = node_details_config::<Service>(config, node_name);
+        let details_config = node_details_config::<Service>(config, node_id);
         let result = <Service::StaticStorage as StaticStorage>::Builder::new(
             &FileName::new(b"node").unwrap(),
         )
@@ -537,7 +651,7 @@ impl<Service: service::Service> Node<Service> {
         }
 
         let msg = "Unable to open node config storage";
-        let origin = format!("open_node_storage({:?}, {:?})", config, node_name);
+        let origin = format!("open_node_storage({:?}, {:?})", config, node_id);
 
         match result.err().unwrap() {
             StaticStorageOpenError::DoesNotExist => Ok(None),
@@ -558,9 +672,9 @@ impl<Service: service::Service> Node<Service> {
 
     fn get_node_details(
         config: &Config,
-        node_name: &FileName,
+        node_id: &NodeId,
     ) -> Result<Option<NodeDetails>, NodeReadStorageFailure> {
-        let node_storage = if let Some(n) = Self::open_node_storage(config, node_name)? {
+        let node_storage = if let Some(n) = Self::open_node_storage(config, node_id)? {
             n
         } else {
             return Ok(None);
@@ -569,7 +683,7 @@ impl<Service: service::Service> Node<Service> {
         let mut read_content =
             String::from_utf8(vec![b' '; node_storage.len() as usize]).expect("");
 
-        let origin = format!("get_node_details({:?}, {:?})", config, node_name);
+        let origin = format!("get_node_details({:?}, {:?})", config, node_id);
         let msg = "Unable to read node details";
 
         if node_storage
@@ -644,13 +758,16 @@ impl NodeBuilder {
         };
 
         let (details_storage, details) =
-            self.create_node_details_storage::<Service>(&config, &monitor_name)?;
+            self.create_node_details_storage::<Service>(&config, &NodeId(node_id))?;
         let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
 
         Ok(Node {
             shared: Arc::new(SharedNode {
-                id: node_id,
+                id: NodeId(node_id),
                 monitoring_token: UnsafeCell::new(Some(monitoring_token)),
+                registered_services: RegisteredServices {
+                    data: Mutex::new(HashMap::new()),
+                },
                 _details_storage: details_storage,
                 details,
             }),
@@ -687,7 +804,7 @@ impl NodeBuilder {
     fn create_node_details_storage<Service: service::Service>(
         &self,
         config: &Config,
-        monitor_name: &FileName,
+        node_id: &NodeId,
     ) -> Result<(Service::StaticStorage, NodeDetails), NodeCreationFailure> {
         let msg = "Unable to create node details storage";
         let details = NodeDetails {
@@ -699,7 +816,7 @@ impl NodeBuilder {
             config: config.clone(),
         };
 
-        let details_config = node_details_config::<Service>(&details.config, monitor_name);
+        let details_config = node_details_config::<Service>(&details.config, node_id);
         let serialized_details = match <Service::ConfigSerializer>::serialize(&details) {
             Ok(serialized_details) => serialized_details,
             Err(SerializeError::InternalError) => {

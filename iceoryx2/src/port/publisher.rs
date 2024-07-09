@@ -116,6 +116,7 @@ use crate::service::static_config::publish_subscribe::{self};
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -400,6 +401,7 @@ impl<Service: service::Service> DataSegment<Service> {
         unsafe {
             (*self.subscriber_list_state.get()).for_each(|index, subscriber_id| {
                 visited_indices[index as usize] = Some(*subscriber_id);
+                CallbackProgression::Continue
             })
         };
 
@@ -548,21 +550,21 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let origin = "Publisher::new()";
         let port_id = UniquePublisherId::new();
         let subscriber_list = &service
-            .state()
+            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()
             .subscribers;
 
-        let dynamic_storage = Arc::clone(&service.state().dynamic_storage);
+        let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
         let number_of_samples = service
-            .state()
+            .__internal_state()
             .static_config
             .messaging_pattern
             .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
         let data_segment = fail!(from origin,
-                when Self::create_data_segment(port_id, service.state().shared_node.config(), number_of_samples, static_config, &config),
+                when Self::create_data_segment(port_id, service.__internal_state().shared_node.config(), number_of_samples, static_config, &config),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
@@ -588,7 +590,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             port_id,
             subscriber_connections: SubscriberConnections::new(
                 subscriber_list.capacity(),
-                service.state().shared_node.clone(),
+                service.__internal_state().shared_node.clone(),
                 port_id,
                 static_config,
                 number_of_samples,
@@ -599,7 +601,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 true => None,
                 false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
             },
-            static_config: service.state().static_config.clone(),
+            static_config: service.__internal_state().static_config.clone(),
             loan_counter: IoxAtomicUsize::new(0),
         });
 
@@ -619,7 +621,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources
         let dynamic_publisher_handle = match service
-            .state()
+            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()
@@ -632,7 +634,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             None => {
                 fail!(from origin, with PublisherCreateError::ExceedsMaxSupportedPublishers,
                             "{} since it would exceed the maximum supported amount of publishers of {}.",
-                            msg, service.state().static_config.publish_subscribe().max_publishers);
+                            msg, service.__internal_state().static_config.publish_subscribe().max_publishers);
             }
         };
 

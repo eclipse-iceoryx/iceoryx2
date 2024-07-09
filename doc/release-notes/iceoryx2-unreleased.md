@@ -15,6 +15,7 @@
     * Implement Serialize,Deserialize for
         * `SemanticString`
         * `UniqueSystemId`
+ * Nodes register in service to enable monitoring [#103](https://github.com/eclipse-iceoryx/iceoryx2/issues/103)
  * Multiple features from [#195](https://github.com/eclipse-iceoryx/iceoryx2/issues/195)
     * Introduce `payload_alignment` in `publish_subscribe` builder to increase alignment of payload for all service samples
     * Introduce support for slice-types with dynamic sizes.
@@ -308,3 +309,49 @@
         list_of_samples: Vec<Sample<zero_copy::Service, MyMessageType, MyCustomHeader>>,
     }
     ```
+
+15. To avoid heap allocations, `Service::list()` requires a callback that is called for every
+        service entry instead of returning a `Vec`.
+
+    ```rust
+    // old
+    let services = zero_copy::Service::list(Config::get_global_config())?;
+
+    for service in services {
+        println!("\n{:#?}", &service);
+    }
+
+    // new
+    zero_copy::Service::list(Config::get_global_config(), |service| {
+        println!("\n{:#?}", &service?);
+        Ok(CallbackProgression::Continue)
+    })?;
+    ```
+
+16. Rename `max_supported_{publisher,subscriber,notifier,listener}` into
+        `max_{publisher,subscriber,notifier,lister}` in the services `PortFactory`.
+
+    ```rust
+    let event_service = node.service_builder("MyEventName".try_into()?)
+                     .event()
+                     .open_or_create()?;
+
+    let pubsub_service = node.service_builder("MyPubSubName".try_into()?)
+                     .publish_subscribe<u64>()
+                     .open_or_create()?;
+
+    // old
+    event_service.static_config().max_supported_listeners();
+    event_service.static_config().max_supported_notifier();
+
+    pubsub_service.static_config().max_supported_publisher();
+    pubsub_service.static_config().max_supported_subscriber();
+
+    // new
+    event_service.static_config().max_listeners();
+    event_service.static_config().max_notifier();
+
+    pubsub_service.static_config().max_publisher();
+    pubsub_service.static_config().max_subscriber();
+    ```
+

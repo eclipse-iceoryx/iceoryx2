@@ -189,13 +189,13 @@ impl BaseAllocator for PoolAllocator {
         }
 
         match unsafe { self.buckets.acquire_raw_index() } {
-            Some(v) => Ok(unsafe {
+            Ok(v) => Ok(unsafe {
                 NonNull::new_unchecked(std::slice::from_raw_parts_mut(
                     (self.start + v as usize * self.bucket_size) as *mut u8,
                     layout.size(),
                 ))
             }),
-            None => {
+            Err(_) => {
                 fail!(from self, with AllocationError::OutOfMemory,
                     "No more buckets available to allocate {} bytes with an alignment of {}.",
                         layout.size(), layout.align());
@@ -206,7 +206,8 @@ impl BaseAllocator for PoolAllocator {
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
         self.verify_init("deallocate");
 
-        self.buckets.release_raw_index(self.get_index(ptr));
+        self.buckets
+            .release_raw_index(self.get_index(ptr), ReleaseMode::Default);
     }
 }
 
