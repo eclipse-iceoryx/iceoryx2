@@ -137,7 +137,17 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_n
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_t {
     debug_assert!(!node_handle.is_null());
-    todo!() // TODO: [#210] implement
+
+    unsafe {
+        match (*node_handle).node_type {
+            iox2_node_type_e::ZERO_COPY => (*node_handle)
+                .node_assume_init::<zero_copy::Service>()
+                .config() as *const _,
+            iox2_node_type_e::PROCESS_LOCAL => (*node_handle)
+                .node_assume_init::<process_local::Service>()
+                .config() as *const _,
+        }
+    }
 }
 
 pub type iox2_unique_system_id_t = *const (); // TODO: [#210] implement in unique_system_id.rs
@@ -243,8 +253,7 @@ mod test {
         const _STORAGE_LAYOUT_CHECK: () = iox2_node_storage_t::assert_storage_layout();
     }
 
-    #[test]
-    fn basic_node_api_test() {
+    fn create_sut_node() -> iox2_node_h {
         unsafe {
             let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
             let mut node_handle: iox2_node_h = std::ptr::null_mut();
@@ -256,7 +265,33 @@ mod test {
             );
 
             assert_that!(ret_val, eq(IOX2_OK));
+
+            node_handle
+        }
+    }
+
+    #[test]
+    fn basic_node_api_test() {
+        unsafe {
+            let node_handle = create_sut_node();
+
             assert_that!(node_handle, ne(std::ptr::null_mut()));
+
+            iox2_node_drop(node_handle);
+        }
+    }
+
+    #[test]
+    fn node_config_test() {
+        unsafe {
+            let node_handle = create_sut_node();
+            let expected_config = (*node_handle)
+                .node_assume_init::<zero_copy::Service>()
+                .config();
+
+            let config = iox2_node_config(node_handle);
+
+            assert_that!(*config, eq(*expected_config));
 
             iox2_node_drop(node_handle);
         }
