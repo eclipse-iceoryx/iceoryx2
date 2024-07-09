@@ -76,6 +76,7 @@
  * Updated all dependencies and increased MSRV to 1.75 [#221](https://github.com/eclipse-iceoryx/iceoryx2/issues/221)
  * Remove `Service::does_exist_with_custom_config` and `Service::list_with_custom_config` [#238](https://github.com/eclipse-iceoryx/iceoryx2/issues/238)
  * Renamed `PortFactory::{publisher|subscriber|listener|notifier}` to `PortFactory::{publisher|subscriber|listener|notifier}_builder` [#244](https://github.com/eclipse-iceoryx/iceoryx2/issues/244)
+ * Merged `Iox2::wait` with new `Node` and removed `Iox2` [#270](https://github.com/eclipse-iceoryx/iceoryx2/issues/270)
 
 ### Workflow
 
@@ -353,5 +354,20 @@
 
     pubsub_service.static_config().max_publisher();
     pubsub_service.static_config().max_subscriber();
+    ```
+
+17. `Iox2::wait()` is part of the `Node`, `Iox2Event` renamed to `NodeEvent`
+
+    ```rust
+    // old
+    while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+        // main loop stuff
+    }
+
+    // new
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+        // main loop stuff
+    }
     ```
 

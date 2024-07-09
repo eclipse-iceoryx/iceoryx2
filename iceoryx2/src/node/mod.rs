@@ -623,7 +623,7 @@ impl<Service: service::Service> Node<Service> {
     }
 
     /// Waits until an event was received. It returns
-    /// [`Iox2Event::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
+    /// [`NodeEvent::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
     pub fn wait(&self, cycle_time: Duration) -> NodeEvent {
         if SignalHandler::termination_requested() {
             return NodeEvent::TerminationRequest;
