@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut counter: u64 = 0;
 
-    while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
         counter += 1;
         let sample = publisher.loan_uninit()?;
 

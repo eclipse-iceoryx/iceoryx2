@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{} = {}", attribute.key(), attribute.value());
     }
 
-    while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
         let sample = publisher.loan_uninit()?;
         let sample = sample.write_payload(0);
         sample.send()?;

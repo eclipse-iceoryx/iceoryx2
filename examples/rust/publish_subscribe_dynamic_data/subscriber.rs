@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
         while let Some(sample) = subscriber.receive()? {
             print!("received {} bytes: ", sample.payload().len());
             for byte in sample.payload() {

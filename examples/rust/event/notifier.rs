@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let notifier = event.notifier_builder().create()?;
 
     let mut counter: usize = 0;
-    while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
         counter += 1;
         notifier.notify_with_custom_event_id(EventId::new(counter))?;
 
