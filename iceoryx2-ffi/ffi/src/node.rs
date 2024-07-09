@@ -13,7 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_node_name_t, iox2_service_builder_h, iox2_service_builder_storage_t, iox2_service_name_h,
+    iox2_config_t, iox2_node_name_t, iox2_service_builder_h, iox2_service_builder_storage_t,
+    iox2_service_name_h,
 };
 
 use iceoryx2::prelude::*;
@@ -107,8 +108,7 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_n
     todo!() // TODO: [#210] implement
 }
 
-pub type iox2_config_t = *const (); // TODO: [#210] implement in config.rs
-/// Returns the immutable [`iox2_config_t`] handle that the [`iox2_node_h`] will use to create any iceoryx2 entity.
+/// Returns the immutable [`iox2_config_t`](crate::iox2_config_t) handle that the [`iox2_node_h`] will use to create any iceoryx2 entity.
 ///
 /// # Safety
 ///
@@ -139,7 +139,7 @@ pub type iox2_node_list_failure_e = c_int; // TODO: [#210] implement in this fil
 /// # Arguments
 ///
 /// * `node_handle` - A valid [`iox2_node_h`]
-/// * `config_handle` - A valid [`iox2_config_t`]
+/// * `config_handle` - A valid [`iox2_config_t`](crate::iox2_config_t)
 /// * `callback` - A valid callback with ??? signature
 ///
 /// Returns IOX2_OK on success, an [`iox2_node_list_failure_e`] otherwise.
