@@ -39,6 +39,22 @@ pub const IOX2_OK: c_int = 0;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
+pub enum iox2_callback_progression_e {
+    STOP = 0,
+    CONTINUE,
+}
+
+impl From<iox2_callback_progression_e> for CallbackProgression {
+    fn from(value: iox2_callback_progression_e) -> Self {
+        match value {
+            iox2_callback_progression_e::STOP => CallbackProgression::Stop,
+            iox2_callback_progression_e::CONTINUE => CallbackProgression::Continue,
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
 pub enum iox2_semantic_string_error_e {
     INVALID_CONTENT = IOX2_OK as isize + 1,
     EXCEEDS_MAXIMUM_LENGTH,
