@@ -17,22 +17,19 @@
 #include <iox/function.hpp>
 #include <iox/optional.hpp>
 
+#include "callback_progression.hpp"
+#include "config.hpp"
 #include "internal/iceoryx2.hpp"
 #include "node_name.hpp"
 
 namespace iox2 {
-
 enum class NodeListFailure {};
-
-enum class CallbackProgression { Continue, Stop };
 
 enum class NodeCreationFailure { InsufficientPermissions, InternalError };
 
 enum class NodeCleanupFailure {};
 
 enum class NodeType { PROCESS_LOCAL, ZERO_COPY };
-
-class Config {};
 
 class NodeId {};
 class ServiceName {
@@ -69,8 +66,10 @@ class DeadNodeView {
 template <NodeType T>
 class NodeState {
    public:
-    NodeState& if_alive(iox::function<void(AliveNodeView<T>&)> callback);
-    NodeState& is_dead(iox::function<void(DeadNodeView<T>&)> callback);
+    NodeState& if_alive(const iox::function<void(AliveNodeView<T>&)>& callback);
+    NodeState& is_dead(const iox::function<void(DeadNodeView<T>&)>& callback);
+    NodeState& is_inaccessible(const iox::function<void(NodeId&)>& callback);
+    NodeState& is_undefined(const iox::function<void(NodeId&)>& callback);
 };
 
 template <NodeType T>
@@ -82,8 +81,7 @@ class Node {
 
     static iox::expected<void, NodeListFailure> list(
         const Config& config,
-        const iox::function<iox::expected<CallbackProgression, NodeListFailure>(
-            iox::expected<NodeState<T>, NodeListFailure>)>& callback);
+        const iox::function<CallbackProgression(NodeState<T>)>& callback);
 
    private:
     friend class NodeBuilder;

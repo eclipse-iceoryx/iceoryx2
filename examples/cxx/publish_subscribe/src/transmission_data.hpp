@@ -9,18 +9,15 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+#ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_HPP_
+#define IOX2_EXAMPLES_TRANSMISSION_DATA_HPP_
 
-#include "iox2/node.hpp"
-#include "transmission_data.hpp"
+#include <cstdint>
 
-int main() {
-    using namespace iox2;
-    auto node = NodeBuilder().template create<NodeType::ZERO_COPY>().expect(
-        "successful node creation");
+struct TransmissionData {
+    std::int32_t x;
+    std::int32_t y;
+    double funky;
+};
 
-    // Node<NodeType::ZERO_COPY>::list(
-    //     Config{}, [](auto) { return iox::ok(CallbackProgression::Continue);
-    //     });
-
-    return 0;
-}
+#endif

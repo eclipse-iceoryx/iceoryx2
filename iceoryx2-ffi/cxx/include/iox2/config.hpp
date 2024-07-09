@@ -9,18 +9,11 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+#ifndef IOX2_CONFIG_HPP_
+#define IOX2_CONFIG_HPP_
 
-#include "iox2/node.hpp"
-#include "transmission_data.hpp"
+namespace iox2 {
+class Config {};
+}  // namespace iox2
 
-int main() {
-    using namespace iox2;
-    auto node = NodeBuilder().template create<NodeType::ZERO_COPY>().expect(
-        "successful node creation");
-
-    // Node<NodeType::ZERO_COPY>::list(
-    //     Config{}, [](auto) { return iox::ok(CallbackProgression::Continue);
-    //     });
-
-    return 0;
-}
+#endif

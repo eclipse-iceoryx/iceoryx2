@@ -10,17 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/node.hpp"
-#include "transmission_data.hpp"
+#ifndef IOX2_CALLBACK_PROGRESSION_HPP_
+#define IOX2_CALLBACK_PROGRESSION_HPP_
 
-int main() {
-    using namespace iox2;
-    auto node = NodeBuilder().template create<NodeType::ZERO_COPY>().expect(
-        "successful node creation");
-
-    // Node<NodeType::ZERO_COPY>::list(
-    //     Config{}, [](auto) { return iox::ok(CallbackProgression::Continue);
-    //     });
-
-    return 0;
+namespace iox2 {
+enum class CallbackProgression { Continue, Stop };
 }
+
+#endif
