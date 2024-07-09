@@ -194,7 +194,7 @@ pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_node_id_
     todo!() // TODO: [#210] implement
 }
 
-fn iox2_nodel_list_impl<S: Service>(
+fn iox2_node_list_impl<S: Service>(
     node_state: &NodeState<S>,
     callback: iox2_node_list_callback,
     callback_ctx: iox2_node_list_callback_ctx,
@@ -275,7 +275,7 @@ fn iox2_nodel_list_impl<S: Service>(
 ///
 /// The `config_handle` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_get_global`](crate::iox2_config_get_global)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_nodel_list(
+pub unsafe extern "C" fn iox2_node_list(
     node_type: iox2_node_type_e,
     config_handle: iox2_config_t,
     callback: iox2_node_list_callback,
@@ -287,11 +287,11 @@ pub unsafe extern "C" fn iox2_nodel_list(
 
     let list_result = match node_type {
         iox2_node_type_e::ZERO_COPY => Node::<zero_copy::Service>::list(config, |node_state| {
-            iox2_nodel_list_impl(&node_state, callback, callback_ctx)
+            iox2_node_list_impl(&node_state, callback, callback_ctx)
         }),
         iox2_node_type_e::PROCESS_LOCAL => {
             Node::<process_local::Service>::list(config, |node_state| {
-                iox2_nodel_list_impl(&node_state, callback, callback_ctx)
+                iox2_node_list_impl(&node_state, callback, callback_ctx)
             })
         }
     };
@@ -452,7 +452,7 @@ mod test {
             let node_handle = create_sut_node();
             let config = iox2_node_config(node_handle);
 
-            let ret_val = iox2_nodel_list(
+            let ret_val = iox2_node_list(
                 iox2_node_type_e::ZERO_COPY,
                 config,
                 node_list_callback,
