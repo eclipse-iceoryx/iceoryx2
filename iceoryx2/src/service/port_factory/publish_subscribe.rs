@@ -108,11 +108,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .publish_subscribe()
     }
 
-    fn nodes<
-        F: FnMut(
-            Result<crate::node::NodeState<Service>, NodeListFailure>,
-        ) -> Result<CallbackProgression, NodeListFailure>,
-    >(
+    fn nodes<F: FnMut(crate::node::NodeState<Service>) -> CallbackProgression>(
         &self,
         callback: F,
     ) -> Result<(), NodeListFailure> {

@@ -75,11 +75,7 @@ pub trait PortFactory {
     /// and calls for every [`Node`](crate::node::Node) the provided callback. If an error occurs
     /// while acquiring the [`Node`](crate::node::Node)s corresponding [`NodeState`] the error is
     /// forwarded to the callback as input argument.
-    fn nodes<
-        F: FnMut(
-            Result<NodeState<Self::Service>, NodeListFailure>,
-        ) -> Result<CallbackProgression, NodeListFailure>,
-    >(
+    fn nodes<F: FnMut(NodeState<Self::Service>) -> CallbackProgression>(
         &self,
         callback: F,
     ) -> Result<(), NodeListFailure>;
@@ -87,9 +83,7 @@ pub trait PortFactory {
 
 pub(crate) fn nodes<
     Service: crate::service::Service,
-    F: FnMut(
-        Result<NodeState<Service>, NodeListFailure>,
-    ) -> Result<CallbackProgression, NodeListFailure>,
+    F: FnMut(NodeState<Service>) -> CallbackProgression,
 >(
     dynamic_config: &DynamicConfig,
     config: &Config,
@@ -98,21 +92,12 @@ pub(crate) fn nodes<
     let mut ret_val = Ok(());
     dynamic_config.list_node_ids(|node_id| {
         match crate::node::NodeState::<Service>::new(node_id, config) {
-            Ok(Some(node_state)) => match callback(Ok(node_state)) {
-                Ok(c) => c,
-                Err(e) => {
-                    ret_val = Err(e);
-                    CallbackProgression::Stop
-                }
-            },
+            Ok(Some(node_state)) => callback(node_state),
             Ok(None) => CallbackProgression::Continue,
-            Err(e) => match callback(Err(e)) {
-                Ok(c) => c,
-                Err(e) => {
-                    ret_val = Err(e);
-                    CallbackProgression::Stop
-                }
-            },
+            Err(e) => {
+                ret_val = Err(e);
+                CallbackProgression::Stop
+            }
         }
     });
 
