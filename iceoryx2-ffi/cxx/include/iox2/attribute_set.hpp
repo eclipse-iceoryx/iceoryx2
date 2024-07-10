@@ -12,6 +12,7 @@
 #ifndef IOX2_ATTRIBUTE_SET_HPP_
 #define IOX2_ATTRIBUTE_SET_HPP_
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -20,6 +21,13 @@ class AttributeSet {
    public:
     std::vector<std::string> get(const std::string& key) const {}
 };
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const AttributeSet& value) {
+    std::cout << "AttributeSet { }";
+    return stream;
+}
+
 }  // namespace iox2
 
 #endif
