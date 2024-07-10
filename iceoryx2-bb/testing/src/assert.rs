@@ -195,6 +195,11 @@ macro_rules! assert_that {
             }
         }
     };
+    (unreachable) => {
+        {
+            core::panic!("assertion failed: reached unreachable code path");
+        }
+    };
     [color_start] => {
         {
             use std::io::IsTerminal;

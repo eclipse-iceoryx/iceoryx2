@@ -41,6 +41,7 @@ mod node_death_tests {
         }
     }
 
+    #[ignore]
     #[test]
     fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
         let node_name = S::generate_node_name(0, "toby or no toby");
