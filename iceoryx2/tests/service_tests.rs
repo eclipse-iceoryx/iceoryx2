@@ -734,7 +734,6 @@ mod service {
 
                         let mut found_me = false;
                         let result = service.nodes(|node_state| {
-                            let node_state = node_state?;
                             match node_state {
                                 NodeState::Alive(view) => {
                                     if view.id() == node.id() {
@@ -755,7 +754,7 @@ mod service {
                                     assert_that!(true, eq false);
                                 }
                             }
-                            Ok(CallbackProgression::Continue)
+                            CallbackProgression::Continue
                         });
 
                         assert_that!(result, is_ok);
@@ -862,7 +861,6 @@ mod service {
             let mut registered_node_ids = vec![];
             service
                 .nodes(|node_state| {
-                    let node_state = node_state?;
                     match node_state {
                         NodeState::Alive(view) => registered_node_ids.push(view.id().clone()),
                         NodeState::Dead(view) => registered_node_ids.push(view.id().clone()),
@@ -870,7 +868,7 @@ mod service {
                             assert_that!(true, eq false)
                         }
                     }
-                    Ok(CallbackProgression::Continue)
+                    CallbackProgression::Continue
                 })
                 .unwrap();
             registered_node_ids
