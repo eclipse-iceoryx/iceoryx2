@@ -13,7 +13,7 @@
 #if !(defined(_WIN64) || defined(_WIN32))
 #include <dirent.h>
 
-int scandir_ext(const char *dir, struct dirent ***namelist) {
+int scandir_ext(const char* dir, struct dirent*** namelist) {
     return scandir(dir, namelist, 0, alphasort);
 }
 #endif

@@ -17,8 +17,8 @@
 
 #include "iox2/iceoryx2.h"
 
-#include <iox/logging.hpp>
 #include <iostream>
+#include <iox/logging.hpp>
 
 void hypnotoad() {
     IOX_LOG(INFO, "All glory to the hypnotoad!");
