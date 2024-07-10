@@ -25,6 +25,7 @@ add_executable(${PROJECT_NAME} ${TEST_FILES})
 target_link_libraries(${PROJECT_NAME} iceoryx2-cxx::static-lib-cxx GTest::gtest GTest::gmock)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 17
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/tests"
