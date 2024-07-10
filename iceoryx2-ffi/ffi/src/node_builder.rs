@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_node_h, iox2_node_name_h, iox2_node_storage_t, iox2_node_type_e, IntoCInt, IOX2_OK,
+    iox2_node_h, iox2_node_name_h, iox2_node_storage_t, iox2_service_type_e, IntoCInt, IOX2_OK,
 };
 
 use iceoryx2::node::NodeCreationFailure;
@@ -167,7 +167,7 @@ pub extern "C" fn iox2_node_builder_set_config(node_builder_handle: iox2_node_bu
 ///
 /// * `node_builder_handle` - Must be a valid [`iox2_node_builder_h`] obtained by [`iox2_node_builder_new`].
 /// * `node_storage` - Must be either a NULL pointer or a pointer to a valid [`iox2_node_storage_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
-/// * `node_type` - The [`iox2_node_type_e`] for the node to be created.
+/// * `service_type` - The [`iox2_service_type_e`] for the node to be created.
 /// * `node_handle_ptr` - An uninitialized or dangling [`iox2_node_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_node_creation_failure_e`] otherwise.
@@ -180,7 +180,7 @@ pub extern "C" fn iox2_node_builder_set_config(node_builder_handle: iox2_node_bu
 pub unsafe extern "C" fn iox2_node_builder_create(
     node_builder_handle: iox2_node_builder_h,
     node_storage: *mut iox2_node_storage_t,
-    node_type: iox2_node_type_e,
+    service_type: iox2_service_type_e,
     node_handle_ptr: *mut iox2_node_h,
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
@@ -202,13 +202,13 @@ pub unsafe extern "C" fn iox2_node_builder_create(
     debug_assert!(!node_handle.is_null());
 
     unsafe {
-        (*node_handle).node_type = node_type;
+        (*node_handle).service_type = service_type;
         (*node_handle).deleter = deleter;
         *node_handle_ptr = node_handle;
     }
 
-    match node_type {
-        iox2_node_type_e::ZERO_COPY => match node_builder.create::<zero_copy::Service>() {
+    match service_type {
+        iox2_service_type_e::IPC => match node_builder.create::<zero_copy::Service>() {
             Ok(node) => unsafe {
                 (*node_handle).node_maybe_uninit().write(node);
             },
@@ -216,7 +216,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
                 return error.into_c_int();
             }
         },
-        iox2_node_type_e::PROCESS_LOCAL => match node_builder.create::<process_local::Service>() {
+        iox2_service_type_e::LOCAL => match node_builder.create::<process_local::Service>() {
             Ok(node) => unsafe {
                 (*node_handle).node_maybe_uninit().write(node);
             },
@@ -250,7 +250,7 @@ mod test {
             let ret_val = iox2_node_builder_create(
                 node_builder_handle,
                 std::ptr::null_mut(),
-                iox2_node_type_e::PROCESS_LOCAL,
+                iox2_service_type_e::LOCAL,
                 &mut node_handle as *mut iox2_node_h,
             );
 

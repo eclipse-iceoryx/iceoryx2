@@ -14,7 +14,7 @@
 
 use crate::{
     iox2_callback_progression_e, iox2_config_t, iox2_node_name_t, iox2_service_builder_h,
-    iox2_service_builder_storage_t, iox2_service_name_h, IntoCInt, IOX2_OK,
+    iox2_service_builder_storage_t, iox2_service_name_h, iox2_service_type_e, IntoCInt, IOX2_OK,
 };
 
 use iceoryx2::node::{NodeListFailure, NodeView};
@@ -28,13 +28,6 @@ use core::mem::{align_of, size_of, MaybeUninit};
 use std::alloc::{alloc, dealloc, Layout};
 
 // BEGIN type definition
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub enum iox2_node_type_e {
-    PROCESS_LOCAL,
-    ZERO_COPY,
-}
 
 #[repr(C)]
 #[repr(align(8))] // magic number; the larger one of align_of::<Node<zero_copy::Service>>() and align_of::<Node<process_local::Service>>()
@@ -64,7 +57,7 @@ impl IntoCInt for NodeListFailure {
 
 #[repr(C)]
 pub struct iox2_node_storage_t {
-    pub(crate) node_type: iox2_node_type_e,
+    pub(crate) service_type: iox2_service_type_e,
     pub(crate) internal: iox2_node_storage_internal_t,
     pub(crate) deleter: fn(*mut iox2_node_storage_t),
 }
@@ -173,11 +166,11 @@ pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_conf
     debug_assert!(!node_handle.is_null());
 
     unsafe {
-        match (*node_handle).node_type {
-            iox2_node_type_e::ZERO_COPY => (*node_handle)
+        match (*node_handle).service_type {
+            iox2_service_type_e::IPC => (*node_handle)
                 .node_assume_init::<zero_copy::Service>()
                 .config() as *const _ as *const _,
-            iox2_node_type_e::PROCESS_LOCAL => (*node_handle)
+            iox2_service_type_e::LOCAL => (*node_handle)
                 .node_assume_init::<process_local::Service>()
                 .config() as *const _ as *const _,
         }
@@ -265,7 +258,7 @@ fn iox2_node_list_impl<S: Service>(
 ///
 /// # Arguments
 ///
-/// * `node_type` - A [`iox2_node_type_e`]
+/// * `service_type` - A [`iox2_service_type_e`]
 /// * `config_handle` - A valid [`iox2_config_t`](crate::iox2_config_t)
 /// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_node_list_callback_ctx`} to e.g. store information across callback iterations
@@ -277,7 +270,7 @@ fn iox2_node_list_impl<S: Service>(
 /// The `config_handle` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_get_global`](crate::iox2_config_get_global)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_list(
-    node_type: iox2_node_type_e,
+    service_type: iox2_service_type_e,
     config_handle: iox2_config_t,
     callback: iox2_node_list_callback,
     callback_ctx: iox2_node_list_callback_ctx,
@@ -286,15 +279,13 @@ pub unsafe extern "C" fn iox2_node_list(
 
     let config = &*(config_handle as *const _);
 
-    let list_result = match node_type {
-        iox2_node_type_e::ZERO_COPY => Node::<zero_copy::Service>::list(config, |node_state| {
+    let list_result = match service_type {
+        iox2_service_type_e::IPC => Node::<zero_copy::Service>::list(config, |node_state| {
             iox2_node_list_impl(&node_state, callback, callback_ctx)
         }),
-        iox2_node_type_e::PROCESS_LOCAL => {
-            Node::<process_local::Service>::list(config, |node_state| {
-                iox2_node_list_impl(&node_state, callback, callback_ctx)
-            })
-        }
+        iox2_service_type_e::LOCAL => Node::<process_local::Service>::list(config, |node_state| {
+            iox2_node_list_impl(&node_state, callback, callback_ctx)
+        }),
     };
 
     match list_result {
@@ -337,14 +328,14 @@ pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
     debug_assert!(!node_handle.is_null());
 
     unsafe {
-        match (*node_handle).node_type {
-            iox2_node_type_e::ZERO_COPY => {
+        match (*node_handle).service_type {
+            iox2_service_type_e::IPC => {
                 std::ptr::drop_in_place(
                     (*node_handle).node_assume_init::<zero_copy::Service>() as *mut _
                 );
                 ((*node_handle).deleter)(node_handle);
             }
-            iox2_node_type_e::PROCESS_LOCAL => {
+            iox2_service_type_e::LOCAL => {
                 std::ptr::drop_in_place(
                     (*node_handle).node_assume_init::<process_local::Service>() as *mut _,
                 );
@@ -374,7 +365,7 @@ mod test {
             let ret_val = iox2_node_builder_create(
                 node_builder_handle,
                 std::ptr::null_mut(),
-                iox2_node_type_e::ZERO_COPY,
+                iox2_service_type_e::IPC,
                 &mut node_handle as *mut iox2_node_h,
             );
 
@@ -454,7 +445,7 @@ mod test {
             let config = iox2_node_config(node_handle);
 
             let ret_val = iox2_node_list(
-                iox2_node_type_e::ZERO_COPY,
+                iox2_service_type_e::IPC,
                 config,
                 node_list_callback,
                 &mut ctx as *mut _ as *mut _,

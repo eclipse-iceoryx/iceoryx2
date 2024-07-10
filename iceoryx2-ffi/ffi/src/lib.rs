@@ -23,6 +23,7 @@ mod node;
 mod node_builder;
 mod node_name;
 mod publisher;
+mod service;
 mod service_builder;
 mod subscriber;
 
@@ -31,6 +32,7 @@ pub use node::*;
 pub use node_builder::*;
 pub use node_name::*;
 pub use publisher::*;
+pub use service::*;
 pub use service_builder::*;
 pub use subscriber::*;
 
