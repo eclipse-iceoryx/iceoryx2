@@ -128,6 +128,7 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError};
+use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -694,6 +695,13 @@ impl<Service: service::Service> Node<Service> {
     }
 
     fn get_node_state(config: &Config, node_id: &NodeId) -> Result<State, NodeListFailure> {
+        let my_pid = Process::from_self().id();
+        let node_pid = node_id.0.pid();
+
+        if my_pid == node_pid {
+            return Ok(State::Alive);
+        }
+
         let config = node_monitoring_config::<Service>(config);
         let result = <Service::Monitoring as Monitoring>::Builder::new(&node_id.as_file_name())
             .config(&config)

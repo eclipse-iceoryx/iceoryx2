@@ -25,8 +25,8 @@ mod node {
     use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_system_types::path::*;
-    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_bb_testing::{assert_that, test_fail};
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
@@ -316,6 +316,26 @@ mod node {
 
         assert_that!(result, is_ok);
         assert_that!(node_counter, eq 1);
+    }
+
+    #[test]
+    fn i_am_not_dead<S: Service>() {
+        let node = NodeBuilder::new().create::<S>().unwrap();
+
+        let mut nodes = vec![];
+        let result = Node::<S>::list(node.config(), |node_state| {
+            nodes.push(node_state);
+            CallbackProgression::Continue
+        });
+
+        assert_that!(result, is_ok);
+        assert_that!(nodes, len 1);
+
+        if let NodeState::Alive(node_view) = &nodes[0] {
+            assert_that!(node_view.id(), eq node.id());
+        } else {
+            test_fail!("Process internal nodes shall be always detected as alive.");
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
