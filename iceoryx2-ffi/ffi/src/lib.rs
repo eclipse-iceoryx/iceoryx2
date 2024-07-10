@@ -18,22 +18,42 @@ use iceoryx2_bb_log::set_log_level;
 
 use core::ffi::c_int;
 
+mod config;
 mod node;
 mod node_builder;
 mod node_name;
 mod publisher;
+mod service;
 mod service_builder;
 mod subscriber;
 
+pub use config::*;
 pub use node::*;
 pub use node_builder::*;
 pub use node_name::*;
 pub use publisher::*;
+pub use service::*;
 pub use service_builder::*;
 pub use subscriber::*;
 
 /// This constant signals an successful function call
 pub const IOX2_OK: c_int = 0;
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_callback_progression_e {
+    STOP = 0,
+    CONTINUE,
+}
+
+impl From<iox2_callback_progression_e> for CallbackProgression {
+    fn from(value: iox2_callback_progression_e) -> Self {
+        match value {
+            iox2_callback_progression_e::STOP => CallbackProgression::Stop,
+            iox2_callback_progression_e::CONTINUE => CallbackProgression::Continue,
+        }
+    }
+}
 
 #[repr(C)]
 #[derive(Copy, Clone)]

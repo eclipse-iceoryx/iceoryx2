@@ -13,26 +13,21 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_node_name_t, iox2_service_builder_h, iox2_service_builder_storage_t, iox2_service_name_h,
+    iox2_callback_progression_e, iox2_config_t, iox2_node_name_t, iox2_service_builder_h,
+    iox2_service_builder_storage_t, iox2_service_name_h, iox2_service_type_e, IntoCInt, IOX2_OK,
 };
 
+use iceoryx2::node::{NodeListFailure, NodeView};
 use iceoryx2::prelude::*;
 use iceoryx2::service;
 use iceoryx2_bb_elementary::math::max;
 use iceoryx2_bb_elementary::static_assert::*;
 
-use core::ffi::c_int;
+use core::ffi::{c_int, c_void};
 use core::mem::{align_of, size_of, MaybeUninit};
 use std::alloc::{alloc, dealloc, Layout};
 
 // BEGIN type definition
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub enum iox2_node_type_e {
-    PROCESS_LOCAL,
-    ZERO_COPY,
-}
 
 #[repr(C)]
 #[repr(align(8))] // magic number; the larger one of align_of::<Node<zero_copy::Service>>() and align_of::<Node<process_local::Service>>()
@@ -41,8 +36,28 @@ pub struct iox2_node_storage_internal_t {
 }
 
 #[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_node_list_failure_e {
+    INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
+    INTERRUPT,
+    INTERNAL_ERROR,
+}
+
+impl IntoCInt for NodeListFailure {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            NodeListFailure::InsufficientPermissions => {
+                iox2_node_list_failure_e::INSUFFICIENT_PERMISSIONS
+            }
+            NodeListFailure::Interrupt => iox2_node_list_failure_e::INTERRUPT,
+            NodeListFailure::InternalError => iox2_node_list_failure_e::INTERNAL_ERROR,
+        }) as c_int
+    }
+}
+
+#[repr(C)]
 pub struct iox2_node_storage_t {
-    pub(crate) node_type: iox2_node_type_e,
+    pub(crate) service_type: iox2_service_type_e,
     pub(crate) internal: iox2_node_storage_internal_t,
     pub(crate) deleter: fn(*mut iox2_node_storage_t),
 }
@@ -92,6 +107,40 @@ impl iox2_node_storage_t {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_node_state_e {
+    ALIVE,
+    DEAD,
+    INACCESSIBLE,
+    UNDEFINED,
+}
+
+// TODO: [#210] implement
+pub type iox2_node_id_t = *const c_void;
+
+/// An alias to a `void *` which can be used to pass arbitrary data to the callback
+pub type iox2_node_list_callback_ctx = *mut c_void;
+
+/// The callback for [`iox2_node_list`]
+///
+/// # Arguments
+///
+/// * [`iox2_node_state_e`]
+/// * [`iox2_node_id_t`]
+/// * [`iox2_node_name_t`](crate::iox2_node_name_t) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
+/// * [`iox2_config_t`](crate::iox2_config_t) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
+/// * [`iox2_node_list_callback_ctx`] -> provided by the user to [`iox2_node_list`] and can be `NULL`
+///
+/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+pub type iox2_node_list_callback = extern "C" fn(
+    iox2_node_state_e,
+    iox2_node_id_t,
+    iox2_node_name_t,
+    iox2_config_t,
+    iox2_node_list_callback_ctx,
+) -> iox2_callback_progression_e;
+
 // END type definition
 
 // BEGIN C API
@@ -107,8 +156,7 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_n
     todo!() // TODO: [#210] implement
 }
 
-pub type iox2_config_t = *const (); // TODO: [#210] implement in config.rs
-/// Returns the immutable [`iox2_config_t`] handle that the [`iox2_node_h`] will use to create any iceoryx2 entity.
+/// Returns the immutable [`iox2_config_t`](crate::iox2_config_t) handle that the [`iox2_node_h`] will use to create any iceoryx2 entity.
 ///
 /// # Safety
 ///
@@ -116,47 +164,134 @@ pub type iox2_config_t = *const (); // TODO: [#210] implement in config.rs
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_t {
     debug_assert!(!node_handle.is_null());
-    todo!() // TODO: [#210] implement
+
+    unsafe {
+        match (*node_handle).service_type {
+            iox2_service_type_e::IPC => (*node_handle)
+                .node_assume_init::<zero_copy::Service>()
+                .config() as *const _ as *const _,
+            iox2_service_type_e::LOCAL => (*node_handle)
+                .node_assume_init::<process_local::Service>()
+                .config() as *const _ as *const _,
+        }
+    }
 }
 
-pub type iox2_unique_system_id_t = *const (); // TODO: [#210] implement in unique_system_id.rs
-/// Returns the immutable [`iox2_unique_system_id_t`] handle of the [`iox2_node_h`].
+/// Returns the immutable [`iox2_node_id_t`] handle of the [`iox2_node_h`].
 ///
 /// # Safety
 ///
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_unique_system_id_t {
+pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_node_id_t {
     debug_assert!(!node_handle.is_null());
     todo!() // TODO: [#210] implement
 }
 
-pub type iox2_node_state_t = *mut (); // TODO: [#210] implement in node_state.rs
-pub type iox2_node_list_failure_e = c_int; // TODO: [#210] implement in this file
-/// Call the callback repeatedly with an immutable [`iox2_node_state_t`] handle for all [`Node`](iceoryx2::node::Node)s
-/// in the system under a given [`Config`](iceoryx2::config::Config).
+fn iox2_node_list_impl<S: Service>(
+    node_state: &NodeState<S>,
+    callback: iox2_node_list_callback,
+    callback_ctx: iox2_node_list_callback_ctx,
+) -> CallbackProgression {
+    match node_state {
+        NodeState::Alive(alive_node_view) => {
+            let (node_name, config) = alive_node_view
+                .details()
+                .as_ref()
+                .map(|view| {
+                    (
+                        view.name() as *const _ as *const _,
+                        view.config() as *const _ as *const _,
+                    )
+                })
+                .unwrap_or((std::ptr::null(), std::ptr::null()));
+            callback(
+                iox2_node_state_e::ALIVE,
+                alive_node_view.id() as *const _ as *const _,
+                node_name,
+                config,
+                callback_ctx,
+            )
+            .into()
+        }
+        NodeState::Dead(dead_node_view) => {
+            let (node_name, config) = dead_node_view
+                .details()
+                .as_ref()
+                .map(|view| {
+                    (
+                        view.name() as *const _ as *const _,
+                        view.config() as *const _ as *const _,
+                    )
+                })
+                .unwrap_or((std::ptr::null(), std::ptr::null()));
+            callback(
+                iox2_node_state_e::DEAD,
+                dead_node_view.id() as *const _ as *const _,
+                node_name,
+                config,
+                callback_ctx,
+            )
+            .into()
+        }
+        NodeState::Inaccessible(ref node_id) => callback(
+            iox2_node_state_e::INACCESSIBLE,
+            node_id as *const _ as *const _,
+            std::ptr::null(),
+            std::ptr::null(),
+            callback_ctx,
+        )
+        .into(),
+        NodeState::Undefined(ref node_id) => callback(
+            iox2_node_state_e::UNDEFINED,
+            node_id as *const _ as *const _,
+            std::ptr::null(),
+            std::ptr::null(),
+            callback_ctx,
+        )
+        .into(),
+    }
+}
+
+/// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_node_id_t`], [´iox2_node_name_t´] and [`iox2_config_t`] for
+/// all [`Node`](iceoryx2::node::Node)s in the system under a given [`Config`](iceoryx2::config::Config).
 ///
 /// # Arguments
 ///
-/// * `node_handle` - A valid [`iox2_node_h`]
-/// * `config_handle` - A valid [`iox2_config_t`]
-/// * `callback` - A valid callback with ??? signature
+/// * `service_type` - A [`iox2_service_type_e`]
+/// * `config_handle` - A valid [`iox2_config_t`](crate::iox2_config_t)
+/// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
+/// * `callback_ctx` - An optional callback context [`iox2_node_list_callback_ctx`} to e.g. store information across callback iterations
 ///
 /// Returns IOX2_OK on success, an [`iox2_node_list_failure_e`] otherwise.
 ///
 /// # Safety
 ///
-/// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// The `config_handle` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_get_global`](crate::iox2_config_get_global)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_nodel_list(
-    node_handle: iox2_node_h,
+pub unsafe extern "C" fn iox2_node_list(
+    service_type: iox2_service_type_e,
     config_handle: iox2_config_t,
+    callback: iox2_node_list_callback,
+    callback_ctx: iox2_node_list_callback_ctx,
 ) -> c_int {
-    debug_assert!(!node_handle.is_null());
     debug_assert!(!config_handle.is_null());
-    todo!() // TODO: [#210] implement
 
-    // IOX2_OK
+    let config = &*(config_handle as *const _);
+
+    let list_result = match service_type {
+        iox2_service_type_e::IPC => Node::<zero_copy::Service>::list(config, |node_state| {
+            iox2_node_list_impl(&node_state, callback, callback_ctx)
+        }),
+        iox2_service_type_e::LOCAL => Node::<process_local::Service>::list(config, |node_state| {
+            iox2_node_list_impl(&node_state, callback, callback_ctx)
+        }),
+    };
+
+    match list_result {
+        Ok(_) => IOX2_OK,
+        Err(e) => e.into_c_int(),
+    }
 }
 
 #[no_mangle]
@@ -193,14 +328,14 @@ pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
     debug_assert!(!node_handle.is_null());
 
     unsafe {
-        match (*node_handle).node_type {
-            iox2_node_type_e::ZERO_COPY => {
+        match (*node_handle).service_type {
+            iox2_service_type_e::IPC => {
                 std::ptr::drop_in_place(
                     (*node_handle).node_assume_init::<zero_copy::Service>() as *mut _
                 );
                 ((*node_handle).deleter)(node_handle);
             }
-            iox2_node_type_e::PROCESS_LOCAL => {
+            iox2_service_type_e::LOCAL => {
                 std::ptr::drop_in_place(
                     (*node_handle).node_assume_init::<process_local::Service>() as *mut _,
                 );
@@ -223,22 +358,107 @@ mod test {
         const _STORAGE_LAYOUT_CHECK: () = iox2_node_storage_t::assert_storage_layout();
     }
 
-    #[test]
-    fn basic_node_api_test() {
+    fn create_sut_node() -> iox2_node_h {
         unsafe {
             let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
             let mut node_handle: iox2_node_h = std::ptr::null_mut();
             let ret_val = iox2_node_builder_create(
                 node_builder_handle,
                 std::ptr::null_mut(),
-                iox2_node_type_e::ZERO_COPY,
+                iox2_service_type_e::IPC,
                 &mut node_handle as *mut iox2_node_h,
             );
 
             assert_that!(ret_val, eq(IOX2_OK));
+
+            node_handle
+        }
+    }
+
+    #[test]
+    fn basic_node_api_test() {
+        unsafe {
+            let node_handle = create_sut_node();
+
             assert_that!(node_handle, ne(std::ptr::null_mut()));
 
             iox2_node_drop(node_handle);
+        }
+    }
+
+    #[test]
+    fn basic_node_config_test() {
+        unsafe {
+            let node_handle = create_sut_node();
+            let expected_config = (*node_handle)
+                .node_assume_init::<zero_copy::Service>()
+                .config();
+
+            let config = iox2_node_config(node_handle);
+
+            assert_that!(*(config as *const Config), eq(*expected_config));
+
+            iox2_node_drop(node_handle);
+        }
+    }
+
+    #[derive(Default)]
+    struct NodeListCtx {
+        alive: u64,
+        dead: u64,
+        inaccessible: u64,
+        undefined: u64,
+    }
+
+    extern "C" fn node_list_callback(
+        node_state: iox2_node_state_e,
+        _node_id: iox2_node_id_t,
+        _node_name: iox2_node_name_t,
+        _config: iox2_config_t,
+        ctx: iox2_node_list_callback_ctx,
+    ) -> iox2_callback_progression_e {
+        let ctx = unsafe { &mut *(ctx as *mut NodeListCtx) };
+
+        match node_state {
+            iox2_node_state_e::ALIVE => {
+                ctx.alive += 1;
+            }
+            iox2_node_state_e::DEAD => {
+                ctx.dead += 1;
+            }
+            iox2_node_state_e::INACCESSIBLE => {
+                ctx.inaccessible += 1;
+            }
+            iox2_node_state_e::UNDEFINED => {
+                ctx.undefined += 1;
+            }
+        }
+
+        iox2_callback_progression_e::CONTINUE
+    }
+
+    #[test]
+    fn basic_node_list_test() {
+        unsafe {
+            let mut ctx = NodeListCtx::default();
+            let node_handle = create_sut_node();
+            let config = iox2_node_config(node_handle);
+
+            let ret_val = iox2_node_list(
+                iox2_service_type_e::IPC,
+                config,
+                node_list_callback,
+                &mut ctx as *mut _ as *mut _,
+            );
+
+            iox2_node_drop(node_handle);
+
+            assert_that!(ret_val, eq(IOX2_OK));
+
+            assert_that!(ctx.alive, eq(1));
+            assert_that!(ctx.dead, eq(0));
+            assert_that!(ctx.inaccessible, eq(0));
+            assert_that!(ctx.undefined, eq(0));
         }
     }
 }
