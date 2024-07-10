@@ -13,11 +13,19 @@
 #define IOX2_EXAMPLES_TRANSMISSION_DATA_HPP_
 
 #include <cstdint>
+#include <iostream>
 
 struct TransmissionData {
     std::int32_t x;
     std::int32_t y;
     double funky;
 };
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const TransmissionData& value) {
+    std::cout << "TransmissionData { x: " << value.x << ", y: " << value.y
+              << ", funky: " << value.funky << "}";
+    return stream;
+}
 
 #endif

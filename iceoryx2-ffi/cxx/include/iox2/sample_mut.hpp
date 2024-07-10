@@ -45,10 +45,22 @@ class SampleMut {
     UserHeader& user_header_mut() {}
     const Payload& payload() const {}
     Payload& payload_mut() {}
-
-    static iox::expected<uint64_t, PublisherSendError> send(
-        SampleMut&& sample) {}
+    void write_payload(const Payload& payload) {}
 };
+
+template <ServiceType S, typename Payload>
+class SampleMut<S, Payload, void> {
+   public:
+    const HeaderPublishSubscribe& header() const {}
+    const Payload& payload() const {}
+    Payload& payload_mut() {}
+    void write_payload(const Payload& payload) {}
+};
+
+template <ServiceType S, typename Payload, typename UserHeader>
+iox::expected<uint64_t, PublisherSendError> send_sample(
+    SampleMut<S, Payload, UserHeader>&& sample) {}
+
 }  // namespace iox2
 
 #endif

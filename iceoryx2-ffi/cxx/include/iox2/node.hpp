@@ -12,14 +12,13 @@
 #ifndef IOX2_NODE_HPP_
 #define IOX2_NODE_HPP_
 
-#include <iox/builder.hpp>
-#include <iox/expected.hpp>
-#include <iox/function.hpp>
-#include <iox/optional.hpp>
-
 #include "callback_progression.hpp"
 #include "config.hpp"
 #include "internal/iceoryx2.hpp"
+#include "iox/builder.hpp"
+#include "iox/duration.hpp"
+#include "iox/expected.hpp"
+#include "iox/function.hpp"
 #include "node_id.hpp"
 #include "node_name.hpp"
 #include "node_state.hpp"
@@ -28,12 +27,22 @@
 #include "service_type.hpp"
 
 namespace iox2 {
+enum class NodeEvent {
+    /// The timeout passed.
+    Tick,
+    /// SIGTERM signal was received
+    TerminationRequest,
+    /// SIGINT signal was received
+    InterruptSignal,
+};
+
 template <ServiceType T>
 class Node {
    public:
     NodeName& name() const {}
     NodeId& id() const {}
     ServiceBuilder<T> service_builder(const ServiceName& name) const {}
+    NodeEvent wait(const iox::units::Duration& cycle_time) const {}
 
     static iox::expected<void, NodeListFailure> list(
         const Config& config,

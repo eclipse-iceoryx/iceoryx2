@@ -17,6 +17,7 @@
 #include "unique_port_id.hpp"
 
 namespace iox2 {
+
 template <ServiceType, typename Payload, typename UserHeader>
 class Sample {
    public:
@@ -25,6 +26,15 @@ class Sample {
     const HeaderPublishSubscribe& header() const {}
     UniquePublisherId origin() const {}
 };
+
+template <ServiceType S, typename Payload>
+class Sample<S, Payload, void> {
+   public:
+    const Payload& payload() const {}
+    const HeaderPublishSubscribe& header() const {}
+    UniquePublisherId origin() const {}
+};
+
 }  // namespace iox2
 
 #endif
