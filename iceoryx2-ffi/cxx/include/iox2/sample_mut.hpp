@@ -16,6 +16,8 @@
 
 #include "header_publish_subscribe.hpp"
 #include "iox/expected.hpp"
+#include "iox/function.hpp"
+#include "iox/slice.hpp"
 #include "service_type.hpp"
 
 namespace iox2 {
@@ -55,6 +57,15 @@ class SampleMut<S, Payload, void> {
     const Payload& payload() const {}
     Payload& payload_mut() {}
     void write_payload(const Payload& payload) {}
+};
+
+template <ServiceType S, typename Payload>
+class SampleMut<S, iox::Slice<Payload>, void> {
+   public:
+    const HeaderPublishSubscribe& header() const {}
+    const Payload& payload() const {}
+    Payload& payload_mut() {}
+    void write_from_fn(const iox::function<Payload(uint64_t)>& initializer) {}
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>

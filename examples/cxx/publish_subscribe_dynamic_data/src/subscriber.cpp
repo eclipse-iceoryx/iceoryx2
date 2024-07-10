@@ -10,11 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include <cstdint>
 #include <iostream>
 
 #include "iox/duration.hpp"
+#include "iox/slice.hpp"
 #include "iox2/node.hpp"
-#include "transmission_data.hpp"
 
 constexpr iox::units::Duration CYCLE_TIME =
     iox::units::Duration::fromSeconds(1);
@@ -25,9 +26,9 @@ int main() {
         "successful node creation");
 
     auto service =
-        node.service_builder(ServiceName::create("My/Funk/ServiceName")
+        node.service_builder(ServiceName::create("Service With Dynamic Data")
                                  .expect("valid service name"))
-            .publish_subscribe<TransmissionData>()
+            .publish_subscribe<iox::Slice<uint8_t>>()
             .open_or_create()
             .expect("successful service creation/opening");
 
@@ -37,7 +38,11 @@ int main() {
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {
-            std::cout << "received: " << sample->payload() << std::endl;
+            std::cout << "received " << sample->payload().size() << " bytes: ";
+            for (auto byte : sample->payload()) {
+                std::cout << std::hex << byte << " ";
+            }
+            std::cout << std::endl;
             sample = subscriber.receive().expect("receive succeeds");
         }
     }
