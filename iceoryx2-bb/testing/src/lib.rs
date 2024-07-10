@@ -23,5 +23,17 @@ macro_rules! test_requires {
     }
 }
 
+#[macro_export(local_inner_macros)]
+macro_rules! test_fail {
+    ($($e:expr),*) => {
+        core::panic!(
+            "test failed: {} {} {}",
+            assert_that![color_start],
+            std::format_args!($($e),*).to_string(),
+            assert_that![color_end]
+        )
+    };
+}
+
 pub const AT_LEAST_TIMING_VARIANCE: f32 =
     iceoryx2_pal_configuration::settings::AT_LEAST_TIMING_VARIANCE;
