@@ -9,14 +9,21 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-#ifndef IOX2_CONFIG_HPP_
-#define IOX2_CONFIG_HPP_
 
-namespace iox2 {
-class Config {
-   public:
-    static Config& global_config() {}
-};
-}  // namespace iox2
+#include <iostream>
 
-#endif
+#include "iox2/callback_progression.hpp"
+#include "iox2/config.hpp"
+#include "iox2/service.hpp"
+#include "iox2/service_type.hpp"
+
+int main() {
+    using namespace iox2;
+
+    Service<ServiceType::Ipc>::list(Config::global_config(), [](auto service) {
+        std::cout << service.static_details.name().as_string() << std::endl;
+        return CallbackProgression::Continue;
+    }).expect("discover all available services");
+
+    return 0;
+}
