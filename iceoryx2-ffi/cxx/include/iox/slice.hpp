@@ -9,6 +9,7 @@
 // which is available at https://opensource.org/licenses/MIT.
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
+
 #ifndef IOX_SLICE_HPP_
 #define IOX_SLICE_HPP_
 
