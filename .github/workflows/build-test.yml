@@ -42,7 +42,7 @@ jobs:
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
 
-  static-code-analysis:
+  static-code-analysis-rust:
     needs: preflight-check
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -71,6 +71,31 @@ jobs:
 
       - name: Build documentation
         run: cargo doc
+
+  static-code-analysis-cpp:
+    needs: preflight-check
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: clang-format and clang-tidy versions
+        run: |
+            clang-format --version
+            clang-tidy --version
+
+      - name: Run clang-format
+        run: git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
+
+  # just to have a sync point for the C++ and Rust static code analysis
+  static-code-analysis:
+    needs: [static-code-analysis-cpp, static-code-analysis-rust]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Static code analysis sync point
+        run: echo "Nothing to see, move along!"
 
   cargo-nextest:
     needs: preflight-check
