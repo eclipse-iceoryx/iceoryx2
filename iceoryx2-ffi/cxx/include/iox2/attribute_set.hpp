@@ -17,10 +17,12 @@
 #include <string>
 #include <vector>
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox2 {
 class AttributeSet {
    public:
-    std::vector<std::string> get(const std::string& key) const {}
+    std::vector<std::string> get(const std::string& key) const { IOX_TODO(); }
 };
 
 inline std::ostream& operator<<(std::ostream& stream,

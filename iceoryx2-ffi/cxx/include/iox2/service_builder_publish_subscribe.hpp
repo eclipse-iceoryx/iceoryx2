@@ -18,6 +18,7 @@
 
 #include "attribute_specifier.hpp"
 #include "attribute_verifier.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "port_factory_publish_subscribe.hpp"
 #include "service_type.hpp"
 
@@ -119,30 +120,44 @@ class ServiceBuilderPublishSubscribe {
 
    public:
     template <typename NewHeader>
-    ServiceBuilderPublishSubscribe<Payload, NewHeader, S> user_header() {}
+    ServiceBuilderPublishSubscribe<Payload, NewHeader, S> user_header() {
+        IOX_TODO();
+    }
 
     iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                   PublishSubscribeOpenOrCreateError>
-    open_or_create() && {}
+    open_or_create() && {
+        IOX_TODO();
+    }
 
     iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                   PublishSubscribeOpenOrCreateError>
     open_or_create_with_attributes(
-        const AttributeVerifier& required_attributes) && {}
+        const AttributeVerifier& required_attributes) && {
+        IOX_TODO();
+    }
 
     iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                   PublishSubscribeOpenError>
-    open() && {}
+    open() && {
+        IOX_TODO();
+    }
     iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                   PublishSubscribeOpenError>
-    open_with_attributes(const AttributeVerifier& required_attributes) && {}
+    open_with_attributes(const AttributeVerifier& required_attributes) && {
+        IOX_TODO();
+    }
 
     iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                   PublishSubscribeOpenError>
-    create() && {}
+    create() && {
+        IOX_TODO();
+    }
     iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                   PublishSubscribeOpenError>
-    create_with_attributes(const AttributeSpecifier& attributes) && {}
+    create_with_attributes(const AttributeSpecifier& attributes) && {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

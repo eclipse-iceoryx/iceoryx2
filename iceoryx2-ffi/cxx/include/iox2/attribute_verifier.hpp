@@ -18,19 +18,24 @@
 #include <vector>
 
 #include "attribute_set.hpp"
+#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 class AttributeVerifier {
    public:
     AttributeVerifier() = default;
     AttributeVerifier& require(const std::string& key,
-                               const std::string& value) {}
-    AttributeVerifier& require_key(const std::string& key) {}
-    const AttributeSet& attributes() const {}
-    std::vector<std::string> keys() const {}
+                               const std::string& value) {
+        IOX_TODO();
+    }
+    AttributeVerifier& require_key(const std::string& key) { IOX_TODO(); }
+    const AttributeSet& attributes() const { IOX_TODO(); }
+    std::vector<std::string> keys() const { IOX_TODO(); }
 
     iox::expected<void, std::string> verify_requirements(
-        const AttributeSet& rhs) const {}
+        const AttributeSet& rhs) const {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

@@ -13,6 +13,7 @@
 #ifndef IOX2_PORTFACTORY_NOTIFIER_HPP_
 #define IOX2_PORTFACTORY_NOTIFIER_HPP_
 
+#include "iox/assertions_addendum.hpp"
 #include "iox/builder.hpp"
 #include "iox/expected.hpp"
 #include "notifier.hpp"
@@ -25,7 +26,7 @@ class PortFactoryNotifier {
     IOX_BUILDER_PARAMETER(EventId, default_event_id, 0)
 
    public:
-    iox::expected<Notifier<S>, NotifierCreateError> create() && {}
+    iox::expected<Notifier<S>, NotifierCreateError> create() && { IOX_TODO(); }
 };
 }  // namespace iox2
 

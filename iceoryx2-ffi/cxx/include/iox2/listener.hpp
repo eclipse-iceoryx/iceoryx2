@@ -14,6 +14,7 @@
 #define IOX2_LISTENER_HPP_
 
 #include "event_id.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
@@ -43,21 +44,33 @@ enum class ListenerWaitError {
 template <ServiceType>
 class Listener {
    public:
-    UniqueListenerId id() const {}
+    UniqueListenerId id() const { IOX_TODO(); }
 
     iox::expected<void, ListenerWaitError> try_wait_all(
-        const iox::function<void(EventId)>& callback) {}
+        const iox::function<void(EventId)>& callback) {
+        IOX_TODO();
+    }
     iox::expected<void, ListenerWaitError> timed_wait_all(
         const iox::function<void(EventId)>& callback,
-        const iox::units::Duration& timeout) {}
+        const iox::units::Duration& timeout) {
+        IOX_TODO();
+    }
     iox::expected<void, ListenerWaitError> blocking_wait_all(
-        const iox::function<void(EventId)>& callback) {}
+        const iox::function<void(EventId)>& callback) {
+        IOX_TODO();
+    }
 
-    iox::expected<iox::optional<EventId>, ListenerWaitError> try_wait_one() {}
+    iox::expected<iox::optional<EventId>, ListenerWaitError> try_wait_one() {
+        IOX_TODO();
+    }
     iox::expected<iox::optional<EventId>, ListenerWaitError> timed_wait_one(
-        const iox::units::Duration& timeout) {}
+        const iox::units::Duration& timeout) {
+        IOX_TODO();
+    }
     iox::expected<iox::optional<EventId>, ListenerWaitError>
-    blocking_wait_one() {}
+    blocking_wait_one() {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

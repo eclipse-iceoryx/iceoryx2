@@ -10,16 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// NOTE: dummy source file to create static and shared libraries; can be removed
-// once we have real cpp files or the libraries need to become an INTERFACE
-// library in cmake
+#ifndef IOX_ASSERTIONS_ADDENDUM_HPP_
+#define IOX_ASSERTIONS_ADDENDUM_HPP_
 
-#include <iostream>
-#include <iox/logging.hpp>
+#include "iox/assertions.hpp"
 
-#include "iox2/iceoryx2.h"
+#define IOX_TODO() iox::er::forwardPanic(IOX_CURRENT_SOURCE_LOCATION, "Not yet implemented!")
 
-void hypnotoad() {
-    IOX_LOG(INFO, "All glory to the hypnotoad!");
-    iox2_node_builder_new(nullptr);
-}
+#endif

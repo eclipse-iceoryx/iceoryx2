@@ -13,10 +13,12 @@
 #ifndef IOX2_CONFIG_HPP_
 #define IOX2_CONFIG_HPP_
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox2 {
 class Config {
    public:
-    static Config& global_config() {}
+    static Config& global_config() { IOX_TODO(); }
 };
 }  // namespace iox2
 

@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "connection_failure.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "sample_mut.hpp"
 #include "service_type.hpp"
@@ -62,22 +63,32 @@ enum class PublisherLoanError {
 template <ServiceType S, typename Payload, typename UserHeader>
 class Publisher {
    public:
-    UniquePublisherId id() const {}
+    UniquePublisherId id() const { IOX_TODO(); }
     iox::expected<uint64_t, PublisherSendError> send_copy(
-        const Payload& payload) const {}
+        const Payload& payload) const {
+        IOX_TODO();
+    }
 
     iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
-    loan_uninit() {}
+    loan_uninit() {
+        IOX_TODO();
+    }
 
     iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
-    loan() {}
+    loan() {
+        IOX_TODO();
+    }
 
     iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
-    loan_slice(const uint64_t number_of_elements) {}
+    loan_slice(const uint64_t number_of_elements) {
+        IOX_TODO();
+    }
     iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
-    loan_slice_uninit(const uint64_t number_of_elements) {}
+    loan_slice_uninit(const uint64_t number_of_elements) {
+        IOX_TODO();
+    }
 
-    iox::expected<void, ConnectionFailure> update_connections() {}
+    iox::expected<void, ConnectionFailure> update_connections() { IOX_TODO(); }
 };
 }  // namespace iox2
 

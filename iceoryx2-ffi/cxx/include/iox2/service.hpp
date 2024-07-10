@@ -15,6 +15,7 @@
 
 #include "callback_progression.hpp"
 #include "config.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/optional.hpp"
@@ -57,15 +58,20 @@ class Service {
    public:
     static iox::expected<bool, ServiceDetailsError> does_exist(
         const ServiceName& service_name, const Config& config,
-        const MessagingPattern messaging_pattern) {}
+        const MessagingPattern messaging_pattern) {
+        IOX_TODO();
+    }
 
     static iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError>
     details(const ServiceName& service_name, const Config& config,
-            const MessagingPattern messaging_pattern) {}
+            const MessagingPattern messaging_pattern) {
+        IOX_TODO();
+    }
 
     static iox::expected<void, ServiceListError> list(
         const Config& config,
         const iox::function<CallbackProgression(ServiceDetails<S>)>& callback) {
+        IOX_TODO();
     }
 };
 }  // namespace iox2

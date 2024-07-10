@@ -15,11 +15,13 @@
 
 #include <cstdint>
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox {
 class Layout {
    public:
-    uint64_t size() const {}
-    uint64_t alignment() const {}
+    uint64_t size() const { IOX_TODO(); }
+    uint64_t alignment() const { IOX_TODO(); }
 };
 }  // namespace iox
 

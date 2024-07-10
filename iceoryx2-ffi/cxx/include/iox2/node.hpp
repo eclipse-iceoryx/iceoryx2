@@ -16,6 +16,7 @@
 #include "callback_progression.hpp"
 #include "config.hpp"
 #include "internal/iceoryx2.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/builder.hpp"
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
@@ -40,14 +41,18 @@ enum class NodeEvent {
 template <ServiceType T>
 class Node {
    public:
-    NodeName& name() const {}
-    NodeId& id() const {}
-    ServiceBuilder<T> service_builder(const ServiceName& name) const {}
-    NodeEvent wait(const iox::units::Duration& cycle_time) const {}
+    NodeName& name() const { IOX_TODO(); }
+    NodeId& id() const { IOX_TODO(); }
+    ServiceBuilder<T> service_builder(const ServiceName& name) const {
+        IOX_TODO();
+    }
+    NodeEvent wait(const iox::units::Duration& cycle_time) const { IOX_TODO(); }
 
     static iox::expected<void, NodeListFailure> list(
         const Config& config,
-        const iox::function<CallbackProgression(NodeState<T>)>& callback);
+        const iox::function<CallbackProgression(NodeState<T>)>& callback) {
+        IOX_TODO();
+    }
 
    private:
     friend class NodeBuilder;

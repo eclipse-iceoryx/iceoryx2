@@ -16,14 +16,15 @@
 #include <string>
 
 #include "attribute_set.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "service_name.hpp"
 
 namespace iox2 {
 class StaticConfig {
    public:
-    const AttributeSet& attributes() const {}
-    std::string uuid() const {}
-    ServiceName name() const {}
+    const AttributeSet& attributes() const { IOX_TODO(); }
+    std::string uuid() const { IOX_TODO(); }
+    ServiceName name() const { IOX_TODO(); }
 };
 }  // namespace iox2
 

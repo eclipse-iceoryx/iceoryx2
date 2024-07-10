@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+#include "iox/assertions_addendum.hpp"
 #include "iox/builder.hpp"
 #include "iox/expected.hpp"
 #include "service_type.hpp"
@@ -28,7 +29,9 @@ class PortFactorySubscriber {
 
    public:
     iox::expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError>
-    create() && {}
+    create() && {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

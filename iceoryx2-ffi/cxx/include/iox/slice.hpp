@@ -15,6 +15,8 @@
 
 #include <cstdint>
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox {
 template <typename T>
 class Slice {
@@ -22,14 +24,14 @@ class Slice {
     using iterator = T*;
     using const_iterator = const T*;
 
-    uint64_t size() const {}
-    const T& operator[](const uint64_t n) const {}
-    T& operator[](const uint64_t n) {}
+    uint64_t size() const { IOX_TODO(); }
+    const T& operator[](const uint64_t n) const { IOX_TODO(); }
+    T& operator[](const uint64_t n) { IOX_TODO(); }
 
-    iterator begin() {}
-    const_iterator begin() const {}
-    iterator end() {}
-    const_iterator end() const {}
+    iterator begin() { IOX_TODO(); }
+    const_iterator begin() const { IOX_TODO(); }
+    iterator end() { IOX_TODO(); }
+    const_iterator end() const { IOX_TODO(); }
 };
 }  // namespace iox
 

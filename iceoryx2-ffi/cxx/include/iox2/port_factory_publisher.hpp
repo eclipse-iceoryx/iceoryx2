@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+#include "iox/assertions_addendum.hpp"
 #include "iox/builder.hpp"
 #include "iox/expected.hpp"
 #include "publisher.hpp"
@@ -32,7 +33,9 @@ class PortFactoryPublisher {
 
    public:
     iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>
-    create() && {}
+    create() && {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

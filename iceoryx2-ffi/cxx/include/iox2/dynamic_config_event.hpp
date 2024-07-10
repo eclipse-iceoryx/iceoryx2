@@ -15,11 +15,13 @@
 
 #include <cstdint>
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox2 {
 class DynamicConfigEvent {
    public:
-    uint64_t number_of_listeners() const {}
-    uint64_t number_of_notifiers() const {}
+    uint64_t number_of_listeners() const { IOX_TODO(); }
+    uint64_t number_of_notifiers() const { IOX_TODO(); }
 };
 }  // namespace iox2
 

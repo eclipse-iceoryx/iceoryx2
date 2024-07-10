@@ -15,11 +15,13 @@
 
 #include <cstdint>
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox2 {
 class DynamicConfigPublishSubscribe {
    public:
-    uint64_t number_of_publishers() const {}
-    uint64_t number_of_subscribers() const {}
+    uint64_t number_of_publishers() const { IOX_TODO(); }
+    uint64_t number_of_subscribers() const { IOX_TODO(); }
 };
 }  // namespace iox2
 

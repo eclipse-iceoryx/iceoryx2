@@ -14,6 +14,7 @@
 #define IOX2_SAMPLE_HPP_
 
 #include "header_publish_subscribe.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "service_type.hpp"
 #include "unique_port_id.hpp"
 
@@ -22,18 +23,18 @@ namespace iox2 {
 template <ServiceType, typename Payload, typename UserHeader>
 class Sample {
    public:
-    const Payload& payload() const {}
-    const UserHeader& user_header() const {}
-    const HeaderPublishSubscribe& header() const {}
-    UniquePublisherId origin() const {}
+    const Payload& payload() const { IOX_TODO(); }
+    const UserHeader& user_header() const { IOX_TODO(); }
+    const HeaderPublishSubscribe& header() const { IOX_TODO(); }
+    UniquePublisherId origin() const { IOX_TODO(); }
 };
 
 template <ServiceType S, typename Payload>
 class Sample<S, Payload, void> {
    public:
-    const Payload& payload() const {}
-    const HeaderPublishSubscribe& header() const {}
-    UniquePublisherId origin() const {}
+    const Payload& payload() const { IOX_TODO(); }
+    const HeaderPublishSubscribe& header() const { IOX_TODO(); }
+    UniquePublisherId origin() const { IOX_TODO(); }
 };
 
 }  // namespace iox2

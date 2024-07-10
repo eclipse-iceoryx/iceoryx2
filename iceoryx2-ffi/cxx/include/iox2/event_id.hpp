@@ -16,10 +16,12 @@
 #include <cstdint>
 #include <iostream>
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox2 {
 class EventId {
    public:
-    EventId(const uint64_t value) : m_value{value} {}
+    EventId(const uint64_t value) : m_value{value} { IOX_TODO(); }
     uint64_t as_value() const { return m_value; }
 
    private:

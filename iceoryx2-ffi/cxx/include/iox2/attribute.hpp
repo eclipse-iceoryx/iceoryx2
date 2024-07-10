@@ -15,11 +15,13 @@
 
 #include <string>
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox2 {
 class Attribute {
    public:
-    const std::string& key() const {}
-    const std::string& value() const {}
+    const std::string& key() const { IOX_TODO(); }
+    const std::string& value() const { IOX_TODO(); }
 };
 }  // namespace iox2
 

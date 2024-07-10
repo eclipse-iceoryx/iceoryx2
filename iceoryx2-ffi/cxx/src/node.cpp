@@ -12,9 +12,9 @@
 
 #include "iox2/node.hpp"
 
-#include <iox2/iceoryx2.h>
-
+#include "iox/assertions.hpp"
 #include "iox/into.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 namespace iox {
 using namespace ::iox2;
@@ -30,6 +30,7 @@ from<iox2_node_creation_failure_e, NodeCreationFailure>(
             iox2_node_creation_failure_e_INTERNAL_ERROR:
             return NodeCreationFailure::InternalError;
     }
+    IOX_UNREACHABLE();
 }
 }  // namespace iox
 

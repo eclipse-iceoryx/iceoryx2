@@ -15,19 +15,20 @@
 
 #include <cstdint>
 
+#include "iox/assertions_addendum.hpp"
 #include "message_type_details.hpp"
 
 namespace iox2 {
 class StaticConfigPublishSubscribe {
    public:
-    uint64_t max_nodes() const {}
-    uint64_t max_publishers() const {}
-    uint64_t max_subscribers() const {}
-    uint64_t history_size() const {}
-    uint64_t subscriber_max_buffer_size() const {}
-    uint64_t subscriber_max_borrowed_samples() const {}
-    bool has_safe_overflow() const {}
-    const MessageTypeDetails& message_type_details() const {}
+    uint64_t max_nodes() const { IOX_TODO(); }
+    uint64_t max_publishers() const { IOX_TODO(); }
+    uint64_t max_subscribers() const { IOX_TODO(); }
+    uint64_t history_size() const { IOX_TODO(); }
+    uint64_t subscriber_max_buffer_size() const { IOX_TODO(); }
+    uint64_t subscriber_max_borrowed_samples() const { IOX_TODO(); }
+    bool has_safe_overflow() const { IOX_TODO(); }
+    const MessageTypeDetails& message_type_details() const { IOX_TODO(); }
 };
 }  // namespace iox2
 

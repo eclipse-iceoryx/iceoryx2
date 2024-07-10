@@ -18,6 +18,7 @@
 #include "attribute_set.hpp"
 #include "callback_progression.hpp"
 #include "dynamic_config_publish_subscribe.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "node_failure_enums.hpp"
@@ -32,17 +33,23 @@ namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublishSubscribe {
    public:
-    const ServiceName& service_name() const {}
-    const std::string& uuid() const {}
-    const AttributeSet& attributes() const {}
-    const StaticConfigPublishSubscribe& static_config() const {}
-    const DynamicConfigPublishSubscribe& dynamic_config() const {}
+    const ServiceName& service_name() const { IOX_TODO(); }
+    const std::string& uuid() const { IOX_TODO(); }
+    const AttributeSet& attributes() const { IOX_TODO(); }
+    const StaticConfigPublishSubscribe& static_config() const { IOX_TODO(); }
+    const DynamicConfigPublishSubscribe& dynamic_config() const { IOX_TODO(); }
 
     iox::expected<void, NodeListFailure> nodes(
-        const iox::function<CallbackProgression(NodeState<S>)>) const {}
+        const iox::function<CallbackProgression(NodeState<S>)>) const {
+        IOX_TODO();
+    }
 
-    PortFactorySubscriber<S, Payload, UserHeader> subscriber_builder() const {}
-    PortFactoryPublisher<S, Payload, UserHeader> publisher_builder() const {}
+    PortFactorySubscriber<S, Payload, UserHeader> subscriber_builder() const {
+        IOX_TODO();
+    }
+    PortFactoryPublisher<S, Payload, UserHeader> publisher_builder() const {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

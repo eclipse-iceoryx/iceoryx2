@@ -13,6 +13,7 @@
 #ifndef IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP_
 #define IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP_
 
+#include "iox/assertions_addendum.hpp"
 #include "iox/layout.hpp"
 #include "service_type.hpp"
 #include "unique_port_id.hpp"
@@ -20,8 +21,8 @@
 namespace iox2 {
 class HeaderPublishSubscribe {
    public:
-    UniquePublisherId publisher_id() const {}
-    iox::Layout payload_type_layout() const {}
+    UniquePublisherId publisher_id() const { IOX_TODO(); }
+    iox::Layout payload_type_layout() const { IOX_TODO(); }
 };
 }  // namespace iox2
 

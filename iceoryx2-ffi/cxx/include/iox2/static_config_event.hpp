@@ -15,13 +15,15 @@
 
 #include <cstdint>
 
+#include "iox/assertions_addendum.hpp"
+
 namespace iox2 {
 class StaticConfigEvent {
    public:
-    uint64_t max_nodes() const {}
-    uint64_t max_notifiers() const {}
-    uint64_t max_listeners() const {}
-    uint64_t event_id_max_value() const {}
+    uint64_t max_nodes() const { IOX_TODO(); }
+    uint64_t max_notifiers() const { IOX_TODO(); }
+    uint64_t max_listeners() const { IOX_TODO(); }
+    uint64_t event_id_max_value() const { IOX_TODO(); }
 };
 }  // namespace iox2
 

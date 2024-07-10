@@ -13,6 +13,7 @@
 #ifndef IOX2_SERVICE_BUILDER_HPP_
 #define IOX2_SERVICE_BUILDER_HPP_
 
+#include "iox/assertions_addendum.hpp"
 #include "service_builder_event.hpp"
 #include "service_builder_publish_subscribe.hpp"
 #include "service_type.hpp"
@@ -23,9 +24,11 @@ template <ServiceType S>
 class ServiceBuilder {
    public:
     template <typename Payload>
-    ServiceBuilderPublishSubscribe<Payload, void, S> publish_subscribe() {}
+    ServiceBuilderPublishSubscribe<Payload, void, S> publish_subscribe() {
+        IOX_TODO();
+    }
 
-    ServiceBuilderEvent<S> event() {}
+    ServiceBuilderEvent<S> event() { IOX_TODO(); }
 };
 
 }  // namespace iox2

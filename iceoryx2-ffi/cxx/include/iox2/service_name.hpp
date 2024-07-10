@@ -15,6 +15,7 @@
 
 #include <iox/expected.hpp>
 
+#include "iox/assertions_addendum.hpp"
 #include "semantic_string.hpp"
 
 namespace iox2 {
@@ -22,8 +23,10 @@ namespace iox2 {
 class ServiceName {
    public:
     static iox::expected<ServiceName, SemanticStringError> create(
-        const char* value) {}
-    const std::string& as_string() const {}
+        const char* value) {
+        IOX_TODO();
+    }
+    const std::string& as_string() const { IOX_TODO(); }
 };
 
 }  // namespace iox2

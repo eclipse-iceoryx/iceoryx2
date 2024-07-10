@@ -14,13 +14,14 @@
 #define IOX2_NODE_DETAILS_HPP_
 
 #include "config.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "node_name.hpp"
 
 namespace iox2 {
 class NodeDetails {
    public:
-    const NodeName& name() const;
-    const Config& config() const;
+    const NodeName& name() const { IOX_TODO(); }
+    const Config& config() const { IOX_TODO(); }
 };
 }  // namespace iox2
 

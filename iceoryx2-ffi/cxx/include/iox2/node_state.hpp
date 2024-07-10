@@ -13,6 +13,7 @@
 #ifndef IOX2_NODE_STATE_HPP_
 #define IOX2_NODE_STATE_HPP_
 
+#include "iox/assertions_addendum.hpp"
 #include "iox/function.hpp"
 #include "iox/optional.hpp"
 #include "node_details.hpp"
@@ -25,25 +26,36 @@ namespace iox2 {
 template <ServiceType>
 class AliveNodeView {
    public:
-    const NodeId& id() const;
-    const iox::optional<NodeDetails> details() const;
+    const NodeId& id() const { IOX_TODO(); }
+    const iox::optional<NodeDetails> details() const { IOX_TODO(); }
 };
 
 template <ServiceType>
 class DeadNodeView {
    public:
-    const NodeId& id() const;
-    const iox::optional<NodeDetails> details() const;
-    iox::expected<bool, NodeCleanupFailure> remove_stale_resources();
+    const NodeId& id() const { IOX_TODO(); }
+    const iox::optional<NodeDetails> details() const { IOX_TODO(); }
+    iox::expected<bool, NodeCleanupFailure> remove_stale_resources() {
+        IOX_TODO();
+    }
 };
 
 template <ServiceType T>
 class NodeState {
    public:
-    NodeState& if_alive(const iox::function<void(AliveNodeView<T>&)>& callback);
-    NodeState& is_dead(const iox::function<void(DeadNodeView<T>&)>& callback);
-    NodeState& is_inaccessible(const iox::function<void(NodeId&)>& callback);
-    NodeState& is_undefined(const iox::function<void(NodeId&)>& callback);
+    NodeState& if_alive(
+        const iox::function<void(AliveNodeView<T>&)>& callback) {
+        IOX_TODO();
+    }
+    NodeState& is_dead(const iox::function<void(DeadNodeView<T>&)>& callback) {
+        IOX_TODO();
+    }
+    NodeState& is_inaccessible(const iox::function<void(NodeId&)>& callback) {
+        IOX_TODO();
+    }
+    NodeState& is_undefined(const iox::function<void(NodeId&)>& callback) {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

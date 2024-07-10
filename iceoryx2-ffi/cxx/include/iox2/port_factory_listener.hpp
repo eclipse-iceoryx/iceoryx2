@@ -13,6 +13,7 @@
 #ifndef IOX2_PORTFACTORY_LISTENER_HPP_
 #define IOX2_PORTFACTORY_LISTENER_HPP_
 
+#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "listener.hpp"
 #include "service_type.hpp"
@@ -21,7 +22,7 @@ namespace iox2 {
 template <ServiceType S>
 class PortFactoryListener {
    public:
-    iox::expected<Listener<S>, ListenerCreateError> create() && {}
+    iox::expected<Listener<S>, ListenerCreateError> create() && { IOX_TODO(); }
 };
 }  // namespace iox2
 

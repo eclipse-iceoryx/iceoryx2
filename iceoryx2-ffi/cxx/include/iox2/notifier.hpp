@@ -14,6 +14,7 @@
 #define IOX2_NOTIFIER_HPP_
 
 #include "event_id.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "service_type.hpp"
 #include "unique_port_id.hpp"
@@ -39,10 +40,12 @@ enum class NotifierNotifyError {
 template <ServiceType S>
 class Notifier {
    public:
-    UniqueNotifierId id() const {}
-    iox::expected<uint64_t, NotifierNotifyError> notify() const {}
+    UniqueNotifierId id() const { IOX_TODO(); }
+    iox::expected<uint64_t, NotifierNotifyError> notify() const { IOX_TODO(); }
     iox::expected<uint64_t, NotifierNotifyError> notify_with_custom_event_id(
-        const EventId id) const {}
+        const EventId id) const {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

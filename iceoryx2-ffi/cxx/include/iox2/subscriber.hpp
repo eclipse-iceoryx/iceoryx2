@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "connection_failure.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/optional.hpp"
 #include "sample.hpp"
@@ -40,12 +41,16 @@ enum class SubscriberCreateError {
 template <ServiceType S, typename Payload, typename UserHeader>
 class Subscriber {
    public:
-    UniqueSubscriberId id() const {}
-    uint64_t buffer_size() const {}
+    UniqueSubscriberId id() const { IOX_TODO(); }
+    uint64_t buffer_size() const { IOX_TODO(); }
     iox::expected<iox::optional<Sample<S, Payload, UserHeader>>,
                   SubscriberReceiveError>
-    receive() const {}
-    iox::expected<void, ConnectionFailure> update_connections() const {}
+    receive() const {
+        IOX_TODO();
+    }
+    iox::expected<void, ConnectionFailure> update_connections() const {
+        IOX_TODO();
+    }
 };
 }  // namespace iox2
 

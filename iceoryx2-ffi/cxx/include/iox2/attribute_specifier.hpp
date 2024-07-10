@@ -16,14 +16,17 @@
 #include <string>
 
 #include "attribute_set.hpp"
+#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 class AttributeSpecifier {
    public:
     AttributeSpecifier() = default;
     AttributeSpecifier& define(const std::string& key,
-                               const std::string& value) {}
-    AttributeSet& attributes() const {}
+                               const std::string& value) {
+        IOX_TODO();
+    }
+    AttributeSet& attributes() const { IOX_TODO(); }
 };
 }  // namespace iox2
 
