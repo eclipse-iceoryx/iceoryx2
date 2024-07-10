@@ -75,7 +75,7 @@
 //!
 //! let subscriber = service.subscriber_builder().create()?;
 //!
-//! while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
 //!     while let Some(sample) = subscriber.receive()? {
 //!         println!("received: {:?}", *sample);
 //!     }
@@ -102,7 +102,7 @@
 //!
 //! let publisher = service.publisher_builder().create()?;
 //!
-//! while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
 //!     let sample = publisher.loan_uninit()?;
 //!     let sample = sample.write_payload(1234);
 //!     sample.send()?;
@@ -135,7 +135,7 @@
 //!
 //! let mut listener = event.listener_builder().create()?;
 //!
-//! while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
+//! while let NodeEvent::Tick = node.wait(Duration::ZERO) {
 //!     if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
 //!         println!("event was triggered with id: {:?}", event_id);
 //!     }
@@ -163,7 +163,7 @@
 //! let notifier = event.notifier_builder().create()?;
 //!
 //! let mut counter: usize = 0;
-//! while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
 //!     counter += 1;
 //!     notifier.notify_with_custom_event_id(EventId::new(counter))?;
 //!
@@ -288,9 +288,6 @@ mod compiletests;
 
 /// Handles iceoryx2s global configuration
 pub mod config;
-
-/// Central instance that handles all incoming events, the event loop
-pub mod iox2;
 
 /// Central instance that owns all service entities and can handle incoming event in an event loop
 pub mod node;

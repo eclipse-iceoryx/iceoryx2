@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = event.listener_builder().create()?;
 
-    while let Iox2Event::Tick = Iox2::wait(Duration::ZERO) {
+    while let NodeEvent::Tick = node.wait(Duration::ZERO) {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
             println!("event was triggered with id: {:?}", event_id);
         }

@@ -61,6 +61,55 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! ## Simple Event Loop
+//!
+//! ```no_run
+//! use core::time::Duration;
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//! let node = NodeBuilder::new()
+//!                 .name("my_little_node".try_into()?)
+//!                 .create::<zero_copy::Service>()?;
+//!
+//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+//!     // your algorithm in here
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Advanced Event Loop
+//!
+//! ```no_run
+//! use core::time::Duration;
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//! let node = NodeBuilder::new()
+//!                 .name("my_little_node".try_into()?)
+//!                 .create::<zero_copy::Service>()?;
+//!
+//! loop {
+//!     match node.wait(CYCLE_TIME) {
+//!         NodeEvent::Tick => {
+//!             println!("entered next cycle");
+//!         }
+//!         NodeEvent::TerminationRequest => {
+//!             println!("User pressed CTRL+c, terminating");
+//!             break;
+//!         }
+//!         NodeEvent::InterruptSignal => {
+//!             println!("Someone send an interrupt signal ...");
+//!         }
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
 
 /// The name for a node.
 pub mod node_name;
@@ -78,6 +127,8 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError};
+use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptRemoveError};
@@ -88,6 +139,18 @@ use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+/// A complete list of all events that can occur in the main event loop, [`Node::wait()`].
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
+pub enum NodeEvent {
+    /// The timeout passed.
+    Tick,
+    /// SIGTERM signal was received
+    TerminationRequest,
+    /// SIGINT signal was received
+    InterruptSignal,
+}
 
 /// The system-wide unique id of a [`Node`]
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -557,6 +620,30 @@ impl<Service: service::Service> Node<Service> {
     ///
     pub(crate) unsafe fn staged_death(&mut self) -> <Service::Monitoring as Monitoring>::Token {
         (*self.shared.monitoring_token.get()).take().unwrap()
+    }
+
+    /// Waits until an event was received. It returns
+    /// [`NodeEvent::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
+    pub fn wait(&self, cycle_time: Duration) -> NodeEvent {
+        if SignalHandler::termination_requested() {
+            return NodeEvent::TerminationRequest;
+        }
+
+        match nanosleep(cycle_time) {
+            Ok(()) => {
+                if SignalHandler::termination_requested() {
+                    NodeEvent::TerminationRequest
+                } else {
+                    NodeEvent::Tick
+                }
+            }
+            Err(NanosleepError::InterruptedBySignal(_)) => NodeEvent::InterruptSignal,
+            Err(v) => {
+                fatal_panic!(from self,
+                    "Failed to wait with cycle time {:?} in main event look, caused by ({:?}).",
+                    cycle_time, v);
+            }
+        }
     }
 
     fn list_all_nodes(

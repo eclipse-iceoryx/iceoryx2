@@ -51,7 +51,7 @@ pub extern "C" fn run_subscriber(seconds: u32) -> i32 {
 
     let mut remaining_seconds = seconds;
 
-    while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
         loop {
             match subscriber.receive() {
                 Ok(Some(sample)) => println!("received: {:?}", *sample),
