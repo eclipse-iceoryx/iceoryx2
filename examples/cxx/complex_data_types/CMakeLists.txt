@@ -11,12 +11,9 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-project(examples_cxx LANGUAGES CXX)
+project(example_cxx_complex_data_types LANGUAGES CXX)
 
-add_subdirectory(complex_data_types)
-add_subdirectory(discovery)
-add_subdirectory(event)
-add_subdirectory(publish_subscribe)
-add_subdirectory(publish_subscribe_dynamic_data)
-add_subdirectory(publish_subscribe_with_user_header)
-add_subdirectory(service_attributes)
+find_package(iceoryx2-cxx 0.3.0 REQUIRED)
+
+add_executable(example_cxx_complex_data_types src/complex_data_types.cpp)
+target_link_libraries(example_cxx_complex_data_types iceoryx2-cxx::static-lib-cxx)
