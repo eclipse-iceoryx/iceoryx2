@@ -15,16 +15,19 @@
 
 int iox2_sigaction_func(int sig, const struct iox2_sigaction* restrict act, struct iox2_sigaction* restrict oact) {
     struct sigaction tr_act;
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) safe due to use of 'sizeof'
     memset(&tr_act, 0, sizeof(struct sigaction));
     struct sigaction* tr_act_ptr = NULL;
 
     struct sigaction tr_oact;
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) safe due to use of 'sizeof'
     memset(&tr_act, 0, sizeof(struct sigaction));
     struct sigaction* tr_oact_ptr = NULL;
 
     if (act != NULL) {
         tr_act.sa_flags = act->iox2_sa_flags;
         tr_act.sa_mask = act->iox2_sa_mask;
+        // NOLINTNEXTLINE(performance-no-int-to-ptr) not an issue here since this is not in a hop path
         tr_act.sa_handler = (void (*)(int)) act->iox2_sa_handler;
         tr_act_ptr = &tr_act;
     }

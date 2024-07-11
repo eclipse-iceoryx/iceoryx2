@@ -188,8 +188,12 @@ function scan() {
         FILE_COUNTER=$((FILE_COUNTER + 1))
 
         if test -f "$FILE"; then
+            EXTRA_ARG=""
+            if [[ "$FILE" == iceoryx2-pal/posix/* ]]; then
+                EXTRA_ARG="--extra-arg=-xc"
+            fi
             SECONDS_START=${SECONDS}
-            $(clang-tidy ${WARN_MODE_PARAM} --quiet -p target/clang-tidy-scan ${FILE} >&2 \
+            $(clang-tidy ${WARN_MODE_PARAM} --quiet -p target/clang-tidy-scan ${FILE} ${EXTRA_ARG} >&2 \
             || exit $? \
             && echo echo -e "${COLOR_YELLOW} $((${SECONDS}-${SECONDS_START}))s${COLOR_OFF} to scan '${FILE}'") &
             CURRENT_CONCURRENT_EXECUTIONS=$((CURRENT_CONCURRENT_EXECUTIONS + 1))
