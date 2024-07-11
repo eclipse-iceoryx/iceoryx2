@@ -36,7 +36,7 @@ while (( "$#" )); do
         echo ""
         echo "Options:"
         echo "    --mode                Specify the build type. Either 'release' or 'debug'"
-        echo "    --mode                Specify the rust toolchain, e.g. 'stable' or 'beta'"
+        echo "    --toolchain           Specify the rust toolchain, e.g. 'stable' or 'beta'"
         echo "Args:"
         echo "    help                  Print this help"
         echo ""
