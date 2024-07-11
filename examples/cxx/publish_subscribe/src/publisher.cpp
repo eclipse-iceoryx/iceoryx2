@@ -39,8 +39,8 @@ int main() {
         counter += 1;
         auto sample = publisher.loan_uninit().expect("acquire sample");
 
-        sample.write_payload(TransmissionData{
-            .x = counter, .y = counter * 3, .funky = counter * 812.12});
+        sample.write_payload(
+            TransmissionData{counter, counter * 3, counter * 812.12});
 
         send_sample(std::move(sample)).expect("send successful");
 

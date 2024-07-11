@@ -62,9 +62,8 @@ int main() {
         payload.plain_old_data = counter;
         payload.text = iox::string<8>("hello");
         payload.vec_of_data.push_back(counter);
-        payload.vec_of_complex_data.push_back(
-            ComplexData{.name = iox::string<4>("bla"),
-                        .data = iox::vector<uint64_t, 4>(2, counter)});
+        payload.vec_of_complex_data.push_back(ComplexData{
+            iox::string<4>("bla"), iox::vector<uint64_t, 4>(2, counter)});
 
         send_sample(std::move(sample)).expect("send successful");
 
