@@ -89,6 +89,9 @@ jobs:
       - name: Run clang-format
         run: git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
 
+      - name: Run clang-tidy
+        run: internal/scripts/clang_tidy_scan.sh warning-as-error --files "${{ steps.changed_files.outputs.added_modified }}"
+
   # just to have a sync point for the C++ and Rust static code analysis
   static-code-analysis:
     needs: [static-code-analysis-cpp, static-code-analysis-rust]

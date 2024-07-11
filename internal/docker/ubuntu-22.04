@@ -14,6 +14,8 @@ ENV PATH="/root/.cargo/bin:$PATH"
 RUN echo "#### Installing dependencies" \
   && apt update && apt install -y \
        clang \
+       clang-format \
+       clang-tidy \
        cmake \
        curl \
        gcc \

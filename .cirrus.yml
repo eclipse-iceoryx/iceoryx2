@@ -71,8 +71,10 @@ iox2_cargo_fmt_and_clippy_template: &IOX2_CARGO_FMT_AND_CLIPPY
     - cargo clippy -- -D warnings
 
 iox2_clang_format_and_clang_tidy_template: &IOX2_CLANG_FORMAT_AND_CLANG_TIDY
-  clang_format_and_clang_tidy:
+  clang_format_and_clang_tidy_script:
     - git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
+    - git fetch origin main # required to make diff-to-main work
+    - internal/scripts/clang_tidy_scan.sh warning-as-error diff-to-main
 
 iox2_common_build_debug_template: &IOX2_COMMON_BUILD_DEBUG
   build_script: cargo build --workspace --all-targets
