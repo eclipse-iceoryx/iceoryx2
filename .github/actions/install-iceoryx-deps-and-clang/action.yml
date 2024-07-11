@@ -6,8 +6,9 @@ runs:
       shell: bash
       run: |
         sudo wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-18 main"
+        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
         sudo apt-get update
+        sudo apt-get install -y libacl1-dev
         sudo apt-get install -y clang-format-18 clang-tidy-18 clang-tools-18 clang-18 lld
         sudo rm /usr/bin/clang
         sudo rm /usr/bin/clang++
