@@ -22,8 +22,6 @@ COLOR_RED='\033[1;31m'
 COLOR_GREEN='\033[1;32m'
 COLOR_YELLOW='\033[1;33m'
 
-MODE=${1:-full} # Can be either `full` for all files or `hook` for formatting with git hooks
-
 DIRECTORIES_TO_SCAN="iceoryx2* examples benchmarks"
 FILE_FILTER="\.(h|hh|hpp|hxx|inl|c|cc|cpp|cxx)$"
 FILES_TO_SCAN=""
@@ -31,6 +29,8 @@ WARN_MODE_PARAM=""
 
 DIRECTORIES_MODE=false
 FILES_MODE=false
+DIFF_TO_MAIN_MODE=false
+MAIN_ORIGIN="origin"
 FULL_MODE=false
 CACHED_COMMIT_MODE=false
 MODIFIED_MODE=false
@@ -47,8 +47,16 @@ while (( "$#" )); do
             FILES_MODE=true
             shift 2
             ;;
+        --main-origin)
+            MAIN_ORIGIN="$2"
+            shift 2
+            ;;
         cached-commit)
             CACHED_COMMIT_MODE=true
+            shift 1
+            ;;
+        diff-to-main)
+            DIFF_TO_MAIN_MODE=true
             shift 1
             ;;
         full)
@@ -73,8 +81,10 @@ while (( "$#" )); do
             echo "    --files               Scan all specified files"
             echo "                          Multiple files must be enclosed in quotes"
             echo "                          e.g. --files \"file1 file2 file3\""
+            echo "    --main-origin         The origin of main. By default \"origin\""
             echo "Args:"
             echo "    cached-commit         Scan all modified and added files which are cached for a commit"
+            echo "    diff-to-main          Scan all modified towards HEAD of main branch"
             echo "    full                  Scan all versioned files from [$DIRECTORIES_TO_SCAN]"
             echo "    help                  Print this help"
             echo "    modified              Scan all modified, added and untracked files from the git repo"
@@ -96,7 +106,11 @@ cd "${WORKSPACE}"
 MODIFIED_FILES=""
 ADDED_FILES=""
 FILE_LIST=""
-if [[ $FILES_MODE == true ]]; then
+if [[ $FILES_MODE == true || $DIFF_TO_MAIN_MODE == true ]]; then
+    if [[ $DIFF_TO_MAIN_MODE == true ]]; then
+        FILES_TO_SCAN=$(git diff --name-only --diff-filter=AM ${MAIN_ORIGIN}/main HEAD)
+    fi
+
     SEPARATOR=''
     for FILE in ${FILES_TO_SCAN}; do
         if [[ $FILE =~ $FILE_FILTER ]]; then
@@ -216,7 +230,7 @@ if [[ $FULL_MODE == true || $DIRECTORIES_MODE == true ]]; then
     echo ""
     echo "Checking files in [${DIRECTORIES_TO_SCAN}]"
     scan "${FILES}"
-elif [[ $FILES_MODE == true ]]; then
+elif [[ $FILES_MODE == true || $DIFF_TO_MAIN_MODE == true ]]; then
     echo ""
     echo "Checking files from provided list"
     scan "$FILE_LIST"
