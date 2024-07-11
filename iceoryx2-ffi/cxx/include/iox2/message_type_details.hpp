@@ -50,6 +50,6 @@ struct MessageTypeDetails {
     /// The [`TypeDetail`] of the payload of the message, the last part.
     TypeDetail payload;
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

@@ -94,7 +94,8 @@ enum class EventCreateError {
     OldConnectionsStillActive,
 };
 
-enum class EventOpenOrCreateError {};
+enum class EventOpenOrCreateError {
+};
 
 template <ServiceType S>
 class ServiceBuilderEvent {
@@ -103,33 +104,32 @@ class ServiceBuilderEvent {
     IOX_BUILDER_PARAMETER(int64_t, max_notifiers, -1)
     IOX_BUILDER_PARAMETER(int64_t, max_listeners, -1)
 
-   public:
-    iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError>
-    open_or_create() && {
+  public:
+    iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> open_or_create() && {
         IOX_TODO();
     }
 
     iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError>
-    open_or_create_with_attributes(
-        const AttributeVerifier& required_attributes) && {
+    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryEvent<S>, EventOpenError> open() && { IOX_TODO(); }
-    iox::expected<PortFactoryEvent<S>, EventOpenError> open_with_attributes(
-        const AttributeVerifier& required_attributes) && {
+    iox::expected<PortFactoryEvent<S>, EventOpenError> open() && {
+        IOX_TODO();
+    }
+    iox::expected<PortFactoryEvent<S>, EventOpenError>
+    open_with_attributes(const AttributeVerifier& required_attributes) && {
         IOX_TODO();
     }
 
     iox::expected<PortFactoryEvent<S>, EventOpenError> create() && {
         IOX_TODO();
     }
-    iox::expected<PortFactoryEvent<S>, EventOpenError> create_with_attributes(
-        const AttributeSpecifier& attributes) && {
+    iox::expected<PortFactoryEvent<S>, EventOpenError> create_with_attributes(const AttributeSpecifier& attributes) && {
         IOX_TODO();
     }
 };
 
-}  // namespace iox2
+} // namespace iox2
 
 #endif

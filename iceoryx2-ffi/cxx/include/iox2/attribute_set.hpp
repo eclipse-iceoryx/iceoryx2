@@ -21,16 +21,17 @@
 
 namespace iox2 {
 class AttributeSet {
-   public:
-    std::vector<std::string> get(const std::string& key) const { IOX_TODO(); }
+  public:
+    std::vector<std::string> get(const std::string& key) const {
+        IOX_TODO();
+    }
 };
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                const AttributeSet& value) {
+inline std::ostream& operator<<(std::ostream& stream, const AttributeSet& value) {
     std::cout << "AttributeSet { }";
     return stream;
 }
 
-}  // namespace iox2
+} // namespace iox2
 
 #endif

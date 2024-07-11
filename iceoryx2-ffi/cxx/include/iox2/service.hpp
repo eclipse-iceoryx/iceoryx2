@@ -55,25 +55,22 @@ enum class ServiceListError {
 
 template <ServiceType S>
 class Service {
-   public:
-    static iox::expected<bool, ServiceDetailsError> does_exist(
-        const ServiceName& service_name, const Config& config,
-        const MessagingPattern messaging_pattern) {
+  public:
+    static iox::expected<bool, ServiceDetailsError>
+    does_exist(const ServiceName& service_name, const Config& config, const MessagingPattern messaging_pattern) {
         IOX_TODO();
     }
 
     static iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError>
-    details(const ServiceName& service_name, const Config& config,
-            const MessagingPattern messaging_pattern) {
+    details(const ServiceName& service_name, const Config& config, const MessagingPattern messaging_pattern) {
         IOX_TODO();
     }
 
-    static iox::expected<void, ServiceListError> list(
-        const Config& config,
-        const iox::function<CallbackProgression(ServiceDetails<S>)>& callback) {
+    static iox::expected<void, ServiceListError>
+    list(const Config& config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback) {
         IOX_TODO();
     }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

@@ -39,14 +39,17 @@ enum class NotifierNotifyError {
 
 template <ServiceType S>
 class Notifier {
-   public:
-    UniqueNotifierId id() const { IOX_TODO(); }
-    iox::expected<uint64_t, NotifierNotifyError> notify() const { IOX_TODO(); }
-    iox::expected<uint64_t, NotifierNotifyError> notify_with_custom_event_id(
-        const EventId id) const {
+  public:
+    UniqueNotifierId id() const {
+        IOX_TODO();
+    }
+    iox::expected<uint64_t, NotifierNotifyError> notify() const {
+        IOX_TODO();
+    }
+    iox::expected<uint64_t, NotifierNotifyError> notify_with_custom_event_id(const EventId id) const {
         IOX_TODO();
     }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

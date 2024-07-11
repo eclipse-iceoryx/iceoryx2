@@ -19,10 +19,14 @@
 
 namespace iox2 {
 class DynamicConfigEvent {
-   public:
-    uint64_t number_of_listeners() const { IOX_TODO(); }
-    uint64_t number_of_notifiers() const { IOX_TODO(); }
+  public:
+    uint64_t number_of_listeners() const {
+        IOX_TODO();
+    }
+    uint64_t number_of_notifiers() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

@@ -20,14 +20,15 @@
 
 namespace iox2 {
 class AttributeSpecifier {
-   public:
+  public:
     AttributeSpecifier() = default;
-    AttributeSpecifier& define(const std::string& key,
-                               const std::string& value) {
+    AttributeSpecifier& define(const std::string& key, const std::string& value) {
         IOX_TODO();
     }
-    AttributeSet& attributes() const { IOX_TODO(); }
+    AttributeSet& attributes() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

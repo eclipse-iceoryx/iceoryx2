@@ -30,21 +30,34 @@
 namespace iox2 {
 template <ServiceType S>
 class PortFactoryEvent {
-   public:
-    const ServiceName& service_name() const { IOX_TODO(); }
-    const std::string& uuid() const { IOX_TODO(); }
-    const AttributeSet& attributes() const { IOX_TODO(); }
-    const StaticConfigEvent& static_config() const { IOX_TODO(); }
-    const DynamicConfigEvent& dynamic_config() const { IOX_TODO(); }
-
-    iox::expected<void, NodeListFailure> nodes(
-        const iox::function<CallbackProgression(NodeState<S>)>) const {
+  public:
+    const ServiceName& service_name() const {
+        IOX_TODO();
+    }
+    const std::string& uuid() const {
+        IOX_TODO();
+    }
+    const AttributeSet& attributes() const {
+        IOX_TODO();
+    }
+    const StaticConfigEvent& static_config() const {
+        IOX_TODO();
+    }
+    const DynamicConfigEvent& dynamic_config() const {
         IOX_TODO();
     }
 
-    PortFactoryListener<S> listener_builder() const { IOX_TODO(); }
-    PortFactoryNotifier<S> notifier_builder() const { IOX_TODO(); }
+    iox::expected<void, NodeListFailure> nodes(const iox::function<CallbackProgression(NodeState<S>)>) const {
+        IOX_TODO();
+    }
+
+    PortFactoryListener<S> listener_builder() const {
+        IOX_TODO();
+    }
+    PortFactoryNotifier<S> notifier_builder() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

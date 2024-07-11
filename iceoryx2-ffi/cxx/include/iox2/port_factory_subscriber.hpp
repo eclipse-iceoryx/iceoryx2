@@ -27,12 +27,11 @@ template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactorySubscriber {
     IOX_BUILDER_PARAMETER(int64_t, history_size, -1)
 
-   public:
-    iox::expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError>
-    create() && {
+  public:
+    iox::expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError> create() && {
         IOX_TODO();
     }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

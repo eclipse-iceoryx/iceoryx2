@@ -14,10 +14,10 @@
 #define IOX2_UNIQUE_PORT_ID_HPP_
 
 namespace iox2 {
-class UniquePublisherId {};
-class UniqueSubscriberId {};
-class UniqueNotifierId {};
-class UniqueListenerId {};
-}  // namespace iox2
+class UniquePublisherId { };
+class UniqueSubscriberId { };
+class UniqueNotifierId { };
+class UniqueListenerId { };
+} // namespace iox2
 
 #endif

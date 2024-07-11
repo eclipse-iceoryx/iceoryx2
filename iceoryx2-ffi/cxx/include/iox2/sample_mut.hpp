@@ -43,41 +43,66 @@ enum PublisherSendError {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 class SampleMut {
-   public:
-    const HeaderPublishSubscribe& header() const { IOX_TODO(); }
-    const UserHeader& user_header() const { IOX_TODO(); }
-    UserHeader& user_header_mut() { IOX_TODO(); }
-    const Payload& payload() const { IOX_TODO(); }
-    Payload& payload_mut() { IOX_TODO(); }
-    void write_payload(const Payload& payload) { IOX_TODO(); }
+  public:
+    const HeaderPublishSubscribe& header() const {
+        IOX_TODO();
+    }
+    const UserHeader& user_header() const {
+        IOX_TODO();
+    }
+    UserHeader& user_header_mut() {
+        IOX_TODO();
+    }
+    const Payload& payload() const {
+        IOX_TODO();
+    }
+    Payload& payload_mut() {
+        IOX_TODO();
+    }
+    void write_payload(const Payload& payload) {
+        IOX_TODO();
+    }
 };
 
 template <ServiceType S, typename Payload>
 class SampleMut<S, Payload, void> {
-   public:
-    const HeaderPublishSubscribe& header() const { IOX_TODO(); }
-    const Payload& payload() const { IOX_TODO(); }
-    Payload& payload_mut() { IOX_TODO(); }
-    void write_payload(const Payload& payload) { IOX_TODO(); }
+  public:
+    const HeaderPublishSubscribe& header() const {
+        IOX_TODO();
+    }
+    const Payload& payload() const {
+        IOX_TODO();
+    }
+    Payload& payload_mut() {
+        IOX_TODO();
+    }
+    void write_payload(const Payload& payload) {
+        IOX_TODO();
+    }
 };
 
 template <ServiceType S, typename Payload>
 class SampleMut<S, iox::Slice<Payload>, void> {
-   public:
-    const HeaderPublishSubscribe& header() const { IOX_TODO(); }
-    const Payload& payload() const { IOX_TODO(); }
-    Payload& payload_mut() { IOX_TODO(); }
+  public:
+    const HeaderPublishSubscribe& header() const {
+        IOX_TODO();
+    }
+    const Payload& payload() const {
+        IOX_TODO();
+    }
+    Payload& payload_mut() {
+        IOX_TODO();
+    }
     void write_from_fn(const iox::function<Payload(uint64_t)>& initializer) {
         IOX_TODO();
     }
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
-iox::expected<uint64_t, PublisherSendError> send_sample(
-    SampleMut<S, Payload, UserHeader>&& sample) {
+iox::expected<uint64_t, PublisherSendError> send_sample(SampleMut<S, Payload, UserHeader>&& sample) {
     IOX_TODO();
 }
 
-}  // namespace iox2
+} // namespace iox2
 
 #endif

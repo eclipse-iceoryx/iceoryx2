@@ -19,10 +19,14 @@
 
 namespace iox {
 class Layout {
-   public:
-    uint64_t size() const { IOX_TODO(); }
-    uint64_t alignment() const { IOX_TODO(); }
+  public:
+    uint64_t size() const {
+        IOX_TODO();
+    }
+    uint64_t alignment() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox
+} // namespace iox
 
 #endif

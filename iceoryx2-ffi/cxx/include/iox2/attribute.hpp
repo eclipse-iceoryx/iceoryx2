@@ -19,10 +19,14 @@
 
 namespace iox2 {
 class Attribute {
-   public:
-    const std::string& key() const { IOX_TODO(); }
-    const std::string& value() const { IOX_TODO(); }
+  public:
+    const std::string& key() const {
+        IOX_TODO();
+    }
+    const std::string& value() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

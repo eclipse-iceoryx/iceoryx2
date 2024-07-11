@@ -19,10 +19,14 @@
 
 namespace iox2 {
 class NodeDetails {
-   public:
-    const NodeName& name() const { IOX_TODO(); }
-    const Config& config() const { IOX_TODO(); }
+  public:
+    const NodeName& name() const {
+        IOX_TODO();
+    }
+    const Config& config() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

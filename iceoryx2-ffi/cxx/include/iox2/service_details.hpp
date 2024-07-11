@@ -21,6 +21,6 @@ template <ServiceType>
 struct ServiceDetails {
     StaticConfig static_details;
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

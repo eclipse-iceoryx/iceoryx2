@@ -21,11 +21,17 @@
 
 namespace iox2 {
 class StaticConfig {
-   public:
-    const AttributeSet& attributes() const { IOX_TODO(); }
-    std::string uuid() const { IOX_TODO(); }
-    ServiceName name() const { IOX_TODO(); }
+  public:
+    const AttributeSet& attributes() const {
+        IOX_TODO();
+    }
+    std::string uuid() const {
+        IOX_TODO();
+    }
+    ServiceName name() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

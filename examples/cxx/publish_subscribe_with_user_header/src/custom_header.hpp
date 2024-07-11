@@ -21,10 +21,8 @@ struct CustomHeader {
     uint64_t timestamp;
 };
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                const CustomHeader& value) {
-    std::cout << "CustomHeader { version: " << value.version
-              << ", timestamp: " << value.timestamp << "}";
+inline std::ostream& operator<<(std::ostream& stream, const CustomHeader& value) {
+    std::cout << "CustomHeader { version: " << value.version << ", timestamp: " << value.timestamp << "}";
     return stream;
 }
 

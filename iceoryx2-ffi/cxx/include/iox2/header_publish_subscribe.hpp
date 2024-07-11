@@ -20,10 +20,14 @@
 
 namespace iox2 {
 class HeaderPublishSubscribe {
-   public:
-    UniquePublisherId publisher_id() const { IOX_TODO(); }
-    iox::Layout payload_type_layout() const { IOX_TODO(); }
+  public:
+    UniquePublisherId publisher_id() const {
+        IOX_TODO();
+    }
+    iox::Layout payload_type_layout() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

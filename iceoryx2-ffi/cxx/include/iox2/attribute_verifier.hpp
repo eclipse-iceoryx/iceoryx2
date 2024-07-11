@@ -22,21 +22,25 @@
 
 namespace iox2 {
 class AttributeVerifier {
-   public:
+  public:
     AttributeVerifier() = default;
-    AttributeVerifier& require(const std::string& key,
-                               const std::string& value) {
+    AttributeVerifier& require(const std::string& key, const std::string& value) {
         IOX_TODO();
     }
-    AttributeVerifier& require_key(const std::string& key) { IOX_TODO(); }
-    const AttributeSet& attributes() const { IOX_TODO(); }
-    std::vector<std::string> keys() const { IOX_TODO(); }
+    AttributeVerifier& require_key(const std::string& key) {
+        IOX_TODO();
+    }
+    const AttributeSet& attributes() const {
+        IOX_TODO();
+    }
+    std::vector<std::string> keys() const {
+        IOX_TODO();
+    }
 
-    iox::expected<void, std::string> verify_requirements(
-        const AttributeSet& rhs) const {
+    iox::expected<void, std::string> verify_requirements(const AttributeSet& rhs) const {
         IOX_TODO();
     }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

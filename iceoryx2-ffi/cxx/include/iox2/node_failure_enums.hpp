@@ -14,12 +14,17 @@
 #define IOX2_NODE_FAILURE_ENUMS_HPP_
 
 namespace iox2 {
-enum class NodeListFailure {};
+enum class NodeListFailure {
+};
 
-enum class NodeCreationFailure { InsufficientPermissions, InternalError };
+enum class NodeCreationFailure {
+    InsufficientPermissions,
+    InternalError
+};
 
-enum class NodeCleanupFailure {};
+enum class NodeCleanupFailure {
+};
 
-}  // namespace iox2
+} // namespace iox2
 
 #endif

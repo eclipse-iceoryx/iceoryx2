@@ -14,7 +14,10 @@
 #define IOX2_CALLBACK_PROGRESSION_HPP_
 
 namespace iox2 {
-enum class CallbackProgression { Continue, Stop };
-}
+enum class CallbackProgression {
+    Continue,
+    Stop
+};
+} // namespace iox2
 
 #endif

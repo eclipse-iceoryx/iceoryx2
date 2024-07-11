@@ -22,14 +22,16 @@ namespace iox2 {
 
 template <ServiceType S>
 class ServiceBuilder {
-   public:
+  public:
     template <typename Payload>
     ServiceBuilderPublishSubscribe<Payload, void, S> publish_subscribe() {
         IOX_TODO();
     }
 
-    ServiceBuilderEvent<S> event() { IOX_TODO(); }
+    ServiceBuilderEvent<S> event() {
+        IOX_TODO();
+    }
 };
 
-}  // namespace iox2
+} // namespace iox2
 #endif

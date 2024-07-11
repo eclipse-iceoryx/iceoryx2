@@ -22,21 +22,22 @@
 #include "service_type.hpp"
 
 namespace iox2 {
-enum class UnableToDeliverStrategy { Block, DiscardSample };
+enum class UnableToDeliverStrategy {
+    Block,
+    DiscardSample
+};
 
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublisher {
-    IOX_BUILDER_PARAMETER(UnableToDeliverStrategy, unable_to_deliver_strategy,
-                          UnableToDeliverStrategy::Block)
+    IOX_BUILDER_PARAMETER(UnableToDeliverStrategy, unable_to_deliver_strategy, UnableToDeliverStrategy::Block)
     IOX_BUILDER_PARAMETER(int64_t, max_loaned_samples, -1)
     IOX_BUILDER_PARAMETER(int64_t, max_slice_len, -1)
 
-   public:
-    iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>
-    create() && {
+  public:
+    iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError> create() && {
         IOX_TODO();
     }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

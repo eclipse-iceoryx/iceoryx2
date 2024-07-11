@@ -15,29 +15,23 @@
 #include "iox/duration.hpp"
 #include "iox2/node.hpp"
 
-constexpr iox::units::Duration CYCLE_TIME =
-    iox::units::Duration::fromSeconds(1);
+constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
 int main() {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect(
-        "successful node creation");
+    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service =
-        node.service_builder(
-                ServiceName::create("MyEventName").expect("valid service name"))
-            .event()
-            .open_or_create()
-            .expect("successful service creation/opening");
+    auto service = node.service_builder(ServiceName::create("MyEventName").expect("valid service name"))
+                       .event()
+                       .open_or_create()
+                       .expect("successful service creation/opening");
 
-    auto notifier = service.notifier_builder().create().expect(
-        "successful notifier creation");
+    auto notifier = service.notifier_builder().create().expect("successful notifier creation");
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         counter += 1;
-        notifier.notify_with_custom_event_id(EventId(counter))
-            .expect("notification");
+        notifier.notify_with_custom_event_id(EventId(counter)).expect("notification");
 
         std::cout << "Trigger event with id " << counter << "..." << std::endl;
     }

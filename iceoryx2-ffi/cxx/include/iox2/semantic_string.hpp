@@ -14,7 +14,8 @@
 #define IOX2_SEMANTIC_STRING_HPP_
 
 namespace iox2 {
-enum class SemanticStringError {};
-}
+enum class SemanticStringError {
+};
+} // namespace iox2
 
 #endif

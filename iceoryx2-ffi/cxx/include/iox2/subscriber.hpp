@@ -24,7 +24,8 @@
 #include "unique_port_id.hpp"
 
 namespace iox2 {
-enum class SubscriberReceiveError {};
+enum class SubscriberReceiveError {
+};
 
 enum class SubscriberCreateError {
     /// The maximum amount of [`Subscriber`]s that can connect to a
@@ -40,18 +41,20 @@ enum class SubscriberCreateError {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 class Subscriber {
-   public:
-    UniqueSubscriberId id() const { IOX_TODO(); }
-    uint64_t buffer_size() const { IOX_TODO(); }
-    iox::expected<iox::optional<Sample<S, Payload, UserHeader>>,
-                  SubscriberReceiveError>
-    receive() const {
+  public:
+    UniqueSubscriberId id() const {
+        IOX_TODO();
+    }
+    uint64_t buffer_size() const {
+        IOX_TODO();
+    }
+    iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> receive() const {
         IOX_TODO();
     }
     iox::expected<void, ConnectionFailure> update_connections() const {
         IOX_TODO();
     }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

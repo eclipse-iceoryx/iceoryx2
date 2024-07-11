@@ -20,11 +20,16 @@
 
 namespace iox2 {
 class EventId {
-   public:
-    EventId(const uint64_t value) : m_value{value} { IOX_TODO(); }
-    uint64_t as_value() const { return m_value; }
+  public:
+    EventId(const uint64_t value)
+        : m_value { value } {
+        IOX_TODO();
+    }
+    uint64_t as_value() const {
+        return m_value;
+    }
 
-   private:
+  private:
     friend std::ostream& operator<<(std::ostream&, const EventId&);
     uint64_t m_value;
 };
@@ -34,6 +39,6 @@ inline std::ostream& operator<<(std::ostream& stream, const EventId& value) {
     return stream;
 }
 
-}  // namespace iox2
+} // namespace iox2
 
 #endif

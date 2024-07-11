@@ -22,21 +22,35 @@ namespace iox2 {
 
 template <ServiceType, typename Payload, typename UserHeader>
 class Sample {
-   public:
-    const Payload& payload() const { IOX_TODO(); }
-    const UserHeader& user_header() const { IOX_TODO(); }
-    const HeaderPublishSubscribe& header() const { IOX_TODO(); }
-    UniquePublisherId origin() const { IOX_TODO(); }
+  public:
+    const Payload& payload() const {
+        IOX_TODO();
+    }
+    const UserHeader& user_header() const {
+        IOX_TODO();
+    }
+    const HeaderPublishSubscribe& header() const {
+        IOX_TODO();
+    }
+    UniquePublisherId origin() const {
+        IOX_TODO();
+    }
 };
 
 template <ServiceType S, typename Payload>
 class Sample<S, Payload, void> {
-   public:
-    const Payload& payload() const { IOX_TODO(); }
-    const HeaderPublishSubscribe& header() const { IOX_TODO(); }
-    UniquePublisherId origin() const { IOX_TODO(); }
+  public:
+    const Payload& payload() const {
+        IOX_TODO();
+    }
+    const HeaderPublishSubscribe& header() const {
+        IOX_TODO();
+    }
+    UniquePublisherId origin() const {
+        IOX_TODO();
+    }
 };
 
-}  // namespace iox2
+} // namespace iox2
 
 #endif

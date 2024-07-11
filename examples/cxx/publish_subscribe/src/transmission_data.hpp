@@ -22,10 +22,8 @@ struct TransmissionData {
     double funky;
 };
 
-inline std::ostream& operator<<(std::ostream& stream,
-                                const TransmissionData& value) {
-    std::cout << "TransmissionData { x: " << value.x << ", y: " << value.y
-              << ", funky: " << value.funky << "}";
+inline std::ostream& operator<<(std::ostream& stream, const TransmissionData& value) {
+    std::cout << "TransmissionData { x: " << value.x << ", y: " << value.y << ", funky: " << value.funky << "}";
     return stream;
 }
 

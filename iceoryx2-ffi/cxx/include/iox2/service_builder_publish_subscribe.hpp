@@ -105,7 +105,8 @@ enum class PublishSubscribeCreateError {
     HangsInCreation,
 };
 
-enum class PublishSubscribeOpenOrCreateError {};
+enum class PublishSubscribeOpenOrCreateError {
+};
 
 template <typename Payload, typename UserHeader, ServiceType S>
 class ServiceBuilderPublishSubscribe {
@@ -118,47 +119,38 @@ class ServiceBuilderPublishSubscribe {
     IOX_BUILDER_PARAMETER(int64_t, max_publishers, -1)
     IOX_BUILDER_PARAMETER(int64_t, max_nodes, -1)
 
-   public:
+  public:
     template <typename NewHeader>
     ServiceBuilderPublishSubscribe<Payload, NewHeader, S> user_header() {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                  PublishSubscribeOpenOrCreateError>
+    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenOrCreateError>
     open_or_create() && {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                  PublishSubscribeOpenOrCreateError>
-    open_or_create_with_attributes(
-        const AttributeVerifier& required_attributes) && {
+    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenOrCreateError>
+    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                  PublishSubscribeOpenError>
-    open() && {
+    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> open() && {
         IOX_TODO();
     }
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                  PublishSubscribeOpenError>
+    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>
     open_with_attributes(const AttributeVerifier& required_attributes) && {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                  PublishSubscribeOpenError>
-    create() && {
+    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> create() && {
         IOX_TODO();
     }
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                  PublishSubscribeOpenError>
+    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>
     create_with_attributes(const AttributeSpecifier& attributes) && {
         IOX_TODO();
     }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

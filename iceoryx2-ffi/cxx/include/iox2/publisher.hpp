@@ -62,25 +62,23 @@ enum class PublisherLoanError {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 class Publisher {
-   public:
-    UniquePublisherId id() const { IOX_TODO(); }
-    iox::expected<uint64_t, PublisherSendError> send_copy(
-        const Payload& payload) const {
+  public:
+    UniquePublisherId id() const {
+        IOX_TODO();
+    }
+    iox::expected<uint64_t, PublisherSendError> send_copy(const Payload& payload) const {
         IOX_TODO();
     }
 
-    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
-    loan_uninit() {
+    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> loan_uninit() {
         IOX_TODO();
     }
 
-    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
-    loan() {
+    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> loan() {
         IOX_TODO();
     }
 
-    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
-    loan_slice(const uint64_t number_of_elements) {
+    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> loan_slice(const uint64_t number_of_elements) {
         IOX_TODO();
     }
     iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
@@ -88,8 +86,10 @@ class Publisher {
         IOX_TODO();
     }
 
-    iox::expected<void, ConnectionFailure> update_connections() { IOX_TODO(); }
+    iox::expected<void, ConnectionFailure> update_connections() {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

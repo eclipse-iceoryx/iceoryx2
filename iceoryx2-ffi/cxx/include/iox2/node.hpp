@@ -40,21 +40,26 @@ enum class NodeEvent {
 
 template <ServiceType T>
 class Node {
-   public:
-    NodeName& name() const { IOX_TODO(); }
-    NodeId& id() const { IOX_TODO(); }
+  public:
+    NodeName& name() const {
+        IOX_TODO();
+    }
+    NodeId& id() const {
+        IOX_TODO();
+    }
     ServiceBuilder<T> service_builder(const ServiceName& name) const {
         IOX_TODO();
     }
-    NodeEvent wait(const iox::units::Duration& cycle_time) const { IOX_TODO(); }
-
-    static iox::expected<void, NodeListFailure> list(
-        const Config& config,
-        const iox::function<CallbackProgression(NodeState<T>)>& callback) {
+    NodeEvent wait(const iox::units::Duration& cycle_time) const {
         IOX_TODO();
     }
 
-   private:
+    static iox::expected<void, NodeListFailure> list(const Config& config,
+                                                     const iox::function<CallbackProgression(NodeState<T>)>& callback) {
+        IOX_TODO();
+    }
+
+  private:
     friend class NodeBuilder;
 
     Node(iox2_node_h handle);
@@ -64,17 +69,17 @@ class Node {
 
 class NodeBuilder {
     IOX_BUILDER_PARAMETER(NodeName, name, NodeName::create("").expect(""))
-    IOX_BUILDER_PARAMETER(Config, config, Config{})
+    IOX_BUILDER_PARAMETER(Config, config, Config {})
 
-   public:
+  public:
     NodeBuilder();
 
     template <ServiceType T>
     iox::expected<Node<T>, NodeCreationFailure> create() const&&;
 
-   private:
+  private:
     iox2_node_builder_h m_handle;
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

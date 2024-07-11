@@ -19,12 +19,20 @@
 
 namespace iox2 {
 class StaticConfigEvent {
-   public:
-    uint64_t max_nodes() const { IOX_TODO(); }
-    uint64_t max_notifiers() const { IOX_TODO(); }
-    uint64_t max_listeners() const { IOX_TODO(); }
-    uint64_t event_id_max_value() const { IOX_TODO(); }
+  public:
+    uint64_t max_nodes() const {
+        IOX_TODO();
+    }
+    uint64_t max_notifiers() const {
+        IOX_TODO();
+    }
+    uint64_t max_listeners() const {
+        IOX_TODO();
+    }
+    uint64_t event_id_max_value() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

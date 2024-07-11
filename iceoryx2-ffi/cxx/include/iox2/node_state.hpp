@@ -25,16 +25,24 @@ namespace iox2 {
 
 template <ServiceType>
 class AliveNodeView {
-   public:
-    const NodeId& id() const { IOX_TODO(); }
-    const iox::optional<NodeDetails> details() const { IOX_TODO(); }
+  public:
+    const NodeId& id() const {
+        IOX_TODO();
+    }
+    const iox::optional<NodeDetails> details() const {
+        IOX_TODO();
+    }
 };
 
 template <ServiceType>
 class DeadNodeView {
-   public:
-    const NodeId& id() const { IOX_TODO(); }
-    const iox::optional<NodeDetails> details() const { IOX_TODO(); }
+  public:
+    const NodeId& id() const {
+        IOX_TODO();
+    }
+    const iox::optional<NodeDetails> details() const {
+        IOX_TODO();
+    }
     iox::expected<bool, NodeCleanupFailure> remove_stale_resources() {
         IOX_TODO();
     }
@@ -42,9 +50,8 @@ class DeadNodeView {
 
 template <ServiceType T>
 class NodeState {
-   public:
-    NodeState& if_alive(
-        const iox::function<void(AliveNodeView<T>&)>& callback) {
+  public:
+    NodeState& if_alive(const iox::function<void(AliveNodeView<T>&)>& callback) {
         IOX_TODO();
     }
     NodeState& is_dead(const iox::function<void(DeadNodeView<T>&)>& callback) {
@@ -57,6 +64,6 @@ class NodeState {
         IOX_TODO();
     }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

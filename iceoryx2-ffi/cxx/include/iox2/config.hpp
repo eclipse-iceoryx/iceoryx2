@@ -17,9 +17,11 @@
 
 namespace iox2 {
 class Config {
-   public:
-    static Config& global_config() { IOX_TODO(); }
+  public:
+    static Config& global_config() {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

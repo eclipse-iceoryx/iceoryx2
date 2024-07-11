@@ -25,9 +25,11 @@ template <ServiceType S>
 class PortFactoryNotifier {
     IOX_BUILDER_PARAMETER(EventId, default_event_id, 0)
 
-   public:
-    iox::expected<Notifier<S>, NotifierCreateError> create() && { IOX_TODO(); }
+  public:
+    iox::expected<Notifier<S>, NotifierCreateError> create() && {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

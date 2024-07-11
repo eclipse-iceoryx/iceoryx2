@@ -16,31 +16,25 @@
 #include "iox2/node.hpp"
 #include "transmission_data.hpp"
 
-constexpr iox::units::Duration CYCLE_TIME =
-    iox::units::Duration::fromSeconds(1);
+constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
 int main() {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect(
-        "successful node creation");
+    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service =
-        node.service_builder(ServiceName::create("My/Funk/ServiceName")
-                                 .expect("valid service name"))
-            .publish_subscribe<TransmissionData>()
-            .open_or_create()
-            .expect("successful service creation/opening");
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+                       .publish_subscribe<TransmissionData>()
+                       .open_or_create()
+                       .expect("successful service creation/opening");
 
-    auto publisher = service.publisher_builder().create().expect(
-        "successful publisher creation");
+    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         counter += 1;
         auto sample = publisher.loan_uninit().expect("acquire sample");
 
-        sample.write_payload(
-            TransmissionData{counter, counter * 3, counter * 812.12});
+        sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 });
 
         send_sample(std::move(sample)).expect("send successful");
 

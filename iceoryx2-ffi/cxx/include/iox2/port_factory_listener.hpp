@@ -21,9 +21,11 @@
 namespace iox2 {
 template <ServiceType S>
 class PortFactoryListener {
-   public:
-    iox::expected<Listener<S>, ListenerCreateError> create() && { IOX_TODO(); }
+  public:
+    iox::expected<Listener<S>, ListenerCreateError> create() && {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

@@ -14,7 +14,8 @@
 #define IOX2_CONNECTION_FAILURE_HPP_
 
 namespace iox2 {
-enum class ConnectionFailure {};
-}
+enum class ConnectionFailure {
+};
+} // namespace iox2
 
 #endif

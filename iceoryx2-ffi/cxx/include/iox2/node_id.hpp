@@ -14,7 +14,7 @@
 #define IOX2_NODE_ID_HPP_
 
 namespace iox2 {
-class NodeId {};
-}  // namespace iox2
+class NodeId { };
+} // namespace iox2
 
 #endif

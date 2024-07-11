@@ -19,10 +19,14 @@
 
 namespace iox2 {
 class DynamicConfigPublishSubscribe {
-   public:
-    uint64_t number_of_publishers() const { IOX_TODO(); }
-    uint64_t number_of_subscribers() const { IOX_TODO(); }
+  public:
+    uint64_t number_of_publishers() const {
+        IOX_TODO();
+    }
+    uint64_t number_of_subscribers() const {
+        IOX_TODO();
+    }
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

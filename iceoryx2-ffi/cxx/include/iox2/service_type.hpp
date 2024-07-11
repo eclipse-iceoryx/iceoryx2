@@ -14,7 +14,10 @@
 #define IOX2_SERVICE_TYPE_HPP_
 
 namespace iox2 {
-enum class ServiceType { Local, Ipc };
-}
+enum class ServiceType {
+    Local,
+    Ipc
+};
+} // namespace iox2
 
 #endif

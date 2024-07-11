@@ -29,6 +29,6 @@ enum class MessagingPattern {
     /// Building block to realize push-notifications.
     Event,
 };
-}
+} // namespace iox2
 
 #endif

@@ -16,28 +16,22 @@
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/node.hpp"
 
-constexpr iox::units::Duration CYCLE_TIME =
-    iox::units::Duration::fromSeconds(1);
+constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
 int main() {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect(
-        "successful node creation");
+    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
     auto service =
-        node.service_builder(ServiceName::create("Service/With/Properties")
-                                 .expect("valid service name"))
+        node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))
             .publish_subscribe<uint64_t>()
-            .open_with_attributes(AttributeVerifier()
-                                      .require("camera_resolution", "1920x1080")
-                                      .require_key("dds_service_mapping"))
+            .open_with_attributes(
+                AttributeVerifier().require("camera_resolution", "1920x1080").require_key("dds_service_mapping"))
             .expect("successful service creation/opening");
 
-    auto subscriber = service.subscriber_builder().create().expect(
-        "successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
 
-    std::cout << "defined service attributes: " << service.attributes()
-              << std::endl;
+    std::cout << "defined service attributes: " << service.attributes() << std::endl;
 
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         auto sample = subscriber.receive().expect("receive succeeds");

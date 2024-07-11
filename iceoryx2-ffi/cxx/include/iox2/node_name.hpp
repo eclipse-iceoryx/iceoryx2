@@ -21,15 +21,14 @@
 
 namespace iox2 {
 class NodeName {
-   public:
-    static iox::expected<NodeName, SemanticStringError> create(
-        const char* value);
+  public:
+    static iox::expected<NodeName, SemanticStringError> create(const char* value);
 
     const std::string& as_string() const;
 
-   private:
+  private:
     iox2_node_name_storage_t value;
 };
-}  // namespace iox2
+} // namespace iox2
 
 #endif

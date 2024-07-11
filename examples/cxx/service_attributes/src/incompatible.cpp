@@ -15,12 +15,10 @@
 
 int main() {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect(
-        "successful node creation");
+    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
     auto incompatible_service =
-        node.service_builder(ServiceName::create("Service/With/Properties")
-                                 .expect("valid service name"))
+        node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))
             .publish_subscribe<uint64_t>()
             .open_with_attributes(
                 // the opening of the service will fail since the
@@ -28,14 +26,12 @@ int main() {
                 // `3840x2160`
                 AttributeVerifier().require("camera_resolution", "3840x2160"));
 
-    incompatible_service =
-        node.service_builder(ServiceName::create("My/Funk/ServiceName")
-                                 .expect("valid service name"))
-            .publish_subscribe<uint64_t>()
-            .open_with_attributes(
-                // the opening of the service will fail since the key is not
-                // defined.
-                AttributeVerifier().require_key("camera_type"));
+    incompatible_service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+                               .publish_subscribe<uint64_t>()
+                               .open_with_attributes(
+                                   // the opening of the service will fail since the key is not
+                                   // defined.
+                                   AttributeVerifier().require_key("camera_type"));
 
     return 0;
 }

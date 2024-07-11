@@ -16,33 +16,27 @@
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/node.hpp"
 
-constexpr iox::units::Duration CYCLE_TIME =
-    iox::units::Duration::fromSeconds(1);
+constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
 int main() {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect(
-        "successful node creation");
+    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service =
-        node.service_builder(ServiceName::create("Service/With/Properties")
-                                 .expect("valid service name"))
-            .publish_subscribe<uint64_t>()
-            .create_with_attributes(
-                // define a set of properties that are static for the lifetime
-                // of the service
-                AttributeSpecifier()
-                    .define("dds_service_mapping", "my_funky_service_name")
-                    .define("tcp_serialization_format", "cdr")
-                    .define("someip_service_mapping", "1/2/3")
-                    .define("camera_resolution", "1920x1080"))
-            .expect("successful service creation/opening");
+    auto service = node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))
+                       .publish_subscribe<uint64_t>()
+                       .create_with_attributes(
+                           // define a set of properties that are static for the lifetime
+                           // of the service
+                           AttributeSpecifier()
+                               .define("dds_service_mapping", "my_funky_service_name")
+                               .define("tcp_serialization_format", "cdr")
+                               .define("someip_service_mapping", "1/2/3")
+                               .define("camera_resolution", "1920x1080"))
+                       .expect("successful service creation/opening");
 
-    auto publisher = service.publisher_builder().create().expect(
-        "successful publisher creation");
+    auto publisher = service.publisher_builder().create().expect("successful publisher creation");
 
-    std::cout << "defined service attributes: " << service.attributes()
-              << std::endl;
+    std::cout << "defined service attributes: " << service.attributes() << std::endl;
 
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         auto sample = publisher.loan_uninit().expect("acquire sample");

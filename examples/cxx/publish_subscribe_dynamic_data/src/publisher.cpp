@@ -17,20 +17,16 @@
 #include "iox/slice.hpp"
 #include "iox2/node.hpp"
 
-constexpr iox::units::Duration CYCLE_TIME =
-    iox::units::Duration::fromSeconds(1);
+constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
 int main() {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect(
-        "successful node creation");
+    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service =
-        node.service_builder(ServiceName::create("Service With Dynamic Data")
-                                 .expect("valid service name"))
-            .publish_subscribe<iox::Slice<uint8_t>>()
-            .open_or_create()
-            .expect("successful service creation/opening");
+    auto service = node.service_builder(ServiceName::create("Service With Dynamic Data").expect("valid service name"))
+                       .publish_subscribe<iox::Slice<uint8_t>>()
+                       .open_or_create()
+                       .expect("successful service creation/opening");
 
     uint64_t worst_case_memory_size = 1024;
     auto publisher = service.publisher_builder()
@@ -44,10 +40,8 @@ int main() {
         counter += 1;
 
         auto required_memory_size = (8 + counter) % 16;
-        auto sample = publisher.loan_slice_uninit(required_memory_size)
-                          .expect("acquire sample");
-        sample.write_from_fn(
-            [&](auto byte_idx) { return (byte_idx + counter) % 255; });
+        auto sample = publisher.loan_slice_uninit(required_memory_size).expect("acquire sample");
+        sample.write_from_fn([&](auto byte_idx) { return (byte_idx + counter) % 255; });
 
         send_sample(std::move(sample)).expect("send successful");
 

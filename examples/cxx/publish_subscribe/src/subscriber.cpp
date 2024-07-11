@@ -16,23 +16,18 @@
 #include "iox2/node.hpp"
 #include "transmission_data.hpp"
 
-constexpr iox::units::Duration CYCLE_TIME =
-    iox::units::Duration::fromSeconds(1);
+constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
 int main() {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect(
-        "successful node creation");
+    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto service =
-        node.service_builder(ServiceName::create("My/Funk/ServiceName")
-                                 .expect("valid service name"))
-            .publish_subscribe<TransmissionData>()
-            .open_or_create()
-            .expect("successful service creation/opening");
+    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+                       .publish_subscribe<TransmissionData>()
+                       .open_or_create()
+                       .expect("successful service creation/opening");
 
-    auto subscriber = service.subscriber_builder().create().expect(
-        "successful subscriber creation");
+    auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
 
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         auto sample = subscriber.receive().expect("receive succeeds");
