@@ -110,12 +110,20 @@ struct Args {
     /// Run benchmark for the process local setup
     #[clap(long)]
     bench_process_local: bool,
+    /// Activate full log output
+    #[clap(short, long)]
+    debug_mode: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    set_log_level(iceoryx2_bb_log::LogLevel::Info);
+    if args.debug_mode {
+        set_log_level(iceoryx2_bb_log::LogLevel::Trace);
+    } else {
+        set_log_level(iceoryx2_bb_log::LogLevel::Info);
+    }
+
     let mut at_least_one_benchmark_did_run = false;
 
     if args.bench_zero_copy || args.bench_all {
