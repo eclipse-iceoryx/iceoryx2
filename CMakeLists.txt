@@ -16,6 +16,8 @@ project(iceoryx2 VERSION ${IOX2_VERSION_STRING})
 
 #TODO how to handle feature flags
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # "Create compile_commands.json file"
+
 macro(add_option)
     set(ONE_VALUE_ARGS NAME DESCRIPTION DEFAULT_VALUE)
     cmake_parse_arguments(ADD_OPTION "" "${ONE_VALUE_ARGS}" "" ${ARGN})

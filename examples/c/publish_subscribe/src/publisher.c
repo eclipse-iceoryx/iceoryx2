@@ -17,7 +17,7 @@
 
 int main(void) {
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
-    iox2_node_h node_handle;
+    iox2_node_h node_handle = NULL;
     int ret_val = iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle);
     if (ret_val != IOX2_OK) {
         printf("Could not create node! Error code: %i", ret_val);
