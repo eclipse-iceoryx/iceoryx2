@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_LISTENER_HPP_
-#define IOX2_LISTENER_HPP_
+#ifndef IOX2_LISTENER_HPP
+#define IOX2_LISTENER_HPP
 
 #include "event_id.hpp"
 #include "iox/assertions_addendum.hpp"
@@ -22,8 +22,10 @@
 #include "service_type.hpp"
 #include "unique_port_id.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
-enum class ListenerCreateError {
+enum class ListenerCreateError : uint8_t {
     /// The maximum amount of [`Listener`]s that can connect to a
     /// [`Service`](crate::service::Service) is
     /// defined in [`crate::config::Config`]. When this is exceeded no more
@@ -35,7 +37,7 @@ enum class ListenerCreateError {
     ResourceCreationFailed,
 };
 
-enum class ListenerWaitError {
+enum class ListenerWaitError : uint8_t {
     ContractViolation,
     InternalFailure,
     InterruptSignal,
@@ -44,28 +46,29 @@ enum class ListenerWaitError {
 template <ServiceType>
 class Listener {
   public:
-    UniqueListenerId id() const {
+    auto id() const -> UniqueListenerId {
         IOX_TODO();
     }
 
-    iox::expected<void, ListenerWaitError> try_wait_all(const iox::function<void(EventId)>& callback) {
+    auto try_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError> {
         IOX_TODO();
     }
-    iox::expected<void, ListenerWaitError> timed_wait_all(const iox::function<void(EventId)>& callback,
-                                                          const iox::units::Duration& timeout) {
+    auto timed_wait_all(const iox::function<void(EventId)>& callback,
+                        const iox::units::Duration& timeout) -> iox::expected<void, ListenerWaitError> {
         IOX_TODO();
     }
-    iox::expected<void, ListenerWaitError> blocking_wait_all(const iox::function<void(EventId)>& callback) {
+    auto blocking_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError> {
         IOX_TODO();
     }
 
-    iox::expected<iox::optional<EventId>, ListenerWaitError> try_wait_one() {
+    auto try_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
         IOX_TODO();
     }
-    iox::expected<iox::optional<EventId>, ListenerWaitError> timed_wait_one(const iox::units::Duration& timeout) {
+    auto
+    timed_wait_one(const iox::units::Duration& timeout) -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
         IOX_TODO();
     }
-    iox::expected<iox::optional<EventId>, ListenerWaitError> blocking_wait_one() {
+    auto blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
         IOX_TODO();
     }
 };

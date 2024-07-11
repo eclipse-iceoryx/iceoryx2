@@ -10,36 +10,40 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <cstdint>
-#include <iostream>
-
 #include "iox/duration.hpp"
 #include "iox/string.hpp"
 #include "iox/vector.hpp"
 #include "iox2/node.hpp"
+#include "iox2/sample_mut.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
+
+#include <cstdint>
+#include <iostream>
+#include <utility>
 
 struct ComplexData {
-    iox::string<4> name;
-    iox::vector<uint64_t, 4> data;
+    iox::string<4> name;           // NOLINT
+    iox::vector<uint64_t, 4> data; // NOLINT
 };
 
 struct ComplexDataType {
     uint64_t plain_old_data;
-    iox::string<8> text;
-    iox::vector<uint64_t, 4> vec_of_data;
-    iox::vector<ComplexData, 404857> vec_of_complex_data;
+    iox::string<8> text;                                  // NOLINT
+    iox::vector<uint64_t, 4> vec_of_data;                 // NOLINT
+    iox::vector<ComplexData, 404857> vec_of_complex_data; // NOLINT
 };
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
-int main() {
+auto main() -> int {
     using namespace iox2;
     auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
                        .publish_subscribe<ComplexDataType>()
-                       .max_publishers(16)
-                       .max_subscribers(16)
+                       .max_publishers(16)  // NOLINT
+                       .max_subscribers(16) // NOLINT
                        .open_or_create()
                        .expect("successful service creation/opening");
 
@@ -54,7 +58,7 @@ int main() {
 
         auto& payload = sample.payload_mut();
         payload.plain_old_data = counter;
-        payload.text = iox::string<8>("hello");
+        payload.text = iox::string<8>("hello"); // NOLINT
         payload.vec_of_data.push_back(counter);
         payload.vec_of_complex_data.push_back(
             ComplexData { iox::string<4>("bla"), iox::vector<uint64_t, 4>(2, counter) });

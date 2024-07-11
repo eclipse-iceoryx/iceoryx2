@@ -12,8 +12,12 @@
 
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/node.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
 
-int main() {
+#include <cstdint>
+
+auto main() -> int {
     using namespace iox2;
     auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 

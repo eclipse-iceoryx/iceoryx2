@@ -14,11 +14,13 @@
 
 #include "iox/duration.hpp"
 #include "iox2/node.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
 #include "transmission_data.hpp"
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
-int main() {
+auto main() -> int {
     using namespace iox2;
     auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 

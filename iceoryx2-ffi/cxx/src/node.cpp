@@ -14,14 +14,13 @@
 
 #include "iox/assertions.hpp"
 #include "iox/into.hpp"
-#include "iox2/internal/iceoryx2.hpp"
 
 namespace iox {
 using namespace ::iox2;
 template <>
-constexpr NodeCreationFailure
-from<iox2_node_creation_failure_e, NodeCreationFailure>(iox2_node_creation_failure_e e) noexcept {
-    switch (e) {
+constexpr auto from<iox2_node_creation_failure_e, NodeCreationFailure>(iox2_node_creation_failure_e value) noexcept
+    -> NodeCreationFailure {
+    switch (value) {
     case iox2_node_creation_failure_e::iox2_node_creation_failure_e_INSUFFICIENT_PERMISSIONS:
         return NodeCreationFailure::InsufficientPermissions;
     case iox2_node_creation_failure_e::iox2_node_creation_failure_e_INTERNAL_ERROR:
@@ -42,9 +41,9 @@ NodeBuilder::NodeBuilder()
 }
 
 template <ServiceType T>
-iox::expected<Node<T>, NodeCreationFailure> NodeBuilder::create() const&& {
-    iox2_node_h node_handle;
-    int ret_val = iox2_node_builder_create(m_handle, nullptr, iox2_service_type_e_IPC, &node_handle);
+auto NodeBuilder::create() const&& -> iox::expected<Node<T>, NodeCreationFailure> {
+    iox2_node_h node_handle = nullptr;
+    const int ret_val = iox2_node_builder_create(m_handle, nullptr, iox2_service_type_e_IPC, &node_handle);
 
     if (ret_val != IOX2_OK) {
         return iox::err(iox::from<iox2_node_creation_failure_e, NodeCreationFailure>(
@@ -54,7 +53,7 @@ iox::expected<Node<T>, NodeCreationFailure> NodeBuilder::create() const&& {
     return iox::ok(Node<T>(node_handle));
 }
 
-template iox::expected<Node<ServiceType::Ipc>, NodeCreationFailure> NodeBuilder::create() const&&;
+template auto NodeBuilder::create() const&& -> iox::expected<Node<ServiceType::Ipc>, NodeCreationFailure>;
 
-template iox::expected<Node<ServiceType::Local>, NodeCreationFailure> NodeBuilder::create() const&&;
+template auto NodeBuilder::create() const&& -> iox::expected<Node<ServiceType::Local>, NodeCreationFailure>;
 } // namespace iox2

@@ -10,31 +10,31 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PORTFACTORY_PUBLISHER_HPP_
-#define IOX2_PORTFACTORY_PUBLISHER_HPP_
-
-#include <cstdint>
+#ifndef IOX2_PORTFACTORY_PUBLISHER_HPP
+#define IOX2_PORTFACTORY_PUBLISHER_HPP
 
 #include "iox/assertions_addendum.hpp"
-#include "iox/builder.hpp"
+#include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
 #include "publisher.hpp"
 #include "service_type.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
-enum class UnableToDeliverStrategy {
+enum class UnableToDeliverStrategy : uint8_t {
     Block,
     DiscardSample
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublisher {
-    IOX_BUILDER_PARAMETER(UnableToDeliverStrategy, unable_to_deliver_strategy, UnableToDeliverStrategy::Block)
-    IOX_BUILDER_PARAMETER(int64_t, max_loaned_samples, -1)
-    IOX_BUILDER_PARAMETER(int64_t, max_slice_len, -1)
+    IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
+    IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_samples);
+    IOX_BUILDER_OPTIONAL(uint64_t, max_slice_len);
 
   public:
-    iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError> create() && {
+    auto create() && -> iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError> {
         IOX_TODO();
     }
 };

@@ -10,20 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_DYNAMIC_CONFIG_PUBLISH_SUBSCRIBE_HPP_
-#define IOX2_DYNAMIC_CONFIG_PUBLISH_SUBSCRIBE_HPP_
-
-#include <cstdint>
+#ifndef IOX2_DYNAMIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
+#define IOX2_DYNAMIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 
 #include "iox/assertions_addendum.hpp"
+
+#include <cstdint>
 
 namespace iox2 {
 class DynamicConfigPublishSubscribe {
   public:
-    uint64_t number_of_publishers() const {
+    auto number_of_publishers() const -> uint64_t {
         IOX_TODO();
     }
-    uint64_t number_of_subscribers() const {
+    auto number_of_subscribers() const -> uint64_t {
         IOX_TODO();
     }
 };

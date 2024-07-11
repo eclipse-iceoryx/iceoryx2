@@ -10,15 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_CONFIG_HPP_
-#define IOX2_CONFIG_HPP_
+#ifndef IOX2_CONFIG_HPP
+#define IOX2_CONFIG_HPP
 
 #include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 class Config {
   public:
-    static Config& global_config() {
+    static auto global_config() -> Config& {
         IOX_TODO();
     }
 };

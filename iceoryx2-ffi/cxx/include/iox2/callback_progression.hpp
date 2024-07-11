@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_CALLBACK_PROGRESSION_HPP_
-#define IOX2_CALLBACK_PROGRESSION_HPP_
+#ifndef IOX2_CALLBACK_PROGRESSION_HPP
+#define IOX2_CALLBACK_PROGRESSION_HPP
+
+#include <cstdint>
 
 namespace iox2 {
-enum class CallbackProgression {
+enum class CallbackProgression : uint8_t {
     Continue,
     Stop
 };

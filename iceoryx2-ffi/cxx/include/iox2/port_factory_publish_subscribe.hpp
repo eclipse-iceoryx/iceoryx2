@@ -10,10 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP_
-#define IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP_
-
-#include <string>
+#ifndef IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP
+#define IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP
 
 #include "attribute_set.hpp"
 #include "callback_progression.hpp"
@@ -29,34 +27,37 @@
 #include "service_type.hpp"
 #include "static_config_publish_subscribe.hpp"
 
+#include <string>
+
 namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublishSubscribe {
   public:
-    const ServiceName& service_name() const {
+    auto service_name() const -> const ServiceName& {
         IOX_TODO();
     }
-    const std::string& uuid() const {
+    auto uuid() const -> const std::string& {
         IOX_TODO();
     }
-    const AttributeSet& attributes() const {
+    auto attributes() const -> const AttributeSet& {
         IOX_TODO();
     }
-    const StaticConfigPublishSubscribe& static_config() const {
+    auto static_config() const -> const StaticConfigPublishSubscribe& {
         IOX_TODO();
     }
-    const DynamicConfigPublishSubscribe& dynamic_config() const {
-        IOX_TODO();
-    }
-
-    iox::expected<void, NodeListFailure> nodes(const iox::function<CallbackProgression(NodeState<S>)>) const {
+    auto dynamic_config() const -> const DynamicConfigPublishSubscribe& {
         IOX_TODO();
     }
 
-    PortFactorySubscriber<S, Payload, UserHeader> subscriber_builder() const {
+    auto nodes(const iox::function<CallbackProgression(NodeState<S>)> callback) const
+        -> iox::expected<void, NodeListFailure> {
         IOX_TODO();
     }
-    PortFactoryPublisher<S, Payload, UserHeader> publisher_builder() const {
+
+    auto subscriber_builder() const -> PortFactorySubscriber<S, Payload, UserHeader> {
+        IOX_TODO();
+    }
+    auto publisher_builder() const -> PortFactoryPublisher<S, Payload, UserHeader> {
         IOX_TODO();
     }
 };

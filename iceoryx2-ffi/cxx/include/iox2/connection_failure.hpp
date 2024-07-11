@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_CONNECTION_FAILURE_HPP_
-#define IOX2_CONNECTION_FAILURE_HPP_
+#ifndef IOX2_CONNECTION_FAILURE_HPP
+#define IOX2_CONNECTION_FAILURE_HPP
 
 namespace iox2 {
 enum class ConnectionFailure {

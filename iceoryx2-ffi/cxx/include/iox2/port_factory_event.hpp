@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PORTFACTORY_EVENT_HPP_
-#define IOX2_PORTFACTORY_EVENT_HPP_
+#ifndef IOX2_PORTFACTORY_EVENT_HPP
+#define IOX2_PORTFACTORY_EVENT_HPP
 
 #include "attribute_set.hpp"
 #include "callback_progression.hpp"
@@ -31,30 +31,31 @@ namespace iox2 {
 template <ServiceType S>
 class PortFactoryEvent {
   public:
-    const ServiceName& service_name() const {
+    auto service_name() const -> const ServiceName& {
         IOX_TODO();
     }
-    const std::string& uuid() const {
+    auto uuid() const -> const std::string& {
         IOX_TODO();
     }
-    const AttributeSet& attributes() const {
+    auto attributes() const -> const AttributeSet& {
         IOX_TODO();
     }
-    const StaticConfigEvent& static_config() const {
+    auto static_config() const -> const StaticConfigEvent& {
         IOX_TODO();
     }
-    const DynamicConfigEvent& dynamic_config() const {
-        IOX_TODO();
-    }
-
-    iox::expected<void, NodeListFailure> nodes(const iox::function<CallbackProgression(NodeState<S>)>) const {
+    auto dynamic_config() const -> const DynamicConfigEvent& {
         IOX_TODO();
     }
 
-    PortFactoryListener<S> listener_builder() const {
+    auto nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
+        -> iox::expected<void, NodeListFailure> {
         IOX_TODO();
     }
-    PortFactoryNotifier<S> notifier_builder() const {
+
+    auto listener_builder() const -> PortFactoryListener<S> {
+        IOX_TODO();
+    }
+    auto notifier_builder() const -> PortFactoryNotifier<S> {
         IOX_TODO();
     }
 };

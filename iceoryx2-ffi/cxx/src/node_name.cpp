@@ -15,11 +15,11 @@
 #include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
-iox::expected<NodeName, SemanticStringError> NodeName::create(const char* value) {
+auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStringError> {
     IOX_TODO();
 }
 
-const std::string& NodeName::as_string() const {
+auto NodeName::as_string() const -> const std::string& {
     IOX_TODO();
 }
 

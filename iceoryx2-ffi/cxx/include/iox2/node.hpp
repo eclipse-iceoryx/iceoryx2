@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_HPP_
-#define IOX2_NODE_HPP_
+#ifndef IOX2_NODE_HPP
+#define IOX2_NODE_HPP
 
 #include "callback_progression.hpp"
 #include "config.hpp"
 #include "internal/iceoryx2.hpp"
 #include "iox/assertions_addendum.hpp"
-#include "iox/builder.hpp"
+#include "iox/builder_addendum.hpp"
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
@@ -29,7 +29,7 @@
 #include "service_type.hpp"
 
 namespace iox2 {
-enum class NodeEvent {
+enum class NodeEvent : uint8_t {
     /// The timeout passed.
     Tick,
     /// SIGTERM signal was received
@@ -41,41 +41,41 @@ enum class NodeEvent {
 template <ServiceType T>
 class Node {
   public:
-    NodeName& name() const {
+    auto name() const -> NodeName& {
         IOX_TODO();
     }
-    NodeId& id() const {
+    auto id() const -> NodeId& {
         IOX_TODO();
     }
-    ServiceBuilder<T> service_builder(const ServiceName& name) const {
+    auto service_builder(const ServiceName& name) const -> ServiceBuilder<T> {
         IOX_TODO();
     }
-    NodeEvent wait(const iox::units::Duration& cycle_time) const {
+    auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent {
         IOX_TODO();
     }
 
-    static iox::expected<void, NodeListFailure> list(const Config& config,
-                                                     const iox::function<CallbackProgression(NodeState<T>)>& callback) {
+    static auto list(const Config& config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
+        -> iox::expected<void, NodeListFailure> {
         IOX_TODO();
     }
 
   private:
     friend class NodeBuilder;
 
-    Node(iox2_node_h handle);
+    explicit Node(iox2_node_h handle);
 
     iox2_node_h m_handle;
 };
 
 class NodeBuilder {
-    IOX_BUILDER_PARAMETER(NodeName, name, NodeName::create("").expect(""))
-    IOX_BUILDER_PARAMETER(Config, config, Config {})
+    IOX_BUILDER_OPTIONAL(NodeName, name);
+    IOX_BUILDER_OPTIONAL(Config, config);
 
   public:
     NodeBuilder();
 
     template <ServiceType T>
-    iox::expected<Node<T>, NodeCreationFailure> create() const&&;
+    auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure>;
 
   private:
     iox2_node_builder_h m_handle;

@@ -10,20 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_DYNAMIC_CONFIG_EVENT_HPP_
-#define IOX2_DYNAMIC_CONFIG_EVENT_HPP_
-
-#include <cstdint>
+#ifndef IOX2_DYNAMIC_CONFIG_EVENT_HPP
+#define IOX2_DYNAMIC_CONFIG_EVENT_HPP
 
 #include "iox/assertions_addendum.hpp"
+
+#include <cstdint>
 
 namespace iox2 {
 class DynamicConfigEvent {
   public:
-    uint64_t number_of_listeners() const {
+    auto number_of_listeners() const -> uint64_t {
         IOX_TODO();
     }
-    uint64_t number_of_notifiers() const {
+    auto number_of_notifiers() const -> uint64_t {
         IOX_TODO();
     }
 };

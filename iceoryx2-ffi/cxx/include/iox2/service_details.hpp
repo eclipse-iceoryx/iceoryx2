@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_DETAILS_HPP_
-#define IOX2_SERVICE_DETAILS_HPP_
+#ifndef IOX2_SERVICE_DETAILS_HPP
+#define IOX2_SERVICE_DETAILS_HPP
 
 #include "service_type.hpp"
 #include "static_config.hpp"

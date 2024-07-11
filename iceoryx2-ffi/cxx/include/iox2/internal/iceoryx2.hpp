@@ -10,11 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_INTERNAL_ICEORYX2_HPP_
-#define IOX2_INTERNAL_ICEORYX2_HPP_
+#ifndef IOX2_INTERNAL_ICEORYX2_HPP
+#define IOX2_INTERNAL_ICEORYX2_HPP
 
 extern "C" {
-#include <iox2/iceoryx2.h>
+#include <iox2/iceoryx2.h> // NOLINT
 }
 
 #endif

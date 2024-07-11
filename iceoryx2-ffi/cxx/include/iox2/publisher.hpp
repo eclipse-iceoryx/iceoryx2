@@ -10,10 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PUBLISHER_HPP_
-#define IOX2_PUBLISHER_HPP_
-
-#include <cstdint>
+#ifndef IOX2_PUBLISHER_HPP
+#define IOX2_PUBLISHER_HPP
 
 #include "connection_failure.hpp"
 #include "iox/assertions_addendum.hpp"
@@ -22,8 +20,10 @@
 #include "service_type.hpp"
 #include "unique_port_id.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
-enum class PublisherCreateError {
+enum class PublisherCreateError : uint8_t {
     /// The maximum amount of [`Publisher`]s that can connect to a
     /// [`Service`](crate::service::Service) is
     /// defined in [`crate::config::Config`]. When this is exceeded no more
@@ -38,7 +38,7 @@ enum class PublisherCreateError {
 /// Defines a failure that can occur in [`Publisher::loan()`] and
 /// [`Publisher::loan_uninit()`] or is part of [`PublisherSendError`] emitted in
 /// [`Publisher::send_copy()`].
-enum class PublisherLoanError {
+enum class PublisherLoanError : uint8_t {
     /// The [`Publisher`]s data segment does not have any more memory left
     OutOfMemory,
     /// The maximum amount of [`SampleMut`]s a user can borrow with
@@ -63,30 +63,31 @@ enum class PublisherLoanError {
 template <ServiceType S, typename Payload, typename UserHeader>
 class Publisher {
   public:
-    UniquePublisherId id() const {
+    auto id() const -> UniquePublisherId {
         IOX_TODO();
     }
-    iox::expected<uint64_t, PublisherSendError> send_copy(const Payload& payload) const {
-        IOX_TODO();
-    }
-
-    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> loan_uninit() {
+    auto send_copy(const Payload& payload) const -> iox::expected<uint64_t, PublisherSendError> {
         IOX_TODO();
     }
 
-    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> loan() {
+    auto loan_uninit() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
         IOX_TODO();
     }
 
-    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> loan_slice(const uint64_t number_of_elements) {
-        IOX_TODO();
-    }
-    iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>
-    loan_slice_uninit(const uint64_t number_of_elements) {
+    auto loan() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
         IOX_TODO();
     }
 
-    iox::expected<void, ConnectionFailure> update_connections() {
+    auto loan_slice(const uint64_t number_of_elements)
+        -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
+        IOX_TODO();
+    }
+    auto loan_slice_uninit(const uint64_t number_of_elements)
+        -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
+        IOX_TODO();
+    }
+
+    auto update_connections() -> iox::expected<void, ConnectionFailure> {
         IOX_TODO();
     }
 };

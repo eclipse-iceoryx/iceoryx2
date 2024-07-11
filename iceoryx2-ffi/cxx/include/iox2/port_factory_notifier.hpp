@@ -10,11 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PORTFACTORY_NOTIFIER_HPP_
-#define IOX2_PORTFACTORY_NOTIFIER_HPP_
+#ifndef IOX2_PORTFACTORY_NOTIFIER_HPP
+#define IOX2_PORTFACTORY_NOTIFIER_HPP
 
 #include "iox/assertions_addendum.hpp"
-#include "iox/builder.hpp"
+#include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
 #include "notifier.hpp"
 #include "service_type.hpp"
@@ -23,10 +23,10 @@ namespace iox2 {
 
 template <ServiceType S>
 class PortFactoryNotifier {
-    IOX_BUILDER_PARAMETER(EventId, default_event_id, 0)
+    IOX_BUILDER_OPTIONAL(EventId, default_event_id);
 
   public:
-    iox::expected<Notifier<S>, NotifierCreateError> create() && {
+    auto create() && -> iox::expected<Notifier<S>, NotifierCreateError> {
         IOX_TODO();
     }
 };

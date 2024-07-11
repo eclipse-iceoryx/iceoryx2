@@ -10,20 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP_
-#define IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP_
-
-#include <iox/builder.hpp>
-#include <iox/expected.hpp>
+#ifndef IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP
+#define IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP
 
 #include "attribute_specifier.hpp"
 #include "attribute_verifier.hpp"
 #include "iox/assertions_addendum.hpp"
+#include "iox/builder_addendum.hpp"
+#include "iox/expected.hpp"
 #include "port_factory_publish_subscribe.hpp"
 #include "service_type.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
-enum class PublishSubscribeOpenError {
+enum class PublishSubscribeOpenError : uint8_t {
     /// Service could not be openen since it does not exist
     DoesNotExist,
     /// Errors that indicate either an implementation issue or a wrongly
@@ -74,7 +75,7 @@ enum class PublishSubscribeOpenError {
     IsMarkedForDestruction,
 };
 
-enum class PublishSubscribeCreateError {
+enum class PublishSubscribeCreateError : uint8_t {
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
     ServiceInCorruptedState,
@@ -105,49 +106,54 @@ enum class PublishSubscribeCreateError {
     HangsInCreation,
 };
 
-enum class PublishSubscribeOpenOrCreateError {
+enum class PublishSubscribeOpenOrCreateError : uint8_t {
 };
 
 template <typename Payload, typename UserHeader, ServiceType S>
 class ServiceBuilderPublishSubscribe {
-    IOX_BUILDER_PARAMETER(int64_t, payload_alignment, -1)
-    IOX_BUILDER_PARAMETER(bool, enable_safe_overflow, true)
-    IOX_BUILDER_PARAMETER(int64_t, subscriber_max_borrowed_samples, -1)
-    IOX_BUILDER_PARAMETER(int64_t, history_size, -1)
-    IOX_BUILDER_PARAMETER(int64_t, subscriber_max_buffer_size, -1)
-    IOX_BUILDER_PARAMETER(int64_t, max_subscribers, -1)
-    IOX_BUILDER_PARAMETER(int64_t, max_publishers, -1)
-    IOX_BUILDER_PARAMETER(int64_t, max_nodes, -1)
+    IOX_BUILDER_OPTIONAL(uint64_t, payload_alignment);
+    IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow);
+    IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_borrowed_samples);
+    IOX_BUILDER_OPTIONAL(uint64_t, history_size);
+    IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_buffer_size);
+    IOX_BUILDER_OPTIONAL(uint64_t, max_subscribers);
+    IOX_BUILDER_OPTIONAL(uint64_t, max_publishers);
+    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
 
   public:
     template <typename NewHeader>
-    ServiceBuilderPublishSubscribe<Payload, NewHeader, S> user_header() {
+    auto user_header() -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S> {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenOrCreateError>
-    open_or_create() && {
+    auto open_or_create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                              PublishSubscribeOpenOrCreateError> {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenOrCreateError>
-    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && {
+    auto open_or_create_with_attributes(
+        const AttributeVerifier&
+            required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                     PublishSubscribeOpenOrCreateError> {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> open() && {
+    auto open() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
         IOX_TODO();
     }
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>
-    open_with_attributes(const AttributeVerifier& required_attributes) && {
+    auto open_with_attributes(
+        const AttributeVerifier&
+            required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                     PublishSubscribeOpenError> {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> create() && {
+    auto create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
         IOX_TODO();
     }
-    iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>
-    create_with_attributes(const AttributeSpecifier& attributes) && {
+    auto create_with_attributes(
+        const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                                  PublishSubscribeOpenError> {
         IOX_TODO();
     }
 };

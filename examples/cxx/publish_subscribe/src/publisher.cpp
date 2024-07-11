@@ -10,15 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <iostream>
-
 #include "iox/duration.hpp"
 #include "iox2/node.hpp"
+#include "iox2/sample_mut.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
 #include "transmission_data.hpp"
+
+#include <iostream>
+#include <utility>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
-int main() {
+auto main() -> int {
     using namespace iox2;
     auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
@@ -34,7 +38,7 @@ int main() {
         counter += 1;
         auto sample = publisher.loan_uninit().expect("acquire sample");
 
-        sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 });
+        sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
 
         send_sample(std::move(sample)).expect("send successful");
 

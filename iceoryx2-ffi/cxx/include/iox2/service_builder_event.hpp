@@ -10,21 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_EVENT_BUILDER_HPP_
-#define IOX2_SERVICE_EVENT_BUILDER_HPP_
-
-#include <cstdint>
-#include <iox/builder.hpp>
-#include <iox/expected.hpp>
+#ifndef IOX2_SERVICE_EVENT_BUILDER_HPP
+#define IOX2_SERVICE_EVENT_BUILDER_HPP
 
 #include "attribute_specifier.hpp"
 #include "attribute_verifier.hpp"
 #include "iox/assertions_addendum.hpp"
+#include "iox/builder_addendum.hpp"
+#include "iox/expected.hpp"
 #include "port_factory_event.hpp"
 #include "service_type.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
-enum class EventOpenError {
+enum class EventOpenError : uint8_t {
     /// The [`Service`] does not exist.
     DoesNotExist,
     /// The process has not enough permissions to open the [`Service`]
@@ -68,7 +68,7 @@ enum class EventOpenError {
     IsMarkedForDestruction,
 };
 
-enum class EventCreateError {
+enum class EventCreateError : uint8_t {
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
     ServiceInCorruptedState,
@@ -94,38 +94,39 @@ enum class EventCreateError {
     OldConnectionsStillActive,
 };
 
-enum class EventOpenOrCreateError {
+enum class EventOpenOrCreateError : uint8_t {
 };
 
 template <ServiceType S>
 class ServiceBuilderEvent {
-    IOX_BUILDER_PARAMETER(int64_t, max_nodes, -1)
-    IOX_BUILDER_PARAMETER(int64_t, event_id_max_value, -1)
-    IOX_BUILDER_PARAMETER(int64_t, max_notifiers, -1)
-    IOX_BUILDER_PARAMETER(int64_t, max_listeners, -1)
+    IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+    IOX_BUILDER_OPTIONAL(uint64_t, event_id_max_value);
+    IOX_BUILDER_OPTIONAL(uint64_t, max_notifiers);
+    IOX_BUILDER_OPTIONAL(uint64_t, max_listeners);
 
   public:
-    iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> open_or_create() && {
+    auto open_or_create() && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError>
-    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && {
+    auto open_or_create_with_attributes(
+        const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryEvent<S>, EventOpenError> open() && {
+    auto open() && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
         IOX_TODO();
     }
-    iox::expected<PortFactoryEvent<S>, EventOpenError>
-    open_with_attributes(const AttributeVerifier& required_attributes) && {
+    auto open_with_attributes(
+        const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
         IOX_TODO();
     }
 
-    iox::expected<PortFactoryEvent<S>, EventOpenError> create() && {
+    auto create() && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
         IOX_TODO();
     }
-    iox::expected<PortFactoryEvent<S>, EventOpenError> create_with_attributes(const AttributeSpecifier& attributes) && {
+    auto create_with_attributes(
+        const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
         IOX_TODO();
     }
 };

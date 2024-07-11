@@ -10,20 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_ATTRIBUTE_HPP_
-#define IOX2_ATTRIBUTE_HPP_
-
-#include <string>
+#ifndef IOX2_ATTRIBUTE_HPP
+#define IOX2_ATTRIBUTE_HPP
 
 #include "iox/assertions_addendum.hpp"
+
+#include <string>
 
 namespace iox2 {
 class Attribute {
   public:
-    const std::string& key() const {
+    auto key() const -> const std::string& {
         IOX_TODO();
     }
-    const std::string& value() const {
+    auto value() const -> const std::string& {
         IOX_TODO();
     }
 };

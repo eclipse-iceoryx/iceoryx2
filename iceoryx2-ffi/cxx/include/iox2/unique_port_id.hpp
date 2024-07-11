@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_UNIQUE_PORT_ID_HPP_
-#define IOX2_UNIQUE_PORT_ID_HPP_
+#ifndef IOX2_UNIQUE_PORT_ID_HPP
+#define IOX2_UNIQUE_PORT_ID_HPP
 
 namespace iox2 {
 class UniquePublisherId { };

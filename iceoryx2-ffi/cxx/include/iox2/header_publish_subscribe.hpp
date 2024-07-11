@@ -10,21 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP_
-#define IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP_
+#ifndef IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP
+#define IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/layout.hpp"
-#include "service_type.hpp"
 #include "unique_port_id.hpp"
 
 namespace iox2 {
 class HeaderPublishSubscribe {
   public:
-    UniquePublisherId publisher_id() const {
+    auto publisher_id() const -> UniquePublisherId {
         IOX_TODO();
     }
-    iox::Layout payload_type_layout() const {
+    auto payload_type_layout() const -> iox::Layout {
         IOX_TODO();
     }
 };

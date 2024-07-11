@@ -10,22 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_NAME_HPP_
-#define IOX2_SERVICE_NAME_HPP_
-
-#include <iox/expected.hpp>
+#ifndef IOX2_SERVICE_NAME_HPP
+#define IOX2_SERVICE_NAME_HPP
 
 #include "iox/assertions_addendum.hpp"
+#include "iox/expected.hpp"
 #include "semantic_string.hpp"
 
 namespace iox2 {
 
 class ServiceName {
   public:
-    static iox::expected<ServiceName, SemanticStringError> create(const char* value) {
+    static auto create(const char* value) -> iox::expected<ServiceName, SemanticStringError> {
         IOX_TODO();
     }
-    const std::string& as_string() const {
+    auto as_string() const -> const std::string& {
         IOX_TODO();
     }
 };

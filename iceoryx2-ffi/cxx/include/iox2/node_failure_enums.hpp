@@ -10,19 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_FAILURE_ENUMS_HPP_
-#define IOX2_NODE_FAILURE_ENUMS_HPP_
+#ifndef IOX2_NODE_FAILURE_ENUMS_HPP
+#define IOX2_NODE_FAILURE_ENUMS_HPP
+
+#include <cstdint>
 
 namespace iox2 {
-enum class NodeListFailure {
+enum class NodeListFailure : uint8_t {
 };
 
-enum class NodeCreationFailure {
+enum class NodeCreationFailure : uint8_t {
     InsufficientPermissions,
     InternalError
 };
 
-enum class NodeCleanupFailure {
+enum class NodeCleanupFailure : uint8_t {
 };
 
 } // namespace iox2

@@ -10,31 +10,31 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_EVENT_ID_HPP_
-#define IOX2_EVENT_ID_HPP_
+#ifndef IOX2_EVENT_ID_HPP
+#define IOX2_EVENT_ID_HPP
+
+#include "iox/assertions_addendum.hpp"
 
 #include <cstdint>
 #include <iostream>
 
-#include "iox/assertions_addendum.hpp"
-
 namespace iox2 {
 class EventId {
   public:
-    EventId(const uint64_t value)
+    explicit EventId(const uint64_t value)
         : m_value { value } {
         IOX_TODO();
     }
-    uint64_t as_value() const {
+    auto as_value() const -> uint64_t {
         return m_value;
     }
 
   private:
-    friend std::ostream& operator<<(std::ostream&, const EventId&);
+    friend auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream&;
     uint64_t m_value;
 };
 
-inline std::ostream& operator<<(std::ostream& stream, const EventId& value) {
+inline auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream& {
     std::cout << "EventId { m_value: " << value.m_value << "}";
     return stream;
 }

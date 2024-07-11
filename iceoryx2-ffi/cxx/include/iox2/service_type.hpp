@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_TYPE_HPP_
-#define IOX2_SERVICE_TYPE_HPP_
+#ifndef IOX2_SERVICE_TYPE_HPP
+#define IOX2_SERVICE_TYPE_HPP
+
+#include <cstdint>
 
 namespace iox2 {
-enum class ServiceType {
+enum class ServiceType : uint8_t {
     Local,
     Ipc
 };

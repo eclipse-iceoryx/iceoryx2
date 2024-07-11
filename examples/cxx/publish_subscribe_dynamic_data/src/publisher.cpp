@@ -10,16 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <cstdint>
-#include <iostream>
-
 #include "iox/duration.hpp"
 #include "iox/slice.hpp"
 #include "iox2/node.hpp"
+#include "iox2/sample_mut.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
+
+#include <cstdint>
+#include <iostream>
+#include <utility>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
-int main() {
+auto main() -> int {
     using namespace iox2;
     auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
 
@@ -28,7 +32,7 @@ int main() {
                        .open_or_create()
                        .expect("successful service creation/opening");
 
-    uint64_t worst_case_memory_size = 1024;
+    uint64_t worst_case_memory_size = 1024; // NOLINT
     auto publisher = service.publisher_builder()
                          .max_slice_len(worst_case_memory_size)
                          .create()
@@ -39,9 +43,9 @@ int main() {
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         counter += 1;
 
-        auto required_memory_size = (8 + counter) % 16;
+        auto required_memory_size = (8 + counter) % 16; // NOLINT
         auto sample = publisher.loan_slice_uninit(required_memory_size).expect("acquire sample");
-        sample.write_from_fn([&](auto byte_idx) { return (byte_idx + counter) % 255; });
+        sample.write_from_fn([&](auto byte_idx) { return (byte_idx + counter) % 255; }); // NOLINT
 
         send_sample(std::move(sample)).expect("send successful");
 

@@ -10,26 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_STATIC_CONFIG_EVENT_HPP_
-#define IOX2_STATIC_CONFIG_EVENT_HPP_
-
-#include <cstdint>
+#ifndef IOX2_STATIC_CONFIG_EVENT_HPP
+#define IOX2_STATIC_CONFIG_EVENT_HPP
 
 #include "iox/assertions_addendum.hpp"
+
+#include <cstdint>
 
 namespace iox2 {
 class StaticConfigEvent {
   public:
-    uint64_t max_nodes() const {
+    auto max_nodes() const -> uint64_t {
         IOX_TODO();
     }
-    uint64_t max_notifiers() const {
+    auto max_notifiers() const -> uint64_t {
         IOX_TODO();
     }
-    uint64_t max_listeners() const {
+    auto max_listeners() const -> uint64_t {
         IOX_TODO();
     }
-    uint64_t event_id_max_value() const {
+    auto event_id_max_value() const -> uint64_t {
         IOX_TODO();
     }
 };

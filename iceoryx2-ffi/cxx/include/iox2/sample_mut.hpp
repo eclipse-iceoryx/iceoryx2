@@ -10,10 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SAMPLE_MUT_HPP_
-#define IOX2_SAMPLE_MUT_HPP_
-
-#include <cstdint>
+#ifndef IOX2_SAMPLE_MUT_HPP
+#define IOX2_SAMPLE_MUT_HPP
 
 #include "header_publish_subscribe.hpp"
 #include "iox/assertions_addendum.hpp"
@@ -22,10 +20,12 @@
 #include "iox/slice.hpp"
 #include "service_type.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
 /// Failure that can be emitted when a [`SampleMut`] is sent via
 /// [`SampleMut::send()`].
-enum PublisherSendError {
+enum PublisherSendError : uint8_t {
     /// [`SampleMut::send()`] was called but the corresponding [`Publisher`]
     /// went already out of
     /// scope.
@@ -44,19 +44,19 @@ enum PublisherSendError {
 template <ServiceType S, typename Payload, typename UserHeader>
 class SampleMut {
   public:
-    const HeaderPublishSubscribe& header() const {
+    auto header() const -> const HeaderPublishSubscribe& {
         IOX_TODO();
     }
-    const UserHeader& user_header() const {
+    auto user_header() const -> const UserHeader& {
         IOX_TODO();
     }
-    UserHeader& user_header_mut() {
+    auto user_header_mut() -> UserHeader& {
         IOX_TODO();
     }
-    const Payload& payload() const {
+    auto payload() const -> const Payload& {
         IOX_TODO();
     }
-    Payload& payload_mut() {
+    auto payload_mut() -> Payload& {
         IOX_TODO();
     }
     void write_payload(const Payload& payload) {
@@ -67,13 +67,13 @@ class SampleMut {
 template <ServiceType S, typename Payload>
 class SampleMut<S, Payload, void> {
   public:
-    const HeaderPublishSubscribe& header() const {
+    auto header() const -> const HeaderPublishSubscribe& {
         IOX_TODO();
     }
-    const Payload& payload() const {
+    auto payload() const -> const Payload& {
         IOX_TODO();
     }
-    Payload& payload_mut() {
+    auto payload_mut() -> Payload& {
         IOX_TODO();
     }
     void write_payload(const Payload& payload) {
@@ -84,13 +84,13 @@ class SampleMut<S, Payload, void> {
 template <ServiceType S, typename Payload>
 class SampleMut<S, iox::Slice<Payload>, void> {
   public:
-    const HeaderPublishSubscribe& header() const {
+    auto header() const -> const HeaderPublishSubscribe& {
         IOX_TODO();
     }
-    const Payload& payload() const {
+    auto payload() const -> const Payload& {
         IOX_TODO();
     }
-    Payload& payload_mut() {
+    auto payload_mut() -> Payload& {
         IOX_TODO();
     }
     void write_from_fn(const iox::function<Payload(uint64_t)>& initializer) {
@@ -99,7 +99,7 @@ class SampleMut<S, iox::Slice<Payload>, void> {
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
-iox::expected<uint64_t, PublisherSendError> send_sample(SampleMut<S, Payload, UserHeader>&& sample) {
+auto send_sample(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<uint64_t, PublisherSendError> {
     IOX_TODO();
 }
 

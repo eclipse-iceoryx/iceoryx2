@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_STATIC_CONFIG_HPP_
-#define IOX2_STATIC_CONFIG_HPP_
+#ifndef IOX2_STATIC_CONFIG_HPP
+#define IOX2_STATIC_CONFIG_HPP
 
 #include <string>
 
@@ -22,13 +22,13 @@
 namespace iox2 {
 class StaticConfig {
   public:
-    const AttributeSet& attributes() const {
+    auto attributes() const -> const AttributeSet& {
         IOX_TODO();
     }
-    std::string uuid() const {
+    auto uuid() const -> std::string {
         IOX_TODO();
     }
-    ServiceName name() const {
+    auto name() const -> ServiceName {
         IOX_TODO();
     }
 };

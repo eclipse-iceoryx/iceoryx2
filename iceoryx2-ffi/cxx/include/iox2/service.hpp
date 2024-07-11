@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_HPP_
-#define IOX2_SERVICE_HPP_
+#ifndef IOX2_SERVICE_HPP
+#define IOX2_SERVICE_HPP
 
 #include "callback_progression.hpp"
 #include "config.hpp"
@@ -24,8 +24,10 @@
 #include "service_name.hpp"
 #include "service_type.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
-enum class ServiceDetailsError {
+enum class ServiceDetailsError : uint8_t {
     /// The underlying static [`Service`] information could not be opened.
     FailedToOpenStaticServiceInfo,
     /// The underlying static [`Service`] information could not be read.
@@ -45,7 +47,7 @@ enum class ServiceDetailsError {
     FailedToAcquireNodeState,
 };
 
-enum class ServiceListError {
+enum class ServiceListError : uint8_t {
     /// The process has insufficient permissions to list all [`Service`]s.
     InsufficientPermissions,
     /// Errors that indicate either an implementation issue or a wrongly
@@ -56,18 +58,19 @@ enum class ServiceListError {
 template <ServiceType S>
 class Service {
   public:
-    static iox::expected<bool, ServiceDetailsError>
-    does_exist(const ServiceName& service_name, const Config& config, const MessagingPattern messaging_pattern) {
+    static auto does_exist(const ServiceName& service_name,
+                           const Config& config,
+                           const MessagingPattern messaging_pattern) -> iox::expected<bool, ServiceDetailsError> {
         IOX_TODO();
     }
 
-    static iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError>
-    details(const ServiceName& service_name, const Config& config, const MessagingPattern messaging_pattern) {
+    static auto details(const ServiceName& service_name, const Config& config, const MessagingPattern messaging_pattern)
+        -> iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError> {
         IOX_TODO();
     }
 
-    static iox::expected<void, ServiceListError>
-    list(const Config& config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback) {
+    static auto list(const Config& config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback)
+        -> iox::expected<void, ServiceListError> {
         IOX_TODO();
     }
 };

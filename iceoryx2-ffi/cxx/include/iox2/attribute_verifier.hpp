@@ -10,34 +10,34 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_ATTRIBUTE_VERIFIER_HPP_
-#define IOX2_ATTRIBUTE_VERIFIER_HPP_
+#ifndef IOX2_ATTRIBUTE_VERIFIER_HPP
+#define IOX2_ATTRIBUTE_VERIFIER_HPP
+
+#include "attribute_set.hpp"
+#include "iox/assertions_addendum.hpp"
 
 #include <iox/expected.hpp>
 #include <string>
 #include <vector>
 
-#include "attribute_set.hpp"
-#include "iox/assertions_addendum.hpp"
-
 namespace iox2 {
 class AttributeVerifier {
   public:
     AttributeVerifier() = default;
-    AttributeVerifier& require(const std::string& key, const std::string& value) {
+    auto require(const std::string& key, const std::string& value) -> AttributeVerifier& {
         IOX_TODO();
     }
-    AttributeVerifier& require_key(const std::string& key) {
+    auto require_key(const std::string& key) -> AttributeVerifier& {
         IOX_TODO();
     }
-    const AttributeSet& attributes() const {
+    auto attributes() const -> const AttributeSet& {
         IOX_TODO();
     }
-    std::vector<std::string> keys() const {
+    auto keys() const -> std::vector<std::string> {
         IOX_TODO();
     }
 
-    iox::expected<void, std::string> verify_requirements(const AttributeSet& rhs) const {
+    auto verify_requirements(const AttributeSet& rhs) const -> iox::expected<void, std::string> {
         IOX_TODO();
     }
 };

@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_MESSAGE_TYPE_DETAILS_HPP_
-#define IOX2_MESSAGE_TYPE_DETAILS_HPP_
+#ifndef IOX2_MESSAGE_TYPE_DETAILS_HPP
+#define IOX2_MESSAGE_TYPE_DETAILS_HPP
 
 #include <cstdint>
 #include <string>
@@ -20,7 +20,7 @@ namespace iox2 {
 /// Defines if the type is a slice with a runtime-size
 /// ([`TypeVariant::Dynamic`]) or if its a type that satisfies [`Sized`]
 /// ([`TypeVariant::FixedSize`]).
-enum class TypeVariant {
+enum class TypeVariant : uint8_t {
     /// A fixed size type like [`u64`]
     FixedSize,
     /// A dynamic sized type like a slice

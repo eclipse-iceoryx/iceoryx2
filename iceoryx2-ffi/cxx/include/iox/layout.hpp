@@ -10,20 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_LAYOUT_HPP_
-#define IOX_LAYOUT_HPP_
-
-#include <cstdint>
+#ifndef IOX_LAYOUT_HPP
+#define IOX_LAYOUT_HPP
 
 #include "iox/assertions_addendum.hpp"
+
+#include <cstdint>
 
 namespace iox {
 class Layout {
   public:
-    uint64_t size() const {
+    auto size() const -> uint64_t {
         IOX_TODO();
     }
-    uint64_t alignment() const {
+    auto alignment() const -> uint64_t {
         IOX_TODO();
     }
 };

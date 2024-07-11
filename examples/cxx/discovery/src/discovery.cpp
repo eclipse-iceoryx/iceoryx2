@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <iostream>
-
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/service.hpp"
 #include "iox2/service_type.hpp"
 
-int main() {
+#include <iostream>
+
+auto main() -> int {
     using namespace iox2;
 
     Service<ServiceType::Ipc>::list(Config::global_config(), [](auto service) {

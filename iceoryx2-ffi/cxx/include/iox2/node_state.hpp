@@ -10,10 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_STATE_HPP_
-#define IOX2_NODE_STATE_HPP_
+#ifndef IOX2_NODE_STATE_HPP
+#define IOX2_NODE_STATE_HPP
 
 #include "iox/assertions_addendum.hpp"
+#include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/optional.hpp"
 #include "node_details.hpp"
@@ -26,10 +27,10 @@ namespace iox2 {
 template <ServiceType>
 class AliveNodeView {
   public:
-    const NodeId& id() const {
+    auto id() const -> const NodeId& {
         IOX_TODO();
     }
-    const iox::optional<NodeDetails> details() const {
+    auto details() const -> iox::optional<NodeDetails> {
         IOX_TODO();
     }
 };
@@ -37,13 +38,13 @@ class AliveNodeView {
 template <ServiceType>
 class DeadNodeView {
   public:
-    const NodeId& id() const {
+    auto id() const -> const NodeId& {
         IOX_TODO();
     }
-    const iox::optional<NodeDetails> details() const {
+    auto details() const -> iox::optional<NodeDetails> {
         IOX_TODO();
     }
-    iox::expected<bool, NodeCleanupFailure> remove_stale_resources() {
+    auto remove_stale_resources() -> iox::expected<bool, NodeCleanupFailure> {
         IOX_TODO();
     }
 };
@@ -51,16 +52,16 @@ class DeadNodeView {
 template <ServiceType T>
 class NodeState {
   public:
-    NodeState& if_alive(const iox::function<void(AliveNodeView<T>&)>& callback) {
+    auto if_alive(const iox::function<void(AliveNodeView<T>&)>& callback) -> NodeState& {
         IOX_TODO();
     }
-    NodeState& is_dead(const iox::function<void(DeadNodeView<T>&)>& callback) {
+    auto is_dead(const iox::function<void(DeadNodeView<T>&)>& callback) -> NodeState& {
         IOX_TODO();
     }
-    NodeState& is_inaccessible(const iox::function<void(NodeId&)>& callback) {
+    auto is_inaccessible(const iox::function<void(NodeId&)>& callback) -> NodeState& {
         IOX_TODO();
     }
-    NodeState& is_undefined(const iox::function<void(NodeId&)>& callback) {
+    auto is_undefined(const iox::function<void(NodeId&)>& callback) -> NodeState& {
         IOX_TODO();
     }
 };

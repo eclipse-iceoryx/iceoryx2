@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_DETAILS_HPP_
-#define IOX2_NODE_DETAILS_HPP_
+#ifndef IOX2_NODE_DETAILS_HPP
+#define IOX2_NODE_DETAILS_HPP
 
 #include "config.hpp"
 #include "iox/assertions_addendum.hpp"
@@ -20,10 +20,10 @@
 namespace iox2 {
 class NodeDetails {
   public:
-    const NodeName& name() const {
+    auto name() const -> const NodeName& {
         IOX_TODO();
     }
-    const Config& config() const {
+    auto config() const -> const Config& {
         IOX_TODO();
     }
 };

@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_BUILDER_HPP_
-#define IOX2_SERVICE_BUILDER_HPP_
+#ifndef IOX2_SERVICE_BUILDER_HPP
+#define IOX2_SERVICE_BUILDER_HPP
 
 #include "iox/assertions_addendum.hpp"
 #include "service_builder_event.hpp"
@@ -24,11 +24,11 @@ template <ServiceType S>
 class ServiceBuilder {
   public:
     template <typename Payload>
-    ServiceBuilderPublishSubscribe<Payload, void, S> publish_subscribe() {
+    auto publish_subscribe() -> ServiceBuilderPublishSubscribe<Payload, void, S> {
         IOX_TODO();
     }
 
-    ServiceBuilderEvent<S> event() {
+    auto event() -> ServiceBuilderEvent<S> {
         IOX_TODO();
     }
 };

@@ -10,25 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PORTFACTORY_SUBSCRIBER_HPP_
-#define IOX2_PORTFACTORY_SUBSCRIBER_HPP_
-
-#include <cstdint>
+#ifndef IOX2_PORTFACTORY_SUBSCRIBER_HPP
+#define IOX2_PORTFACTORY_SUBSCRIBER_HPP
 
 #include "iox/assertions_addendum.hpp"
-#include "iox/builder.hpp"
+#include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
 #include "service_type.hpp"
 #include "subscriber.hpp"
+
+#include <cstdint>
 
 namespace iox2 {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactorySubscriber {
-    IOX_BUILDER_PARAMETER(int64_t, history_size, -1)
+    IOX_BUILDER_OPTIONAL(uint64_t, history_size);
 
   public:
-    iox::expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError> create() && {
+    auto create() && -> iox::expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError> {
         IOX_TODO();
     }
 };

@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_EXAMPLES_CUSTOM_HEADER_HPP_
-#define IOX2_EXAMPLES_CUSTOM_HEADER_HPP_
+#ifndef IOX2_EXAMPLES_CUSTOM_HEADER_HPP
+#define IOX2_EXAMPLES_CUSTOM_HEADER_HPP
 
 #include <cstdint>
 #include <iostream>
@@ -21,7 +21,7 @@ struct CustomHeader {
     uint64_t timestamp;
 };
 
-inline std::ostream& operator<<(std::ostream& stream, const CustomHeader& value) {
+inline auto operator<<(std::ostream& stream, const CustomHeader& value) -> std::ostream&  {
     std::cout << "CustomHeader { version: " << value.version << ", timestamp: " << value.timestamp << "}";
     return stream;
 }

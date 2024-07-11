@@ -10,40 +10,39 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX_SLICE_HPP_
-#define IOX_SLICE_HPP_
-
-#include <cstdint>
+#ifndef IOX_SLICE_HPP
+#define IOX_SLICE_HPP
 
 #include "iox/assertions_addendum.hpp"
+
+#include <cstdint>
 
 namespace iox {
 template <typename T>
 class Slice {
   public:
-    using iterator = T*;
-    using const_iterator = const T*;
+    using Iterator = T*;
+    using ConstIterator = const T*;
 
-    uint64_t size() const {
+    auto size() const -> uint64_t {
         IOX_TODO();
     }
-    const T& operator[](const uint64_t n) const {
+    auto operator[](const uint64_t n) const -> const T& {
         IOX_TODO();
     }
-    T& operator[](const uint64_t n) {
+    auto operator[](const uint64_t n) -> T& {
         IOX_TODO();
     }
-
-    iterator begin() {
+    auto begin() -> Iterator {
         IOX_TODO();
     }
-    const_iterator begin() const {
+    auto begin() const -> ConstIterator {
         IOX_TODO();
     }
-    iterator end() {
+    auto end() -> Iterator {
         IOX_TODO();
     }
-    const_iterator end() const {
+    auto end() const -> ConstIterator {
         IOX_TODO();
     }
 };

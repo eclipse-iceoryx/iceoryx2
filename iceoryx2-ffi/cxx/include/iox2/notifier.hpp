@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NOTIFIER_HPP_
-#define IOX2_NOTIFIER_HPP_
+#ifndef IOX2_NOTIFIER_HPP
+#define IOX2_NOTIFIER_HPP
 
 #include "event_id.hpp"
 #include "iox/assertions_addendum.hpp"
@@ -19,8 +19,10 @@
 #include "service_type.hpp"
 #include "unique_port_id.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
-enum class NotifierCreateError {
+enum class NotifierCreateError : uint8_t {
     /// The maximum amount of [`Notifier`]s that can connect to a
     /// [`Service`](crate::service::Service) is
     /// defined in [`crate::config::Config`]. When this is exceeded no more
@@ -29,7 +31,7 @@ enum class NotifierCreateError {
     ExceedsMaxSupportedNotifiers,
 };
 
-enum class NotifierNotifyError {
+enum class NotifierNotifyError : uint8_t {
     /// A [`Notifier::notify_with_custom_event_id()`] was called and the
     /// provided [`EventId`]
     /// is greater than the maximum supported [`EventId`] by the
@@ -40,13 +42,13 @@ enum class NotifierNotifyError {
 template <ServiceType S>
 class Notifier {
   public:
-    UniqueNotifierId id() const {
+    auto id() const -> UniqueNotifierId {
         IOX_TODO();
     }
-    iox::expected<uint64_t, NotifierNotifyError> notify() const {
+    auto notify() const -> iox::expected<uint64_t, NotifierNotifyError> {
         IOX_TODO();
     }
-    iox::expected<uint64_t, NotifierNotifyError> notify_with_custom_event_id(const EventId id) const {
+    auto notify_with_custom_event_id(const EventId event_id) const -> iox::expected<uint64_t, NotifierNotifyError> {
         IOX_TODO();
     }
 };

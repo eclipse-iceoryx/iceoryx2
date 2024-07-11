@@ -10,24 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_NAME_HPP_
-#define IOX2_NODE_NAME_HPP_
-
-#include <string>
+#ifndef IOX2_NODE_NAME_HPP
+#define IOX2_NODE_NAME_HPP
 
 #include "internal/iceoryx2.hpp"
 #include "iox/expected.hpp"
 #include "semantic_string.hpp"
 
+#include <string>
+
 namespace iox2 {
 class NodeName {
   public:
-    static iox::expected<NodeName, SemanticStringError> create(const char* value);
+    static auto create(const char* value) -> iox::expected<NodeName, SemanticStringError>;
 
-    const std::string& as_string() const;
+    auto as_string() const -> const std::string&;
 
   private:
-    iox2_node_name_storage_t value;
+    iox2_node_name_storage_t m_value;
 };
 } // namespace iox2
 

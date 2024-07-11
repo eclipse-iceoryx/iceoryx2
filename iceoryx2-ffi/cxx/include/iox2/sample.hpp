@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SAMPLE_HPP_
-#define IOX2_SAMPLE_HPP_
+#ifndef IOX2_SAMPLE_HPP
+#define IOX2_SAMPLE_HPP
 
 #include "header_publish_subscribe.hpp"
 #include "iox/assertions_addendum.hpp"
@@ -23,16 +23,16 @@ namespace iox2 {
 template <ServiceType, typename Payload, typename UserHeader>
 class Sample {
   public:
-    const Payload& payload() const {
+    auto payload() const -> const Payload& {
         IOX_TODO();
     }
-    const UserHeader& user_header() const {
+    auto user_header() const -> const UserHeader& {
         IOX_TODO();
     }
-    const HeaderPublishSubscribe& header() const {
+    auto header() const -> const HeaderPublishSubscribe& {
         IOX_TODO();
     }
-    UniquePublisherId origin() const {
+    auto origin() const -> UniquePublisherId {
         IOX_TODO();
     }
 };
@@ -40,13 +40,13 @@ class Sample {
 template <ServiceType S, typename Payload>
 class Sample<S, Payload, void> {
   public:
-    const Payload& payload() const {
+    auto payload() const -> const Payload& {
         IOX_TODO();
     }
-    const HeaderPublishSubscribe& header() const {
+    auto header() const -> const HeaderPublishSubscribe& {
         IOX_TODO();
     }
-    UniquePublisherId origin() const {
+    auto origin() const -> UniquePublisherId {
         IOX_TODO();
     }
 };

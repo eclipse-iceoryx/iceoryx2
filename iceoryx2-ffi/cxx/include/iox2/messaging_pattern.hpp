@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_MESSAGING_PATTERN_HPP_
-#define IOX2_MESSAGING_PATTERN_HPP_
+#ifndef IOX2_MESSAGING_PATTERN_HPP
+#define IOX2_MESSAGING_PATTERN_HPP
+
+#include <cstdint>
 
 namespace iox2 {
-enum class MessagingPattern {
+enum class MessagingPattern : uint8_t {
     /// Unidirectional communication pattern where the
     /// [`Publisher`](crate::port::publisher::Publisher) sends arbitrary data to
     /// the

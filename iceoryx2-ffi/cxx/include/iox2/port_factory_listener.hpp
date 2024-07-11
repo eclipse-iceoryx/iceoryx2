@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PORTFACTORY_LISTENER_HPP_
-#define IOX2_PORTFACTORY_LISTENER_HPP_
+#ifndef IOX2_PORTFACTORY_LISTENER_HPP
+#define IOX2_PORTFACTORY_LISTENER_HPP
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
@@ -22,7 +22,7 @@ namespace iox2 {
 template <ServiceType S>
 class PortFactoryListener {
   public:
-    iox::expected<Listener<S>, ListenerCreateError> create() && {
+    auto create() && -> iox::expected<Listener<S>, ListenerCreateError> {
         IOX_TODO();
     }
 };

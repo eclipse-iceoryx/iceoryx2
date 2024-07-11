@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SEMANTIC_STRING_HPP_
-#define IOX2_SEMANTIC_STRING_HPP_
+#ifndef IOX2_SEMANTIC_STRING_HPP
+#define IOX2_SEMANTIC_STRING_HPP
+
+#include <cstdint>
 
 namespace iox2 {
-enum class SemanticStringError {
+enum class SemanticStringError : uint8_t {
 };
 } // namespace iox2
 

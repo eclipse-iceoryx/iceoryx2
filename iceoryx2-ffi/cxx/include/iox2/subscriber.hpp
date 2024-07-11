@@ -10,10 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SUBSCRIBER_HPP_
-#define IOX2_SUBSCRIBER_HPP_
-
-#include <cstdint>
+#ifndef IOX2_SUBSCRIBER_HPP
+#define IOX2_SUBSCRIBER_HPP
 
 #include "connection_failure.hpp"
 #include "iox/assertions_addendum.hpp"
@@ -23,11 +21,13 @@
 #include "service_type.hpp"
 #include "unique_port_id.hpp"
 
+#include <cstdint>
+
 namespace iox2 {
-enum class SubscriberReceiveError {
+enum class SubscriberReceiveError : uint8_t {
 };
 
-enum class SubscriberCreateError {
+enum class SubscriberCreateError : uint8_t {
     /// The maximum amount of [`Subscriber`]s that can connect to a
     /// [`Service`](crate::service::Service) is
     /// defined in [`crate::config::Config`]. When this is exceeded no more
@@ -42,16 +42,16 @@ enum class SubscriberCreateError {
 template <ServiceType S, typename Payload, typename UserHeader>
 class Subscriber {
   public:
-    UniqueSubscriberId id() const {
+    auto id() const -> UniqueSubscriberId {
         IOX_TODO();
     }
-    uint64_t buffer_size() const {
+    auto buffer_size() const -> uint64_t {
         IOX_TODO();
     }
-    iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> receive() const {
+    auto receive() const -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> {
         IOX_TODO();
     }
-    iox::expected<void, ConnectionFailure> update_connections() const {
+    auto update_connections() const -> iox::expected<void, ConnectionFailure> {
         IOX_TODO();
     }
 };
