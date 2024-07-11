@@ -21,7 +21,7 @@ struct CustomHeader {
     uint64_t timestamp;
 };
 
-inline auto operator<<(std::ostream& stream, const CustomHeader& value) -> std::ostream&  {
+inline auto operator<<(std::ostream& stream, const CustomHeader& value) -> std::ostream& {
     std::cout << "CustomHeader { version: " << value.version << ", timestamp: " << value.timestamp << "}";
     return stream;
 }

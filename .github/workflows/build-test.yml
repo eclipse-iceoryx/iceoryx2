@@ -81,6 +81,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
+      - name: Install clang-tidy and clang-format
+        uses: ./.github/actions/install-iceoryx-deps-and-clang
+
       - name: clang-format and clang-tidy versions
         run: |
             clang-format --version
