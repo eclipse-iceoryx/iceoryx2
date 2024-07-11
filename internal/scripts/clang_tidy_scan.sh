@@ -32,8 +32,8 @@ WARN_MODE_PARAM=""
 DIRECTORIES_MODE=false
 FILES_MODE=false
 FULL_MODE=false
+CACHED_COMMIT_MODE=false
 MODIFIED_MODE=false
-
 
 while (( "$#" )); do
     case "$1" in
@@ -46,6 +46,10 @@ while (( "$#" )); do
             FILES_TO_SCAN=$2
             FILES_MODE=true
             shift 2
+            ;;
+        cached-commit)
+            CACHED_COMMIT_MODE=true
+            shift 1
             ;;
         full)
             FULL_MODE=true
@@ -70,9 +74,10 @@ while (( "$#" )); do
             echo "                          Multiple files must be enclosed in quotes"
             echo "                          e.g. --files \"file1 file2 file3\""
             echo "Args:"
+            echo "    cached-commit         Scan all modified and added files which are cached for a commit"
             echo "    full                  Scan all versioned files from [$DIRECTORIES_TO_SCAN]"
             echo "    help                  Print this help"
-            echo "    modified              Scan all modified files from [$DIRECTORIES_TO_SCAN]"
+            echo "    modified              Scan all modified, added and untracked files from the git repo"
             echo "    warning-as-error      Treat warnings as errors"
             echo ""
             exit 0
@@ -86,6 +91,50 @@ done
 
 WORKSPACE=$(git rev-parse --show-toplevel)
 cd "${WORKSPACE}"
+
+# exit no relevant files need to be scanned
+MODIFIED_FILES=""
+ADDED_FILES=""
+FILE_LIST=""
+if [[ $FILES_MODE == true ]]; then
+    SEPARATOR=''
+    for FILE in ${FILES_TO_SCAN}; do
+        if [[ $FILE =~ $FILE_FILTER ]]; then
+            FILE_LIST+="${SEPARATOR}${FILE}"
+            SEPARATOR=$'\n'
+        fi
+    done
+
+    FILE_LIST_ARRAY=(${FILE_LIST})
+    NUMBER_OF_FILES=${#FILE_LIST_ARRAY[@]}
+
+    if [[ ${NUMBER_OF_FILES} -eq 0 ]]; then
+        echo -e "${COLOR_YELLOW}-> nothing to do${COLOR_OFF}"
+        exit 0
+    fi
+elif [[ $CACHED_COMMIT_MODE == true ]]; then
+    MODIFIED_FILES=$(git diff --cached --name-only --diff-filter=CMRT | grep -E "$FILE_FILTER" | cat)
+    MODIFIED_FILES_ARRAY=(${MODIFIED_FILES})
+    NUMBER_OF_MODIFIED_FILES=${#MODIFIED_FILES_ARRAY[@]}
+
+    ADDED_FILES=$(git diff --cached --name-only --diff-filter=A | grep -E "$FILE_FILTER" | cat)
+    ADDED_FILES_ARRAY=(${ADDED_FILES})
+    NUMBER_OF_ADDED_FILES=${#ADDED_FILES_ARRAY[@]}
+
+    if [[ ${NUMBER_OF_MODIFIED_FILES} -eq 0 && ${NUMBER_OF_ADDED_FILES} -eq 0 ]]; then
+        echo -e "${COLOR_YELLOW}-> nothing to do${COLOR_OFF}"
+        exit 0
+    fi
+elif [[ $MODIFIED_MODE == true ]]; then
+    MODIFIED_FILES=$(git status --porcelain | grep '^[ AM?]'| grep -E "$FILE_FILTER" | sed 's/^.\{2\} //')
+    MODIFIED_FILES_ARRAY=(${MODIFIED_FILES})
+    NUMBER_OF_MODIFIED_FILES=${#MODIFIED_FILES_ARRAY[@]}
+
+    if [[ ${NUMBER_OF_MODIFIED_FILES} -eq 0 ]]; then
+        echo -e "${COLOR_YELLOW}-> nothing to do${COLOR_OFF}"
+        exit 0
+    fi
+fi
 
 # we have to ensure that everything is build otherwise clang-tidy may not find some header
 echo -e "${COLOR_YELLOW}Building iceoryx-ffi and C/C++ bindings as preparation for clang-tidy${COLOR_OFF}"
@@ -164,31 +213,17 @@ if [[ $FULL_MODE == true || $DIRECTORIES_MODE == true ]]; then
     echo "Checking files in [${DIRECTORIES_TO_SCAN}]"
     scan "${FILES}"
 elif [[ $FILES_MODE == true ]]; then
-    FILES_TO_SCAN_ARRAY=(${FILES_TO_SCAN})
-    NUMBER_OF_FILES=${#FILES_TO_SCAN_ARRAY[@]}
-    if [[ ${NUMBER_OF_FILES} -gt 0 ]]
-    then
-        FILES=""
-        SEPARATOR=''
-        for FILE in ${FILES_TO_SCAN}; do
-            FILES+="${SEPARATOR}${FILE}"
-            SEPARATOR=$'\n'
-        done
-
-        scan "$FILES"
-    else
-        echo "No files to scan"
-    fi
-elif [[ $MODIFIED_MODE == true ]]; then
-    MODIFIED_FILES=$(git diff --cached --name-only --diff-filter=CMRT | grep -E "$FILE_FILTER" | cat)
     echo ""
-    echo "Checking modified files in [${DIRECTORIES_TO_SCAN}]"
+    echo "Checking files from provided list"
+    scan "$FILE_LIST"
+elif [[ $CACHED_COMMIT_MODE == true || $MODIFIED_MODE == true ]]; then
+    echo ""
+    echo "Checking modified files"
     scan "${MODIFIED_FILES}"
 
     # List only added files
-    ADDED_FILES=$(git diff --cached --name-only --diff-filter=A | grep -E "$FILE_FILTER" | cat)
     echo ""
-    echo "Checking added files in [${DIRECTORIES_TO_SCAN}]"
+    echo "Checking added files"
     scan "${ADDED_FILES}"
 fi
 
