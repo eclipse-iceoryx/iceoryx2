@@ -12,10 +12,18 @@ ENV PATH="/root/.cargo/bin:$PATH"
 # Minimize the number of layers (RUN, COPY and ADD create layers)
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#minimize-the-number-of-layers
 RUN echo "#### Installing dependencies" \
-  && apt update && apt install -y \
-       clang \
-       clang-format \
-       clang-tidy \
+  && apt update \
+  && apt install -y \
+       gnupg \
+       software-properties-common \
+       wget \
+  && wget -P /tmp https://apt.llvm.org/llvm-snapshot.gpg.key \
+  && apt-key add /tmp/llvm-snapshot.gpg.key \
+  && add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" \
+  && apt install -y \
+       clang-18 \
+       clang-format-18 \
+       clang-tidy-18 \
        cmake \
        curl \
        gcc \
@@ -23,6 +31,10 @@ RUN echo "#### Installing dependencies" \
        libacl1-dev \
   && rm -rf /var/lib/apt/lists/* \
   && apt clean \
+  && ln -s /usr/bin/clang-18 /usr/bin/clang \
+  && ln -s /usr/bin/clang++-18 /usr/bin/clang++ \
+  && ln -s /usr/bin/clang-tidy-18 /usr/bin/clang-tidy \
+  && ln -s /usr/bin/clang-format-18 /usr/bin/clang-format \
   && echo "#### Install minimal Rust toolchain" \
   && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path \
   && echo "#### Adding beta and nightly toolchain" \
