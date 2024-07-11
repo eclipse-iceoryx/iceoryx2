@@ -14,6 +14,8 @@
 
 #include <dirent.h>
 
-int iox2_dirfd(DIR *dirp) { return dirfd(dirp); };
+int iox2_dirfd(DIR* dirp) {
+    return dirfd(dirp);
+};
 
 #endif

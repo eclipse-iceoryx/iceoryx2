@@ -82,30 +82,66 @@ typedef int acl_permset_t;
 #define ACL_FIRST_ENTRY 7
 #define ACL_NEXT_ENTRY 8
 
-int acl_get_perm(acl_permset_t, acl_perm_t) { return 0; }
-acl_t acl_init(int) { return 0; }
-int acl_free(void *) { return 0; }
-int acl_valid(acl_t) { return 0; }
-int acl_create_entry(acl_t *, acl_entry_t *) { return 0; }
-int acl_get_entry(acl_t, int, acl_entry_t *) { return 0; }
-int acl_add_perm(acl_permset_t, acl_perm_t) { return 0; }
-int acl_clear_perms(acl_permset_t) { return 0; }
-int acl_get_permset(acl_entry_t, acl_permset_t *) { return 0; }
-int acl_set_permset(acl_entry_t, acl_permset_t) { return 0; }
-void *acl_get_qualifier(acl_entry_t) { return NULL; }
-int acl_set_qualifier(acl_entry_t, const void *) { return 0; }
-int acl_get_tag_type(acl_entry_t, acl_tag_t *) { return 0; }
-int acl_set_tag_type(acl_entry_t, acl_tag_t) { return 0; }
-acl_t acl_get_fd(int) { return 0; }
-int acl_set_fd(int, acl_t) { return 0; }
-char *acl_to_text(acl_t, ssize_t *) { return NULL; }
-acl_t acl_from_text(const char *) { return 0; }
+int acl_get_perm(acl_permset_t, acl_perm_t) {
+    return 0;
+}
+acl_t acl_init(int) {
+    return 0;
+}
+int acl_free(void*) {
+    return 0;
+}
+int acl_valid(acl_t) {
+    return 0;
+}
+int acl_create_entry(acl_t*, acl_entry_t*) {
+    return 0;
+}
+int acl_get_entry(acl_t, int, acl_entry_t*) {
+    return 0;
+}
+int acl_add_perm(acl_permset_t, acl_perm_t) {
+    return 0;
+}
+int acl_clear_perms(acl_permset_t) {
+    return 0;
+}
+int acl_get_permset(acl_entry_t, acl_permset_t*) {
+    return 0;
+}
+int acl_set_permset(acl_entry_t, acl_permset_t) {
+    return 0;
+}
+void* acl_get_qualifier(acl_entry_t) {
+    return NULL;
+}
+int acl_set_qualifier(acl_entry_t, const void*) {
+    return 0;
+}
+int acl_get_tag_type(acl_entry_t, acl_tag_t*) {
+    return 0;
+}
+int acl_set_tag_type(acl_entry_t, acl_tag_t) {
+    return 0;
+}
+acl_t acl_get_fd(int) {
+    return 0;
+}
+int acl_set_fd(int, acl_t) {
+    return 0;
+}
+char* acl_to_text(acl_t, ssize_t*) {
+    return NULL;
+}
+acl_t acl_from_text(const char*) {
+    return 0;
+}
 #endif
 
 #if !(defined(_WIN64) || defined(_WIN32))
 struct iox2_sigaction {
-  size_t iox2_sa_handler;
-  sigset_t iox2_sa_mask;
-  int iox2_sa_flags;
+    size_t iox2_sa_handler;
+    sigset_t iox2_sa_mask;
+    int iox2_sa_flags;
 };
 #endif
