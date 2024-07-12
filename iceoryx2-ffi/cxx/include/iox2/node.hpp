@@ -61,10 +61,6 @@ class Node {
 
   private:
     friend class NodeBuilder;
-
-    explicit Node(iox2_node_h handle);
-
-    iox2_node_h m_handle;
 };
 
 class NodeBuilder {
@@ -72,13 +68,14 @@ class NodeBuilder {
     IOX_BUILDER_OPTIONAL(Config, config);
 
   public:
-    NodeBuilder();
+    NodeBuilder() {
+        IOX_TODO();
+    }
 
     template <ServiceType T>
-    auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure>;
-
-  private:
-    iox2_node_builder_h m_handle;
+    auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure> {
+        IOX_TODO();
+    }
 };
 } // namespace iox2
 

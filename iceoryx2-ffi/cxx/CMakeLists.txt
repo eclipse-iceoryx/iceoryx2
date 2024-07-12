@@ -36,7 +36,6 @@ target_include_directories(includes-only-cxx
 # object lib
 
 add_library(iceoryx2-cxx-object-lib OBJECT
-    src/node.cpp
     src/node_name.cpp
 )
 
@@ -103,4 +102,3 @@ include(cmake/install.cmake)
 if(${BUILD_TESTING})
     add_subdirectory(tests)
 endif()
-
