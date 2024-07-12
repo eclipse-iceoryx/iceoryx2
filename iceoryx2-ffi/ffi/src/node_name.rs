@@ -32,11 +32,11 @@ pub struct iox2_node_name_storage_t {
     deleter: fn(*mut iox2_node_name_storage_t),
 }
 
-/// The handle to use for the `iox2_node_name_*` functions
-pub type iox2_node_name_h = *mut iox2_node_name_storage_t;
+/// The handle to use for the `iox2_node_name_*` functions which mutate the node name
+pub type iox2_node_name_mut_h = *mut iox2_node_name_storage_t;
 
 /// The immutable handle to the underlying `NodeName`
-pub type iox2_node_name_t = *const iox2_node_name_storage_internal_t;
+pub type iox2_node_name_h = *const iox2_node_name_storage_internal_t;
 
 impl iox2_node_name_storage_t {
     const fn _assert_storage_layout() {
@@ -62,7 +62,7 @@ impl iox2_node_name_storage_t {
 /// * `node_name_storage` - Must be either a NULL pointer or a pointer to a valid [`iox2_node_name_storage_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `node_name` - Must be valid node name string.
 /// * `node_name_len` - The length of the node name string, not including a null termination.
-/// * `node_name_handle_ptr` - An uninitialized or dangling [`iox2_node_name_h`] handle which will be initialized by this function call.
+/// * `node_name_handle_ptr` - An uninitialized or dangling [`iox2_node_name_mut_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_semantic_string_error_e`](crate::iox2_semantic_string_error_e) otherwise.
 ///
@@ -75,7 +75,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
     _node_name_storage: *mut iox2_node_name_storage_t,
     node_name: *const c_char,
     _node_name_len: c_int,
-    node_name_handle_ptr: *mut iox2_node_name_h,
+    node_name_handle_ptr: *mut iox2_node_name_mut_h,
 ) -> c_int {
     debug_assert!(!node_name.is_null());
     debug_assert!(!node_name_handle_ptr.is_null());
@@ -87,18 +87,18 @@ pub unsafe extern "C" fn iox2_node_name_new(
 
 /// This function needs to be called to destroy the node name!
 ///
-/// In general, this function is not required to call, since [`iox2_node_builder_set_name`](crate::iox2_node_builder_set_name) will consume the [`iox2_node_name_h`] handle.
+/// In general, this function is not required to call, since [`iox2_node_builder_set_name`](crate::iox2_node_builder_set_name) will consume the [`iox2_node_name_mut_h`] handle.
 ///
 /// # Arguments
 ///
-/// * `node_name_handle` - A valid [`iox2_node_name_h`]
+/// * `node_name_handle` - A valid [`iox2_node_name_mut_h`]
 ///
 /// # Safety
 ///
 /// The `node_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// The corresponding [`iox2_node_name_storage_t`] can be re-used with a call to [`iox2_node_name_new`]!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
+pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_mut_h) {
     debug_assert!(!node_name_handle.is_null());
 
     todo!() // TODO: [#210] implement

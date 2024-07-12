@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_callback_progression_e, iox2_config_t, iox2_node_name_t, iox2_service_builder_h,
-    iox2_service_builder_storage_t, iox2_service_name_h, iox2_service_type_e, IntoCInt, IOX2_OK,
+    iox2_callback_progression_e, iox2_config_h, iox2_node_name_h, iox2_service_builder_mut_h,
+    iox2_service_builder_storage_t, iox2_service_name_mut_h, iox2_service_type_e, IntoCInt, IOX2_OK,
 };
 
 use iceoryx2::node::{NodeListFailure, NodeView};
@@ -62,8 +62,8 @@ pub struct iox2_node_storage_t {
     pub(crate) deleter: fn(*mut iox2_node_storage_t),
 }
 
-/// The handle to use for the `iox2_node_*` functions
-pub type iox2_node_h = *mut iox2_node_storage_t;
+/// The handle to use for the `iox2_node_*` functions which mutate the node
+pub type iox2_node_mut_h = *mut iox2_node_storage_t;
 
 impl iox2_node_storage_t {
     const fn assert_storage_layout() {
@@ -117,52 +117,52 @@ pub enum iox2_node_state_e {
 }
 
 // TODO: [#210] implement
-pub type iox2_node_id_t = *const c_void;
+pub type iox2_node_id_h = *const c_void;
 
 /// An alias to a `void *` which can be used to pass arbitrary data to the callback
-pub type iox2_node_list_callback_ctx = *mut c_void;
+pub type iox2_node_list_callback_context = *mut c_void;
 
 /// The callback for [`iox2_node_list`]
 ///
 /// # Arguments
 ///
 /// * [`iox2_node_state_e`]
-/// * [`iox2_node_id_t`]
-/// * [`iox2_node_name_t`](crate::iox2_node_name_t) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
-/// * [`iox2_config_t`](crate::iox2_config_t) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
-/// * [`iox2_node_list_callback_ctx`] -> provided by the user to [`iox2_node_list`] and can be `NULL`
+/// * [`iox2_node_id_h`]
+/// * [`iox2_node_name_h`](crate::iox2_node_name_h) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
+/// * [`iox2_config_h`](crate::iox2_config_h) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
+/// * [`iox2_node_list_callback_context`] -> provided by the user to [`iox2_node_list`] and can be `NULL`
 ///
 /// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
 pub type iox2_node_list_callback = extern "C" fn(
     iox2_node_state_e,
-    iox2_node_id_t,
-    iox2_node_name_t,
-    iox2_config_t,
-    iox2_node_list_callback_ctx,
+    iox2_node_id_h,
+    iox2_node_name_h,
+    iox2_config_h,
+    iox2_node_list_callback_context,
 ) -> iox2_callback_progression_e;
 
 // END type definition
 
 // BEGIN C API
 
-/// Returns the [`iox2_node_name_t`](crate::iox2_node_name_t), an immutable handle to the node name.
+/// Returns the [`iox2_node_name_h`](crate::iox2_node_name_h), an immutable handle to the node name.
 ///
 /// # Safety
 ///
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_name_t {
+pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_mut_h) -> iox2_node_name_h {
     debug_assert!(!node_handle.is_null());
     todo!() // TODO: [#210] implement
 }
 
-/// Returns the immutable [`iox2_config_t`](crate::iox2_config_t) handle that the [`iox2_node_h`] will use to create any iceoryx2 entity.
+/// Returns the immutable [`iox2_config_h`](crate::iox2_config_h) handle that the [`iox2_node_mut_h`] will use to create any iceoryx2 entity.
 ///
 /// # Safety
 ///
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_t {
+pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_mut_h) -> iox2_config_h {
     debug_assert!(!node_handle.is_null());
 
     unsafe {
@@ -177,13 +177,13 @@ pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_conf
     }
 }
 
-/// Returns the immutable [`iox2_node_id_t`] handle of the [`iox2_node_h`].
+/// Returns the immutable [`iox2_node_id_h`] handle of the [`iox2_node_mut_h`].
 ///
 /// # Safety
 ///
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_node_id_t {
+pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_mut_h) -> iox2_node_id_h {
     debug_assert!(!node_handle.is_null());
     todo!() // TODO: [#210] implement
 }
@@ -191,7 +191,7 @@ pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_node_id_
 fn iox2_node_list_impl<S: Service>(
     node_state: &NodeState<S>,
     callback: iox2_node_list_callback,
-    callback_ctx: iox2_node_list_callback_ctx,
+    callback_ctx: iox2_node_list_callback_context,
 ) -> CallbackProgression {
     match node_state {
         NodeState::Alive(alive_node_view) => {
@@ -253,15 +253,15 @@ fn iox2_node_list_impl<S: Service>(
     }
 }
 
-/// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_node_id_t`], [´iox2_node_name_t´] and [`iox2_config_t`] for
+/// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_node_id_h`], [´iox2_node_name_h´] and [`iox2_config_h`] for
 /// all [`Node`](iceoryx2::node::Node)s in the system under a given [`Config`](iceoryx2::config::Config).
 ///
 /// # Arguments
 ///
 /// * `service_type` - A [`iox2_service_type_e`]
-/// * `config_handle` - A valid [`iox2_config_t`](crate::iox2_config_t)
+/// * `config_handle` - A valid [`iox2_config_h`](crate::iox2_config_h)
 /// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
-/// * `callback_ctx` - An optional callback context [`iox2_node_list_callback_ctx`} to e.g. store information across callback iterations
+/// * `callback_ctx` - An optional callback context [`iox2_node_list_callback_context`} to e.g. store information across callback iterations
 ///
 /// Returns IOX2_OK on success, an [`iox2_node_list_failure_e`] otherwise.
 ///
@@ -271,9 +271,9 @@ fn iox2_node_list_impl<S: Service>(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_list(
     service_type: iox2_service_type_e,
-    config_handle: iox2_config_t,
+    config_handle: iox2_config_h,
     callback: iox2_node_list_callback,
-    callback_ctx: iox2_node_list_callback_ctx,
+    callback_ctx: iox2_node_list_callback_context,
 ) -> c_int {
     debug_assert!(!config_handle.is_null());
 
@@ -296,7 +296,7 @@ pub unsafe extern "C" fn iox2_node_list(
 
 #[no_mangle]
 pub extern "C" fn iox2_service_name_new() {}
-/// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.
+/// Instantiates a [`iox2_service_builder_mut_h`] for a service with the provided name.
 ///
 /// # Safety
 ///
@@ -304,10 +304,10 @@ pub extern "C" fn iox2_service_name_new() {}
 /// The `service_name_handle` must be valid and obtained by [`iox2_service_name_new`]!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_service_builder(
-    node_handle: iox2_node_h,
+    node_handle: iox2_node_mut_h,
     _service_builder_storage: *mut iox2_service_builder_storage_t,
-    service_name_handle: iox2_service_name_h,
-) -> iox2_service_builder_h {
+    service_name_handle: iox2_service_name_mut_h,
+) -> iox2_service_builder_mut_h {
     debug_assert!(!node_handle.is_null());
     debug_assert!(!service_name_handle.is_null());
     todo!() // TODO: [#210] implement
@@ -317,14 +317,14 @@ pub unsafe extern "C" fn iox2_node_service_builder(
 ///
 /// # Arguments
 ///
-/// * `node_handle` - A valid [`iox2_node_h`]
+/// * `node_handle` - A valid [`iox2_node_mut_h`]
 ///
 /// # Safety
 ///
 /// The `node_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// The corresponding [`iox2_node_storage_t`] can be re-used with a call to [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
+pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_mut_h) {
     debug_assert!(!node_handle.is_null());
 
     unsafe {
@@ -358,15 +358,15 @@ mod test {
         const _STORAGE_LAYOUT_CHECK: () = iox2_node_storage_t::assert_storage_layout();
     }
 
-    fn create_sut_node() -> iox2_node_h {
+    fn create_sut_node() -> iox2_node_mut_h {
         unsafe {
             let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
-            let mut node_handle: iox2_node_h = std::ptr::null_mut();
+            let mut node_handle: iox2_node_mut_h = std::ptr::null_mut();
             let ret_val = iox2_node_builder_create(
                 node_builder_handle,
                 std::ptr::null_mut(),
                 iox2_service_type_e::IPC,
-                &mut node_handle as *mut iox2_node_h,
+                &mut node_handle as *mut iox2_node_mut_h,
             );
 
             assert_that!(ret_val, eq(IOX2_OK));
@@ -412,10 +412,10 @@ mod test {
 
     extern "C" fn node_list_callback(
         node_state: iox2_node_state_e,
-        _node_id: iox2_node_id_t,
-        _node_name: iox2_node_name_t,
-        _config: iox2_config_t,
-        ctx: iox2_node_list_callback_ctx,
+        _node_id: iox2_node_id_h,
+        _node_name: iox2_node_name_h,
+        _config: iox2_config_h,
+        ctx: iox2_node_list_callback_context,
     ) -> iox2_callback_progression_e {
         let ctx = unsafe { &mut *(ctx as *mut NodeListCtx) };
 
