@@ -760,9 +760,9 @@ mod service_event {
             .unwrap();
         let listener = sut.listener_builder().create().unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::Event), eq Ok(true));
+        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::Event), eq Ok(false));
+        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(false));
 
         assert_that!(notifier.notify(), eq Ok(1));
 
@@ -793,9 +793,9 @@ mod service_event {
             .unwrap();
         let listener = sut.listener_builder().create().unwrap();
 
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::Event), eq Ok(true));
+        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::get_global_config(), MessagingPattern::Event), eq Ok(false));
+        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(false));
 
         let sut = node.service_builder(service_name.clone()).event().create();
         assert_that!(sut, is_err);

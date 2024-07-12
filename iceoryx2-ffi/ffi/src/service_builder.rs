@@ -12,6 +12,6 @@
 
 #![allow(non_camel_case_types)]
 
-pub type iox2_service_builder_storage_t = *mut (); // TODO: [#210] implement
-pub type iox2_service_builder_h = *mut (); // TODO: [#210] implement
-pub type iox2_service_name_h = *mut (); // TODO: [#210] implement
+pub struct iox2_service_builder_storage_t {} // TODO: [#210] implement
+pub type iox2_service_builder_mut_h = *mut (); // TODO: [#210] implement
+pub type iox2_service_name_mut_h = *mut (); // TODO: [#210] implement

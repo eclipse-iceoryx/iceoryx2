@@ -363,14 +363,14 @@ impl Config {
     /// [`Config::setup_global_config_from_file()`]
     /// is called after this function was called, no file will be loaded since the global default
     /// config was already populated.
-    pub fn get_global_config() -> &'static Config {
+    pub fn global_config() -> &'static Config {
         if !ICEORYX2_CONFIG.is_initialized()
             && Config::setup_global_config_from_file(unsafe {
                 &FilePath::new_unchecked(DEFAULT_CONFIG_FILE)
             })
             .is_err()
         {
-            warn!(from "Config::get_global_config()", "Default config file found but unable to read data, populate config with default values.");
+            warn!(from "Config::global_config()", "Default config file found but unable to read data, populate config with default values.");
             ICEORYX2_CONFIG.set_value(Config::default());
         }
 

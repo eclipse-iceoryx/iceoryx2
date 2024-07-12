@@ -13,7 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_node_h, iox2_node_name_h, iox2_node_storage_t, iox2_service_type_e, IntoCInt, IOX2_OK,
+    iox2_node_mut_h, iox2_node_name_mut_h, iox2_node_storage_t, iox2_service_type_e, IntoCInt,
+    IOX2_OK,
 };
 
 use iceoryx2::node::NodeCreationFailure;
@@ -56,8 +57,8 @@ pub struct iox2_node_builder_storage_t {
     deleter: fn(*mut iox2_node_builder_storage_t),
 }
 
-/// The handle to use for the `iox2_node_builder_*` functions
-pub type iox2_node_builder_h = *mut iox2_node_builder_storage_t;
+/// The handle to use for the `iox2_node_builder_*` functions which mutate the node builder
+pub type iox2_node_builder_mut_h = *mut iox2_node_builder_storage_t;
 
 impl iox2_node_builder_storage_t {
     const fn assert_storage_layout() {
@@ -110,7 +111,7 @@ impl iox2_node_builder_storage_t {
 ///
 /// # Returns
 ///
-/// A [`iox2_node_builder_h`] handle to build the actual node.
+/// A [`iox2_node_builder_mut_h`] handle to build the actual node.
 ///
 /// # Safety
 ///
@@ -118,7 +119,7 @@ impl iox2_node_builder_storage_t {
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_new(
     node_builder_storage: *mut iox2_node_builder_storage_t,
-) -> iox2_node_builder_h {
+) -> iox2_node_builder_mut_h {
     let mut handle = node_builder_storage;
     fn no_op(_storage: *mut iox2_node_builder_storage_t) {}
     let mut deleter: fn(*mut iox2_node_builder_storage_t) = no_op;
@@ -143,8 +144,8 @@ pub unsafe extern "C" fn iox2_node_builder_new(
 
 #[no_mangle]
 pub extern "C" fn iox2_node_builder_set_name(
-    node_builder_handle: iox2_node_builder_h,
-    node_name_handle: iox2_node_name_h,
+    node_builder_handle: iox2_node_builder_mut_h,
+    node_name_handle: iox2_node_name_mut_h,
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!node_name_handle.is_null());
@@ -154,7 +155,9 @@ pub extern "C" fn iox2_node_builder_set_name(
 }
 
 #[no_mangle]
-pub extern "C" fn iox2_node_builder_set_config(node_builder_handle: iox2_node_builder_h) -> c_int {
+pub extern "C" fn iox2_node_builder_set_config(
+    node_builder_handle: iox2_node_builder_mut_h,
+) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
     todo!() // TODO: [#210] implement
 
@@ -165,10 +168,10 @@ pub extern "C" fn iox2_node_builder_set_config(node_builder_handle: iox2_node_bu
 ///
 /// # Arguments
 ///
-/// * `node_builder_handle` - Must be a valid [`iox2_node_builder_h`] obtained by [`iox2_node_builder_new`].
+/// * `node_builder_handle` - Must be a valid [`iox2_node_builder_mut_h`] obtained by [`iox2_node_builder_new`].
 /// * `node_storage` - Must be either a NULL pointer or a pointer to a valid [`iox2_node_storage_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `service_type` - The [`iox2_service_type_e`] for the node to be created.
-/// * `node_handle_ptr` - An uninitialized or dangling [`iox2_node_h`] handle which will be initialized by this function call.
+/// * `node_handle_ptr` - An uninitialized or dangling [`iox2_node_mut_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_node_creation_failure_e`] otherwise.
 ///
@@ -178,10 +181,10 @@ pub extern "C" fn iox2_node_builder_set_config(node_builder_handle: iox2_node_bu
 /// The corresponding [`iox2_node_builder_storage_t`] can be re-used with a call to [`iox2_node_builder_new`]!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_create(
-    node_builder_handle: iox2_node_builder_h,
+    node_builder_handle: iox2_node_builder_mut_h,
     node_storage: *mut iox2_node_storage_t,
     service_type: iox2_service_type_e,
-    node_handle_ptr: *mut iox2_node_h,
+    node_handle_ptr: *mut iox2_node_mut_h,
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!node_handle_ptr.is_null());
@@ -246,12 +249,12 @@ mod test {
     fn basic_node_builder_api_test() {
         unsafe {
             let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
-            let mut node_handle: iox2_node_h = std::ptr::null_mut();
+            let mut node_handle: iox2_node_mut_h = std::ptr::null_mut();
             let ret_val = iox2_node_builder_create(
                 node_builder_handle,
                 std::ptr::null_mut(),
                 iox2_service_type_e::LOCAL,
-                &mut node_handle as *mut iox2_node_h,
+                &mut node_handle as *mut iox2_node_mut_h,
             );
 
             assert_that!(ret_val, eq(IOX2_OK));

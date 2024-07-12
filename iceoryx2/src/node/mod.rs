@@ -37,7 +37,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
+//! Node::<zero_copy::Service>::list(Config::global_config(), |node_state| {
 //!     println!("found node {:?}", node_state);
 //!     CallbackProgression::Continue
 //! });
@@ -49,7 +49,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
+//! Node::<zero_copy::Service>::list(Config::global_config(), |node_state| {
 //!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state {
 //!         println!("cleanup resources of dead node {:?}", view);
 //!         if let Err(e) = view.remove_stale_resources() {
@@ -341,7 +341,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         let config = if let Some(d) = self.details() {
             d.config()
         } else {
-            Config::get_global_config()
+            Config::global_config()
         };
 
         let _cleaner = match <Service::Monitoring as Monitoring>::Builder::new(&monitor_name)
@@ -572,7 +572,7 @@ impl<Service: service::Service> Node<Service> {
     /// [`CallbackProgression::Stop`] to stop the iteration immediately.
     /// ```
     /// # use iceoryx2::prelude::*;
-    /// Node::<zero_copy::Service>::list(Config::get_global_config(), |node_state| {
+    /// Node::<zero_copy::Service>::list(Config::global_config(), |node_state| {
     ///     println!("found node {:?}", node_state);
     ///     CallbackProgression::Continue
     /// });
@@ -849,7 +849,7 @@ impl NodeBuilder {
         let config = if let Some(ref config) = self.config {
             config.clone()
         } else {
-            Config::get_global_config().clone()
+            Config::global_config().clone()
         };
 
         let (details_storage, details) =

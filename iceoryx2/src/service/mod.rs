@@ -353,7 +353,7 @@ pub trait Service: Debug + Sized {
     /// let does_name_exist =
     ///     zero_copy::Service::does_exist(
     ///                 &name,
-    ///                 Config::get_global_config(),
+    ///                 Config::global_config(),
     ///                 MessagingPattern::Event)?;
     /// # Ok(())
     /// # }
@@ -379,7 +379,7 @@ pub trait Service: Debug + Sized {
     /// let details =
     ///     zero_copy::Service::details(
     ///                 &name,
-    ///                 Config::get_global_config(),
+    ///                 Config::global_config(),
     ///                 MessagingPattern::Event)?;
     ///
     /// if let Some(details) = details {
@@ -414,7 +414,7 @@ pub trait Service: Debug + Sized {
     /// use iceoryx2::config::Config;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// zero_copy::Service::list(Config::get_global_config(), |service| {
+    /// zero_copy::Service::list(Config::global_config(), |service| {
     ///     println!("\n{:#?}", &service?);
     ///     Ok(CallbackProgression::Continue)
     /// })?;
