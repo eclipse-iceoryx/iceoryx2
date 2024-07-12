@@ -154,7 +154,17 @@ pub type iox2_node_list_callback = extern "C" fn(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_mut_h) -> iox2_node_name_h {
     debug_assert!(!node_handle.is_null());
-    todo!() // TODO: [#210] implement
+
+    unsafe {
+        match (*node_handle).service_type {
+            iox2_service_type_e::IPC => (*node_handle)
+                .node_assume_init::<zero_copy::Service>()
+                .name() as *const _ as *const _,
+            iox2_service_type_e::LOCAL => (*node_handle)
+                .node_assume_init::<process_local::Service>()
+                .name() as *const _ as *const _,
+        }
+    }
 }
 
 /// Returns the immutable [`iox2_config_h`](crate::iox2_config_h) handle that the [`iox2_node_mut_h`] will use to create any iceoryx2 entity.
@@ -362,6 +372,18 @@ mod test {
     fn create_sut_node() -> iox2_node_mut_h {
         unsafe {
             let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
+
+            let mut node_name_handle_mut = std::ptr::null_mut();
+            let node_name = "hypnotoad";
+            let ret_val = iox2_node_name_new(
+                std::ptr::null_mut(),
+                node_name.as_ptr() as *const _,
+                node_name.len() as _,
+                &mut node_name_handle_mut,
+            );
+            assert_that!(ret_val, eq(IOX2_OK));
+            iox2_node_builder_set_name(node_builder_handle, node_name_handle_mut);
+
             let mut node_handle: iox2_node_mut_h = std::ptr::null_mut();
             let ret_val = iox2_node_builder_create(
                 node_builder_handle,
@@ -398,6 +420,23 @@ mod test {
             let config = iox2_node_config(node_handle);
 
             assert_that!(*(config as *const Config), eq(*expected_config));
+
+            iox2_node_drop(node_handle);
+        }
+    }
+
+    #[test]
+    fn basic_node_name_test() {
+        unsafe {
+            let node_handle = create_sut_node();
+            let expected_node_name = (*node_handle)
+                .node_assume_init::<zero_copy::Service>()
+                .name();
+            assert_that!(expected_node_name.as_str(), eq("hypnotoad"));
+
+            let node_name = iox2_node_name(node_handle);
+
+            assert_that!(*(node_name as *const NodeName), eq(*expected_node_name));
 
             iox2_node_drop(node_handle);
         }

@@ -71,6 +71,10 @@ pub type iox2_node_name_mut_h = *mut iox2_node_name_storage_t;
 pub type iox2_node_name_h = *const iox2_node_name_storage_internal_t;
 
 impl iox2_node_name_storage_t {
+    pub(crate) fn copy_as_node_name(&self) -> NodeName {
+        NodeName::new( unsafe {self.node_name.assume_init_ref().as_str() } ).unwrap()
+    }
+
     fn alloc() -> *mut iox2_node_name_storage_t {
         unsafe { alloc(Layout::new::<iox2_node_name_storage_t>()) as *mut iox2_node_name_storage_t }
     }
