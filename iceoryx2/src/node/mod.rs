@@ -844,6 +844,15 @@ impl NodeBuilder {
         let node_id = fail!(from self, when UniqueSystemId::new(),
                                 with NodeCreationFailure::InternalError,
                                 "{msg} since the unique node id could not be generated.");
+        unsafe { self.__internal_create_with_custom_node_id(node_id) }
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_create_with_custom_node_id<Service: service::Service>(
+        self,
+        node_id: UniqueSystemId,
+    ) -> Result<Node<Service>, NodeCreationFailure> {
+        let msg = "Unable to create node";
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
                                 "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let config = if let Some(ref config) = self.config {

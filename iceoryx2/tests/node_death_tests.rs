@@ -17,6 +17,7 @@ mod node_death_tests {
     use iceoryx2::node::{NodeState, NodeView};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
+    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 
     trait Test {
@@ -41,15 +42,18 @@ mod node_death_tests {
         }
     }
 
-    #[ignore]
     #[test]
     fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
         let node_name = S::generate_node_name(0, "toby or no toby");
+        let fake_node_id = (u32::MAX as u128) << 96;
+        let fake_node_id = unsafe { core::mem::transmute::<u128, UniqueSystemId>(fake_node_id) };
 
-        let mut sut = NodeBuilder::new()
-            .name(node_name.clone())
-            .create::<S::Service>()
-            .unwrap();
+        let mut sut = unsafe {
+            NodeBuilder::new()
+                .name(node_name.clone())
+                .__internal_create_with_custom_node_id::<S::Service>(fake_node_id)
+                .unwrap()
+        };
 
         S::staged_death(&mut sut);
 
