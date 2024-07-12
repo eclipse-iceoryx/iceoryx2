@@ -183,10 +183,10 @@
     ```rust
     // old
     let services = zero_copy::Service::list()?;
-    let services = zero_copy::Service::list_with_custom_config(Config::get_global_config())?;
+    let services = zero_copy::Service::list_with_custom_config(Config::global_config())?;
 
     // new
-    let services = zero_copy::Service::list(Config::get_global_config())?;
+    let services = zero_copy::Service::list(Config::global_config())?;
     ```
 
 8. `Service::does_exist_with_custom_config` was removed.
@@ -194,10 +194,10 @@
     ```rust
     // old
     let services = zero_copy::Service::does_exist(service_name)?;
-    let services = zero_copy::Service::does_exist_with_custom_config(service_name, Config::get_global_config())?;
+    let services = zero_copy::Service::does_exist_with_custom_config(service_name, Config::global_config())?;
 
     // new
-    let services = zero_copy::Service::does_exist(service_name, Config::get_global_config())?;
+    let services = zero_copy::Service::does_exist(service_name, Config::global_config())?;
     ```
 
 9. Creating pub-sub ports with `service.{publisher|subscriber}_builder()`.
@@ -316,14 +316,14 @@
 
     ```rust
     // old
-    let services = zero_copy::Service::list(Config::get_global_config())?;
+    let services = zero_copy::Service::list(Config::global_config())?;
 
     for service in services {
         println!("\n{:#?}", &service);
     }
 
     // new
-    zero_copy::Service::list(Config::get_global_config(), |service| {
+    zero_copy::Service::list(Config::global_config(), |service| {
         println!("\n{:#?}", &service?);
         Ok(CallbackProgression::Continue)
     })?;
@@ -371,3 +371,4 @@
     }
     ```
 
+18. Renamed `Config::get_global_config` to just `Config::global_config`

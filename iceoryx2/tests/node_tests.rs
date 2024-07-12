@@ -124,7 +124,7 @@ mod node {
     fn without_custom_config_global_config_is_used<S: Service>() {
         let sut = NodeBuilder::new().create::<S>().unwrap();
 
-        assert_that!(*sut.config(), eq * Config::get_global_config());
+        assert_that!(*sut.config(), eq * Config::global_config());
     }
 
     #[test]
@@ -140,7 +140,7 @@ mod node {
             nodes.push(node);
         }
 
-        assert_node_presence::<S>(&node_details, Config::get_global_config());
+        assert_node_presence::<S>(&node_details, Config::global_config());
     }
 
     #[test]
@@ -159,7 +159,7 @@ mod node {
         for _ in 0..NUMBER_OF_NODES {
             nodes.pop();
             node_details.pop_back();
-            assert_node_presence::<S>(&node_details, Config::get_global_config());
+            assert_node_presence::<S>(&node_details, Config::global_config());
         }
     }
 
@@ -213,7 +213,7 @@ mod node {
             node_details_1.pop_back();
             node_details_2.pop_front();
 
-            assert_node_presence::<S>(&node_details_1, Config::get_global_config());
+            assert_node_presence::<S>(&node_details_1, Config::global_config());
             assert_node_presence::<S>(&node_details_2, &config);
         }
 

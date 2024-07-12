@@ -89,7 +89,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let services = zero_copy::Service::list(Config::get_global_config(), |service| {
+//! let services = zero_copy::Service::list(Config::global_config(), |service| {
 //!     println!("\n{:#?}", &service?.static_details.attributes());
 //!     Ok(CallbackProgression::Continue)
 //! })?;

@@ -13,7 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_node_mut_h, iox2_node_name_mut_h, iox2_node_storage_t, iox2_service_type_e, IntoCInt, IOX2_OK,
+    iox2_node_mut_h, iox2_node_name_mut_h, iox2_node_storage_t, iox2_service_type_e, IntoCInt,
+    IOX2_OK,
 };
 
 use iceoryx2::node::NodeCreationFailure;
@@ -154,7 +155,9 @@ pub extern "C" fn iox2_node_builder_set_name(
 }
 
 #[no_mangle]
-pub extern "C" fn iox2_node_builder_set_config(node_builder_handle: iox2_node_builder_mut_h) -> c_int {
+pub extern "C" fn iox2_node_builder_set_config(
+    node_builder_handle: iox2_node_builder_mut_h,
+) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
     todo!() // TODO: [#210] implement
 

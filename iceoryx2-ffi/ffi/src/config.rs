@@ -24,8 +24,8 @@ pub type iox2_config_h = *const c_void;
 
 // BEGIN C API
 #[no_mangle]
-pub extern "C" fn iox2_config_get_global() -> iox2_config_h {
-    Config::get_global_config() as *const _ as *const _
+pub extern "C" fn iox2_config_global_config() -> iox2_config_h {
+    Config::global_config() as *const _ as *const _
 }
 
 // END C API

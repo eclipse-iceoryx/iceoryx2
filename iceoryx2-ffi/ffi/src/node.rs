@@ -14,7 +14,8 @@
 
 use crate::{
     iox2_callback_progression_e, iox2_config_h, iox2_node_name_h, iox2_service_builder_mut_h,
-    iox2_service_builder_storage_t, iox2_service_name_mut_h, iox2_service_type_e, IntoCInt, IOX2_OK,
+    iox2_service_builder_storage_t, iox2_service_name_mut_h, iox2_service_type_e, IntoCInt,
+    IOX2_OK,
 };
 
 use iceoryx2::node::{NodeListFailure, NodeView};
@@ -267,7 +268,7 @@ fn iox2_node_list_impl<S: Service>(
 ///
 /// # Safety
 ///
-/// The `config_handle` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_get_global`](crate::iox2_config_get_global)!
+/// The `config_handle` must be valid and obtained by ether [`iox2_node_config`] or [`iox2_config_global_config`](crate::iox2_config_global_config)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_list(
     service_type: iox2_service_type_e,

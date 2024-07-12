@@ -82,7 +82,7 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
         Ok(CallbackProgression::Continue)
     };
 
-    match zero_copy::Service::list(Config::get_global_config(), callback) {
+    match zero_copy::Service::list(Config::global_config(), callback) {
         Ok(_) => 0,
         Err(_) => -1,
     }
