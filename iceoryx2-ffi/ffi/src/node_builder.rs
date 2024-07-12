@@ -150,7 +150,7 @@ pub unsafe extern "C" fn iox2_node_builder_set_name(
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!node_name_handle_mut.is_null());
 
-    let node_name = unsafe { (*node_name_handle_mut).copy_as_node_name() };
+    let node_name = unsafe { (*node_name_handle_mut).take().unwrap() };
     iox2_node_name_drop(node_name_handle_mut);
 
     let node_builder = std::mem::take(unsafe { (*node_builder_handle).node_builder_assume_init() });

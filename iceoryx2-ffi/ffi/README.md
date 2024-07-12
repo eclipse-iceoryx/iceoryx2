@@ -3,22 +3,22 @@
 - all constructs start with `iox2_`
 - `structs` end with a `_t`
 - mutable handles end with a `_mut_h` and are a type definition to a `*mut iox2_foo_storage_t`
-- immutable handles end with a `_h` and are a type definition to a `*const iox2_foo_storage_internal_t` which holds the Rust type `Foo`
+- immutable handles end with a `_h` and are a type definition to a `*const iox2_foo_storage_internal_t` which holds the Rust type `Option<Foo>`
 - `enums` ends with a `_e`
 
 # Pattern for Type Erasure
 
 The type erasure is usually done in two stages with `iox2_foo_storage_internal_t` and `iox2_foo_storage_t`.
 
-The `iox2_foo_storage_internal_t` is the storage for the Rust type `Foo` and must match the size and alignment of `Foo`.
+The `iox2_foo_storage_internal_t` is the storage for the Rust type `Option<Foo>` and must match the size and alignment of `Option<Foo>`.
 If the internal storage must hold multiple types, the size and alignment is respectively the max value of the types.
 The struct is not supposed to be used standalone but always in combination with an `iox2_foo_storage_t`.
 Assuming the size is 160 and the alignment is 8, then the storage is defined as following
 ```rs
 #[repr(C)]
-#[repr(align(8))] // alignment of Foo
+#[repr(align(8))] // alignment of Option<Foo>
 pub struct iox2_foo_storage_internal_t {
-    internal: [u8; 160], // magic number obtained with size_of::<Foo>()
+    internal: [u8; 160], // magic number obtained with size_of::<Option<Foo>>()
 }
 ```
 

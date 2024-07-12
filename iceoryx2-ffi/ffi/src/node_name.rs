@@ -25,35 +25,44 @@ use std::alloc::{alloc, dealloc, Layout};
 // BEGIN type definition
 
 #[repr(C)]
-#[repr(align(8))] // alignment of NodeName
+#[repr(align(8))] // alignment of Option<NodeName>
 pub struct iox2_node_name_storage_internal_t {
-    internal: [u8; 24], // magic number obtained with size_of::<NodeName>()
+    internal: [u8; 24], // magic number obtained with size_of::<Option<NodeName>>()
 }
 
 impl iox2_node_name_storage_internal_t {
     const fn assert_storage_layout() {
         static_assert_ge::<
             { align_of::<iox2_node_name_storage_internal_t>() },
-            { align_of::<NodeName>() },
+            { align_of::<Option<NodeName>>() },
         >();
         static_assert_ge::<
             { size_of::<iox2_node_name_storage_internal_t>() },
-            { size_of::<NodeName>() },
+            { size_of::<Option<NodeName>>() },
         >();
     }
 
-    fn maybe_uninit(&mut self) -> &mut MaybeUninit<NodeName> {
+    fn init(&mut self, node_name: NodeName) {
         iox2_node_name_storage_internal_t::assert_storage_layout();
 
-        unsafe { &mut *(self as *mut Self).cast::<MaybeUninit<NodeName>>() }
+        unsafe { &mut *(self as *mut Self).cast::<MaybeUninit<Option<NodeName>>>() }
+            .write(Some(node_name));
     }
-    unsafe fn assume_init_mut(&mut self) -> &mut NodeName {
-        self.maybe_uninit().assume_init_mut()
-    }
-    unsafe fn assume_init_ref(&self) -> &NodeName {
-        iox2_node_name_storage_internal_t::assert_storage_layout();
 
-        (&*(self as *const Self).cast::<MaybeUninit<NodeName>>()).assume_init_ref()
+    unsafe fn assume_init_mut(&mut self) -> &mut Option<NodeName> {
+        (&mut *(self as *mut Self).cast::<MaybeUninit<Option<NodeName>>>()).assume_init_mut()
+    }
+
+    unsafe fn assume_init_ref(&self) -> &Option<NodeName> {
+        (&*(self as *const Self).cast::<MaybeUninit<Option<NodeName>>>()).assume_init_ref()
+    }
+
+    unsafe fn _assume_init_mut_inner(&mut self) -> &mut NodeName {
+        self.assume_init_mut().as_mut().unwrap()
+    }
+
+    unsafe fn assume_init_ref_inner(&self) -> &NodeName {
+        self.assume_init_ref().as_ref().unwrap()
     }
 }
 
@@ -71,8 +80,8 @@ pub type iox2_node_name_mut_h = *mut iox2_node_name_storage_t;
 pub type iox2_node_name_h = *const iox2_node_name_storage_internal_t;
 
 impl iox2_node_name_storage_t {
-    pub(crate) fn copy_as_node_name(&self) -> NodeName {
-        NodeName::new( unsafe {self.node_name.assume_init_ref().as_str() } ).unwrap()
+    pub(crate) fn take(&mut self) -> Option<NodeName> {
+        unsafe { self.node_name.assume_init_mut().take() }
     }
 
     fn alloc() -> *mut iox2_node_name_storage_t {
@@ -147,7 +156,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
     };
 
     unsafe {
-        (*handle).node_name.maybe_uninit().write(node_name);
+        (*handle).node_name.init(node_name);
     }
 
     *node_name_handle_mut_ptr = handle;
@@ -195,7 +204,7 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
 ) -> *const c_char {
     debug_assert!(!node_name_handle.is_null());
 
-    let node_name = (*node_name_handle).assume_init_ref();
+    let node_name = (*node_name_handle).assume_init_ref_inner();
 
     if !node_name_len.is_null() {
         unsafe {
@@ -222,7 +231,7 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle_mut: iox2_node_name_mut_h) {
     debug_assert!(!node_name_handle_mut.is_null());
 
-    std::ptr::drop_in_place((*node_name_handle_mut).node_name.assume_init_mut() as *mut _);
+    (*node_name_handle_mut).node_name.assume_init_mut().take();
     ((*node_name_handle_mut).deleter)(node_name_handle_mut);
 }
 
