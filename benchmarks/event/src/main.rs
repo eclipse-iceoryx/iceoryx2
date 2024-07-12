@@ -97,11 +97,19 @@ struct Args {
     /// The greatest supported EventId
     #[clap(short, long, default_value_t = EVENT_ID_MAX_VALUE)]
     max_event_id: usize,
+    /// Activate full log output
+    #[clap(short, long)]
+    debug_mode: bool,
 }
 
 fn main() {
     let args = Args::parse();
-    set_log_level(iceoryx2_bb_log::LogLevel::Info);
+
+    if args.debug_mode {
+        set_log_level(iceoryx2_bb_log::LogLevel::Trace);
+    } else {
+        set_log_level(iceoryx2_bb_log::LogLevel::Info);
+    }
 
     perform_benchmark::<zero_copy::Service>(&args);
     perform_benchmark::<process_local::Service>(&args);
