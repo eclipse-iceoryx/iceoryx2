@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_callback_progression_e, iox2_config_h, iox2_node_name_h, iox2_service_builder_mut_h,
+    iox2_callback_progression_e, iox2_config_h, iox2_node_name_ptr, iox2_service_builder_mut_h,
     iox2_service_builder_storage_t, iox2_service_name_mut_h, iox2_service_type_e, IntoCInt,
     IOX2_OK,
 };
@@ -129,7 +129,7 @@ pub type iox2_node_list_callback_context = *mut c_void;
 ///
 /// * [`iox2_node_state_e`]
 /// * [`iox2_node_id_h`]
-/// * [`iox2_node_name_h`](crate::iox2_node_name_h) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
+/// * [`iox2_node_name_ptr`](crate::iox2_node_name_ptr) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
 /// * [`iox2_config_h`](crate::iox2_config_h) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
 /// * [`iox2_node_list_callback_context`] -> provided by the user to [`iox2_node_list`] and can be `NULL`
 ///
@@ -137,7 +137,7 @@ pub type iox2_node_list_callback_context = *mut c_void;
 pub type iox2_node_list_callback = extern "C" fn(
     iox2_node_state_e,
     iox2_node_id_h,
-    iox2_node_name_h,
+    iox2_node_name_ptr,
     iox2_config_h,
     iox2_node_list_callback_context,
 ) -> iox2_callback_progression_e;
@@ -146,15 +146,25 @@ pub type iox2_node_list_callback = extern "C" fn(
 
 // BEGIN C API
 
-/// Returns the [`iox2_node_name_h`](crate::iox2_node_name_h), an immutable handle to the node name.
+/// Returns the [`iox2_node_name_ptr`](crate::iox2_node_name_ptr), an immutable pointer to the node name.
 ///
 /// # Safety
 ///
 /// The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_mut_h) -> iox2_node_name_h {
+pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_mut_h) -> iox2_node_name_ptr {
     debug_assert!(!node_handle.is_null());
-    todo!() // TODO: [#210] implement
+
+    unsafe {
+        match (*node_handle).service_type {
+            iox2_service_type_e::IPC => (*node_handle)
+                .node_assume_init::<zero_copy::Service>()
+                .name() as *const _ as *const _,
+            iox2_service_type_e::LOCAL => (*node_handle)
+                .node_assume_init::<process_local::Service>()
+                .name() as *const _ as *const _,
+        }
+    }
 }
 
 /// Returns the immutable [`iox2_config_h`](crate::iox2_config_h) handle that the [`iox2_node_mut_h`] will use to create any iceoryx2 entity.
@@ -254,7 +264,7 @@ fn iox2_node_list_impl<S: Service>(
     }
 }
 
-/// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_node_id_h`], [´iox2_node_name_h´] and [`iox2_config_h`] for
+/// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_node_id_h`], [´iox2_node_name_ptr´] and [`iox2_config_h`] for
 /// all [`Node`](iceoryx2::node::Node)s in the system under a given [`Config`](iceoryx2::config::Config).
 ///
 /// # Arguments
@@ -362,6 +372,18 @@ mod test {
     fn create_sut_node() -> iox2_node_mut_h {
         unsafe {
             let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
+
+            let mut node_name_handle_mut = std::ptr::null_mut();
+            let node_name = "hypnotoad";
+            let ret_val = iox2_node_name_new(
+                std::ptr::null_mut(),
+                node_name.as_ptr() as *const _,
+                node_name.len() as _,
+                &mut node_name_handle_mut,
+            );
+            assert_that!(ret_val, eq(IOX2_OK));
+            iox2_node_builder_set_name(node_builder_handle, node_name_handle_mut);
+
             let mut node_handle: iox2_node_mut_h = std::ptr::null_mut();
             let ret_val = iox2_node_builder_create(
                 node_builder_handle,
@@ -403,6 +425,23 @@ mod test {
         }
     }
 
+    #[test]
+    fn basic_node_name_test() {
+        unsafe {
+            let node_handle = create_sut_node();
+            let expected_node_name = (*node_handle)
+                .node_assume_init::<zero_copy::Service>()
+                .name();
+            assert_that!(expected_node_name.as_str(), eq("hypnotoad"));
+
+            let node_name = iox2_node_name(node_handle);
+
+            assert_that!(*(node_name as *const NodeName), eq(*expected_node_name));
+
+            iox2_node_drop(node_handle);
+        }
+    }
+
     #[derive(Default)]
     struct NodeListCtx {
         alive: u64,
@@ -414,7 +453,7 @@ mod test {
     extern "C" fn node_list_callback(
         node_state: iox2_node_state_e,
         _node_id: iox2_node_id_h,
-        _node_name: iox2_node_name_h,
+        _node_name: iox2_node_name_ptr,
         _config: iox2_config_h,
         ctx: iox2_node_list_callback_context,
     ) -> iox2_callback_progression_e {
