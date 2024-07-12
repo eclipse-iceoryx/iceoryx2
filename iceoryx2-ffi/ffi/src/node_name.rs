@@ -26,73 +26,83 @@ use std::alloc::{alloc, dealloc, Layout};
 
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<NodeName>
-pub struct iox2_node_name_storage_internal_t {
+pub struct iox2_node_name_storage_t {
     internal: [u8; 24], // magic number obtained with size_of::<Option<NodeName>>()
 }
 
-impl iox2_node_name_storage_internal_t {
+impl iox2_node_name_storage_t {
     const fn assert_storage_layout() {
         static_assert_ge::<
-            { align_of::<iox2_node_name_storage_internal_t>() },
+            { align_of::<iox2_node_name_storage_t>() },
             { align_of::<Option<NodeName>>() },
         >();
         static_assert_ge::<
-            { size_of::<iox2_node_name_storage_internal_t>() },
+            { size_of::<iox2_node_name_storage_t>() },
             { size_of::<Option<NodeName>>() },
         >();
     }
 
     fn init(&mut self, node_name: NodeName) {
-        iox2_node_name_storage_internal_t::assert_storage_layout();
+        iox2_node_name_storage_t::assert_storage_layout();
 
         unsafe { &mut *(self as *mut Self).cast::<MaybeUninit<Option<NodeName>>>() }
             .write(Some(node_name));
     }
 
     unsafe fn assume_init_mut(&mut self) -> &mut Option<NodeName> {
-        (&mut *(self as *mut Self).cast::<MaybeUninit<Option<NodeName>>>()).assume_init_mut()
+        (*(self as *mut Self).cast::<MaybeUninit<Option<NodeName>>>()).assume_init_mut()
     }
 
     unsafe fn assume_init_ref(&self) -> &Option<NodeName> {
-        (&*(self as *const Self).cast::<MaybeUninit<Option<NodeName>>>()).assume_init_ref()
-    }
-
-    unsafe fn _assume_init_mut_inner(&mut self) -> &mut NodeName {
-        self.assume_init_mut().as_mut().unwrap()
-    }
-
-    unsafe fn assume_init_ref_inner(&self) -> &NodeName {
-        self.assume_init_ref().as_ref().unwrap()
+        (*(self as *const Self).cast::<MaybeUninit<Option<NodeName>>>()).assume_init_ref()
     }
 }
 
 #[repr(C)]
-pub struct iox2_node_name_storage_t {
+pub struct iox2_node_name_t {
     /// cbindgen:rename=internal
-    node_name: iox2_node_name_storage_internal_t,
-    deleter: fn(*mut iox2_node_name_storage_t),
+    node_name: iox2_node_name_storage_t,
+    deleter: fn(*mut iox2_node_name_t),
 }
 
-/// The handle to use for the `iox2_node_name_*` functions which mutate the node name
-pub type iox2_node_name_mut_h = *mut iox2_node_name_storage_t;
+impl iox2_node_name_t {
+    pub(crate) fn cast(node_name: iox2_node_name_h) -> *mut Self {
+        node_name as *mut _ as *mut Self
+    }
 
-/// The immutable handle to the underlying `NodeName`
-pub type iox2_node_name_h = *const iox2_node_name_storage_internal_t;
+    pub(crate) fn cast_node_name(node_name_ptr: iox2_node_name_ptr) -> *const NodeName {
+        debug_assert!(!node_name_ptr.is_null());
+        let maybe_node_name =
+            unsafe { (*(node_name_ptr as *const _ as *const Option<NodeName>)).as_ref() };
+        debug_assert!(maybe_node_name.is_some());
+        unsafe { maybe_node_name.unwrap_unchecked() as *const _ }
+    }
 
-impl iox2_node_name_storage_t {
     pub(crate) fn take(&mut self) -> Option<NodeName> {
         unsafe { self.node_name.assume_init_mut().take() }
     }
 
-    fn alloc() -> *mut iox2_node_name_storage_t {
-        unsafe { alloc(Layout::new::<iox2_node_name_storage_t>()) as *mut iox2_node_name_storage_t }
+    fn alloc() -> *mut iox2_node_name_t {
+        unsafe { alloc(Layout::new::<iox2_node_name_t>()) as *mut iox2_node_name_t }
     }
-    fn dealloc(storage: *mut iox2_node_name_storage_t) {
+    fn dealloc(storage: *mut iox2_node_name_t) {
         unsafe {
-            dealloc(storage as *mut _, Layout::new::<iox2_node_name_storage_t>());
+            dealloc(storage as *mut _, Layout::new::<iox2_node_name_t>());
         }
     }
 }
+
+pub struct iox2_node_name_h_t;
+/// The handle for `iox2_node_name_t`. Passing the handle to an function transfers the ownership.
+pub type iox2_node_name_h = *mut iox2_node_name_h_t;
+
+pub struct iox2_node_name_ptr_t;
+/// The immutable pointer to the underlying `NodeName`
+pub type iox2_node_name_ptr = *const iox2_node_name_ptr_t;
+
+pub struct iox2_node_name_mut_ptr_t;
+/// The mutable pointer to the underlying `NodeName`
+pub type iox2_node_name_mut_ptr = *mut iox2_node_name_mut_ptr_t;
 
 // END type definition
 
@@ -102,35 +112,35 @@ impl iox2_node_name_storage_t {
 ///
 /// # Arguments
 ///
-/// * `node_name_storage` - Must be either a NULL pointer or a pointer to a valid [`iox2_node_name_storage_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
-/// * `node_name` - Must be valid node name string.
+/// * `node_name_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_node_name_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `node_name_str` - Must be valid node name string.
 /// * `node_name_len` - The length of the node name string, not including a null termination.
-/// * `node_name_handle_mut_ptr` - An uninitialized or dangling [`iox2_node_name_mut_h`] handle which will be initialized by this function call.
+/// * `node_name_handle_ptr` - An uninitialized or dangling [`iox2_node_name_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_semantic_string_error_e`](crate::iox2_semantic_string_error_e) otherwise.
 ///
 /// # Safety
 ///
-/// Terminates if `node_name` or `node_name_handle_mut_ptr` is a NULL pointer!
-/// It is undefined behavior to pass a `node_name_len` which is larger than the actual length of `node_name`!
+/// Terminates if `node_name_str` or `node_name_handle_ptr` is a NULL pointer!
+/// It is undefined behavior to pass a `node_name_len` which is larger than the actual length of `node_name_str`!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_new(
-    node_name_storage: *mut iox2_node_name_storage_t,
-    node_name: *const c_char,
+    node_name_struct_ptr: *mut iox2_node_name_t,
+    node_name_str: *const c_char,
     node_name_len: c_int,
-    node_name_handle_mut_ptr: *mut iox2_node_name_mut_h,
+    node_name_handle_ptr: *mut iox2_node_name_h,
 ) -> c_int {
-    debug_assert!(!node_name.is_null());
-    debug_assert!(!node_name_handle_mut_ptr.is_null());
+    debug_assert!(!node_name_str.is_null());
+    debug_assert!(!node_name_handle_ptr.is_null());
 
-    *node_name_handle_mut_ptr = std::ptr::null_mut();
+    *node_name_handle_ptr = std::ptr::null_mut();
 
-    let mut handle = node_name_storage;
-    fn no_op(_storage: *mut iox2_node_name_storage_t) {}
-    let mut deleter: fn(*mut iox2_node_name_storage_t) = no_op;
+    let mut handle = node_name_struct_ptr;
+    fn no_op(_storage: *mut iox2_node_name_t) {}
+    let mut deleter: fn(*mut iox2_node_name_t) = no_op;
     if handle.is_null() {
-        handle = iox2_node_name_storage_t::alloc();
-        deleter = iox2_node_name_storage_t::dealloc;
+        handle = iox2_node_name_t::alloc();
+        deleter = iox2_node_name_t::dealloc;
     }
     debug_assert!(!handle.is_null());
 
@@ -138,7 +148,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
         (*handle).deleter = deleter;
     }
 
-    let node_name = slice::from_raw_parts(node_name as *const u8, node_name_len as usize);
+    let node_name = slice::from_raw_parts(node_name_str as *const _, node_name_len as usize);
 
     let node_name = if let Ok(node_name) = str::from_utf8(node_name) {
         node_name
@@ -159,52 +169,54 @@ pub unsafe extern "C" fn iox2_node_name_new(
         (*handle).node_name.init(node_name);
     }
 
-    *node_name_handle_mut_ptr = handle;
+    *node_name_handle_ptr = handle as *mut _ as *mut _;
 
     IOX2_OK
 }
 
-/// This function converts a [`iox2_node_name_mut_h`] into a [`iox2_node_name_h`]
+/// This function casts a [`iox2_node_name_h`] into a [`iox2_node_name_ptr`]
 ///
 /// # Arguments
 ///
-/// * `node_name_handle_mut` obtained by [`iox2_node_name_new`]
+/// * `node_name_handle` obtained by [`iox2_node_name_new`]
 ///
-/// Returns a [`iox2_node_name_h`]
+/// Returns a [`iox2_node_name_ptr`]
 ///
 /// # Safety
 ///
-/// The `node_name_handle_mut` must be a valid handle.
-/// The `node_name_handle_mut` is still valid after the call to this function.
+/// The `node_name_handle` must be a valid handle.
+/// The `node_name_handle` is still valid after the call to this function.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_into_node_name_h(
-    node_name_handle_mut: iox2_node_name_mut_h,
-) -> iox2_node_name_h {
-    debug_assert!(!node_name_handle_mut.is_null());
+pub unsafe extern "C" fn iox2_cast_node_name_ptr(
+    node_name_handle: iox2_node_name_h,
+) -> iox2_node_name_ptr {
+    debug_assert!(!node_name_handle.is_null());
 
-    &(*node_name_handle_mut).node_name as *const _
+    (*iox2_node_name_t::cast(node_name_handle))
+        .node_name
+        .assume_init_ref() as *const _ as *const _
 }
 
 /// This function gives access to the node name as a C-style string
 ///
 /// # Arguments
 ///
-/// * `node_name_handle` obtained by e.g. [`iox2_into_node_name_h`] or a function returning a [`iox2_node_name_h`]
+/// * `node_name_ptr` obtained by e.g. [`iox2_cast_node_name_ptr`] or a function returning a [`iox2_node_name_ptr`]
 /// * `node_name_len` can be used to get the length of the C-style string if not `NULL`
 ///
 /// Returns zero terminated C-style string
 ///
 /// # Safety
 ///
-/// The `node_name_handle` must be a valid handle.
+/// The `node_name_ptr` must be a valid pointer to a node name.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_as_c_str(
-    node_name_handle: iox2_node_name_h,
+    node_name_ptr: iox2_node_name_ptr,
     node_name_len: *mut c_int,
 ) -> *const c_char {
-    debug_assert!(!node_name_handle.is_null());
+    debug_assert!(!node_name_ptr.is_null());
 
-    let node_name = (*node_name_handle).assume_init_ref_inner();
+    let node_name = &*iox2_node_name_t::cast_node_name(node_name_ptr);
 
     if !node_name_len.is_null() {
         unsafe {
@@ -217,22 +229,24 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
 
 /// This function needs to be called to destroy the node name!
 ///
-/// In general, this function is not required to call, since [`iox2_node_builder_set_name`](crate::iox2_node_builder_set_name) will consume the [`iox2_node_name_mut_h`] handle.
+/// In general, this function is not required to call, since [`iox2_node_builder_set_name`](crate::iox2_node_builder_set_name) will consume the [`iox2_node_name_h`] handle.
 ///
 /// # Arguments
 ///
-/// * `node_name_handle` - A valid [`iox2_node_name_mut_h`]
+/// * `node_name_handle` - A valid [`iox2_node_name_h`]
 ///
 /// # Safety
 ///
-/// The `node_name_handle_mut` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-/// The corresponding [`iox2_node_name_storage_t`] can be re-used with a call to [`iox2_node_name_new`]!
+/// The `node_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// The corresponding [`iox2_node_name_t`] can be re-used with a call to [`iox2_node_name_new`]!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle_mut: iox2_node_name_mut_h) {
-    debug_assert!(!node_name_handle_mut.is_null());
+pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
+    debug_assert!(!node_name_handle.is_null());
 
-    (*node_name_handle_mut).node_name.assume_init_mut().take();
-    ((*node_name_handle_mut).deleter)(node_name_handle_mut);
+    let node_name_struct = &mut (*iox2_node_name_t::cast(node_name_handle));
+
+    node_name_struct.node_name.assume_init_mut().take();
+    (node_name_struct.deleter)(node_name_struct);
 }
 
 // END C API
@@ -246,8 +260,7 @@ mod test {
     #[test]
     fn assert_storage_size() {
         // all const functions; if it compiles, the storage size is sufficient
-        const _STORAGE_LAYOUT_CHECK: () =
-            iox2_node_name_storage_internal_t::assert_storage_layout();
+        const _STORAGE_LAYOUT_CHECK: () = iox2_node_name_storage_t::assert_storage_layout();
     }
 
     #[test]
@@ -255,18 +268,18 @@ mod test {
         unsafe {
             let expected_node_name = NodeName::new("hypnotaod")?;
 
-            let mut node_name_handle_mut: iox2_node_name_mut_h = std::ptr::null_mut();
+            let mut node_name_handle: iox2_node_name_h = std::ptr::null_mut();
             let ret_val = iox2_node_name_new(
                 std::ptr::null_mut(),
                 expected_node_name.as_str().as_ptr() as *const _,
                 expected_node_name.len() as _,
-                &mut node_name_handle_mut,
+                &mut node_name_handle,
             );
             assert_that!(ret_val, eq(IOX2_OK));
 
             let mut node_name_len = 0;
             let node_name_c_str = iox2_node_name_as_c_str(
-                iox2_into_node_name_h(node_name_handle_mut),
+                iox2_cast_node_name_ptr(node_name_handle),
                 &mut node_name_len,
             );
 
@@ -275,7 +288,7 @@ mod test {
 
             assert_that!(node_name, eq(expected_node_name.as_str()));
 
-            iox2_node_name_drop(node_name_handle_mut);
+            iox2_node_name_drop(node_name_handle);
 
             Ok(())
         }

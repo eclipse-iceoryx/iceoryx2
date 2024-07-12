@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_node_mut_h, iox2_node_name_drop, iox2_node_name_mut_h, iox2_node_storage_t,
+    iox2_node_mut_h, iox2_node_name_drop, iox2_node_name_h, iox2_node_name_t, iox2_node_storage_t,
     iox2_service_type_e, IntoCInt, IOX2_OK,
 };
 
@@ -142,16 +142,28 @@ pub unsafe extern "C" fn iox2_node_builder_new(
     handle
 }
 
+/// Sets the node name for the builder
+///
+/// # Arguments
+///
+/// * `node_builder_handle` - Must be a valid [`iox2_node_builder_mut_h`] obtained by [`iox2_node_builder_new`].
+/// * `node_name_handle` - Must be a valid [`iox2_node_name_h`] obtained by [`iox2_node_name_new`](crate::iox2_node_name_new).
+///
+/// Returns IOX2_OK
+///
+/// # Safety
+///
+/// `node_builder_handle` as well as `node_name_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_set_name(
     node_builder_handle: iox2_node_builder_mut_h,
-    node_name_handle_mut: iox2_node_name_mut_h,
+    node_name_handle: iox2_node_name_h,
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
-    debug_assert!(!node_name_handle_mut.is_null());
+    debug_assert!(!node_name_handle.is_null());
 
-    let node_name = unsafe { (*node_name_handle_mut).take().unwrap() };
-    iox2_node_name_drop(node_name_handle_mut);
+    let node_name = unsafe { (*iox2_node_name_t::cast(node_name_handle)).take().unwrap() };
+    iox2_node_name_drop(node_name_handle);
 
     let node_builder = std::mem::take(unsafe { (*node_builder_handle).node_builder_assume_init() });
     let node_builder = node_builder.name(node_name);
