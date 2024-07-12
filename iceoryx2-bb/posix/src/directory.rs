@@ -36,6 +36,7 @@
 use iceoryx2_bb_container::byte_string::strnlen;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
@@ -379,64 +380,76 @@ impl Directory {
         let number_of_directory_entries =
             unsafe { posix::scandir(self.path.as_c_str(), &mut namelist) };
 
-        if number_of_directory_entries < 0 {
-            let msg = "Unable to read directory contents";
-            handle_errno!(DirectoryReadError, from self,
-                Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
-                Errno::ENOENT => (DirectoryDoesNoLongerExist, "{} since the directory does not exist anymore.", msg),
-                Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
-                Errno::EMFILE => (PerProcessFileHandleLimitReached, "{} since the file descriptor limit of the process was reached.", msg),
-                Errno::ENFILE => (SystemWideFileHandleLimitReached, "{} since the system-wide limit of file descriptors was reached.", msg),
-                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-            );
-        } else {
-            let mut contents: Vec<DirectoryEntry> = vec![];
-            for i in 0..number_of_directory_entries {
-                let raw_name = unsafe {
-                    (*(*namelist.offset(i as isize))).d_name.as_ptr() as *mut posix::c_char
-                };
-                let raw_name_length = unsafe { strnlen(raw_name, FileName::max_len()) };
-
-                const DOT: posix::c_char = b'.' as _;
-                // dot is skipped
-                if raw_name_length == 1 && unsafe { *raw_name == DOT } {
-                    continue;
+        let _memory_cleanup_guard = ScopeGuardBuilder::new(namelist)
+            .on_init(|_| {
+                if number_of_directory_entries < 0 {
+                    let msg = "Unable to read directory contents";
+                    handle_errno!(DirectoryReadError, from self,
+                        Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
+                        Errno::ENOENT => (DirectoryDoesNoLongerExist, "{} since the directory does not exist anymore.", msg),
+                        Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
+                        Errno::EMFILE => (PerProcessFileHandleLimitReached, "{} since the file descriptor limit of the process was reached.", msg),
+                        Errno::ENFILE => (SystemWideFileHandleLimitReached, "{} since the system-wide limit of file descriptors was reached.", msg),
+                        v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
+                    );
                 }
 
-                // dot dot is skipped
-                if raw_name_length == 2
-                    && unsafe { *raw_name == DOT }
-                    && unsafe { *raw_name.offset(1) == DOT }
-                {
-                    continue;
+                Ok(())
+            })
+            .on_drop(|v| {
+                for i in 0..number_of_directory_entries {
+                    unsafe { posix::free(*(v.offset(i as isize)) as *mut posix::void) };
                 }
+                unsafe { posix::free(*v as *mut posix::void) };
+            }).create()?;
 
-                match unsafe { FileName::from_c_str(raw_name) } {
-                    Ok(name) => {
-                        let msg = format!(
-                            "Failed to acquire stats \"{}\" while reading directory content",
-                            name
-                        );
-                        match Self::acquire_metadata(self, &name, &msg) {
-                            Ok(metadata) => contents.push(DirectoryEntry { name, metadata }),
-                            Err(DirectoryStatError::DoesNotExist)
-                            | Err(DirectoryStatError::InsufficientPermissions) => (),
-                            Err(e) => {
-                                fail!(from self, with e.into(),
+        let mut contents: Vec<DirectoryEntry> = vec![];
+        for i in 0..number_of_directory_entries {
+            let raw_name =
+                unsafe { (*(*namelist.offset(i as isize))).d_name.as_ptr() as *mut posix::c_char };
+            let raw_name_length = unsafe { strnlen(raw_name, FileName::max_len()) };
+
+            if raw_name_length == 0 {
+                continue;
+            }
+
+            const DOT: posix::c_char = b'.' as _;
+            // dot is skipped
+            if raw_name_length == 1 && unsafe { *raw_name == DOT } {
+                continue;
+            }
+
+            // dot dot is skipped
+            if raw_name_length == 2
+                && unsafe { *raw_name == DOT }
+                && unsafe { *raw_name.offset(1) == DOT }
+            {
+                continue;
+            }
+
+            match unsafe { FileName::from_c_str(raw_name) } {
+                Ok(name) => {
+                    let msg = format!(
+                        "Failed to acquire stats \"{}\" while reading directory content",
+                        name
+                    );
+                    match Self::acquire_metadata(self, &name, &msg) {
+                        Ok(metadata) => contents.push(DirectoryEntry { name, metadata }),
+                        Err(DirectoryStatError::DoesNotExist)
+                        | Err(DirectoryStatError::InsufficientPermissions) => (),
+                        Err(e) => {
+                            fail!(from self, with e.into(),
                                     "{} due to an internal failure {:?}.", msg, e);
-                            }
                         }
                     }
-                    Err(v) => {
-                        error!(from self, "Directory contains entries that are not representable with FileName struct ({:?}).", v);
-                    }
                 }
-                unsafe { posix::free(*(namelist.offset(i as isize)) as *mut posix::void) };
+                Err(v) => {
+                    error!(from self, "Directory contains entries that are not representable with FileName struct ({:?}).", v);
+                }
             }
-            unsafe { posix::free(namelist as *mut posix::void) };
-
-            Ok(contents)
         }
+
+        Ok(contents)
     }
 
     /// Returns true if a directory already exists, otherwise false
