@@ -5,4 +5,4 @@ Welcome to iceoryx2's documentation!
    :maxdepth: 1
 
 
-   api/library_root
+   target/api/library_root

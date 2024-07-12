@@ -1,10 +1,10 @@
 import subprocess, os
 
 project = 'iceoryx2'
-copyright = '2024, ekxide.io'
-author = 'ekxide.io'
+copyright = '2024, ekxide IO GmbH'
+author = 'ekxide IO GmbH'
 
-subprocess.call('mkdir -p build/doxygen_docs', shell=True)
+subprocess.call('mkdir -p target/doxygen_docs', shell=True)
 subprocess.call('doxygen -g Doxyfile.global', shell=True)
 subprocess.call('doxygen Doxyfile', shell=True)
 
@@ -16,14 +16,14 @@ extensions = [
 # -- Exhale configuration ---------------------------------------------------
 # Setup the breathe extension
 breathe_projects = {
-    "iceoryx2": "./build/doxygen_docs/xml"
+    "iceoryx2": "./target/doxygen_docs/xml"
 }
 breathe_default_project = "iceoryx2"
 
  # Setup the exhale extension
 exhale_args = {
     # These arguments are required
-    "containmentFolder":     "./api",
+    "containmentFolder":     "./target/api",
     "rootFileName":          "library_root.rst",
     "rootFileTitle":         "iceoryx2",
     "doxygenStripFromPath":  "..",
@@ -59,5 +59,3 @@ html_theme_options = {
     'includehidden': True,
     'titles_only': False
 }
-
-html_static_path = ['_static']

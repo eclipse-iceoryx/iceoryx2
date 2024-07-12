@@ -4,7 +4,7 @@ GENERATE_XML                    = YES
 XML_PROGRAMLISTING              = NO
 
 PROJECT_NAME                    = "iceoryx2"
-OUTPUT_DIRECTORY                = "./build/doxygen_docs"
+OUTPUT_DIRECTORY                = "./target/doxygen_docs"
 
 INPUT                           = "../../iceoryx2-ffi/cxx/include"
 RECURSIVE                       = YES

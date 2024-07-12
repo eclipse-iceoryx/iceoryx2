@@ -11,5 +11,5 @@ make html
 
 3. open generated documentation in browser:
 ```
-build/html/index.html
+target/html/index.html
 ```
