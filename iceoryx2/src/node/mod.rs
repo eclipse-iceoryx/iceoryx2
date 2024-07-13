@@ -443,6 +443,7 @@ fn remove_node<Service: service::Service>(
         core::any::type_name::<Service>(),
         id
     );
+
     let details_config = node_details_config::<Service>(&details.config, &id);
     let detail_storages = acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
     remove_detail_storages::<Service>(&origin, detail_storages, &details_config)?;

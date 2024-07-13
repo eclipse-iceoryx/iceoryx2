@@ -170,9 +170,10 @@ use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_storage_name;
 use crate::service::static_config::*;
+use config_scheme::service_tag_config;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_log::{debug, fail, trace, warn};
+use iceoryx2_bb_log::{debug, error, fail, trace, warn};
 use iceoryx2_cal::dynamic_storage::{
     DynamicStorage, DynamicStorageBuilder, DynamicStorageOpenError,
 };
@@ -186,6 +187,7 @@ use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
+use naming_scheme::service_tag_name;
 
 use self::dynamic_config::DeregisterNodeState;
 use self::messaging_pattern::MessagingPattern;
@@ -284,19 +286,35 @@ impl<S: Service> ServiceState<S> {
 
 impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
+        let origin = "ServiceState::drop()";
+        let id = self.static_config.uuid();
         self.shared_node
             .registered_services
-            .remove(self.static_config.uuid(), |handle| {
+            .remove(id, |handle| {
+                match unsafe {
+                    <S::StaticStorage as NamedConceptMgmt>::remove_cfg(&service_tag_name(
+                        id,
+                    ), &service_tag_config::<S>(self.shared_node.config(), self.shared_node.id()))
+                } {
+                    Ok(true) => (),
+                    Ok(false) => warn!(from origin,
+                        "The service's (uuid={}) tag for the node {:?} was already removed. This may indicate a corrupted system!",
+                        id, self.shared_node.id()),
+                    Err(e) => error!(from origin,
+                        "Unable to remove the service's (uuid={}) tag for the node {:?} due to an internal error ({:?}).",
+                        id, self.shared_node.id(), e),
+                };
+
                 match self.dynamic_storage.get().deregister_node_id(handle) {
                     DeregisterNodeState::HasOwners => {
-                        trace!(from "Service::close()", "close service: {} (uuid={:?})",
-                            self.static_config.name(), self.static_config.uuid());
+                        trace!(from origin, "close service: {} (uuid={:?})",
+                            self.static_config.name(), id);
                     }
                     DeregisterNodeState::NoMoreOwners => {
                         self.static_storage.acquire_ownership();
                         self.dynamic_storage.acquire_ownership();
-                        trace!(from "Service::remove()", "close and remove service: {} (uuid={:?})",
-                            self.static_config.name(), self.static_config.uuid());
+                        trace!(from origin, "close and remove service: {} (uuid={:?})",
+                            self.static_config.name(), id);
                     }
                 }
             });

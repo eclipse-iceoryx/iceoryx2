@@ -136,6 +136,8 @@ pub struct Node {
     pub monitor_suffix: FileName,
     /// The suffix of the files where the node configuration is stored.
     pub static_config_suffix: FileName,
+    /// The suffix of the service tags.
+    pub service_tag_suffix: FileName,
 }
 
 /// The global settings
@@ -283,6 +285,7 @@ impl Default for Config {
                     directory: Path::new(b"nodes").unwrap(),
                     monitor_suffix: FileName::new(b".node_monitor").unwrap(),
                     static_config_suffix: FileName::new(b".details").unwrap(),
+                    service_tag_suffix: FileName::new(b".service_tag").unwrap(),
                 },
             },
             defaults: Defaults {

@@ -299,6 +299,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     let event_static_config =
                         self.verify_service_attributes(&static_config, required_attributes)?;
 
+                    let service_tag = self
+                        .base
+                        .create_node_service_tag(msg, EventOpenError::InternalFailure)?;
+
                     let dynamic_config = match self.base.open_dynamic_config_storage() {
                         Ok(v) => v,
                         Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
@@ -331,6 +335,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::Event(event_static_config);
+
+                    if let Some(mut service_tag) = service_tag {
+                        service_tag.release_ownership();
+                    }
 
                     return Ok(event::PortFactory::new(ServiceType::__internal_from_state(
                         service::ServiceState::new(
@@ -368,6 +376,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
         match self.base.is_service_available(msg)? {
             None => {
+                let service_tag = self
+                    .base
+                    .create_node_service_tag(msg, EventCreateError::InternalFailure)?;
+
                 let static_config = match self.base.create_static_config_storage() {
                     Ok(c) => c,
                     Err(StaticStorageCreateError::AlreadyExists) => {
@@ -425,6 +437,9 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                             "{} since the configuration could not be written to the static storage.", msg);
 
                 unlocked_static_details.release_ownership();
+                if let Some(mut service_tag) = service_tag {
+                    service_tag.release_ownership();
+                }
 
                 Ok(event::PortFactory::new(ServiceType::__internal_from_state(
                     service::ServiceState::new(

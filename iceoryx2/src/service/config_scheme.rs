@@ -86,3 +86,13 @@ pub(crate) fn node_details_config<Service: crate::service::Service>(
         .suffix(global_config.global.node.static_config_suffix)
         .path_hint(node_details_path(global_config, node_id))
 }
+
+pub(crate) fn service_tag_config<Service: crate::service::Service>(
+    global_config: &config::Config,
+    node_id: &NodeId,
+) -> <Service::StaticStorage as NamedConceptMgmt>::Configuration {
+    <<Service::StaticStorage as NamedConceptMgmt>::Configuration>::default()
+        .prefix(global_config.global.prefix)
+        .suffix(global_config.global.node.service_tag_suffix)
+        .path_hint(node_details_path(global_config, node_id))
+}
