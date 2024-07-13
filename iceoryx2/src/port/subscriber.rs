@@ -214,8 +214,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         visited_indices.resize(self.publisher_connections.capacity(), None);
 
         unsafe {
-            (*self.publisher_list_state.get()).for_each(|index, details| {
-                visited_indices[index as usize] = Some(*details);
+            (*self.publisher_list_state.get()).for_each(|h, details| {
+                visited_indices[h.index() as usize] = Some(*details);
                 CallbackProgression::Continue
             })
         };

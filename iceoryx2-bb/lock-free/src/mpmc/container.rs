@@ -141,11 +141,16 @@ impl<T: Copy + Debug> ContainerState<T> {
     ///     CallbackProgression::Continue
     /// });
     /// ```
-    pub fn for_each<F: FnMut(u32, &T) -> CallbackProgression>(&self, mut callback: F) {
+    pub fn for_each<F: FnMut(ContainerHandle, &T) -> CallbackProgression>(&self, mut callback: F) {
         for i in 0..self.data.len() {
             if self.active_index[i] % 2 == 1
-                && callback(i as _, unsafe { self.data[i].assume_init_ref() })
-                    == CallbackProgression::Stop
+                && callback(
+                    ContainerHandle {
+                        index: i as _,
+                        container_id: self.container_id,
+                    },
+                    unsafe { self.data[i].assume_init_ref() },
+                ) == CallbackProgression::Stop
             {
                 return;
             }

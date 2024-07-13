@@ -77,8 +77,8 @@ mod mpmc_container {
 
         let state = sut.get_state();
         let mut contained_values: Vec<(u32, usize)> = vec![];
-        state.for_each(|index: u32, value: &T| {
-            contained_values.push((index, (*value).into()));
+        state.for_each(|h: ContainerHandle, value: &T| {
+            contained_values.push((h.index(), (*value).into()));
             CallbackProgression::Continue
         });
 
@@ -113,7 +113,7 @@ mod mpmc_container {
 
         let state = sut.get_state();
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| {
+        state.for_each(|_: ContainerHandle, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -154,7 +154,7 @@ mod mpmc_container {
 
         let state = unsafe { sut.get_state() };
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| {
+        state.for_each(|_: ContainerHandle, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -190,7 +190,7 @@ mod mpmc_container {
 
         let state = sut.get_state();
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| {
+        state.for_each(|_: ContainerHandle, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -235,14 +235,14 @@ mod mpmc_container {
 
         let mut state = sut.get_state();
         let mut contained_values1 = vec![];
-        state.for_each(|_: u32, value: &T| {
+        state.for_each(|_: ContainerHandle, value: &T| {
             contained_values1.push((*value).into());
             CallbackProgression::Continue
         });
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq false);
         let mut contained_values2 = vec![];
-        state.for_each(|_: u32, value: &T| {
+        state.for_each(|_: ContainerHandle, value: &T| {
             contained_values2.push((*value).into());
             CallbackProgression::Continue
         });
@@ -274,7 +274,7 @@ mod mpmc_container {
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| {
+        state.for_each(|_: ContainerHandle, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -309,7 +309,7 @@ mod mpmc_container {
 
         assert_that!(unsafe { sut.update_state(&mut state) }, eq true);
         let mut contained_values = vec![];
-        state.for_each(|_: u32, value: &T| {
+        state.for_each(|_: ContainerHandle, value: &T| {
             contained_values.push((*value).into());
             CallbackProgression::Continue
         });
@@ -337,8 +337,8 @@ mod mpmc_container {
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
-            state.for_each(|index: u32, value: &T| {
-                contained_values.push((index, (*value).into()));
+            state.for_each(|h: ContainerHandle, value: &T| {
+                contained_values.push((h.index(), (*value).into()));
                 CallbackProgression::Continue
             });
 
@@ -354,8 +354,8 @@ mod mpmc_container {
 
             unsafe { sut.update_state(&mut state) };
             let mut contained_values = vec![];
-            state.for_each(|index: u32, value: &T| {
-                contained_values.push((index, (*value).into()));
+            state.for_each(|h: ContainerHandle, value: &T| {
+                contained_values.push((h.index(), (*value).into()));
                 CallbackProgression::Continue
             });
 
@@ -452,11 +452,11 @@ mod mpmc_container {
                         != number_of_threads_per_op as u32
                     {
                         if unsafe { sut.update_state(&mut state) } {
-                            state.for_each(|index: u32, value: &T| {
+                            state.for_each(|h: ContainerHandle, value: &T| {
                                 extracted_content[thread_number]
                                     .lock()
                                     .unwrap()
-                                    .push((index, *value));
+                                    .push((h.index(), *value));
                                 CallbackProgression::Continue
                             })
                         }

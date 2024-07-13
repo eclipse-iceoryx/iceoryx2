@@ -261,8 +261,8 @@ impl<Service: service::Service> Notifier<Service> {
         visited_indices.resize(self.listener_connections.len(), None);
 
         unsafe {
-            (*self.listener_list_state.get()).for_each(|index, listener_id| {
-                visited_indices[index as usize] = Some(*listener_id);
+            (*self.listener_list_state.get()).for_each(|h, listener_id| {
+                visited_indices[h.index() as usize] = Some(*listener_id);
                 CallbackProgression::Continue
             })
         };

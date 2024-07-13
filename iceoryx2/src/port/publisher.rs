@@ -399,8 +399,8 @@ impl<Service: service::Service> DataSegment<Service> {
         visited_indices.resize(self.subscriber_connections.capacity(), None);
 
         unsafe {
-            (*self.subscriber_list_state.get()).for_each(|index, subscriber_id| {
-                visited_indices[index as usize] = Some(*subscriber_id);
+            (*self.subscriber_list_state.get()).for_each(|h, subscriber_id| {
+                visited_indices[h.index() as usize] = Some(*subscriber_id);
                 CallbackProgression::Continue
             })
         };
