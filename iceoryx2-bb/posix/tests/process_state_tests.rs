@@ -212,6 +212,58 @@ pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() 
     );
 }
 
+#[test]
+pub fn process_state_cleaner_removes_state_files_on_drop() {
+    let path = generate_file_path();
+    let mut owner_lock_path = path.clone();
+    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+
+    let _file = FileBuilder::new(&path)
+        .has_ownership(false)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
+        .has_ownership(false)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let owner_lock = ProcessCleaner::new(&path);
+    assert_that!(owner_lock, is_ok);
+
+    drop(owner_lock);
+
+    assert_that!(File::does_exist(&path).unwrap(), eq false);
+    assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq false);
+}
+
+#[test]
+pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
+    let path = generate_file_path();
+    let mut owner_lock_path = path.clone();
+    owner_lock_path.push_bytes(b"_owner_lock").unwrap();
+
+    let _file = FileBuilder::new(&path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let _owner_lock_file = FileBuilder::new(&owner_lock_path)
+        .has_ownership(true)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let owner_lock = ProcessCleaner::new(&path).unwrap();
+    owner_lock.abandon();
+
+    assert_that!(File::does_exist(&path).unwrap(), eq true);
+    assert_that!(File::does_exist(&owner_lock_path).unwrap(), eq true);
+}
+
 // START: OS with IPC only lock detection
 //
 // the lock detection does work on some OS only in the inter process context.

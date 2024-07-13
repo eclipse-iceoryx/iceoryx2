@@ -752,8 +752,8 @@ impl ProcessMonitor {
 /// ```
 #[derive(Debug)]
 pub struct ProcessCleaner {
-    _file: File,
-    _owner_lock_file: File,
+    file: File,
+    owner_lock_file: File,
 }
 
 impl ProcessCleaner {
@@ -807,8 +807,8 @@ impl ProcessCleaner {
                 file.acquire_ownership();
                 owner_lock_file.acquire_ownership();
                 Ok(Self {
-                    _file: file,
-                    _owner_lock_file: owner_lock_file,
+                    file,
+                    owner_lock_file,
                 })
             }
             Err(ProcessGuardLockError::OwnedByAnotherProcess) => {
@@ -824,5 +824,13 @@ impl ProcessCleaner {
                     "{} due to an unknown failure ({:?}).", msg, e);
             }
         }
+    }
+
+    /// Abandons the [`ProcessCleaner`] without removing the underlying resources. This is useful
+    /// when another process tried to cleanup the stale resources of the dead process but is unable
+    /// to due to insufficient permissions.
+    pub fn abandon(mut self) {
+        self.file.release_ownership();
+        self.owner_lock_file.release_ownership();
     }
 }
