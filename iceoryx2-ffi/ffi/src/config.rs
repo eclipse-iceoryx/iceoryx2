@@ -18,13 +18,13 @@ use core::ffi::c_void;
 
 // BEGIN type definition
 
-pub type iox2_config_h = *const c_void;
+pub type iox2_config_ptr = *const c_void;
 
 // END type definition
 
 // BEGIN C API
 #[no_mangle]
-pub extern "C" fn iox2_config_global_config() -> iox2_config_h {
+pub extern "C" fn iox2_config_global_config() -> iox2_config_ptr {
     Config::global_config() as *const _ as *const _
 }
 
