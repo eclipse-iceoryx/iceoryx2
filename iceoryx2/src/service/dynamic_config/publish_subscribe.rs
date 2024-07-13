@@ -31,7 +31,10 @@ use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
-use crate::port::port_identifiers::{UniquePublisherId, UniqueSubscriberId};
+use crate::{
+    node::NodeId,
+    port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DynamicConfigSettings {
@@ -42,13 +45,15 @@ pub(crate) struct DynamicConfigSettings {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct PublisherDetails {
     pub(crate) publisher_id: UniquePublisherId,
+    pub(crate) node_id: NodeId,
     pub(crate) number_of_samples: usize,
     pub(crate) max_slice_len: usize,
 }
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct SubscriberDetails {
-    pub(crate) port_id: UniqueSubscriberId,
+    pub(crate) subscriber_id: UniqueSubscriberId,
+    pub(crate) node_id: NodeId,
     pub(crate) buffer_size: usize,
 }
 

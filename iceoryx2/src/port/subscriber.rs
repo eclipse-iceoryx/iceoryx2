@@ -136,7 +136,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     ) -> Result<Self, SubscriberCreateError> {
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
-        let port_id = UniqueSubscriberId::new();
+        let subscriber_id = UniqueSubscriberId::new();
 
         let publisher_list = &service
             .__internal_state()
@@ -161,7 +161,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
         let publisher_connections = Arc::new(PublisherConnections::new(
             publisher_list.capacity(),
-            port_id,
+            subscriber_id,
             service.__internal_state().shared_node.clone(),
             static_config,
             buffer_size,
@@ -192,8 +192,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .get()
             .publish_subscribe()
             .add_subscriber_id(SubscriberDetails {
-                port_id,
+                subscriber_id,
                 buffer_size,
+                node_id: service.__internal_state().shared_node.id().clone(),
             }) {
             Some(unique_index) => unique_index,
             None => {

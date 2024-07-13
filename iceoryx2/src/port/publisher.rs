@@ -412,7 +412,7 @@ impl<Service: service::Service> DataSegment<Service> {
                         None => true,
                         Some(connection) => {
                             let is_connected =
-                                connection.subscriber_id != subscriber_details.port_id;
+                                connection.subscriber_id != subscriber_details.subscriber_id;
                             if is_connected {
                                 self.remove_connection(i);
                             }
@@ -436,24 +436,24 @@ impl<Service: service::Service> DataSegment<Service> {
                                 Some(c) => match c.call(
                                     self.static_config.clone(),
                                     self.port_id,
-                                    subscriber_details.port_id,
+                                    subscriber_details.subscriber_id,
                                 ) {
                                     DegrationAction::Ignore => (),
                                     DegrationAction::Warn => {
                                         warn!(from self,
                                             "Unable to establish connection to new subscriber {:?}.",
-                                            subscriber_details.port_id )
+                                            subscriber_details.subscriber_id )
                                     }
                                     DegrationAction::Fail => {
                                         fail!(from self, with e,
                                            "Unable to establish connection to new subscriber {:?}.",
-                                           subscriber_details.port_id );
+                                           subscriber_details.subscriber_id );
                                     }
                                 },
                                 None => {
                                     warn!(from self,
                                         "Unable to establish connection to new subscriber {:?}.",
-                                        subscriber_details.port_id )
+                                        subscriber_details.subscriber_id )
                                 }
                             },
                         }
@@ -629,6 +629,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 publisher_id: port_id,
                 number_of_samples,
                 max_slice_len,
+                node_id: service.__internal_state().shared_node.id().clone(),
             }) {
             Some(unique_index) => unique_index,
             None => {

@@ -38,7 +38,11 @@
 use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 use crate::{
     port::port_identifiers::UniqueNotifierId,
-    service::{self, naming_scheme::event_concept_name},
+    service::{
+        self,
+        dynamic_config::event::{ListenerDetails, NotifierDetails},
+        naming_scheme::event_concept_name,
+    },
 };
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -166,12 +170,12 @@ impl<Service: service::Service> ListenerConnections<Service> {
 #[derive(Debug)]
 pub struct Notifier<Service: service::Service> {
     listener_connections: ListenerConnections<Service>,
-    listener_list_state: UnsafeCell<ContainerState<UniqueListenerId>>,
+    listener_list_state: UnsafeCell<ContainerState<ListenerDetails>>,
     default_event_id: EventId,
     event_id_max_value: usize,
     dynamic_storage: Arc<Service::DynamicStorage>,
     dynamic_notifier_handle: Option<ContainerHandle>,
-    port_id: UniqueNotifierId,
+    notifier_id: UniqueNotifierId,
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {
@@ -192,7 +196,7 @@ impl<Service: service::Service> Notifier<Service> {
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
-        let port_id = UniqueNotifierId::new();
+        let notifier_id = UniqueNotifierId::new();
 
         let listener_list = &service
             .__internal_state()
@@ -213,7 +217,7 @@ impl<Service: service::Service> Notifier<Service> {
                 .event()
                 .event_id_max_value,
             dynamic_notifier_handle: None,
-            port_id,
+            notifier_id,
         };
 
         new_self.populate_listener_channels();
@@ -222,12 +226,12 @@ impl<Service: service::Service> Notifier<Service> {
 
         // !MUST! be the last task otherwise a notifier is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_notifier_handle = match new_self
-            .dynamic_storage
-            .get()
-            .event()
-            .add_notifier_id(port_id)
-        {
+        let dynamic_notifier_handle = match new_self.dynamic_storage.get().event().add_notifier_id(
+            NotifierDetails {
+                notifier_id,
+                node_id: service.__internal_state().shared_node.id().clone(),
+            },
+        ) {
             Some(handle) => handle,
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
@@ -265,11 +269,11 @@ impl<Service: service::Service> Notifier<Service> {
 
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
-                Some(listener_id) => {
+                Some(details) => {
                     let create_connection = match self.listener_connections.get(i) {
                         None => true,
                         Some(connection) => {
-                            let is_connected = connection.listener_id != *listener_id;
+                            let is_connected = connection.listener_id != details.listener_id;
                             if is_connected {
                                 self.listener_connections.remove(i);
                             }
@@ -278,7 +282,7 @@ impl<Service: service::Service> Notifier<Service> {
                     };
 
                     if create_connection {
-                        self.listener_connections.create(i, *listener_id);
+                        self.listener_connections.create(i, details.listener_id);
                     }
                 }
                 None => self.listener_connections.remove(i),
@@ -288,7 +292,7 @@ impl<Service: service::Service> Notifier<Service> {
 
     /// Returns the [`UniqueNotifierId`] of the [`Notifier`]
     pub fn id(&self) -> UniqueNotifierId {
-        self.port_id
+        self.notifier_id
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with the default
