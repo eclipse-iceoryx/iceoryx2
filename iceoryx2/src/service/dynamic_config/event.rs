@@ -33,7 +33,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
 use crate::{
     node::NodeId,
-    port::port_identifiers::{UniqueListenerId, UniqueNotifierId},
+    port::port_identifiers::{UniqueListenerId, UniqueNotifierId, UniquePortId},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -92,6 +92,32 @@ impl DynamicConfig {
     /// Returns the how many [`crate::port::notifier::Notifier`] ports are currently connected.
     pub fn number_of_notifiers(&self) -> usize {
         self.notifiers.len()
+    }
+
+    pub(crate) unsafe fn remove_dead_node_id<PortCleanup: FnMut(UniquePortId)>(
+        &self,
+        node_id: &NodeId,
+        mut port_cleanup_callback: PortCleanup,
+    ) {
+        self.listeners
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_listener| {
+                if registered_listener.node_id == *node_id {
+                    port_cleanup_callback(UniquePortId::Listener(registered_listener.listener_id));
+                    self.release_listener_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
+
+        self.notifiers
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_notifier| {
+                if registered_notifier.node_id == *node_id {
+                    port_cleanup_callback(UniquePortId::Notifier(registered_notifier.notifier_id));
+                    self.release_notifier_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
     }
 
     pub(crate) fn add_listener_id(&self, id: ListenerDetails) -> Option<ContainerHandle> {

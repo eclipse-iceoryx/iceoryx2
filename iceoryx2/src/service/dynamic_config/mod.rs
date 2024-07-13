@@ -30,7 +30,7 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use std::fmt::Display;
 
-use crate::node::NodeId;
+use crate::{node::NodeId, port::port_identifiers::UniquePortId};
 
 #[derive(Debug)]
 pub(crate) enum RegisterNodeResult {
@@ -41,6 +41,11 @@ pub(crate) enum RegisterNodeResult {
 pub(crate) enum DeregisterNodeState {
     HasOwners,
     NoMoreOwners,
+}
+
+#[derive(Debug)]
+pub(crate) enum RemoveDeadNodeResult {
+    NodeNotRegistered,
 }
 
 #[derive(Debug)]
@@ -88,6 +93,33 @@ impl DynamicConfig {
             MessagingPattern::PublishSubscribe(ref v) => v.init(allocator),
             MessagingPattern::Event(ref v) => v.init(allocator),
         }
+    }
+
+    pub(crate) unsafe fn remove_dead_node_id<PortCleanup: FnMut(UniquePortId)>(
+        &self,
+        node_id: &NodeId,
+        port_cleanup_callback: PortCleanup,
+    ) -> Result<DeregisterNodeState, RemoveDeadNodeResult> {
+        match self.messaging_pattern {
+            MessagingPattern::PublishSubscribe(ref v) => {
+                v.remove_dead_node_id(node_id, port_cleanup_callback)
+            }
+            MessagingPattern::Event(ref v) => v.remove_dead_node_id(node_id, port_cleanup_callback),
+        };
+
+        let mut ret_val = Err(RemoveDeadNodeResult::NodeNotRegistered);
+        self.nodes
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_node_id| {
+                if registered_node_id == node_id {
+                    ret_val = Ok(self.deregister_node_id(handle));
+                    CallbackProgression::Stop
+                } else {
+                    CallbackProgression::Continue
+                }
+            });
+
+        ret_val
     }
 
     pub(crate) fn register_node_id(

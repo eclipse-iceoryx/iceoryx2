@@ -33,7 +33,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
 use crate::{
     node::NodeId,
-    port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},
+    port::port_identifiers::{UniquePortId, UniquePublisherId, UniqueSubscriberId},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -85,6 +85,36 @@ impl DynamicConfig {
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
         Container::<SubscriberDetails>::memory_size(config.number_of_subscribers)
             + Container::<PublisherDetails>::memory_size(config.number_of_publishers)
+    }
+
+    pub(crate) unsafe fn remove_dead_node_id<PortCleanup: FnMut(UniquePortId)>(
+        &self,
+        node_id: &NodeId,
+        mut port_cleanup_callback: PortCleanup,
+    ) {
+        self.publishers
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_publisher| {
+                if registered_publisher.node_id == *node_id {
+                    port_cleanup_callback(UniquePortId::Publisher(
+                        registered_publisher.publisher_id,
+                    ));
+                    self.release_publisher_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
+
+        self.subscribers
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_subscriber| {
+                if registered_subscriber.node_id == *node_id {
+                    port_cleanup_callback(UniquePortId::Subscriber(
+                        registered_subscriber.subscriber_id,
+                    ));
+                    self.release_subscriber_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
     }
 
     /// Returns how many [`crate::port::publisher::Publisher`] ports are currently connected.
