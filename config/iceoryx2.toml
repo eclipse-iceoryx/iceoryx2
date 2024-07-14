@@ -14,6 +14,7 @@ directory                                   = 'services'
 publisher-data-segment-suffix               = '.publisher_data'
 static-config-storage-suffix                = '.service'
 dynamic-config-storage-suffix               = '.dynamic'
+event-connection-suffix                     = '.event'
 connection-suffix                           = '.connection'
 creation-timeout.secs                       = 0
 creation-timeout.nanos                      = 500000000

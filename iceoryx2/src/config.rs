@@ -123,6 +123,8 @@ pub struct Service {
     pub creation_timeout: Duration,
     /// The suffix of a one-to-one connection
     pub connection_suffix: FileName,
+    /// The suffix of a one-to-one connection
+    pub event_connection_suffix: FileName,
 }
 
 /// All configurable settings of a [`crate::node::Node`].
@@ -280,6 +282,7 @@ impl Default for Config {
                     dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
                     creation_timeout: Duration::from_millis(500),
                     connection_suffix: FileName::new(b".connection").unwrap(),
+                    event_connection_suffix: FileName::new(b".event").unwrap(),
                 },
                 node: Node {
                     directory: Path::new(b"nodes").unwrap(),

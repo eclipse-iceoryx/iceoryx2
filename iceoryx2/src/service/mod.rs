@@ -330,6 +330,7 @@ pub(crate) mod internal {
     use crate::{
         node::NodeId,
         port::{
+            listener::remove_connection_of_listener,
             port_identifiers::UniquePortId,
             publisher::{
                 remove_data_segment_of_publisher, remove_publisher_from_all_connections,
@@ -372,37 +373,47 @@ pub(crate) mod internal {
                 }
             };
 
+            let cleanup_port_resources = |port_id| {
+                match port_id {
+                    UniquePortId::Publisher(ref id) => {
+                        if let Err(e) =
+                            unsafe { remove_publisher_from_all_connections::<S>(id, config) }
+                        {
+                            debug!(from origin, "Failed to remove the publishers ({:?}) from all of its connections ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+
+                        if let Err(e) = unsafe { remove_data_segment_of_publisher::<S>(id, config) }
+                        {
+                            debug!(from origin, "Failed to remove the publishers ({:?}) data segment ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
+                    UniquePortId::Subscriber(ref id) => {
+                        if let Err(e) =
+                            unsafe { remove_subscriber_from_all_connections::<S>(id, config) }
+                        {
+                            debug!(from origin, "Failed to remove the subscriber ({:?}) from all of its connections ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
+                    UniquePortId::Notifier(_) => (),
+                    UniquePortId::Listener(ref id) => {
+                        if let Err(e) = unsafe { remove_connection_of_listener::<S>(id, config) } {
+                            debug!(from origin, "Failed to remove the listeners ({:?}) connection ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
+                };
+
+                debug!(from origin, "Remove port {:?} from service.", port_id);
+                PortCleanupAction::RemovePort
+            };
+
             let _ = unsafe {
                 dynamic_config
                     .get()
-                    .remove_dead_node_id(node_id, |port_id| {
-                        match port_id {
-                            UniquePortId::Publisher(ref id) => {
-                                if let Err(e) = remove_publisher_from_all_connections::<S>(id, config) {
-                                    debug!(from origin,
-                                        "Failed to remove the publishers ({:?}) from all of its connections ({:?}).", id, e);
-                                    return PortCleanupAction::SkipPort;
-                                }
-
-                                if let Err(e) = remove_data_segment_of_publisher::<S>(id, config) {
-                                    debug!(from origin,
-                                        "Failed to remove the publishers ({:?}) data segment ({:?}).", id, e);
-                                    return PortCleanupAction::SkipPort;
-                                }
-                           }
-                           UniquePortId::Subscriber(ref id) => {
-                               if let Err(e) = remove_subscriber_from_all_connections::<S>(id, config) {
-                                   debug!(from origin,
-                                       "Failed to remove the subscriber ({:?}) from all of its connections ({:?}).", id, e);
-                                   return PortCleanupAction::SkipPort;
-                               }
-                           }
-                            _ => (),
-                        };
-                        // TODO: remove port resources
-                        debug!(from origin, "Remove port {:?} from service.", port_id);
-                        PortCleanupAction::RemovePort
-                    })
+                    .remove_dead_node_id(node_id, cleanup_port_resources)
             };
 
             Ok(())

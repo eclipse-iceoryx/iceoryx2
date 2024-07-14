@@ -37,9 +37,11 @@
 
 use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 use crate::{
+    node::SharedNode,
     port::port_identifiers::UniqueNotifierId,
     service::{
         self,
+        config_scheme::event_config,
         dynamic_config::event::{ListenerDetails, NotifierDetails},
         naming_scheme::event_concept_name,
     },
@@ -96,16 +98,18 @@ struct Connection<Service: service::Service> {
     listener_id: UniqueListenerId,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
+    shared_node: Arc<SharedNode<Service>>,
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
-    fn new(size: usize) -> Self {
+    fn new(size: usize, shared_node: Arc<SharedNode<Service>>) -> Self {
         let mut new_self = Self {
             connections: vec![],
+            shared_node,
         };
 
         new_self.connections.reserve(size);
@@ -119,8 +123,10 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn create(&self, index: usize, listener_id: UniqueListenerId) {
         let msg = "Unable to establish connection to listener";
         let event_name = event_concept_name(&listener_id);
+        let event_config = event_config::<Service>(self.shared_node.config());
         if self.get(index).is_none() {
             match <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name)
+                .config(&event_config)
                 .open()
             {
                 Ok(notifier) => {
@@ -207,7 +213,10 @@ impl<Service: service::Service> Notifier<Service> {
         let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
 
         let mut new_self = Self {
-            listener_connections: ListenerConnections::new(listener_list.capacity()),
+            listener_connections: ListenerConnections::new(
+                listener_list.capacity(),
+                service.__internal_state().shared_node.clone(),
+            ),
             default_event_id,
             listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
             dynamic_storage,
