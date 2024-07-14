@@ -36,6 +36,8 @@ use crate::{
     port::port_identifiers::{UniquePortId, UniquePublisherId, UniqueSubscriberId},
 };
 
+use super::PortCleanupAction;
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DynamicConfigSettings {
     pub number_of_subscribers: usize,
@@ -87,7 +89,9 @@ impl DynamicConfig {
             + Container::<PublisherDetails>::memory_size(config.number_of_publishers)
     }
 
-    pub(crate) unsafe fn remove_dead_node_id<PortCleanup: FnMut(UniquePortId)>(
+    pub(crate) unsafe fn remove_dead_node_id<
+        PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
+    >(
         &self,
         node_id: &NodeId,
         mut port_cleanup_callback: PortCleanup,
@@ -95,10 +99,11 @@ impl DynamicConfig {
         self.publishers
             .get_state()
             .for_each(|handle: ContainerHandle, registered_publisher| {
-                if registered_publisher.node_id == *node_id {
-                    port_cleanup_callback(UniquePortId::Publisher(
+                if registered_publisher.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Publisher(
                         registered_publisher.publisher_id,
-                    ));
+                    )) == PortCleanupAction::RemovePort
+                {
                     self.release_publisher_handle(handle);
                 }
                 CallbackProgression::Continue
@@ -107,10 +112,11 @@ impl DynamicConfig {
         self.subscribers
             .get_state()
             .for_each(|handle: ContainerHandle, registered_subscriber| {
-                if registered_subscriber.node_id == *node_id {
-                    port_cleanup_callback(UniquePortId::Subscriber(
+                if registered_subscriber.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Subscriber(
                         registered_subscriber.subscriber_id,
-                    ));
+                    )) == PortCleanupAction::RemovePort
+                {
                     self.release_subscriber_handle(handle);
                 }
                 CallbackProgression::Continue

@@ -47,7 +47,7 @@ pub(crate) fn connection_name(
     file
 }
 
-pub(crate) fn data_segment_name(publisher_id: UniquePublisherId) -> FileName {
+pub(crate) fn data_segment_name(publisher_id: &UniquePublisherId) -> FileName {
     let msg = "The system does not support the required file name length for the publishers data segment.";
     let origin = "data_segment_name()";
 

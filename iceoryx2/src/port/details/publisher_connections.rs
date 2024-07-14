@@ -62,7 +62,7 @@ impl<Service: service::Service> Connection<Service> {
 
         let data_segment = fail!(from this,
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
-                                Builder::new(&data_segment_name(details.publisher_id))
+                                Builder::new(&data_segment_name(&details.publisher_id))
                                 .config(&data_segment_config::<Service>(this.shared_node.config()))
                                 .open(),
                             "{} since the publishers data segment could not be mapped into the process.", msg);

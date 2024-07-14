@@ -36,6 +36,8 @@ use crate::{
     port::port_identifiers::{UniqueListenerId, UniqueNotifierId, UniquePortId},
 };
 
+use super::PortCleanupAction;
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DynamicConfigSettings {
     pub number_of_listeners: usize,
@@ -94,7 +96,9 @@ impl DynamicConfig {
         self.notifiers.len()
     }
 
-    pub(crate) unsafe fn remove_dead_node_id<PortCleanup: FnMut(UniquePortId)>(
+    pub(crate) unsafe fn remove_dead_node_id<
+        PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
+    >(
         &self,
         node_id: &NodeId,
         mut port_cleanup_callback: PortCleanup,
@@ -102,8 +106,11 @@ impl DynamicConfig {
         self.listeners
             .get_state()
             .for_each(|handle: ContainerHandle, registered_listener| {
-                if registered_listener.node_id == *node_id {
-                    port_cleanup_callback(UniquePortId::Listener(registered_listener.listener_id));
+                if registered_listener.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Listener(
+                        registered_listener.listener_id,
+                    )) == PortCleanupAction::RemovePort
+                {
                     self.release_listener_handle(handle);
                 }
                 CallbackProgression::Continue
@@ -112,8 +119,11 @@ impl DynamicConfig {
         self.notifiers
             .get_state()
             .for_each(|handle: ContainerHandle, registered_notifier| {
-                if registered_notifier.node_id == *node_id {
-                    port_cleanup_callback(UniquePortId::Notifier(registered_notifier.notifier_id));
+                if registered_notifier.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Notifier(
+                        registered_notifier.notifier_id,
+                    )) == PortCleanupAction::RemovePort
+                {
                     self.release_notifier_handle(handle);
                 }
                 CallbackProgression::Continue

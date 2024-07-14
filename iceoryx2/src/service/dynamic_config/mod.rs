@@ -32,6 +32,12 @@ use std::fmt::Display;
 
 use crate::{node::NodeId, port::port_identifiers::UniquePortId};
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum PortCleanupAction {
+    RemovePort,
+    SkipPort,
+}
+
 #[derive(Debug)]
 pub(crate) enum RegisterNodeResult {
     MarkedForDestruction,
@@ -95,7 +101,9 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) unsafe fn remove_dead_node_id<PortCleanup: FnMut(UniquePortId)>(
+    pub(crate) unsafe fn remove_dead_node_id<
+        PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
+    >(
         &self,
         node_id: &NodeId,
         port_cleanup_callback: PortCleanup,

@@ -120,7 +120,8 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::named_concept::NamedConceptBuilder;
+use iceoryx2_cal::event::NamedConceptMgmt;
+use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
 use iceoryx2_cal::shared_memory::{
     SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, ShmPointer,
 };
@@ -564,7 +565,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
         let data_segment = fail!(from origin,
-                when Self::create_data_segment(port_id, service.__internal_state().shared_node.config(), number_of_samples, static_config, &config),
+                when Self::create_data_segment(&port_id, service.__internal_state().shared_node.config(), number_of_samples, static_config, &config),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
@@ -645,7 +646,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     }
 
     fn create_data_segment(
-        port_id: UniquePublisherId,
+        port_id: &UniquePublisherId,
         global_config: &config::Config,
         number_of_samples: usize,
         static_config: &publish_subscribe::StaticConfig,
@@ -995,4 +996,23 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug> UpdateConnect
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         self.data_segment.update_connections()
     }
+}
+
+pub(crate) unsafe fn remove_data_segment_of_publisher<Service: service::Service>(
+    port_id: &UniquePublisherId,
+    config: &config::Config,
+) -> Result<(), NamedConceptRemoveError> {
+    let origin = format!(
+        "remove_data_segment_of_publisher::<{}>::({:?})",
+        core::any::type_name::<Service>(),
+        port_id
+    );
+
+    fail!(from origin, when <Service::SharedMemory as NamedConceptMgmt>::remove_cfg(
+            &data_segment_name(port_id),
+            &data_segment_config::<Service>(config),
+        ), "Unable to remove the publishers data segment."
+    );
+
+    Ok(())
 }

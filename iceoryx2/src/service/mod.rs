@@ -325,7 +325,12 @@ impl<S: Service> Drop for ServiceState<S> {
 }
 
 pub(crate) mod internal {
-    use crate::node::NodeId;
+    use dynamic_config::PortCleanupAction;
+
+    use crate::{
+        node::NodeId,
+        port::{port_identifiers::UniquePortId, publisher::remove_data_segment_of_publisher},
+    };
 
     use super::*;
 
@@ -365,8 +370,19 @@ pub(crate) mod internal {
                 dynamic_config
                     .get()
                     .remove_dead_node_id(node_id, |port_id| {
+                        match port_id {
+                            UniquePortId::Publisher(ref id) => {
+                                if let Err(e) = remove_data_segment_of_publisher::<S>(id, config) {
+                                    debug!(from origin,
+                                        "Failed to remove the publishers ({:?}) data segment ({:?}).", id, e);
+                                    return PortCleanupAction::SkipPort;
+                                }
+                            }
+                            _ => (),
+                        };
                         // TODO: remove port resources
                         debug!(from origin, "Remove port {:?} from service.", port_id);
+                        PortCleanupAction::RemovePort
                     })
             };
 

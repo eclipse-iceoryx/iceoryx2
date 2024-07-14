@@ -2,6 +2,8 @@
 
  * remove port resources in mod.rs:368
  * remove service if the dynamic config has it marked for destruction
+ * add atomic lock to node cleanup so that two threads in same process do not
+    block each other
  * test, when a service is opened with dead nodes and the service would be
     marked for destruction, that the service is kept alive or recreated
  * config: add entries
@@ -9,6 +11,7 @@
     * on node destruction?
     * on service creation?
     * on service cleanup?
+
 
  * windows stat.rs, allowed to fail if file no longer exists
  * cargo nextest run -p iceoryx2 --test service_tests gracefully
