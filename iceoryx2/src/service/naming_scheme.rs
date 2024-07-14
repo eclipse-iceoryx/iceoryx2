@@ -55,6 +55,14 @@ pub(crate) fn extract_publisher_id_from_connection(connection: &FileName) -> Uni
     unsafe { core::mem::transmute::<u128, UniquePublisherId>(value) }
 }
 
+pub(crate) fn extract_subscriber_id_from_connection(connection: &FileName) -> UniqueSubscriberId {
+    let name = core::str::from_utf8(connection.as_bytes()).unwrap();
+    let subscriber_id = &name[name.find('_').unwrap() + 1..];
+    let value: u128 = u128::from_str_radix(subscriber_id, 10).unwrap();
+
+    unsafe { core::mem::transmute::<u128, UniqueSubscriberId>(value) }
+}
+
 pub(crate) fn data_segment_name(publisher_id: &UniquePublisherId) -> FileName {
     let msg = "The system does not support the required file name length for the publishers data segment.";
     let origin = "data_segment_name()";

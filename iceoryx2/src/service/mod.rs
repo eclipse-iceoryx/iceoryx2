@@ -331,7 +331,10 @@ pub(crate) mod internal {
         node::NodeId,
         port::{
             port_identifiers::UniquePortId,
-            publisher::{remove_data_segment_of_publisher, remove_publisher_from_all_connections},
+            publisher::{
+                remove_data_segment_of_publisher, remove_publisher_from_all_connections,
+                remove_subscriber_from_all_connections,
+            },
         },
     };
 
@@ -386,6 +389,13 @@ pub(crate) mod internal {
                                         "Failed to remove the publishers ({:?}) data segment ({:?}).", id, e);
                                     return PortCleanupAction::SkipPort;
                                 }
+                           }
+                           UniquePortId::Subscriber(ref id) => {
+                               if let Err(e) = remove_subscriber_from_all_connections::<S>(id, config) {
+                                   debug!(from origin,
+                                       "Failed to remove the subscriber ({:?}) from all of its connections ({:?}).", id, e);
+                                   return PortCleanupAction::SkipPort;
+                               }
                            }
                             _ => (),
                         };
