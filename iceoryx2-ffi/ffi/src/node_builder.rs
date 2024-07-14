@@ -253,28 +253,3 @@ pub unsafe extern "C" fn iox2_node_builder_create(
 }
 
 // END C API
-
-#[cfg(test)]
-mod test {
-    use crate::*;
-    use iceoryx2_bb_testing::assert_that;
-
-    #[test]
-    fn basic_node_builder_api_test() {
-        unsafe {
-            let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
-            let mut node_handle: iox2_node_h = std::ptr::null_mut();
-            let ret_val = iox2_node_builder_create(
-                node_builder_handle,
-                std::ptr::null_mut(),
-                iox2_service_type_e::LOCAL,
-                &mut node_handle as *mut iox2_node_h,
-            );
-
-            assert_that!(ret_val, eq(IOX2_OK));
-            assert_that!(node_handle, ne(std::ptr::null_mut()));
-
-            iox2_node_drop(node_handle);
-        }
-    }
-}
