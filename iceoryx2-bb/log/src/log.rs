@@ -49,7 +49,6 @@ macro_rules! trace {
             if result.is_err() {
                 $crate::__internal_print_log_msg($crate::LogLevel::Trace, std::format_args!("{:?}", $o), std::format_args!($($e),*))
             }
-            result.ok().unwrap()
         }
     }
 }
@@ -91,7 +90,6 @@ macro_rules! debug {
             if result.is_err() {
                 $crate::__internal_print_log_msg($crate::LogLevel::Debug, std::format_args!("{:?}", $o), std::format_args!($($e),*))
             }
-            result.ok().unwrap()
         }
     }
 }
@@ -133,7 +131,6 @@ macro_rules! info {
             if result.is_err() {
                 $crate::__internal_print_log_msg($crate::LogLevel::Info, std::format_args!("{:?}", $o), std::format_args!($($e),*))
             }
-            result.ok().unwrap()
         }
     }
 }
@@ -175,7 +172,6 @@ macro_rules! warn {
             if result.is_err() {
                 $crate::__internal_print_log_msg($crate::LogLevel::Warn, std::format_args!("{:?}", $o), std::format_args!($($e),*))
             }
-            result.ok().unwrap()
         }
     }
 }
@@ -217,7 +213,6 @@ macro_rules! error {
             if result.is_err() {
                 $crate::__internal_print_log_msg($crate::LogLevel::Error, std::format_args!("{:?}", $o), std::format_args!($($e),*))
             }
-            result.ok().unwrap()
         }
     }
 }
