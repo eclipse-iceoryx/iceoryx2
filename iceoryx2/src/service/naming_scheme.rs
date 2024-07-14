@@ -15,8 +15,6 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::FileName;
 
-use super::static_config::StaticConfig;
-
 pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     let msg = "The system does not support the required file name length for the listeners event concept name.";
     let origin = "event_concept_name()";
@@ -26,8 +24,8 @@ pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     file
 }
 
-pub(crate) fn dynamic_config_storage_name(static_config: &StaticConfig) -> FileName {
-    FileName::new(static_config.uuid().as_bytes()).unwrap()
+pub(crate) fn dynamic_config_storage_name(service_uuid: &str) -> FileName {
+    FileName::new(service_uuid.as_bytes()).unwrap()
 }
 
 pub(crate) fn static_config_storage_name(uuid: &str) -> FileName {

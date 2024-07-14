@@ -283,7 +283,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             DynamicConfig,
         >>::Builder<'_> as NamedConceptBuilder<
             ServiceType::DynamicStorage,
-        >>::new(&dynamic_config_storage_name(&self.service_config))
+        >>::new(&dynamic_config_storage_name(self.service_config.uuid()))
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(additional_size + required_memory_size)
             .has_ownership(false)
@@ -312,7 +312,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage,
-                >>::new(&dynamic_config_storage_name(&self.service_config))
+                >>::new(&dynamic_config_storage_name(self.service_config.uuid()))
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
                 .open(),

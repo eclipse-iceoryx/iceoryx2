@@ -118,12 +118,12 @@ pub mod node_name;
 pub mod testing;
 
 use crate::node::node_name::NodeName;
-use crate::service;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
 };
 use crate::service::service_name::ServiceName;
+use crate::service::{self, remove_service_tag};
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -361,7 +361,15 @@ impl<Service: service::Service> DeadNodeView<Service> {
         let cleaner = cleaner.unwrap();
 
         match Node::<Service>::service_tags(config, self.id(), |service_uuid| {
-            debug!(from self, "remove node from service (uuid = {:?})", service_uuid);
+            if Service::__internal_remove_node_from_service(self.id(), service_uuid, config).is_ok()
+            {
+                let service_uuid_str = core::str::from_utf8(service_uuid.as_bytes()).unwrap();
+                if let Err(e) = remove_service_tag::<Service>(self.id(), service_uuid_str, config) {
+                    debug!(from self,
+                            "The service tag coult not be removed from the dead node ({:?}).",
+                            e);
+                }
+            }
             CallbackProgression::Continue
         }) {
             Ok(()) => (),
