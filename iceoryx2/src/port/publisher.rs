@@ -107,10 +107,10 @@ use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
 use crate::service;
-use crate::service::config_scheme::data_segment_config;
+use crate::service::config_scheme::{connection_config, data_segment_config};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
-use crate::service::naming_scheme::data_segment_name;
+use crate::service::naming_scheme::{data_segment_name, extract_publisher_id_from_connection};
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
 use crate::service::static_config::publish_subscribe::{self};
 use crate::{config, sample_mut::SampleMut};
@@ -118,10 +118,12 @@ use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
+use iceoryx2_bb_log::{debug, error, fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
-use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
+use iceoryx2_cal::named_concept::{
+    NamedConceptBuilder, NamedConceptListError, NamedConceptRemoveError,
+};
 use iceoryx2_cal::shared_memory::{
     SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, ShmPointer,
 };
@@ -220,6 +222,12 @@ impl std::fmt::Display for PublisherSendError {
 }
 
 impl std::error::Error for PublisherSendError {}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub(crate) enum RemovePublisherFromAllConnectionsError {
+    InsufficientPermissions,
+    InternalError,
+}
 
 #[derive(Debug)]
 pub(crate) struct DataSegment<Service: service::Service> {
@@ -1015,4 +1023,54 @@ pub(crate) unsafe fn remove_data_segment_of_publisher<Service: service::Service>
     );
 
     Ok(())
+}
+
+pub(crate) unsafe fn remove_publisher_from_all_connections<Service: service::Service>(
+    port_id: &UniquePublisherId,
+    config: &config::Config,
+) -> Result<(), RemovePublisherFromAllConnectionsError> {
+    let origin = format!(
+        "remove_publisher_from_all_connections::<{}>::({:?})",
+        core::any::type_name::<Service>(),
+        port_id
+    );
+    let msg = "Unable to remove the publisher from all connections";
+    let connection_config = connection_config::<Service>(config);
+
+    let connection_list = match <Service::Connection as NamedConceptMgmt>::list_cfg(
+        &connection_config,
+    ) {
+        Ok(list) => list,
+        Err(NamedConceptListError::InsufficientPermissions) => {
+            fail!(from origin, with RemovePublisherFromAllConnectionsError::InsufficientPermissions,
+                    "{} due to insufficient permissions to list all connections.", msg);
+        }
+        Err(NamedConceptListError::InternalError) => {
+            fail!(from origin, with RemovePublisherFromAllConnectionsError::InternalError,
+                "{} due to an internal error while listing all connections.", msg);
+        }
+    };
+
+    let mut ret_val = Ok(());
+    for connection in connection_list {
+        let publisher_id = extract_publisher_id_from_connection(&connection);
+        if publisher_id == *port_id {
+            match <Service::Connection as NamedConceptMgmt>::remove_cfg(
+                &connection,
+                &connection_config,
+            ) {
+                Ok(_) => (),
+                Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                    debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
+                    ret_val = Err(RemovePublisherFromAllConnectionsError::InsufficientPermissions);
+                }
+                Err(NamedConceptRemoveError::InternalError) => {
+                    debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
+                    ret_val = Err(RemovePublisherFromAllConnectionsError::InternalError);
+                }
+            }
+        }
+    }
+
+    ret_val
 }

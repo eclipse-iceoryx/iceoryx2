@@ -47,6 +47,14 @@ pub(crate) fn connection_name(
     file
 }
 
+pub(crate) fn extract_publisher_id_from_connection(connection: &FileName) -> UniquePublisherId {
+    let name = core::str::from_utf8(connection.as_bytes()).unwrap();
+    let publisher_id = &name[..name.find('_').unwrap()];
+    let value: u128 = u128::from_str_radix(publisher_id, 10).unwrap();
+
+    unsafe { core::mem::transmute::<u128, UniquePublisherId>(value) }
+}
+
 pub(crate) fn data_segment_name(publisher_id: &UniquePublisherId) -> FileName {
     let msg = "The system does not support the required file name length for the publishers data segment.";
     let origin = "data_segment_name()";
