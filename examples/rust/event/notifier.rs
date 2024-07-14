@@ -22,13 +22,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .service_builder("MyEventName".try_into()?)
         .event()
         .open_or_create()?;
+    let max_event_id = event.static_config().event_id_max_value();
 
     let notifier = event.notifier_builder().create()?;
 
     let mut counter: usize = 0;
     while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
         counter += 1;
-        notifier.notify_with_custom_event_id(EventId::new(counter))?;
+        notifier.notify_with_custom_event_id(EventId::new(counter % max_event_id))?;
 
         println!("Trigger event with id {} ...", counter);
     }
