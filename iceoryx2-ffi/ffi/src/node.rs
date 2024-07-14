@@ -20,10 +20,10 @@ use crate::{
 use iceoryx2::node::{NodeListFailure, NodeView};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_int, c_void};
-use core::mem::{align_of, size_of, ManuallyDrop, MaybeUninit};
-use std::alloc::{alloc, dealloc, Layout};
+use core::mem::ManuallyDrop;
 
 // BEGIN type definition
 
@@ -71,46 +71,11 @@ pub struct iox2_node_storage_t {
     internal: [u8; 16], // magic number obtained with size_of::<Option<NodeUnion>>()
 }
 
-impl iox2_node_storage_t {
-    const fn assert_storage_layout() {
-        static_assert_ge::<
-            { align_of::<iox2_node_storage_t>() },
-            { align_of::<Option<NodeUnion>>() },
-        >();
-        static_assert_ge::<{ size_of::<iox2_node_storage_t>() }, { size_of::<Option<NodeUnion>>() }>(
-        );
-    }
-
-    fn init(&mut self, node: NodeUnion) {
-        iox2_node_storage_t::assert_storage_layout();
-
-        unsafe { &mut *(self as *mut Self).cast::<MaybeUninit<Option<NodeUnion>>>() }
-            .write(Some(node));
-    }
-
-    unsafe fn as_option_mut(&mut self) -> &mut Option<NodeUnion> {
-        &mut *(self as *mut Self).cast::<Option<NodeUnion>>()
-    }
-
-    unsafe fn as_option_ref(&self) -> &Option<NodeUnion> {
-        &*(self as *const Self).cast::<Option<NodeUnion>>()
-    }
-
-    unsafe fn as_mut(&mut self) -> &mut NodeUnion {
-        self.as_option_mut().as_mut().unwrap()
-    }
-
-    unsafe fn as_ref(&self) -> &NodeUnion {
-        self.as_option_ref().as_ref().unwrap()
-    }
-}
-
 #[repr(C)]
+#[iceoryx2_ffi(NodeUnion)]
 pub struct iox2_node_t {
-    /// cbindgen:rename=internal1
     pub(crate) service_type: iox2_service_type_e,
-    /// cbindgen:rename=internal2
-    pub(crate) node: iox2_node_storage_t,
+    pub(crate) value: iox2_node_storage_t,
     pub(crate) deleter: fn(*mut iox2_node_t),
 }
 
@@ -118,25 +83,16 @@ impl iox2_node_t {
     pub(crate) fn init(
         &mut self,
         service_type: iox2_service_type_e,
-        node: NodeUnion,
+        value: NodeUnion,
         deleter: fn(*mut iox2_node_t),
     ) {
         self.service_type = service_type;
-        self.node.init(node);
+        self.value.init(value);
         self.deleter = deleter;
     }
 
     pub(crate) fn cast(node: iox2_node_h) -> *mut Self {
         node as *mut _ as *mut Self
-    }
-
-    pub(crate) fn alloc() -> *mut iox2_node_t {
-        unsafe { alloc(Layout::new::<iox2_node_t>()) as *mut iox2_node_t }
-    }
-    pub(crate) fn dealloc(storage: *mut iox2_node_t) {
-        unsafe {
-            dealloc(storage as *mut _, Layout::new::<iox2_node_t>());
-        }
     }
 }
 
@@ -192,13 +148,11 @@ pub type iox2_node_list_callback = extern "C" fn(
 pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_name_ptr {
     debug_assert!(!node_handle.is_null());
 
-    let node_struct = &mut *iox2_node_t::cast(node_handle);
+    let node = &mut *iox2_node_t::cast(node_handle);
 
-    match node_struct.service_type {
-        iox2_service_type_e::IPC => node_struct.node.as_ref().ipc.name() as *const _ as *const _,
-        iox2_service_type_e::LOCAL => {
-            node_struct.node.as_ref().local.name() as *const _ as *const _
-        }
+    match node.service_type {
+        iox2_service_type_e::IPC => node.value.as_ref().ipc.name() as *const _ as *const _,
+        iox2_service_type_e::LOCAL => node.value.as_ref().local.name() as *const _ as *const _,
     }
 }
 
@@ -211,13 +165,11 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_n
 pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_ptr {
     debug_assert!(!node_handle.is_null());
 
-    let node_struct = &mut *iox2_node_t::cast(node_handle);
+    let node = &mut *iox2_node_t::cast(node_handle);
 
-    match node_struct.service_type {
-        iox2_service_type_e::IPC => node_struct.node.as_ref().ipc.config() as *const _ as *const _,
-        iox2_service_type_e::LOCAL => {
-            node_struct.node.as_ref().local.config() as *const _ as *const _
-        }
+    match node.service_type {
+        iox2_service_type_e::IPC => node.value.as_ref().ipc.config() as *const _ as *const _,
+        iox2_service_type_e::LOCAL => node.value.as_ref().local.config() as *const _ as *const _,
     }
 }
 
@@ -371,17 +323,17 @@ pub unsafe extern "C" fn iox2_node_service_builder(
 pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
     debug_assert!(!node_handle.is_null());
 
-    let node_struct = &mut *iox2_node_t::cast(node_handle);
+    let node = &mut *iox2_node_t::cast(node_handle);
 
-    match node_struct.service_type {
+    match node.service_type {
         iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut node_struct.node.as_mut().ipc);
+            ManuallyDrop::drop(&mut node.value.as_mut().ipc);
         }
         iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut node_struct.node.as_mut().local);
+            ManuallyDrop::drop(&mut node.value.as_mut().local);
         }
     }
-    (node_struct.deleter)(node_struct);
+    (node.deleter)(node);
 }
 
 // END C API
@@ -390,12 +342,6 @@ pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
 mod test {
     use crate::*;
     use iceoryx2_bb_testing::assert_that;
-
-    #[test]
-    fn assert_storage_sizes() {
-        // all const functions; if it compiles, the storage size is sufficient
-        const _STORAGE_LAYOUT_CHECK: () = iox2_node_storage_t::assert_storage_layout();
-    }
 
     fn create_sut_node() -> iox2_node_h {
         unsafe {
@@ -444,7 +390,11 @@ mod test {
     fn basic_node_config_test() {
         unsafe {
             let node_handle = create_sut_node();
-            let expected_config = (*iox2_node_t::cast(node_handle)).node.as_ref().ipc.config();
+            let expected_config = (*iox2_node_t::cast(node_handle))
+                .value
+                .as_ref()
+                .ipc
+                .config();
 
             let config = iox2_node_config(node_handle);
 
@@ -458,7 +408,7 @@ mod test {
     fn basic_node_name_test() {
         unsafe {
             let node_handle = create_sut_node();
-            let expected_node_name = (*iox2_node_t::cast(node_handle)).node.as_ref().ipc.name();
+            let expected_node_name = (*iox2_node_t::cast(node_handle)).value.as_ref().ipc.name();
             assert_that!(expected_node_name.as_str(), eq("hypnotoad"));
 
             let node_name = iox2_node_name(node_handle);

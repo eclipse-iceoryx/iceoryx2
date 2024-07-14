@@ -136,11 +136,11 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
                 unsafe { *self.value.as_option_mut() = Some(value) }
             }
 
-            fn alloc() -> *mut #struct_name {
+            pub(crate) fn alloc() -> *mut #struct_name {
                 unsafe { ::std::alloc::alloc(::std::alloc::Layout::new::<#struct_name>()) as _ }
             }
 
-            fn dealloc(storage: *mut #struct_name) {
+            pub(crate) fn dealloc(storage: *mut #struct_name) {
                 unsafe {
                     ::std::alloc::dealloc(storage as _, ::core::alloc::Layout::new::<#struct_name>())
                 }
