@@ -26,6 +26,7 @@ iceoryx2 = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
+iceoryx2-ffi-macros = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

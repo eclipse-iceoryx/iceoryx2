@@ -14,6 +14,7 @@ members = [
     "iceoryx2-bb/trait-tests",
 
     "iceoryx2-ffi/ffi",
+    "iceoryx2-ffi/ffi-macros",
 
     "iceoryx2-cal",
     "iceoryx2",
@@ -66,7 +67,8 @@ iceoryx2-pal-configuration = { version = "0.3.0", path = "iceoryx2-pal/configura
 
 iceoryx2-cal = { version = "0.3.0", path = "iceoryx2-cal" }
 
-iceoryx2-ffi = { version = "0.3.0", path = "iceoryx2-ffi" }
+iceoryx2-ffi = { version = "0.3.0", path = "iceoryx2-ffi/ffi" }
+iceoryx2-ffi-macros = { version = "0.3.0", path = "iceoryx2-ffi/ffi-macros" }
 
 iceoryx2 = { version = "0.3.0", path = "iceoryx2/" }
 
