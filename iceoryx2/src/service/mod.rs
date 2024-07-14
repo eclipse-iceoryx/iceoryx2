@@ -321,11 +321,22 @@ impl<S: Service> Drop for ServiceState<S> {
     }
 }
 
+pub(crate) mod internal {
+    use super::*;
+
+    pub(crate) trait ServiceInternal<S: Service> {
+        fn __internal_from_state(state: ServiceState<S>) -> S;
+
+        fn __internal_state(&self) -> &ServiceState<S>;
+    }
+}
+
 /// Represents a service. Used to create or open new services with the
 /// [`crate::node::Node::service_builder()`].
 /// Contains the building blocks a [`Service`] requires to create the underlying resources and
 /// establish communication.
-pub trait Service: Debug + Sized {
+#[allow(private_bounds)]
+pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;
@@ -351,12 +362,6 @@ pub trait Service: Debug + Sized {
 
     /// Monitoring mechanism to detect dead processes.
     type Monitoring: Monitoring;
-
-    #[doc(hidden)]
-    fn __internal_from_state(state: ServiceState<Self>) -> Self;
-
-    #[doc(hidden)]
-    fn __internal_state(&self) -> &ServiceState<Self>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///
