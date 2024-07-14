@@ -120,13 +120,15 @@ pub mod testing;
 use crate::node::node_name::NodeName;
 use crate::service;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
-use crate::service::config_scheme::{node_details_path, node_monitoring_config};
+use crate::service::config_scheme::{
+    node_details_path, node_monitoring_config, service_tag_config,
+};
 use crate::service::service_name::ServiceName;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError};
 use iceoryx2_bb_posix::process::Process;
 use iceoryx2_bb_posix::signal::SignalHandler;
@@ -224,6 +226,12 @@ impl std::error::Error for NodeCleanupFailure {}
 enum NodeReadStorageFailure {
     ReadError,
     Corrupted,
+    InternalError,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum NodeReadServiceTagsFailure {
+    InsufficientPermissions,
     InternalError,
 }
 
@@ -344,13 +352,55 @@ impl<Service: service::Service> DeadNodeView<Service> {
             Config::global_config()
         };
 
-        let _cleaner = match <Service::Monitoring as Monitoring>::Builder::new(&monitor_name)
+        let cleaner = fail!(from self, when self.acquire_cleaner_lock(&monitor_name, config),
+                        "{} since the monitor cleaner lock could not be acquired.", msg);
+
+        if cleaner.is_none() {
+            return Ok(false);
+        }
+        let cleaner = cleaner.unwrap();
+
+        warn!(from self, "trying to cleanup stale resources of dead node");
+        match Node::<Service>::service_tags(config, self.id(), |service_uuid| {
+            warn!(from self, "remove node from service (uuid = {:?})", service_uuid);
+            CallbackProgression::Continue
+        }) {
+            Ok(()) => (),
+            Err(e) => {
+                cleaner.abandon();
+                fail!(from self, with NodeCleanupFailure::InsufficientPermissions,
+                    "{} since the service tags could not be read ({:?}).", msg, e);
+            }
+        };
+
+        match remove_node::<Service>(*self.id(), config) {
+            Ok(_) => {
+                warn!(from self, "remove dead node");
+                Ok(true)
+            }
+            Err(e) => {
+                cleaner.abandon();
+                warn!(from self, "failed to remove dead node");
+                fail!(from self, with e,
+                "{} since the node itself could not be removed.", msg);
+            }
+        }
+    }
+
+    fn acquire_cleaner_lock(
+        &self,
+        monitor_name: &FileName,
+        config: &Config,
+    ) -> Result<Option<<Service::Monitoring as Monitoring>::Cleaner>, NodeCleanupFailure> {
+        let msg = "Unable to acquire monitor cleaner";
+
+        match <Service::Monitoring as Monitoring>::Builder::new(monitor_name)
             .config(&node_monitoring_config::<Service>(config))
             .cleaner()
         {
-            Ok(cleaner) => cleaner,
+            Ok(cleaner) => Ok(Some(cleaner)),
             Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance)
-            | Err(MonitoringCreateCleanerError::DoesNotExist) => return Ok(false),
+            | Err(MonitoringCreateCleanerError::DoesNotExist) => return Ok(None),
             Err(MonitoringCreateCleanerError::Interrupt) => {
                 fail!(from self, with NodeCleanupFailure::Interrupt,
                     "{} since an interrupt signal was received.", msg);
@@ -363,12 +413,6 @@ impl<Service: service::Service> DeadNodeView<Service> {
                 fatal_panic!(from self,
                         "This should never happen! {} since the Node is still alive.", msg);
             }
-        };
-
-        if let Some(details) = self.details() {
-            remove_node::<Service>(*self.id(), details)
-        } else {
-            Ok(true)
         }
     }
 }
@@ -436,7 +480,7 @@ fn remove_node_details_directory<Service: service::Service>(
 
 fn remove_node<Service: service::Service>(
     id: NodeId,
-    details: &NodeDetails,
+    config: &Config,
 ) -> Result<bool, NodeCleanupFailure> {
     let origin = format!(
         "remove_node<{}>({:?})",
@@ -444,10 +488,10 @@ fn remove_node<Service: service::Service>(
         id
     );
 
-    let details_config = node_details_config::<Service>(&details.config, &id);
+    let details_config = node_details_config::<Service>(config, &id);
     let detail_storages = acquire_all_node_detail_storages::<Service>(&origin, &details_config)?;
     remove_detail_storages::<Service>(&origin, detail_storages, &details_config)?;
-    remove_node_details_directory::<Service>(details.config(), &id)?;
+    remove_node_details_directory::<Service>(config, &id)?;
 
     Ok(true)
 }
@@ -527,7 +571,7 @@ impl<Service: service::Service> SharedNode<Service> {
 impl<Service: service::Service> Drop for SharedNode<Service> {
     fn drop(&mut self) {
         if self.monitoring_token.get_mut().is_some() {
-            warn!(from self, when remove_node::<Service>(self.id, &self.details),
+            warn!(from self, when remove_node::<Service>(self.id, self.details.config()),
                 "Unable to remove node resources.");
         }
     }
@@ -797,6 +841,38 @@ impl<Service: service::Service> Node<Service> {
 
         Ok(Some(node_details))
     }
+
+    fn service_tags<F: FnMut(&FileName) -> CallbackProgression>(
+        config: &Config,
+        node_id: &NodeId,
+        mut callback: F,
+    ) -> Result<(), NodeReadServiceTagsFailure> {
+        let origin = "Node::service_tags()";
+        let msg = format!(
+            "Unable to acquire all service tags of the node {:?}",
+            node_id
+        );
+        match <Service::StaticStorage as NamedConceptMgmt>::list_cfg(
+            &service_tag_config::<Service>(config, node_id),
+        ) {
+            Ok(tags) => {
+                for tag in tags {
+                    if callback(&tag) == CallbackProgression::Stop {
+                        break;
+                    }
+                }
+                Ok(())
+            }
+            Err(NamedConceptListError::InsufficientPermissions) => {
+                fail!(from origin, with NodeReadServiceTagsFailure::InsufficientPermissions,
+                    "{} due to insufficient permissions.", msg);
+            }
+            Err(NamedConceptListError::InternalError) => {
+                fail!(from origin, with NodeReadServiceTagsFailure::InternalError,
+                    "{} due to an internal error.", msg);
+            }
+        }
+    }
 }
 
 /// Creates a [`Node`].
@@ -853,15 +929,17 @@ impl NodeBuilder {
         self,
         node_id: UniqueSystemId,
     ) -> Result<Node<Service>, NodeCreationFailure> {
-        let msg = "Unable to create node";
-        let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
-                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let config = if let Some(ref config) = self.config {
             config.clone()
         } else {
             Config::global_config().clone()
         };
 
+        self.cleanup_dead_nodes::<Service>(&config);
+
+        let msg = "Unable to create node";
+        let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
+                                "This should never happen! {msg} since the UniqueSystemId is not a valid file name.");
         let (details_storage, details) =
             self.create_node_details_storage::<Service>(&config, &NodeId(node_id))?;
         let monitoring_token = self.create_token::<Service>(&config, &monitor_name)?;
@@ -877,6 +955,21 @@ impl NodeBuilder {
                 details,
             }),
         })
+    }
+
+    fn cleanup_dead_nodes<Service: service::Service>(&self, config: &Config) {
+        match Node::<Service>::list(config, |node_state| {
+            if let NodeState::Dead(dead_node) = node_state {
+                dead_node.remove_stale_resources();
+            }
+
+            CallbackProgression::Continue
+        }) {
+            Ok(()) => (),
+            Err(e) => {
+                debug!(from self, "Unable to perform a full scan for dead nodes since the all existing nodes could not be listed ({:?}).", e)
+            }
+        }
     }
 
     fn create_token<Service: service::Service>(

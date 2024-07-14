@@ -171,7 +171,9 @@ impl NamedConcept for Cleaner {
     }
 }
 
-impl MonitoringCleaner for Cleaner {}
+impl MonitoringCleaner for Cleaner {
+    fn abandon(self) {}
+}
 
 #[derive(Debug)]
 pub struct Token {
