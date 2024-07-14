@@ -322,12 +322,21 @@ impl<S: Service> Drop for ServiceState<S> {
 }
 
 pub(crate) mod internal {
+    use crate::node::NodeId;
+
     use super::*;
 
     pub(crate) trait ServiceInternal<S: Service> {
         fn __internal_from_state(state: ServiceState<S>) -> S;
 
         fn __internal_state(&self) -> &ServiceState<S>;
+
+        fn __internal_remove_node_from_service(node_id: &NodeId, service_id: &FileName) {
+            debug!(
+                "remove node {:?} from service (uuid = {:?})",
+                node_id, service_id
+            );
+        }
     }
 }
 

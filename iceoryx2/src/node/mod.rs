@@ -360,9 +360,8 @@ impl<Service: service::Service> DeadNodeView<Service> {
         }
         let cleaner = cleaner.unwrap();
 
-        warn!(from self, "trying to cleanup stale resources of dead node");
         match Node::<Service>::service_tags(config, self.id(), |service_uuid| {
-            warn!(from self, "remove node from service (uuid = {:?})", service_uuid);
+            debug!(from self, "remove node from service (uuid = {:?})", service_uuid);
             CallbackProgression::Continue
         }) {
             Ok(()) => (),
@@ -374,15 +373,10 @@ impl<Service: service::Service> DeadNodeView<Service> {
         };
 
         match remove_node::<Service>(*self.id(), config) {
-            Ok(_) => {
-                warn!(from self, "remove dead node");
-                Ok(true)
-            }
+            Ok(_) => Ok(true),
             Err(e) => {
                 cleaner.abandon();
-                warn!(from self, "failed to remove dead node");
-                fail!(from self, with e,
-                "{} since the node itself could not be removed.", msg);
+                fail!(from self, with e, "{} since the node itself could not be removed.", msg);
             }
         }
     }
@@ -960,7 +954,16 @@ impl NodeBuilder {
     fn cleanup_dead_nodes<Service: service::Service>(&self, config: &Config) {
         match Node::<Service>::list(config, |node_state| {
             if let NodeState::Dead(dead_node) = node_state {
-                dead_node.remove_stale_resources();
+                let node_id = dead_node.id().clone();
+                warn!(from self, "Dead node ({:?}) detected", node_id);
+                match dead_node.remove_stale_resources() {
+                    Ok(_) => {
+                        debug!(from self, "The dead node ({:?}) was successfully removed.", node_id)
+                    }
+                    Err(e) => {
+                        warn!(from self, "Unable to remove dead node {:?} ({:?}).", node_id, e)
+                    }
+                }
             }
 
             CallbackProgression::Continue
