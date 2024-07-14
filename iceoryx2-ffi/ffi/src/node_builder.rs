@@ -144,7 +144,7 @@ pub type iox2_node_builder_ref_h = *mut iox2_node_builder_ref_h_t;
 ///
 /// # Safety
 ///
-/// The same [`iox2_node_builder_t`] cannot be used in subsequent calls to this function, unless [`iox2_node_builder_create`] was called before!
+/// * The same [`iox2_node_builder_t`] cannot be used in subsequent calls to this function, unless [`iox2_node_builder_create`] was called before!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_new(
     node_builder_struct_ptr: *mut iox2_node_builder_t,
@@ -176,8 +176,8 @@ pub unsafe extern "C" fn iox2_node_builder_new(
 ///
 /// # Safety
 ///
-/// The `node_builder_handle` must be a valid handle.
-/// The `node_builder_handle` is still valid after the call to this function.
+/// * The `node_builder_handle` must be a valid handle.
+/// * The `node_builder_handle` is still valid after the call to this function.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_cast_node_builder_ref_h(
     node_builder_handle: iox2_node_builder_h,
@@ -198,7 +198,7 @@ pub unsafe extern "C" fn iox2_cast_node_builder_ref_h(
 ///
 /// # Safety
 ///
-/// `node_builder_handle` as well as `node_name_handle` must be valid handles
+/// * `node_builder_handle` as well as `node_name_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_set_name(
     node_builder_handle: iox2_node_builder_ref_h,
@@ -252,8 +252,8 @@ unsafe fn iox2_node_builder_drop(node_builder_handle: iox2_node_builder_h) {
 ///
 /// # Safety
 ///
-/// The `node_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-/// The corresponding [`iox2_node_builder_t`] can be re-used with a call to [`iox2_node_builder_new`]!
+/// * The `node_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_node_builder_t`] can be re-used with a call to [`iox2_node_builder_new`]!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_create(
     node_builder_handle: iox2_node_builder_h,

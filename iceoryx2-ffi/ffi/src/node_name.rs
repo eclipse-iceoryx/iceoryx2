@@ -126,8 +126,8 @@ pub type iox2_node_name_mut_ptr = *mut iox2_node_name_mut_ptr_t;
 ///
 /// # Safety
 ///
-/// Terminates if `node_name_str` or `node_name_handle_ptr` is a NULL pointer!
-/// It is undefined behavior to pass a `node_name_len` which is larger than the actual length of `node_name_str`!
+/// * Terminates if `node_name_str` or `node_name_handle_ptr` is a NULL pointer!
+/// * It is undefined behavior to pass a `node_name_len` which is larger than the actual length of `node_name_str`!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_new(
     node_name_struct_ptr: *mut iox2_node_name_t,
@@ -189,8 +189,8 @@ pub unsafe extern "C" fn iox2_node_name_new(
 ///
 /// # Safety
 ///
-/// The `node_name_handle` must be a valid handle.
-/// The `node_name_handle` is still valid after the call to this function.
+/// * The `node_name_handle` must be a valid handle.
+/// * The `node_name_handle` is still valid after the call to this function.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_cast_node_name_ptr(
     node_name_handle: iox2_node_name_h,
@@ -213,7 +213,7 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 ///
 /// # Safety
 ///
-/// The `node_name_ptr` must be a valid pointer to a node name.
+/// * The `node_name_ptr` must be a valid pointer to a node name.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_as_c_str(
     node_name_ptr: iox2_node_name_ptr,
@@ -242,8 +242,8 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
 ///
 /// # Safety
 ///
-/// The `node_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-/// The corresponding [`iox2_node_name_t`] can be re-used with a call to [`iox2_node_name_new`]!
+/// * The `node_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_node_name_t`] can be re-used with a call to [`iox2_node_name_new`]!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
     debug_assert!(!node_name_handle.is_null());
