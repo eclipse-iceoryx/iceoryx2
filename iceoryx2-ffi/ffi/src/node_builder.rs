@@ -14,7 +14,7 @@
 
 use crate::{
     iox2_node_h, iox2_node_name_drop, iox2_node_name_h, iox2_node_name_t, iox2_node_t,
-    iox2_service_type_e, IntoCInt, IOX2_OK,
+    iox2_service_type_e, IntoCInt, NodeUnion, IOX2_OK,
 };
 
 use iceoryx2::node::NodeCreationFailure;
@@ -46,9 +46,9 @@ impl IntoCInt for NodeCreationFailure {
 }
 
 #[repr(C)]
-#[repr(align(8))] // alignment of NodeBuilder
+#[repr(align(8))] // alignment of Option<NodeBuilder>
 pub struct iox2_node_builder_storage_t {
-    internal: [u8; 18432], // magic number obtained with size_of::<NodeBuilder>()
+    internal: [u8; 18432], // magic number obtained with size_of::<Option<NodeBuilder>>()
 }
 
 impl iox2_node_builder_storage_t {
@@ -280,7 +280,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
     match service_type {
         iox2_service_type_e::IPC => match node_builder.create::<zero_copy::Service>() {
             Ok(node) => unsafe {
-                (*node_struct_ptr).init(service_type, node, deleter);
+                (*node_struct_ptr).init(service_type, NodeUnion::new_ipc(node), deleter);
             },
             Err(error) => {
                 return error.into_c_int();
@@ -288,7 +288,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
         },
         iox2_service_type_e::LOCAL => match node_builder.create::<process_local::Service>() {
             Ok(node) => unsafe {
-                (*node_struct_ptr).init(service_type, node, deleter);
+                (*node_struct_ptr).init(service_type, NodeUnion::new_local(node), deleter);
             },
             Err(error) => {
                 return error.into_c_int();

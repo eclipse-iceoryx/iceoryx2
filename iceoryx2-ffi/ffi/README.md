@@ -13,7 +13,7 @@
 The type erasure is usually done in two stages with `iox2_foo_storage_t` and `iox2_foo_t`.
 
 The `iox2_foo_storage_t` is the storage for the Rust type `Option<Foo>` and must match the size and alignment of `Option<Foo>`.
-If the internal storage must hold multiple types, the size and alignment is respectively the max value of the types.
+If the internal storage must hold multiple types, a union can be used.
 The struct is not supposed to be used standalone but always in combination with an `iox2_foo_t`.
 Assuming the size is 160 and the alignment is 8, then the storage is defined as following
 ```rs
