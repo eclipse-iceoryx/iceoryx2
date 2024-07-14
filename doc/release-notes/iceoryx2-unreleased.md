@@ -66,6 +66,7 @@
  * Build failure for Windows 11 i686-pc-windows-msvc [#235](https://github.com/eclipse-iceoryx/iceoryx2/issues/235)
  * 'win32call' needs to provide the last error [#241](https://github.com/eclipse-iceoryx/iceoryx2/issues/241)
  * Mem-leak in `iceoryx2-bb-posix::Directory::contents()` and skip empty file names [#287](https://github.com/eclipse-iceoryx/iceoryx2/issues/287)
+ * Log macros do no longer return values [#292](https://github.com/eclipse-iceoryx/iceoryx2/issues/292)
 
 ### Refactoring
 
