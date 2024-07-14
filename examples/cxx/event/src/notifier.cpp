@@ -28,13 +28,14 @@ auto main() -> int {
                        .event()
                        .open_or_create()
                        .expect("successful service creation/opening");
+    auto max_event_id = service.static_config().event_id_max_value();
 
     auto notifier = service.notifier_builder().create().expect("successful notifier creation");
 
     auto counter = 0;
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         counter += 1;
-        notifier.notify_with_custom_event_id(EventId(counter)).expect("notification");
+        notifier.notify_with_custom_event_id(EventId(counter % max_event_id)).expect("notification");
 
         std::cout << "Trigger event with id " << counter << "..." << std::endl;
     }
