@@ -14,18 +14,20 @@
 
 use iceoryx2::prelude::*;
 
-use core::ffi::c_void;
-
 // BEGIN type definition
 
-pub type iox2_config_ptr = *const c_void;
+// NOTE check the README.md for using opaque types with renaming
+/// The immutable pointer to the underlying `Config`
+pub type iox2_config_ptr = *const Config;
+/// The mutable pointer to the underlying `Config`
+pub type iox2_config_mut_ptr = *mut Config;
 
 // END type definition
 
 // BEGIN C API
 #[no_mangle]
 pub extern "C" fn iox2_config_global_config() -> iox2_config_ptr {
-    Config::global_config() as *const _ as *const _
+    Config::global_config()
 }
 
 // END C API

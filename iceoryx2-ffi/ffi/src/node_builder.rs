@@ -59,10 +59,18 @@ pub struct iox2_node_builder_t {
 
 impl iox2_node_builder_t {
     pub(crate) fn cast(node_builder: iox2_node_builder_h) -> *mut Self {
-        node_builder as *mut _ as *mut Self
+        node_builder as *mut _ as _
     }
     pub(crate) fn cast_from_ref(node_builder: iox2_node_builder_ref_h) -> *mut Self {
-        node_builder as *mut _ as *mut Self
+        node_builder as *mut _ as _
+    }
+
+    pub(crate) fn as_handle(&mut self) -> iox2_node_builder_h {
+        self as *mut _ as _
+    }
+
+    pub(crate) fn as_ref_handle(&mut self) -> iox2_node_builder_ref_h {
+        self as *mut _ as _
     }
 }
 
@@ -107,7 +115,7 @@ pub unsafe extern "C" fn iox2_node_builder_new(
     (*node_builder_struct_ptr).deleter = deleter;
     (*node_builder_struct_ptr).value.init(NodeBuilder::new());
 
-    node_builder_struct_ptr as *mut _ as *mut _
+    (*node_builder_struct_ptr).as_handle()
 }
 
 /// This function casts an owning [`iox2_node_builder_h`] into a non-owning [`iox2_node_builder_ref_h`]
@@ -128,7 +136,7 @@ pub unsafe extern "C" fn iox2_cast_node_builder_ref_h(
 ) -> iox2_node_builder_ref_h {
     debug_assert!(!node_builder_handle.is_null());
 
-    node_builder_handle as *mut _ as _
+    (*iox2_node_builder_t::cast(node_builder_handle)).as_ref_handle()
 }
 
 /// Sets the node name for the builder
@@ -178,9 +186,9 @@ pub extern "C" fn iox2_node_builder_set_config(
 unsafe fn iox2_node_builder_drop(node_builder_handle: iox2_node_builder_h) {
     debug_assert!(!node_builder_handle.is_null());
 
-    let node_builder_struct = &mut (*iox2_node_builder_t::cast(node_builder_handle));
-    std::ptr::drop_in_place(node_builder_struct.value.as_option_mut() as *mut _);
-    (node_builder_struct.deleter)(node_builder_struct);
+    let node_builder = &mut (*iox2_node_builder_t::cast(node_builder_handle));
+    std::ptr::drop_in_place(node_builder.value.as_option_mut());
+    (node_builder.deleter)(node_builder);
 }
 
 /// Creates a node and consumes the builder
@@ -240,7 +248,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
         },
     }
 
-    *node_handle_ptr = node_struct_ptr as *mut _ as *mut _;
+    *node_handle_ptr = (*node_struct_ptr).as_handle();
 
     IOX2_OK
 }

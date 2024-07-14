@@ -38,12 +38,11 @@ pub struct iox2_node_name_t {
 
 impl iox2_node_name_t {
     pub(crate) fn cast(node_name: iox2_node_name_h) -> *mut Self {
-        node_name as *mut _ as *mut Self
+        node_name as *mut _ as _
     }
 
-    pub(crate) fn cast_node_name(node_name_ptr: iox2_node_name_ptr) -> *const NodeName {
-        debug_assert!(!node_name_ptr.is_null());
-        node_name_ptr as *const _ as *const _
+    pub(crate) fn as_handle(&mut self) -> iox2_node_name_h {
+        self as *mut _ as _
     }
 }
 
@@ -51,13 +50,11 @@ pub struct iox2_node_name_h_t;
 /// The handle for `iox2_node_name_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_node_name_h = *mut iox2_node_name_h_t;
 
-pub struct iox2_node_name_ptr_t;
+// NOTE check the README.md for using opaque types with renaming
 /// The immutable pointer to the underlying `NodeName`
-pub type iox2_node_name_ptr = *const iox2_node_name_ptr_t;
-
-pub struct iox2_node_name_mut_ptr_t;
+pub type iox2_node_name_ptr = *const NodeName;
 /// The mutable pointer to the underlying `NodeName`
-pub type iox2_node_name_mut_ptr = *mut iox2_node_name_mut_ptr_t;
+pub type iox2_node_name_mut_ptr = *mut NodeName;
 
 // END type definition
 
@@ -103,7 +100,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
         (*node_name_struct_ptr).deleter = deleter;
     }
 
-    let node_name = slice::from_raw_parts(node_name_str as *const _, node_name_len as usize);
+    let node_name = slice::from_raw_parts(node_name_str as _, node_name_len as usize);
 
     let node_name = if let Ok(node_name) = str::from_utf8(node_name) {
         node_name
@@ -124,7 +121,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
         (*node_name_struct_ptr).value.init(node_name);
     }
 
-    *node_name_handle_ptr = node_name_struct_ptr as *mut _ as *mut _;
+    *node_name_handle_ptr = (*node_name_struct_ptr).as_handle();
 
     IOX2_OK
 }
@@ -147,7 +144,7 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 ) -> iox2_node_name_ptr {
     debug_assert!(!node_name_handle.is_null());
 
-    (*iox2_node_name_t::cast(node_name_handle)).value.as_ref() as *const _ as *const _
+    (*iox2_node_name_t::cast(node_name_handle)).value.as_ref()
 }
 
 /// This function gives access to the node name as a C-style string
@@ -169,7 +166,7 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
 ) -> *const c_char {
     debug_assert!(!node_name_ptr.is_null());
 
-    let node_name = &*iox2_node_name_t::cast_node_name(node_name_ptr);
+    let node_name = &*node_name_ptr;
 
     if !node_name_len.is_null() {
         unsafe {
@@ -177,7 +174,7 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
         }
     }
 
-    node_name.as_str().as_ptr() as *const _
+    node_name.as_str().as_ptr() as _
 }
 
 /// This function needs to be called to destroy the node name!
@@ -196,10 +193,10 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
     debug_assert!(!node_name_handle.is_null());
 
-    let node_name_struct = &mut (*iox2_node_name_t::cast(node_name_handle));
+    let node_name = &mut (*iox2_node_name_t::cast(node_name_handle));
 
-    std::ptr::drop_in_place(node_name_struct.value.as_option_mut() as *mut _);
-    (node_name_struct.deleter)(node_name_struct);
+    std::ptr::drop_in_place(node_name.value.as_option_mut());
+    (node_name.deleter)(node_name);
 }
 
 // END C API

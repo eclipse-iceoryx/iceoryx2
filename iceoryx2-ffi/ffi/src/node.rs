@@ -17,7 +17,7 @@ use crate::{
     iox2_service_builder_t, iox2_service_name_h, iox2_service_type_e, IntoCInt, IOX2_OK,
 };
 
-use iceoryx2::node::{NodeListFailure, NodeView};
+use iceoryx2::node::{NodeId, NodeListFailure, NodeView};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -92,7 +92,11 @@ impl iox2_node_t {
     }
 
     pub(crate) fn cast(node: iox2_node_h) -> *mut Self {
-        node as *mut _ as *mut Self
+        node as *mut _ as _
+    }
+
+    pub(crate) fn as_handle(&mut self) -> iox2_node_h {
+        self as *mut _ as _
     }
 }
 
@@ -109,9 +113,11 @@ pub enum iox2_node_state_e {
     UNDEFINED,
 }
 
-// TODO: [#210] implement
-pub struct iox2_node_id_ptr_t;
-pub type iox2_node_id_ptr = *const iox2_node_id_ptr_t;
+// NOTE check the README.md for using opaque types with renaming
+/// The immutable pointer to the underlying `NodeId`
+pub type iox2_node_id_ptr = *const NodeId;
+/// The mutable pointer to the underlying `NodeId`
+pub type iox2_node_id_mut_ptr = *mut NodeId;
 
 /// An alias to a `void *` which can be used to pass arbitrary data to the callback
 pub type iox2_node_list_callback_context = *mut c_void;
@@ -151,8 +157,8 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_n
     let node = &mut *iox2_node_t::cast(node_handle);
 
     match node.service_type {
-        iox2_service_type_e::IPC => node.value.as_ref().ipc.name() as *const _ as *const _,
-        iox2_service_type_e::LOCAL => node.value.as_ref().local.name() as *const _ as *const _,
+        iox2_service_type_e::IPC => node.value.as_ref().ipc.name(),
+        iox2_service_type_e::LOCAL => node.value.as_ref().local.name(),
     }
 }
 
@@ -168,8 +174,8 @@ pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_conf
     let node = &mut *iox2_node_t::cast(node_handle);
 
     match node.service_type {
-        iox2_service_type_e::IPC => node.value.as_ref().ipc.config() as *const _ as *const _,
-        iox2_service_type_e::LOCAL => node.value.as_ref().local.config() as *const _ as *const _,
+        iox2_service_type_e::IPC => node.value.as_ref().ipc.config(),
+        iox2_service_type_e::LOCAL => node.value.as_ref().local.config(),
     }
 }
 
@@ -194,16 +200,11 @@ fn iox2_node_list_impl<S: Service>(
             let (node_name, config) = alive_node_view
                 .details()
                 .as_ref()
-                .map(|view| {
-                    (
-                        view.name() as *const _ as *const _,
-                        view.config() as *const _ as *const _,
-                    )
-                })
+                .map(|view| (view.name() as _, view.config() as _))
                 .unwrap_or((std::ptr::null(), std::ptr::null()));
             callback(
                 iox2_node_state_e::ALIVE,
-                alive_node_view.id() as *const _ as *const _,
+                alive_node_view.id(),
                 node_name,
                 config,
                 callback_ctx,
@@ -214,16 +215,11 @@ fn iox2_node_list_impl<S: Service>(
             let (node_name, config) = dead_node_view
                 .details()
                 .as_ref()
-                .map(|view| {
-                    (
-                        view.name() as *const _ as *const _,
-                        view.config() as *const _ as *const _,
-                    )
-                })
+                .map(|view| (view.name() as _, view.config() as _))
                 .unwrap_or((std::ptr::null(), std::ptr::null()));
             callback(
                 iox2_node_state_e::DEAD,
-                dead_node_view.id() as *const _ as *const _,
+                dead_node_view.id(),
                 node_name,
                 config,
                 callback_ctx,
@@ -232,7 +228,7 @@ fn iox2_node_list_impl<S: Service>(
         }
         NodeState::Inaccessible(ref node_id) => callback(
             iox2_node_state_e::INACCESSIBLE,
-            node_id as *const _ as *const _,
+            node_id,
             std::ptr::null(),
             std::ptr::null(),
             callback_ctx,
@@ -240,7 +236,7 @@ fn iox2_node_list_impl<S: Service>(
         .into(),
         NodeState::Undefined(ref node_id) => callback(
             iox2_node_state_e::UNDEFINED,
-            node_id as *const _ as *const _,
+            node_id,
             std::ptr::null(),
             std::ptr::null(),
             callback_ctx,
@@ -273,7 +269,7 @@ pub unsafe extern "C" fn iox2_node_list(
 ) -> c_int {
     debug_assert!(!config_ptr.is_null());
 
-    let config = &*(config_ptr as *const _);
+    let config = &*config_ptr;
 
     let list_result = match service_type {
         iox2_service_type_e::IPC => Node::<zero_copy::Service>::list(config, |node_state| {
@@ -291,7 +287,9 @@ pub unsafe extern "C" fn iox2_node_list(
 }
 
 #[no_mangle]
-pub extern "C" fn iox2_service_name_new() {}
+pub extern "C" fn iox2_service_name_new() {
+    todo!() // TODO: [#210] implement
+}
 /// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.
 ///
 /// # Safety
