@@ -45,9 +45,9 @@ impl IntoCInt for NodeCreationFailure {
 }
 
 #[repr(C)]
-#[repr(align(8))] // alignment of NodeBuilder
-pub struct iox2_node_builder_storage_internal_t {
-    internal: [u8; 3576], // magic number obtained with size_of::<NodeBuilder>()
+#[repr(align(8))] // alignment of Option<NodeBuilder>
+pub struct iox2_node_builder_storage_t {
+    internal: [u8; 18696], // magic number obtained with size_of::<NodeBuilder>()
 }
 
 #[repr(C)]

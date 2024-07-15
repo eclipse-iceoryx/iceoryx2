@@ -125,6 +125,8 @@ mod node_death_tests {
         let mut services = vec![];
         let mut bad_publishers = vec![];
         let mut bad_subscribers = vec![];
+        let mut good_publishers = vec![];
+        let mut good_subscribers = vec![];
 
         for _ in 0..NUMBER_OF_SERVICES {
             let service_name = generate_name();
@@ -144,17 +146,23 @@ mod node_death_tests {
             }
 
             for node in &good_nodes {
-                services.push(
-                    node.service_builder(&service_name)
-                        .publish_subscribe::<u64>()
-                        .max_publishers(NUMBER_OF_PUBLISHERS)
-                        .max_subscribers(NUMBER_OF_SUBSCRIBERS)
-                        .open_or_create()
-                        .unwrap(),
-                );
+                let service = node
+                    .service_builder(&service_name)
+                    .publish_subscribe::<u64>()
+                    .max_publishers(NUMBER_OF_PUBLISHERS)
+                    .max_subscribers(NUMBER_OF_SUBSCRIBERS)
+                    .open_or_create()
+                    .unwrap();
+                good_publishers.push(service.publisher_builder().create().unwrap());
+                good_subscribers.push(service.subscriber_builder().create().unwrap());
+                services.push(service);
             }
         }
-        //S::staged_death(&mut sut.node);
+
+        for _ in 0..NUMBER_OF_BAD_NODES {
+            let mut node = bad_nodes.pop().unwrap();
+            S::staged_death(&mut node);
+        }
     }
 
     #[instantiate_tests(<ZeroCopy>)]
