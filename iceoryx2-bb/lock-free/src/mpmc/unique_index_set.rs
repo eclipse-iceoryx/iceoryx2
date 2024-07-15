@@ -359,6 +359,13 @@ impl UniqueIndexSet {
         }
     }
 
+    /// Returns if the [`UniqueIndexSet`] is locked or not. If the set is locked no more indices
+    /// can be borrowed.
+    pub fn is_locked(&self) -> bool {
+        let s = HeadDetails::from(self.head.load(Ordering::Relaxed)).borrowed_indices;
+        s == LOCK_ACQUIRE
+    }
+
     /// Acquires a raw ([`u32`]) index from the [`UniqueIndexSet`]. Returns [`None`] when no more
     /// indices are available. The index **must** be returned manually with
     /// [`UniqueIndexSet::release_raw_index()`].
@@ -578,6 +585,11 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
     /// See [`UniqueIndexSet::capacity()`]
     pub fn capacity(&self) -> u32 {
         self.state.capacity()
+    }
+
+    /// See [`UniqueIndexSet::is_locked()`]
+    pub fn is_locked(&self) -> bool {
+        self.state.is_locked()
     }
 
     /// See [`UniqueIndexSet::acquire_raw_index()`]

@@ -284,6 +284,12 @@ impl<T: Copy + Debug> Container<T> {
         self.capacity
     }
 
+    /// Returns true if the container is locked, otherwise false.
+    /// If the [`Container`] is locked no more elements can be added to it.
+    pub fn is_locked(&self) -> bool {
+        self.index_set.is_locked()
+    }
+
     /// Returns the current len of the container
     pub fn len(&self) -> usize {
         self.index_set.borrowed_indices()

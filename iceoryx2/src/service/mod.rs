@@ -325,7 +325,9 @@ impl<S: Service> Drop for ServiceState<S> {
 }
 
 pub(crate) mod internal {
-    use dynamic_config::PortCleanupAction;
+    use config_scheme::static_config_storage_config;
+    use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
+    use naming_scheme::static_config_storage_name;
 
     use crate::{
         node::NodeId,
@@ -410,11 +412,37 @@ pub(crate) mod internal {
                 PortCleanupAction::RemovePort
             };
 
-            let _ = unsafe {
+            let remove_service = match unsafe {
                 dynamic_config
                     .get()
                     .remove_dead_node_id(node_id, cleanup_port_resources)
+            } {
+                Ok(DeregisterNodeState::HasOwners) => false,
+                Ok(DeregisterNodeState::NoMoreOwners) => true,
+                Err(RemoveDeadNodeResult::NodeNotRegistered) => {
+                    dynamic_config.get().is_marked_for_destruction()
+                }
             };
+
+            if remove_service {
+                match unsafe {
+                    <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
+                        &static_config_storage_name(
+                            core::str::from_utf8(service_uuid.as_bytes()).unwrap(),
+                        ),
+                        &static_config_storage_config::<S>(config),
+                    )
+                } {
+                    Ok(_) => {
+                        debug!(from origin, "Remove unused service.");
+                        dynamic_config.acquire_ownership()
+                    }
+                    Err(e) => {
+                        warn!(from origin, "Unable to remove static config of unused service ({:?}).",
+                            e);
+                    }
+                }
+            }
 
             Ok(())
         }

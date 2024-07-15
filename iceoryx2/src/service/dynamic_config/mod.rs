@@ -153,6 +153,10 @@ impl DynamicConfig {
         state.for_each(|_, node_id| callback(node_id));
     }
 
+    pub(crate) fn is_marked_for_destruction(&self) -> bool {
+        self.nodes.is_locked()
+    }
+
     pub(crate) fn deregister_node_id(&self, handle: ContainerHandle) -> DeregisterNodeState {
         if unsafe { self.nodes.remove(handle, ReleaseMode::LockIfLastIndex) }
             == ReleaseState::Locked

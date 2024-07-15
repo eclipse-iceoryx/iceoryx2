@@ -1,9 +1,8 @@
 # POSIX
 
- * remove port resources in mod.rs:368
- * remove service if the dynamic config has it marked for destruction
  * add atomic lock to node cleanup so that two threads in same process do not
     block each other
+ * what if service that is marked for destruction cannot be removed?
  * test, when a service is opened with dead nodes and the service would be
     marked for destruction, that the service is kept alive or recreated
  * config: add entries
