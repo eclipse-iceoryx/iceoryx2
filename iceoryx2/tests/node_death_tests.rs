@@ -51,7 +51,7 @@ mod node_death_tests {
 
             let node = unsafe {
                 NodeBuilder::new()
-                    .name(node_name.clone())
+                    .name(&node_name)
                     .__internal_create_with_custom_node_id::<Self::Service>(fake_node_id)
                     .unwrap()
             };
@@ -105,20 +105,56 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
-        let mut sut = S::create_test_node();
-        let good_node = NodeBuilder::new().create::<S::Service>().unwrap();
+        const NUMBER_OF_BAD_NODES: usize = 2;
+        const NUMBER_OF_GOOD_NODES: usize = 3;
+        const NUMBER_OF_SERVICES: usize = 14;
+        const NUMBER_OF_PUBLISHERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
+        const NUMBER_OF_SUBSCRIBERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
 
-        let service_name = generate_name();
+        let mut bad_nodes = vec![];
+        let mut good_nodes = vec![];
+
+        for _ in 0..NUMBER_OF_BAD_NODES {
+            bad_nodes.push(S::create_test_node().node);
+        }
+
+        for _ in 0..NUMBER_OF_GOOD_NODES {
+            good_nodes.push(NodeBuilder::new().create::<S::Service>().unwrap());
+        }
+
         let mut services = vec![];
-        services.push(
-            sut.node
-                .service_builder(&service_name)
-                .publish_subscribe::<u64>()
-                .open_or_create()
-                .unwrap(),
-        );
+        let mut bad_publishers = vec![];
+        let mut bad_subscribers = vec![];
 
-        S::staged_death(&mut sut.node);
+        for _ in 0..NUMBER_OF_SERVICES {
+            let service_name = generate_name();
+
+            for node in &bad_nodes {
+                let service = node
+                    .service_builder(&service_name)
+                    .publish_subscribe::<u64>()
+                    .max_publishers(NUMBER_OF_PUBLISHERS)
+                    .max_subscribers(NUMBER_OF_SUBSCRIBERS)
+                    .open_or_create()
+                    .unwrap();
+                bad_publishers.push(service.publisher_builder().create().unwrap());
+                bad_subscribers.push(service.subscriber_builder().create().unwrap());
+
+                services.push(service);
+            }
+
+            for node in &good_nodes {
+                services.push(
+                    node.service_builder(&service_name)
+                        .publish_subscribe::<u64>()
+                        .max_publishers(NUMBER_OF_PUBLISHERS)
+                        .max_subscribers(NUMBER_OF_SUBSCRIBERS)
+                        .open_or_create()
+                        .unwrap(),
+                );
+            }
+        }
+        //S::staged_death(&mut sut.node);
     }
 
     #[instantiate_tests(<ZeroCopy>)]

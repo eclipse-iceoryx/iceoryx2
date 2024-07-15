@@ -933,8 +933,8 @@ impl NodeBuilder {
     }
 
     /// Sets the [`NodeName`] of the to be created [`Node`].
-    pub fn name(mut self, value: NodeName) -> Self {
-        self.name = Some(value);
+    pub fn name(mut self, value: &NodeName) -> Self {
+        self.name = Some(value.clone());
         self
     }
 
