@@ -123,3 +123,13 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
 trait IntoCInt {
     fn into_c_int(self) -> c_int;
 }
+
+pub trait HandleToType {
+    type Target;
+
+    // NOTE in this case, the handle `self` is already a `*mut`. Passing by value means a copy
+    // of the pointer; passing by reference make the implementation more error prone since one
+    // has to remember to de-reference `self` in order to get the `*mut`
+    #[allow(clippy::wrong_self_convention)]
+    fn as_type(self) -> Self::Target;
+}

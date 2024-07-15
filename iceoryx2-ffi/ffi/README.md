@@ -4,8 +4,8 @@
 - `structs` end with a `_t`
 - owning handles end with a `_h` and are a type definition to a `struct iox2_foo_h_t;` as `pub type iox2_foo_h = *mut iox2_foo_h_t`
 - non-owning handles end with a `_ref_h` and are a type definition to a `struct iox2_foo_ref_h_t;` as `pub type iox2_foo_ref_h = *mut iox2_foo_ref_h_t`
-- immutable pointer to the Rust type end with a `_ptr` and are a type definition to a `struct iox2_foo_ptr_t;` as `pub type iox2_foo_ptr = *const iox2_foo_ptr_t`
-- mutable pointer to the Rust type end with a `_mut_ptr` and are a type definition to a `struct iox2_foo_mut_ptr_t;` as `pub type iox2_foo_mut_ptr = *mut iox2_foo_mut_ptr_t`
+- immutable pointer to the Rust type end with a `_ptr` and are a type definition like `pub type iox2_foo_ptr = *const Foo`
+- mutable pointer to the Rust type end with a `_mut_ptr` and are a type definition like `pub type iox2_foo_mut_ptr = *mut Foo`
 - `enums` ends with a `_e`
 
 # Pattern for Type Erasure
@@ -53,13 +53,19 @@ pub type iox2_foo_h = *mut iox2_foo_h_t;
 pub struct iox2_foo_ref_h_t;
 pub type iox2_foo_ref_h = *mut iox2_foo_ref_h_t;
 
-pub struct iox2_foo_ptr_t;
-pub type iox2_foo_ptr = *const iox2_foo_ptr_t;
+pub type iox2_foo_ptr = *const Foo;
 
-pub struct iox2_foo_mut_ptr_t;
-pub type iox2_foo_mut_ptr = *mut iox2_foo_mut_ptr_t;
+pub type iox2_foo_mut_ptr = *mut Foo;
 ```
 
-The `_h` handle is in general created by a builder and the `_ptr` pointer ar in general provided by a function, e.g. as return value.
+The `_h` handle is in general created by a builder and the `_ptr` pointer are in general provided by a function, e.g. as return value.
 
 The `src/node_name.rs` file can be used as a more comprehensive example on how to implement an FFI binding for a specific type.
+
+## Opaque Types
+
+In order to prevent symbol pollution in C, all types need to be prefixed with `iox2_` or renamed via `cbindgen.toml` if they originate
+outside of this crate. The opaque types additionally need to be manually forward-declared in `cbindgen.toml` since cbindgen does not do it automatically.
+
+- renaming is done in `[export.rename]` with `"Foo" = "iox2_foo_ptr_t"`
+- forward declaration is done in the `after_includes` section with `typedef struct iox2_foo_ptr_t iox2_foo_ptr_t;`

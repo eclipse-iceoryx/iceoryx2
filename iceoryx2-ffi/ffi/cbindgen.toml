@@ -71,6 +71,11 @@ after_includes = """
 #else
 #define IOX2_REPR_ALIGNED(n) __attribute__((aligned(n)))
 #endif
+
+// forward declarations of renamed types
+typedef struct iox2_config_ptr_t iox2_config_ptr_t;
+typedef struct iox2_node_id_ptr_t iox2_node_id_ptr_t;
+typedef struct iox2_node_name_ptr_t iox2_node_name_ptr_t;
 """
 
 
@@ -134,8 +139,9 @@ renaming_overrides_prefixing = false
 
 # Table of name conversions to apply to item names (lhs becomes rhs)
 [export.rename]
-#"MyType" = "hypnotoads_type"
-
+"Config" = "iox2_config_ptr_t"
+"NodeId" = "iox2_node_id_ptr_t"
+"NodeName" = "iox2_node_name_ptr_t"
 
 [export.pre_body]
 
@@ -335,7 +341,7 @@ default_features = true
 features = []
 
 [ptr]
-non_null_attribute = "_NonNull"
+non_null_attribute = ""
 
 #######################################
 # Options specific to Cython bindings #
