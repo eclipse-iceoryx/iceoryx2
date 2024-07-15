@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
     let _incompatible_service = node
-        .service_builder("Service/With/Properties".try_into()?)
+        .service_builder(&"Service/With/Properties".try_into()?)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // the opening of the service will fail since the
@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
 
     let _incompatible_service = node
-        .service_builder("Service/With/Properties".try_into()?)
+        .service_builder(&"Service/With/Properties".try_into()?)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // the opening of the service will fail since the key is not defined.

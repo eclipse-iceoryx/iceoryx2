@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
     let service = node
-        .service_builder("Service With Dynamic Data".try_into()?)
+        .service_builder(&"Service With Dynamic Data".try_into()?)
         .publish_subscribe::<[u8]>()
         .open_or_create()?;
 

@@ -609,7 +609,7 @@ impl<Service: service::Service> Node<Service> {
     }
 
     /// Instantiates a [`ServiceBuilder`](Builder) for a service with the provided name.
-    pub fn service_builder(&self, name: ServiceName) -> Builder<Service> {
+    pub fn service_builder(&self, name: &ServiceName) -> Builder<Service> {
         Builder::new(name, self.shared.clone())
     }
 
@@ -661,11 +661,6 @@ impl<Service: service::Service> Node<Service> {
         Ok(())
     }
 
-    /// # Safety
-    ///
-    ///  * only for internal testing purposes
-    ///  * shall be called at most once
-    ///
     pub(crate) unsafe fn staged_death(&mut self) -> <Service::Monitoring as Monitoring>::Token {
         (*self.shared.monitoring_token.get()).take().unwrap()
     }
@@ -690,6 +685,40 @@ impl<Service: service::Service> Node<Service> {
                 fatal_panic!(from self,
                     "Failed to wait with cycle time {:?} in main event look, caused by ({:?}).",
                     cycle_time, v);
+            }
+        }
+    }
+
+    /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
+    /// removed from all registered [`Service`](crate::service::Service)s.
+    ///
+    /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then
+    /// the [`Node`] is skipped.
+    pub fn cleanup_dead_nodes(config: &Config) {
+        let origin = format!(
+            "Node::<{}>::cleanup_dead_nodes()",
+            core::any::type_name::<Service>()
+        );
+
+        match Node::<Service>::list(config, |node_state| {
+            if let NodeState::Dead(dead_node) = node_state {
+                let node_id = dead_node.id().clone();
+                warn!(from origin, "Dead node ({:?}) detected", node_id);
+                match dead_node.remove_stale_resources() {
+                    Ok(_) => {
+                        debug!(from origin, "The dead node ({:?}) was successfully removed.", node_id)
+                    }
+                    Err(e) => {
+                        warn!(from origin, "Unable to remove dead node {:?} ({:?}).", node_id, e)
+                    }
+                }
+            }
+
+            CallbackProgression::Continue
+        }) {
+            Ok(()) => (),
+            Err(e) => {
+                debug!(from origin, "Unable to perform a full scan for dead nodes since the all existing nodes could not be listed ({:?}).", e)
             }
         }
     }
@@ -937,7 +966,9 @@ impl NodeBuilder {
             Config::global_config().clone()
         };
 
-        self.cleanup_dead_nodes::<Service>(&config);
+        if config.global.node.cleanup_dead_nodes_on_creation {
+            Node::<Service>::cleanup_dead_nodes(&config);
+        }
 
         let msg = "Unable to create node";
         let monitor_name = fatal_panic!(from self, when FileName::new(node_id.value().to_string().as_bytes()),
@@ -957,34 +988,6 @@ impl NodeBuilder {
                 details,
             }),
         })
-    }
-
-    fn cleanup_dead_nodes<Service: service::Service>(&self, config: &Config) {
-        if !config.global.node.cleanup_dead_nodes_on_creation {
-            return;
-        }
-
-        match Node::<Service>::list(config, |node_state| {
-            if let NodeState::Dead(dead_node) = node_state {
-                let node_id = dead_node.id().clone();
-                warn!(from self, "Dead node ({:?}) detected", node_id);
-                match dead_node.remove_stale_resources() {
-                    Ok(_) => {
-                        debug!(from self, "The dead node ({:?}) was successfully removed.", node_id)
-                    }
-                    Err(e) => {
-                        warn!(from self, "Unable to remove dead node {:?} ({:?}).", node_id, e)
-                    }
-                }
-            }
-
-            CallbackProgression::Continue
-        }) {
-            Ok(()) => (),
-            Err(e) => {
-                debug!(from self, "Unable to perform a full scan for dead nodes since the all existing nodes could not be listed ({:?}).", e)
-            }
-        }
     }
 
     fn create_token<Service: service::Service>(

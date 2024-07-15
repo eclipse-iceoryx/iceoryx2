@@ -45,7 +45,7 @@ mod listener {
         const MAX_LISTENERS: usize = 8;
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_listeners(MAX_LISTENERS)
             .create()

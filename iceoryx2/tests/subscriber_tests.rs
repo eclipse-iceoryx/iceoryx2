@@ -51,7 +51,7 @@ mod subscriber {
         const MAX_SUBSCRIBERS: usize = 8;
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_subscribers(MAX_SUBSCRIBERS)
             .create()

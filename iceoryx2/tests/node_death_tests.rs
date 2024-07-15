@@ -12,6 +12,8 @@
 
 #[generic_tests::define]
 mod node_death_tests {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
     use iceoryx2::config::Config;
     use iceoryx2::node::testing::__internal_node_staged_death;
     use iceoryx2::node::{NodeState, NodeView};
@@ -20,11 +22,41 @@ mod node_death_tests {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 
+    fn generate_name() -> ServiceName {
+        ServiceName::new(&format!(
+            "node_death_tests_{}",
+            UniqueSystemId::new().unwrap().value()
+        ))
+        .unwrap()
+    }
+
+    struct TestDetails<S: Service> {
+        node: Node<S>,
+        node_name: NodeName,
+    }
+
     trait Test {
         type Service: Service;
 
         fn generate_node_name(i: usize, prefix: &str) -> NodeName {
             NodeName::new(&(prefix.to_string() + &i.to_string())).unwrap()
+        }
+
+        fn create_test_node() -> TestDetails<Self::Service> {
+            static COUNTER: AtomicU32 = AtomicU32::new(0);
+            let node_name = Self::generate_node_name(0, "toby or no toby");
+            let fake_node_id = ((u32::MAX - COUNTER.fetch_add(0, Ordering::Relaxed)) as u128) << 96;
+            let fake_node_id =
+                unsafe { core::mem::transmute::<u128, UniqueSystemId>(fake_node_id) };
+
+            let node = unsafe {
+                NodeBuilder::new()
+                    .name(node_name.clone())
+                    .__internal_create_with_custom_node_id::<Self::Service>(fake_node_id)
+                    .unwrap()
+            };
+
+            TestDetails { node, node_name }
         }
 
         fn staged_death(node: &mut Node<Self::Service>);
@@ -44,18 +76,8 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
-        let node_name = S::generate_node_name(0, "toby or no toby");
-        let fake_node_id = (u32::MAX as u128) << 96;
-        let fake_node_id = unsafe { core::mem::transmute::<u128, UniqueSystemId>(fake_node_id) };
-
-        let mut sut = unsafe {
-            NodeBuilder::new()
-                .name(node_name.clone())
-                .__internal_create_with_custom_node_id::<S::Service>(fake_node_id)
-                .unwrap()
-        };
-
-        S::staged_death(&mut sut);
+        let mut sut = S::create_test_node();
+        S::staged_death(&mut sut.node);
 
         let mut node_list = vec![];
         Node::<S::Service>::list(Config::global_config(), |node_state| {
@@ -66,7 +88,7 @@ mod node_death_tests {
         assert_that!(node_list, len 1);
 
         if let Some(NodeState::Dead(state)) = node_list.pop() {
-            assert_that!(*state.details().as_ref().unwrap().name(), eq node_name);
+            assert_that!(*state.details().as_ref().unwrap().name(), eq sut.node_name);
             assert_that!(state.remove_stale_resources(), eq Ok(true));
         } else {
             assert_that!(true, eq false);
@@ -79,6 +101,24 @@ mod node_death_tests {
         })
         .unwrap();
         assert_that!(node_list, len 0);
+    }
+
+    #[test]
+    fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
+        let mut sut = S::create_test_node();
+        let good_node = NodeBuilder::new().create::<S::Service>().unwrap();
+
+        let service_name = generate_name();
+        let mut services = vec![];
+        services.push(
+            sut.node
+                .service_builder(&service_name)
+                .publish_subscribe::<u64>()
+                .open_or_create()
+                .unwrap(),
+        );
+
+        S::staged_death(&mut sut.node);
     }
 
     #[instantiate_tests(<ZeroCopy>)]

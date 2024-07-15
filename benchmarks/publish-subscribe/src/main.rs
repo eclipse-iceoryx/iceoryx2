@@ -25,7 +25,7 @@ fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::err
     let node = NodeBuilder::new().create::<T>()?;
 
     let service_a2b = node
-        .service_builder(service_name_a2b)
+        .service_builder(&service_name_a2b)
         .publish_subscribe::<u64>()
         .max_publishers(1)
         .max_subscribers(1)
@@ -35,7 +35,7 @@ fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::err
         .create()?;
 
     let service_b2a = node
-        .service_builder(service_name_b2a)
+        .service_builder(&service_name_b2a)
         .publish_subscribe::<u64>()
         .max_publishers(1)
         .max_subscribers(1)

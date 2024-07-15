@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
     let service = node
-        .service_builder("Service/With/Properties".try_into()?)
+        .service_builder(&"Service/With/Properties".try_into()?)
         .publish_subscribe::<u64>()
         .open_with_attributes(
             // define attributes that the service requires
