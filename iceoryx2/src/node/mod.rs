@@ -960,6 +960,10 @@ impl NodeBuilder {
     }
 
     fn cleanup_dead_nodes<Service: service::Service>(&self, config: &Config) {
+        if !config.global.node.cleanup_dead_nodes_on_creation {
+            return;
+        }
+
         match Node::<Service>::list(config, |node_state| {
             if let NodeState::Dead(dead_node) = node_state {
                 let node_id = dead_node.id().clone();

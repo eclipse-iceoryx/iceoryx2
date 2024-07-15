@@ -140,6 +140,10 @@ pub struct Node {
     pub static_config_suffix: FileName,
     /// The suffix of the service tags.
     pub service_tag_suffix: FileName,
+    /// When true, the [`NodeBuilder`](crate::node::NodeBuilder) checks for dead nodes and
+    /// cleans up all their stale resources whenever a new [`Node`](crate::node::Node) is
+    /// created.
+    pub cleanup_dead_nodes_on_creation: bool,
 }
 
 /// The global settings
@@ -289,6 +293,7 @@ impl Default for Config {
                     monitor_suffix: FileName::new(b".node_monitor").unwrap(),
                     static_config_suffix: FileName::new(b".details").unwrap(),
                     service_tag_suffix: FileName::new(b".service_tag").unwrap(),
+                    cleanup_dead_nodes_on_creation: true,
                 },
             },
             defaults: Defaults {
