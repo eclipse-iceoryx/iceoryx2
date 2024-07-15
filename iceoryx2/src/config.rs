@@ -144,6 +144,10 @@ pub struct Node {
     /// cleans up all their stale resources whenever a new [`Node`](crate::node::Node) is
     /// created.
     pub cleanup_dead_nodes_on_creation: bool,
+    /// When true, the [`NodeBuilder`](crate::node::NodeBuilder) checks for dead nodes and
+    /// cleans up all their stale resources whenever an existing [`Node`](crate::node::Node) is
+    /// going out of scope.
+    pub cleanup_dead_nodes_on_destruction: bool,
 }
 
 /// The global settings
@@ -294,6 +298,7 @@ impl Default for Config {
                     static_config_suffix: FileName::new(b".details").unwrap(),
                     service_tag_suffix: FileName::new(b".service_tag").unwrap(),
                     cleanup_dead_nodes_on_creation: true,
+                    cleanup_dead_nodes_on_destruction: true,
                 },
             },
             defaults: Defaults {

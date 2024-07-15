@@ -2,15 +2,6 @@
 
  * add atomic lock to node cleanup so that two threads in same process do not
     block each other
- * what if service that is marked for destruction cannot be removed?
- * test, when a service is opened with dead nodes and the service would be
-    marked for destruction, that the service is kept alive or recreated
- * config: add entries
-    * dead node detection/cleanup on node creation
-    * on node destruction?
-    * on service creation?
-    * on service cleanup?
-
 
  * windows stat.rs, allowed to fail if file no longer exists
  * cargo nextest run -p iceoryx2 --test service_tests gracefully

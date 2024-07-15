@@ -9,6 +9,7 @@ monitor-suffix                              = '.node_monitor'
 static-config-suffix                        = '.details'
 service-tag-suffix                          = '.service_tag'
 cleanup-dead-nodes-on-creation              = true
+cleanup-dead-nodes-on-destruction           = true
 
 [global.service]
 directory                                   = 'services'

@@ -299,6 +299,19 @@ impl<Service: service::Service> NodeState<Service> {
     }
 }
 
+/// Returned by [`Node::cleanup_dead_nodes()`]. Contains the cleanup report of the call
+/// and contains the number of dead nodes that were successfully cleaned up and how many
+/// could not be cleaned up.
+/// This does not have to be an error, for instance when the current process does not
+/// have the permission to access the corresponding resources.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CleanupState {
+    /// The number of successful dead node cleanups
+    pub cleanups: usize,
+    /// The number of failed dead node cleanups
+    pub failed_cleanups: usize,
+}
+
 /// Contains all available details of a [`Node`].
 pub trait NodeView {
     /// Returns the [`NodeId`] of the [`Node`].
@@ -573,6 +586,10 @@ impl<Service: service::Service> SharedNode<Service> {
 impl<Service: service::Service> Drop for SharedNode<Service> {
     fn drop(&mut self) {
         if self.monitoring_token.get_mut().is_some() {
+            if self.config().global.node.cleanup_dead_nodes_on_destruction {
+                Node::<Service>::cleanup_dead_nodes(self.config());
+            }
+
             warn!(from self, when remove_node::<Service>(self.id, self.details.config()),
                 "Unable to remove node resources.");
         }
@@ -694,7 +711,11 @@ impl<Service: service::Service> Node<Service> {
     ///
     /// If a [`Node`] cannot be cleaned up since the process has insufficient permissions then
     /// the [`Node`] is skipped.
-    pub fn cleanup_dead_nodes(config: &Config) {
+    pub fn cleanup_dead_nodes(config: &Config) -> CleanupState {
+        let mut cleanup_state = CleanupState {
+            cleanups: 0,
+            failed_cleanups: 0,
+        };
         let origin = format!(
             "Node::<{}>::cleanup_dead_nodes()",
             core::any::type_name::<Service>()
@@ -706,9 +727,11 @@ impl<Service: service::Service> Node<Service> {
                 warn!(from origin, "Dead node ({:?}) detected", node_id);
                 match dead_node.remove_stale_resources() {
                     Ok(_) => {
+                        cleanup_state.cleanups += 1;
                         debug!(from origin, "The dead node ({:?}) was successfully removed.", node_id)
                     }
                     Err(e) => {
+                        cleanup_state.failed_cleanups += 1;
                         warn!(from origin, "Unable to remove dead node {:?} ({:?}).", node_id, e)
                     }
                 }
@@ -716,9 +739,10 @@ impl<Service: service::Service> Node<Service> {
 
             CallbackProgression::Continue
         }) {
-            Ok(()) => (),
+            Ok(()) => cleanup_state,
             Err(e) => {
-                debug!(from origin, "Unable to perform a full scan for dead nodes since the all existing nodes could not be listed ({:?}).", e)
+                debug!(from origin, "Unable to perform a full scan for dead nodes since the all existing nodes could not be listed ({:?}).", e);
+                cleanup_state
             }
         }
     }
