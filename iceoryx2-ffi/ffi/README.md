@@ -69,3 +69,22 @@ outside of this crate. The opaque types additionally need to be manually forward
 
 - renaming is done in `[export.rename]` with `"Foo" = "iox2_foo_ptr_t"`
 - forward declaration is done in the `after_includes` section with `typedef struct iox2_foo_ptr_t iox2_foo_ptr_t;`
+
+## Why the folder structure with 'api' and 'test'
+
+As it turned out `cdylib`s do not play well with integration tests. The `cdylib` is build
+with `panic="abort"` but the tests require `panic="unwind"`. This results in building the lib
+twice if there are integration tests and leads to the following warning and eventually to build failures.
+
+> warning: output filename collision.
+> The lib target `iceoryx2_ffi` in package `iceoryx2-ffi v0.3.0 (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`
+> has the same output filename as the lib target `iceoryx2_ffi` in package
+> `iceoryx2-ffi v0.3.0 (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`.
+> Colliding filename is: C:\Users\ekxide\iceoryx2\target\release\deps\iceoryx2_ffi.lib
+> The targets should have unique names.
+> Consider changing their names to be unique or compiling them separately.
+> This may become a hard error in the future; see <https://github.com/rust-lang/cargo/issues/6313>.
+
+As a workaround, the integrationtests are placed in the module. This would give access to private API though. To circumvent this problem,
+only `pub(super)` shall be used if an API needs to be available in other modules but not `pub(crate)`. With the chosen folder
+structure the tests can again only be written as whitebox tests.

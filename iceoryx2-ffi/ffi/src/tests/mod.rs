@@ -10,13 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(dead_code)]
+mod node_builder_tests;
+mod node_name_tests;
+mod node_tests;
 
+use crate::*;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_ffi::*;
 
-pub(crate) trait ServiceTypeMapping {
+trait ServiceTypeMapping {
     fn service_type() -> iox2_service_type_e;
 }
 
@@ -32,8 +34,7 @@ impl ServiceTypeMapping for iceoryx2::service::process_local::Service {
     }
 }
 
-#[cfg(test)]
-pub(crate) fn create_node<S: Service + ServiceTypeMapping>(node_name: &str) -> iox2_node_h {
+fn create_node<S: Service + ServiceTypeMapping>(node_name: &str) -> iox2_node_h {
     unsafe {
         let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
 

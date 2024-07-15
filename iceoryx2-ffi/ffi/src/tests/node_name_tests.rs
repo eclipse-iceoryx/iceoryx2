@@ -10,9 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::*;
-use iceoryx2_bb_testing::assert_that;
-use iceoryx2_ffi::*;
+use crate::tests::*;
 
 use core::{slice, str};
 
@@ -42,6 +40,8 @@ fn basic_node_name_test() -> Result<(), Box<dyn std::error::Error>> {
         assert_that!(node_name, eq(expected_node_name.as_str()));
 
         iox2_node_name_drop(node_name_handle);
+
+        let _foo = &(*(node_name_handle as *mut _ as *mut iox2_node_name_t)).value;
 
         Ok(())
     }

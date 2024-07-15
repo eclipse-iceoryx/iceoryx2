@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::{iox2_semantic_string_error_e, HandleToType, IntoCInt, IOX2_OK};
+use crate::api::{iox2_semantic_string_error_e, HandleToType, IntoCInt, IOX2_OK};
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
@@ -32,7 +32,7 @@ pub struct iox2_node_name_storage_t {
 #[repr(C)]
 #[iceoryx2_ffi(NodeName)]
 pub struct iox2_node_name_t {
-    value: iox2_node_name_storage_t,
+    pub value: iox2_node_name_storage_t,
     deleter: fn(*mut iox2_node_name_t),
 }
 

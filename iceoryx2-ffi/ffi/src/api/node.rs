@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::{
+use crate::api::{
     iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr, iox2_service_builder_h,
     iox2_service_builder_t, iox2_service_name_h, iox2_service_type_e, HandleToType, IntoCInt,
     IOX2_OK,
@@ -48,18 +48,18 @@ impl IntoCInt for NodeListFailure {
     }
 }
 
-pub(crate) union NodeUnion {
+pub(super) union NodeUnion {
     ipc: ManuallyDrop<Node<zero_copy::Service>>,
     local: ManuallyDrop<Node<process_local::Service>>,
 }
 
 impl NodeUnion {
-    pub(crate) fn new_ipc(node: Node<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(node: Node<zero_copy::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(node),
         }
     }
-    pub(crate) fn new_local(node: Node<process_local::Service>) -> Self {
+    pub(super) fn new_local(node: Node<process_local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(node),
         }
@@ -75,13 +75,13 @@ pub struct iox2_node_storage_t {
 #[repr(C)]
 #[iceoryx2_ffi(NodeUnion)]
 pub struct iox2_node_t {
-    pub(crate) service_type: iox2_service_type_e,
-    pub(crate) value: iox2_node_storage_t,
-    pub(crate) deleter: fn(*mut iox2_node_t),
+    pub(super) service_type: iox2_service_type_e,
+    pub(super) value: iox2_node_storage_t,
+    pub(super) deleter: fn(*mut iox2_node_t),
 }
 
 impl iox2_node_t {
-    pub(crate) fn init(
+    pub(super) fn init(
         &mut self,
         service_type: iox2_service_type_e,
         value: NodeUnion,

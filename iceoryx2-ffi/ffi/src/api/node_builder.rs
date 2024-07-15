@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::{
+use crate::api::{
     iox2_node_h, iox2_node_name_drop, iox2_node_name_h, iox2_node_t, iox2_service_type_e,
     HandleToType, IntoCInt, NodeUnion, IOX2_OK,
 };

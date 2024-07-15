@@ -10,15 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod common;
-
 #[generic_tests::define]
 mod node_builder {
-
-    use crate::common::*;
-    use iceoryx2::prelude::*;
-    use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_ffi::*;
+    use crate::tests::*;
 
     #[test]
     fn basic_node_builder_api_test<S: Service + ServiceTypeMapping>() {
