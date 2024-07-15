@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::{iox2_semantic_string_error_e, IntoCInt, IOX2_OK};
+use crate::{iox2_semantic_string_error_e, HandleToType, IntoCInt, IOX2_OK};
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
@@ -36,25 +36,35 @@ pub struct iox2_node_name_t {
     deleter: fn(*mut iox2_node_name_t),
 }
 
-impl iox2_node_name_t {
-    pub(crate) fn cast(node_name: iox2_node_name_h) -> *mut Self {
-        node_name as *mut _ as _
-    }
-
-    pub(crate) fn as_handle(&mut self) -> iox2_node_name_h {
-        self as *mut _ as _
-    }
-}
-
 pub struct iox2_node_name_h_t;
-/// The handle for `iox2_node_name_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_node_name_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_node_name_h = *mut iox2_node_name_h_t;
+
+pub struct iox2_node_name_ref_h_t;
+/// The non-owning handle for `iox2_node_name_t`. Passing the handle to an function does not transfers the ownership.
+pub type iox2_node_name_ref_h = *mut iox2_node_name_ref_h_t;
 
 // NOTE check the README.md for using opaque types with renaming
 /// The immutable pointer to the underlying `NodeName`
 pub type iox2_node_name_ptr = *const NodeName;
 /// The mutable pointer to the underlying `NodeName`
 pub type iox2_node_name_mut_ptr = *mut NodeName;
+
+impl HandleToType for iox2_node_name_h {
+    type Target = *mut iox2_node_name_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
+impl HandleToType for iox2_node_name_ref_h {
+    type Target = *mut iox2_node_name_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
 
 // END type definition
 
@@ -144,7 +154,7 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 ) -> iox2_node_name_ptr {
     debug_assert!(!node_name_handle.is_null());
 
-    (*iox2_node_name_t::cast(node_name_handle)).value.as_ref()
+    (*node_name_handle.as_type()).value.as_ref()
 }
 
 /// This function gives access to the node name as a C-style string
@@ -193,7 +203,7 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
     debug_assert!(!node_name_handle.is_null());
 
-    let node_name = &mut (*iox2_node_name_t::cast(node_name_handle));
+    let node_name = &mut *node_name_handle.as_type();
 
     std::ptr::drop_in_place(node_name.value.as_option_mut());
     (node_name.deleter)(node_name);

@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    iox2_node_h, iox2_node_name_drop, iox2_node_name_h, iox2_node_name_t, iox2_node_t,
-    iox2_service_type_e, IntoCInt, NodeUnion, IOX2_OK,
+    iox2_node_h, iox2_node_name_drop, iox2_node_name_h, iox2_node_t, iox2_service_type_e,
+    HandleToType, IntoCInt, NodeUnion, IOX2_OK,
 };
 
 use iceoryx2::node::NodeCreationFailure;
@@ -57,23 +57,6 @@ pub struct iox2_node_builder_t {
     deleter: fn(*mut iox2_node_builder_t),
 }
 
-impl iox2_node_builder_t {
-    pub(crate) fn cast(node_builder: iox2_node_builder_h) -> *mut Self {
-        node_builder as *mut _ as _
-    }
-    pub(crate) fn cast_from_ref(node_builder: iox2_node_builder_ref_h) -> *mut Self {
-        node_builder as *mut _ as _
-    }
-
-    pub(crate) fn as_handle(&mut self) -> iox2_node_builder_h {
-        self as *mut _ as _
-    }
-
-    pub(crate) fn as_ref_handle(&mut self) -> iox2_node_builder_ref_h {
-        self as *mut _ as _
-    }
-}
-
 pub struct iox2_node_builder_h_t;
 /// The owning handle for `iox2_node_builder_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_node_builder_h = *mut iox2_node_builder_h_t;
@@ -81,6 +64,22 @@ pub type iox2_node_builder_h = *mut iox2_node_builder_h_t;
 pub struct iox2_node_builder_ref_h_t;
 /// The non-owning handle for `iox2_node_builder_t`. Passing the handle to an function does not transfers the ownership.
 pub type iox2_node_builder_ref_h = *mut iox2_node_builder_ref_h_t;
+
+impl HandleToType for iox2_node_builder_h {
+    type Target = *mut iox2_node_builder_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
+impl HandleToType for iox2_node_builder_ref_h {
+    type Target = *mut iox2_node_builder_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
 
 // END type definition
 
@@ -136,7 +135,7 @@ pub unsafe extern "C" fn iox2_cast_node_builder_ref_h(
 ) -> iox2_node_builder_ref_h {
     debug_assert!(!node_builder_handle.is_null());
 
-    (*iox2_node_builder_t::cast(node_builder_handle)).as_ref_handle()
+    (*node_builder_handle.as_type()).as_ref_handle()
 }
 
 /// Sets the node name for the builder
@@ -159,11 +158,11 @@ pub unsafe extern "C" fn iox2_node_builder_set_name(
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!node_name_handle.is_null());
 
-    let node_name_struct = &mut *iox2_node_name_t::cast(node_name_handle);
+    let node_name_struct = &mut *node_name_handle.as_type();
     let node_name = node_name_struct.take().unwrap();
     iox2_node_name_drop(node_name_handle);
 
-    let node_builder_struct = &mut *iox2_node_builder_t::cast_from_ref(node_builder_handle);
+    let node_builder_struct = &mut *node_builder_handle.as_type();
 
     let node_builder = node_builder_struct.take().unwrap();
     let node_builder = node_builder.name(node_name);
@@ -186,7 +185,7 @@ pub extern "C" fn iox2_node_builder_set_config(
 unsafe fn iox2_node_builder_drop(node_builder_handle: iox2_node_builder_h) {
     debug_assert!(!node_builder_handle.is_null());
 
-    let node_builder = &mut (*iox2_node_builder_t::cast(node_builder_handle));
+    let node_builder = &mut *node_builder_handle.as_type();
     std::ptr::drop_in_place(node_builder.value.as_option_mut());
     (node_builder.deleter)(node_builder);
 }
@@ -216,7 +215,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!node_handle_ptr.is_null());
 
-    let node_builder_struct = &mut *iox2_node_builder_t::cast(node_builder_handle);
+    let node_builder_struct = &mut *node_builder_handle.as_type();
     let node_builder = node_builder_struct.take().unwrap();
     iox2_node_builder_drop(node_builder_handle);
 

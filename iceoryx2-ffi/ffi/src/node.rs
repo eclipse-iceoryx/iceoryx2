@@ -14,7 +14,8 @@
 
 use crate::{
     iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr, iox2_service_builder_h,
-    iox2_service_builder_t, iox2_service_name_h, iox2_service_type_e, IntoCInt, IOX2_OK,
+    iox2_service_builder_t, iox2_service_name_h, iox2_service_type_e, HandleToType, IntoCInt,
+    IOX2_OK,
 };
 
 use iceoryx2::node::{NodeId, NodeListFailure, NodeView};
@@ -90,19 +91,31 @@ impl iox2_node_t {
         self.value.init(value);
         self.deleter = deleter;
     }
+}
 
-    pub(crate) fn cast(node: iox2_node_h) -> *mut Self {
-        node as *mut _ as _
-    }
+pub struct iox2_name_h_t;
+/// The owning handle for `iox2_node_t`. Passing the handle to an function transfers the ownership.
+pub type iox2_node_h = *mut iox2_name_h_t;
 
-    pub(crate) fn as_handle(&mut self) -> iox2_node_h {
+pub struct iox2_noderef_h_t;
+/// The non-owning handle for `iox2_node_t`. Passing the handle to an function does not transfers the ownership.
+pub type iox2_node_ref_h = *mut iox2_noderef_h_t;
+
+impl HandleToType for iox2_node_h {
+    type Target = *mut iox2_node_t;
+
+    fn as_type(self) -> Self::Target {
         self as *mut _ as _
     }
 }
 
-pub struct iox2_node_h_t;
-/// The handle for `iox2_node_builder_t`. Passing the handle to an function transfers the ownership.
-pub type iox2_node_h = *mut iox2_node_h_t;
+impl HandleToType for iox2_node_ref_h {
+    type Target = *mut iox2_node_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -154,7 +167,7 @@ pub type iox2_node_list_callback = extern "C" fn(
 pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_name_ptr {
     debug_assert!(!node_handle.is_null());
 
-    let node = &mut *iox2_node_t::cast(node_handle);
+    let node = &mut *node_handle.as_type();
 
     match node.service_type {
         iox2_service_type_e::IPC => node.value.as_ref().ipc.name(),
@@ -171,7 +184,7 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_n
 pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_ptr {
     debug_assert!(!node_handle.is_null());
 
-    let node = &mut *iox2_node_t::cast(node_handle);
+    let node = &mut *node_handle.as_type();
 
     match node.service_type {
         iox2_service_type_e::IPC => node.value.as_ref().ipc.config(),
@@ -321,7 +334,7 @@ pub unsafe extern "C" fn iox2_node_service_builder(
 pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
     debug_assert!(!node_handle.is_null());
 
-    let node = &mut *iox2_node_t::cast(node_handle);
+    let node = &mut *node_handle.as_type();
 
     match node.service_type {
         iox2_service_type_e::IPC => {
@@ -340,6 +353,8 @@ pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
 mod test {
     use crate::*;
     use iceoryx2_bb_testing::assert_that;
+
+    use core::{slice, str};
 
     fn create_sut_node() -> iox2_node_h {
         unsafe {
@@ -388,11 +403,8 @@ mod test {
     fn basic_node_config_test() {
         unsafe {
             let node_handle = create_sut_node();
-            let expected_config = (*iox2_node_t::cast(node_handle))
-                .value
-                .as_ref()
-                .ipc
-                .config();
+
+            let expected_config = Config::global_config();
 
             let config = iox2_node_config(node_handle);
 
@@ -403,17 +415,23 @@ mod test {
     }
 
     #[test]
-    fn basic_node_name_test() {
+    fn basic_node_name_test() -> Result<(), Box<dyn std::error::Error>> {
         unsafe {
             let node_handle = create_sut_node();
-            let expected_node_name = (*iox2_node_t::cast(node_handle)).value.as_ref().ipc.name();
-            assert_that!(expected_node_name.as_str(), eq("hypnotoad"));
 
             let node_name = iox2_node_name(node_handle);
 
-            assert_that!(*(node_name as *const NodeName), eq(*expected_node_name));
+            let mut node_name_len = 0;
+            let node_name_c_str = iox2_node_name_as_c_str(node_name, &mut node_name_len);
+
+            let slice = slice::from_raw_parts(node_name_c_str as *const _, node_name_len as _);
+            let node_name_str = str::from_utf8(slice)?;
+
+            assert_that!(node_name_str, eq("hypnotoad"));
 
             iox2_node_drop(node_handle);
+
+            Ok(())
         }
     }
 

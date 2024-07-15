@@ -60,9 +60,9 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
     // Define all the names we need
     let struct_storage_name = format_ident!("iox2_{}_storage_t", stripped_struct_name);
     let _struct_h_t_name = format_ident!("iox2_{}_h_t", stripped_struct_name);
-    let _struct_h_name = format_ident!("iox2_{}_h", stripped_struct_name);
+    let struct_h_name = format_ident!("iox2_{}_h", stripped_struct_name);
     let _struct_ref_h_t_name = format_ident!("iox2_{}_ref_h_t", stripped_struct_name);
-    let _struct_ref_h_name = format_ident!("iox2_{}_ref_h", stripped_struct_name);
+    let struct_ref_h_name = format_ident!("iox2_{}_ref_h", stripped_struct_name);
 
     // NOTE: cbindgen does not play well with adding new structs or fields to existing structs;
     // this code is kept for reference
@@ -128,6 +128,13 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
         #my_struct
 
         impl #struct_name {
+            pub(crate) fn as_handle(&mut self) -> #struct_h_name {
+                self as *mut _ as _
+            }
+            pub(crate) fn as_ref_handle(&mut self) -> #struct_ref_h_name {
+                self as *mut _ as _
+            }
+
             pub(crate) fn take(&mut self) -> Option<#my_type> {
                 unsafe { self.value.as_option_mut().take() }
             }
