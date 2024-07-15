@@ -49,12 +49,20 @@ impl iox2_node_name_storage_t {
             .write(Some(node_name));
     }
 
-    unsafe fn assume_init_mut(&mut self) -> &mut Option<NodeName> {
-        (*(self as *mut Self).cast::<MaybeUninit<Option<NodeName>>>()).assume_init_mut()
+    unsafe fn as_option_mut(&mut self) -> &mut Option<NodeName> {
+        &mut *(self as *mut Self).cast::<Option<NodeName>>()
     }
 
-    unsafe fn assume_init_ref(&self) -> &Option<NodeName> {
-        (*(self as *const Self).cast::<MaybeUninit<Option<NodeName>>>()).assume_init_ref()
+    unsafe fn as_option_ref(&self) -> &Option<NodeName> {
+        &*(self as *const Self).cast::<Option<NodeName>>()
+    }
+
+    unsafe fn _as_mut(&mut self) -> &mut NodeName {
+        self.as_option_mut().as_mut().unwrap()
+    }
+
+    unsafe fn as_ref(&self) -> &NodeName {
+        self.as_option_ref().as_ref().unwrap()
     }
 }
 
@@ -72,14 +80,11 @@ impl iox2_node_name_t {
 
     pub(crate) fn cast_node_name(node_name_ptr: iox2_node_name_ptr) -> *const NodeName {
         debug_assert!(!node_name_ptr.is_null());
-        let maybe_node_name =
-            unsafe { (*(node_name_ptr as *const _ as *const Option<NodeName>)).as_ref() };
-        debug_assert!(maybe_node_name.is_some());
-        unsafe { maybe_node_name.unwrap_unchecked() as *const _ }
+        node_name_ptr as *const _ as *const _
     }
 
     pub(crate) fn take(&mut self) -> Option<NodeName> {
-        unsafe { self.node_name.assume_init_mut().take() }
+        unsafe { self.node_name.as_option_mut().take() }
     }
 
     fn alloc() -> *mut iox2_node_name_t {
@@ -121,8 +126,8 @@ pub type iox2_node_name_mut_ptr = *mut iox2_node_name_mut_ptr_t;
 ///
 /// # Safety
 ///
-/// Terminates if `node_name_str` or `node_name_handle_ptr` is a NULL pointer!
-/// It is undefined behavior to pass a `node_name_len` which is larger than the actual length of `node_name_str`!
+/// * Terminates if `node_name_str` or `node_name_handle_ptr` is a NULL pointer!
+/// * It is undefined behavior to pass a `node_name_len` which is larger than the actual length of `node_name_str`!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_new(
     node_name_struct_ptr: *mut iox2_node_name_t,
@@ -135,17 +140,17 @@ pub unsafe extern "C" fn iox2_node_name_new(
 
     *node_name_handle_ptr = std::ptr::null_mut();
 
-    let mut handle = node_name_struct_ptr;
-    fn no_op(_storage: *mut iox2_node_name_t) {}
+    let mut node_name_struct_ptr = node_name_struct_ptr;
+    fn no_op(_: *mut iox2_node_name_t) {}
     let mut deleter: fn(*mut iox2_node_name_t) = no_op;
-    if handle.is_null() {
-        handle = iox2_node_name_t::alloc();
+    if node_name_struct_ptr.is_null() {
+        node_name_struct_ptr = iox2_node_name_t::alloc();
         deleter = iox2_node_name_t::dealloc;
     }
-    debug_assert!(!handle.is_null());
+    debug_assert!(!node_name_struct_ptr.is_null());
 
     unsafe {
-        (*handle).deleter = deleter;
+        (*node_name_struct_ptr).deleter = deleter;
     }
 
     let node_name = slice::from_raw_parts(node_name_str as *const _, node_name_len as usize);
@@ -153,23 +158,23 @@ pub unsafe extern "C" fn iox2_node_name_new(
     let node_name = if let Ok(node_name) = str::from_utf8(node_name) {
         node_name
     } else {
-        deleter(handle);
+        deleter(node_name_struct_ptr);
         return iox2_semantic_string_error_e::INVALID_CONTENT as c_int;
     };
 
     let node_name = match NodeName::new(node_name) {
         Ok(node_name) => node_name,
         Err(e) => {
-            deleter(handle);
+            deleter(node_name_struct_ptr);
             return e.into_c_int();
         }
     };
 
     unsafe {
-        (*handle).node_name.init(node_name);
+        (*node_name_struct_ptr).node_name.init(node_name);
     }
 
-    *node_name_handle_ptr = handle as *mut _ as *mut _;
+    *node_name_handle_ptr = node_name_struct_ptr as *mut _ as *mut _;
 
     IOX2_OK
 }
@@ -184,8 +189,8 @@ pub unsafe extern "C" fn iox2_node_name_new(
 ///
 /// # Safety
 ///
-/// The `node_name_handle` must be a valid handle.
-/// The `node_name_handle` is still valid after the call to this function.
+/// * The `node_name_handle` must be a valid handle.
+/// * The `node_name_handle` is still valid after the call to this function.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_cast_node_name_ptr(
     node_name_handle: iox2_node_name_h,
@@ -194,7 +199,7 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 
     (*iox2_node_name_t::cast(node_name_handle))
         .node_name
-        .assume_init_ref() as *const _ as *const _
+        .as_ref() as *const _ as *const _
 }
 
 /// This function gives access to the node name as a C-style string
@@ -208,7 +213,7 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 ///
 /// # Safety
 ///
-/// The `node_name_ptr` must be a valid pointer to a node name.
+/// * The `node_name_ptr` must be a valid pointer to a node name.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_as_c_str(
     node_name_ptr: iox2_node_name_ptr,
@@ -237,15 +242,15 @@ pub unsafe extern "C" fn iox2_node_name_as_c_str(
 ///
 /// # Safety
 ///
-/// The `node_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-/// The corresponding [`iox2_node_name_t`] can be re-used with a call to [`iox2_node_name_new`]!
+/// * The `node_name_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_node_name_t`] can be re-used with a call to [`iox2_node_name_new`]!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h) {
     debug_assert!(!node_name_handle.is_null());
 
     let node_name_struct = &mut (*iox2_node_name_t::cast(node_name_handle));
 
-    node_name_struct.node_name.assume_init_mut().take();
+    std::ptr::drop_in_place(node_name_struct.node_name.as_option_mut() as *mut _);
     (node_name_struct.deleter)(node_name_struct);
 }
 
