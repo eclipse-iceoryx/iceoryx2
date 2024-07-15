@@ -16,11 +16,10 @@ use crate::{iox2_semantic_string_error_e, IntoCInt, IOX2_OK};
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
-use core::mem::{align_of, size_of, MaybeUninit};
 use core::{slice, str};
-use std::alloc::{alloc, dealloc, Layout};
 
 // BEGIN type definition
 
@@ -30,46 +29,10 @@ pub struct iox2_node_name_storage_t {
     internal: [u8; 24], // magic number obtained with size_of::<Option<NodeName>>()
 }
 
-impl iox2_node_name_storage_t {
-    const fn assert_storage_layout() {
-        static_assert_ge::<
-            { align_of::<iox2_node_name_storage_t>() },
-            { align_of::<Option<NodeName>>() },
-        >();
-        static_assert_ge::<
-            { size_of::<iox2_node_name_storage_t>() },
-            { size_of::<Option<NodeName>>() },
-        >();
-    }
-
-    fn init(&mut self, node_name: NodeName) {
-        iox2_node_name_storage_t::assert_storage_layout();
-
-        unsafe { &mut *(self as *mut Self).cast::<MaybeUninit<Option<NodeName>>>() }
-            .write(Some(node_name));
-    }
-
-    unsafe fn as_option_mut(&mut self) -> &mut Option<NodeName> {
-        &mut *(self as *mut Self).cast::<Option<NodeName>>()
-    }
-
-    unsafe fn as_option_ref(&self) -> &Option<NodeName> {
-        &*(self as *const Self).cast::<Option<NodeName>>()
-    }
-
-    unsafe fn _as_mut(&mut self) -> &mut NodeName {
-        self.as_option_mut().as_mut().unwrap()
-    }
-
-    unsafe fn as_ref(&self) -> &NodeName {
-        self.as_option_ref().as_ref().unwrap()
-    }
-}
-
 #[repr(C)]
+#[iceoryx2_ffi(NodeName)]
 pub struct iox2_node_name_t {
-    /// cbindgen:rename=internal
-    node_name: iox2_node_name_storage_t,
+    value: iox2_node_name_storage_t,
     deleter: fn(*mut iox2_node_name_t),
 }
 
@@ -81,19 +44,6 @@ impl iox2_node_name_t {
     pub(crate) fn cast_node_name(node_name_ptr: iox2_node_name_ptr) -> *const NodeName {
         debug_assert!(!node_name_ptr.is_null());
         node_name_ptr as *const _ as *const _
-    }
-
-    pub(crate) fn take(&mut self) -> Option<NodeName> {
-        unsafe { self.node_name.as_option_mut().take() }
-    }
-
-    fn alloc() -> *mut iox2_node_name_t {
-        unsafe { alloc(Layout::new::<iox2_node_name_t>()) as *mut iox2_node_name_t }
-    }
-    fn dealloc(storage: *mut iox2_node_name_t) {
-        unsafe {
-            dealloc(storage as *mut _, Layout::new::<iox2_node_name_t>());
-        }
     }
 }
 
@@ -171,7 +121,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
     };
 
     unsafe {
-        (*node_name_struct_ptr).node_name.init(node_name);
+        (*node_name_struct_ptr).value.init(node_name);
     }
 
     *node_name_handle_ptr = node_name_struct_ptr as *mut _ as *mut _;
@@ -197,9 +147,7 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 ) -> iox2_node_name_ptr {
     debug_assert!(!node_name_handle.is_null());
 
-    (*iox2_node_name_t::cast(node_name_handle))
-        .node_name
-        .as_ref() as *const _ as *const _
+    (*iox2_node_name_t::cast(node_name_handle)).value.as_ref() as *const _ as *const _
 }
 
 /// This function gives access to the node name as a C-style string
@@ -250,7 +198,7 @@ pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h)
 
     let node_name_struct = &mut (*iox2_node_name_t::cast(node_name_handle));
 
-    std::ptr::drop_in_place(node_name_struct.node_name.as_option_mut() as *mut _);
+    std::ptr::drop_in_place(node_name_struct.value.as_option_mut() as *mut _);
     (node_name_struct.deleter)(node_name_struct);
 }
 
@@ -261,12 +209,6 @@ mod test {
     use super::*;
 
     use iceoryx2_bb_testing::assert_that;
-
-    #[test]
-    fn assert_storage_size() {
-        // all const functions; if it compiles, the storage size is sufficient
-        const _STORAGE_LAYOUT_CHECK: () = iox2_node_name_storage_t::assert_storage_layout();
-    }
 
     #[test]
     fn basic_node_name_test() -> Result<(), Box<dyn std::error::Error>> {

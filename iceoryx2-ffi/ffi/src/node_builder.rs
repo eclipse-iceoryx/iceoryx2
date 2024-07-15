@@ -20,10 +20,9 @@ use crate::{
 use iceoryx2::node::NodeCreationFailure;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_int;
-use core::mem::{align_of, size_of, MaybeUninit};
-use std::alloc::{alloc, dealloc, Layout};
 
 // BEGIN types definition
 
@@ -51,46 +50,10 @@ pub struct iox2_node_builder_storage_t {
     internal: [u8; 18432], // magic number obtained with size_of::<Option<NodeBuilder>>()
 }
 
-impl iox2_node_builder_storage_t {
-    const fn assert_storage_layout() {
-        static_assert_ge::<
-            { align_of::<iox2_node_builder_storage_t>() },
-            { align_of::<Option<NodeBuilder>>() },
-        >();
-        static_assert_ge::<
-            { size_of::<iox2_node_builder_storage_t>() },
-            { size_of::<Option<NodeBuilder>>() },
-        >();
-    }
-
-    fn init(&mut self, node_builder: NodeBuilder) {
-        iox2_node_builder_storage_t::assert_storage_layout();
-
-        unsafe { &mut *(self as *mut Self).cast::<MaybeUninit<Option<NodeBuilder>>>() }
-            .write(Some(node_builder));
-    }
-
-    unsafe fn as_option_mut(&mut self) -> &mut Option<NodeBuilder> {
-        &mut *(self as *mut Self).cast::<Option<NodeBuilder>>()
-    }
-
-    unsafe fn _os_option_ref(&self) -> &Option<NodeBuilder> {
-        &*(self as *const Self).cast::<Option<NodeBuilder>>()
-    }
-
-    unsafe fn _as_mut(&mut self) -> &mut NodeBuilder {
-        self.as_option_mut().as_mut().unwrap()
-    }
-
-    unsafe fn _as_ref(&self) -> &NodeBuilder {
-        self._os_option_ref().as_ref().unwrap()
-    }
-}
-
 #[repr(C)]
+#[iceoryx2_ffi(NodeBuilder)]
 pub struct iox2_node_builder_t {
-    /// cbindgen:rename=internal
-    node_builder: iox2_node_builder_storage_t,
+    value: iox2_node_builder_storage_t,
     deleter: fn(*mut iox2_node_builder_t),
 }
 
@@ -100,23 +63,6 @@ impl iox2_node_builder_t {
     }
     pub(crate) fn cast_from_ref(node_builder: iox2_node_builder_ref_h) -> *mut Self {
         node_builder as *mut _ as *mut Self
-    }
-
-    pub(crate) fn take(&mut self) -> Option<NodeBuilder> {
-        unsafe { self.node_builder.as_option_mut().take() }
-    }
-
-    pub(crate) fn set(&mut self, node_builder: NodeBuilder) {
-        unsafe { *self.node_builder.as_option_mut() = Some(node_builder) }
-    }
-
-    fn alloc() -> *mut iox2_node_builder_t {
-        unsafe { alloc(Layout::new::<iox2_node_builder_t>()) as *mut iox2_node_builder_t }
-    }
-    fn dealloc(storage: *mut iox2_node_builder_t) {
-        unsafe {
-            dealloc(storage as *mut _, Layout::new::<iox2_node_builder_t>());
-        }
     }
 }
 
@@ -159,9 +105,7 @@ pub unsafe extern "C" fn iox2_node_builder_new(
     debug_assert!(!node_builder_struct_ptr.is_null());
 
     (*node_builder_struct_ptr).deleter = deleter;
-    (*node_builder_struct_ptr)
-        .node_builder
-        .init(NodeBuilder::new());
+    (*node_builder_struct_ptr).value.init(NodeBuilder::new());
 
     node_builder_struct_ptr as *mut _ as *mut _
 }
@@ -235,7 +179,7 @@ unsafe fn iox2_node_builder_drop(node_builder_handle: iox2_node_builder_h) {
     debug_assert!(!node_builder_handle.is_null());
 
     let node_builder_struct = &mut (*iox2_node_builder_t::cast(node_builder_handle));
-    std::ptr::drop_in_place(node_builder_struct.node_builder.as_option_mut() as *mut _);
+    std::ptr::drop_in_place(node_builder_struct.value.as_option_mut() as *mut _);
     (node_builder_struct.deleter)(node_builder_struct);
 }
 
@@ -307,12 +251,6 @@ pub unsafe extern "C" fn iox2_node_builder_create(
 mod test {
     use crate::*;
     use iceoryx2_bb_testing::assert_that;
-
-    #[test]
-    fn assert_storage_sizes() {
-        // all const functions; if it compiles, the storage size is sufficient
-        const _STORAGE_LAYOUT_CHECK: () = iox2_node_builder_storage_t::assert_storage_layout();
-    }
 
     #[test]
     fn basic_node_builder_api_test() {
