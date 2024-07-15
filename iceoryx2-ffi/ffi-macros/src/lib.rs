@@ -128,26 +128,26 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
         #my_struct
 
         impl #struct_name {
-            pub(crate) fn as_handle(&mut self) -> #struct_h_name {
+            pub(super) fn as_handle(&mut self) -> #struct_h_name {
                 self as *mut _ as _
             }
-            pub(crate) fn as_ref_handle(&mut self) -> #struct_ref_h_name {
+            pub(super) fn as_ref_handle(&mut self) -> #struct_ref_h_name {
                 self as *mut _ as _
             }
 
-            pub(crate) fn take(&mut self) -> Option<#my_type> {
+            pub(super) fn take(&mut self) -> Option<#my_type> {
                 unsafe { self.value.as_option_mut().take() }
             }
 
-            pub(crate) fn set(&mut self, value: #my_type) {
+            pub(super) fn set(&mut self, value: #my_type) {
                 unsafe { *self.value.as_option_mut() = Some(value) }
             }
 
-            pub(crate) fn alloc() -> *mut #struct_name {
+            pub(super) fn alloc() -> *mut #struct_name {
                 unsafe { ::std::alloc::alloc(::std::alloc::Layout::new::<#struct_name>()) as _ }
             }
 
-            pub(crate) fn dealloc(storage: *mut #struct_name) {
+            pub(super) fn dealloc(storage: *mut #struct_name) {
                 unsafe {
                     ::std::alloc::dealloc(storage as _, ::core::alloc::Layout::new::<#struct_name>())
                 }

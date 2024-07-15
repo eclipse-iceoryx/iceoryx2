@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::{iox2_semantic_string_error_e, HandleToType, IntoCInt, IOX2_OK};
+use crate::api::{iox2_semantic_string_error_e, HandleToType, IntoCInt, IOX2_OK};
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
@@ -32,7 +32,7 @@ pub struct iox2_node_name_storage_t {
 #[repr(C)]
 #[iceoryx2_ffi(NodeName)]
 pub struct iox2_node_name_t {
-    value: iox2_node_name_storage_t,
+    pub value: iox2_node_name_storage_t,
     deleter: fn(*mut iox2_node_name_t),
 }
 
@@ -210,41 +210,3 @@ pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h)
 }
 
 // END C API
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    use iceoryx2_bb_testing::assert_that;
-
-    #[test]
-    fn basic_node_name_test() -> Result<(), Box<dyn std::error::Error>> {
-        unsafe {
-            let expected_node_name = NodeName::new("hypnotaod")?;
-
-            let mut node_name_handle: iox2_node_name_h = std::ptr::null_mut();
-            let ret_val = iox2_node_name_new(
-                std::ptr::null_mut(),
-                expected_node_name.as_str().as_ptr() as *const _,
-                expected_node_name.len() as _,
-                &mut node_name_handle,
-            );
-            assert_that!(ret_val, eq(IOX2_OK));
-
-            let mut node_name_len = 0;
-            let node_name_c_str = iox2_node_name_as_c_str(
-                iox2_cast_node_name_ptr(node_name_handle),
-                &mut node_name_len,
-            );
-
-            let slice = slice::from_raw_parts(node_name_c_str as *const _, node_name_len as _);
-            let node_name = str::from_utf8(slice)?;
-
-            assert_that!(node_name, eq(expected_node_name.as_str()));
-
-            iox2_node_name_drop(node_name_handle);
-
-            Ok(())
-        }
-    }
-}

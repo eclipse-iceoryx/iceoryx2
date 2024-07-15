@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::{
+use crate::api::{
     iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr, iox2_service_builder_h,
     iox2_service_builder_t, iox2_service_name_h, iox2_service_type_e, HandleToType, IntoCInt,
     IOX2_OK,
@@ -48,18 +48,18 @@ impl IntoCInt for NodeListFailure {
     }
 }
 
-pub(crate) union NodeUnion {
+pub(super) union NodeUnion {
     ipc: ManuallyDrop<Node<zero_copy::Service>>,
     local: ManuallyDrop<Node<process_local::Service>>,
 }
 
 impl NodeUnion {
-    pub(crate) fn new_ipc(node: Node<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(node: Node<zero_copy::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(node),
         }
     }
-    pub(crate) fn new_local(node: Node<process_local::Service>) -> Self {
+    pub(super) fn new_local(node: Node<process_local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(node),
         }
@@ -75,13 +75,13 @@ pub struct iox2_node_storage_t {
 #[repr(C)]
 #[iceoryx2_ffi(NodeUnion)]
 pub struct iox2_node_t {
-    pub(crate) service_type: iox2_service_type_e,
-    pub(crate) value: iox2_node_storage_t,
-    pub(crate) deleter: fn(*mut iox2_node_t),
+    pub(super) service_type: iox2_service_type_e,
+    pub(super) value: iox2_node_storage_t,
+    pub(super) deleter: fn(*mut iox2_node_t),
 }
 
 impl iox2_node_t {
-    pub(crate) fn init(
+    pub(super) fn init(
         &mut self,
         service_type: iox2_service_type_e,
         value: NodeUnion,
@@ -348,150 +348,3 @@ pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
 }
 
 // END C API
-
-#[cfg(test)]
-mod test {
-    use crate::*;
-    use iceoryx2_bb_testing::assert_that;
-
-    use core::{slice, str};
-
-    fn create_sut_node() -> iox2_node_h {
-        unsafe {
-            let node_builder_handle = iox2_node_builder_new(std::ptr::null_mut());
-
-            let mut node_name_handle = std::ptr::null_mut();
-            let node_name = "hypnotoad";
-            let ret_val = iox2_node_name_new(
-                std::ptr::null_mut(),
-                node_name.as_ptr() as *const _,
-                node_name.len() as _,
-                &mut node_name_handle,
-            );
-            assert_that!(ret_val, eq(IOX2_OK));
-            iox2_node_builder_set_name(
-                iox2_cast_node_builder_ref_h(node_builder_handle),
-                node_name_handle,
-            );
-
-            let mut node_handle: iox2_node_h = std::ptr::null_mut();
-            let ret_val = iox2_node_builder_create(
-                node_builder_handle,
-                std::ptr::null_mut(),
-                iox2_service_type_e::IPC,
-                &mut node_handle as *mut iox2_node_h,
-            );
-
-            assert_that!(ret_val, eq(IOX2_OK));
-
-            node_handle
-        }
-    }
-
-    #[test]
-    fn basic_node_api_test() {
-        unsafe {
-            let node_handle = create_sut_node();
-
-            assert_that!(node_handle, ne(std::ptr::null_mut()));
-
-            iox2_node_drop(node_handle);
-        }
-    }
-
-    #[test]
-    fn basic_node_config_test() {
-        unsafe {
-            let node_handle = create_sut_node();
-
-            let expected_config = Config::global_config();
-
-            let config = iox2_node_config(node_handle);
-
-            assert_that!(*(config as *const Config), eq(*expected_config));
-
-            iox2_node_drop(node_handle);
-        }
-    }
-
-    #[test]
-    fn basic_node_name_test() -> Result<(), Box<dyn std::error::Error>> {
-        unsafe {
-            let node_handle = create_sut_node();
-
-            let node_name = iox2_node_name(node_handle);
-
-            let mut node_name_len = 0;
-            let node_name_c_str = iox2_node_name_as_c_str(node_name, &mut node_name_len);
-
-            let slice = slice::from_raw_parts(node_name_c_str as *const _, node_name_len as _);
-            let node_name_str = str::from_utf8(slice)?;
-
-            assert_that!(node_name_str, eq("hypnotoad"));
-
-            iox2_node_drop(node_handle);
-
-            Ok(())
-        }
-    }
-
-    #[derive(Default)]
-    struct NodeListCtx {
-        alive: u64,
-        dead: u64,
-        inaccessible: u64,
-        undefined: u64,
-    }
-
-    extern "C" fn node_list_callback(
-        node_state: iox2_node_state_e,
-        _node_id_ptr: iox2_node_id_ptr,
-        _node_name_ptr: iox2_node_name_ptr,
-        _config_ptr: iox2_config_ptr,
-        ctx: iox2_node_list_callback_context,
-    ) -> iox2_callback_progression_e {
-        let ctx = unsafe { &mut *(ctx as *mut NodeListCtx) };
-
-        match node_state {
-            iox2_node_state_e::ALIVE => {
-                ctx.alive += 1;
-            }
-            iox2_node_state_e::DEAD => {
-                ctx.dead += 1;
-            }
-            iox2_node_state_e::INACCESSIBLE => {
-                ctx.inaccessible += 1;
-            }
-            iox2_node_state_e::UNDEFINED => {
-                ctx.undefined += 1;
-            }
-        }
-
-        iox2_callback_progression_e::CONTINUE
-    }
-
-    #[test]
-    fn basic_node_list_test() {
-        unsafe {
-            let mut ctx = NodeListCtx::default();
-            let node_handle = create_sut_node();
-            let config = iox2_node_config(node_handle);
-
-            let ret_val = iox2_node_list(
-                iox2_service_type_e::IPC,
-                config,
-                node_list_callback,
-                &mut ctx as *mut _ as *mut _,
-            );
-
-            iox2_node_drop(node_handle);
-
-            assert_that!(ret_val, eq(IOX2_OK));
-
-            assert_that!(ctx.alive, eq(1));
-            assert_that!(ctx.dead, eq(0));
-            assert_that!(ctx.inaccessible, eq(0));
-            assert_that!(ctx.undefined, eq(0));
-        }
-    }
-}
