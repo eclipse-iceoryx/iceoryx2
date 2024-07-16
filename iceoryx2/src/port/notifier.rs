@@ -16,7 +16,7 @@
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -238,7 +238,7 @@ impl<Service: service::Service> Notifier<Service> {
         let dynamic_notifier_handle = match new_self.dynamic_storage.get().event().add_notifier_id(
             NotifierDetails {
                 notifier_id,
-                node_id: service.__internal_state().shared_node.id().clone(),
+                node_id: *service.__internal_state().shared_node.id(),
             },
         ) {
             Some(handle) => handle,

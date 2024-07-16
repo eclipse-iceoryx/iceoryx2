@@ -19,7 +19,7 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -62,7 +62,7 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<[usize]>()
 //!     .open_or_create()?;
 //!
@@ -642,7 +642,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 publisher_id: port_id,
                 number_of_samples,
                 max_slice_len,
-                node_id: service.__internal_state().shared_node.id().clone(),
+                node_id: *service.__internal_state().shared_node.id(),
             }) {
             Some(unique_index) => unique_index,
             None => {
@@ -769,7 +769,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// #
-    /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -804,7 +804,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// #
-    /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -860,7 +860,7 @@ impl<Service: service::Service, Payload: Default + Debug + Sized, UserHeader: De
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// #
-    /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
     /// #     .open_or_create()?;
     /// #
@@ -902,7 +902,7 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// #
-    /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<[u64]>()
     /// #     .open_or_create()?;
     /// #
@@ -943,7 +943,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     ///
     /// # let node = NodeBuilder::new().create::<zero_copy::Service>()?;
     /// #
-    /// # let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #

@@ -24,7 +24,7 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new()
-//!                 .name("my_little_node".try_into()?)
+//!                 .name(&"my_little_node".try_into()?)
 //!                 .create::<zero_copy::Service>()?;
 //!
 //! println!("created node {:?}", node);
@@ -71,7 +71,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //! let node = NodeBuilder::new()
-//!                 .name("my_little_node".try_into()?)
+//!                 .name(&"my_little_node".try_into()?)
 //!                 .create::<zero_copy::Service>()?;
 //!
 //! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
@@ -90,7 +90,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //! let node = NodeBuilder::new()
-//!                 .name("my_little_node".try_into()?)
+//!                 .name(&"my_little_node".try_into()?)
 //!                 .create::<zero_copy::Service>()?;
 //!
 //! loop {
@@ -373,18 +373,20 @@ impl<Service: service::Service> DeadNodeView<Service> {
         }
         let cleaner = cleaner.unwrap();
 
-        match Node::<Service>::service_tags(config, self.id(), |service_uuid| {
+        let remove_node_from_service = |service_uuid: &FileName| {
             if Service::__internal_remove_node_from_service(self.id(), service_uuid, config).is_ok()
             {
                 let service_uuid_str = core::str::from_utf8(service_uuid.as_bytes()).unwrap();
                 if let Err(e) = remove_service_tag::<Service>(self.id(), service_uuid_str, config) {
                     debug!(from self,
-                            "The service tag coult not be removed from the dead node ({:?}).",
-                            e);
+                                    "The service tag coult not be removed from the dead node ({:?}).",
+                                    e);
                 }
             }
             CallbackProgression::Continue
-        }) {
+        };
+
+        match Node::<Service>::service_tags(config, self.id(), remove_node_from_service) {
             Ok(()) => (),
             Err(e) => {
                 cleaner.abandon();
@@ -415,7 +417,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         {
             Ok(cleaner) => Ok(Some(cleaner)),
             Err(MonitoringCreateCleanerError::AlreadyOwnedByAnotherInstance)
-            | Err(MonitoringCreateCleanerError::DoesNotExist) => return Ok(None),
+            | Err(MonitoringCreateCleanerError::DoesNotExist) => Ok(None),
             Err(MonitoringCreateCleanerError::Interrupt) => {
                 fail!(from self, with NodeCleanupFailure::Interrupt,
                     "{} since an interrupt signal was received.", msg);
@@ -721,9 +723,9 @@ impl<Service: service::Service> Node<Service> {
             core::any::type_name::<Service>()
         );
 
-        match Node::<Service>::list(config, |node_state| {
+        let cleanup_call = |node_state| {
             if let NodeState::Dead(dead_node) = node_state {
-                let node_id = dead_node.id().clone();
+                let node_id = *dead_node.id();
                 warn!(from origin, "Dead node ({:?}) detected", node_id);
                 match dead_node.remove_stale_resources() {
                     Ok(_) => {
@@ -738,7 +740,9 @@ impl<Service: service::Service> Node<Service> {
             }
 
             CallbackProgression::Continue
-        }) {
+        };
+
+        match Node::<Service>::list(config, cleanup_call) {
             Ok(()) => cleanup_state,
             Err(e) => {
                 debug!(from origin, "Unable to perform a full scan for dead nodes since the all existing nodes could not be listed ({:?}).", e);
@@ -937,7 +941,7 @@ impl<Service: service::Service> Node<Service> {
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let node = NodeBuilder::new()
-///                 .name("my_little_node".try_into()?)
+///                 .name(&"my_little_node".try_into()?)
 ///                 .create::<zero_copy::Service>()?;
 ///
 /// // do things with your cool new node

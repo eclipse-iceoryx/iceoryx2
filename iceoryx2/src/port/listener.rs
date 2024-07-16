@@ -24,7 +24,7 @@
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -44,7 +44,7 @@
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -151,7 +151,7 @@ impl<Service: service::Service> Listener<Service> {
             .event()
             .add_listener_id(ListenerDetails {
                 listener_id,
-                node_id: service.__internal_state().shared_node.id().clone(),
+                node_id: *service.__internal_state().shared_node.id(),
             }) {
             Some(unique_index) => unique_index,
             None => {
@@ -257,7 +257,7 @@ pub(crate) unsafe fn remove_connection_of_listener<Service: service::Service>(
         listener_id
     );
     let msg = "Unable to remove the listener connection";
-    let event_name = event_concept_name(&listener_id);
+    let event_name = event_concept_name(listener_id);
     let event_config = event_config::<Service>(config);
 
     fail!(from origin,

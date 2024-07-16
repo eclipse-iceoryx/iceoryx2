@@ -28,7 +28,7 @@
 //!     .config(&custom_config)
 //!     .create::<zero_copy::Service>()?;
 //!
-//! let service = node.service_builder("MyServiceName".try_into()?)
+//! let service = node.service_builder(&"MyServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!

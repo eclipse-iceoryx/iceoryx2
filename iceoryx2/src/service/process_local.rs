@@ -19,7 +19,7 @@
 //! let node = NodeBuilder::new().create::<process_local::Service>()?;
 //!
 //! // use `process_local` as communication variant
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!

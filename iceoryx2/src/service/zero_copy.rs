@@ -19,7 +19,7 @@
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
 //! // use `zero_copy` as communication variant
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!

@@ -37,8 +37,8 @@
 //! };
 //!
 //! let mut state = container.get_state();
-//! state.for_each(|index: u32, value: &u32| {
-//!     println!("index: {}, value: {}", index, value);
+//! state.for_each(|handle: ContainerHandle, value: &u32| {
+//!     println!("handle: {:?}, value: {}", handle, value);
 //!     CallbackProgression::Continue
 //! });
 //!
@@ -46,8 +46,8 @@
 //!
 //! if unsafe { container.update_state(&mut state) } {
 //!     println!("container state has changed");
-//!     state.for_each(|index: u32, value: &u32| {
-//!         println!("index: {}, value: {}", index, value);
+//!     state.for_each(|handle: ContainerHandle, value: &u32| {
+//!         println!("handle: {:?}, value: {}", handle, value);
 //!         CallbackProgression::Continue
 //!     });
 //! }
@@ -136,8 +136,8 @@ impl<T: Copy + Debug> ContainerState<T> {
     /// let container = FixedSizeContainer::<u128, 128>::new();
     ///
     /// let mut state = container.get_state();
-    /// state.for_each(|index: u32, value: &u128| {
-    ///     println!("index: {}, value: {}", index, value);
+    /// state.for_each(|handle: ContainerHandle, value: &u128| {
+    ///     println!("handle: {:?}, value: {}", handle, value);
     ///     CallbackProgression::Continue
     /// });
     /// ```

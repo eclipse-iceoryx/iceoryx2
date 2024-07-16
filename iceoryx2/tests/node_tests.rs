@@ -248,6 +248,9 @@ mod node {
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         const NUMBER_OF_ITERATIONS: usize = 100;
         let barrier = Barrier::new(number_of_creators);
+        let mut config = Config::global_config().clone();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
 
         std::thread::scope(|s| {
             let mut threads = vec![];
@@ -255,7 +258,7 @@ mod node {
                 threads.push(s.spawn(|| {
                     barrier.wait();
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let node = NodeBuilder::new().create::<S>().unwrap();
+                        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
                         let mut found_self = false;
                         let result = Node::<S>::list(node.config(), |node_state| {
