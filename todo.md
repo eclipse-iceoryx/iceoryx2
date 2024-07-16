@@ -1,8 +1,5 @@
 # POSIX
 
- * add atomic lock to node cleanup so that two threads in same process do not
-    block each other
-
  * windows stat.rs, allowed to fail if file no longer exists
  * cargo nextest run -p iceoryx2 --test service_tests gracefully
     * service should not be in corrupted state when listed and currently being removed

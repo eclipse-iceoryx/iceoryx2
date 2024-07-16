@@ -99,9 +99,6 @@ impl std::fmt::Display for ZeroCopyReleaseError {
 
 impl std::error::Error for ZeroCopyReleaseError {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ZeroCopyDeadEndpointRemoveError {}
-
 pub const DEFAULT_BUFFER_SIZE: usize = 4;
 pub const DEFAULT_ENABLE_SAFE_OVERFLOW: bool = false;
 pub const DEFAULT_MAX_BORROWED_SAMPLES: usize = 4;

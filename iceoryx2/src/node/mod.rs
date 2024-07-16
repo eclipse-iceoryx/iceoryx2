@@ -138,9 +138,11 @@ use iceoryx2_cal::named_concept::{NamedConceptPathHintRemoveError, NamedConceptR
 use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::marker::PhantomData;
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -373,6 +375,17 @@ impl<Service: service::Service> DeadNodeView<Service> {
         }
         let cleaner = cleaner.unwrap();
 
+        // The cleaner guarantees that the lock can be acquired only once in the inter-process context.
+        // But the same process could acquire the same cleaner multiple times. To avoid intra-process
+        // races an additional lock is introduced so that only one thread can call
+        // remove_stale_resources.
+        static IN_CLEANUP_SECTION: IoxAtomicBool = IoxAtomicBool::new(false);
+
+        // if swap returns true, someone else is holding the lock
+        if IN_CLEANUP_SECTION.swap(true, Ordering::Relaxed) {
+            return Ok(false);
+        }
+
         let remove_node_from_service = |service_uuid: &FileName| {
             if Service::__internal_remove_node_from_service(self.id(), service_uuid, config).is_ok()
             {
@@ -389,6 +402,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         match Node::<Service>::service_tags(config, self.id(), remove_node_from_service) {
             Ok(()) => (),
             Err(e) => {
+                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 cleaner.abandon();
                 fail!(from self, with NodeCleanupFailure::InsufficientPermissions,
                     "{} since the service tags could not be read ({:?}).", msg, e);
@@ -396,8 +410,12 @@ impl<Service: service::Service> DeadNodeView<Service> {
         };
 
         match remove_node::<Service>(*self.id(), config) {
-            Ok(_) => Ok(true),
+            Ok(_) => {
+                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
+                Ok(true)
+            }
             Err(e) => {
+                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 cleaner.abandon();
                 fail!(from self, with e, "{} since the node itself could not be removed.", msg);
             }
