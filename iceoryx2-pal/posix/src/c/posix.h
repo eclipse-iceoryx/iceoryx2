@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#ifndef IOX2_PAL_POSIX_H
+#define IOX2_PAL_POSIX_H
+
 #ifdef __FreeBSD__
 #include <mqueue.h>
 #if defined(IOX2_ACL_SUPPORT) && !defined(IOX2_DOCS_RS_SUPPORT)
@@ -145,3 +148,5 @@ struct iox2_sigaction {
     int iox2_sa_flags;
 };
 #endif
+
+#endif // IOX2_PAL_POSIX_H

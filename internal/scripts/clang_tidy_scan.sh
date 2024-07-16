@@ -23,8 +23,7 @@ COLOR_GREEN='\033[1;32m'
 COLOR_YELLOW='\033[1;33m'
 
 DIRECTORIES_TO_SCAN="iceoryx2* examples benchmarks"
-FILE_FILTER="\.(hpp|inl|cpp)$"
-# FILE_FILTER="\.(h|hh|hpp|hxx|inl|c|cc|cpp|cxx)$"
+FILE_FILTER="\.(h|hh|hpp|hxx|inl|c|cc|cpp|cxx)$"
 FILES_TO_SCAN=""
 WARN_MODE_PARAM=""
 
