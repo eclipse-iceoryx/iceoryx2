@@ -22,10 +22,10 @@ use crate::{
         win32_handle_translator::{FdHandleEntry, HandleTranslator},
     },
     win32call,
-    windows::win32_udp_port_to_uds_name::MAX_UDS_NAME_LEN,
 };
 use core::sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use iceoryx2_pal_configuration::PATH_LENGTH;
 use windows_sys::Win32::{
     Foundation::{
         ERROR_ALREADY_EXISTS, ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, ERROR_PATH_NOT_FOUND,
@@ -75,10 +75,8 @@ pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> i
         let entry_ptr: *mut dirent = posix::malloc(core::mem::size_of::<dirent>()) as *mut dirent;
         let entry = &mut *entry_ptr;
 
-        entry.d_name[..file.len()].copy_from_slice(core::mem::transmute::<
-            &[u8; MAX_UDS_NAME_LEN],
-            &[i8; MAX_UDS_NAME_LEN],
-        >(file));
+        entry.d_name[..file.len()]
+            .copy_from_slice(core::mem::transmute::<&[u8; PATH_LENGTH], &[i8; PATH_LENGTH]>(file));
 
         temp_namelist.push(entry_ptr);
         number_of_files += 1;

@@ -19,6 +19,7 @@ mod node_death_tests {
     use iceoryx2::node::{CleanupState, NodeState};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
+    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
@@ -197,6 +198,7 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_removed_from_event_service<S: Test>() {
+        set_log_level(LogLevel::Error);
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
