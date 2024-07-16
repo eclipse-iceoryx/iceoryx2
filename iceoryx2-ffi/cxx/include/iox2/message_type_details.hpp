@@ -13,8 +13,10 @@
 #ifndef IOX2_MESSAGE_TYPE_DETAILS_HPP
 #define IOX2_MESSAGE_TYPE_DETAILS_HPP
 
+#include "iox/string.hpp"
+#include "iox2/iceoryx2_settings.hpp"
+
 #include <cstdint>
-#include <string>
 
 namespace iox2 {
 /// Defines if the type is a slice with a runtime-size
@@ -33,7 +35,7 @@ struct TypeDetail {
     /// The [`TypeVariant`] of the type
     TypeVariant variant;
     /// Contains the output of [`core::any::type_name()`].
-    std::string type_name;
+    iox::string<MAX_TYPENAME_LENGTH> type_name;
     /// The size of the underlying type.
     uint64_t size;
     /// The alignment of the underlying type.

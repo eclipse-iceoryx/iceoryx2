@@ -41,6 +41,14 @@ enum class NodeEvent : uint8_t {
 template <ServiceType T>
 class Node {
   public:
+    Node() = default;
+    Node(Node&&) = default;
+    auto operator=(Node&&) -> Node& = default;
+    ~Node() = default;
+
+    Node(const Node&) = delete;
+    auto operator=(const Node&) -> Node& = delete;
+
     auto name() const -> NodeName& {
         IOX_TODO();
     }

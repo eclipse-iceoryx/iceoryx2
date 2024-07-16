@@ -19,6 +19,8 @@
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
+#include "iox/string.hpp"
+#include "iox2/iceoryx2_settings.hpp"
 #include "node_failure_enums.hpp"
 #include "node_state.hpp"
 #include "port_factory_listener.hpp"
@@ -31,10 +33,18 @@ namespace iox2 {
 template <ServiceType S>
 class PortFactoryEvent {
   public:
+    PortFactoryEvent() = default;
+    PortFactoryEvent(PortFactoryEvent&&) = default;
+    auto operator=(PortFactoryEvent&&) -> PortFactoryEvent& = default;
+    ~PortFactoryEvent() = default;
+
+    PortFactoryEvent(const PortFactoryEvent&) = delete;
+    auto operator=(const PortFactoryEvent&) -> PortFactoryEvent& = delete;
+
     auto service_name() const -> const ServiceName& {
         IOX_TODO();
     }
-    auto uuid() const -> const std::string& {
+    auto uuid() const -> iox::string<SERVICE_ID_LENGTH> {
         IOX_TODO();
     }
     auto attributes() const -> const AttributeSet& {

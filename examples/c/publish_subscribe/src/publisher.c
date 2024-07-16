@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/iceoryx2.h"
+
 #include <stdint.h>
 #include <stdio.h>
-
-#include "iox2/iceoryx2.h"
 
 int main(void) {
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);

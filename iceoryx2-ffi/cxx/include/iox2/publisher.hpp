@@ -63,6 +63,14 @@ enum class PublisherLoanError : uint8_t {
 template <ServiceType S, typename Payload, typename UserHeader>
 class Publisher {
   public:
+    Publisher() = default;
+    Publisher(Publisher&&) = default;
+    auto operator=(Publisher&&) -> Publisher& = default;
+    ~Publisher() = default;
+
+    Publisher(const Publisher&) = delete;
+    auto operator=(const Publisher&) -> Publisher& = delete;
+
     auto id() const -> UniquePublisherId {
         IOX_TODO();
     }

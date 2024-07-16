@@ -15,29 +15,29 @@
 
 #include "attribute_set.hpp"
 #include "iox/assertions_addendum.hpp"
-
-#include <iox/expected.hpp>
-#include <string>
-#include <vector>
+#include "iox/expected.hpp"
+#include "iox/vector.hpp"
+#include "iox2/attribute.hpp"
+#include "iox2/iceoryx2_settings.hpp"
 
 namespace iox2 {
 class AttributeVerifier {
   public:
     AttributeVerifier() = default;
-    auto require(const std::string& key, const std::string& value) -> AttributeVerifier& {
+    auto require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier& {
         IOX_TODO();
     }
-    auto require_key(const std::string& key) -> AttributeVerifier& {
+    auto require_key(const Attribute::Key& key) -> AttributeVerifier& {
         IOX_TODO();
     }
     auto attributes() const -> const AttributeSet& {
         IOX_TODO();
     }
-    auto keys() const -> std::vector<std::string> {
+    auto keys() const -> iox::vector<Attribute::Key, MAX_ATTRIBUTES_PER_SERVICE> {
         IOX_TODO();
     }
 
-    auto verify_requirements(const AttributeSet& rhs) const -> iox::expected<void, std::string> {
+    auto verify_requirements(const AttributeSet& rhs) const -> iox::expected<void, Attribute::Key> {
         IOX_TODO();
     }
 };

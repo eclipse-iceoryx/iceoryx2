@@ -19,7 +19,7 @@
 
 auto main() -> int {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
     auto incompatible_service =
         node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))

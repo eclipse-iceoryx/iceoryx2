@@ -42,6 +42,14 @@ enum class NotifierNotifyError : uint8_t {
 template <ServiceType S>
 class Notifier {
   public:
+    Notifier() = default;
+    Notifier(Notifier&&) = default;
+    auto operator=(Notifier&&) -> Notifier& = default;
+    ~Notifier() = default;
+
+    Notifier(const Notifier&) = delete;
+    auto operator=(const Notifier&) -> Notifier& = delete;
+
     auto id() const -> UniqueNotifierId {
         IOX_TODO();
     }

@@ -19,7 +19,7 @@ auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStri
     IOX_TODO();
 }
 
-auto NodeName::as_string() const -> const std::string& {
+auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGHT> {
     IOX_TODO();
 }
 

@@ -25,6 +25,7 @@ class EventId {
         : m_value { value } {
         IOX_TODO();
     }
+
     auto as_value() const -> uint64_t {
         return m_value;
     }

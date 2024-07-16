@@ -14,16 +14,21 @@
 #define IOX2_ATTRIBUTE_HPP
 
 #include "iox/assertions_addendum.hpp"
+#include "iox/string.hpp"
+#include "iox2/iceoryx2_settings.hpp"
 
 #include <string>
 
 namespace iox2 {
 class Attribute {
   public:
-    auto key() const -> const std::string& {
+    using Key = iox::string<ATTRIBUTE_KEY_LENGTH>;
+    using Value = iox::string<ATTRIBUTE_VALUE_LENGTH>;
+
+    auto key() const -> Key {
         IOX_TODO();
     }
-    auto value() const -> const std::string& {
+    auto value() const -> Value {
         IOX_TODO();
     }
 };

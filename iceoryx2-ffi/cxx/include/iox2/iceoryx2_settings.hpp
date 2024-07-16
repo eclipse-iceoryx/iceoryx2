@@ -10,28 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_BUILDER_HPP
-#define IOX2_SERVICE_BUILDER_HPP
+#ifndef IOX2_ICEORYX2_SETTINGS_HPP
+#define IOX2_ICEORYX2_SETTINGS_HPP
 
-#include "iox/assertions_addendum.hpp"
-#include "service_builder_event.hpp"
-#include "service_builder_publish_subscribe.hpp"
-#include "service_type.hpp"
+#include <cstdint>
 
 namespace iox2 {
-
-template <ServiceType S>
-class ServiceBuilder {
-  public:
-    template <typename Payload>
-    auto publish_subscribe() -> ServiceBuilderPublishSubscribe<Payload, void, S>&& {
-        IOX_TODO();
-    }
-
-    auto event() -> ServiceBuilderEvent<S>&& {
-        IOX_TODO();
-    }
-};
-
+constexpr uint64_t NODE_NAME_LENGHT = 128;
+constexpr uint64_t SERVICE_NAME_LENGTH = 256;
+constexpr uint64_t SERVICE_ID_LENGTH = 32;
+constexpr uint64_t ATTRIBUTE_KEY_LENGTH = 64;
+constexpr uint64_t ATTRIBUTE_VALUE_LENGTH = 128;
+constexpr uint64_t MAX_ATTRIBUTES_PER_SERVICE = 16;
+constexpr uint64_t MAX_VALUES_PER_ATTRIBUTE_KEY = 8;
+constexpr uint64_t MAX_TYPENAME_LENGTH = 256;
 } // namespace iox2
+
 #endif

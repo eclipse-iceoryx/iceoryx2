@@ -19,6 +19,8 @@
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
+#include "iox/string.hpp"
+#include "iox2/iceoryx2_settings.hpp"
 #include "node_failure_enums.hpp"
 #include "node_state.hpp"
 #include "port_factory_publisher.hpp"
@@ -27,16 +29,22 @@
 #include "service_type.hpp"
 #include "static_config_publish_subscribe.hpp"
 
-#include <string>
-
 namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublishSubscribe {
   public:
+    PortFactoryPublishSubscribe() = default;
+    PortFactoryPublishSubscribe(PortFactoryPublishSubscribe&&) = default;
+    auto operator=(PortFactoryPublishSubscribe&&) -> PortFactoryPublishSubscribe& = default;
+    ~PortFactoryPublishSubscribe() = default;
+
+    PortFactoryPublishSubscribe(const PortFactoryPublishSubscribe&) = delete;
+    auto operator=(const PortFactoryPublishSubscribe&) -> PortFactoryPublishSubscribe& = delete;
+
     auto service_name() const -> const ServiceName& {
         IOX_TODO();
     }
-    auto uuid() const -> const std::string& {
+    auto uuid() const -> iox::string<SERVICE_ID_LENGTH> {
         IOX_TODO();
     }
     auto attributes() const -> const AttributeSet& {

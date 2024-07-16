@@ -15,6 +15,8 @@
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
+#include "iox/string.hpp"
+#include "iox2/iceoryx2_settings.hpp"
 #include "semantic_string.hpp"
 
 namespace iox2 {
@@ -24,7 +26,7 @@ class ServiceName {
     static auto create(const char* value) -> iox::expected<ServiceName, SemanticStringError> {
         IOX_TODO();
     }
-    auto as_string() const -> const std::string& {
+    auto to_string() const -> iox::string<SERVICE_NAME_LENGTH> {
         IOX_TODO();
     }
 };

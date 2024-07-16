@@ -42,6 +42,14 @@ enum class SubscriberCreateError : uint8_t {
 template <ServiceType S, typename Payload, typename UserHeader>
 class Subscriber {
   public:
+    Subscriber() = default;
+    Subscriber(Subscriber&&) = default;
+    auto operator=(Subscriber&&) -> Subscriber& = default;
+    ~Subscriber() = default;
+
+    Subscriber(const Subscriber&) = delete;
+    auto operator=(const Subscriber&) -> Subscriber& = delete;
+
     auto id() const -> UniqueSubscriberId {
         IOX_TODO();
     }

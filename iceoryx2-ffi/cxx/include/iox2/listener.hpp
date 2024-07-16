@@ -46,6 +46,14 @@ enum class ListenerWaitError : uint8_t {
 template <ServiceType>
 class Listener {
   public:
+    Listener() = default;
+    Listener(Listener&&) = default;
+    auto operator=(Listener&&) -> Listener& = default;
+    ~Listener() = default;
+
+    Listener(const Listener&) = delete;
+    auto operator=(const Listener&) -> Listener& = delete;
+
     auto id() const -> UniqueListenerId {
         IOX_TODO();
     }

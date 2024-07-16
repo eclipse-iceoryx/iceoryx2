@@ -21,7 +21,7 @@ constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1)
 
 auto main() -> int {
     using namespace iox2;
-    auto node = NodeBuilder().template create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
     auto service = node.service_builder(ServiceName::create("MyEventName").expect("valid service name"))
                        .event()
