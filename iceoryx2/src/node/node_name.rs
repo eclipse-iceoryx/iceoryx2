@@ -21,6 +21,8 @@ pub struct NodeName {
 
 impl NodeName {
     /// Creates a new [`NodeName`].
+    /// If the provided name does not contain a valid [`NodeName`] it will return a
+    /// [`SemanticStringError`] otherwise the [`NodeName`].
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
         Ok(Self { value: name.into() })
     }

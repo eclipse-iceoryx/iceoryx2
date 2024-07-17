@@ -10,13 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/node.hpp"
+#include "iox2/node_name.hpp"
 
 #include "test.hpp"
 
 namespace {
 
-TEST(Node, CreatingNodeWorks) {
+TEST(Node, valid_node_name_can_be_created) {
     ASSERT_THAT(true, Eq(true));
 }
 
