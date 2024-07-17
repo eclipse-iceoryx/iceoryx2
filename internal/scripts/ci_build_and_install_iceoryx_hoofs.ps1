@@ -37,11 +37,11 @@ switch ($mode) {
 switch ($toolchain) {
     "stable-gnu" {
         if ($?) { Write-Host "## Using the MinGW toolchain" }
-        if ($?) { cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -G "MinGW Makefiles" }
+        if ($?) { cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -G "MinGW Makefiles" }
     }
     default {
         if ($?) { Write-Host "## Using the MSVC toolchain" }
-        if ($?) { cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_CXX_FLAGS="/MP" }
+        if ($?) { cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_CXX_FLAGS="/MP" }
     }
 }
 
@@ -51,10 +51,10 @@ if ($?) { cmake --install target/iceoryx/build/platform $CMAKE_BUILD_CONFIG }
 
 switch ($toolchain) {
     "stable-gnu" {
-        if ($?) { cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$pwd/target/iceoryx/install" -G "MinGW Makefiles" }
+        if ($?) { cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$pwd/target/iceoryx/install" -G "MinGW Makefiles" }
     }
     default {
-        if ($?) { cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$pwd/target/iceoryx/install" -DCMAKE_CXX_FLAGS="/MP" }
+        if ($?) { cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$pwd/target/iceoryx/install" -DCMAKE_CXX_FLAGS="/MP" }
     }
 }
 
