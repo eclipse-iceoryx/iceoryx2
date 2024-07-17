@@ -299,16 +299,12 @@ pub unsafe extern "C" fn iox2_node_list(
     }
 }
 
-#[no_mangle]
-pub extern "C" fn iox2_service_name_new() {
-    todo!() // TODO: [#210] implement
-}
 /// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.
 ///
 /// # Safety
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
-/// * The `service_name_handle` must be valid and obtained by [`iox2_service_name_new`]!
+/// * The `service_name_handle` must be valid and obtained by [`iox2_service_name_new`](crate::iox2_service_name_new)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_service_builder(
     node_handle: iox2_node_h,

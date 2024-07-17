@@ -14,4 +14,3 @@
 
 pub struct iox2_service_builder_t {} // TODO: [#210] implement
 pub type iox2_service_builder_h = *mut (); // TODO: [#210] implement
-pub type iox2_service_name_h = *mut (); // TODO: [#210] implement
