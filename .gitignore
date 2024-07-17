@@ -1,8 +1,14 @@
 target/
 debug/
+.cache
+.idea
+build
 
 Cargo.lock
 **/*.rs.bk
 *.pdb
 **/rusty-tags.vi
 **/*.png
+**/Doxyfile*
+**/compile_commands.json
+

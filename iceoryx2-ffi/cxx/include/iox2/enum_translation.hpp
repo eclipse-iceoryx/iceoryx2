@@ -21,8 +21,8 @@
 namespace iox {
 template <>
 constexpr auto from<iox2_semantic_string_error_e, iox2::SemanticStringError>(
-    const iox2_semantic_string_error_e origin) noexcept -> iox2::SemanticStringError {
-    switch (origin) {
+    const iox2_semantic_string_error_e value) noexcept -> iox2::SemanticStringError {
+    switch (value) {
     case iox2_semantic_string_error_e_INVALID_CONTENT:
         return iox2::SemanticStringError::InvalidContent;
     case iox2_semantic_string_error_e_EXCEEDS_MAXIMUM_LENGTH:

@@ -13,6 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_semantic_string_error_e, HandleToType, IntoCInt, IOX2_OK};
+use crate::c_size_t;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
@@ -20,9 +21,6 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::{slice, str};
-
-// TODO: c_size_t is currently only available in nightly and defined like:
-pub type c_size_t = usize;
 
 // BEGIN type definition
 
@@ -113,7 +111,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
         (*node_name_struct_ptr).deleter = deleter;
     }
 
-    let node_name = slice::from_raw_parts(node_name_str as _, node_name_len as usize);
+    let node_name = slice::from_raw_parts(node_name_str as _, node_name_len as _);
 
     let node_name = if let Ok(node_name) = str::from_utf8(node_name) {
         node_name

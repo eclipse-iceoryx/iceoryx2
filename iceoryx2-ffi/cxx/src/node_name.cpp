@@ -36,13 +36,13 @@ auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStri
         static_cast<iox2_semantic_string_error_e>(ret_val)));
 }
 
-auto NodeName::as_c_str() const -> const char* const {
-    auto ptr = iox2_cast_node_name_ptr(m_handle);
+auto NodeName::as_c_str() const -> const char* {
+    const auto* ptr = iox2_cast_node_name_ptr(m_handle);
     return iox2_node_name_as_c_str(ptr, nullptr);
 }
 
 auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGTH> {
-    return iox::string<NODE_NAME_LENGTH>(iox::TruncateToCapacity, as_c_str());
+    return { iox::TruncateToCapacity, as_c_str() };
 }
 
 } // namespace iox2

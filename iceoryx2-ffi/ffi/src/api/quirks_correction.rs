@@ -12,10 +12,14 @@
 
 #![allow(non_camel_case_types)]
 
+// TODO: c_size_t is currently only available in nightly and defined like:
+pub type c_size_t = usize;
+
 use crate::iox2_semantic_string_error_e;
 
 #[doc(hidden)]
 #[no_mangle]
+// TODO: iox2_semantic_string_error_e is only exported when it is actually used by some function
 pub unsafe extern "C" fn __iox2_internal_semantic_string_error_stub() -> iox2_semantic_string_error_e
 {
     iox2_semantic_string_error_e::INVALID_CONTENT
