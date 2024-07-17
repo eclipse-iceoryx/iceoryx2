@@ -111,7 +111,7 @@ pub unsafe extern "C" fn iox2_service_name_new(
         (*service_name_struct_ptr).deleter = deleter;
     }
 
-    let service_name = slice::from_raw_parts(service_name_str as _, service_name_len as usize);
+    let service_name = slice::from_raw_parts(service_name_str as _, service_name_len as _);
 
     let service_name = if let Ok(service_name) = str::from_utf8(service_name) {
         service_name
