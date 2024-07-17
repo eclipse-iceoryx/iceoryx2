@@ -13,6 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_semantic_string_error_e, HandleToType, IntoCInt, IOX2_OK};
+use crate::c_size_t;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
@@ -89,7 +90,7 @@ impl HandleToType for iox2_service_name_ref_h {
 pub unsafe extern "C" fn iox2_service_name_new(
     service_name_struct_ptr: *mut iox2_service_name_t,
     service_name_str: *const c_char,
-    service_name_len: c_int,
+    service_name_len: c_size_t,
     service_name_handle_ptr: *mut iox2_service_name_h,
 ) -> c_int {
     debug_assert!(!service_name_str.is_null());
@@ -172,7 +173,7 @@ pub unsafe extern "C" fn iox2_cast_service_name_ptr(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_name_as_c_str(
     service_name_ptr: iox2_service_name_ptr,
-    service_name_len: *mut c_int,
+    service_name_len: *mut c_size_t,
 ) -> *const c_char {
     debug_assert!(!service_name_ptr.is_null());
 

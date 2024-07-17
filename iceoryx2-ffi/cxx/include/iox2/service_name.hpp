@@ -13,22 +13,23 @@
 #ifndef IOX2_SERVICE_NAME_HPP
 #define IOX2_SERVICE_NAME_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/string.hpp"
 #include "iox2/iceoryx2_settings.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "semantic_string.hpp"
 
 namespace iox2 {
 
 class ServiceName {
   public:
-    static auto create(const char* value) -> iox::expected<ServiceName, SemanticStringError> {
-        IOX_TODO();
-    }
-    auto to_string() const -> iox::string<SERVICE_NAME_LENGTH> {
-        IOX_TODO();
-    }
+    static auto create(const char* value) -> iox::expected<ServiceName, SemanticStringError>;
+    auto to_string() const -> iox::string<SERVICE_NAME_LENGTH>;
+
+  private:
+    explicit ServiceName(iox2_service_name_h handle);
+
+    iox2_service_name_h m_handle;
 };
 
 } // namespace iox2
