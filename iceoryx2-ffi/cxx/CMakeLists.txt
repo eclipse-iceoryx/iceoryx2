@@ -69,7 +69,7 @@ set_target_properties(static-lib-cxx
 target_link_libraries(static-lib-cxx
     PUBLIC
     iceoryx_hoofs::iceoryx_hoofs
-    iceoryx2-c::shared-lib
+    iceoryx2-c::static-lib
     iceoryx2-cxx::includes-only-cxx
 )
 

@@ -16,7 +16,12 @@
 #include <cstdint>
 
 namespace iox2 {
+/// @brief Failures that can occur when a [`SemanticString`] is created or modified
 enum class SemanticStringError : uint8_t {
+    /// @brief The modification would lead to a [`SemanticString`] with invalid content.
+    InvalidContent,
+    /// @brief The added content would exceed the maximum capacity of the [`SemanticString`]
+    ExceedsMaximumLength
 };
 } // namespace iox2
 

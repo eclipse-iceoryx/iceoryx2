@@ -10,14 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/node.hpp"
+#![allow(non_camel_case_types)]
 
-#include "test.hpp"
+// TODO: c_size_t is currently only available in nightly and defined like:
+pub type c_size_t = usize;
 
-namespace {
+use crate::iox2_semantic_string_error_e;
 
-TEST(Node, CreatingNodeWorks) {
-    ASSERT_THAT(true, Eq(true));
+#[doc(hidden)]
+#[no_mangle]
+// TODO: iox2_semantic_string_error_e is only exported when it is actually used by some function
+pub unsafe extern "C" fn __iox2_internal_semantic_string_error_stub() -> iox2_semantic_string_error_e
+{
+    iox2_semantic_string_error_e::INVALID_CONTENT
 }
-
-} // namespace

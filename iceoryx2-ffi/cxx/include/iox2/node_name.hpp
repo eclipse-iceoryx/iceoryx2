@@ -20,14 +20,21 @@
 #include "semantic_string.hpp"
 
 namespace iox2 {
+/// Represent the name for a [`Node`].
 class NodeName {
   public:
+    /// Creates a new [`NodeName`].
+    /// If the provided name does not contain a valid [`NodeName`] it will return a
+    /// [`SemanticStringError`] otherwise the [`NodeName`].
     static auto create(const char* value) -> iox::expected<NodeName, SemanticStringError>;
 
-    auto to_string() const -> iox::string<NODE_NAME_LENGHT>;
+    /// Returns a [`iox::string`] containing the [`NodeName`].
+    auto to_string() const -> iox::string<NODE_NAME_LENGTH>;
 
   private:
-    iox2_node_name_storage_t m_value;
+    explicit NodeName(iox2_node_name_h handle);
+
+    iox2_node_name_h m_handle;
 };
 } // namespace iox2
 
