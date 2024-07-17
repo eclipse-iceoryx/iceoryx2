@@ -21,9 +21,13 @@
 
 namespace iox2 {
 
+/// The name of a [`Service`].
 class ServiceName {
   public:
+    /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
     static auto create(const char* value) -> iox::expected<ServiceName, SemanticStringError>;
+
+    /// Returns a [`iox::string`] containing the [`ServiceName`].
     auto to_string() const -> iox::string<SERVICE_NAME_LENGTH>;
 
   private:
