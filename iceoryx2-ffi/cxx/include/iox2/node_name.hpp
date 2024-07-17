@@ -38,6 +38,7 @@ class NodeName {
     auto to_string() const -> iox::string<NODE_NAME_LENGTH>;
 
   private:
+    friend class NodeBuilder;
     explicit NodeName(iox2_node_name_h handle);
     void drop() noexcept;
 

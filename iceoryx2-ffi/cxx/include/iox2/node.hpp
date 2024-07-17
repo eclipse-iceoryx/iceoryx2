@@ -41,7 +41,6 @@ enum class NodeEvent : uint8_t {
 template <ServiceType T>
 class Node {
   public:
-    Node() = default;
     Node(Node&&) = default;
     auto operator=(Node&&) -> Node& = default;
     ~Node() = default;
@@ -68,7 +67,11 @@ class Node {
     }
 
   private:
+    explicit Node(iox2_node_h handle);
+
     friend class NodeBuilder;
+
+    iox2_node_h m_handle;
 };
 
 class NodeBuilder {
@@ -76,14 +79,19 @@ class NodeBuilder {
     IOX_BUILDER_OPTIONAL(Config, config);
 
   public:
-    NodeBuilder() {
-        IOX_TODO();
-    }
+    NodeBuilder();
+    NodeBuilder(NodeBuilder&&) = default;
+    auto operator=(NodeBuilder&&) -> NodeBuilder& = default;
+    ~NodeBuilder() = default;
+
+    NodeBuilder(const NodeBuilder&) = delete;
+    auto operator=(const NodeBuilder&) -> NodeBuilder& = delete;
 
     template <ServiceType T>
-    auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure> {
-        IOX_TODO();
-    }
+    auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure>;
+
+  private:
+    iox2_node_builder_h m_handle;
 };
 } // namespace iox2
 
