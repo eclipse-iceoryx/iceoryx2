@@ -42,8 +42,7 @@ auto NodeBuilder::create() const&& -> iox::expected<Node<T>, NodeCreationFailure
         return iox::ok(Node<T> { node_handle });
     }
 
-    return iox::err(iox::from<iox2_node_creation_failure_e, NodeCreationFailure>(
-        static_cast<iox2_node_creation_failure_e>(ret_val)));
+    return iox::err(iox::into<NodeCreationFailure>(ret_val));
 }
 
 template class Node<ServiceType::Ipc>;
