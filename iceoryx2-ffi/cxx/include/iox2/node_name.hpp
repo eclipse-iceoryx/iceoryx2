@@ -31,9 +31,6 @@ class NodeName {
     /// Returns a [`iox::string`] containing the [`NodeName`].
     auto to_string() const -> iox::string<NODE_NAME_LENGTH>;
 
-    /// Returns a pointer to the [`NodeName`] string
-    auto as_c_str() const -> const char*;
-
   private:
     explicit NodeName(iox2_node_name_h handle);
 

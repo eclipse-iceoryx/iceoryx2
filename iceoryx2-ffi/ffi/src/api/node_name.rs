@@ -173,7 +173,7 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name_as_c_str(
     node_name_ptr: iox2_node_name_ptr,
-    node_name_len: *mut c_int,
+    node_name_len: *mut c_size_t,
 ) -> *const c_char {
     debug_assert!(!node_name_ptr.is_null());
 

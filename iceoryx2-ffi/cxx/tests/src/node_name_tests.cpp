@@ -23,7 +23,6 @@ TEST(Node, valid_node_name_can_be_created) {
 
     ASSERT_THAT(sut.has_value(), Eq(true));
 
-    ASSERT_THAT(sut->as_c_str(), StrEq(valid_name));
     ASSERT_THAT(sut->to_string().c_str(), StrEq(valid_name));
 }
 
