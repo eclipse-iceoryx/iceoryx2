@@ -13,6 +13,7 @@
 mod node_builder_tests;
 mod node_name_tests;
 mod node_tests;
+mod service_name_tests;
 
 use crate::*;
 use iceoryx2::prelude::*;

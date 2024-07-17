@@ -25,6 +25,7 @@ mod node_name;
 mod publisher;
 mod service;
 mod service_builder;
+mod service_name;
 mod subscriber;
 
 pub use config::*;
@@ -34,6 +35,7 @@ pub use node_name::*;
 pub use publisher::*;
 pub use service::*;
 pub use service_builder::*;
+pub use service_name::*;
 pub use subscriber::*;
 
 /// This constant signals an successful function call
