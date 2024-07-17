@@ -24,6 +24,12 @@ namespace iox2 {
 /// The name of a [`Service`].
 class ServiceName {
   public:
+    ServiceName(ServiceName&&) noexcept;
+    auto operator=(ServiceName&&) noexcept -> ServiceName&;
+    ServiceName(const ServiceName&);
+    auto operator=(const ServiceName&) -> ServiceName&;
+    ~ServiceName();
+
     /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
     static auto create(const char* value) -> iox::expected<ServiceName, SemanticStringError>;
 
@@ -32,6 +38,7 @@ class ServiceName {
 
   private:
     explicit ServiceName(iox2_service_name_h handle);
+    void drop() noexcept;
 
     iox2_service_name_h m_handle;
 };

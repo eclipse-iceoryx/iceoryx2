@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/service_name.hpp"
+#include "iox/assertions.hpp"
 #include "iox/into.hpp"
 
 #include <cstring>
@@ -18,6 +19,51 @@
 namespace iox2 {
 ServiceName::ServiceName(iox2_service_name_h handle)
     : m_handle { handle } {
+}
+
+ServiceName::~ServiceName() {
+    iox2_service_name_drop(m_handle);
+}
+
+ServiceName::ServiceName(ServiceName&& rhs) noexcept
+    : m_handle { std::move(rhs.m_handle) } {
+    rhs.m_handle = nullptr;
+}
+
+auto ServiceName::operator=(ServiceName&& rhs) noexcept -> ServiceName& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+ServiceName::ServiceName(const ServiceName& rhs)
+    : m_handle { nullptr } {
+    auto value = rhs.to_string();
+    IOX_ASSERT(iox2_service_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
+               "ServiceName shall always contain a valid value.");
+}
+
+auto ServiceName::operator=(const ServiceName& rhs) -> ServiceName& {
+    if (this != &rhs) {
+        drop();
+
+        auto value = rhs.to_string();
+        IOX_ASSERT(iox2_service_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
+                   "ServiceName shall always contain a valid value.");
+    }
+
+    return *this;
+}
+
+void ServiceName::drop() noexcept {
+    if (m_handle != nullptr) {
+        iox2_service_name_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 auto ServiceName::create(const char* value) -> iox::expected<ServiceName, SemanticStringError> {
