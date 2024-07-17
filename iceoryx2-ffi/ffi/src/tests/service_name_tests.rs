@@ -17,7 +17,7 @@ use core::{slice, str};
 #[test]
 fn basic_service_name_test() -> Result<(), Box<dyn std::error::Error>> {
     unsafe {
-        let expected_service_name = NodeName::new("all/glory/to/hypnotaod")?;
+        let expected_service_name = ServiceName::new("all/glory/to/hypnotaod")?;
 
         let mut service_name_handle: iox2_service_name_h = std::ptr::null_mut();
         let ret_val = iox2_service_name_new(

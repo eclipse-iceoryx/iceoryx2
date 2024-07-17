@@ -14,8 +14,8 @@
 
 use crate::api::{
     iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr, iox2_service_builder_h,
-    iox2_service_builder_t, iox2_service_name_h, iox2_service_type_e, HandleToType, IntoCInt,
-    IOX2_OK,
+    iox2_service_builder_t, iox2_service_name_ptr, iox2_service_type_e, HandleToType, IntoCInt,
+    ServiceBuilderUnion, IOX2_OK,
 };
 
 use iceoryx2::node::{NodeId, NodeListFailure, NodeView};
@@ -97,9 +97,9 @@ pub struct iox2_name_h_t;
 /// The owning handle for `iox2_node_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_node_h = *mut iox2_name_h_t;
 
-pub struct iox2_noderef_h_t;
+pub struct iox2_node_ref_h_t;
 /// The non-owning handle for `iox2_node_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_node_ref_h = *mut iox2_noderef_h_t;
+pub type iox2_node_ref_h = *mut iox2_node_ref_h_t;
 
 impl HandleToType for iox2_node_h {
     type Target = *mut iox2_node_t;
@@ -157,6 +157,25 @@ pub type iox2_node_list_callback = extern "C" fn(
 // END type definition
 
 // BEGIN C API
+
+/// This function casts an owning [`iox2_node_h`] into a non-owning [`iox2_node_ref_h`]
+///
+/// # Arguments
+///
+/// * `node_handle` obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)
+///
+/// Returns a [`iox2_node_ref_h`]
+///
+/// # Safety
+///
+/// * The `node_handle` must be a valid handle.
+/// * The `node_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_node_ref_h(node_handle: iox2_node_h) -> iox2_node_ref_h {
+    debug_assert!(!node_handle.is_null());
+
+    (*node_handle.as_type()).as_ref_handle()
+}
 
 /// Returns the [`iox2_node_name_ptr`](crate::iox2_node_name_ptr), an immutable pointer to the node name.
 ///
@@ -301,19 +320,60 @@ pub unsafe extern "C" fn iox2_node_list(
 
 /// Instantiates a [`iox2_service_builder_h`] for a service with the provided name.
 ///
+/// # Arguments
+///
+/// * `node_handle` - Must be a valid [`iox2_node_ref_h`] obtained by [`iox2_node_builder_create`] and casted by [`iox2_cast_node_ref_h`]
+/// * `service_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_service_builder_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `service_name_ptr` - Must be a valid [`iox2_service_name_ptr`] obtained by [`iox2_service_name_new`] and casted by [`iox2_cast_service_name_ptr`]
+///
+/// Returns the `iox2_service_builder_h` handle for the service builder.
+///
 /// # Safety
 ///
-/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
-/// * The `service_name_handle` must be valid and obtained by [`iox2_service_name_new`](crate::iox2_service_name_new)!
+/// * The `node_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_service_builder(
-    node_handle: iox2_node_h,
-    _service_builder: *mut iox2_service_builder_t,
-    service_name_handle: iox2_service_name_h,
+    node_handle: iox2_node_ref_h,
+    service_builder_struct_ptr: *mut iox2_service_builder_t,
+    service_name_ptr: iox2_service_name_ptr,
 ) -> iox2_service_builder_h {
     debug_assert!(!node_handle.is_null());
-    debug_assert!(!service_name_handle.is_null());
-    todo!() // TODO: [#210] implement
+    debug_assert!(!service_name_ptr.is_null());
+
+    let mut service_builder_struct_ptr = service_builder_struct_ptr;
+    fn no_op(_: *mut iox2_service_builder_t) {}
+    let mut deleter: fn(*mut iox2_service_builder_t) = no_op;
+    if service_builder_struct_ptr.is_null() {
+        service_builder_struct_ptr = iox2_service_builder_t::alloc();
+        deleter = iox2_service_builder_t::dealloc;
+    }
+    debug_assert!(!service_builder_struct_ptr.is_null());
+
+    let node = &mut *node_handle.as_type();
+    match node.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder = node.value.as_ref().ipc.service_builder(&*service_name_ptr);
+            (*service_builder_struct_ptr).init(
+                node.service_type,
+                ServiceBuilderUnion::new_ipc_base(service_builder),
+                deleter,
+            );
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder = node
+                .value
+                .as_ref()
+                .local
+                .service_builder(&*service_name_ptr);
+            (*service_builder_struct_ptr).init(
+                node.service_type,
+                ServiceBuilderUnion::new_local_base(service_builder),
+                deleter,
+            );
+        }
+    };
+
+    (*service_builder_struct_ptr).as_handle()
 }
 
 /// This function needs to be called to destroy the node!
