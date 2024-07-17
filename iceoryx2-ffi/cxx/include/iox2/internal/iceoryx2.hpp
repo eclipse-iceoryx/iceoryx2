@@ -17,4 +17,6 @@ extern "C" {
 #include <iox2/iceoryx2.h> // NOLINT
 }
 
+#include "iox2/enum_translation.hpp"
+
 #endif

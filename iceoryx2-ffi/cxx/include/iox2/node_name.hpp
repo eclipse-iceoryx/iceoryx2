@@ -24,10 +24,14 @@ class NodeName {
   public:
     static auto create(const char* value) -> iox::expected<NodeName, SemanticStringError>;
 
-    auto to_string() const -> iox::string<NODE_NAME_LENGHT>;
+    auto to_string() const -> iox::string<NODE_NAME_LENGTH>;
+
+    auto as_c_str() const -> const char* const;
 
   private:
-    iox2_node_name_storage_t m_value;
+    explicit NodeName(iox2_node_name_h handle);
+
+    iox2_node_name_h m_handle;
 };
 } // namespace iox2
 

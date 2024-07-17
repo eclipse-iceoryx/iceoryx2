@@ -16,7 +16,7 @@
 #include <cstdint>
 
 namespace iox2 {
-constexpr uint64_t NODE_NAME_LENGHT = 128;
+constexpr uint64_t NODE_NAME_LENGTH = 128;
 constexpr uint64_t SERVICE_NAME_LENGTH = 256;
 constexpr uint64_t SERVICE_ID_LENGTH = 32;
 constexpr uint64_t ATTRIBUTE_KEY_LENGTH = 64;

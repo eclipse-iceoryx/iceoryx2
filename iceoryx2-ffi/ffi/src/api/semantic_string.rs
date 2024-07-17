@@ -10,19 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SEMANTIC_STRING_HPP
-#define IOX2_SEMANTIC_STRING_HPP
+#![allow(non_camel_case_types)]
 
-#include <cstdint>
+use crate::iox2_semantic_string_error_e;
 
-namespace iox2 {
-/// @brief Failures that can occur when a [`SemanticString`] is created or modified
-enum class SemanticStringError : uint8_t {
-    /// @brief The modification would lead to a [`SemanticString`] with invalid content.
-    InvalidContent,
-    /// @brief The added content would exceed the maximum capacity of the [`SemanticString`]
-    ExceedsMaximumLength
-};
-} // namespace iox2
-
-#endif
+#[doc(hidden)]
+#[no_mangle]
+pub unsafe extern "C" fn __iox2_internal_semantic_string_error_stub() -> iox2_semantic_string_error_e
+{
+    iox2_semantic_string_error_e::INVALID_CONTENT
+}

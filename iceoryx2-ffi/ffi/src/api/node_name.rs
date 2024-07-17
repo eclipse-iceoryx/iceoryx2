@@ -21,6 +21,9 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 use core::ffi::{c_char, c_int};
 use core::{slice, str};
 
+// TODO: c_size_t is currently only available in nightly and defined like:
+pub type c_size_t = usize;
+
 // BEGIN type definition
 
 #[repr(C)]
@@ -89,7 +92,7 @@ impl HandleToType for iox2_node_name_ref_h {
 pub unsafe extern "C" fn iox2_node_name_new(
     node_name_struct_ptr: *mut iox2_node_name_t,
     node_name_str: *const c_char,
-    node_name_len: c_int,
+    node_name_len: c_size_t,
     node_name_handle_ptr: *mut iox2_node_name_h,
 ) -> c_int {
     debug_assert!(!node_name_str.is_null());

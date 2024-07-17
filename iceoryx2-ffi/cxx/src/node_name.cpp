@@ -11,16 +11,38 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/node_name.hpp"
+#include "iox/into.hpp"
 
-#include "iox/assertions_addendum.hpp"
+#include <cstring>
 
 namespace iox2 {
-auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStringError> {
-    IOX_TODO();
+NodeName::NodeName(iox2_node_name_h handle)
+    : m_handle { handle } {
 }
 
-auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGHT> {
-    IOX_TODO();
+auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStringError> {
+    iox2_node_name_h handle {};
+    auto value_len = strnlen(value, NODE_NAME_LENGTH + 1);
+    if (value_len == NODE_NAME_LENGTH + 1) {
+        return iox::err(SemanticStringError::ExceedsMaximumLength);
+    }
+
+    auto ret_val = iox2_node_name_new(nullptr, value, value_len, &handle);
+    if (ret_val == IOX2_OK) {
+        return iox::ok(NodeName { handle });
+    }
+
+    return iox::err(iox::from<iox2_semantic_string_error_e, SemanticStringError>(
+        static_cast<iox2_semantic_string_error_e>(ret_val)));
+}
+
+auto NodeName::as_c_str() const -> const char* const {
+    auto ptr = iox2_cast_node_name_ptr(m_handle);
+    return iox2_node_name_as_c_str(ptr, nullptr);
+}
+
+auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGTH> {
+    return iox::string<NODE_NAME_LENGTH>(iox::TruncateToCapacity, as_c_str());
 }
 
 } // namespace iox2
