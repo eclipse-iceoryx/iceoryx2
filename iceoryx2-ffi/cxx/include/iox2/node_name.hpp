@@ -39,8 +39,11 @@ class NodeName {
 
   private:
     friend class NodeBuilder;
+    template <ServiceType>
+    friend class Node;
     explicit NodeName(iox2_node_name_h handle);
     void drop() noexcept;
+    static auto create_impl(const char* value, size_t value_len) -> iox::expected<NodeName, SemanticStringError>;
 
     iox2_node_name_h m_handle;
 };

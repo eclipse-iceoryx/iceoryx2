@@ -17,6 +17,9 @@
 
 namespace iox2 {
 enum class NodeListFailure : uint8_t {
+    InsufficientPermissions,
+    InternalError,
+    Interrupt,
 };
 
 enum class NodeCreationFailure : uint8_t {

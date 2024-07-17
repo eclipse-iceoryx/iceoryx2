@@ -10,25 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_CONFIG_HPP
-#define IOX2_CONFIG_HPP
-
-#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/config.hpp"
 
 namespace iox2 {
-class ConfigRef {
-  private:
-    friend class Config;
-    template <ServiceType>
-    friend class Node;
-    explicit ConfigRef(iox2_config_ptr ptr);
-    iox2_config_ptr m_ptr;
-};
+ConfigRef::ConfigRef(iox2_config_ptr ptr)
+    : m_ptr { ptr } {
+}
 
-class Config {
-  public:
-    static auto global_config() -> ConfigRef;
-};
+auto Config::global_config() -> ConfigRef {
+    return ConfigRef { iox2_config_global_config() };
+}
 } // namespace iox2
-
-#endif

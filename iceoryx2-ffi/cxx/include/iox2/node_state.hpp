@@ -64,6 +64,8 @@ class NodeState {
     auto is_undefined(const iox::function<void(NodeId&)>& callback) -> NodeState& {
         IOX_TODO();
     }
+
+  private:
 };
 } // namespace iox2
 

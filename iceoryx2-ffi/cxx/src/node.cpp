@@ -19,6 +19,83 @@ Node<T>::Node(iox2_node_h handle)
     : m_handle { handle } {
 }
 
+template <ServiceType T>
+Node<T>::Node(Node&& rhs) noexcept
+    : m_handle { std::move(rhs.m_handle) } {
+    rhs.m_handle = nullptr;
+}
+
+template <ServiceType T>
+auto Node<T>::operator=(Node&& rhs) noexcept -> Node& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType T>
+Node<T>::~Node() {
+    drop();
+}
+
+template <ServiceType T>
+auto Node<T>::name() const -> NodeName {
+    const auto* const node_name_ptr = iox2_node_name(m_handle);
+    size_t name_len = 0;
+    const auto* const name_ptr = iox2_node_name_as_c_str(node_name_ptr, &name_len);
+
+    return NodeName::create_impl(name_ptr, name_len).expect("Node shall always contain a valid NodeName");
+}
+
+template <ServiceType T>
+auto Node<T>::id() const -> NodeId {
+    IOX_TODO();
+}
+
+template <ServiceType T>
+auto Node<T>::wait(const iox::units::Duration& cycle_time) const -> NodeEvent {
+    IOX_TODO();
+}
+
+template <ServiceType T>
+auto Node<T>::service_builder(const ServiceName& name) const -> ServiceBuilder<T> {
+    IOX_TODO();
+}
+
+template <ServiceType T>
+auto list_callback(iox2_node_state_e node_state,
+                   iox2_node_id_ptr node_id,
+                   iox2_node_name_ptr node_name,
+                   iox2_config_ptr config,
+                   iox2_node_list_callback_context context) -> iox2_callback_progression_e {
+    auto* callback = static_cast<const iox::function<CallbackProgression(NodeState<T>)>*>(context);
+    return iox::into<iox2_callback_progression_e>((*callback)(NodeState<T>()));
+}
+
+template <ServiceType T>
+auto Node<T>::list(ConfigRef config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
+    -> iox::expected<void, NodeListFailure> {
+    const auto ret_val = iox2_node_list(
+        iox::into<iox2_service_type_e>(T), config.m_ptr, list_callback<T>, static_cast<const void*>(&callback));
+
+    if (ret_val == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<NodeListFailure>(ret_val));
+}
+
+template <ServiceType T>
+void Node<T>::drop() {
+    if (m_handle != nullptr) {
+        iox2_node_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
 NodeBuilder::NodeBuilder()
     : m_handle { iox2_node_builder_new(nullptr) } {
 }

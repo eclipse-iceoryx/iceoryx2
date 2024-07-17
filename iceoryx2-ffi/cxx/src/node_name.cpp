@@ -67,12 +67,15 @@ void NodeName::drop() noexcept {
 }
 
 auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStringError> {
-    iox2_node_name_h handle {};
-    const auto value_len = strnlen(value, NODE_NAME_LENGTH + 1);
+    return NodeName::create_impl(value, strnlen(value, NODE_NAME_LENGTH + 1));
+}
+
+auto NodeName::create_impl(const char* value, size_t value_len) -> iox::expected<NodeName, SemanticStringError> {
     if (value_len == NODE_NAME_LENGTH + 1) {
         return iox::err(SemanticStringError::ExceedsMaximumLength);
     }
 
+    iox2_node_name_h handle {};
     const auto ret_val = iox2_node_name_new(nullptr, value, value_len, &handle);
     if (ret_val == IOX2_OK) {
         return iox::ok(std::move(NodeName { handle }));

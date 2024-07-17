@@ -41,33 +41,23 @@ enum class NodeEvent : uint8_t {
 template <ServiceType T>
 class Node {
   public:
-    Node(Node&&) = default;
-    auto operator=(Node&&) -> Node& = default;
-    ~Node() = default;
+    Node(Node&&) noexcept;
+    auto operator=(Node&&) noexcept -> Node&;
+    ~Node();
 
     Node(const Node&) = delete;
     auto operator=(const Node&) -> Node& = delete;
 
-    auto name() const -> NodeName& {
-        IOX_TODO();
-    }
-    auto id() const -> NodeId& {
-        IOX_TODO();
-    }
-    auto service_builder(const ServiceName& name) const -> ServiceBuilder<T> {
-        IOX_TODO();
-    }
-    auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent {
-        IOX_TODO();
-    }
-
-    static auto list(const Config& config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
-        -> iox::expected<void, NodeListFailure> {
-        IOX_TODO();
-    }
+    auto name() const -> NodeName;
+    auto id() const -> NodeId;
+    auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
+    auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent;
+    static auto list(ConfigRef config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
+        -> iox::expected<void, NodeListFailure>;
 
   private:
     explicit Node(iox2_node_h handle);
+    void drop();
 
     friend class NodeBuilder;
 
