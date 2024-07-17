@@ -42,12 +42,9 @@ Node<T>::~Node() {
 }
 
 template <ServiceType T>
-auto Node<T>::name() const -> NodeName {
-    const auto* const node_name_ptr = iox2_node_name(m_handle);
-    size_t name_len = 0;
-    const auto* const name_ptr = iox2_node_name_as_c_str(node_name_ptr, &name_len);
-
-    return NodeName::create_impl(name_ptr, name_len).expect("Node shall always contain a valid NodeName");
+auto Node<T>::name() const -> const NodeName& {
+    const auto* node_name = reinterpret_cast<const NodeName*>(iox2_node_name(m_handle));
+    return *node_name;
 }
 
 template <ServiceType T>
