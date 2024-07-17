@@ -22,7 +22,7 @@ ServiceName::ServiceName(iox2_service_name_h handle)
 }
 
 ServiceName::~ServiceName() {
-    iox2_service_name_drop(m_handle);
+    drop();
 }
 
 ServiceName::ServiceName(ServiceName&& rhs) noexcept
@@ -79,8 +79,7 @@ auto ServiceName::create(const char* value) -> iox::expected<ServiceName, Semant
         return iox::ok(ServiceName { handle });
     }
 
-    return iox::err(iox::from<iox2_semantic_string_error_e, SemanticStringError>(
-        static_cast<iox2_semantic_string_error_e>(ret_val)));
+    return iox::err(iox::into<SemanticStringError>(ret_val));
 }
 
 auto ServiceName::to_string() const -> iox::string<SERVICE_NAME_LENGTH> {

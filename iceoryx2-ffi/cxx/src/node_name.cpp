@@ -78,8 +78,7 @@ auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStri
         return iox::ok(std::move(NodeName { handle }));
     }
 
-    return iox::err(iox::from<iox2_semantic_string_error_e, SemanticStringError>(
-        static_cast<iox2_semantic_string_error_e>(ret_val)));
+    return iox::err(iox::into<SemanticStringError>(ret_val));
 }
 
 auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGTH> {
