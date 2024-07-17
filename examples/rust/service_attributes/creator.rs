@@ -34,9 +34,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let publisher = service.publisher_builder().create()?;
 
     println!("defined service attributes: {:?}", service.attributes());
-    for attribute in service.attributes().iter() {
-        println!("{} = {}", attribute.key(), attribute.value());
-    }
 
     while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
         let sample = publisher.loan_uninit()?;

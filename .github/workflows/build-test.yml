@@ -81,16 +81,21 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
+      - name: Install clang-tidy and clang-format
+        uses: ./.github/actions/install-iceoryx-deps-and-clang
+
       - name: clang-format and clang-tidy versions
         run: |
-            clang-format --version
-            clang-tidy --version
+          clang-format --version
+          clang-tidy --version
 
       - name: Run clang-format
         run: git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
 
       - name: Run clang-tidy
-        run: internal/scripts/clang_tidy_scan.sh warning-as-error --files "${{ steps.changed_files.outputs.added_modified }}"
+        run: |
+          git fetch origin main
+          internal/scripts/clang_tidy_scan.sh warning-as-error diff-to-main
 
   # just to have a sync point for the C++ and Rust static code analysis
   static-code-analysis:

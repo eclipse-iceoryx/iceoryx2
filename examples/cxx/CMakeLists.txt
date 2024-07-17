@@ -13,4 +13,13 @@
 cmake_minimum_required(VERSION 3.22)
 project(examples_cxx LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_subdirectory(complex_data_types)
+add_subdirectory(discovery)
+add_subdirectory(event)
 add_subdirectory(publish_subscribe)
+add_subdirectory(publish_subscribe_dynamic_data)
+add_subdirectory(publish_subscribe_with_user_header)
+add_subdirectory(service_attributes)

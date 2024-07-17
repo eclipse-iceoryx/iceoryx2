@@ -15,8 +15,8 @@ project(example_cxx_publish_subscribe LANGUAGES CXX)
 
 find_package(iceoryx2-cxx 0.3.0 REQUIRED)
 
-add_executable(example_cxx_publisher src/publisher.cpp)
-target_link_libraries(example_cxx_publisher iceoryx2-cxx::static-lib-cxx)
+add_executable(example_cxx_publish_subscribe_publisher src/publisher.cpp)
+target_link_libraries(example_cxx_publish_subscribe_publisher iceoryx2-cxx::static-lib-cxx)
 
-add_executable(example_cxx_subscriber src/subscriber.cpp)
-target_link_libraries(example_cxx_subscriber iceoryx2-cxx::static-lib-cxx)
+add_executable(example_cxx_publish_subscribe_subscriber src/subscriber.cpp)
+target_link_libraries(example_cxx_publish_subscribe_subscriber iceoryx2-cxx::static-lib-cxx)

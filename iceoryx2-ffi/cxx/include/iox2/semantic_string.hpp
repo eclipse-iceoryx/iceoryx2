@@ -10,16 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// NOTE: dummy source file to create static and shared libraries; can be removed once we have real cpp files
-// or the libraries need to become an INTERFACE library in cmake
+#ifndef IOX2_SEMANTIC_STRING_HPP
+#define IOX2_SEMANTIC_STRING_HPP
 
-#include "iox2/node.hpp"
+#include <cstdint>
 
-#include "iox2/iceoryx2.h"
+namespace iox2 {
+enum class SemanticStringError : uint8_t {
+};
+} // namespace iox2
 
-#include <iostream>
-#include <iox/logging.hpp>
-
-void hypnotoad() {
-    IOX_LOG(INFO, "All glory to the hypnotoad!");
-}
+#endif

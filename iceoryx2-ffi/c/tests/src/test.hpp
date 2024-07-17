@@ -13,8 +13,8 @@
 #ifndef IOX2_C_TESTS_TEST_HPP
 #define IOX2_C_TESTS_TEST_HPP
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <gmock/gmock.h> // NOLINT
+#include <gtest/gtest.h> // NOLINT
 
 using namespace ::testing;
 
