@@ -41,7 +41,7 @@ mod service_event {
     fn creating_non_existing_service_works<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let sut = node.service_builder(service_name.clone()).event().create();
+        let sut = node.service_builder(&service_name).event().create();
 
         assert_that!(sut, is_ok);
         let sut = sut.unwrap();
@@ -52,10 +52,10 @@ mod service_event {
     fn creating_same_service_twice_fails<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let sut = node.service_builder(service_name.clone()).event().create();
+        let sut = node.service_builder(&service_name).event().create();
         assert_that!(sut, is_ok);
 
-        let sut2 = node.service_builder(service_name).event().create();
+        let sut2 = node.service_builder(&service_name).event().create();
         assert_that!(sut2, is_err);
         assert_that!(
             sut2.err().unwrap(), eq
@@ -67,12 +67,12 @@ mod service_event {
     fn recreate_after_drop_works<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let sut = node.service_builder(service_name.clone()).event().create();
+        let sut = node.service_builder(&service_name).event().create();
         assert_that!(sut, is_ok);
 
         drop(sut);
 
-        let sut2 = node.service_builder(service_name).event().create();
+        let sut2 = node.service_builder(&service_name).event().create();
         assert_that!(sut2, is_ok);
     }
 
@@ -80,7 +80,7 @@ mod service_event {
     fn open_fails_when_service_does_not_exist<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let sut = node.service_builder(service_name).event().open();
+        let sut = node.service_builder(&service_name).event().open();
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq EventOpenError::DoesNotExist);
     }
@@ -89,10 +89,10 @@ mod service_event {
     fn open_succeeds_when_service_does_exist<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let sut = node.service_builder(service_name.clone()).event().create();
+        let sut = node.service_builder(&service_name).event().create();
         assert_that!(sut, is_ok);
 
-        let sut2 = node.service_builder(service_name).event().open();
+        let sut2 = node.service_builder(&service_name).event().open();
         assert_that!(sut2, is_ok);
     }
 
@@ -101,14 +101,14 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_notifiers(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_notifiers(3)
             .open();
@@ -120,7 +120,7 @@ mod service_event {
         );
 
         let sut2 = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_notifiers(1)
             .open_or_create();
@@ -132,14 +132,14 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_listeners(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_listeners(3)
             .open();
@@ -151,7 +151,7 @@ mod service_event {
         );
 
         let sut2 = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_listeners(1)
             .open();
@@ -163,7 +163,7 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_nodes(0)
             .create()
@@ -177,7 +177,7 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_listeners(0)
             .create()
@@ -191,7 +191,7 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_notifiers(0)
             .create()
@@ -205,14 +205,14 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_nodes(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_nodes(3)
             .open();
@@ -224,7 +224,7 @@ mod service_event {
         );
 
         let sut2 = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_nodes(1)
             .open();
@@ -238,13 +238,13 @@ mod service_event {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let _sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .event_id_max_value(EVENT_ID_MAX_VALUE)
             .create();
 
         let sut2 = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .event_id_max_value(EVENT_ID_MAX_VALUE + 1)
             .open();
@@ -253,7 +253,7 @@ mod service_event {
         assert_that!(sut2.err().unwrap(), eq EventOpenError::DoesNotSupportRequestedMaxEventId);
 
         let sut2 = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .event_id_max_value(EVENT_ID_MAX_VALUE)
             .open();
@@ -266,7 +266,7 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_nodes(7)
             .max_notifiers(4)
@@ -277,7 +277,7 @@ mod service_event {
         assert_that!(sut.static_config().max_notifiers(), eq 4);
         assert_that!(sut.static_config().max_listeners(), eq 5);
 
-        let sut2 = node.service_builder(service_name).event().open().unwrap();
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
         assert_that!(sut2.static_config().max_nodes(), eq 7);
         assert_that!(sut2.static_config().max_notifiers(), eq 4);
         assert_that!(sut2.static_config().max_listeners(), eq 5);
@@ -296,7 +296,7 @@ mod service_event {
             .unwrap();
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .create()
             .unwrap();
@@ -304,7 +304,7 @@ mod service_event {
         assert_that!(sut.static_config().max_notifiers(), eq 9);
         assert_that!(sut.static_config().max_listeners(), eq 10);
 
-        let sut2 = node.service_builder(service_name).event().open().unwrap();
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
         assert_that!(sut2.static_config().max_nodes(), eq 13);
         assert_that!(sut2.static_config().max_notifiers(), eq 9);
         assert_that!(sut2.static_config().max_listeners(), eq 10);
@@ -317,12 +317,12 @@ mod service_event {
         let event_id = EventId::new(32);
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .create()
             .unwrap();
 
-        let sut2 = node.service_builder(service_name).event().open().unwrap();
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
 
         let listener = sut.listener_builder().create().unwrap();
         let notifier = sut2
@@ -348,12 +348,12 @@ mod service_event {
         let event_id = EventId::new(23);
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .create()
             .unwrap();
 
-        let sut2 = node.service_builder(service_name).event().open().unwrap();
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
 
         let notifier = sut2
             .notifier_builder()
@@ -381,7 +381,7 @@ mod service_event {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_notifiers(MAX_NOTIFIERS)
             .max_listeners(MAX_LISTENERS)
@@ -429,7 +429,7 @@ mod service_event {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_notifiers(MAX_NOTIFIERS)
             .max_listeners(MAX_LISTENERS)
@@ -478,13 +478,13 @@ mod service_event {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_notifiers(MAX_NOTIFIERS)
             .create()
             .unwrap();
 
-        let sut2 = node.service_builder(service_name).event().open().unwrap();
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
 
         let mut notifiers = vec![];
 
@@ -520,13 +520,13 @@ mod service_event {
         const MAX_LISTENERS: usize = 8;
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_listeners(MAX_LISTENERS)
             .create()
             .unwrap();
 
-        let sut2 = node.service_builder(service_name).event().open().unwrap();
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
 
         let mut listeners = vec![];
 
@@ -562,7 +562,7 @@ mod service_event {
         const MAX_NODES: usize = 8;
 
         let _sut = main_node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_nodes(MAX_NODES)
             .create()
@@ -573,14 +573,14 @@ mod service_event {
 
         for _ in 1..MAX_NODES {
             let node = NodeBuilder::new().create::<Sut>().unwrap();
-            let service = node.service_builder(service_name.clone()).event().open();
+            let service = node.service_builder(&service_name).event().open();
             assert_that!(service, is_ok);
             nodes.push(node);
             services.push(service);
         }
 
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let service = node.service_builder(service_name.clone()).event().open();
+        let service = node.service_builder(&service_name).event().open();
         assert_that!(service, is_err);
         assert_that!(service.err().unwrap(), eq EventOpenError::ExceedsMaxNumberOfNodes);
 
@@ -588,7 +588,7 @@ mod service_event {
         services.pop();
 
         let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let service = node.service_builder(service_name.clone()).event().open();
+        let service = node.service_builder(&service_name).event().open();
         assert_that!(service, is_ok);
     }
 
@@ -599,13 +599,13 @@ mod service_event {
         const EVENT_ID_MAX_VALUE: usize = 78;
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .event_id_max_value(EVENT_ID_MAX_VALUE)
             .create()
             .unwrap();
 
-        let sut2 = node.service_builder(service_name).event().open().unwrap();
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
 
         let listener = sut.listener_builder().create().unwrap();
         let notifier = sut2.notifier_builder().create().unwrap();
@@ -637,7 +637,7 @@ mod service_event {
         let barrier = Barrier::new(number_of_notifier_threads + number_of_listener_threads);
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .max_listeners(number_of_listener_threads)
             .max_notifiers(number_of_notifier_threads)
@@ -696,7 +696,7 @@ mod service_event {
         let barrier = Barrier::new(number_of_listener_threads + number_of_notifier_threads);
 
         let sut = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .max_listeners(number_of_listener_threads * 2)
             .max_notifiers(number_of_notifier_threads)
@@ -748,7 +748,7 @@ mod service_event {
         let event_id = EventId::new(12);
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .create()
             .unwrap();
@@ -781,7 +781,7 @@ mod service_event {
         let event_id = EventId::new(43212);
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .event()
             .create()
             .unwrap();
@@ -797,19 +797,19 @@ mod service_event {
         drop(sut);
         assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(false));
 
-        let sut = node.service_builder(service_name.clone()).event().create();
+        let sut = node.service_builder(&service_name).event().create();
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq EventCreateError::OldConnectionsStillActive);
 
         drop(listener);
 
-        let sut = node.service_builder(service_name.clone()).event().create();
+        let sut = node.service_builder(&service_name).event().create();
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq EventCreateError::OldConnectionsStillActive);
 
         drop(notifier);
 
-        assert_that!(node.service_builder(service_name).event().create(), is_ok);
+        assert_that!(node.service_builder(&service_name).event().create(), is_ok);
     }
 
     #[test]
@@ -818,7 +818,11 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = node.service_builder(service_name).event().create().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
         let listener = sut.listener_builder().create().unwrap();
 
         assert_that!(listener.try_wait_one(), is_ok);
@@ -830,7 +834,11 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = node.service_builder(service_name).event().create().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
 
         let listener = sut.listener_builder().create().unwrap();
 
@@ -846,7 +854,11 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = node.service_builder(service_name).event().create().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
         let notifier = sut.notifier_builder().create().unwrap();
         let counter = AtomicU64::new(0);
         let barrier = Barrier::new(2);
@@ -923,7 +935,11 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = node.service_builder(service_name).event().create().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
 
         let listener = sut.listener_builder().create().unwrap();
 
@@ -938,7 +954,11 @@ mod service_event {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
-        let sut = node.service_builder(service_name).event().create().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
 
         let listener = sut.listener_builder().create().unwrap();
 
@@ -997,7 +1017,7 @@ mod service_event {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
 
         let sut = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .event()
             .event_id_max_value(number_of_notifications)
             .create()

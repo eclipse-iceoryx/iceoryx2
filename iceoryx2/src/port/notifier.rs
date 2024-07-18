@@ -16,7 +16,7 @@
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -37,8 +37,14 @@
 
 use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 use crate::{
+    node::SharedNode,
     port::port_identifiers::UniqueNotifierId,
-    service::{self, naming_scheme::event_concept_name},
+    service::{
+        self,
+        config_scheme::event_config,
+        dynamic_config::event::{ListenerDetails, NotifierDetails},
+        naming_scheme::event_concept_name,
+    },
 };
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -92,16 +98,18 @@ struct Connection<Service: service::Service> {
     listener_id: UniqueListenerId,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
+    shared_node: Arc<SharedNode<Service>>,
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
-    fn new(size: usize) -> Self {
+    fn new(size: usize, shared_node: Arc<SharedNode<Service>>) -> Self {
         let mut new_self = Self {
             connections: vec![],
+            shared_node,
         };
 
         new_self.connections.reserve(size);
@@ -115,8 +123,10 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn create(&self, index: usize, listener_id: UniqueListenerId) {
         let msg = "Unable to establish connection to listener";
         let event_name = event_concept_name(&listener_id);
+        let event_config = event_config::<Service>(self.shared_node.config());
         if self.get(index).is_none() {
             match <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name)
+                .config(&event_config)
                 .open()
             {
                 Ok(notifier) => {
@@ -166,12 +176,12 @@ impl<Service: service::Service> ListenerConnections<Service> {
 #[derive(Debug)]
 pub struct Notifier<Service: service::Service> {
     listener_connections: ListenerConnections<Service>,
-    listener_list_state: UnsafeCell<ContainerState<UniqueListenerId>>,
+    listener_list_state: UnsafeCell<ContainerState<ListenerDetails>>,
     default_event_id: EventId,
     event_id_max_value: usize,
     dynamic_storage: Arc<Service::DynamicStorage>,
     dynamic_notifier_handle: Option<ContainerHandle>,
-    port_id: UniqueNotifierId,
+    notifier_id: UniqueNotifierId,
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {
@@ -192,7 +202,7 @@ impl<Service: service::Service> Notifier<Service> {
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
-        let port_id = UniqueNotifierId::new();
+        let notifier_id = UniqueNotifierId::new();
 
         let listener_list = &service
             .__internal_state()
@@ -203,7 +213,10 @@ impl<Service: service::Service> Notifier<Service> {
         let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
 
         let mut new_self = Self {
-            listener_connections: ListenerConnections::new(listener_list.capacity()),
+            listener_connections: ListenerConnections::new(
+                listener_list.capacity(),
+                service.__internal_state().shared_node.clone(),
+            ),
             default_event_id,
             listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
             dynamic_storage,
@@ -213,7 +226,7 @@ impl<Service: service::Service> Notifier<Service> {
                 .event()
                 .event_id_max_value,
             dynamic_notifier_handle: None,
-            port_id,
+            notifier_id,
         };
 
         new_self.populate_listener_channels();
@@ -222,12 +235,12 @@ impl<Service: service::Service> Notifier<Service> {
 
         // !MUST! be the last task otherwise a notifier is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_notifier_handle = match new_self
-            .dynamic_storage
-            .get()
-            .event()
-            .add_notifier_id(port_id)
-        {
+        let dynamic_notifier_handle = match new_self.dynamic_storage.get().event().add_notifier_id(
+            NotifierDetails {
+                notifier_id,
+                node_id: *service.__internal_state().shared_node.id(),
+            },
+        ) {
             Some(handle) => handle,
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
@@ -257,19 +270,19 @@ impl<Service: service::Service> Notifier<Service> {
         visited_indices.resize(self.listener_connections.len(), None);
 
         unsafe {
-            (*self.listener_list_state.get()).for_each(|index, listener_id| {
-                visited_indices[index as usize] = Some(*listener_id);
+            (*self.listener_list_state.get()).for_each(|h, listener_id| {
+                visited_indices[h.index() as usize] = Some(*listener_id);
                 CallbackProgression::Continue
             })
         };
 
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
-                Some(listener_id) => {
+                Some(details) => {
                     let create_connection = match self.listener_connections.get(i) {
                         None => true,
                         Some(connection) => {
-                            let is_connected = connection.listener_id != *listener_id;
+                            let is_connected = connection.listener_id != details.listener_id;
                             if is_connected {
                                 self.listener_connections.remove(i);
                             }
@@ -278,7 +291,7 @@ impl<Service: service::Service> Notifier<Service> {
                     };
 
                     if create_connection {
-                        self.listener_connections.create(i, *listener_id);
+                        self.listener_connections.create(i, details.listener_id);
                     }
                 }
                 None => self.listener_connections.remove(i),
@@ -288,7 +301,7 @@ impl<Service: service::Service> Notifier<Service> {
 
     /// Returns the [`UniqueNotifierId`] of the [`Notifier`]
     pub fn id(&self) -> UniqueNotifierId {
-        self.port_id
+        self.notifier_id
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with the default

@@ -28,7 +28,7 @@
 //!     .config(&custom_config)
 //!     .create::<zero_copy::Service>()?;
 //!
-//! let service = node.service_builder("MyServiceName".try_into()?)
+//! let service = node.service_builder(&"MyServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -123,6 +123,8 @@ pub struct Service {
     pub creation_timeout: Duration,
     /// The suffix of a one-to-one connection
     pub connection_suffix: FileName,
+    /// The suffix of a one-to-one connection
+    pub event_connection_suffix: FileName,
 }
 
 /// All configurable settings of a [`crate::node::Node`].
@@ -136,6 +138,16 @@ pub struct Node {
     pub monitor_suffix: FileName,
     /// The suffix of the files where the node configuration is stored.
     pub static_config_suffix: FileName,
+    /// The suffix of the service tags.
+    pub service_tag_suffix: FileName,
+    /// When true, the [`NodeBuilder`](crate::node::NodeBuilder) checks for dead nodes and
+    /// cleans up all their stale resources whenever a new [`Node`](crate::node::Node) is
+    /// created.
+    pub cleanup_dead_nodes_on_creation: bool,
+    /// When true, the [`NodeBuilder`](crate::node::NodeBuilder) checks for dead nodes and
+    /// cleans up all their stale resources whenever an existing [`Node`](crate::node::Node) is
+    /// going out of scope.
+    pub cleanup_dead_nodes_on_destruction: bool,
 }
 
 /// The global settings
@@ -278,11 +290,15 @@ impl Default for Config {
                     dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
                     creation_timeout: Duration::from_millis(500),
                     connection_suffix: FileName::new(b".connection").unwrap(),
+                    event_connection_suffix: FileName::new(b".event").unwrap(),
                 },
                 node: Node {
                     directory: Path::new(b"nodes").unwrap(),
                     monitor_suffix: FileName::new(b".node_monitor").unwrap(),
                     static_config_suffix: FileName::new(b".details").unwrap(),
+                    service_tag_suffix: FileName::new(b".service_tag").unwrap(),
+                    cleanup_dead_nodes_on_creation: true,
+                    cleanup_dead_nodes_on_destruction: true,
                 },
             },
             defaults: Defaults {

@@ -17,7 +17,7 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -31,7 +31,12 @@ use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
-use crate::port::port_identifiers::{UniqueListenerId, UniqueNotifierId};
+use crate::{
+    node::NodeId,
+    port::port_identifiers::{UniqueListenerId, UniqueNotifierId, UniquePortId},
+};
+
+use super::PortCleanupAction;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DynamicConfigSettings {
@@ -43,8 +48,20 @@ pub(crate) struct DynamicConfigSettings {
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[derive(Debug)]
 pub struct DynamicConfig {
-    pub(crate) listeners: Container<UniqueListenerId>,
-    pub(crate) notifiers: Container<UniqueNotifierId>,
+    pub(crate) listeners: Container<ListenerDetails>,
+    pub(crate) notifiers: Container<NotifierDetails>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct ListenerDetails {
+    pub(crate) listener_id: UniqueListenerId,
+    pub(crate) node_id: NodeId,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct NotifierDetails {
+    pub(crate) notifier_id: UniqueNotifierId,
+    pub(crate) node_id: NodeId,
 }
 
 impl DynamicConfig {
@@ -65,8 +82,8 @@ impl DynamicConfig {
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
-        Container::<UniqueListenerId>::memory_size(config.number_of_listeners)
-            + Container::<UniqueNotifierId>::memory_size(config.number_of_notifiers)
+        Container::<ListenerDetails>::memory_size(config.number_of_listeners)
+            + Container::<NotifierDetails>::memory_size(config.number_of_notifiers)
     }
 
     /// Returns the how many [`crate::port::listener::Listener`] ports are currently connected.
@@ -79,7 +96,41 @@ impl DynamicConfig {
         self.notifiers.len()
     }
 
-    pub(crate) fn add_listener_id(&self, id: UniqueListenerId) -> Option<ContainerHandle> {
+    pub(crate) unsafe fn remove_dead_node_id<
+        PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
+    >(
+        &self,
+        node_id: &NodeId,
+        mut port_cleanup_callback: PortCleanup,
+    ) {
+        self.listeners
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_listener| {
+                if registered_listener.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Listener(
+                        registered_listener.listener_id,
+                    )) == PortCleanupAction::RemovePort
+                {
+                    self.release_listener_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
+
+        self.notifiers
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_notifier| {
+                if registered_notifier.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Notifier(
+                        registered_notifier.notifier_id,
+                    )) == PortCleanupAction::RemovePort
+                {
+                    self.release_notifier_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
+    }
+
+    pub(crate) fn add_listener_id(&self, id: ListenerDetails) -> Option<ContainerHandle> {
         unsafe { self.listeners.add(id).ok() }
     }
 
@@ -87,7 +138,7 @@ impl DynamicConfig {
         unsafe { self.listeners.remove(handle, ReleaseMode::Default) };
     }
 
-    pub(crate) fn add_notifier_id(&self, id: UniqueNotifierId) -> Option<ContainerHandle> {
+    pub(crate) fn add_notifier_id(&self, id: NotifierDetails) -> Option<ContainerHandle> {
         unsafe { self.notifiers.add(id).ok() }
     }
 

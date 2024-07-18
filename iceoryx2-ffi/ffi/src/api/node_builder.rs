@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_node_h, iox2_node_name_drop, iox2_node_name_h, iox2_node_t, iox2_service_type_e,
-    HandleToType, IntoCInt, NodeUnion, IOX2_OK,
+    iox2_node_h, iox2_node_name_ptr, iox2_node_t, iox2_service_type_e, HandleToType, IntoCInt,
+    NodeUnion, IOX2_OK,
 };
 
 use iceoryx2::node::NodeCreationFailure;
@@ -47,7 +47,7 @@ impl IntoCInt for NodeCreationFailure {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<NodeBuilder>
 pub struct iox2_node_builder_storage_t {
-    internal: [u8; 18432], // magic number obtained with size_of::<Option<NodeBuilder>>()
+    internal: [u8; 18696], // magic number obtained with size_of::<NodeBuilder>()
 }
 
 #[repr(C)]
@@ -143,29 +143,26 @@ pub unsafe extern "C" fn iox2_cast_node_builder_ref_h(
 /// # Arguments
 ///
 /// * `node_builder_handle` - Must be a valid [`iox2_node_builder_ref_h`] obtained by [`iox2_node_builder_new`] and casted by [`iox2_cast_node_builder_ref_h`].
-/// * `node_name_handle` - Must be a valid [`iox2_node_name_h`] obtained by [`iox2_node_name_new`](crate::iox2_node_name_new).
+/// * `node_name_ptr` - Must be a valid [`iox2_node_name_ptr`], e.g. obtained by [`iox2_node_name_new`](crate::iox2_node_name_new) and converted
+///    by [`iox2_cast_node_name_ptr`](crate::iox2_cast_node_name_ptr)
 ///
 /// Returns IOX2_OK
 ///
 /// # Safety
 ///
-/// * `node_builder_handle` as well as `node_name_handle` must be valid handles
+/// * `node_builder_handle` as well as `node_name_ptr` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_set_name(
     node_builder_handle: iox2_node_builder_ref_h,
-    node_name_handle: iox2_node_name_h,
+    node_name_ptr: iox2_node_name_ptr,
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
-    debug_assert!(!node_name_handle.is_null());
-
-    let node_name_struct = &mut *node_name_handle.as_type();
-    let node_name = node_name_struct.take().unwrap();
-    iox2_node_name_drop(node_name_handle);
+    debug_assert!(!node_name_ptr.is_null());
 
     let node_builder_struct = &mut *node_builder_handle.as_type();
 
     let node_builder = node_builder_struct.take().unwrap();
-    let node_builder = node_builder.name(node_name);
+    let node_builder = node_builder.name(&*node_name_ptr);
     node_builder_struct.set(node_builder);
 
     IOX2_OK

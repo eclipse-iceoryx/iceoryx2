@@ -69,7 +69,7 @@
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
 //! // create our port factory by creating or opening the service
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -96,7 +96,7 @@
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
 //! // create our port factory by creating or opening the service
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -129,7 +129,7 @@
 //!
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -156,7 +156,7 @@
 //!
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -191,7 +191,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
-//! let service = node.service_builder("PubSubQos".try_into()?)
+//! let service = node.service_builder(&"PubSubQos".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .enable_safe_overflow(true)
 //!     // how many samples a subscriber can borrow in parallel
@@ -218,7 +218,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
-//! let event = node.service_builder("EventQos".try_into()?)
+//! let event = node.service_builder(&"EventQos".try_into()?)
 //!     .event()
 //!     // the maximum amount of notifiers of this service
 //!     .max_notifiers(2)
@@ -248,7 +248,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .enable_safe_overflow(false)
 //!     .open_or_create()?;

@@ -20,7 +20,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     // define the messaging pattern
 //!     .publish_subscribe::<u64>()
 //!     // various QoS
@@ -47,7 +47,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     // define the messaging pattern
 //!     .event()
 //!     // various QoS
@@ -76,7 +76,7 @@
 //!     .config(&custom_config)
 //!     .create::<zero_copy::Service>()?;
 //!
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -93,7 +93,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
-//! let service_creator = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service_creator = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .create_with_attributes(
 //!         // all attributes that are defined when creating a new service are stored in the
@@ -104,7 +104,7 @@
 //!             .define("another key", "another value")
 //!     )?;
 //!
-//! let service_open = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service_open = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_with_attributes(
 //!         // All attributes that are defined when opening a new service interpreted as
@@ -165,11 +165,12 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::config;
-use crate::node::{NodeListFailure, NodeState, SharedNode};
+use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};
 use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::naming_scheme::dynamic_config_storage_name;
 use crate::service::static_config::*;
+use config_scheme::service_tag_config;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::{debug, fail, trace, warn};
@@ -186,10 +187,24 @@ use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
+use naming_scheme::service_tag_name;
 
 use self::dynamic_config::DeregisterNodeState;
 use self::messaging_pattern::MessagingPattern;
 use self::service_name::ServiceName;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ServiceRemoveNodeError {
+    VersionMismatch,
+    InternalError,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ServiceRemoveTagError {
+    AlreadyRemoved,
+    InternalError,
+    InsufficientPermissions,
+}
 
 /// Failure that can be reported when the [`ServiceDetails`] are acquired with [`Service::details()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -284,22 +299,153 @@ impl<S: Service> ServiceState<S> {
 
 impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
-        self.shared_node
-            .registered_services
-            .remove(self.static_config.uuid(), |handle| {
-                match self.dynamic_storage.get().deregister_node_id(handle) {
-                    DeregisterNodeState::HasOwners => {
-                        trace!(from "Service::close()", "close service: {} (uuid={:?})",
-                            self.static_config.name(), self.static_config.uuid());
+        let origin = "ServiceState::drop()";
+        let id = self.static_config.uuid();
+        self.shared_node.registered_services.remove(id, |handle| {
+            if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), id, self.shared_node.config())
+            {
+                debug!(from origin, "The service tag could not be removed from the node {:?} ({:?}).",
+                        self.shared_node.id(), e);
+            }
+
+            match self.dynamic_storage.get().deregister_node_id(handle) {
+                DeregisterNodeState::HasOwners => {
+                    trace!(from origin, "close service: {} (uuid={:?})",
+                            self.static_config.name(), id);
+                }
+                DeregisterNodeState::NoMoreOwners => {
+                    self.static_storage.acquire_ownership();
+                    self.dynamic_storage.acquire_ownership();
+                    trace!(from origin, "close and remove service: {} (uuid={:?})",
+                            self.static_config.name(), id);
+                }
+            }
+        });
+    }
+}
+
+pub(crate) mod internal {
+    use config_scheme::static_config_storage_config;
+    use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
+    use naming_scheme::static_config_storage_name;
+
+    use crate::{
+        node::NodeId,
+        port::{
+            listener::remove_connection_of_listener,
+            port_identifiers::UniquePortId,
+            publisher::{
+                remove_data_segment_of_publisher, remove_publisher_from_all_connections,
+                remove_subscriber_from_all_connections,
+            },
+        },
+    };
+
+    use super::*;
+
+    pub(crate) trait ServiceInternal<S: Service> {
+        fn __internal_from_state(state: ServiceState<S>) -> S;
+
+        fn __internal_state(&self) -> &ServiceState<S>;
+
+        fn __internal_remove_node_from_service(
+            node_id: &NodeId,
+            service_uuid: &FileName,
+            config: &config::Config,
+        ) -> Result<(), ServiceRemoveNodeError> {
+            let origin = format!(
+                "Service::remove_node_from_service({:?}, {:?})",
+                node_id, service_uuid
+            );
+            let msg = "Unable to remove node from service";
+
+            let dynamic_config = match open_dynamic_config::<S>(
+                config,
+                core::str::from_utf8(service_uuid.as_bytes()).unwrap(),
+            ) {
+                Ok(Some(c)) => c,
+                Ok(None) => return Ok(()),
+                Err(ServiceDetailsError::VersionMismatch) => {
+                    fail!(from origin, with ServiceRemoveNodeError::VersionMismatch,
+                        "{} since the service version does not match.", msg);
+                }
+                Err(e) => {
+                    fail!(from origin, with ServiceRemoveNodeError::InternalError,
+                        "{} due to an internal failure ({:?}).", msg, e);
+                }
+            };
+
+            let cleanup_port_resources = |port_id| {
+                match port_id {
+                    UniquePortId::Publisher(ref id) => {
+                        if let Err(e) =
+                            unsafe { remove_publisher_from_all_connections::<S>(id, config) }
+                        {
+                            debug!(from origin, "Failed to remove the publishers ({:?}) from all of its connections ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+
+                        if let Err(e) = unsafe { remove_data_segment_of_publisher::<S>(id, config) }
+                        {
+                            debug!(from origin, "Failed to remove the publishers ({:?}) data segment ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
                     }
-                    DeregisterNodeState::NoMoreOwners => {
-                        self.static_storage.acquire_ownership();
-                        self.dynamic_storage.acquire_ownership();
-                        trace!(from "Service::remove()", "close and remove service: {} (uuid={:?})",
-                            self.static_config.name(), self.static_config.uuid());
+                    UniquePortId::Subscriber(ref id) => {
+                        if let Err(e) =
+                            unsafe { remove_subscriber_from_all_connections::<S>(id, config) }
+                        {
+                            debug!(from origin, "Failed to remove the subscriber ({:?}) from all of its connections ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
+                    UniquePortId::Notifier(_) => (),
+                    UniquePortId::Listener(ref id) => {
+                        if let Err(e) = unsafe { remove_connection_of_listener::<S>(id, config) } {
+                            debug!(from origin, "Failed to remove the listeners ({:?}) connection ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
+                };
+
+                debug!(from origin, "Remove port {:?} from service.", port_id);
+                PortCleanupAction::RemovePort
+            };
+
+            let remove_service = match unsafe {
+                dynamic_config
+                    .get()
+                    .remove_dead_node_id(node_id, cleanup_port_resources)
+            } {
+                Ok(DeregisterNodeState::HasOwners) => false,
+                Ok(DeregisterNodeState::NoMoreOwners) => true,
+                Err(RemoveDeadNodeResult::NodeNotRegistered) => {
+                    dynamic_config.get().is_marked_for_destruction()
+                }
+            };
+
+            if remove_service {
+                match unsafe {
+                    <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
+                        &static_config_storage_name(
+                            core::str::from_utf8(service_uuid.as_bytes()).unwrap(),
+                        ),
+                        &static_config_storage_config::<S>(config),
+                    )
+                } {
+                    Ok(_) => {
+                        debug!(from origin, "Remove unused service.");
+                        dynamic_config.acquire_ownership()
+                    }
+                    Err(e) => {
+                        warn!(from origin, "Unable to remove static config of unused service ({:?}).",
+                            e);
                     }
                 }
-            });
+            }
+
+            Ok(())
+        }
     }
 }
 
@@ -307,7 +453,8 @@ impl<S: Service> Drop for ServiceState<S> {
 /// [`crate::node::Node::service_builder()`].
 /// Contains the building blocks a [`Service`] requires to create the underlying resources and
 /// establish communication.
-pub trait Service: Debug + Sized {
+#[allow(private_bounds)]
+pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     /// Every service name will be hashed, to allow arbitrary [`ServiceName`]s with as less
     /// restrictions as possible. The hash of the [`ServiceName`] is the [`Service`]s uuid.
     type ServiceNameHasher: Hash;
@@ -333,12 +480,6 @@ pub trait Service: Debug + Sized {
 
     /// Monitoring mechanism to detect dead processes.
     type Monitoring: Monitoring;
-
-    #[doc(hidden)]
-    fn __internal_from_state(state: ServiceState<Self>) -> Self;
-
-    #[doc(hidden)]
-    fn __internal_state(&self) -> &ServiceState<Self>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///
@@ -506,30 +647,10 @@ fn details<S: Service>(
                 msg, service_config, uuid, config);
     }
 
-    let storage = match
-            <<S::DynamicStorage as DynamicStorage<
-                    DynamicConfig,
-                >>::Builder<'_> as NamedConceptBuilder<
-                    S::DynamicStorage,
-                >>::new(&dynamic_config_storage_name(&service_config))
-                    .config(&dynamic_config_storage_config::<S>(config))
-                .has_ownership(false)
-                .open() {
-            Ok(storage) => Some(storage),
-            Err(DynamicStorageOpenError::DoesNotExist) | Err(DynamicStorageOpenError::InitializationNotYetFinalized) => None,
-            Err(DynamicStorageOpenError::VersionMismatch) => {
-                fail!(from origin, with ServiceDetailsError::VersionMismatch,
-                    "{} since there is a version mismatch. Please use the same iceoryx2 version for the whole system.", msg);
-            }
-            Err(DynamicStorageOpenError::InternalError) => {
-                fail!(from origin, with ServiceDetailsError::VersionMismatch,
-                    "{} due to an internal failure while opening the services dynamic config.", msg);
-            }
-    };
-
-    let dynamic_details = if let Some(storage) = storage {
+    let dynamic_config = open_dynamic_config::<S>(config, service_config.uuid())?;
+    let dynamic_details = if let Some(d) = dynamic_config {
         let mut nodes = vec![];
-        storage.get().list_node_ids(|node_id| {
+        d.get().list_node_ids(|node_id| {
             match NodeState::new(node_id, config) {
                 Ok(Some(state)) => nodes.push(state),
                 Ok(None)
@@ -550,4 +671,70 @@ fn details<S: Service>(
         static_details: service_config,
         dynamic_details,
     }))
+}
+
+fn open_dynamic_config<S: Service>(
+    config: &config::Config,
+    service_uuid: &str,
+) -> Result<Option<S::DynamicStorage>, ServiceDetailsError> {
+    let origin = format!(
+        "Service::open_dynamic_details<{}>(service_uuid: {})",
+        core::any::type_name::<S>(),
+        service_uuid
+    );
+    let msg = "Unable to open the services dynamic config";
+    match
+            <<S::DynamicStorage as DynamicStorage<
+                    DynamicConfig,
+                >>::Builder<'_> as NamedConceptBuilder<
+                    S::DynamicStorage,
+                >>::new(&dynamic_config_storage_name(service_uuid))
+                    .config(&dynamic_config_storage_config::<S>(config))
+                .has_ownership(false)
+                .open() {
+            Ok(storage) => Ok(Some(storage)),
+            Err(DynamicStorageOpenError::DoesNotExist) | Err(DynamicStorageOpenError::InitializationNotYetFinalized) => Ok(None),
+            Err(DynamicStorageOpenError::VersionMismatch) => {
+                fail!(from origin, with ServiceDetailsError::VersionMismatch,
+                    "{} since there is a version mismatch. Please use the same iceoryx2 version for the whole system.", msg);
+            }
+            Err(DynamicStorageOpenError::InternalError) => {
+                fail!(from origin, with ServiceDetailsError::InternalError,
+                    "{} due to an internal failure while opening the services dynamic config.", msg);
+            }
+    }
+}
+
+pub(crate) fn remove_service_tag<S: Service>(
+    node_id: &NodeId,
+    service_uuid: &str,
+    config: &config::Config,
+) -> Result<(), ServiceRemoveTagError> {
+    let origin = format!(
+        "remove_service_tag<{}>({:?}, service_uuid: {:?})",
+        core::any::type_name::<S>(),
+        node_id,
+        service_uuid
+    );
+
+    match unsafe {
+        <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
+            &service_tag_name(service_uuid),
+            &service_tag_config::<S>(config, node_id),
+        )
+    } {
+        Ok(true) => Ok(()),
+        Ok(false) => {
+            fail!(from origin, with ServiceRemoveTagError::AlreadyRemoved,
+                    "The service's tag for the node was already removed. This may indicate a corrupted system!");
+        }
+        Err(NamedConceptRemoveError::InternalError) => {
+            fail!(from origin, with ServiceRemoveTagError::InternalError,
+                "Unable to remove the service's tag for the node due to an internal error.");
+        }
+        Err(NamedConceptRemoveError::InsufficientPermissions) => {
+            fail!(from origin, with ServiceRemoveTagError::InsufficientPermissions,
+                "Unable to remove the service's tag for the node due to insufficient permissions.");
+        }
+    }
 }

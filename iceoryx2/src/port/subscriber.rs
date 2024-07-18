@@ -17,7 +17,7 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -136,7 +136,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     ) -> Result<Self, SubscriberCreateError> {
         let msg = "Failed to create Subscriber port";
         let origin = "Subscriber::new()";
-        let port_id = UniqueSubscriberId::new();
+        let subscriber_id = UniqueSubscriberId::new();
 
         let publisher_list = &service
             .__internal_state()
@@ -161,7 +161,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
         let publisher_connections = Arc::new(PublisherConnections::new(
             publisher_list.capacity(),
-            port_id,
+            subscriber_id,
             service.__internal_state().shared_node.clone(),
             static_config,
             buffer_size,
@@ -192,8 +192,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .get()
             .publish_subscribe()
             .add_subscriber_id(SubscriberDetails {
-                port_id,
+                subscriber_id,
                 buffer_size,
+                node_id: *service.__internal_state().shared_node.id(),
             }) {
             Some(unique_index) => unique_index,
             None => {
@@ -213,8 +214,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         visited_indices.resize(self.publisher_connections.capacity(), None);
 
         unsafe {
-            (*self.publisher_list_state.get()).for_each(|index, details| {
-                visited_indices[index as usize] = Some(*details);
+            (*self.publisher_list_state.get()).for_each(|h, details| {
+                visited_indices[h.index() as usize] = Some(*details);
                 CallbackProgression::Continue
             })
         };

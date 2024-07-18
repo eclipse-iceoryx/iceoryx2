@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
     let service = node
-        .service_builder("Complex Data Type Example".try_into()?)
+        .service_builder(&"Complex Data Type Example".try_into()?)
         .publish_subscribe::<ComplexDataType>()
         .max_publishers(16)
         .max_subscribers(16)

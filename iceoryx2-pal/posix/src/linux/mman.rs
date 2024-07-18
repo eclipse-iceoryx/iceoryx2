@@ -54,6 +54,19 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
         let mut temp = [0i8; 256];
         for (i, c) in temp.iter_mut().enumerate() {
             *c = (*entry).d_name[i] as _;
+            if (*entry).d_name[i] == 0 {
+                break;
+            }
+        }
+
+        // skip empty names
+        if temp[0] == 0 ||
+        // skip dot (for current dir)
+        temp[0] as u8 == b'.' && temp[1] == 0 ||
+        // skip  dot dot (for parent dir)
+        temp[0] as u8 == b'.' && temp[1] as u8 == b'.' && temp[2] == 0
+        {
+            continue;
         }
 
         result.push(temp);

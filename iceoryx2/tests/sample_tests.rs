@@ -42,7 +42,7 @@ mod sample {
             let node = NodeBuilder::new().create::<Sut>().unwrap();
             let service_name = generate_name();
             let service = node
-                .service_builder(service_name.clone())
+                .service_builder(&service_name)
                 .publish_subscribe::<u64>()
                 .max_publishers(2)
                 .max_subscribers(1)
@@ -96,7 +96,7 @@ mod sample {
         assert_that!(
             test_context
                 .node
-                .service_builder(service_name)
+                .service_builder(&service_name)
                 .publish_subscribe::<u64>()
                 .create(),
             is_ok

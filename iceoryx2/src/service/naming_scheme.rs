@@ -15,8 +15,6 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::FileName;
 
-use super::static_config::StaticConfig;
-
 pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     let msg = "The system does not support the required file name length for the listeners event concept name.";
     let origin = "event_concept_name()";
@@ -26,11 +24,15 @@ pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     file
 }
 
-pub(crate) fn dynamic_config_storage_name(static_config: &StaticConfig) -> FileName {
-    FileName::new(static_config.uuid().as_bytes()).unwrap()
+pub(crate) fn dynamic_config_storage_name(service_uuid: &str) -> FileName {
+    FileName::new(service_uuid.as_bytes()).unwrap()
 }
 
 pub(crate) fn static_config_storage_name(uuid: &str) -> FileName {
+    FileName::new(uuid.as_bytes()).unwrap()
+}
+
+pub(crate) fn service_tag_name(uuid: &str) -> FileName {
     FileName::new(uuid.as_bytes()).unwrap()
 }
 
@@ -45,7 +47,23 @@ pub(crate) fn connection_name(
     file
 }
 
-pub(crate) fn data_segment_name(publisher_id: UniquePublisherId) -> FileName {
+pub(crate) fn extract_publisher_id_from_connection(connection: &FileName) -> UniquePublisherId {
+    let name = core::str::from_utf8(connection.as_bytes()).unwrap();
+    let publisher_id = &name[..name.find('_').unwrap()];
+    let value: u128 = publisher_id.parse::<u128>().unwrap();
+
+    unsafe { core::mem::transmute::<u128, UniquePublisherId>(value) }
+}
+
+pub(crate) fn extract_subscriber_id_from_connection(connection: &FileName) -> UniqueSubscriberId {
+    let name = core::str::from_utf8(connection.as_bytes()).unwrap();
+    let subscriber_id = &name[name.find('_').unwrap() + 1..];
+    let value: u128 = subscriber_id.parse::<u128>().unwrap();
+
+    unsafe { core::mem::transmute::<u128, UniqueSubscriberId>(value) }
+}
+
+pub(crate) fn data_segment_name(publisher_id: &UniquePublisherId) -> FileName {
     let msg = "The system does not support the required file name length for the publishers data segment.";
     let origin = "data_segment_name()";
 

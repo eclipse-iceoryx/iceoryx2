@@ -19,7 +19,7 @@
 //! let node = NodeBuilder::new().create::<process_local::Service>()?;
 //!
 //! // use `process_local` as communication variant
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -53,7 +53,9 @@ impl crate::service::Service for Service {
     type Connection = zero_copy_connection::process_local::Connection;
     type Event = event::process_local::EventImpl;
     type Monitoring = monitoring::process_local::ProcessLocalMonitoring;
+}
 
+impl crate::service::internal::ServiceInternal<Service> for Service {
     fn __internal_from_state(state: ServiceState<Self>) -> Self {
         Self { state }
     }

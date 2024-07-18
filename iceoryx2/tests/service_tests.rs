@@ -94,7 +94,7 @@ mod service {
             service_name: &ServiceName,
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
-            node.service_builder(service_name.clone())
+            node.service_builder(service_name)
                 .publish_subscribe::<u64>()
                 .open_with_attributes(attributes)
         }
@@ -106,7 +106,7 @@ mod service {
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
             let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
-            node.service_builder(service_name.clone())
+            node.service_builder(service_name)
                 .publish_subscribe::<u64>()
                 .max_nodes(number_of_nodes)
                 .create_with_attributes(attributes)
@@ -159,7 +159,7 @@ mod service {
             service_name: &ServiceName,
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
-            node.service_builder(service_name.clone())
+            node.service_builder(service_name)
                 .event()
                 .open_with_attributes(attributes)
         }
@@ -171,7 +171,7 @@ mod service {
             attributes: &AttributeSpecifier,
         ) -> Result<Self::Factory, Self::CreateError> {
             let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
-            node.service_builder(service_name.clone())
+            node.service_builder(service_name)
                 .event()
                 .max_nodes(number_of_nodes)
                 .create_with_attributes(attributes)
@@ -217,14 +217,14 @@ mod service {
         let service_name = generate_name();
         let node_1 = NodeBuilder::new().create::<Sut>().unwrap();
         let sut_pub_sub = node_1
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
         assert_that!(sut_pub_sub, is_ok);
         let sut_pub_sub = sut_pub_sub.unwrap();
 
         let node_2 = NodeBuilder::new().create::<Sut>().unwrap();
-        let sut_event = node_2.service_builder(service_name).event().create();
+        let sut_event = node_2.service_builder(&service_name).event().create();
         assert_that!(sut_event, is_ok);
         let sut_event = sut_event.unwrap();
 

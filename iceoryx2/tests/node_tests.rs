@@ -14,7 +14,7 @@
 mod node {
     use std::collections::{HashSet, VecDeque};
     use std::sync::Barrier;
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{
@@ -27,6 +27,8 @@ mod node {
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
+
+    const TIMEOUT: Duration = Duration::from_millis(25);
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
@@ -92,10 +94,7 @@ mod node {
     #[test]
     fn node_with_name_can_be_created<S: Service>() {
         let node_name = NodeName::new("photons taste like chicken").unwrap();
-        let sut = NodeBuilder::new()
-            .name(node_name.clone())
-            .create::<S>()
-            .unwrap();
+        let sut = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
 
         assert_that!(*sut.name(), eq node_name);
     }
@@ -107,12 +106,7 @@ mod node {
 
         let mut nodes = vec![];
         for _ in 0..NUMBER_OF_NODES {
-            nodes.push(
-                NodeBuilder::new()
-                    .name(node_name.clone())
-                    .create::<S>()
-                    .unwrap(),
-            );
+            nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
         }
 
         for node in nodes {
@@ -135,7 +129,7 @@ mod node {
         let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "give me a bit");
-            let node = NodeBuilder::new().name(node_name).create::<S>().unwrap();
+            let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
             node_details.push_back(Details::from_node(&node));
             nodes.push(node);
         }
@@ -151,7 +145,7 @@ mod node {
         let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "gravity should be illegal");
-            let node = NodeBuilder::new().name(node_name).create::<S>().unwrap();
+            let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
             node_details.push_back(Details::from_node(&node));
             nodes.push(node);
         }
@@ -174,7 +168,7 @@ mod node {
                 i,
                 "its a bird, its a plane, no its the mountain goat jumping through the code",
             );
-            nodes.push(NodeBuilder::new().name(node_name).create::<S>().unwrap());
+            nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
             assert_that!(node_ids.insert(nodes.last().unwrap().id().clone()), eq true);
         }
     }
@@ -194,10 +188,10 @@ mod node {
         for i in 0..NUMBER_OF_NODES {
             let node_name_1 = generate_node_name(i, "gravity should be illegal");
             let node_name_2 = generate_node_name(i, "i like to name it name it");
-            let node_1 = NodeBuilder::new().name(node_name_1).create::<S>().unwrap();
+            let node_1 = NodeBuilder::new().name(&node_name_1).create::<S>().unwrap();
             let node_2 = NodeBuilder::new()
                 .config(&config)
-                .name(node_name_2)
+                .name(&node_name_2)
                 .create::<S>()
                 .unwrap();
 
@@ -256,6 +250,9 @@ mod node {
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         const NUMBER_OF_ITERATIONS: usize = 100;
         let barrier = Barrier::new(number_of_creators);
+        let mut config = Config::global_config().clone();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
 
         std::thread::scope(|s| {
             let mut threads = vec![];
@@ -263,7 +260,7 @@ mod node {
                 threads.push(s.spawn(|| {
                     barrier.wait();
                     for _ in 0..NUMBER_OF_ITERATIONS {
-                        let node = NodeBuilder::new().create::<S>().unwrap();
+                        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
                         let mut found_self = false;
                         let result = Node::<S>::list(node.config(), |node_state| {
@@ -336,6 +333,16 @@ mod node {
         } else {
             test_fail!("Process internal nodes shall be always detected as alive.");
         }
+    }
+
+    #[test]
+    fn node_wait_returns_tick_on_timeout<S: Service>() {
+        let node = NodeBuilder::new().create::<S>().unwrap();
+
+        let start = Instant::now();
+        let event = node.wait(TIMEOUT);
+        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        assert_that!(event, eq NodeEvent::Tick);
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

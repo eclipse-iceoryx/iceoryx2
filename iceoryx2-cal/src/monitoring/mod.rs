@@ -134,7 +134,12 @@ pub trait MonitoringToken: NamedConcept {}
 
 /// The cleaner owns the remains of a dead process and is the only one that is allowed to clean up
 /// those resources.
-pub trait MonitoringCleaner: NamedConcept {}
+pub trait MonitoringCleaner: NamedConcept {
+    /// Abandons the [`MonitoringCleaner`] without removing the underlying [`Monitoring`] concept. This is useful
+    /// when another process tried to cleanup the stale resources of the dead process but is unable
+    /// to due to insufficient permissions.
+    fn abandon(self);
+}
 
 /// The monitor allows to monitor another process that has instantiated a [`MonitoringToken`]
 pub trait MonitoringMonitor: NamedConcept {

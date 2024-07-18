@@ -19,7 +19,7 @@
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 //!
 //! // use `zero_copy` as communication variant
-//! let service = node.service_builder("My/Funk/ServiceName".try_into()?)
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
 //!
@@ -53,7 +53,9 @@ impl crate::service::Service for Service {
     type Connection = zero_copy_connection::posix_shared_memory::Connection;
     type Event = event::unix_datagram_socket::EventImpl;
     type Monitoring = monitoring::file_lock::FileLockMonitoring;
+}
 
+impl crate::service::internal::ServiceInternal<Service> for Service {
     fn __internal_from_state(state: ServiceState<Self>) -> Self {
         Self { state }
     }

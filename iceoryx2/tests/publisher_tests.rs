@@ -57,7 +57,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -75,7 +75,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<ComplexType>()
             .create()?;
 
@@ -93,7 +93,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -116,7 +116,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -139,7 +139,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<[ComplexType]>()
             .create()?;
 
@@ -160,7 +160,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -178,7 +178,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -210,7 +210,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -231,7 +231,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -255,7 +255,7 @@ mod publisher {
         let service_name = generate_name()?;
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let service = node
-            .service_builder(service_name)
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create()?;
 
@@ -282,7 +282,7 @@ mod publisher {
         let service = node
             .lock()
             .unwrap()
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .subscriber_max_buffer_size(1)
             .enable_safe_overflow(false)
@@ -301,7 +301,7 @@ mod publisher {
                 let service = node
                     .lock()
                     .unwrap()
-                    .service_builder(service_name)
+                    .service_builder(&service_name)
                     .publish_subscribe::<u64>()
                     .subscriber_max_buffer_size(1)
                     .open()
@@ -361,7 +361,7 @@ mod publisher {
         const MAX_PUBLISHERS: usize = 8;
 
         let sut = node
-            .service_builder(service_name.clone())
+            .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .max_publishers(MAX_PUBLISHERS)
             .create()

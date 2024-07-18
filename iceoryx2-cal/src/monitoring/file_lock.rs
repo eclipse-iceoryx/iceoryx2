@@ -134,7 +134,7 @@ impl NamedConceptMgmt for FileLockMonitoring {
 
 #[derive(Debug)]
 pub struct Cleaner {
-    _cleaner: ProcessCleaner,
+    cleaner: ProcessCleaner,
     name: FileName,
 }
 
@@ -144,7 +144,11 @@ impl NamedConcept for Cleaner {
     }
 }
 
-impl MonitoringCleaner for Cleaner {}
+impl MonitoringCleaner for Cleaner {
+    fn abandon(self) {
+        self.cleaner.abandon()
+    }
+}
 
 #[derive(Debug)]
 pub struct Token {
@@ -283,7 +287,7 @@ impl MonitoringBuilder<FileLockMonitoring> for Builder {
         let process_state_path = self.config.path_for(&self.name);
         match ProcessCleaner::new(&process_state_path) {
             Ok(cleaner) => Ok(Cleaner {
-                _cleaner: cleaner,
+                cleaner,
                 name: self.name,
             }),
             Err(ProcessCleanerCreateError::Interrupt) => {

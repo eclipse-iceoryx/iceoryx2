@@ -37,8 +37,8 @@
 //! };
 //!
 //! let mut state = container.get_state();
-//! state.for_each(|index: u32, value: &u32| {
-//!     println!("index: {}, value: {}", index, value);
+//! state.for_each(|handle: ContainerHandle, value: &u32| {
+//!     println!("handle: {:?}, value: {}", handle, value);
 //!     CallbackProgression::Continue
 //! });
 //!
@@ -46,8 +46,8 @@
 //!
 //! if unsafe { container.update_state(&mut state) } {
 //!     println!("container state has changed");
-//!     state.for_each(|index: u32, value: &u32| {
-//!         println!("index: {}, value: {}", index, value);
+//!     state.for_each(|handle: ContainerHandle, value: &u32| {
+//!         println!("handle: {:?}, value: {}", handle, value);
 //!         CallbackProgression::Continue
 //!     });
 //! }
@@ -136,16 +136,21 @@ impl<T: Copy + Debug> ContainerState<T> {
     /// let container = FixedSizeContainer::<u128, 128>::new();
     ///
     /// let mut state = container.get_state();
-    /// state.for_each(|index: u32, value: &u128| {
-    ///     println!("index: {}, value: {}", index, value);
+    /// state.for_each(|handle: ContainerHandle, value: &u128| {
+    ///     println!("handle: {:?}, value: {}", handle, value);
     ///     CallbackProgression::Continue
     /// });
     /// ```
-    pub fn for_each<F: FnMut(u32, &T) -> CallbackProgression>(&self, mut callback: F) {
+    pub fn for_each<F: FnMut(ContainerHandle, &T) -> CallbackProgression>(&self, mut callback: F) {
         for i in 0..self.data.len() {
             if self.active_index[i] % 2 == 1
-                && callback(i as _, unsafe { self.data[i].assume_init_ref() })
-                    == CallbackProgression::Stop
+                && callback(
+                    ContainerHandle {
+                        index: i as _,
+                        container_id: self.container_id,
+                    },
+                    unsafe { self.data[i].assume_init_ref() },
+                ) == CallbackProgression::Stop
             {
                 return;
             }
@@ -277,6 +282,12 @@ impl<T: Copy + Debug> Container<T> {
     /// Returns the capacity of the container.
     pub fn capacity(&self) -> usize {
         self.capacity
+    }
+
+    /// Returns true if the container is locked, otherwise false.
+    /// If the [`Container`] is locked no more elements can be added to it.
+    pub fn is_locked(&self) -> bool {
+        self.index_set.is_locked()
     }
 
     /// Returns the current len of the container

@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_pal_configuration::PATH_LENGTH;
 use windows_sys::Win32::{
     Foundation::{CloseHandle, ERROR_ALREADY_EXISTS, HANDLE},
     Security::SECURITY_ATTRIBUTES,
@@ -28,19 +29,18 @@ const INITIALIZATION_IN_PROGRESS: u64 = 0xbebebebebebebebe;
 const SHM_SEGMENT_NAME: &[u8] = b"/port_to_uds_name_map\0";
 const SHM_SIZE: usize = core::mem::size_of::<PortToUdsNameMap>();
 const UNINITIALIZED_ENTRY: u64 = 1;
-pub(crate) const MAX_UDS_NAME_LEN: usize = 108;
 
 struct Entry {
     aba_counter: IoxAtomicU64,
-    value: [UnsafeCell<[u8; MAX_UDS_NAME_LEN]>; 2],
+    value: [UnsafeCell<[u8; PATH_LENGTH]>; 2],
 }
 
 impl Entry {
     fn initialize(&mut self) {
         self.aba_counter = IoxAtomicU64::new(UNINITIALIZED_ENTRY);
         self.value = [
-            UnsafeCell::new([0; MAX_UDS_NAME_LEN]),
-            UnsafeCell::new([0; MAX_UDS_NAME_LEN]),
+            UnsafeCell::new([0; PATH_LENGTH]),
+            UnsafeCell::new([0; PATH_LENGTH]),
         ];
     }
 
@@ -64,18 +64,18 @@ impl Entry {
     fn set(&self, value: &[u8]) {
         let current = self.aba_counter.load(Ordering::Acquire);
         unsafe {
-            (*self.value[(current % 2) as usize].get()) = [0u8; MAX_UDS_NAME_LEN];
+            (*self.value[(current % 2) as usize].get()) = [0u8; PATH_LENGTH];
             (*self.value[(current % 2) as usize].get())[..value.len()].copy_from_slice(value);
         };
         self.aba_counter.fetch_add(1, Ordering::Release);
     }
 
-    fn get(&self) -> [u8; MAX_UDS_NAME_LEN] {
+    fn get(&self) -> [u8; PATH_LENGTH] {
         let current = self.aba_counter.load(Ordering::Acquire);
         let mut result;
         loop {
             if current == UNINITIALIZED_ENTRY {
-                return [0u8; MAX_UDS_NAME_LEN];
+                return [0u8; PATH_LENGTH];
             }
 
             result = unsafe { *self.value[((current - 1) % 2) as usize].get() };
@@ -93,8 +93,8 @@ impl Entry {
     }
 }
 
-fn normalized_name(name: &[u8]) -> [u8; MAX_UDS_NAME_LEN] {
-    let mut result = [0u8; MAX_UDS_NAME_LEN];
+fn normalized_name(name: &[u8]) -> [u8; PATH_LENGTH] {
+    let mut result = [0u8; PATH_LENGTH];
     let low_case = name.to_ascii_lowercase();
     let mut is_previous_char_path_separator = false;
 
@@ -252,7 +252,7 @@ impl PortToUds {
         unsafe { (*self.map).remove(name) }
     }
 
-    pub fn list(&self, path: &[u8]) -> Vec<[u8; MAX_UDS_NAME_LEN]> {
+    pub fn list(&self, path: &[u8]) -> Vec<[u8; PATH_LENGTH]> {
         let path = normalized_name(path);
         let path_len = unsafe { c_string_length(path.as_ptr().cast()) };
 
@@ -267,7 +267,7 @@ impl PortToUds {
                 }
 
                 if value[..path_len] == path[..path_len] {
-                    let mut file_name = [0u8; MAX_UDS_NAME_LEN];
+                    let mut file_name = [0u8; PATH_LENGTH];
                     let mut start_adjustment = 0;
 
                     if path_len != 0 {
@@ -315,7 +315,7 @@ impl PortToUds {
     }
 
     pub fn reset(&self, port: u16) {
-        self.set(port, &[0; MAX_UDS_NAME_LEN]);
+        self.set(port, &[0; PATH_LENGTH]);
     }
 }
 
@@ -323,7 +323,7 @@ impl PortToUds {
 mod tests {
     use iceoryx2_bb_testing::assert_that;
 
-    use crate::windows::win32_udp_port_to_uds_name::MAX_UDS_NAME_LEN;
+    use crate::windows::win32_udp_port_to_uds_name::PATH_LENGTH;
 
     use super::PortToUds;
 
@@ -376,7 +376,7 @@ mod tests {
         assert_that!(sut.get_port(b"hypnotoad"), eq 789);
     }
 
-    fn contains(list: &Vec<[u8; MAX_UDS_NAME_LEN]>, value: &[u8]) -> bool {
+    fn contains(list: &Vec<[u8; PATH_LENGTH]>, value: &[u8]) -> bool {
         for entry in list {
             if &entry[..value.len()] == value {
                 return true;

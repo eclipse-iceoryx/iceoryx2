@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_pal_configuration::PATH_LENGTH;
 use windows_sys::Win32::{
     Foundation::HANDLE,
     Networking::WinSock::SOCKADDR,
@@ -23,7 +24,7 @@ use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::WaitAction;
 use std::sync::atomic::Ordering;
 
-use super::win32_udp_port_to_uds_name::{PortToUds, MAX_UDS_NAME_LEN};
+use super::win32_udp_port_to_uds_name::PortToUds;
 
 const MAX_SUPPORTED_FD_HANDLES: usize = 1024;
 
@@ -318,7 +319,7 @@ impl HandleTranslator {
         result
     }
 
-    pub(crate) fn list_all_uds(&self, path: *const c_char) -> Vec<[u8; MAX_UDS_NAME_LEN]> {
+    pub(crate) fn list_all_uds(&self, path: *const c_char) -> Vec<[u8; PATH_LENGTH]> {
         let mut result = vec![];
         let path_slice = unsafe { core::slice::from_raw_parts(path.cast(), c_string_length(path)) };
 

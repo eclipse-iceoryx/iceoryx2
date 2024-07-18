@@ -43,7 +43,7 @@ impl<Service: service::Service> Connection<Service> {
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
             "Unable to establish connection to subscriber {:?} from publisher {:?}",
-            subscriber_details.port_id, this.port_id
+            subscriber_details.subscriber_id, this.port_id
         );
         if this.static_config.subscriber_max_buffer_size < subscriber_details.buffer_size {
             fail!(from this, with ZeroCopyCreationError::IncompatibleBufferSize,
@@ -52,7 +52,7 @@ impl<Service: service::Service> Connection<Service> {
         }
 
         let sender = fail!(from this, when <Service::Connection as ZeroCopyConnection>::
-                        Builder::new( &connection_name(this.port_id, subscriber_details.port_id))
+                        Builder::new( &connection_name(this.port_id, subscriber_details.subscriber_id))
                                 .config(&connection_config::<Service>(this.shared_node.config()))
                                 .buffer_size(subscriber_details.buffer_size)
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
@@ -63,7 +63,7 @@ impl<Service: service::Service> Connection<Service> {
 
         Ok(Self {
             sender,
-            subscriber_id: subscriber_details.port_id,
+            subscriber_id: subscriber_details.subscriber_id,
         })
     }
 }

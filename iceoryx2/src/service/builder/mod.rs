@@ -45,8 +45,10 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use super::config_scheme::dynamic_config_storage_config;
+use super::config_scheme::service_tag_config;
 use super::config_scheme::static_config_storage_config;
 use super::naming_scheme::dynamic_config_storage_name;
+use super::naming_scheme::service_tag_name;
 use super::naming_scheme::static_config_storage_name;
 use super::service_name::ServiceName;
 use super::Service;
@@ -107,9 +109,9 @@ pub struct Builder<S: Service> {
 }
 
 impl<S: Service> Builder<S> {
-    pub(crate) fn new(name: ServiceName, shared_node: Arc<SharedNode<S>>) -> Self {
+    pub(crate) fn new(name: &ServiceName, shared_node: Arc<SharedNode<S>>) -> Self {
         Self {
-            name,
+            name: name.clone(),
             shared_node,
             _phantom_s: PhantomData,
         }
@@ -281,7 +283,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             DynamicConfig,
         >>::Builder<'_> as NamedConceptBuilder<
             ServiceType::DynamicStorage,
-        >>::new(&dynamic_config_storage_name(&self.service_config))
+        >>::new(&dynamic_config_storage_name(self.service_config.uuid()))
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(additional_size + required_memory_size)
             .has_ownership(false)
@@ -310,7 +312,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage,
-                >>::new(&dynamic_config_storage_name(&self.service_config))
+                >>::new(&dynamic_config_storage_name(self.service_config.uuid()))
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
                 .open(),
@@ -334,6 +336,30 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             })?;
 
         Ok(storage)
+    }
+
+    fn create_node_service_tag<ErrorType>(
+        &self,
+        error_msg: &str,
+        error_value: ErrorType,
+    ) -> Result<Option<ServiceType::StaticStorage>, ErrorType> {
+        match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+            ServiceType::StaticStorage,
+        >>::new(&service_tag_name(self.service_config.uuid()))
+        .config(&service_tag_config::<ServiceType>(
+            self.shared_node.config(),
+            self.shared_node.id(),
+        ))
+        .has_ownership(true)
+        .create(&[])
+        {
+            Ok(static_storage) => Ok(Some(static_storage)),
+            Err(StaticStorageCreateError::AlreadyExists) => Ok(None),
+            Err(e) => {
+                fail!(from self, with error_value,
+                    "{} since the nodes service tag could not be created ({:?}).", error_msg, e);
+            }
+        }
     }
 
     fn create_static_config_storage(

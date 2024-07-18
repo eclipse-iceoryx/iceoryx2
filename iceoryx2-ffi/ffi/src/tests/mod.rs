@@ -49,8 +49,9 @@ fn create_node<S: Service + ServiceTypeMapping>(node_name: &str) -> iox2_node_h 
         assert_that!(ret_val, eq(IOX2_OK));
         iox2_node_builder_set_name(
             iox2_cast_node_builder_ref_h(node_builder_handle),
-            node_name_handle,
+            iox2_cast_node_name_ptr(node_name_handle),
         );
+        iox2_node_name_drop(node_name_handle);
 
         let mut node_handle: iox2_node_h = std::ptr::null_mut();
         let ret_val = iox2_node_builder_create(

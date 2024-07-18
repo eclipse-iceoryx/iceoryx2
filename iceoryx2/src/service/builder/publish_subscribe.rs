@@ -513,6 +513,10 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
 
         match self.is_service_available(msg)? {
             None => {
+                let service_tag = self
+                    .base
+                    .create_node_service_tag(msg, PublishSubscribeCreateError::InternalFailure)?;
+
                 // create static config
                 let static_config = match self.base.create_static_config_storage() {
                     Ok(c) => c,
@@ -576,6 +580,9 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                             "{} since the configuration could not be written to the static storage.", msg);
 
                 unlocked_static_details.release_ownership();
+                if let Some(mut service_tag) = service_tag {
+                    service_tag.release_ownership();
+                }
 
                 Ok(publish_subscribe::PortFactory::new(
                     ServiceType::__internal_from_state(service::ServiceState::new(
@@ -614,6 +621,10 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     let pub_sub_static_config =
                         self.verify_service_attributes(&static_config, attributes)?;
 
+                    let service_tag = self
+                        .base
+                        .create_node_service_tag(msg, PublishSubscribeOpenError::InternalFailure)?;
+
                     let dynamic_config = match self.base.open_dynamic_config_storage() {
                         Ok(v) => v,
                         Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
@@ -646,6 +657,10 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
 
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::PublishSubscribe(pub_sub_static_config.clone());
+
+                    if let Some(mut service_tag) = service_tag {
+                        service_tag.release_ownership();
+                    }
 
                     return Ok(publish_subscribe::PortFactory::new(
                         ServiceType::__internal_from_state(service::ServiceState::new(

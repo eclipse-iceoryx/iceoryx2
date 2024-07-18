@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<zero_copy::Service>()?;
 
     let service = node
-        .service_builder("My/Funk/ServiceName".try_into()?)
+        .service_builder(&"My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<u64>()
         // define the CustomHeader as user_header which is stored in the
         // beginning of every Sample

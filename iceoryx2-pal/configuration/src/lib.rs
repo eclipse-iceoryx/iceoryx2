@@ -20,7 +20,9 @@ pub mod settings {
     pub const PATH_SEPARATOR: u8 = b'/';
     pub const ROOT: &[u8] = b"/";
     pub const FILENAME_LENGTH: usize = 255;
-    pub const PATH_LENGTH: usize = 4096;
+    // it is actually 4096 but to be more compatible with windows and also safe some stack the number
+    // is reduced to 255
+    pub const PATH_LENGTH: usize = 255;
     #[cfg(not(target_os = "macos"))]
     pub const AT_LEAST_TIMING_VARIANCE: f32 = 0.25;
     #[cfg(target_os = "macos")]

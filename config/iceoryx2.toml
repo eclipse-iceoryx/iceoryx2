@@ -7,12 +7,16 @@ prefix                                      = 'iox2_'
 directory                                   = 'nodes'
 monitor-suffix                              = '.node_monitor'
 static-config-suffix                        = '.details'
+service-tag-suffix                          = '.service_tag'
+cleanup-dead-nodes-on-creation              = true
+cleanup-dead-nodes-on-destruction           = true
 
 [global.service]
 directory                                   = 'services'
 publisher-data-segment-suffix               = '.publisher_data'
 static-config-storage-suffix                = '.service'
 dynamic-config-storage-suffix               = '.dynamic'
+event-connection-suffix                     = '.event'
 connection-suffix                           = '.connection'
 creation-timeout.secs                       = 0
 creation-timeout.nanos                      = 500000000

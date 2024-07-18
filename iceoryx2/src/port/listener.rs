@@ -24,7 +24,7 @@
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -44,7 +44,7 @@
 //! use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
-//! let event = node.service_builder("MyEventName".try_into()?)
+//! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
 //!     .open_or_create()?;
 //!
@@ -61,9 +61,12 @@
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError, TriggerId};
-use iceoryx2_cal::named_concept::NamedConceptBuilder;
+use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError, NamedConceptMgmt, TriggerId};
+use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
 
+use crate::config::Config;
+use crate::service::config_scheme::event_config;
+use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::{port::port_identifiers::UniqueListenerId, service};
 use std::sync::atomic::Ordering;
@@ -99,7 +102,7 @@ pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
     listener: <Service::Event as iceoryx2_cal::event::Event>::Listener,
     dynamic_storage: Arc<Service::DynamicStorage>,
-    port_id: UniqueListenerId,
+    listener_id: UniqueListenerId,
 }
 
 impl<Service: service::Service> Drop for Listener<Service> {
@@ -117,13 +120,14 @@ impl<Service: service::Service> Listener<Service> {
     pub(crate) fn new(service: &Service) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
-        let port_id = UniqueListenerId::new();
+        let listener_id = UniqueListenerId::new();
 
-        let event_name = event_concept_name(&port_id);
         let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
+        let event_name = event_concept_name(&listener_id);
+        let event_config = event_config::<Service>(service.__internal_state().shared_node.config());
 
         let listener = fail!(from origin,
-                             when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name)
+                             when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).config(&event_config)
                                 .trigger_id_max(TriggerId::new(service.__internal_state().static_config.event().event_id_max_value))
                                 .create(),
                              with ListenerCreateError::ResourceCreationFailed,
@@ -133,7 +137,7 @@ impl<Service: service::Service> Listener<Service> {
             dynamic_storage,
             dynamic_listener_handle: None,
             listener,
-            port_id,
+            listener_id,
         };
 
         std::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -145,8 +149,10 @@ impl<Service: service::Service> Listener<Service> {
             .dynamic_storage
             .get()
             .event()
-            .add_listener_id(port_id)
-        {
+            .add_listener_id(ListenerDetails {
+                listener_id,
+                node_id: *service.__internal_state().shared_node.id(),
+            }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,
@@ -237,6 +243,25 @@ impl<Service: service::Service> Listener<Service> {
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]
     pub fn id(&self) -> UniqueListenerId {
-        self.port_id
+        self.listener_id
     }
+}
+
+pub(crate) unsafe fn remove_connection_of_listener<Service: service::Service>(
+    listener_id: &UniqueListenerId,
+    config: &Config,
+) -> Result<(), NamedConceptRemoveError> {
+    let origin = format!(
+        "remove_connection_of_listener::<{}>({:?})",
+        core::any::type_name::<Service>(),
+        listener_id
+    );
+    let msg = "Unable to remove the listener connection";
+    let event_name = event_concept_name(listener_id);
+    let event_config = event_config::<Service>(config);
+
+    fail!(from origin,
+            when <Service::Event as NamedConceptMgmt>::remove_cfg(&event_name, &event_config),
+            "{} since the underlying concept could not be removed.", msg);
+    Ok(())
 }

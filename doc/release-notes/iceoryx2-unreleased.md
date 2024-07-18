@@ -9,6 +9,7 @@
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
  * Subscriber buffer size can be reduced [#19](https://github.com/eclipse-iceoryx/iceoryx2/issues/19)
+ * Nodes cleanup all resources of dead nodes on creation and destruction [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
  * CLI for iox2 [#98](https://github.com/eclipse-iceoryx/iceoryx2/issues/98)
     * Add entrypoint CLI `iox2` in preparation for adding additional CLI commands
  * Introduce Nodes [#102](https://github.com/eclipse-iceoryx/iceoryx2/issues/102)
@@ -58,7 +59,6 @@
         * `FixedSizeVec`
  * TryInto implemented for `{Node|Service}Name` [#243](https://github.com/eclipse-iceoryx/iceoryx2/issues/243)
  * Add custom user header [#253](https://github.com/eclipse-iceoryx/iceoryx2/issues/253)
-
 ### Bugfixes
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
