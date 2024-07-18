@@ -26,8 +26,8 @@ NodeName::~NodeName() {
 }
 
 NodeName::NodeName(NodeName&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
-    rhs.m_handle = nullptr;
+    : m_handle { nullptr } {
+    *this = std::move(rhs);
 }
 
 auto NodeName::operator=(NodeName&& rhs) noexcept -> NodeName& {
@@ -42,17 +42,17 @@ auto NodeName::operator=(NodeName&& rhs) noexcept -> NodeName& {
 
 NodeName::NodeName(const NodeName& rhs)
     : m_handle { nullptr } {
-    auto value = rhs.to_string();
-    IOX_ASSERT(iox2_node_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
-               "NodeName shall always contain a valid value.");
+    *this = rhs;
 }
 
 auto NodeName::operator=(const NodeName& rhs) -> NodeName& {
     if (this != &rhs) {
         drop();
 
-        auto value = rhs.to_string();
-        IOX_ASSERT(iox2_node_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
+        const auto* ptr = iox2_cast_node_name_ptr(m_handle);
+        size_t len = 0;
+        const auto* c_ptr = iox2_node_name_as_c_str(ptr, &len);
+        IOX_ASSERT(iox2_node_name_new(nullptr, c_ptr, len, &m_handle) == IOX2_OK,
                    "NodeName shall always contain a valid value.");
     }
 

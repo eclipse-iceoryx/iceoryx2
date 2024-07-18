@@ -43,7 +43,7 @@ Node<T>::~Node() {
 
 template <ServiceType T>
 auto Node<T>::name() const -> const NodeName& {
-    const auto* node_name = reinterpret_cast<const NodeName*>(iox2_node_name(m_handle));
+    const auto* node_name = reinterpret_cast<const NodeName*>(m_handle);
     return *node_name;
 }
 
@@ -102,7 +102,8 @@ auto NodeBuilder::create() const&& -> iox::expected<Node<T>, NodeCreationFailure
     auto* handle_ref = iox2_cast_node_builder_ref_h(m_handle);
 
     if (m_name.has_value()) {
-        iox2_node_builder_set_name(handle_ref, m_name->m_handle);
+        const auto* name_ptr = iox2_cast_node_name_ptr(m_name->m_handle);
+        iox2_node_builder_set_name(handle_ref, name_ptr);
     }
 
     if (m_config.has_value()) {

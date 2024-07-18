@@ -23,6 +23,6 @@ TEST(Node, node_name_is_applied) {
     auto node_name = NodeName::create(name_value).expect("");
 
     auto sut = NodeBuilder().name(node_name).create<ServiceType::Local>().expect("");
-    // ASSERT_THAT(sut.name().to_string(), Eq(node_name.to_string()));
+    ASSERT_THAT(sut.name().to_string(), Eq(node_name.to_string()));
 }
 } // namespace
