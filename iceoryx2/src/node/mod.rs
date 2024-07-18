@@ -367,14 +367,6 @@ impl<Service: service::Service> DeadNodeView<Service> {
             Config::global_config()
         };
 
-        let cleaner = fail!(from self, when self.acquire_cleaner_lock(&monitor_name, config),
-                        "{} since the monitor cleaner lock could not be acquired.", msg);
-
-        if cleaner.is_none() {
-            return Ok(false);
-        }
-        let cleaner = cleaner.unwrap();
-
         // The cleaner guarantees that the lock can be acquired only once in the inter-process context.
         // But the same process could acquire the same cleaner multiple times. To avoid intra-process
         // races an additional lock is introduced so that only one thread can call
@@ -385,6 +377,15 @@ impl<Service: service::Service> DeadNodeView<Service> {
         if IN_CLEANUP_SECTION.swap(true, Ordering::Relaxed) {
             return Ok(false);
         }
+
+        let cleaner = fail!(from self, when self.acquire_cleaner_lock(&monitor_name, config),
+                        "{} since the monitor cleaner lock could not be acquired.", msg);
+
+        if cleaner.is_none() {
+            IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
+            return Ok(false);
+        }
+        let cleaner = cleaner.unwrap();
 
         let remove_node_from_service = |service_uuid: &FileName| {
             if Service::__internal_remove_node_from_service(self.id(), service_uuid, config).is_ok()
@@ -402,8 +403,8 @@ impl<Service: service::Service> DeadNodeView<Service> {
         match Node::<Service>::service_tags(config, self.id(), remove_node_from_service) {
             Ok(()) => (),
             Err(e) => {
-                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 cleaner.abandon();
+                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 fail!(from self, with NodeCleanupFailure::InsufficientPermissions,
                     "{} since the service tags could not be read ({:?}).", msg, e);
             }
@@ -411,12 +412,13 @@ impl<Service: service::Service> DeadNodeView<Service> {
 
         match remove_node::<Service>(*self.id(), config) {
             Ok(_) => {
+                drop(cleaner);
                 IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 Ok(true)
             }
             Err(e) => {
-                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 cleaner.abandon();
+                IN_CLEANUP_SECTION.store(false, Ordering::Relaxed);
                 fail!(from self, with e, "{} since the node itself could not be removed.", msg);
             }
         }

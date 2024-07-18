@@ -25,7 +25,6 @@ Adjusting `global` settings ensures a non-interfering setup.
  * `global.node.monitor-suffix` - [string]: Suffix added to the node monitor.
  * `global.node.static-config-suffix` - [string]: Suffix added to the static config of the node.
  * `global.node.service-tag-suffix` - [string]: Suffix added to the service tag of the node.
- * `global.node.service-tag-suffix` - [string]: Suffix added to the service tag of the node.
  * `global.node.cleanup-dead-nodes-on-creation` - [`true`|`false`]: Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever a new node is created.
  * `global.node.cleanup-dead-nodes-on-destruction` - [`true`|`false`]: Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever a node is going out-of-scope.
 
