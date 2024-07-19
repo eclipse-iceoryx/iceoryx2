@@ -42,9 +42,9 @@ Node<T>::~Node() {
 }
 
 template <ServiceType T>
-auto Node<T>::name() const -> const NodeName& {
-    const auto* node_name = reinterpret_cast<const NodeName*>(m_handle);
-    return *node_name;
+auto Node<T>::name() const -> const NodeNameView {
+    auto node_name_ptr = iox2_node_name(m_handle);
+    return NodeNameView { node_name_ptr };
 }
 
 template <ServiceType T>

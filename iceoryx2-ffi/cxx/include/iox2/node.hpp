@@ -48,7 +48,7 @@ class Node {
     Node(const Node&) = delete;
     auto operator=(const Node&) -> Node& = delete;
 
-    auto name() const -> const NodeName&;
+    auto name() const -> const NodeNameView;
     auto id() const -> NodeId;
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
     auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent;

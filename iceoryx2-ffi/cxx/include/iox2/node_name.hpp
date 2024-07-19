@@ -38,6 +38,8 @@ class NodeNameView {
     auto to_owned() const -> NodeName;
 
   private:
+    template <ServiceType>
+    friend class Node;
     friend class NodeName;
     explicit NodeNameView(iox2_node_name_ptr ptr);
     iox2_node_name_ptr m_ptr;
@@ -65,8 +67,6 @@ class NodeName {
 
   private:
     friend class NodeBuilder;
-    template <ServiceType>
-    friend class Node;
     friend class NodeNameView;
 
     explicit NodeName(iox2_node_name_h handle);
