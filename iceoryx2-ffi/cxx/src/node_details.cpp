@@ -13,6 +13,11 @@
 #include "iox2/node_details.hpp"
 
 namespace iox2 {
+NodeDetails::NodeDetails(const NodeName& name, const Config& config)
+    : m_node_name { name }
+    , m_config { config } {
+}
+
 auto NodeDetails::name() const -> const NodeName& {
     return m_node_name;
 }

@@ -69,14 +69,31 @@ auto list_callback(iox2_node_state_e node_state,
                    iox2_node_name_ptr node_name,
                    iox2_config_ptr config,
                    iox2_node_list_callback_context context) -> iox2_callback_progression_e {
-    // auto node_state_creator = [&]() {
-    //     switch (node_state) {
-    //     case iox2_node_state_e_ALIVE:
-    //         break;
-    //     }
-    // };
-    // auto* callback = static_cast<const iox::function<CallbackProgression(NodeState<T>)>*>(context);
-    // return iox::into<iox2_callback_progression_e>((*callback)(NodeState<T>()));
+    auto node_details = [&] {
+        if (node_id == nullptr || config == nullptr) {
+            return iox::optional<NodeDetails>();
+        }
+
+        return iox::optional<NodeDetails>(NodeDetails { NodeNameView { node_name }.to_owned(), Config {} });
+    }();
+
+    auto node_state_object = [&] {
+        switch (node_state) {
+        case iox2_node_state_e_ALIVE:
+            return NodeState<T> { AliveNodeView<T> { NodeId {}, node_details } };
+        case iox2_node_state_e_DEAD:
+            return NodeState<T> { DeadNodeView<T> { AliveNodeView<T> { NodeId {}, node_details } } };
+        case iox2_node_state_e_UNDEFINED:
+            return NodeState<T> { iox2_node_state_e_UNDEFINED, NodeId {} };
+        case iox2_node_state_e_INACCESSIBLE:
+            return NodeState<T> { iox2_node_state_e_INACCESSIBLE, NodeId {} };
+        }
+
+        IOX_UNREACHABLE();
+    }();
+
+    auto* callback = static_cast<const iox::function<CallbackProgression(NodeState<T>)>*>(context);
+    return iox::into<iox2_callback_progression_e>((*callback)(node_state_object));
 }
 // NOLINTEND(readability-function-size)
 

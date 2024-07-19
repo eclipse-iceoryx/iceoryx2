@@ -38,7 +38,9 @@ target_include_directories(includes-only-cxx
 add_library(iceoryx2-cxx-object-lib OBJECT
     src/config.cpp
     src/node.cpp
+    src/node_details.cpp
     src/node_name.cpp
+    src/node_state.cpp
     src/service_name.cpp
 )
 
