@@ -20,6 +20,28 @@
 #include "semantic_string.hpp"
 
 namespace iox2 {
+class ServiceName;
+
+/// Non-owning view of a [`ServiceName`].
+class ServiceNameView {
+  public:
+    ServiceNameView(ServiceNameView&&) = default;
+    ServiceNameView(const ServiceNameView&) = default;
+    auto operator=(ServiceNameView&&) -> ServiceNameView& = default;
+    auto operator=(const ServiceNameView&) -> ServiceNameView& = default;
+    ~ServiceNameView() = default;
+
+    /// Returns a [`iox::string`] containing the [`ServiceName`].
+    auto to_string() const -> iox::string<NODE_NAME_LENGTH>;
+
+    /// Creates a copy of the corresponding [`ServiceName`] and returns it.
+    auto to_owned() const -> ServiceName;
+
+  private:
+    friend class ServiceName;
+    explicit ServiceNameView(iox2_service_name_ptr ptr);
+    iox2_service_name_ptr m_ptr;
+};
 
 /// The name of a [`Service`].
 class ServiceName {
@@ -37,7 +59,9 @@ class ServiceName {
     auto to_string() const -> iox::string<SERVICE_NAME_LENGTH>;
 
   private:
+    friend class ServiceNameView;
     explicit ServiceName(iox2_service_name_h handle);
+    static auto create_impl(const char* value, size_t value_len) -> iox::expected<ServiceName, SemanticStringError>;
     void drop() noexcept;
 
     iox2_service_name_h m_handle;

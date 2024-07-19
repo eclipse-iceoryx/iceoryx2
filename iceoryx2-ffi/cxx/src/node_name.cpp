@@ -88,7 +88,7 @@ auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStri
 }
 
 auto NodeName::create_impl(const char* value, size_t value_len) -> iox::expected<NodeName, SemanticStringError> {
-    if (value_len == NODE_NAME_LENGTH + 1) {
+    if (value_len > NODE_NAME_LENGTH) {
         return iox::err(SemanticStringError::ExceedsMaximumLength);
     }
 
@@ -102,10 +102,7 @@ auto NodeName::create_impl(const char* value, size_t value_len) -> iox::expected
 }
 
 auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGTH> {
-    const auto* ptr = iox2_cast_node_name_ptr(m_handle);
-    size_t len = 0;
-    const auto* c_ptr = iox2_node_name_as_c_str(ptr, &len);
-    return { iox::TruncateToCapacity, c_ptr, len };
+    return NodeNameView(iox2_cast_node_name_ptr(m_handle)).to_string();
 }
 
 } // namespace iox2

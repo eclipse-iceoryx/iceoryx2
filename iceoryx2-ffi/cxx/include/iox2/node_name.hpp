@@ -39,7 +39,7 @@ class NodeNameView {
 
   private:
     friend class NodeName;
-    explicit NodeNameView(iox2_node_name_ptr handle);
+    explicit NodeNameView(iox2_node_name_ptr ptr);
     iox2_node_name_ptr m_ptr;
 };
 
