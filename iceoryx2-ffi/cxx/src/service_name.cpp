@@ -103,10 +103,10 @@ auto ServiceName::create_impl(const char* value,
 }
 
 auto ServiceName::to_string() const -> iox::string<SERVICE_NAME_LENGTH> {
-    const auto* ptr = iox2_cast_service_name_ptr(m_handle);
-    size_t len = 0;
-    const auto* c_ptr = iox2_service_name_as_c_str(ptr, &len);
-    return { iox::TruncateToCapacity, c_ptr, len };
+    return as_view().to_string();
 }
 
+auto ServiceName::as_view() const -> ServiceNameView {
+    return ServiceNameView(iox2_cast_service_name_ptr(m_handle));
+}
 } // namespace iox2

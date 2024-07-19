@@ -52,6 +52,9 @@ class ServiceName {
     auto operator=(const ServiceName&) -> ServiceName&;
     ~ServiceName();
 
+    /// Creates a [`ServiceNameView`]
+    auto as_view() const -> ServiceNameView;
+
     /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
     static auto create(const char* value) -> iox::expected<ServiceName, SemanticStringError>;
 
@@ -66,7 +69,6 @@ class ServiceName {
 
     iox2_service_name_h m_handle;
 };
-
 } // namespace iox2
 
 #endif

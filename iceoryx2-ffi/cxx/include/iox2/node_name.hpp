@@ -52,6 +52,9 @@ class NodeName {
     auto operator=(const NodeName&) -> NodeName&;
     ~NodeName();
 
+    /// Creates a [`NodeNameView`]
+    auto as_view() const -> NodeNameView;
+
     /// Creates a new [`NodeName`].
     /// If the provided name does not contain a valid [`NodeName`] it will return a
     /// [`SemanticStringError`] otherwise the [`NodeName`].

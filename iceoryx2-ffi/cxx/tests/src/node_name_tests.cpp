@@ -27,11 +27,34 @@ TEST(NodeName, valid_node_name_can_be_created) {
 }
 
 TEST(NodeName, creating_node_name_with_too_long_name_fails) {
-    auto invalid_name = std::string(NODE_NAME_LENGTH + 1, 's');
-    auto sut = NodeName::create(invalid_name.c_str());
+    auto test = [](auto overlength) {
+        auto invalid_name = std::string(NODE_NAME_LENGTH + overlength, 's');
+        auto sut = NodeName::create(invalid_name.c_str());
 
-    ASSERT_THAT(sut.has_value(), Eq(false));
-    ASSERT_THAT(sut.error(), Eq(SemanticStringError::ExceedsMaximumLength));
+        ASSERT_THAT(sut.has_value(), Eq(false));
+        ASSERT_THAT(sut.error(), Eq(SemanticStringError::ExceedsMaximumLength));
+    };
+
+    for (uint64_t i = 1; i < 10; ++i) {
+        test(i);
+    }
+}
+
+TEST(NodeName, as_view_works) {
+    const auto* valid_name = "You're my heart, you my toad.";
+    auto sut = NodeName::create(valid_name).expect("");
+    auto sut_view = sut.as_view();
+
+    ASSERT_THAT(sut.to_string().c_str(), StrEq(sut_view.to_string().c_str()));
+}
+
+TEST(NodeName, to_owned_works) {
+    const auto* valid_name = "Brother toady toad.";
+    auto sut = NodeName::create(valid_name).expect("");
+    auto sut_view = sut.as_view();
+    auto sut_owned = sut_view.to_owned();
+
+    ASSERT_THAT(sut_view.to_string().c_str(), StrEq(sut_owned.to_string().c_str()));
 }
 
 } // namespace

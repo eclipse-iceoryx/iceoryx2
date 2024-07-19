@@ -102,7 +102,11 @@ auto NodeName::create_impl(const char* value, size_t value_len) -> iox::expected
 }
 
 auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGTH> {
-    return NodeNameView(iox2_cast_node_name_ptr(m_handle)).to_string();
+    return as_view().to_string();
+}
+
+auto NodeName::as_view() const -> NodeNameView {
+    return NodeNameView(iox2_cast_node_name_ptr(m_handle));
 }
 
 } // namespace iox2
