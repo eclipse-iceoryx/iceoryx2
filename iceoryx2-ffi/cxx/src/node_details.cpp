@@ -10,25 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_DETAILS_HPP
-#define IOX2_NODE_DETAILS_HPP
-
-#include "iox2/config.hpp"
-#include "iox2/node_name.hpp"
+#include "iox2/node_details.hpp"
 
 namespace iox2 {
-/// Contains details of a [`Node`].
-class NodeDetails {
-  public:
-    /// Returns a reference of the [`NodeName`].
-    auto name() const -> const NodeName&;
-    /// Returns a reference to the [`Config`] the [`Node`] uses.
-    auto config() const -> const Config&;
+auto NodeDetails::name() const -> const NodeName& {
+    return m_node_name;
+}
 
-  private:
-    NodeName m_node_name;
-    Config m_config;
-};
+auto NodeDetails::config() const -> const Config& {
+    return m_config;
+}
+
+
 } // namespace iox2
-
-#endif

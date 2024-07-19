@@ -42,8 +42,8 @@ Node<T>::~Node() {
 }
 
 template <ServiceType T>
-auto Node<T>::name() const -> const NodeNameView {
-    auto node_name_ptr = iox2_node_name(m_handle);
+auto Node<T>::name() const -> NodeNameView {
+    const auto* node_name_ptr = iox2_node_name(m_handle);
     return NodeNameView { node_name_ptr };
 }
 
@@ -63,6 +63,7 @@ auto Node<T>::service_builder(const ServiceName& name) const -> ServiceBuilder<T
 }
 
 template <ServiceType T>
+// NOLINTBEGIN(readability-function-size)
 auto list_callback(iox2_node_state_e node_state,
                    iox2_node_id_ptr node_id,
                    iox2_node_name_ptr node_name,
@@ -71,6 +72,7 @@ auto list_callback(iox2_node_state_e node_state,
     auto* callback = static_cast<const iox::function<CallbackProgression(NodeState<T>)>*>(context);
     return iox::into<iox2_callback_progression_e>((*callback)(NodeState<T>()));
 }
+// NOLINTEND(readability-function-size)
 
 template <ServiceType T>
 auto Node<T>::list(ConfigView config, const iox::function<CallbackProgression(NodeState<T>)>& callback)

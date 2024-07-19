@@ -65,7 +65,7 @@ auto ServiceName::operator=(const ServiceName& rhs) -> ServiceName& {
     if (this != &rhs) {
         drop();
 
-        const auto* ptr = iox2_cast_service_name_ptr(m_handle);
+        const auto* ptr = iox2_cast_service_name_ptr(rhs.m_handle);
         size_t len = 0;
         const auto* c_ptr = iox2_service_name_as_c_str(ptr, &len);
         IOX_ASSERT(iox2_service_name_new(nullptr, c_ptr, len, &m_handle) == IOX2_OK,

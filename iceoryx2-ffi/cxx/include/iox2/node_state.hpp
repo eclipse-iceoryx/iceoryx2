@@ -17,6 +17,7 @@
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/optional.hpp"
+#include "iox/variant.hpp"
 #include "node_details.hpp"
 #include "node_failure_enums.hpp"
 #include "node_id.hpp"
@@ -33,9 +34,13 @@ class AliveNodeView {
     auto details() const -> iox::optional<NodeDetails> {
         IOX_TODO();
     }
+
+  private:
+    NodeId m_id;
+    iox::optional<NodeDetails> m_details;
 };
 
-template <ServiceType>
+template <ServiceType T>
 class DeadNodeView {
   public:
     auto id() const -> const NodeId& {
@@ -47,6 +52,9 @@ class DeadNodeView {
     auto remove_stale_resources() -> iox::expected<bool, NodeCleanupFailure> {
         IOX_TODO();
     }
+
+  private:
+    AliveNodeView<T> m_view;
 };
 
 template <ServiceType T>
@@ -66,6 +74,7 @@ class NodeState {
     }
 
   private:
+    iox::variant<AliveNodeView<T>, DeadNodeView<T>, NodeId> m_state;
 };
 } // namespace iox2
 
