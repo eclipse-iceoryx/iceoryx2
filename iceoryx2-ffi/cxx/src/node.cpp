@@ -73,7 +73,7 @@ auto list_callback(iox2_node_state_e node_state,
 }
 
 template <ServiceType T>
-auto Node<T>::list(ConfigRef config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
+auto Node<T>::list(ConfigView config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
     -> iox::expected<void, NodeListFailure> {
     const auto ret_val = iox2_node_list(
         iox::into<iox2_service_type_e>(T), config.m_ptr, list_callback<T>, static_cast<const void*>(&callback));

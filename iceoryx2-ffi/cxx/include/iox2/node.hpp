@@ -52,7 +52,7 @@ class Node {
     auto id() const -> NodeId;
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
     auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent;
-    static auto list(ConfigRef config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
+    static auto list(ConfigView config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
         -> iox::expected<void, NodeListFailure>;
 
   private:
