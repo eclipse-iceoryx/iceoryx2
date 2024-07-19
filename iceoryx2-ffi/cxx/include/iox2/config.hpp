@@ -18,6 +18,7 @@
 namespace iox2 {
 class Config;
 
+/// Non-owning view of a [`Config`].
 class ConfigView {
   public:
     ConfigView(const ConfigView&) = default;
@@ -26,6 +27,7 @@ class ConfigView {
     auto operator=(ConfigView&&) -> ConfigView& = default;
     ~ConfigView() = default;
 
+    /// Creates a copy of the corresponding [`Config`] and returns it.
     auto to_owned() const -> Config;
 
   private:
@@ -38,6 +40,7 @@ class ConfigView {
 
 class Config {
   public:
+    /// Returns a [`ConfigView`] to the current global config.
     static auto global_config() -> ConfigView;
 };
 } // namespace iox2

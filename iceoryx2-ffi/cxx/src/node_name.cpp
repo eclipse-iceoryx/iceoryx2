@@ -12,11 +12,28 @@
 
 #include "iox2/node_name.hpp"
 #include "iox/assertions.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/into.hpp"
 
 #include <cstring>
 
 namespace iox2 {
+auto NodeNameView::to_string() const -> iox::string<NODE_NAME_LENGTH> {
+    size_t len = 0;
+    const auto* c_ptr = iox2_node_name_as_c_str(m_ptr, &len);
+    return { iox::TruncateToCapacity, c_ptr, len };
+}
+
+auto NodeNameView::to_owned() const -> NodeName {
+    size_t len = 0;
+    const auto* c_ptr = iox2_node_name_as_c_str(m_ptr, &len);
+    return NodeName::create_impl(c_ptr, len).expect("NodeNameView contains always valid NodeName");
+}
+
+NodeNameView::NodeNameView(iox2_node_name_ptr ptr)
+    : m_ptr { ptr } {
+}
+
 NodeName::NodeName(iox2_node_name_h handle)
     : m_handle { handle } {
 }

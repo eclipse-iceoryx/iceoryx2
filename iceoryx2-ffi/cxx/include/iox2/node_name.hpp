@@ -20,6 +20,29 @@
 #include "semantic_string.hpp"
 
 namespace iox2 {
+class NodeName;
+
+/// Non-owning view of a [`NodeName`].
+class NodeNameView {
+  public:
+    NodeNameView(NodeNameView&&) = default;
+    NodeNameView(const NodeNameView&) = default;
+    auto operator=(NodeNameView&&) -> NodeNameView& = default;
+    auto operator=(const NodeNameView&) -> NodeNameView& = default;
+    ~NodeNameView() = default;
+
+    /// Returns a [`iox::string`] containing the [`NodeName`].
+    auto to_string() const -> iox::string<NODE_NAME_LENGTH>;
+
+    /// Creates a copy of the corresponding [`NodeName`] and returns it.
+    auto to_owned() const -> NodeName;
+
+  private:
+    friend class NodeName;
+    explicit NodeNameView(iox2_node_name_ptr handle);
+    iox2_node_name_ptr m_ptr;
+};
+
 /// Represent the name for a [`Node`].
 class NodeName {
   public:
@@ -41,6 +64,8 @@ class NodeName {
     friend class NodeBuilder;
     template <ServiceType>
     friend class Node;
+    friend class NodeNameView;
+
     explicit NodeName(iox2_node_name_h handle);
     void drop() noexcept;
     static auto create_impl(const char* value, size_t value_len) -> iox::expected<NodeName, SemanticStringError>;
