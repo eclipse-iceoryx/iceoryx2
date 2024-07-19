@@ -23,11 +23,15 @@
 #include "service_type.hpp"
 
 namespace iox2 {
-
+/// Contains all details of a [`Node`] that is alive.
 template <ServiceType>
 class AliveNodeView {
   public:
+    /// Returns the [`NodeId`].
     auto id() const -> const NodeId&;
+
+    /// Returns a optional [`NodeDetails`] that contains further information about the [`Node`].
+    /// Can only be acquired when the process has the access right to read it.
     auto details() const -> const iox::optional<NodeDetails>&;
 
   private:
@@ -37,11 +41,19 @@ class AliveNodeView {
     iox::optional<NodeDetails> m_details;
 };
 
+/// Contains all details of a [`Node`] that is dead.
 template <ServiceType T>
 class DeadNodeView {
   public:
+    /// Returns the [`NodeId`].
     auto id() const -> const NodeId&;
+
+    /// Returns a optional [`NodeDetails`] that contains further information about the [`Node`].
+    /// Can only be acquired when the process has the access right to read it.
     auto details() const -> iox::optional<NodeDetails>;
+
+    /// Removes all stale resources of the dead [`Node`]. On error it returns a [`NodeCleanupFailure`].
+    /// It returns true if the stale resources could be removed, otherwise false.
     auto remove_stale_resources() -> iox::expected<bool, NodeCleanupFailure>;
 
   private:
@@ -50,12 +62,24 @@ class DeadNodeView {
     AliveNodeView<T> m_view;
 };
 
+/// Describes the state of a [`Node`].
 template <ServiceType T>
 class NodeState {
   public:
+    /// If the [`Node`] is alive the provided callback is called with an [`AliveNodeView`]
+    /// as argument.
     auto alive(const iox::function<void(AliveNodeView<T>&)>& callback) -> NodeState&;
+
+    /// If the [`Node`] is dead the provided callback is called with a [`DeadNodeView`] as
+    /// argument.
     auto dead(const iox::function<void(DeadNodeView<T>&)>& callback) -> NodeState&;
+
+    /// If the [`Node`] is inaccessible due to a lack of permissions the provided callback is
+    /// called with a [`NodeId`] as argument.
     auto inaccessible(const iox::function<void(NodeId&)>& callback) -> NodeState&;
+
+    /// If the [`Node`] is files are corrupted or some essential constructs are missing the
+    /// provided callback is called with a [`NodeId`] as argument.
     auto undefined(const iox::function<void(NodeId&)>& callback) -> NodeState&;
 
   private:
