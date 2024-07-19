@@ -69,8 +69,14 @@ auto list_callback(iox2_node_state_e node_state,
                    iox2_node_name_ptr node_name,
                    iox2_config_ptr config,
                    iox2_node_list_callback_context context) -> iox2_callback_progression_e {
-    auto* callback = static_cast<const iox::function<CallbackProgression(NodeState<T>)>*>(context);
-    return iox::into<iox2_callback_progression_e>((*callback)(NodeState<T>()));
+    // auto node_state_creator = [&]() {
+    //     switch (node_state) {
+    //     case iox2_node_state_e_ALIVE:
+    //         break;
+    //     }
+    // };
+    // auto* callback = static_cast<const iox::function<CallbackProgression(NodeState<T>)>*>(context);
+    // return iox::into<iox2_callback_progression_e>((*callback)(NodeState<T>()));
 }
 // NOLINTEND(readability-function-size)
 
