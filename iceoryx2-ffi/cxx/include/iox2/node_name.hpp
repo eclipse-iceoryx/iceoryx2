@@ -23,6 +23,12 @@ namespace iox2 {
 /// Represent the name for a [`Node`].
 class NodeName {
   public:
+    NodeName(NodeName&&) noexcept;
+    auto operator=(NodeName&&) noexcept -> NodeName&;
+    NodeName(const NodeName&);
+    auto operator=(const NodeName&) -> NodeName&;
+    ~NodeName();
+
     /// Creates a new [`NodeName`].
     /// If the provided name does not contain a valid [`NodeName`] it will return a
     /// [`SemanticStringError`] otherwise the [`NodeName`].
@@ -33,6 +39,7 @@ class NodeName {
 
   private:
     explicit NodeName(iox2_node_name_h handle);
+    void drop() noexcept;
 
     iox2_node_name_h m_handle;
 };

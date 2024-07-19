@@ -117,7 +117,7 @@ target_link_libraries(static-lib INTERFACE
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_STATIC_LIB_LINK_NAME}>
     $<$<NOT:$<PLATFORM_ID:Windows>>:m pthread>
     $<$<PLATFORM_ID:Windows>:userenv ntdll ws2_32 wsock32>
-    $<$<AND:$<PLATFORM_ID:Windows>,$<C_COMPILER_ID:MSVC>>:bcrypt synchronization>
+    $<$<AND:$<PLATFORM_ID:Windows>,$<OR:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>>:bcrypt synchronization>
     $<$<PLATFORM_ID:Darwin>:stdc++>
     $<$<PLATFORM_ID:FreeBSD>:rt>
 )

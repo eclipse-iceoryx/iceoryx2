@@ -25,8 +25,7 @@
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use serde::{de::Visitor, Deserialize, Serialize};
 
-/// The name of a [`Service`](crate::service::Service). In combination with the
-/// [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern).
+/// The name of a [`Service`](crate::service::Service).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ServiceName {
     value: String,

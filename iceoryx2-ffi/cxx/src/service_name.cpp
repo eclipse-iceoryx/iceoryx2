@@ -10,27 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/node_name.hpp"
+#include "iox2/service_name.hpp"
 #include "iox/assertions.hpp"
 #include "iox/into.hpp"
 
 #include <cstring>
 
 namespace iox2 {
-NodeName::NodeName(iox2_node_name_h handle)
+ServiceName::ServiceName(iox2_service_name_h handle)
     : m_handle { handle } {
 }
 
-NodeName::~NodeName() {
+ServiceName::~ServiceName() {
     drop();
 }
 
-NodeName::NodeName(NodeName&& rhs) noexcept
+ServiceName::ServiceName(ServiceName&& rhs) noexcept
     : m_handle { std::move(rhs.m_handle) } {
     rhs.m_handle = nullptr;
 }
 
-auto NodeName::operator=(NodeName&& rhs) noexcept -> NodeName& {
+auto ServiceName::operator=(ServiceName&& rhs) noexcept -> ServiceName& {
     if (this != &rhs) {
         drop();
         m_handle = std::move(rhs.m_handle);
@@ -40,51 +40,52 @@ auto NodeName::operator=(NodeName&& rhs) noexcept -> NodeName& {
     return *this;
 }
 
-NodeName::NodeName(const NodeName& rhs)
+ServiceName::ServiceName(const ServiceName& rhs)
     : m_handle { nullptr } {
     auto value = rhs.to_string();
-    IOX_ASSERT(iox2_node_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
-               "NodeName shall always contain a valid value.");
+    IOX_ASSERT(iox2_service_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
+               "ServiceName shall always contain a valid value.");
 }
 
-auto NodeName::operator=(const NodeName& rhs) -> NodeName& {
+auto ServiceName::operator=(const ServiceName& rhs) -> ServiceName& {
     if (this != &rhs) {
         drop();
 
         auto value = rhs.to_string();
-        IOX_ASSERT(iox2_node_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
-                   "NodeName shall always contain a valid value.");
+        IOX_ASSERT(iox2_service_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
+                   "ServiceName shall always contain a valid value.");
     }
 
     return *this;
 }
 
-void NodeName::drop() noexcept {
+void ServiceName::drop() noexcept {
     if (m_handle != nullptr) {
-        iox2_node_name_drop(m_handle);
+        iox2_service_name_drop(m_handle);
         m_handle = nullptr;
     }
 }
 
-auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStringError> {
-    iox2_node_name_h handle {};
-    const auto value_len = strnlen(value, NODE_NAME_LENGTH + 1);
-    if (value_len == NODE_NAME_LENGTH + 1) {
+auto ServiceName::create(const char* value) -> iox::expected<ServiceName, SemanticStringError> {
+    iox2_service_name_h handle {};
+    const auto value_len = strnlen(value, SERVICE_NAME_LENGTH + 1);
+    if (value_len == SERVICE_NAME_LENGTH + 1) {
         return iox::err(SemanticStringError::ExceedsMaximumLength);
     }
 
-    const auto ret_val = iox2_node_name_new(nullptr, value, value_len, &handle);
+    const auto ret_val = iox2_service_name_new(nullptr, value, value_len, &handle);
+
     if (ret_val == IOX2_OK) {
-        return iox::ok(std::move(NodeName { handle }));
+        return iox::ok(ServiceName { handle });
     }
 
     return iox::err(iox::into<SemanticStringError>(ret_val));
 }
 
-auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGTH> {
-    const auto* ptr = iox2_cast_node_name_ptr(m_handle);
+auto ServiceName::to_string() const -> iox::string<SERVICE_NAME_LENGTH> {
+    const auto* ptr = iox2_cast_service_name_ptr(m_handle);
     size_t len = 0;
-    const auto* c_ptr = iox2_node_name_as_c_str(ptr, &len);
+    const auto* c_ptr = iox2_service_name_as_c_str(ptr, &len);
     return { iox::TruncateToCapacity, c_ptr, len };
 }
 
