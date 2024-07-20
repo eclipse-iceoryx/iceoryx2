@@ -143,17 +143,38 @@ pub unsafe extern "C" fn iox2_service_does_exist(
     }
 }
 
+/// Acquires the service details of a specified service. If the service exists `service_details` will contain
+/// the requested information, otherwise it is NULL. On error it returns `iox2_service_details_error_e`, on
+/// success `IOX2_OK`.
+///
+/// # Safety
+///
+/// * The `service_name` must be valid and non-null
+/// * The `config` must be valid and non-null
+/// * The `service_details` must be valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_details(
     _service_type: iox2_service_type_e,
-    _service_name: iox2_service_name_ptr,
-    _config: iox2_config_ptr,
+    service_name: iox2_service_name_ptr,
+    config: iox2_config_ptr,
     _messaging_pattern: iox2_messaging_pattern_e,
-    _service_details: iox2_service_name_ptr,
+    service_details: iox2_service_name_ptr,
 ) -> c_int {
+    debug_assert!(!service_name.is_null());
+    debug_assert!(!config.is_null());
+    debug_assert!(!service_details.is_null());
+
     todo!()
 }
 
+/// Iterates over the all accessible services and calls the provided callback for
+/// every service with iox2_service_details as input argument.
+/// On error it returns `iox2_service_list_error_e`, otherwise IOX2_OK.
+///
+/// # Safety
+///
+/// * The `config` must be valid and non-null
+/// * The `callback` must be valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_list(
     _config_ptr: iox2_config_ptr,
