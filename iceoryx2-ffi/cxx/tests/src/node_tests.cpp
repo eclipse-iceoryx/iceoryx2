@@ -13,6 +13,8 @@
 #include "iox2/node.hpp"
 #include "iox2/node_name.hpp"
 
+#include <vector>
+
 #include "test.hpp"
 
 namespace {
@@ -24,5 +26,42 @@ TEST(Node, node_name_is_applied) {
 
     auto sut = NodeBuilder().name(node_name).create<ServiceType::Local>().expect("");
     ASSERT_THAT(sut.name().to_string(), Eq(node_name.to_string()));
+}
+
+TEST(Node, created_nodes_can_be_listed) {
+    auto node_name_1 = NodeName::create("Nala does not like water.").expect("");
+    auto node_name_2 = NodeName::create("Nala does not like paprika.").expect("");
+
+    {
+        auto sut_1 = NodeBuilder().name(node_name_1).create<ServiceType::Local>().expect("");
+        auto sut_2 = NodeBuilder().name(node_name_2).create<ServiceType::Local>().expect("");
+
+        std::vector<NodeName> nodes;
+        auto result = Node<ServiceType::Local>::list(Config::global_config(), [&](auto node_state) {
+            node_state.alive([&](auto& view) { nodes.push_back(view.details()->name()); });
+            return CallbackProgression::Continue;
+        });
+        ASSERT_TRUE(result.has_value());
+
+        auto contains = [&](const NodeName& name) {
+            for (const auto& node : nodes) {
+                if (node.to_string() == name.to_string()) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        ASSERT_TRUE(contains(node_name_1));
+        ASSERT_TRUE(contains(node_name_2));
+    }
+
+    uint64_t counter = 0;
+    auto result = Node<ServiceType::Local>::list(Config::global_config(), [&](auto node_state) {
+        counter++;
+        return CallbackProgression::Continue;
+    });
+    ASSERT_TRUE(result.has_value());
+    ASSERT_THAT(counter, Eq(0));
 }
 } // namespace

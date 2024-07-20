@@ -69,9 +69,11 @@ template <ServiceType T>
 NodeState<T>::NodeState(iox2_node_state_e node_state, const NodeId& node_id) {
     if (node_state == iox2_node_state_e_INACCESSIBLE) {
         m_state.template emplace_at_index<INACCESSIBLE_STATE>(node_id);
-    } else {
+    } else if (node_state == iox2_node_state_e_UNDEFINED) {
         m_state.template emplace_at_index<UNDEFINED_STATE>(node_id);
     }
+
+    IOX_UNREACHABLE();
 }
 
 template <ServiceType T>
