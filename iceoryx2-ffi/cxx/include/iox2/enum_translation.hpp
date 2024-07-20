@@ -18,6 +18,8 @@
 #include "iox2/callback_progression.hpp"
 #include "iox2/enum_translation.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+// #include "iox2/node.hpp"
+#include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/semantic_string.hpp"
 #include "iox2/service_type.hpp"
@@ -115,6 +117,23 @@ constexpr auto from<int, iox2::NodeListFailure>(const int value) noexcept -> iox
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::NodeEvent>(const int value) noexcept -> iox2::NodeEvent {
+    const auto error = static_cast<iox2_semantic_string_error_e>(value);
+    switch (error) {
+    case iox2_node_event_e_TICK:
+        return iox2::NodeEvent::Tick;
+    case iox2_node_event_e_TERMINATION_REQUEST:
+        return iox2::NodeEvent::TerminationRequest;
+    case iox2_node_event_e_INTERRUPT_SIGNAL:
+        return iox2::NodeEvent::InterruptSignal;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+
 } // namespace iox
 
 #endif

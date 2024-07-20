@@ -25,6 +25,7 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
+use std::time::Duration;
 
 // BEGIN type definition
 
@@ -44,6 +45,24 @@ impl IntoCInt for NodeListFailure {
             }
             NodeListFailure::Interrupt => iox2_node_list_failure_e::INTERRUPT,
             NodeListFailure::InternalError => iox2_node_list_failure_e::INTERNAL_ERROR,
+        }) as c_int
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_node_event_e {
+    TICK = 0,
+    TERMINATION_REQUEST,
+    INTERRUPT_SIGNAL,
+}
+
+impl IntoCInt for NodeEvent {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            NodeEvent::Tick => iox2_node_event_e::TICK,
+            NodeEvent::TerminationRequest => iox2_node_event_e::TERMINATION_REQUEST,
+            NodeEvent::InterruptSignal => iox2_node_event_e::INTERRUPT_SIGNAL,
         }) as c_int
     }
 }
@@ -192,6 +211,30 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_n
         iox2_service_type_e::IPC => node.value.as_ref().ipc.name(),
         iox2_service_type_e::LOCAL => node.value.as_ref().local.name(),
     }
+}
+
+/// Wait until the provided cycle time has passed and returns a [`iox2_node_event_e`] enum containing the event that
+/// has occurred.
+///
+/// # Safety
+///
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_node_wait(
+    node_handle: iox2_node_h,
+    cycle_time_sec: u64,
+    cycle_time_nsec: u32,
+) -> c_int {
+    debug_assert!(!node_handle.is_null());
+
+    let node = &mut *node_handle.as_type();
+    let cycle_time =
+        Duration::from_secs(cycle_time_sec) + Duration::from_nanos(cycle_time_nsec as u64);
+    match node.service_type {
+        iox2_service_type_e::IPC => node.value.as_ref().ipc.wait(cycle_time),
+        iox2_service_type_e::LOCAL => node.value.as_ref().local.wait(cycle_time),
+    }
+    .into_c_int()
 }
 
 /// Returns the [`iox2_config_ptr`](crate::iox2_config_ptr), an immutable pointer to the config.
