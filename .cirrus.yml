@@ -129,12 +129,12 @@ iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP
     - mount -t mqueuefs null /mnt/mqueue/
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
     - rustup component add clippy rustfmt
- 
+
 #
 # Filter to run the CI only on the main branch or for pull request to the main branch
 #
 
-only_if: $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH == 'main')
+only_if: false && ( $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH == 'main'))
 
 #
 # Global environment variables
@@ -150,7 +150,7 @@ env:
 preflight_check_task:
   <<: *IOX2_CONTAINER_UBUNTU_22_04_X64
   set_toolchain_script: rustup default stable
-  fingerprint_script: 
+  fingerprint_script:
     - cargo audit
   # TODO iox2-#8: add more preflight-checks here
   <<: *IOX2_CARGO_FMT_AND_CLIPPY

@@ -82,8 +82,8 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
     set_log_level(iceoryx2_bb_log::LogLevel::Info);
 
     let callback = |service| {
-        println!("\n{:#?}", service?);
-        Ok(CallbackProgression::Continue)
+        println!("\n{:#?}", service);
+        CallbackProgression::Continue
     };
 
     match zero_copy::Service::list(Config::global_config(), callback) {
