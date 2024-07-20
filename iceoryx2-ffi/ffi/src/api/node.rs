@@ -202,7 +202,7 @@ pub unsafe extern "C" fn iox2_cast_node_ref_h(node_handle: iox2_node_h) -> iox2_
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_name_ptr {
+pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_ref_h) -> iox2_node_name_ptr {
     debug_assert!(!node_handle.is_null());
 
     let node = &mut *node_handle.as_type();
@@ -221,7 +221,7 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h) -> iox2_node_n
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_wait(
-    node_handle: iox2_node_h,
+    node_handle: iox2_node_ref_h,
     cycle_time_sec: u64,
     cycle_time_nsec: u32,
 ) -> c_int {
@@ -243,7 +243,7 @@ pub unsafe extern "C" fn iox2_node_wait(
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_config_ptr {
+pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_ref_h) -> iox2_config_ptr {
     debug_assert!(!node_handle.is_null());
 
     let node = &mut *node_handle.as_type();
@@ -260,7 +260,7 @@ pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h) -> iox2_conf
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h) -> iox2_node_id_ptr {
+pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_ref_h) -> iox2_node_id_ptr {
     debug_assert!(!node_handle.is_null());
     todo!() // TODO: [#210] implement
 }
