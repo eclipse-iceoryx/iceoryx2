@@ -2030,8 +2030,8 @@ mod service_publish_subscribe {
 
             let mut service_list = vec![];
             Sut::list(Config::global_config(), |s| {
-                service_list.push(s.unwrap());
-                Ok(CallbackProgression::Continue)
+                service_list.push(s);
+                CallbackProgression::Continue
             })
             .unwrap();
             assert_that!(service_list, len i + 1);
@@ -2045,8 +2045,8 @@ mod service_publish_subscribe {
 
             let mut service_list = vec![];
             Sut::list(Config::global_config(), |s| {
-                service_list.push(s.unwrap());
-                Ok(CallbackProgression::Continue)
+                service_list.push(s);
+                CallbackProgression::Continue
             })
             .unwrap();
             assert_that!(service_list, len NUMBER_OF_SERVICES - i - 1);

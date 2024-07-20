@@ -625,8 +625,8 @@ mod service {
 
         let mut listed_services = vec![];
         let result = Sut::list(Config::global_config(), |service| {
-            listed_services.push(service?.static_details.uuid().to_string());
-            Ok(CallbackProgression::Continue)
+            listed_services.push(service.static_details.uuid().to_string());
+            CallbackProgression::Continue
         });
         assert_that!(result, is_ok);
 
@@ -655,10 +655,9 @@ mod service {
         }
 
         let mut service_counter = 0;
-        let result = Sut::list(Config::global_config(), |service| {
-            assert_that!(service, is_ok);
+        let result = Sut::list(Config::global_config(), |_service| {
             service_counter += 1;
-            Ok(CallbackProgression::Stop)
+            CallbackProgression::Stop
         });
         assert_that!(result, is_ok);
         assert_that!(service_counter, eq 1);
@@ -687,11 +686,10 @@ mod service {
 
                         let mut found_me = false;
                         let result = Sut::list(Config::global_config(), |s| {
-                            assert_that!(s, is_ok);
-                            if sut.uuid() == s?.static_details.uuid() {
+                            if sut.uuid() == s.static_details.uuid() {
                                 found_me = true;
                             }
-                            Ok(CallbackProgression::Continue)
+                            CallbackProgression::Continue
                         });
 
                         assert_that!(result, is_ok);

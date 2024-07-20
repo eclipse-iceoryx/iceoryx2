@@ -296,9 +296,8 @@ mod node_death_tests {
 
         assert_that!(
             S::Service::list(&config, |service_details| {
-                let service_details = service_details?;
                 assert_that!(*service_details.static_details.name(), eq service_name);
-                Ok(CallbackProgression::Continue)
+                CallbackProgression::Continue
             }),
             is_ok
         );
@@ -330,9 +329,8 @@ mod node_death_tests {
 
         assert_that!(
             S::Service::list(&config, |service_details| {
-                let service_details = service_details?;
                 assert_that!(*service_details.static_details.name(), eq service_name);
-                Ok(CallbackProgression::Continue)
+                CallbackProgression::Continue
             }),
             is_ok
         );

@@ -556,17 +556,13 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// zero_copy::Service::list(Config::global_config(), |service| {
-    ///     println!("\n{:#?}", &service?);
-    ///     Ok(CallbackProgression::Continue)
+    ///     println!("\n{:#?}", &service);
+    ///     CallbackProgression::Continue
     /// })?;
     /// # Ok(())
     /// # }
     /// ```
-    fn list<
-        F: FnMut(
-            Result<ServiceDetails<Self>, ServiceListError>,
-        ) -> Result<CallbackProgression, ServiceListError>,
-    >(
+    fn list<F: FnMut(ServiceDetails<Self>) -> CallbackProgression>(
         config: &config::Config,
         mut callback: F,
     ) -> Result<(), ServiceListError> {
@@ -581,17 +577,9 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
                 "{} due to a failure while collecting all active services for config: {:?}", msg, config);
 
         for uuid in &service_uuids {
-            match details::<Self>(config, uuid) {
-                Ok(Some(service_details)) => {
-                    if callback(Ok(service_details))? == CallbackProgression::Stop {
-                        break;
-                    }
-                }
-                Ok(None) => (),
-                Err(e) => {
-                    warn!(from origin,
-                        "The service list is incomplete since the service with the UUID {:?} could not be read ({:?}).",
-                        uuid, e);
+            if let Ok(Some(service_details)) = details::<Self>(config, uuid) {
+                if callback(service_details) == CallbackProgression::Stop {
+                    break;
                 }
             }
         }
