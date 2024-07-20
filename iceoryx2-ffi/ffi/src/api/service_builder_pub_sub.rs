@@ -327,6 +327,8 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create(
         }
     }
 
+    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+
     IOX2_OK
 }
 
@@ -408,6 +410,8 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
             }
         }
     }
+
+    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
 
     IOX2_OK
 }
