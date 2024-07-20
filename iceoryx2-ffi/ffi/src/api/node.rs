@@ -322,9 +322,12 @@ pub unsafe extern "C" fn iox2_node_list(
 ///
 /// # Arguments
 ///
-/// * `node_handle` - Must be a valid [`iox2_node_ref_h`] obtained by [`iox2_node_builder_create`] and casted by [`iox2_cast_node_ref_h`]
-/// * `service_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_service_builder_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
-/// * `service_name_ptr` - Must be a valid [`iox2_service_name_ptr`] obtained by [`iox2_service_name_new`] and casted by [`iox2_cast_service_name_ptr`]
+/// * `node_handle` - Must be a valid [`iox2_node_ref_h`] obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)
+///   and casted by [`iox2_cast_node_ref_h`]
+/// * `service_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_service_builder_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `service_name_ptr` - Must be a valid [`iox2_service_name_ptr`] obtained by [`iox2_service_name_new`](crate::iox2_service_name_new)
+///   and casted by [`iox2_cast_service_name_ptr`](crate::iox2_cast_service_name_ptr)
 ///
 /// Returns the `iox2_service_builder_h` handle for the service builder.
 ///

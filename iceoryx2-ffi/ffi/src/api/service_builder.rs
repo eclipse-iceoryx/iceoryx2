@@ -244,6 +244,17 @@ pub unsafe extern "C" fn iox2_cast_service_builder_pub_sub_ref_h(
     (*service_builder_handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// This function transform the [`iox2_service_builder_h`] to an event service builder.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
+///
+/// Returns a [`iox2_service_builder_event_h`] for the event service builder
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event(
     service_builder_handle: iox2_service_builder_h,
@@ -275,6 +286,17 @@ pub unsafe extern "C" fn iox2_service_builder_event(
     service_builder_handle as *mut _ as _
 }
 
+/// This function transform the [`iox2_service_builder_h`] to a publish-subscribe service builder.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
+///
+/// Returns a [`iox2_service_builder_pub_sub_h`] for the publish-subscribe service builder
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub(
     service_builder_handle: iox2_service_builder_h,

@@ -100,6 +100,18 @@ impl HandleToType for iox2_port_factory_pub_sub_ref_h {
 
 // BEGIN C API
 
+/// This function needs to be called to destroy the port factory!
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - A valid [`iox2_port_factory_pub_sub_h`]
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_port_factory_pub_sub_t`] can be re-used with a call to
+///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create) or
+///   [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_drop(
     port_factory_handle: iox2_port_factory_pub_sub_h,

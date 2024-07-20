@@ -160,6 +160,18 @@ impl IntoCInt for PublishSubscribeOpenOrCreateError {
 
 // BEGIN C API
 
+/// Sets the max publishers for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`](crate::iox2_service_builder_pub_sub_ref_h)
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `value` - The value to set the max publishers to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_publishers(
     service_builder_handle: iox2_service_builder_pub_sub_ref_h,
@@ -191,6 +203,18 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_publishers(
     }
 }
 
+/// Sets the max subscribers for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`](crate::iox2_service_builder_pub_sub_ref_h)
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `value` - The value to set the max subscribers to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
     service_builder_handle: iox2_service_builder_pub_sub_ref_h,
@@ -224,6 +248,23 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
 
 // TODO [#210] add all the other setter methods
 
+/// Opens a publish-subscribe service or creates the service if it does not exist and returns a port factory to create publishers and subscribers.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`](crate::iox2_service_builder_pub_sub_h)
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_pub_sub_t`](crate::iox2_port_factory_pub_sub_t). If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_pub_sub_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_pub_sub_open_or_create_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create(
     service_builder_handle: iox2_service_builder_pub_sub_h,
@@ -289,6 +330,23 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create(
     IOX2_OK
 }
 
+/// Opens a publish-subscribe service and returns a port factory to create publishers and subscribers.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`](crate::iox2_service_builder_pub_sub_h)
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_pub_sub_t`](crate::iox2_port_factory_pub_sub_t). If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_pub_sub_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_pub_sub_open_or_create_error_e`] otherwise. Note, only the errors annotated with `O_` are relevant.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
     service_builder_handle: iox2_service_builder_pub_sub_h,
@@ -313,7 +371,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
     match service_type {
         iox2_service_type_e::IPC => {
             let service_builder =
-            ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
 
@@ -322,7 +380,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
                     (*port_factory_struct_ptr).init(
                         service_type,
                         PortFactoryPubSubUnion::new_ipc(port_factory),
-                                                    deleter,
+                        deleter,
                     );
                 }
                 Err(error) => {
@@ -332,7 +390,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
         }
         iox2_service_type_e::LOCAL => {
             let service_builder =
-            ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
 
@@ -341,7 +399,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
                     (*port_factory_struct_ptr).init(
                         service_type,
                         PortFactoryPubSubUnion::new_local(port_factory),
-                                                    deleter,
+                        deleter,
                     );
                 }
                 Err(error) => {

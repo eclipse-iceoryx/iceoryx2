@@ -135,6 +135,18 @@ impl IntoCInt for EventOpenOrCreateError {
 
 // BEGIN C API
 
+/// Sets the max notifiers for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`](crate::iox2_service_builder_event_ref_h)
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event) and
+///   casted by [`iox2_cast_service_builder_event_ref_h`](crate::iox2_cast_service_builder_event_ref_h).
+/// * `value` - The value to set the max notifiers to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
     service_builder_handle: iox2_service_builder_event_ref_h,
@@ -166,6 +178,18 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
     }
 }
 
+/// Sets the max listeners for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`](crate::iox2_service_builder_event_ref_h)
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event) and
+///   casted by [`iox2_cast_service_builder_event_ref_h`](crate::iox2_cast_service_builder_event_ref_h).
+/// * `value` - The value to set the max listeners to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
     service_builder_handle: iox2_service_builder_event_ref_h,
@@ -199,6 +223,23 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
 
 // TODO [#210] add all the other setter methods
 
+/// Opens an event service or creates the service if it does not exist and returns a port factory to create notifiers and listeners.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`](crate::iox2_service_builder_event_h)
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_event_t`](crate::iox2_port_factory_event_t). If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
     service_builder_handle: iox2_service_builder_event_h,
@@ -264,6 +305,23 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
     IOX2_OK
 }
 
+/// Opens an event service and returns a port factory to create notifiers and listeners.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`](crate::iox2_service_builder_event_h)
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_event_t`](crate::iox2_port_factory_event_t). If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise. Note, only the errors annotated with `O_` are relevant.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event_open(
     service_builder_handle: iox2_service_builder_event_h,

@@ -96,6 +96,18 @@ impl HandleToType for iox2_port_factory_event_ref_h {
 
 // BEGIN C API
 
+/// This function needs to be called to destroy the port factory!
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - A valid [`iox2_port_factory_event_h`]
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_port_factory_event_t`] can be re-used with a call to
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create) or
+///   [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_drop(
     port_factory_handle: iox2_port_factory_event_h,
