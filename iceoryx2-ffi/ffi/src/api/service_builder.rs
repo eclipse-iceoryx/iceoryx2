@@ -26,13 +26,14 @@ use core::mem::ManuallyDrop;
 
 // BEGIN types definition
 
-type UserHeader = [u8;128];
+type NoUserHeader = ();
+type _UserHeader = [u8; 128];
 type Payload = [u8];
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
     base: ManuallyDrop<ServiceBuilderBase<S>>,
     event: ManuallyDrop<ServiceBuilderEvent<S>>,
-    pub_sub: ManuallyDrop<ServiceBuilderPubSub<Payload, UserHeader, S>>,
+    pub_sub: ManuallyDrop<ServiceBuilderPubSub<Payload, NoUserHeader, S>>,
 }
 
 pub(super) union ServiceBuilderUnion {
@@ -58,7 +59,7 @@ impl ServiceBuilderUnion {
     }
 
     pub(super) fn new_ipc_pub_sub(
-        service_builder: ServiceBuilderPubSub<Payload, UserHeader, zero_copy::Service>,
+        service_builder: ServiceBuilderPubSub<Payload, NoUserHeader, zero_copy::Service>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<zero_copy::Service> {
@@ -88,7 +89,7 @@ impl ServiceBuilderUnion {
     }
 
     pub(super) fn new_local_pub_sub(
-        service_builder: ServiceBuilderPubSub<Payload, UserHeader, process_local::Service>,
+        service_builder: ServiceBuilderPubSub<Payload, NoUserHeader, process_local::Service>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(ServiceBuilderUnionNested::<process_local::Service> {
@@ -134,6 +135,23 @@ pub struct iox2_service_builder_ref_h_t;
 /// The non-owning handle for `iox2_service_builder_t`. Passing the handle to an function does not transfers the ownership.
 pub type iox2_service_builder_ref_h = *mut iox2_service_builder_ref_h_t;
 
+pub struct iox2_service_builder_event_h_t;
+/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function transfers the ownership.
+pub type iox2_service_builder_event_h = *mut iox2_service_builder_event_h_t;
+
+pub struct iox2_service_builder_event_ref_h_t;
+/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
+pub type iox2_service_builder_event_ref_h = *mut iox2_service_builder_event_ref_h_t;
+
+pub struct iox2_service_builder_publish_subscribe_h_t;
+/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function transfers the ownership.
+pub type iox2_service_builder_publish_subscribe_h = *mut iox2_service_builder_publish_subscribe_h_t;
+
+pub struct iox2_service_builder_publish_subscribe_ref_h_t;
+/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
+pub type iox2_service_builder_publish_subscribe_ref_h =
+    *mut iox2_service_builder_publish_subscribe_ref_h_t;
+
 impl HandleToType for iox2_service_builder_h {
     type Target = *mut iox2_service_builder_t;
 
@@ -155,8 +173,62 @@ impl HandleToType for iox2_service_builder_ref_h {
 // BEGIN C API
 
 #[no_mangle]
-pub extern "C" fn iox2_service_builder_event() {
-    todo!()
+pub unsafe extern "C" fn iox2_service_builder_event(
+    service_builder_handle: iox2_service_builder_h,
+) -> iox2_service_builder_event_h {
+    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builders_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.base);
+            service_builders_struct
+                .set(ServiceBuilderUnion::new_ipc_event(service_builder.event()));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.base);
+            service_builders_struct.set(ServiceBuilderUnion::new_local_event(
+                service_builder.event(),
+            ));
+        }
+    }
+
+    service_builder_handle as *mut _ as _
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_publish_subscribe(
+    service_builder_handle: iox2_service_builder_h,
+) -> iox2_service_builder_publish_subscribe_h {
+    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builders_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.base);
+            service_builders_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.publish_subscribe::<[u8]>(),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.base);
+            service_builders_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.publish_subscribe::<[u8]>(),
+            ));
+        }
+    }
+
+    service_builder_handle as *mut _ as _
 }
 
 // END C API
