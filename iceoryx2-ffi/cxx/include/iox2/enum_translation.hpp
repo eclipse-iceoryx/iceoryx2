@@ -37,7 +37,7 @@ constexpr auto from<int, iox2::SemanticStringError>(const int value) noexcept ->
 }
 
 template <>
-inline constexpr auto from<int, iox2::ServiceType>(const int value) noexcept -> iox2::ServiceType {
+constexpr auto from<int, iox2::ServiceType>(const int value) noexcept -> iox2::ServiceType {
     const auto service_type = static_cast<iox2_service_type_e>(value);
     switch (service_type) {
     case iox2_service_type_e_IPC:
@@ -50,7 +50,7 @@ inline constexpr auto from<int, iox2::ServiceType>(const int value) noexcept -> 
 }
 
 template <>
-inline constexpr auto
+constexpr auto
 from<iox2::ServiceType, iox2_service_type_e>(const iox2::ServiceType value) noexcept -> iox2_service_type_e {
     switch (value) {
     case iox2::ServiceType::Ipc:
@@ -63,7 +63,7 @@ from<iox2::ServiceType, iox2_service_type_e>(const iox2::ServiceType value) noex
 }
 
 template <>
-inline constexpr auto from<int, iox2::NodeCreationFailure>(const int value) noexcept -> iox2::NodeCreationFailure {
+constexpr auto from<int, iox2::NodeCreationFailure>(const int value) noexcept -> iox2::NodeCreationFailure {
     const auto error = static_cast<iox2_node_creation_failure_e>(value);
     switch (error) {
     case iox2_node_creation_failure_e_INSUFFICIENT_PERMISSIONS:
@@ -76,7 +76,7 @@ inline constexpr auto from<int, iox2::NodeCreationFailure>(const int value) noex
 }
 
 template <>
-inline constexpr auto from<int, iox2::CallbackProgression>(const int value) noexcept -> iox2::CallbackProgression {
+constexpr auto from<int, iox2::CallbackProgression>(const int value) noexcept -> iox2::CallbackProgression {
     const auto error = static_cast<iox2_callback_progression_e>(value);
     switch (error) {
     case iox2_callback_progression_e_CONTINUE:
@@ -89,7 +89,7 @@ inline constexpr auto from<int, iox2::CallbackProgression>(const int value) noex
 }
 
 template <>
-inline constexpr auto from<iox2::CallbackProgression, iox2_callback_progression_e>(
+constexpr auto from<iox2::CallbackProgression, iox2_callback_progression_e>(
     const iox2::CallbackProgression value) noexcept -> iox2_callback_progression_e {
     switch (value) {
     case iox2::CallbackProgression::Continue:
@@ -102,7 +102,7 @@ inline constexpr auto from<iox2::CallbackProgression, iox2_callback_progression_
 }
 
 template <>
-inline constexpr auto from<int, iox2::NodeListFailure>(const int value) noexcept -> iox2::NodeListFailure {
+constexpr auto from<int, iox2::NodeListFailure>(const int value) noexcept -> iox2::NodeListFailure {
     const auto error = static_cast<iox2_node_list_failure_e>(value);
     switch (error) {
     case iox2_node_list_failure_e_INSUFFICIENT_PERMISSIONS:

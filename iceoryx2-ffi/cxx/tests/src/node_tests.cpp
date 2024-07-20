@@ -44,6 +44,7 @@ TEST(Node, created_nodes_can_be_listed) {
         ASSERT_TRUE(result.has_value());
 
         auto contains = [&](const NodeName& name) {
+            // NOLINTNEXTLINE(readability-use-anyofallof), not yet supported in all compilers
             for (const auto& node : nodes) {
                 if (node.to_string() == name.to_string()) {
                     return true;

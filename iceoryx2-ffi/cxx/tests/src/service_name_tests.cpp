@@ -27,6 +27,8 @@ TEST(ServiceName, valid_service_name_can_be_created) {
 }
 
 TEST(ServiceName, creating_service_name_with_too_long_name_fails) {
+    constexpr uint64_t MAX_OVERLENGTH = 10;
+
     auto test = [](auto overlength) {
         auto invalid_name = std::string(SERVICE_NAME_LENGTH + overlength, 's');
         auto sut = ServiceName::create(invalid_name.c_str());
@@ -35,7 +37,7 @@ TEST(ServiceName, creating_service_name_with_too_long_name_fails) {
         ASSERT_THAT(sut.error(), Eq(SemanticStringError::ExceedsMaximumLength));
     };
 
-    for (uint64_t i = 1; i < 10; ++i) {
+    for (uint64_t i = 1; i < MAX_OVERLENGTH; ++i) {
         test(i);
     }
 }

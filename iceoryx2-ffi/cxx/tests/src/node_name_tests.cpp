@@ -27,6 +27,7 @@ TEST(NodeName, valid_node_name_can_be_created) {
 }
 
 TEST(NodeName, creating_node_name_with_too_long_name_fails) {
+    constexpr uint64_t MAX_OVERLENGTH = 10;
     auto test = [](auto overlength) {
         auto invalid_name = std::string(NODE_NAME_LENGTH + overlength, 's');
         auto sut = NodeName::create(invalid_name.c_str());
@@ -35,7 +36,7 @@ TEST(NodeName, creating_node_name_with_too_long_name_fails) {
         ASSERT_THAT(sut.error(), Eq(SemanticStringError::ExceedsMaximumLength));
     };
 
-    for (uint64_t i = 1; i < 10; ++i) {
+    for (uint64_t i = 1; i < MAX_OVERLENGTH; ++i) {
         test(i);
     }
 }

@@ -13,8 +13,8 @@
 #include "iox2/node_details.hpp"
 
 namespace iox2 {
-NodeDetails::NodeDetails(const NodeName& name, const Config& config)
-    : m_node_name { name }
+NodeDetails::NodeDetails(NodeName name, const Config& config)
+    : m_node_name { std::move(name) }
     , m_config { config } {
 }
 
