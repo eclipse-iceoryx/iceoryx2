@@ -168,17 +168,17 @@ fn trigger_queue_blocking_push_blocks_until_there_is_space_again() {
     thread::scope(|s| {
         s.spawn(|| {
             sut.blocking_push(0);
-            counter.store(1, Ordering::Relaxed);
+            counter.store(1, Ordering::SeqCst);
         });
 
         nanosleep(TIMEOUT).unwrap();
-        let counter_old = counter.load(Ordering::Relaxed);
+        let counter_old = counter.load(Ordering::SeqCst);
         sut.blocking_pop();
 
         assert_that!(counter_old, eq 0);
 
         // if the thread is not unblocked the counter stays zero until the watchdog intervenes
-        while counter.load(Ordering::Relaxed) == 0 {}
+        while counter.load(Ordering::SeqCst) == 0 {}
     });
 }
 
@@ -196,17 +196,17 @@ fn trigger_queue_blocking_pop_blocks_until_there_is_something_pushed() {
     thread::scope(|s| {
         s.spawn(|| {
             sut.blocking_pop();
-            counter.store(1, Ordering::Relaxed);
+            counter.store(1, Ordering::SeqCst);
         });
 
         nanosleep(TIMEOUT).unwrap();
-        let counter_old = counter.load(Ordering::Relaxed);
+        let counter_old = counter.load(Ordering::SeqCst);
         sut.blocking_push(0);
 
         assert_that!(counter_old, eq 0);
 
         // if the thread is not unblocked the counter stays zero until the watchdog intervenes
-        while counter.load(Ordering::Relaxed) == 0 {}
+        while counter.load(Ordering::SeqCst) == 0 {}
     });
 }
 
@@ -231,14 +231,14 @@ fn trigger_queue_one_pop_notifies_exactly_one_blocking_push() {
             s.spawn(|| {
                 barrier.wait();
                 sut.blocking_push(0);
-                counter.fetch_add(1, Ordering::Relaxed);
+                counter.fetch_add(1, Ordering::SeqCst);
             });
         }
 
         barrier.wait();
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
+            assert_that!(|| counter.load(Ordering::SeqCst), block_until i);
             sut.blocking_pop();
         }
     });
@@ -265,14 +265,14 @@ fn trigger_queue_one_pop_notifies_exactly_one_timed_push() {
             s.spawn(|| {
                 barrier.wait();
                 assert_that!(sut.timed_push(0, TIMEOUT * 1000), eq true);
-                counter.fetch_add(1, Ordering::Relaxed);
+                counter.fetch_add(1, Ordering::SeqCst);
             });
         }
 
         barrier.wait();
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
+            assert_that!(|| counter.load(Ordering::SeqCst), block_until i);
             sut.blocking_pop();
         }
     });
@@ -295,7 +295,7 @@ fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
             s.spawn(|| {
                 barrier.wait();
                 sut.blocking_pop();
-                counter.fetch_add(1, Ordering::Relaxed);
+                counter.fetch_add(1, Ordering::SeqCst);
             });
         }
 
@@ -303,7 +303,7 @@ fn trigger_queue_one_push_notifies_exactly_one_blocking_pop() {
 
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
+            assert_that!(|| counter.load(Ordering::SeqCst), block_until i);
             sut.blocking_push(0);
         }
     });
@@ -325,7 +325,7 @@ fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
             s.spawn(|| {
                 barrier.wait();
                 sut.timed_pop(TIMEOUT * 1000);
-                counter.fetch_add(1, Ordering::Relaxed);
+                counter.fetch_add(1, Ordering::SeqCst);
             });
         }
 
@@ -333,7 +333,7 @@ fn trigger_queue_one_push_notifies_exactly_one_timed_pop() {
 
         for i in 0..NUMBER_OF_THREADS {
             nanosleep(TIMEOUT).unwrap();
-            assert_that!(|| counter.load(Ordering::Relaxed), block_until i);
+            assert_that!(|| counter.load(Ordering::SeqCst), block_until i);
             sut.blocking_push(0);
         }
     });
