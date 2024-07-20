@@ -23,11 +23,13 @@ mod node;
 mod node_builder;
 mod node_name;
 mod port_factory_event;
+mod port_factory_pub_sub;
 mod publisher;
 mod quirks_correction;
 mod service;
 mod service_builder;
 mod service_builder_event;
+mod service_builder_pub_sub;
 mod service_name;
 mod subscriber;
 
@@ -36,11 +38,13 @@ pub use node::*;
 pub use node_builder::*;
 pub use node_name::*;
 pub use port_factory_event::*;
+pub use port_factory_pub_sub::*;
 pub use publisher::*;
 pub use quirks_correction::*;
 pub use service::*;
 pub use service_builder::*;
 pub use service_builder_event::*;
+pub use service_builder_pub_sub::*;
 pub use service_name::*;
 pub use subscriber::*;
 
