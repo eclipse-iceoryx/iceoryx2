@@ -16,14 +16,23 @@
 #include <cstdint>
 
 namespace iox2 {
+/// All failures that can occur in [`Node::list()`].
 enum class NodeListFailure : uint8_t {
+    /// The process has insufficient permissions.
     InsufficientPermissions,
+    /// Maybe the configuration/system is broken since someone has
+    /// removed/modified internal resources
     InternalError,
+    /// A SIGINT signal was received
     Interrupt,
 };
 
+/// All failures that can occur in [`NodeBuilder::create()`].
 enum class NodeCreationFailure : uint8_t {
+    /// The process has insufficient permissions.
     InsufficientPermissions,
+    /// Maybe the configuration/system is broken since someone has
+    /// removed/modified internal resources
     InternalError
 };
 

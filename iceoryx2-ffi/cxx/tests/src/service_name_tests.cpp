@@ -58,4 +58,26 @@ TEST(ServiceName, to_owned_works) {
 
     ASSERT_THAT(sut_view.to_string().c_str(), StrEq(sut_owned.to_string().c_str()));
 }
+
+TEST(ServiceName, copy_works) {
+    const auto* valid_name = "I am Joey ... ";
+    const ServiceName sut = ServiceName::create(valid_name).expect("");
+    ServiceName sut_assign = ServiceName::create("blarb").expect("");
+    const ServiceName sut_copy { sut }; //NOLINT
+    sut_assign = sut;
+
+    ASSERT_THAT(sut.to_string().c_str(), StrEq(valid_name));
+    ASSERT_THAT(sut.to_string(), Eq(sut_copy.to_string()));
+    ASSERT_THAT(sut.to_string(), Eq(sut_assign.to_string()));
+}
+
+TEST(ServiceName, move_works) {
+    const auto* valid_name = "He eats chickens and looks at them";
+    ServiceName sut = ServiceName::create(valid_name).expect("");
+    ServiceName sut_move { std::move(sut) };
+
+    ASSERT_THAT(sut_move.to_string().c_str(), StrEq(valid_name));
+    sut = std::move(sut_move);
+    ASSERT_THAT(sut.to_string().c_str(), StrEq(valid_name));
+}
 } // namespace

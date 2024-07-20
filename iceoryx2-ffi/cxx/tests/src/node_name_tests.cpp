@@ -58,4 +58,25 @@ TEST(NodeName, to_owned_works) {
     ASSERT_THAT(sut_view.to_string().c_str(), StrEq(sut_owned.to_string().c_str()));
 }
 
+TEST(NodeName, copy_works) {
+    const auto* valid_name = "A glass full of apple beans - what?";
+    const NodeName sut = NodeName::create(valid_name).expect("");
+    NodeName sut_assign = NodeName::create("blarb").expect("");
+    NodeName sut_copy { sut }; //NOLINT
+    sut_assign = sut;
+
+    ASSERT_THAT(sut.to_string().c_str(), StrEq(valid_name));
+    ASSERT_THAT(sut.to_string(), Eq(sut_copy.to_string()));
+    ASSERT_THAT(sut.to_string(), Eq(sut_assign.to_string()));
+}
+
+TEST(NodeName, move_works) {
+    const auto* valid_name = "Who is the Cyborg-Vampire?";
+    NodeName sut = NodeName::create(valid_name).expect("");
+    NodeName sut_move { std::move(sut) };
+
+    ASSERT_THAT(sut_move.to_string().c_str(), StrEq(valid_name));
+    sut = std::move(sut_move);
+    ASSERT_THAT(sut.to_string().c_str(), StrEq(valid_name));
+}
 } // namespace

@@ -67,13 +67,16 @@ NodeState<T>::NodeState(const DeadNodeView<T>& view)
 
 template <ServiceType T>
 NodeState<T>::NodeState(iox2_node_state_e node_state, const NodeId& node_id) {
-    if (node_state == iox2_node_state_e_INACCESSIBLE) {
+    switch (node_state) {
+    case iox2_node_state_e_INACCESSIBLE:
         m_state.template emplace_at_index<INACCESSIBLE_STATE>(node_id);
-    } else if (node_state == iox2_node_state_e_UNDEFINED) {
+        break;
+    case iox2_node_state_e_UNDEFINED:
         m_state.template emplace_at_index<UNDEFINED_STATE>(node_id);
+        break;
+    default:
+        IOX_UNREACHABLE();
     }
-
-    IOX_UNREACHABLE();
 }
 
 template <ServiceType T>
