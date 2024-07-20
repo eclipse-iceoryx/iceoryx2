@@ -22,11 +22,12 @@ mod config;
 mod node;
 mod node_builder;
 mod node_name;
-mod port_factory;
+mod port_factory_event;
 mod publisher;
 mod quirks_correction;
 mod service;
 mod service_builder;
+mod service_builder_event;
 mod service_name;
 mod subscriber;
 
@@ -34,11 +35,12 @@ pub use config::*;
 pub use node::*;
 pub use node_builder::*;
 pub use node_name::*;
-pub use port_factory::*;
+pub use port_factory_event::*;
 pub use publisher::*;
 pub use quirks_correction::*;
 pub use service::*;
 pub use service_builder::*;
+pub use service_builder_event::*;
 pub use service_name::*;
 pub use subscriber::*;
 

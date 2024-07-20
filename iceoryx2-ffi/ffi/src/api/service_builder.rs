@@ -26,19 +26,19 @@ use core::mem::ManuallyDrop;
 
 // BEGIN types definition
 
-type NoUserHeader = ();
-type _UserHeader = [u8; 128];
-type Payload = [u8];
+pub(super) type NoUserHeaderFfi = ();
+pub(super) type _UserHeaderFfi = [u8; 128];
+pub(super) type PayloadFfi = [u8];
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
-    base: ManuallyDrop<ServiceBuilderBase<S>>,
-    event: ManuallyDrop<ServiceBuilderEvent<S>>,
-    pub_sub: ManuallyDrop<ServiceBuilderPubSub<Payload, NoUserHeader, S>>,
+    pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,
+    pub(super) event: ManuallyDrop<ServiceBuilderEvent<S>>,
+    pub(super) pub_sub: ManuallyDrop<ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, S>>,
 }
 
 pub(super) union ServiceBuilderUnion {
-    ipc: ManuallyDrop<ServiceBuilderUnionNested<zero_copy::Service>>,
-    local: ManuallyDrop<ServiceBuilderUnionNested<process_local::Service>>,
+    pub(super) ipc: ManuallyDrop<ServiceBuilderUnionNested<zero_copy::Service>>,
+    pub(super) local: ManuallyDrop<ServiceBuilderUnionNested<process_local::Service>>,
 }
 
 impl ServiceBuilderUnion {
@@ -59,7 +59,7 @@ impl ServiceBuilderUnion {
     }
 
     pub(super) fn new_ipc_pub_sub(
-        service_builder: ServiceBuilderPubSub<Payload, NoUserHeader, zero_copy::Service>,
+        service_builder: ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, zero_copy::Service>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<zero_copy::Service> {
@@ -89,7 +89,7 @@ impl ServiceBuilderUnion {
     }
 
     pub(super) fn new_local_pub_sub(
-        service_builder: ServiceBuilderPubSub<Payload, NoUserHeader, process_local::Service>,
+        service_builder: ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, process_local::Service>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(ServiceBuilderUnionNested::<process_local::Service> {
@@ -108,10 +108,9 @@ pub struct iox2_service_builder_storage_t {
 #[repr(C)]
 #[iceoryx2_ffi(ServiceBuilderUnion)]
 pub struct iox2_service_builder_t {
-    service_type: iox2_service_type_e,
-    // TODO messaging_type for event and pub_sub differentiation
-    value: iox2_service_builder_storage_t,
-    deleter: fn(*mut iox2_service_builder_t),
+    pub(super) service_type: iox2_service_type_e,
+    pub(super) value: iox2_service_builder_storage_t,
+    pub(super) deleter: fn(*mut iox2_service_builder_t),
 }
 
 impl iox2_service_builder_t {
@@ -143,14 +142,13 @@ pub struct iox2_service_builder_event_ref_h_t;
 /// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
 pub type iox2_service_builder_event_ref_h = *mut iox2_service_builder_event_ref_h_t;
 
-pub struct iox2_service_builder_publish_subscribe_h_t;
+pub struct iox2_service_builder_pub_sub_h_t;
 /// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function transfers the ownership.
-pub type iox2_service_builder_publish_subscribe_h = *mut iox2_service_builder_publish_subscribe_h_t;
+pub type iox2_service_builder_pub_sub_h = *mut iox2_service_builder_pub_sub_h_t;
 
-pub struct iox2_service_builder_publish_subscribe_ref_h_t;
+pub struct iox2_service_builder_pub_sub_ref_h_t;
 /// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
-pub type iox2_service_builder_publish_subscribe_ref_h =
-    *mut iox2_service_builder_publish_subscribe_ref_h_t;
+pub type iox2_service_builder_pub_sub_ref_h = *mut iox2_service_builder_pub_sub_ref_h_t;
 
 impl HandleToType for iox2_service_builder_h {
     type Target = *mut iox2_service_builder_t;
@@ -168,14 +166,90 @@ impl HandleToType for iox2_service_builder_ref_h {
     }
 }
 
+impl HandleToType for iox2_service_builder_event_h {
+    type Target = *mut iox2_service_builder_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
+impl HandleToType for iox2_service_builder_event_ref_h {
+    type Target = *mut iox2_service_builder_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
+impl HandleToType for iox2_service_builder_pub_sub_h {
+    type Target = *mut iox2_service_builder_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
+impl HandleToType for iox2_service_builder_pub_sub_ref_h {
+    type Target = *mut iox2_service_builder_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
 // END type definition
 
 // BEGIN C API
+
+/// This function casts an owning [`iox2_service_builder_event_h`] into a non-owning [`iox2_service_builder_event_ref_h`]
+///
+/// # Arguments
+///
+/// * `service_builder_handle` obtained by `iox2_service_builder_event`
+///
+/// Returns a [`iox2_service_builder_event_ref_h`]
+///
+/// # Safety
+///
+/// * The `service_builder_handle` must be a valid handle.
+/// * The `service_builder_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_service_builder_event_ref_h(
+    service_builder_handle: iox2_service_builder_event_h,
+) -> iox2_service_builder_event_ref_h {
+    debug_assert!(!service_builder_handle.is_null());
+
+    (*service_builder_handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// This function casts an owning [`iox2_service_builder_pub_sub_h`] into a non-owning [`iox2_service_builder_pub_sub_ref_h`]
+///
+/// # Arguments
+///
+/// * `service_builder_handle` obtained by `iox2_service_builder_pub_sub`
+///
+/// Returns a [`iox2_service_builder_pub_sub_ref_h`]
+///
+/// # Safety
+///
+/// * The `service_builder_handle` must be a valid handle.
+/// * The `service_builder_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_service_builder_pub_sub_ref_h(
+    service_builder_handle: iox2_service_builder_pub_sub_h,
+) -> iox2_service_builder_pub_sub_ref_h {
+    debug_assert!(!service_builder_handle.is_null());
+
+    (*service_builder_handle.as_type()).as_ref_handle() as *mut _ as _
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event(
     service_builder_handle: iox2_service_builder_h,
 ) -> iox2_service_builder_event_h {
+    debug_assert!(!service_builder_handle.is_null());
+
     let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
 
     match service_builders_struct.service_type {
@@ -202,9 +276,11 @@ pub unsafe extern "C" fn iox2_service_builder_event(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn iox2_service_builder_publish_subscribe(
+pub unsafe extern "C" fn iox2_service_builder_pub_sub(
     service_builder_handle: iox2_service_builder_h,
-) -> iox2_service_builder_publish_subscribe_h {
+) -> iox2_service_builder_pub_sub_h {
+    debug_assert!(!service_builder_handle.is_null());
+
     let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
 
     match service_builders_struct.service_type {
