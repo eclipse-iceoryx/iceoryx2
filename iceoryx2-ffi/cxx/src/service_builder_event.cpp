@@ -19,7 +19,6 @@ ServiceBuilderEvent<S>::ServiceBuilderEvent(iox2_service_builder_h handle)
     : m_handle { iox2_service_builder_event(handle) } {
 }
 
-
 template <ServiceType S>
 void ServiceBuilderEvent<S>::set_parameters() {
     auto* ref_handle = iox2_cast_service_builder_event_ref_h(m_handle);

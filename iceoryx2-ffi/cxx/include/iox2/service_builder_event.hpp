@@ -49,6 +49,9 @@ class ServiceBuilderEvent {
         const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError>;
 
   private:
+    template <ServiceType>
+    friend class ServiceBuilder;
+
     explicit ServiceBuilderEvent(iox2_service_builder_h handle);
 
     void set_parameters();

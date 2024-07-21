@@ -32,10 +32,9 @@ namespace iox2 {
 template <ServiceType S>
 class PortFactoryEvent {
   public:
-    PortFactoryEvent() = default;
-    PortFactoryEvent(PortFactoryEvent&&) = default;
-    auto operator=(PortFactoryEvent&&) -> PortFactoryEvent& = default;
-    ~PortFactoryEvent() = default;
+    PortFactoryEvent(PortFactoryEvent&&) noexcept;
+    auto operator=(PortFactoryEvent&&) noexcept -> PortFactoryEvent&;
+    ~PortFactoryEvent();
 
     PortFactoryEvent(const PortFactoryEvent&) = delete;
     auto operator=(const PortFactoryEvent&) -> PortFactoryEvent& = delete;
@@ -62,6 +61,7 @@ class PortFactoryEvent {
     friend class ServiceBuilderEvent;
 
     explicit PortFactoryEvent(iox2_port_factory_event_h handle);
+    void drop() noexcept;
 
     iox2_port_factory_event_h m_handle;
 };

@@ -20,6 +20,36 @@ PortFactoryEvent<S>::PortFactoryEvent(iox2_port_factory_event_h handle)
 }
 
 template <ServiceType S>
+PortFactoryEvent<S>::~PortFactoryEvent() {
+    drop();
+}
+
+template <ServiceType S>
+PortFactoryEvent<S>::PortFactoryEvent(PortFactoryEvent&& rhs) noexcept
+    : m_handle { nullptr } {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S>
+auto PortFactoryEvent<S>::operator=(PortFactoryEvent&& rhs) noexcept -> PortFactoryEvent& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType S>
+void PortFactoryEvent<S>::drop() noexcept {
+    if (m_handle != nullptr) {
+        iox2_port_factory_event_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S>
 auto PortFactoryEvent<S>::service_name() const -> const ServiceName& {
     IOX_TODO();
 }

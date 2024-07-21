@@ -29,9 +29,9 @@ class ServiceBuilder {
     ~ServiceBuilder() = default;
 
     template <typename Payload>
-    auto publish_subscribe() -> ServiceBuilderPublishSubscribe<Payload, void, S>&&;
+    auto publish_subscribe() && -> ServiceBuilderPublishSubscribe<Payload, void, S>;
 
-    auto event() -> ServiceBuilderEvent<S>&&;
+    auto event() && -> ServiceBuilderEvent<S>;
 
   private:
     template <ServiceType>
@@ -47,13 +47,13 @@ inline ServiceBuilder<S>::ServiceBuilder(iox2_node_ref_h node_handle, iox2_servi
 }
 
 template <ServiceType S>
-inline auto ServiceBuilder<S>::event() -> ServiceBuilderEvent<S>&& {
-    IOX_TODO();
+inline auto ServiceBuilder<S>::event() && -> ServiceBuilderEvent<S> {
+    return ServiceBuilderEvent<S> { m_handle };
 }
 
 template <ServiceType S>
 template <typename Payload>
-inline auto ServiceBuilder<S>::publish_subscribe() -> ServiceBuilderPublishSubscribe<Payload, void, S>&& {
+inline auto ServiceBuilder<S>::publish_subscribe() && -> ServiceBuilderPublishSubscribe<Payload, void, S> {
     IOX_TODO();
 }
 } // namespace iox2
