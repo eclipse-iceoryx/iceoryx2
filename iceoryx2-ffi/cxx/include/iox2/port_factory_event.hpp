@@ -16,7 +16,6 @@
 #include "attribute_set.hpp"
 #include "callback_progression.hpp"
 #include "dynamic_config_event.hpp"
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/string.hpp"
@@ -41,33 +40,27 @@ class PortFactoryEvent {
     PortFactoryEvent(const PortFactoryEvent&) = delete;
     auto operator=(const PortFactoryEvent&) -> PortFactoryEvent& = delete;
 
-    auto service_name() const -> const ServiceName& {
-        IOX_TODO();
-    }
-    auto uuid() const -> iox::string<SERVICE_ID_LENGTH> {
-        IOX_TODO();
-    }
-    auto attributes() const -> const AttributeSet& {
-        IOX_TODO();
-    }
-    auto static_config() const -> const StaticConfigEvent& {
-        IOX_TODO();
-    }
-    auto dynamic_config() const -> const DynamicConfigEvent& {
-        IOX_TODO();
-    }
+    auto service_name() const -> const ServiceName&;
+
+    auto uuid() const -> iox::string<SERVICE_ID_LENGTH>;
+
+    auto attributes() const -> const AttributeSet&;
+
+    auto static_config() const -> const StaticConfigEvent&;
+
+    auto dynamic_config() const -> const DynamicConfigEvent&;
 
     auto nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
-        -> iox::expected<void, NodeListFailure> {
-        IOX_TODO();
-    }
+        -> iox::expected<void, NodeListFailure>;
 
-    auto listener_builder() const -> PortFactoryListener<S> {
-        IOX_TODO();
-    }
-    auto notifier_builder() const -> PortFactoryNotifier<S> {
-        IOX_TODO();
-    }
+    auto listener_builder() const -> PortFactoryListener<S>;
+
+    auto notifier_builder() const -> PortFactoryNotifier<S>;
+
+  private:
+    explicit PortFactoryEvent(iox2_port_factory_event_h handle);
+
+    iox2_port_factory_event_h m_handle;
 };
 } // namespace iox2
 
