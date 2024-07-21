@@ -58,6 +58,9 @@ class PortFactoryEvent {
     auto notifier_builder() const -> PortFactoryNotifier<S>;
 
   private:
+    template <ServiceType>
+    friend class ServiceBuilderEvent;
+
     explicit PortFactoryEvent(iox2_port_factory_event_h handle);
 
     iox2_port_factory_event_h m_handle;

@@ -31,7 +31,14 @@ void ServiceBuilderEvent<S>::set_parameters() {
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::open_or_create() && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
     set_parameters();
-    IOX_TODO();
+    iox2_port_factory_event_h event_handle {};
+    auto result = iox2_service_builder_event_open_or_create(m_handle, nullptr, &event_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryEvent<S>(event_handle));
+    }
+
+    return iox::err(iox::into<EventOpenOrCreateError>(result));
 }
 
 template <ServiceType S>
