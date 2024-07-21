@@ -13,32 +13,23 @@
 #ifndef IOX2_NODE_HPP
 #define IOX2_NODE_HPP
 
-#include "callback_progression.hpp"
-#include "config.hpp"
-#include "internal/iceoryx2.hpp"
 #include "iox/assertions_addendum.hpp"
 #include "iox/builder_addendum.hpp"
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
-#include "node_id.hpp"
-#include "node_name.hpp"
-#include "node_state.hpp"
-#include "service_builder.hpp"
-#include "service_name.hpp"
-#include "service_type.hpp"
+#include "iox2/callback_progression.hpp"
+#include "iox2/config.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/node_event.hpp"
+#include "iox2/node_id.hpp"
+#include "iox2/node_name.hpp"
+#include "iox2/node_state.hpp"
+#include "iox2/service_builder.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
 
 namespace iox2 {
-/// Defines all possible events that can occur during [`Node::wait()`].
-enum class NodeEvent : uint8_t {
-    /// The timeout passed.
-    Tick,
-    /// SIGTERM signal was received
-    TerminationRequest,
-    /// SIGINT signal was received
-    InterruptSignal,
-};
-
 /// The central entry point of iceoryx2. Represents a node of the iceoryx2
 /// system. One process can have arbitrary many nodes but usually it should be
 /// only one node per process.
@@ -64,7 +55,7 @@ class Node {
 
     /// Waits a given time for a [`NodeEvent`]. If the [`cycle_time`] has passed
     /// [`NodeEvent::Tick`] is returned.
-    auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent;
+    auto wait(iox::units::Duration cycle_time) const -> NodeEvent;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.

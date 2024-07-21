@@ -39,6 +39,8 @@ class ServiceNameView {
 
   private:
     friend class ServiceName;
+    template <ServiceType>
+    friend class Service;
     explicit ServiceNameView(iox2_service_name_ptr ptr);
     iox2_service_name_ptr m_ptr;
 };

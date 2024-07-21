@@ -17,7 +17,6 @@
 
 namespace iox2 {
 class Config;
-
 /// Non-owning view of a [`Config`].
 class ConfigView {
   public:
@@ -34,6 +33,10 @@ class ConfigView {
     friend class Config;
     template <ServiceType>
     friend class Node;
+
+    template <ServiceType>
+    friend class Service;
+
     explicit ConfigView(iox2_config_ptr ptr);
     iox2_config_ptr m_ptr;
 };

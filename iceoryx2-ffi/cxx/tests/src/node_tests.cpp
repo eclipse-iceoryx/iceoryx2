@@ -65,4 +65,13 @@ TEST(Node, created_nodes_can_be_listed) {
     ASSERT_TRUE(result.has_value());
     ASSERT_THAT(counter, Eq(0));
 }
+
+TEST(Node, node_wait_returns_tick_on_timeout) {
+    constexpr uint64_t TIMEOUT = 10;
+    auto sut = NodeBuilder().create<ServiceType::Local>().expect("");
+    auto event = sut.wait(iox::units::Duration::fromMilliseconds(TIMEOUT));
+
+    ASSERT_THAT(event, Eq(NodeEvent::Tick));
+}
+
 } // namespace

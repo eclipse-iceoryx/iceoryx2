@@ -16,10 +16,13 @@
 #include "iox/assertions.hpp"
 #include "iox/into.hpp"
 #include "iox2/callback_progression.hpp"
-#include "iox2/enum_translation.hpp"
+#include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/messaging_pattern.hpp"
+#include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/semantic_string.hpp"
+#include "iox2/service_error_enums.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox {
@@ -115,6 +118,58 @@ constexpr auto from<int, iox2::NodeListFailure>(const int value) noexcept -> iox
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::NodeEvent>(const int value) noexcept -> iox2::NodeEvent {
+    const auto error = static_cast<iox2_node_event_e>(value);
+    switch (error) {
+    case iox2_node_event_e_TICK:
+        return iox2::NodeEvent::Tick;
+    case iox2_node_event_e_TERMINATION_REQUEST:
+        return iox2::NodeEvent::TerminationRequest;
+    case iox2_node_event_e_INTERRUPT_SIGNAL:
+        return iox2::NodeEvent::InterruptSignal;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::MessagingPattern, iox2_messaging_pattern_e>(const iox2::MessagingPattern value) noexcept
+    -> iox2_messaging_pattern_e {
+    switch (value) {
+    case iox2::MessagingPattern::PublishSubscribe:
+        return iox2_messaging_pattern_e_PUBLISH_SUBSCRIBE;
+    case iox2::MessagingPattern::Event:
+        return iox2_messaging_pattern_e_EVENT;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::ServiceDetailsError>(const int value) noexcept -> iox2::ServiceDetailsError {
+    const auto error = static_cast<iox2_service_details_error_e>(value);
+    switch (error) {
+    case iox2_service_details_error_e_FAILED_TO_OPEN_STATIC_SERVICE_INFO:
+        return iox2::ServiceDetailsError::FailedToOpenStaticServiceInfo;
+    case iox2_service_details_error_e_FAILED_TO_READ_STATIC_SERVICE_INFO:
+        return iox2::ServiceDetailsError::FailedToReadStaticServiceInfo;
+    case iox2_service_details_error_e_FAILED_TO_ACQUIRE_NODE_STATE:
+        return iox2::ServiceDetailsError::FailedToAcquireNodeState;
+    case iox2_service_details_error_e_FAILED_TO_DESERIALIZE_STATIC_SERVICE_INFO:
+        return iox2::ServiceDetailsError::FailedToDeserializeStaticServiceInfo;
+    case iox2_service_details_error_e_INTERNAL_ERROR:
+        return iox2::ServiceDetailsError::InternalError;
+    case iox2_service_details_error_e_SERVICE_IN_INCONSISTENT_STATE:
+        return iox2::ServiceDetailsError::ServiceInInconsistentState;
+    case iox2_service_details_error_e_VERSION_MISMATCH:
+        return iox2::ServiceDetailsError::VersionMismatch;
+    }
+
+    IOX_UNREACHABLE();
+}
+
 } // namespace iox
 
 #endif

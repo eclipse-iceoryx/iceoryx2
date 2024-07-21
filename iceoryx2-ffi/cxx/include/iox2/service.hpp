@@ -13,67 +13,37 @@
 #ifndef IOX2_SERVICE_HPP
 #define IOX2_SERVICE_HPP
 
-#include "callback_progression.hpp"
-#include "config.hpp"
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/optional.hpp"
+#include "iox2/callback_progression.hpp"
+#include "iox2/config.hpp"
+#include "iox2/messaging_pattern.hpp"
 #include "iox2/service_details.hpp"
-#include "messaging_pattern.hpp"
-#include "service_name.hpp"
-#include "service_type.hpp"
-
-#include <cstdint>
+#include "iox2/service_error_enums.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
 
 namespace iox2 {
-enum class ServiceDetailsError : uint8_t {
-    /// The underlying static [`Service`] information could not be opened.
-    FailedToOpenStaticServiceInfo,
-    /// The underlying static [`Service`] information could not be read.
-    FailedToReadStaticServiceInfo,
-    /// The underlying static [`Service`] information could not be deserialized.
-    /// Can be caused by
-    /// version mismatch or a corrupted file.
-    FailedToDeserializeStaticServiceInfo,
-    /// Required [`Service`] resources are not available or corrupted.
-    ServiceInInconsistentState,
-    /// The [`Service`] was created with a different iceoryx2 version.
-    VersionMismatch,
-    /// Errors that indicate either an implementation issue or a wrongly
-    /// configured system.
-    InternalError,
-    /// The [`NodeState`] could not be acquired.
-    FailedToAcquireNodeState,
-};
-
-enum class ServiceListError : uint8_t {
-    /// The process has insufficient permissions to list all [`Service`]s.
-    InsufficientPermissions,
-    /// Errors that indicate either an implementation issue or a wrongly
-    /// configured system.
-    InternalError,
-};
-
+/// Represents a service. Used to create or open new services with the
+/// [`crate::node::Node::service_builder()`].
+/// Contains the building blocks a [`Service`] requires to create the underlying resources and
+/// establish communication.
 template <ServiceType S>
 class Service {
   public:
+    /// Checks if a service under a given [`ConfigView`] does exist.
     static auto does_exist(const ServiceName& service_name,
-                           const ConfigView config,
-                           const MessagingPattern messaging_pattern) -> iox::expected<bool, ServiceDetailsError> {
-        IOX_TODO();
-    }
+                           ConfigView config,
+                           MessagingPattern messaging_pattern) -> iox::expected<bool, ServiceDetailsError>;
 
-    static auto
-    details(const ServiceName& service_name, const ConfigView config, const MessagingPattern messaging_pattern)
-        -> iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError> {
-        IOX_TODO();
-    }
+    /// Acquires the [`ServiceDetails`] of a [`Service`].
+    static auto details(const ServiceName& service_name, ConfigView config, MessagingPattern messaging_pattern)
+        -> iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError>;
 
-    static auto list(const ConfigView config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback)
-        -> iox::expected<void, ServiceListError> {
-        IOX_TODO();
-    }
+    /// Returns a list of all services created under a given [`config::Config`].
+    static auto list(ConfigView config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback)
+        -> iox::expected<void, ServiceListError>;
 };
 } // namespace iox2
 

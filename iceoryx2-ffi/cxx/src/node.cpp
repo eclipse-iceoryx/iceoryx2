@@ -44,7 +44,7 @@ Node<T>::~Node() {
 
 template <ServiceType T>
 auto Node<T>::name() const -> NodeNameView {
-    const auto* node_name_ptr = iox2_node_name(m_handle);
+    const auto* node_name_ptr = iox2_node_name(iox2_cast_node_ref_h(m_handle));
     return NodeNameView { node_name_ptr };
 }
 
@@ -54,8 +54,9 @@ auto Node<T>::id() const -> NodeId {
 }
 
 template <ServiceType T>
-auto Node<T>::wait(const iox::units::Duration& cycle_time) const -> NodeEvent {
-    IOX_TODO();
+auto Node<T>::wait(iox::units::Duration cycle_time) const -> NodeEvent {
+    auto time = cycle_time.timespec();
+    return iox::into<NodeEvent>(iox2_node_wait(iox2_cast_node_ref_h(m_handle), time.tv_sec, time.tv_nsec));
 }
 
 template <ServiceType T>
