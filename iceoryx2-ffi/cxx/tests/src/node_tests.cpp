@@ -20,24 +20,36 @@
 namespace {
 using namespace iox2;
 
-TEST(Node, node_name_is_applied) {
+template <typename T>
+class NodeTest : public ::testing::Test {
+  public:
+    static constexpr ServiceType TYPE = T::TYPE;
+};
+
+TYPED_TEST_SUITE(NodeTest, iox2_testing::ServiceTypes);
+
+TYPED_TEST(NodeTest, node_name_is_applied) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
     const auto* name_value = "First time we met, I saw the ocean, it was wet!";
     auto node_name = NodeName::create(name_value).expect("");
 
-    auto sut = NodeBuilder().name(node_name).create<ServiceType::Local>().expect("");
+    auto sut = NodeBuilder().name(node_name).create<SERVICE_TYPE>().expect("");
     ASSERT_THAT(sut.name().to_string(), Eq(node_name.to_string()));
 }
 
-TEST(Node, created_nodes_can_be_listed) {
+TYPED_TEST(NodeTest, created_nodes_can_be_listed) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
     auto node_name_1 = NodeName::create("Nala does not like water.").expect("");
     auto node_name_2 = NodeName::create("Nala does not like paprika.").expect("");
 
     {
-        auto sut_1 = NodeBuilder().name(node_name_1).create<ServiceType::Local>().expect("");
-        auto sut_2 = NodeBuilder().name(node_name_2).create<ServiceType::Local>().expect("");
+        auto sut_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");
+        auto sut_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().expect("");
 
         std::vector<NodeName> nodes;
-        auto result = Node<ServiceType::Local>::list(Config::global_config(), [&](auto node_state) {
+        auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](auto node_state) {
             node_state.alive([&](auto& view) { nodes.push_back(view.details()->name()); });
             return CallbackProgression::Continue;
         });
@@ -58,7 +70,7 @@ TEST(Node, created_nodes_can_be_listed) {
     }
 
     uint64_t counter = 0;
-    auto result = Node<ServiceType::Local>::list(Config::global_config(), [&](auto node_state) {
+    auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](auto node_state) {
         counter++;
         return CallbackProgression::Continue;
     });
@@ -66,9 +78,11 @@ TEST(Node, created_nodes_can_be_listed) {
     ASSERT_THAT(counter, Eq(0));
 }
 
-TEST(Node, node_wait_returns_tick_on_timeout) {
+TYPED_TEST(NodeTest, node_wait_returns_tick_on_timeout) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
     constexpr uint64_t TIMEOUT = 10;
-    auto sut = NodeBuilder().create<ServiceType::Local>().expect("");
+    auto sut = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto event = sut.wait(iox::units::Duration::fromMilliseconds(TIMEOUT));
 
     ASSERT_THAT(event, Eq(NodeEvent::Tick));

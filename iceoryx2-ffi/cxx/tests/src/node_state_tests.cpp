@@ -17,11 +17,21 @@
 namespace {
 using namespace iox2;
 
-TEST(NodeState, alive_node_works) {
+template <typename T>
+class NodeStateTest : public ::testing::Test {
+  public:
+    static constexpr ServiceType TYPE = T::TYPE;
+};
+
+TYPED_TEST_SUITE(NodeStateTest, iox2_testing::ServiceTypes);
+
+TYPED_TEST(NodeStateTest, alive_node_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
     const auto* valid_name = "Which companies middleware could be best described as a dead horse!";
     auto node_name = NodeName::create(valid_name).expect("");
-    auto sut = NodeState<ServiceType::Local>(
-        AliveNodeView<ServiceType::Local>(NodeId {}, NodeDetails { node_name, Config::global_config().to_owned() }));
+    auto sut = NodeState<SERVICE_TYPE>(
+        AliveNodeView<SERVICE_TYPE>(NodeId {}, NodeDetails { node_name, Config::global_config().to_owned() }));
 
     iox::optional<NodeName> test_name;
     bool entered_wrong_callback = false;
@@ -35,11 +45,13 @@ TEST(NodeState, alive_node_works) {
     ASSERT_THAT(test_name->to_string().c_str(), StrEq(valid_name));
 }
 
-TEST(NodeState, dead_node_works) {
+TYPED_TEST(NodeStateTest, dead_node_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
     const auto* valid_name = "Oh look there is Super-Hypnotoad flying to the moon!";
     auto node_name = NodeName::create(valid_name).expect("");
-    auto sut = NodeState<ServiceType::Local>(DeadNodeView<ServiceType::Local>(
-        AliveNodeView<ServiceType::Local>(NodeId {}, NodeDetails { node_name, Config::global_config().to_owned() })));
+    auto sut = NodeState<SERVICE_TYPE>(DeadNodeView<SERVICE_TYPE>(
+        AliveNodeView<SERVICE_TYPE>(NodeId {}, NodeDetails { node_name, Config::global_config().to_owned() })));
 
     iox::optional<NodeName> test_name;
     bool entered_wrong_callback = false;
@@ -53,8 +65,10 @@ TEST(NodeState, dead_node_works) {
     ASSERT_THAT(test_name->to_string().c_str(), StrEq(valid_name));
 }
 
-TEST(NodeState, inaccessible_node_works) {
-    auto sut = NodeState<ServiceType::Local>(iox2_node_state_e_INACCESSIBLE, NodeId {});
+TYPED_TEST(NodeStateTest, inaccessible_node_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    auto sut = NodeState<SERVICE_TYPE>(iox2_node_state_e_INACCESSIBLE, NodeId {});
 
     bool entered_right_callback = false;
     bool entered_wrong_callback = false;
@@ -67,8 +81,10 @@ TEST(NodeState, inaccessible_node_works) {
     ASSERT_TRUE(entered_right_callback);
 }
 
-TEST(NodeState, undefined_node_works) {
-    auto sut = NodeState<ServiceType::Local>(iox2_node_state_e_UNDEFINED, NodeId {});
+TYPED_TEST(NodeStateTest, undefined_node_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    auto sut = NodeState<SERVICE_TYPE>(iox2_node_state_e_UNDEFINED, NodeId {});
 
     bool entered_right_callback = false;
     bool entered_wrong_callback = false;
