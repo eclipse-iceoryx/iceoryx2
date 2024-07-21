@@ -41,6 +41,8 @@ class ServiceNameView {
     friend class ServiceName;
     template <ServiceType>
     friend class Service;
+    template <ServiceType>
+    friend class Node;
     explicit ServiceNameView(iox2_service_name_ptr ptr);
     iox2_service_name_ptr m_ptr;
 };

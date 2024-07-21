@@ -14,24 +14,48 @@
 #define IOX2_SERVICE_BUILDER_HPP
 
 #include "iox/assertions_addendum.hpp"
-#include "service_builder_event.hpp"
-#include "service_builder_publish_subscribe.hpp"
-#include "service_type.hpp"
+#include "iox2/service_builder_event.hpp"
+#include "iox2/service_builder_publish_subscribe.hpp"
+#include "iox2/service_type.hpp"
 
 namespace iox2 {
-
 template <ServiceType S>
 class ServiceBuilder {
   public:
-    template <typename Payload>
-    auto publish_subscribe() -> ServiceBuilderPublishSubscribe<Payload, void, S>&& {
-        IOX_TODO();
-    }
+    ServiceBuilder(ServiceBuilder&&) = default;
+    ServiceBuilder(const ServiceBuilder&) = delete;
+    auto operator=(ServiceBuilder&&) -> ServiceBuilder& = default;
+    auto operator=(const ServiceBuilder&) -> ServiceBuilder& = delete;
+    ~ServiceBuilder() = default;
 
-    auto event() -> ServiceBuilderEvent<S>&& {
-        IOX_TODO();
-    }
+    template <typename Payload>
+    auto publish_subscribe() -> ServiceBuilderPublishSubscribe<Payload, void, S>&&;
+
+    auto event() -> ServiceBuilderEvent<S>&&;
+
+  private:
+    template <ServiceType>
+    friend class Node;
+    ServiceBuilder(iox2_node_ref_h node_handle, iox2_service_name_ptr service_name_ptr);
+
+    iox2_service_builder_h m_handle;
 };
+
+template <ServiceType S>
+inline ServiceBuilder<S>::ServiceBuilder(iox2_node_ref_h node_handle, iox2_service_name_ptr service_name_ptr)
+    : m_handle { iox2_node_service_builder(node_handle, nullptr, service_name_ptr) } {
+}
+
+template <ServiceType S>
+inline auto ServiceBuilder<S>::event() -> ServiceBuilderEvent<S>&& {
+    IOX_TODO();
+}
+
+template <ServiceType S>
+template <typename Payload>
+inline auto ServiceBuilder<S>::publish_subscribe() -> ServiceBuilderPublishSubscribe<Payload, void, S>&& {
+    IOX_TODO();
+}
 
 } // namespace iox2
 #endif

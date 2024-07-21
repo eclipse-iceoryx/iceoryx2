@@ -61,7 +61,8 @@ auto Node<T>::wait(iox::units::Duration cycle_time) const -> NodeEvent {
 
 template <ServiceType T>
 auto Node<T>::service_builder(const ServiceName& name) const -> ServiceBuilder<T> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_node_ref_h(m_handle);
+    return ServiceBuilder<T> { ref_handle, name.as_view().m_ptr };
 }
 
 template <ServiceType T>
