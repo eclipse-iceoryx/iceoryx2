@@ -107,19 +107,19 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
                 .write(Some(value));
             }
 
-            unsafe fn as_option_mut(&mut self) -> &mut Option<#my_type> {
+            pub(super) unsafe fn as_option_mut(&mut self) -> &mut Option<#my_type> {
                 &mut *(self as *mut Self).cast::<Option<#my_type>>()
             }
 
-            unsafe fn as_option_ref(&self) -> &Option<#my_type> {
+            pub(super) unsafe fn as_option_ref(&self) -> &Option<#my_type> {
                 &*(self as *const Self).cast::<Option<#my_type>>()
             }
 
-            unsafe fn as_mut(&mut self) -> &mut #my_type {
+            pub(super) unsafe fn as_mut(&mut self) -> &mut #my_type {
                 self.as_option_mut().as_mut().unwrap()
             }
 
-            unsafe fn as_ref(&self) -> &#my_type {
+            pub(super) unsafe fn as_ref(&self) -> &#my_type {
                 self.as_option_ref().as_ref().unwrap()
             }
         }
