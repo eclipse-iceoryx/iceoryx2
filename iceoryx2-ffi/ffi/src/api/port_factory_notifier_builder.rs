@@ -123,7 +123,7 @@ impl HandleToType for iox2_port_factory_notifier_builder_ref_h {
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_notifier_builder_create(
-    port_factory_handle: iox2_port_factory_notifier_builder_ref_h,
+    port_factory_handle: iox2_port_factory_notifier_builder_h,
     notifier_struct_ptr: *mut iox2_notifier_t,
     notifier_handle_ptr: *mut iox2_notifier_h,
 ) -> c_int {

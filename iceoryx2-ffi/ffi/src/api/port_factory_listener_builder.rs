@@ -127,7 +127,7 @@ impl HandleToType for iox2_port_factory_listener_builder_ref_h {
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(
-    port_factory_handle: iox2_port_factory_listener_builder_ref_h,
+    port_factory_handle: iox2_port_factory_listener_builder_h,
     listener_struct_ptr: *mut iox2_listener_t,
     listener_handle_ptr: *mut iox2_listener_h,
 ) -> c_int {

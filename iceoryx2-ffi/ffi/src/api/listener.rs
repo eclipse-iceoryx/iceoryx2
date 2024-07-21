@@ -96,18 +96,38 @@ impl HandleToType for iox2_listener_ref_h {
 
 // BEGIN C API
 
-/// This function needs to be called to destroy the port factory!
+/// This function casts an owning [`iox2_listener_h`] into a non-owning [`iox2_listener_ref_h`]
 ///
 /// # Arguments
 ///
-/// * `port_factory_handle` - A valid [`iox2_port_factory_event_h`]
+/// * `listener_handle` obtained by [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
+///
+/// Returns a [`iox2_listener_ref_h`]
 ///
 /// # Safety
 ///
-/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-/// * The corresponding [`iox2_port_factory_event_t`] can be re-used with a call to
-///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create) or
-///   [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open)!
+/// * The `listener_handle` must be a valid handle.
+/// * The `listener_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_listener_ref_h(
+    listener_handle: iox2_listener_h,
+) -> iox2_listener_ref_h {
+    debug_assert!(!listener_handle.is_null());
+
+    (*listener_handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// This function needs to be called to destroy the listener!
+///
+/// # Arguments
+///
+/// * `listener_handle` - A valid [`iox2_listener_h`]
+///
+/// # Safety
+///
+/// * The `listener_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_listener_t`] can be re-used with a call to
+///   [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
     debug_assert!(!listener_handle.is_null());

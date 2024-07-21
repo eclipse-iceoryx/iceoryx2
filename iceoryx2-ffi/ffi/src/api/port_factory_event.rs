@@ -101,6 +101,28 @@ impl HandleToType for iox2_port_factory_event_ref_h {
 
 // BEGIN C API
 
+/// This function casts an owning [`iox2_port_factory_event_h`] into a non-owning [`iox2_port_factory_event_ref_h`]
+///
+/// # Arguments
+///
+/// * `port_factory_handle` obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
+///
+/// Returns a [`iox2_port_factory_event_ref_h`]
+///
+/// # Safety
+///
+/// * The `port_factory_handle` must be a valid handle.
+/// * The `port_factory_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_port_factory_event_ref_h(
+    port_factory_handle: iox2_port_factory_event_h,
+) -> iox2_port_factory_event_ref_h {
+    debug_assert!(!port_factory_handle.is_null());
+
+    (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
 /// Returns the [`iox2_service_name_ptr`](crate::iox2_service_name_ptr), an immutable pointer to the service name.
 ///
 /// # Safety
