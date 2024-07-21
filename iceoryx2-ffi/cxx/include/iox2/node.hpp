@@ -55,7 +55,7 @@ class Node {
 
     /// Waits a given time for a [`NodeEvent`]. If the [`cycle_time`] has passed
     /// [`NodeEvent::Tick`] is returned.
-    auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent;
+    auto wait(iox::units::Duration cycle_time) const -> NodeEvent;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.

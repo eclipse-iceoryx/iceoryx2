@@ -18,7 +18,6 @@
 #include "iox2/callback_progression.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
-// #include "iox2/node.hpp"
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
@@ -122,7 +121,7 @@ constexpr auto from<int, iox2::NodeListFailure>(const int value) noexcept -> iox
 
 template <>
 constexpr auto from<int, iox2::NodeEvent>(const int value) noexcept -> iox2::NodeEvent {
-    const auto error = static_cast<iox2_semantic_string_error_e>(value);
+    const auto error = static_cast<iox2_node_event_e>(value);
     switch (error) {
     case iox2_node_event_e_TICK:
         return iox2::NodeEvent::Tick;
