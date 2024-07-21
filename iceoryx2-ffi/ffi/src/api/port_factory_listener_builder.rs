@@ -12,16 +12,41 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType};
+use crate::api::{
+    iox2_listener_h, iox2_listener_t, iox2_service_type_e, HandleToType, IntoCInt, ListenerUnion,
+    IOX2_OK,
+};
 
+use iceoryx2::port::listener::ListenerCreateError;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::listener::PortFactoryListener;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use core::ffi::c_int;
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_listener_create_error_e {
+    EXCEEDS_MAX_SUPPORTED_NOTIFIERS = IOX2_OK as isize + 1,
+    RESOURCE_CREATION_FAILED,
+}
+
+impl IntoCInt for ListenerCreateError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            ListenerCreateError::ExceedsMaxSupportedListeners => {
+                iox2_listener_create_error_e::EXCEEDS_MAX_SUPPORTED_NOTIFIERS
+            }
+            ListenerCreateError::ResourceCreationFailed => {
+                iox2_listener_create_error_e::RESOURCE_CREATION_FAILED
+            }
+        }) as c_int
+    }
+}
 
 pub(super) union PortFactoryListenerBuilderUnion {
     ipc: ManuallyDrop<PortFactoryListener<'static, zero_copy::Service>>,
@@ -97,5 +122,70 @@ impl HandleToType for iox2_port_factory_listener_builder_ref_h {
 // END type definition
 
 // BEGIN C API
+
+// TODO [#210] add all the other setter methods
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(
+    port_factory_handle: iox2_port_factory_listener_builder_ref_h,
+    listener_struct_ptr: *mut iox2_listener_t,
+    listener_handle_ptr: *mut iox2_listener_h,
+) -> c_int {
+    debug_assert!(!port_factory_handle.is_null());
+    debug_assert!(!listener_handle_ptr.is_null());
+
+    let mut listener_struct_ptr = listener_struct_ptr;
+    fn no_op(_: *mut iox2_listener_t) {}
+    let mut deleter: fn(*mut iox2_listener_t) = no_op;
+    if listener_struct_ptr.is_null() {
+        listener_struct_ptr = iox2_listener_t::alloc();
+        deleter = iox2_listener_t::dealloc;
+    }
+    debug_assert!(!listener_struct_ptr.is_null());
+
+    let listener_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
+
+    let service_type = listener_builder_struct.service_type;
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let listener_builder =
+            ManuallyDrop::take(&mut listener_builder_struct.value.as_mut().ipc);
+
+            match listener_builder.create() {
+                Ok(listener) => {
+                    (*listener_struct_ptr).init(
+                        service_type,
+                        ListenerUnion::new_ipc(listener),
+                                                deleter,
+                    );
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            let listener_builder =
+            ManuallyDrop::take(&mut listener_builder_struct.value.as_mut().local);
+
+            match listener_builder.create() {
+                Ok(listener) => {
+                    (*listener_struct_ptr).init(
+                        service_type,
+                        ListenerUnion::new_local(listener),
+                                                deleter,
+                    );
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+    }
+
+    *listener_handle_ptr = (*listener_struct_ptr).as_handle();
+
+    IOX2_OK
+}
 
 // END C API

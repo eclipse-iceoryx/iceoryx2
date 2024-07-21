@@ -19,6 +19,7 @@ use iceoryx2_bb_log::set_log_level;
 use core::ffi::c_int;
 
 mod config;
+mod listener;
 mod node;
 mod node_builder;
 mod node_name;
@@ -37,6 +38,7 @@ mod service_name;
 mod subscriber;
 
 pub use config::*;
+pub use listener::*;
 pub use node::*;
 pub use node_builder::*;
 pub use node_name::*;
