@@ -15,9 +15,8 @@
 use crate::api::{
     c_size_t, iox2_port_factory_pub_sub_h, iox2_port_factory_pub_sub_t,
     iox2_service_builder_pub_sub_h, iox2_service_builder_pub_sub_ref_h, iox2_service_type_e,
-    HandleToType, IntoCInt, PortFactoryPubSubUnion, ServiceBuilderUnion,
+    HandleToType, IntoCInt, PortFactoryPubSubUnion, ServiceBuilderUnion, IOX2_OK,
 };
-use crate::IOX2_OK;
 
 use iceoryx2::service::builder::publish_subscribe::{
     PublishSubscribeCreateError, PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
@@ -31,7 +30,7 @@ use core::mem::ManuallyDrop;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_pub_sub_open_or_create_error_e {
-    O_DOES_NOT_EXIST = 1,
+    O_DOES_NOT_EXIST = IOX2_OK as isize + 1,
     O_INTERNAL_FAILURE,
     O_INCOMPATIBLE_TYPES,
     O_INCOMPATIBLE_MESSAGING_PATTERN,

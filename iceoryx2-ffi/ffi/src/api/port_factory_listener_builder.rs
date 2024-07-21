@@ -149,14 +149,14 @@ pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(
     match service_type {
         iox2_service_type_e::IPC => {
             let listener_builder =
-            ManuallyDrop::take(&mut listener_builder_struct.value.as_mut().ipc);
+                ManuallyDrop::take(&mut listener_builder_struct.value.as_mut().ipc);
 
             match listener_builder.create() {
                 Ok(listener) => {
                     (*listener_struct_ptr).init(
                         service_type,
                         ListenerUnion::new_ipc(listener),
-                                                deleter,
+                        deleter,
                     );
                 }
                 Err(error) => {
@@ -166,14 +166,14 @@ pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(
         }
         iox2_service_type_e::LOCAL => {
             let listener_builder =
-            ManuallyDrop::take(&mut listener_builder_struct.value.as_mut().local);
+                ManuallyDrop::take(&mut listener_builder_struct.value.as_mut().local);
 
             match listener_builder.create() {
                 Ok(listener) => {
                     (*listener_struct_ptr).init(
                         service_type,
                         ListenerUnion::new_local(listener),
-                                                deleter,
+                        deleter,
                     );
                 }
                 Err(error) => {

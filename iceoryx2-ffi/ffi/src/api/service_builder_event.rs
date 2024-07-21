@@ -15,9 +15,8 @@
 use crate::api::{
     c_size_t, iox2_port_factory_event_h, iox2_port_factory_event_t, iox2_service_builder_event_h,
     iox2_service_builder_event_ref_h, iox2_service_type_e, HandleToType, IntoCInt,
-    PortFactoryEventUnion, ServiceBuilderUnion,
+    PortFactoryEventUnion, ServiceBuilderUnion, IOX2_OK,
 };
-use crate::IOX2_OK;
 
 use iceoryx2::service::builder::event::{EventCreateError, EventOpenError, EventOpenOrCreateError};
 
@@ -29,7 +28,7 @@ use core::mem::ManuallyDrop;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_event_open_or_create_error_e {
-    O_DOES_NOT_EXIST = 1,
+    O_DOES_NOT_EXIST = IOX2_OK as isize + 1,
     O_INSUFFICIENT_PERMISSIONS,
     O_SERVICE_IN_CORRUPTED_STATE,
     O_INCOMPATIBLE_MESSAGING_PATTERN,

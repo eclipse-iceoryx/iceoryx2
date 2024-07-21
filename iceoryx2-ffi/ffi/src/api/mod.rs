@@ -114,6 +114,7 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
 ///
 /// ```no_run
 /// use core::ffi::c_int;
+/// use iceoryx2_ffi::IOX2_OK;
 ///
 /// trait IntoCInt {
 ///     fn into_c_int(self) -> c_int;
@@ -127,7 +128,7 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
 /// #[repr(C)]
 /// #[derive(Copy, Clone)]
 /// pub enum iox2_foo_error_e {
-///     BAR = 1, // start at 1 since IOX2_OK is already 0
+///     BAR = IOX2_OK as isize + 1, // start `IOX2_OK + 1` to prevent ambiguous values
 ///     BAZ,
 /// }
 ///
