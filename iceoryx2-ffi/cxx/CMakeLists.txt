@@ -42,6 +42,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/node_name.cpp
     src/node_state.cpp
     src/service.cpp
+    src/service_builder_event.cpp
     src/service_name.cpp
 )
 

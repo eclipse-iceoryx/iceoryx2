@@ -56,6 +56,5 @@ template <typename Payload>
 inline auto ServiceBuilder<S>::publish_subscribe() -> ServiceBuilderPublishSubscribe<Payload, void, S>&& {
     IOX_TODO();
 }
-
 } // namespace iox2
 #endif
