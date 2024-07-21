@@ -12,6 +12,7 @@
 
 #include "iox2/node.hpp"
 #include "iox/into.hpp"
+#include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
 template <ServiceType T>
@@ -92,16 +93,18 @@ auto list_callback(iox2_node_state_e node_state,
         IOX_UNREACHABLE();
     }();
 
-    auto* callback = static_cast<const iox::function<CallbackProgression(NodeState<T>)>*>(context);
-    return iox::into<iox2_callback_progression_e>((*callback)(node_state_object));
+    auto* callback = static_cast<internal::CallbackContext<iox::function<CallbackProgression(NodeState<T>)>>*>(context);
+    return iox::into<iox2_callback_progression_e>(callback->value()(node_state_object));
 }
 // NOLINTEND(readability-function-size)
 
 template <ServiceType T>
 auto Node<T>::list(ConfigView config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
     -> iox::expected<void, NodeListFailure> {
-    const auto ret_val = iox2_node_list(
-        iox::into<iox2_service_type_e>(T), config.m_ptr, list_callback<T>, static_cast<const void*>(&callback));
+    auto ctx = internal::create_callback_context(callback);
+
+    const auto ret_val =
+        iox2_node_list(iox::into<iox2_service_type_e>(T), config.m_ptr, list_callback<T>, static_cast<void*>(&ctx));
 
     if (ret_val == IOX2_OK) {
         return iox::ok();

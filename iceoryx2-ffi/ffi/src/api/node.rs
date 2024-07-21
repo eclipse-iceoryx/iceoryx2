@@ -133,7 +133,7 @@ pub type iox2_node_id_ptr = *const NodeId;
 pub type iox2_node_id_mut_ptr = *mut NodeId;
 
 /// An alias to a `void *` which can be used to pass arbitrary data to the callback
-pub type iox2_node_list_callback_context = *const c_void;
+pub type iox2_node_list_callback_context = *mut c_void;
 
 /// The callback for [`iox2_node_list`]
 ///
