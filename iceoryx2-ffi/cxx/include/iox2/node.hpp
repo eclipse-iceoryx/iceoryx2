@@ -29,6 +29,7 @@
 #include "service_type.hpp"
 
 namespace iox2 {
+/// Defines all possible events that can occur during [`Node::wait()`].
 enum class NodeEvent : uint8_t {
     /// The timeout passed.
     Tick,
@@ -38,52 +39,75 @@ enum class NodeEvent : uint8_t {
     InterruptSignal,
 };
 
+/// The central entry point of iceoryx2. Represents a node of the iceoryx2
+/// system. One process can have arbitrary many nodes but usually it should be
+/// only one node per process.
+/// Can be created via the [`NodeBuilder`].
 template <ServiceType T>
 class Node {
   public:
-    Node() = default;
-    Node(Node&&) = default;
-    auto operator=(Node&&) -> Node& = default;
-    ~Node() = default;
-
+    Node(Node&&) noexcept;
+    auto operator=(Node&&) noexcept -> Node&;
     Node(const Node&) = delete;
     auto operator=(const Node&) -> Node& = delete;
+    ~Node();
 
-    auto name() const -> NodeName& {
-        IOX_TODO();
-    }
-    auto id() const -> NodeId& {
-        IOX_TODO();
-    }
-    auto service_builder(const ServiceName& name) const -> ServiceBuilder<T> {
-        IOX_TODO();
-    }
-    auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent {
-        IOX_TODO();
-    }
+    /// Returns the name of the node inside a [`NodeNameView`].
+    auto name() const -> NodeNameView;
 
-    static auto list(const Config& config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
-        -> iox::expected<void, NodeListFailure> {
-        IOX_TODO();
-    }
+    /// Returns the unique id of the [`Node`].
+    auto id() const -> NodeId;
+
+    /// Returns the [`ServiceBuilder`] to create a new service. The
+    /// [`ServiceName`] of the [`Service`] is provided as argument.
+    auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
+
+    /// Waits a given time for a [`NodeEvent`]. If the [`cycle_time`] has passed
+    /// [`NodeEvent::Tick`] is returned.
+    auto wait(const iox::units::Duration& cycle_time) const -> NodeEvent;
+
+    /// Lists all [`Node`]s under a provided config. The provided callback is
+    /// called for every [`Node`] and gets the [`NodeState`] as input argument.
+    /// The callback can return [`CallbackProgression::Stop`] if the iteration
+    /// shall stop or [`CallbackProgression::Continue`];
+    static auto list(ConfigView config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
+        -> iox::expected<void, NodeListFailure>;
 
   private:
+    explicit Node(iox2_node_h handle);
+    void drop();
+
     friend class NodeBuilder;
+
+    iox2_node_h m_handle;
 };
 
+/// Creates a new [`Node`].
 class NodeBuilder {
+    /// The [`NodeName`] that shall be assigned to the [`Node`]. It does not
+    /// have to be unique. If no [`NodeName`] is defined then the [`Node`]
+    /// does not have a name.
     IOX_BUILDER_OPTIONAL(NodeName, name);
+
+    /// The [`Config`] that shall be used for the [`Node`]. If no [`Config`]
+    /// is specified the [`Config::global_config()`] is used.
     IOX_BUILDER_OPTIONAL(Config, config);
 
   public:
-    NodeBuilder() {
-        IOX_TODO();
-    }
+    NodeBuilder();
+    NodeBuilder(NodeBuilder&&) = default;
+    auto operator=(NodeBuilder&&) -> NodeBuilder& = default;
+    ~NodeBuilder() = default;
 
+    NodeBuilder(const NodeBuilder&) = delete;
+    auto operator=(const NodeBuilder&) -> NodeBuilder& = delete;
+
+    /// Creates a new [`Node`] for a specified [`ServiceType`].
     template <ServiceType T>
-    auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure> {
-        IOX_TODO();
-    }
+    auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure>;
+
+  private:
+    iox2_node_builder_h m_handle;
 };
 } // namespace iox2
 

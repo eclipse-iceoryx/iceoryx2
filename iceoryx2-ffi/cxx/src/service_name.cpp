@@ -17,6 +17,22 @@
 #include <cstring>
 
 namespace iox2 {
+auto ServiceNameView::to_string() const -> iox::string<NODE_NAME_LENGTH> {
+    size_t len = 0;
+    const auto* c_ptr = iox2_service_name_as_c_str(m_ptr, &len);
+    return { iox::TruncateToCapacity, c_ptr, len };
+}
+
+auto ServiceNameView::to_owned() const -> ServiceName {
+    size_t len = 0;
+    const auto* c_ptr = iox2_service_name_as_c_str(m_ptr, &len);
+    return ServiceName::create_impl(c_ptr, len).expect("ServiceNameView always contains valid ServiceName");
+}
+
+ServiceNameView::ServiceNameView(iox2_service_name_ptr ptr)
+    : m_ptr { ptr } {
+}
+
 ServiceName::ServiceName(iox2_service_name_h handle)
     : m_handle { handle } {
 }
@@ -26,8 +42,8 @@ ServiceName::~ServiceName() {
 }
 
 ServiceName::ServiceName(ServiceName&& rhs) noexcept
-    : m_handle { std::move(rhs.m_handle) } {
-    rhs.m_handle = nullptr;
+    : m_handle { nullptr } {
+    *this = std::move(rhs);
 }
 
 auto ServiceName::operator=(ServiceName&& rhs) noexcept -> ServiceName& {
@@ -42,17 +58,17 @@ auto ServiceName::operator=(ServiceName&& rhs) noexcept -> ServiceName& {
 
 ServiceName::ServiceName(const ServiceName& rhs)
     : m_handle { nullptr } {
-    auto value = rhs.to_string();
-    IOX_ASSERT(iox2_service_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
-               "ServiceName shall always contain a valid value.");
+    *this = rhs;
 }
 
 auto ServiceName::operator=(const ServiceName& rhs) -> ServiceName& {
     if (this != &rhs) {
         drop();
 
-        auto value = rhs.to_string();
-        IOX_ASSERT(iox2_service_name_new(nullptr, value.c_str(), value.size(), &m_handle) == IOX2_OK,
+        const auto* ptr = iox2_cast_service_name_ptr(rhs.m_handle);
+        size_t len = 0;
+        const auto* c_ptr = iox2_service_name_as_c_str(ptr, &len);
+        IOX_ASSERT(iox2_service_name_new(nullptr, c_ptr, len, &m_handle) == IOX2_OK,
                    "ServiceName shall always contain a valid value.");
     }
 
@@ -67,9 +83,13 @@ void ServiceName::drop() noexcept {
 }
 
 auto ServiceName::create(const char* value) -> iox::expected<ServiceName, SemanticStringError> {
+    return ServiceName::create_impl(value, strnlen(value, SERVICE_NAME_LENGTH + 1));
+}
+
+auto ServiceName::create_impl(const char* value,
+                              const size_t value_len) -> iox::expected<ServiceName, SemanticStringError> {
     iox2_service_name_h handle {};
-    const auto value_len = strnlen(value, SERVICE_NAME_LENGTH + 1);
-    if (value_len == SERVICE_NAME_LENGTH + 1) {
+    if (value_len > SERVICE_NAME_LENGTH) {
         return iox::err(SemanticStringError::ExceedsMaximumLength);
     }
 
@@ -83,10 +103,10 @@ auto ServiceName::create(const char* value) -> iox::expected<ServiceName, Semant
 }
 
 auto ServiceName::to_string() const -> iox::string<SERVICE_NAME_LENGTH> {
-    const auto* ptr = iox2_cast_service_name_ptr(m_handle);
-    size_t len = 0;
-    const auto* c_ptr = iox2_service_name_as_c_str(ptr, &len);
-    return { iox::TruncateToCapacity, c_ptr, len };
+    return as_view().to_string();
 }
 
+auto ServiceName::as_view() const -> ServiceNameView {
+    return ServiceNameView(iox2_cast_service_name_ptr(m_handle));
+}
 } // namespace iox2

@@ -56,11 +56,22 @@ add_option(
     DEFAULT_VALUE OFF
 )
 
+add_option(
+    NAME SANITIZERS
+    DESCRIPTION "Build with undefined-behavior- and address-sanitizer"
+    DEFAULT_VALUE OFF
+)
+
 add_param(
     NAME RUST_TARGET_TRIPLET
     DESCRIPTION "The target triplet for cross compilation, e.g. 'aarch64-unknown-linux-gnu'"
     DEFAULT_VALUE ""
 )
+
+if(SANITIZERS)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=undefined")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined")
+endif()
 
 # C binding
 add_subdirectory(iceoryx2-ffi/c)

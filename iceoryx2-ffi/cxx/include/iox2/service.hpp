@@ -59,17 +59,18 @@ template <ServiceType S>
 class Service {
   public:
     static auto does_exist(const ServiceName& service_name,
-                           const Config& config,
+                           const ConfigView config,
                            const MessagingPattern messaging_pattern) -> iox::expected<bool, ServiceDetailsError> {
         IOX_TODO();
     }
 
-    static auto details(const ServiceName& service_name, const Config& config, const MessagingPattern messaging_pattern)
+    static auto
+    details(const ServiceName& service_name, const ConfigView config, const MessagingPattern messaging_pattern)
         -> iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError> {
         IOX_TODO();
     }
 
-    static auto list(const Config& config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback)
+    static auto list(const ConfigView config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback)
         -> iox::expected<void, ServiceListError> {
         IOX_TODO();
     }

@@ -10,27 +10,29 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_DETAILS_HPP
-#define IOX2_NODE_DETAILS_HPP
+#ifndef IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
+#define IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 
-#include "iox2/config.hpp"
-#include "iox2/node_name.hpp"
-
-namespace iox2 {
-/// Contains details of a [`Node`].
-class NodeDetails {
+namespace iox2::internal {
+template <typename T>
+class CallbackContext {
   public:
-    NodeDetails(NodeName name, const Config& config);
+    explicit CallbackContext(const T& ptr)
+        : m_ptr { &ptr } {
+    }
 
-    /// Returns a reference of the [`NodeName`].
-    auto name() const -> const NodeName&;
-    /// Returns a reference to the [`Config`] the [`Node`] uses.
-    auto config() const -> const Config&;
+    auto value() const -> const T& {
+        return *m_ptr;
+    }
 
   private:
-    NodeName m_node_name;
-    Config m_config;
+    const T* m_ptr;
 };
-} // namespace iox2
+
+template <typename T>
+auto create_callback_context(const T& ptr) -> CallbackContext<T> {
+    return CallbackContext<T>(ptr);
+}
+} // namespace iox2::internal
 
 #endif
