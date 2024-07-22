@@ -104,7 +104,6 @@ impl std::error::Error for SubscriberCreateError {}
 pub struct Subscriber<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: Arc<PublisherConnections<Service>>,
-    dynamic_storage: Arc<Service::DynamicStorage>,
     static_config: crate::service::static_config::StaticConfig,
     degration_callback: Option<DegrationCallback<'static>>,
 
@@ -118,7 +117,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Drop
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
-            self.dynamic_storage
+            self.publisher_connections
+                .service_state
+                .dynamic_storage
                 .get()
                 .publish_subscribe()
                 .release_subscriber_handle(handle)
@@ -145,8 +146,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .publish_subscribe()
             .publishers;
 
-        let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
-
         let buffer_size = match config.buffer_size {
             Some(buffer_size) => {
                 if static_config.subscriber_max_buffer_size < buffer_size {
@@ -162,7 +161,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let publisher_connections = Arc::new(PublisherConnections::new(
             publisher_list.capacity(),
             subscriber_id,
-            service.__internal_state().shared_node.clone(),
+            service.__internal_state().clone(),
             static_config,
             buffer_size,
         ));
@@ -170,7 +169,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let mut new_self = Self {
             degration_callback: config.degration_callback,
             publisher_connections,
-            dynamic_storage,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
             static_config: service.__internal_state().static_config.clone(),
@@ -352,7 +350,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Upda
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
-            self.dynamic_storage
+            self.publisher_connections
+                .service_state
+                .dynamic_storage
                 .get()
                 .publish_subscribe()
                 .publishers

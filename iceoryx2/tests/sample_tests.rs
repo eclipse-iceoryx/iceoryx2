@@ -15,6 +15,7 @@ mod sample {
     use iceoryx2::port::publisher::Publisher;
     use iceoryx2::port::subscriber::Subscriber;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -80,7 +81,7 @@ mod sample {
     }
 
     #[test]
-    fn sample_of_dropped_service_does_not_block_new_service_creation<Sut: Service>() {
+    fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
         let test_context = TestContext::<Sut>::new();
 
         let service_name = test_context.service_name.clone();
@@ -93,13 +94,15 @@ mod sample {
 
         let test_context = TestContext::<Sut>::new();
 
+        let result = test_context
+            .node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
+        assert_that!(result, is_err);
         assert_that!(
-            test_context
-                .node
-                .service_builder(&service_name)
-                .publish_subscribe::<u64>()
-                .create(),
-            is_ok
+            result.err().unwrap(),
+            eq PublishSubscribeCreateError::AlreadyExists
         );
     }
 
