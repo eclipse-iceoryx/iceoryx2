@@ -552,7 +552,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                     ),
                     pubsub_config.max_nodes,
                 ) {
-                    Ok(dynamic_config) => Arc::new(dynamic_config),
+                    Ok(dynamic_config) => dynamic_config,
                     Err(DynamicStorageCreateError::AlreadyExists) => {
                         fail!(from self, with PublishSubscribeCreateError::ServiceInCorruptedState,
                             "{} since the dynamic config of a previous instance of the service still exists.", msg);
@@ -647,8 +647,6 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                             continue;
                         }
                     };
-
-                    let dynamic_config = Arc::new(dynamic_config);
 
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::PublishSubscribe(pub_sub_static_config.clone());

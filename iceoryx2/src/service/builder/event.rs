@@ -326,8 +326,6 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         }
                     };
 
-                    let dynamic_config = Arc::new(dynamic_config);
-
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::Event(event_static_config);
 
@@ -409,7 +407,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     dynamic_config::event::DynamicConfig::memory_size(&dynamic_config_setting),
                     event_config.max_nodes,
                 ) {
-                    Ok(dynamic_config) => Arc::new(dynamic_config),
+                    Ok(dynamic_config) => dynamic_config,
                     Err(DynamicStorageCreateError::AlreadyExists) => {
                         fail!(from self, with EventCreateError::ServiceInCorruptedState,
                             "{} since there exist an old dynamic config from a previous instance of the service.", msg);
