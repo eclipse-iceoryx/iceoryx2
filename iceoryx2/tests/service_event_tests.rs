@@ -22,7 +22,6 @@ mod service_event {
     use iceoryx2::port::notifier::{NotifierCreateError, NotifierNotifyError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
-    use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -742,77 +741,6 @@ mod service_event {
     }
 
     #[test]
-    fn communication_persists_when_service_is_dropped<Sut: Service>() {
-        let service_name = generate_name();
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let event_id = EventId::new(12);
-
-        let sut = node
-            .service_builder(&service_name)
-            .event()
-            .create()
-            .unwrap();
-
-        let notifier = sut
-            .notifier_builder()
-            .default_event_id(event_id)
-            .create()
-            .unwrap();
-        let listener = sut.listener_builder().create().unwrap();
-
-        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(true));
-        drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(false));
-
-        assert_that!(notifier.notify(), eq Ok(1));
-
-        let mut received_events = 0;
-        for event in listener.try_wait_one().unwrap().iter() {
-            assert_that!(*event, eq event_id);
-            received_events += 1;
-        }
-        assert_that!(received_events, eq 1);
-    }
-
-    #[test]
-    fn persisting_connection_does_prevent_service_recreation<Sut: Service>() {
-        let service_name = generate_name();
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
-        let event_id = EventId::new(43212);
-
-        let sut = node
-            .service_builder(&service_name)
-            .event()
-            .create()
-            .unwrap();
-
-        let notifier = sut
-            .notifier_builder()
-            .default_event_id(event_id)
-            .create()
-            .unwrap();
-        let listener = sut.listener_builder().create().unwrap();
-
-        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(true));
-        drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(false));
-
-        let sut = node.service_builder(&service_name).event().create();
-        assert_that!(sut, is_err);
-        assert_that!(sut.err().unwrap(), eq EventCreateError::OldConnectionsStillActive);
-
-        drop(listener);
-
-        let sut = node.service_builder(&service_name).event().create();
-        assert_that!(sut, is_err);
-        assert_that!(sut.err().unwrap(), eq EventCreateError::OldConnectionsStillActive);
-
-        drop(notifier);
-
-        assert_that!(node.service_builder(&service_name).event().create(), is_ok);
-    }
-
-    #[test]
     fn try_wait_does_not_block<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let service_name = generate_name();
@@ -1094,8 +1022,6 @@ mod service_event {
             format!("{}", EventCreateError::InsufficientPermissions), eq "EventCreateError::InsufficientPermissions");
         assert_that!(
             format!("{}", EventCreateError::IsBeingCreatedByAnotherInstance), eq "EventCreateError::IsBeingCreatedByAnotherInstance");
-        assert_that!(
-            format!("{}", EventCreateError::OldConnectionsStillActive), eq "EventCreateError::OldConnectionsStillActive");
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

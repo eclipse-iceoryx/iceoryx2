@@ -100,11 +100,6 @@ pub enum EventCreateError {
     HangsInCreation,
     /// The process has insufficient permissions to create the [`Service`].
     InsufficientPermissions,
-    /// The system has cleaned up the [`Service`] but there are still endpoints like
-    /// [`Publisher`](crate::port::publisher::Publisher) or
-    /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
-    /// [`Sample`](crate::sample::Sample) or [`SampleMut`](crate::sample_mut::SampleMut) in use.
-    OldConnectionsStillActive,
 }
 
 impl std::fmt::Display for EventCreateError {
@@ -416,8 +411,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 ) {
                     Ok(dynamic_config) => Arc::new(dynamic_config),
                     Err(DynamicStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with EventCreateError::OldConnectionsStillActive,
-                            "{} since there are still active Listeners or Notifiers.", msg);
+                        fail!(from self, with EventCreateError::ServiceInCorruptedState,
+                            "{} since there exist an old dynamic config from a previous instance of the service.", msg);
                     }
                     Err(e) => {
                         fail!(from self, with EventCreateError::InternalFailure,

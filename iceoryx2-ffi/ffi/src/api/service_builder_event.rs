@@ -114,9 +114,6 @@ impl IntoCInt for EventCreateError {
             EventCreateError::InsufficientPermissions => {
                 iox2_event_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
             }
-            EventCreateError::OldConnectionsStillActive => {
-                iox2_event_open_or_create_error_e::C_OLD_CONNECTION_STILL_ACTIVE
-            }
         }) as c_int
     }
 }
