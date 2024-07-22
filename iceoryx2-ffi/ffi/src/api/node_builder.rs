@@ -31,6 +31,7 @@ use core::ffi::c_int;
 pub enum iox2_node_creation_failure_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
+    INVALID_SERVICE_TYPE_VALUE,
 }
 
 impl IntoCInt for NodeCreationFailure {
@@ -211,6 +212,12 @@ pub unsafe extern "C" fn iox2_node_builder_create(
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!node_handle_ptr.is_null());
+
+    match service_type as usize {
+        0 => (),
+        1 => (),
+        _ => return iox2_node_creation_failure_e::INVALID_SERVICE_TYPE_VALUE as c_int,
+    }
 
     let node_builder_struct = &mut *node_builder_handle.as_type();
     let node_builder = node_builder_struct.take().unwrap();
