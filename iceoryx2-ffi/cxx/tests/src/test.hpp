@@ -16,6 +16,21 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "iox2/service_type.hpp"
+
 using namespace ::testing;
+
+namespace iox2_testing {
+using namespace iox2;
+template <ServiceType T>
+struct TypeServiceType {
+    static constexpr ServiceType TYPE = T;
+};
+using ServiceTypeIpc = TypeServiceType<ServiceType::Ipc>;
+using ServiceTypeLocal = TypeServiceType<ServiceType::Local>;
+
+using ServiceTypes = ::testing::Types<ServiceTypeIpc, ServiceTypeLocal>;
+
+} // namespace iox2_testing
 
 #endif // IOX2_CXX_TESTS_TEST_HPP
