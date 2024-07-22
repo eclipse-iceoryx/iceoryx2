@@ -207,9 +207,9 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         self
     }
 
-    /// If the [`Service`] is created it defines how many [`crate::port::notifier::Notifier`] shall
-    /// be supported at most. If an existing [`Service`] is opened it defines how many
-    /// [`crate::port::notifier::Notifier`] must be at least supported.
+    /// If the [`Service`] is created it set the greatest supported [`NodeId`] value
+    /// If an existing [`Service`] is opened it defines the value size the [`NodeId`]
+    /// must at least support.
     pub fn event_id_max_value(mut self, value: usize) -> Self {
         self.config_details().event_id_max_value = value;
         self.verify_event_id_max_value = true;

@@ -16,6 +16,7 @@
 #include <cstdint>
 
 namespace iox2 {
+/// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 enum class PublishSubscribeOpenError : uint8_t {
     /// Service could not be openen since it does not exist
     DoesNotExist,
@@ -37,12 +38,12 @@ enum class PublishSubscribeOpenError : uint8_t {
     /// requested.
     DoesNotSupportRequestedMinSubscriberBorrowedSamples,
     /// The [`Service`] supports less
-    /// [`Publisher`](crate::port::publisher::Publisher)s than requested.
+    /// [`Publisher`]s than requested.
     DoesNotSupportRequestedAmountOfPublishers,
     /// The [`Service`] supports less
-    /// [`Subscriber`](crate::port::subscriber::Subscriber)s than requested.
+    /// [`Subscriber`]s than requested.
     DoesNotSupportRequestedAmountOfSubscribers,
-    /// The [`Service`] supports less [`Node`](crate::node::Node)s than
+    /// The [`Service`] supports less [`Node`]s than
     /// requested.
     DoesNotSupportRequestedAmountOfNodes,
     /// The [`Service`] required overflow behavior is not compatible.
@@ -56,7 +57,7 @@ enum class PublishSubscribeOpenError : uint8_t {
     /// initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
-    /// The maximum number of [`Node`](crate::node::Node)s have already opened
+    /// The maximum number of [`Node`]s have already opened
     /// the [`Service`].
     ExceedsMaxNumberOfNodes,
     /// The [`Service`] is marked for destruction and currently cleaning up
@@ -67,12 +68,13 @@ enum class PublishSubscribeOpenError : uint8_t {
     IsMarkedForDestruction,
 };
 
+/// Errors that can occur when a new [`MessagingPattern::PublishSubscribe`] [`Service`] shall be created.
 enum class PublishSubscribeCreateError : uint8_t {
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
     ServiceInCorruptedState,
     /// Invalid [`Service`] configuration provided. The
-    /// [`Subscriber`](crate::port::subscriber::Subscriber)s buffer size must be
+    /// [`Subscriber`]s buffer size must be
     /// at least the size
     /// of the history. Otherwise, how could it hold the whole history?
     SubscriberBufferMustBeLargerThanHistorySize,
@@ -87,10 +89,10 @@ enum class PublishSubscribeCreateError : uint8_t {
     IsBeingCreatedByAnotherInstance,
     /// The system has cleaned up the [`Service`] but there are still endpoints
     /// like
-    /// [`Publisher`](crate::port::publisher::Publisher) or
-    /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
-    /// [`Sample`](crate::sample::Sample) or
-    /// [`SampleMut`](crate::sample_mut::SampleMut) in use.
+    /// [`Publisher`] or
+    /// [`Subscriber`] alive or
+    /// [`Sample`] or
+    /// [`SampleMut`] in use.
     OldConnectionsStillActive,
     /// The [`Service`]s creation timeout has passed and it is still not
     /// initialized. Can be caused
@@ -98,6 +100,8 @@ enum class PublishSubscribeCreateError : uint8_t {
     HangsInCreation,
 };
 
+/// Errors that can occur when a [`MessagingPattern::PublishSubscribe`] [`Service`] shall be
+/// created or opened.
 enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// Service could not be openen since it does not exist
     OpenDoesNotExist,
@@ -119,12 +123,12 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// requested.
     OpenDoesNotSupportRequestedMinSubscriberBorrowedSamples,
     /// The [`Service`] supports less
-    /// [`Publisher`](crate::port::publisher::Publisher)s than requested.
+    /// [`Publisher`]s than requested.
     OpenDoesNotSupportRequestedAmountOfPublishers,
     /// The [`Service`] supports less
-    /// [`Subscriber`](crate::port::subscriber::Subscriber)s than requested.
+    /// [`Subscriber`]s than requested.
     OpenDoesNotSupportRequestedAmountOfSubscribers,
-    /// The [`Service`] supports less [`Node`](crate::node::Node)s than
+    /// The [`Service`] supports less [`Node`]s than
     /// requested.
     OpenDoesNotSupportRequestedAmountOfNodes,
     /// The [`Service`] required overflow behavior is not compatible.
@@ -138,7 +142,7 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     OpenHangsInCreation,
-    /// The maximum number of [`Node`](crate::node::Node)s have already opened
+    /// The maximum number of [`Node`]s have already opened
     /// the [`Service`].
     OpenExceedsMaxNumberOfNodes,
     /// The [`Service`] is marked for destruction and currently cleaning up
@@ -152,7 +156,7 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// corrupted or unaccessible.
     CreateServiceInCorruptedState,
     /// Invalid [`Service`] configuration provided. The
-    /// [`Subscriber`](crate::port::subscriber::Subscriber)s buffer size must be
+    /// [`Subscriber`]s buffer size must be
     /// at least the size
     /// of the history. Otherwise, how could it hold the whole history?
     CreateSubscriberBufferMustBeLargerThanHistorySize,
@@ -167,10 +171,10 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     CreateIsBeingCreatedByAnotherInstance,
     /// The system has cleaned up the [`Service`] but there are still endpoints
     /// like
-    /// [`Publisher`](crate::port::publisher::Publisher) or
-    /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
-    /// [`Sample`](crate::sample::Sample) or
-    /// [`SampleMut`](crate::sample_mut::SampleMut) in use.
+    /// [`Publisher`] or
+    /// [`Subscriber`] alive or
+    /// [`Sample`] or
+    /// [`SampleMut`] in use.
     CreateOldConnectionsStillActive,
     /// The [`Service`]s creation timeout has passed and it is still not
     /// initialized. Can be caused

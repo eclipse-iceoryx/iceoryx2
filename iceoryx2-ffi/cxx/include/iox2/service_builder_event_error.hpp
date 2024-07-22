@@ -16,6 +16,7 @@
 #include <cstdint>
 
 namespace iox2 {
+/// Failures that can occur when an existing [`MessagingPattern::Event`] [`Service`] shall be opened.
 enum class EventOpenError : uint8_t {
     /// The [`Service`] does not exist.
     DoesNotExist,
@@ -38,18 +39,18 @@ enum class EventOpenError : uint8_t {
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
     /// The [`Service`] supports less
-    /// [`Notifier`](crate::port::notifier::Notifier)s than requested.
+    /// [`Notifier`]s than requested.
     DoesNotSupportRequestedAmountOfNotifiers,
     /// The [`Service`] supports less
-    /// [`Listener`](crate::port::listener::Listener)s than requested.
+    /// [`Listener`]s than requested.
     DoesNotSupportRequestedAmountOfListeners,
     /// The [`Service`] supported [`EventId`] is smaller than the requested max
     /// [`EventId`].
     DoesNotSupportRequestedMaxEventId,
-    /// The [`Service`] supports less [`Node`](crate::node::Node)s than
+    /// The [`Service`] supports less [`Node`]s than
     /// requested.
     DoesNotSupportRequestedAmountOfNodes,
-    /// The maximum number of [`Node`](crate::node::Node)s have already opened
+    /// The maximum number of [`Node`]s have already opened
     /// the [`Service`].
     ExceedsMaxNumberOfNodes,
     /// The [`Service`] is marked for destruction and currently cleaning up
@@ -60,6 +61,7 @@ enum class EventOpenError : uint8_t {
     IsMarkedForDestruction,
 };
 
+/// Failures that can occur when a new [`MessagingPattern::Event`] [`Service`] shall be created.
 enum class EventCreateError : uint8_t {
     /// Some underlying resources of the [`Service`] are either missing,
     /// corrupted or unaccessible.
@@ -79,13 +81,15 @@ enum class EventCreateError : uint8_t {
     InsufficientPermissions,
     /// The system has cleaned up the [`Service`] but there are still endpoints
     /// like
-    /// [`Publisher`](crate::port::publisher::Publisher) or
-    /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
-    /// [`Sample`](crate::sample::Sample) or
-    /// [`SampleMut`](crate::sample_mut::SampleMut) in use.
+    /// [`Publisher`] or
+    /// [`Subscriber`] alive or
+    /// [`Sample`] or
+    /// [`SampleMut`] in use.
     OldConnectionsStillActive,
 };
 
+/// Failures that can occur when a [`MessagingPattern::Event`] [`Service`] shall be opened or
+/// created.
 enum class EventOpenOrCreateError : uint8_t {
     /// The [`Service`] does not exist.
     OpenDoesNotExist,
@@ -108,18 +112,18 @@ enum class EventOpenOrCreateError : uint8_t {
     /// by a process that crashed during [`Service`] creation.
     OpenHangsInCreation,
     /// The [`Service`] supports less
-    /// [`Notifier`](crate::port::notifier::Notifier)s than requested.
+    /// [`Notifier`]s than requested.
     OpenDoesNotSupportRequestedAmountOfNotifiers,
     /// The [`Service`] supports less
-    /// [`Listener`](crate::port::listener::Listener)s than requested.
+    /// [`Listener`]s than requested.
     OpenDoesNotSupportRequestedAmountOfListeners,
     /// The [`Service`] supported [`EventId`] is smaller than the requested max
     /// [`EventId`].
     OpenDoesNotSupportRequestedMaxEventId,
-    /// The [`Service`] supports less [`Node`](crate::node::Node)s than
+    /// The [`Service`] supports less [`Node`]s than
     /// requested.
     OpenDoesNotSupportRequestedAmountOfNodes,
-    /// The maximum number of [`Node`](crate::node::Node)s have already opened
+    /// The maximum number of [`Node`]s have already opened
     /// the [`Service`].
     OpenExceedsMaxNumberOfNodes,
     /// The [`Service`] is marked for destruction and currently cleaning up
@@ -147,10 +151,10 @@ enum class EventOpenOrCreateError : uint8_t {
     CreateInsufficientPermissions,
     /// The system has cleaned up the [`Service`] but there are still endpoints
     /// like
-    /// [`Publisher`](crate::port::publisher::Publisher) or
-    /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
-    /// [`Sample`](crate::sample::Sample) or
-    /// [`SampleMut`](crate::sample_mut::SampleMut) in use.
+    /// [`Publisher`] or
+    /// [`Subscriber`] alive or
+    /// [`Sample`] or
+    /// [`SampleMut`] in use.
     CreateOldConnectionsStillActive,
 };
 } // namespace iox2

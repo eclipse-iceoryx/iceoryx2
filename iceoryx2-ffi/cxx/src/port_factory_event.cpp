@@ -50,7 +50,7 @@ void PortFactoryEvent<S>::drop() noexcept {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::service_name() const -> const ServiceName& {
+auto PortFactoryEvent<S>::name() const -> const ServiceName& {
     IOX_TODO();
 }
 

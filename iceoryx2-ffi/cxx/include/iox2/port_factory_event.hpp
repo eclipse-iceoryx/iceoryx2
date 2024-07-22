@@ -29,6 +29,7 @@
 #include "static_config_event.hpp"
 
 namespace iox2 {
+/// Represents the port factory of a [`Service`] with [`MessagingPattern::Event`].
 template <ServiceType S>
 class PortFactoryEvent {
   public:
@@ -39,21 +40,34 @@ class PortFactoryEvent {
     PortFactoryEvent(const PortFactoryEvent&) = delete;
     auto operator=(const PortFactoryEvent&) -> PortFactoryEvent& = delete;
 
-    auto service_name() const -> const ServiceName&;
+    /// Returns the [`ServiceName`] of the service
+    auto name() const -> const ServiceName&;
 
+    /// Returns the uuid of the [`Service`]
     auto uuid() const -> iox::string<SERVICE_ID_LENGTH>;
 
+    /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> const AttributeSet&;
 
+    /// Returns the StaticConfig of the [`Service`].
+    /// Contains all settings that never change during the lifetime of the service.
     auto static_config() const -> const StaticConfigEvent&;
 
+    /// Returns the DynamicConfig of the [`Service`].
+    /// Contains all dynamic settings, like the current participants etc..
     auto dynamic_config() const -> const DynamicConfigEvent&;
 
+    /// Iterates over all [`Node`]s of the [`Service`]
+    /// and calls for every [`Node`] the provided callback. If an error occurs
+    /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
+    /// forwarded to the callback as input argument.
     auto nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
         -> iox::expected<void, NodeListFailure>;
 
+    /// Returns a [`PortFactoryListener`] to create a new [`Listener`] port
     auto listener_builder() const -> PortFactoryListener<S>;
 
+    /// Returns a [`PortFactoryNotifier`] to create a new [`Notifier`] port
     auto notifier_builder() const -> PortFactoryNotifier<S>;
 
   private:

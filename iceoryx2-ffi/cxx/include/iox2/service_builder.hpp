@@ -19,6 +19,8 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
+
+/// Builder to create or open [`Service`]s
 template <ServiceType S>
 class ServiceBuilder {
   public:
@@ -28,9 +30,13 @@ class ServiceBuilder {
     auto operator=(const ServiceBuilder&) -> ServiceBuilder& = delete;
     ~ServiceBuilder() = default;
 
+    /// Create a new builder to create a
+    /// [`MessagingPattern::PublishSubscribe`] [`Service`].
     template <typename Payload>
     auto publish_subscribe() && -> ServiceBuilderPublishSubscribe<Payload, void, S>;
 
+    /// Create a new builder to create a
+    /// [`MessagingPattern::Event`] [`Service`].
     auto event() && -> ServiceBuilderEvent<S>;
 
   private:

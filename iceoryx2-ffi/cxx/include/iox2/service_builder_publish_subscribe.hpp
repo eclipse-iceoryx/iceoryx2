@@ -142,7 +142,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
     user_header() && -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S>&& {
     // required here since we just change the template header type but the builder structure stays the same
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    return std::move(reinterpret_cast<ServiceBuilderPublishSubscribe<Payload, NewHeader, S>>(*this));
+    return std::move(*reinterpret_cast<ServiceBuilderPublishSubscribe<Payload, NewHeader, S>*>(this));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
