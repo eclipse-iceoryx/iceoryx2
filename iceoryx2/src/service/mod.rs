@@ -346,7 +346,7 @@ pub(crate) mod internal {
     pub(crate) trait ServiceInternal<S: Service> {
         fn __internal_from_state(state: ServiceState<S>) -> S;
 
-        fn __internal_state(&self) -> &ServiceState<S>;
+        fn __internal_state(&self) -> &Arc<ServiceState<S>>;
 
         fn __internal_remove_node_from_service(
             node_id: &NodeId,
