@@ -132,9 +132,6 @@ impl IntoCInt for PublishSubscribeCreateError {
             PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance => {
                 iox2_pub_sub_open_or_create_error_e::C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE
             }
-         PublishSubscribeCreateError::OldConnectionsStillActive => {
-             iox2_pub_sub_open_or_create_error_e::C_OLD_CONNECTION_STILL_ACTIVE
-         }
          PublishSubscribeCreateError::HangsInCreation => {
              iox2_pub_sub_open_or_create_error_e::C_HANGS_IN_CREATION
          }

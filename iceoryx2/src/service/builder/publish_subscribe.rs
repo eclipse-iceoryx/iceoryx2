@@ -127,11 +127,6 @@ pub enum PublishSubscribeCreateError {
     InternalFailure,
     /// Multiple processes are trying to create the same [`Service`].
     IsBeingCreatedByAnotherInstance,
-    /// The system has cleaned up the [`Service`] but there are still endpoints like
-    /// [`Publisher`](crate::port::publisher::Publisher) or
-    /// [`Subscriber`](crate::port::subscriber::Subscriber) alive or
-    /// [`Sample`](crate::sample::Sample) or [`SampleMut`](crate::sample_mut::SampleMut) in use.
-    OldConnectionsStillActive,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
@@ -559,8 +554,8 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                 ) {
                     Ok(dynamic_config) => Arc::new(dynamic_config),
                     Err(DynamicStorageCreateError::AlreadyExists) => {
-                        fail!(from self, with PublishSubscribeCreateError::OldConnectionsStillActive,
-                            "{} since there are still Publishers, Subscribers or active Samples.", msg);
+                        fail!(from self, with PublishSubscribeCreateError::ServiceInCorruptedState,
+                            "{} since the dynamic config of a previous instance of the service still exists.", msg);
                     }
                     Err(e) => {
                         fail!(from self, with PublishSubscribeCreateError::InternalFailure,
