@@ -17,7 +17,8 @@ pub type c_size_t = usize;
 
 use crate::{
     iox2_event_open_or_create_error_e, iox2_node_creation_failure_e, iox2_node_event_e,
-    iox2_node_list_failure_e, iox2_semantic_string_error_e, iox2_service_details_error_e,
+    iox2_node_list_failure_e, iox2_pub_sub_open_or_create_error_e, iox2_semantic_string_error_e,
+    iox2_service_details_error_e,
 };
 
 #[doc(hidden)]
@@ -64,4 +65,12 @@ pub unsafe extern "C" fn __iox2_internal_service_details_error_stub() -> iox2_se
 pub unsafe extern "C" fn __iox2_internal_event_open_or_create_error_stub(
 ) -> iox2_event_open_or_create_error_e {
     iox2_event_open_or_create_error_e::O_INTERNAL_FAILURE
+}
+
+#[doc(hidden)]
+#[no_mangle]
+// TODO: enums are only exported when they are actually used by some function
+pub unsafe extern "C" fn __iox2_internal_pub_sub_open_or_create_error_stub(
+) -> iox2_pub_sub_open_or_create_error_e {
+    iox2_pub_sub_open_or_create_error_e::O_INTERNAL_FAILURE
 }
