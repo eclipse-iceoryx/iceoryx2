@@ -2074,6 +2074,42 @@ mod service_publish_subscribe {
         assert_that!(publisher.send_copy(PAYLOAD), eq Ok(1));
         assert_that!(*subscriber.receive().unwrap().unwrap(), eq PAYLOAD);
     }
+    #[test]
+    fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()
+            .unwrap();
+
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
+
+        drop(sut);
+
+        assert_that!(node.service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create().err().unwrap(),
+            eq PublishSubscribeCreateError::AlreadyExists);
+
+        drop(subscriber);
+
+        assert_that!(node.service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create().err().unwrap(),
+            eq PublishSubscribeCreateError::AlreadyExists);
+
+        drop(publisher);
+
+        assert_that!(
+            node.service_builder(&service_name)
+                .publish_subscribe::<u64>()
+                .create(),
+            is_ok
+        );
+    }
 
     #[test]
     fn subscriber_can_decrease_buffer_size<Sut: Service>() {

@@ -15,6 +15,7 @@ mod sample_mut {
     use iceoryx2::port::publisher::{Publisher, PublisherLoanError};
     use iceoryx2::port::subscriber::Subscriber;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -31,6 +32,8 @@ mod sample_mut {
     }
 
     struct TestContext<Sut: Service> {
+        node: Node<Sut>,
+        service_name: ServiceName,
         service: PortFactory<Sut, u64, ()>,
         publisher: Publisher<Sut, u64, ()>,
         subscriber: Subscriber<Sut, u64, ()>,
@@ -56,6 +59,8 @@ mod sample_mut {
             let subscriber = service.subscriber_builder().create().unwrap();
 
             Self {
+                node,
+                service_name,
                 service,
                 publisher,
                 subscriber,
@@ -133,6 +138,24 @@ mod sample_mut {
 
         let received_sample = test_context.subscriber.receive().unwrap().unwrap();
         assert_that!(*received_sample, eq PAYLOAD);
+    }
+
+    #[test]
+    fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
+        let test_context = TestContext::<Sut>::new();
+        let service_name = test_context.service_name.clone();
+        let _sample = test_context.publisher.loan_uninit().unwrap();
+
+        drop(test_context);
+
+        let test_context = TestContext::<Sut>::new();
+        let result = test_context
+            .node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
+        assert_that!(result, is_err);
+        assert_that!(result.err().unwrap(), eq PublishSubscribeCreateError::AlreadyExists);
     }
 
     #[test]

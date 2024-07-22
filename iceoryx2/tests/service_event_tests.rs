@@ -741,6 +741,73 @@ mod service_event {
     }
 
     #[test]
+    fn service_persists_when_service_object_is_dropped_but_endpoints_are_still_alive<
+        Sut: Service,
+    >() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let event_id = EventId::new(12);
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+
+        let notifier = sut
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+        let listener = sut.listener_builder().create().unwrap();
+
+        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(true));
+        drop(sut);
+        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::Event), eq Ok(true));
+
+        assert_that!(notifier.notify(), eq Ok(1));
+
+        let mut received_events = 0;
+        for event in listener.try_wait_one().unwrap().iter() {
+            assert_that!(*event, eq event_id);
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 1);
+    }
+
+    #[test]
+    fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+
+        let listener = sut.listener_builder().create().unwrap();
+        let notifier = sut.notifier_builder().create().unwrap();
+
+        drop(sut);
+
+        assert_that!(node.service_builder(&service_name)
+            .event()
+            .create().err().unwrap(),
+            eq EventCreateError::AlreadyExists);
+
+        drop(listener);
+
+        assert_that!(node.service_builder(&service_name)
+            .event()
+            .create().err().unwrap(),
+            eq EventCreateError::AlreadyExists);
+
+        drop(notifier);
+
+        assert_that!(node.service_builder(&service_name).event().create(), is_ok);
+    }
+
+    #[test]
     fn try_wait_does_not_block<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let service_name = generate_name();
