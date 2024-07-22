@@ -23,7 +23,14 @@ template <ServiceType S>
 auto PortFactoryNotifier<S>::create() && -> iox::expected<Notifier<S>, NotifierCreateError> {
     m_default_event_id.and_then([](auto) { IOX_TODO(); });
 
-    IOX_TODO();
+    iox2_notifier_h notifier_handle {};
+    auto result = iox2_port_factory_notifier_builder_create(m_handle, nullptr, &notifier_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Notifier<S> { notifier_handle });
+    }
+
+    return iox::err(iox::into<NotifierCreateError>(result));
 }
 
 template class PortFactoryNotifier<ServiceType::Ipc>;

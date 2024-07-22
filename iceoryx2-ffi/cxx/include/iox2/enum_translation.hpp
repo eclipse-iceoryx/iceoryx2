@@ -21,6 +21,7 @@
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
+#include "iox2/notifier_error.hpp"
 #include "iox2/semantic_string.hpp"
 #include "iox2/service_builder_event_error.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
@@ -408,6 +409,17 @@ from<int, iox2::PublishSubscribeCreateError>(const int value) noexcept -> iox2::
     default:
         IOX_UNREACHABLE();
     }
+}
+
+template <>
+constexpr auto from<int, iox2::NotifierCreateError>(const int value) noexcept -> iox2::NotifierCreateError {
+    const auto error = static_cast<iox2_notifier_create_error_e>(value);
+    switch (error) {
+    case iox2_notifier_create_error_e_EXCEEDS_MAX_SUPPORTED_NOTIFIERS:
+        return iox2::NotifierCreateError::ExceedsMaxSupportedNotifiers;
+    }
+
+    IOX_UNREACHABLE();
 }
 } // namespace iox
 

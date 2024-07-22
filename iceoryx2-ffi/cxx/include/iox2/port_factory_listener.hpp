@@ -25,6 +25,13 @@ namespace iox2 {
 template <ServiceType S>
 class PortFactoryListener {
   public:
+    PortFactoryListener(PortFactoryListener&&) noexcept = default;
+    auto operator=(PortFactoryListener&&) noexcept -> PortFactoryListener& = default;
+    ~PortFactoryListener() = default;
+
+    PortFactoryListener(const PortFactoryListener&) = delete;
+    auto operator=(const PortFactoryListener&) -> PortFactoryListener& = delete;
+
     /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
     auto create() && -> iox::expected<Listener<S>, ListenerCreateError>;
 

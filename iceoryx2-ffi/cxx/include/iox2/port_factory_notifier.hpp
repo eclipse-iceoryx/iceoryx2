@@ -17,6 +17,7 @@
 #include "iox/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/notifier.hpp"
+#include "iox2/notifier_error.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
@@ -30,6 +31,13 @@ class PortFactoryNotifier {
     IOX_BUILDER_OPTIONAL(EventId, default_event_id);
 
   public:
+    PortFactoryNotifier(PortFactoryNotifier&&) noexcept = default;
+    auto operator=(PortFactoryNotifier&&) noexcept -> PortFactoryNotifier& = default;
+    ~PortFactoryNotifier() = default;
+
+    PortFactoryNotifier(const PortFactoryNotifier&) = delete;
+    auto operator=(const PortFactoryNotifier&) -> PortFactoryNotifier& = delete;
+
     /// Creates a new [`Notifier`] port or returns a [`NotifierCreateError`] on failure.
     auto create() && -> iox::expected<Notifier<S>, NotifierCreateError>;
 
