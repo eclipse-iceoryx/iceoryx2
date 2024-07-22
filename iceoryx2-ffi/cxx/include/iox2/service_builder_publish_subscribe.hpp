@@ -18,59 +18,180 @@
 #include "iox/expected.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
+/// Builder to create new [`MessagingPattern::PublishSubscribe`] based [`Service`]s
 template <typename Payload, typename UserHeader, ServiceType S>
 class ServiceBuilderPublishSubscribe {
+    /// If the [`Service`] is created, it defines the [`Alignment`] of the payload for the service. If
+    /// an existing [`Service`] is opened it requires the service to have at least the defined
+    /// [`Alignment`]. If the Payload [`Alignment`] is greater than the provided [`Alignment`]
+    /// then the Payload [`Alignment`] is used.
     IOX_BUILDER_OPTIONAL(uint64_t, payload_alignment);
+
+    /// If the [`Service`] is created, defines the overflow behavior of the service. If an existing
+    /// [`Service`] is opened it requires the service to have the defined overflow behavior.
     IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow);
+
+    /// If the [`Service`] is created it defines how many [`crate::sample::Sample`] a
+    /// [`crate::port::subscriber::Subscriber`] can borrow at most in parallel. If an existing
+    /// [`Service`] is opened it defines the minimum required.
     IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_borrowed_samples);
+
+    /// If the [`Service`] is created it defines the maximum history size a
+    /// [`crate::port::subscriber::Subscriber`] can request on connection. If an existing
+    /// [`Service`] is opened it defines the minimum required.
     IOX_BUILDER_OPTIONAL(uint64_t, history_size);
+
+    /// If the [`Service`] is created it defines how many [`crate::sample::Sample`] a
+    /// [`crate::port::subscriber::Subscriber`] can store in its internal buffer. If an existing
+    /// [`Service`] is opened it defines the minimum required.
     IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_buffer_size);
+
+    /// If the [`Service`] is created it defines how many [`crate::port::subscriber::Subscriber`] shall
+    /// be supported at most. If an existing [`Service`] is opened it defines how many
+    /// [`crate::port::subscriber::Subscriber`] must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_subscribers);
+
+    /// If the [`Service`] is created it defines how many [`crate::port::publisher::Publisher`] shall
+    /// be supported at most. If an existing [`Service`] is opened it defines how many
+    /// [`crate::port::publisher::Publisher`] must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_publishers);
+
+    /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
+    /// be able to open it in parallel. If an existing [`Service`] is opened it defines how many
+    /// [`Node`](crate::node::Node)s must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
 
   public:
+    /// Sets the user header type of the [`Service`].
     template <typename NewHeader>
-    auto user_header() -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S> {
-        IOX_TODO();
-    }
+    auto user_header() && -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S>&&;
 
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
     auto open_or_create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                              PublishSubscribeOpenOrCreateError> {
-        IOX_TODO();
-    }
+                                              PublishSubscribeOpenOrCreateError>;
 
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
+    /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
+    /// does not exist the required attributes will be defined in the [`Service`].
     auto open_or_create_with_attributes(
         const AttributeVerifier&
             required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                     PublishSubscribeOpenOrCreateError> {
-        IOX_TODO();
-    }
+                                                     PublishSubscribeOpenOrCreateError>;
 
-    auto open() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
-        IOX_TODO();
-    }
+    /// Opens an existing [`Service`].
+    auto open() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>;
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
     auto open_with_attributes(
         const AttributeVerifier&
             required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                     PublishSubscribeOpenError> {
-        IOX_TODO();
-    }
+                                                     PublishSubscribeOpenError>;
 
-    auto create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
-        IOX_TODO();
-    }
+    /// Creates a new [`Service`].
+    auto create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>;
+
+    /// Creates a new [`Service`] with a set of attributes.
     auto create_with_attributes(
         const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                                  PublishSubscribeOpenError> {
-        IOX_TODO();
-    }
+                                                                  PublishSubscribeOpenError>;
+
+  private:
+    template <ServiceType>
+    friend class ServiceBuilder;
+
+    explicit ServiceBuilderPublishSubscribe(iox2_service_builder_h handle);
+
+    void set_parameters();
+
+    iox2_service_builder_pub_sub_h m_handle;
 };
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPublishSubscribe(
+    iox2_service_builder_h handle)
+    : m_handle { iox2_service_builder_pub_sub(handle) } {
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_parameters() {
+    auto* ref_handle = iox2_cast_service_builder_pub_sub_ref_h(m_handle);
+
+    m_payload_alignment.and_then([](auto) { IOX_TODO(); });
+    m_enable_safe_overflow.and_then([](auto) { IOX_TODO(); });
+    m_subscriber_max_borrowed_samples.and_then([](auto) { IOX_TODO(); });
+    m_history_size.and_then([](auto) { IOX_TODO(); });
+    m_subscriber_max_buffer_size.and_then([](auto) { IOX_TODO(); });
+    m_max_subscribers.and_then(
+        [&](auto value) { iox2_service_builder_pub_sub_set_max_subscribers(ref_handle, value); });
+    m_max_publishers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_publishers(ref_handle, value); });
+    m_max_nodes.and_then([](auto) { IOX_TODO(); });
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename NewHeader>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
+    user_header() && -> ServiceBuilderPublishSubscribe<Payload, NewHeader, S>&& {
+    // required here since we just change the template header type but the builder structure stays the same
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    return std::move(reinterpret_cast<ServiceBuilderPublishSubscribe<Payload, NewHeader, S>>(*this));
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
+    open_or_create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                         PublishSubscribeOpenOrCreateError> {
+    set_parameters();
+    IOX_TODO();
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
+    open() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
+    set_parameters();
+    IOX_TODO();
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
+    create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
+    set_parameters();
+    IOX_TODO();
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_create_with_attributes(
+    const AttributeVerifier&
+        required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                 PublishSubscribeOpenOrCreateError> {
+    set_parameters();
+    IOX_TODO();
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_with_attributes(
+    const AttributeVerifier&
+        required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                 PublishSubscribeOpenError> {
+    set_parameters();
+    IOX_TODO();
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create_with_attributes(
+    const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
+                                                              PublishSubscribeOpenError> {
+    set_parameters();
+    IOX_TODO();
+}
 } // namespace iox2
 
 #endif

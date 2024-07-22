@@ -25,6 +25,8 @@ void ServiceBuilderEvent<S>::set_parameters() {
 
     m_max_notifiers.and_then([&](auto value) { iox2_service_builder_event_set_max_notifiers(ref_handle, value); });
     m_max_listeners.and_then([&](auto value) { iox2_service_builder_event_set_max_listeners(ref_handle, value); });
+    m_max_nodes.and_then([](auto) { IOX_TODO(); });
+    m_event_id_max_value.and_then([](auto) { IOX_TODO(); });
 }
 
 template <ServiceType S>

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/config.hpp"
+#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 ConfigView::ConfigView(iox2_config_ptr ptr)
@@ -18,6 +19,7 @@ ConfigView::ConfigView(iox2_config_ptr ptr)
 }
 
 auto ConfigView::to_owned() const -> Config {
+    IOX_TODO();
     return Config {};
 }
 
