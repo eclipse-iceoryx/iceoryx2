@@ -37,13 +37,13 @@
 
 use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 use crate::{
-    node::SharedNode,
     port::port_identifiers::UniqueNotifierId,
     service::{
         self,
         config_scheme::event_config,
         dynamic_config::event::{ListenerDetails, NotifierDetails},
         naming_scheme::event_concept_name,
+        ServiceState,
     },
 };
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -102,14 +102,14 @@ struct Connection<Service: service::Service> {
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
-    shared_node: Arc<SharedNode<Service>>,
+    service_state: Arc<ServiceState<Service>>,
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
-    fn new(size: usize, shared_node: Arc<SharedNode<Service>>) -> Self {
+    fn new(size: usize, service_state: Arc<ServiceState<Service>>) -> Self {
         let mut new_self = Self {
             connections: vec![],
-            shared_node,
+            service_state,
         };
 
         new_self.connections.reserve(size);
@@ -123,7 +123,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
     fn create(&self, index: usize, listener_id: UniqueListenerId) {
         let msg = "Unable to establish connection to listener";
         let event_name = event_concept_name(&listener_id);
-        let event_config = event_config::<Service>(self.shared_node.config());
+        let event_config = event_config::<Service>(self.service_state.shared_node.config());
         if self.get(index).is_none() {
             match <Service::Event as iceoryx2_cal::event::Event>::NotifierBuilder::new(&event_name)
                 .config(&event_config)
@@ -179,7 +179,6 @@ pub struct Notifier<Service: service::Service> {
     listener_list_state: UnsafeCell<ContainerState<ListenerDetails>>,
     default_event_id: EventId,
     event_id_max_value: usize,
-    dynamic_storage: Arc<Service::DynamicStorage>,
     dynamic_notifier_handle: Option<ContainerHandle>,
     notifier_id: UniqueNotifierId,
 }
@@ -187,7 +186,9 @@ pub struct Notifier<Service: service::Service> {
 impl<Service: service::Service> Drop for Notifier<Service> {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_notifier_handle {
-            self.dynamic_storage
+            self.listener_connections
+                .service_state
+                .dynamic_storage
                 .get()
                 .event()
                 .release_notifier_handle(handle)
@@ -210,16 +211,14 @@ impl<Service: service::Service> Notifier<Service> {
             .get()
             .event()
             .listeners;
-        let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
 
         let mut new_self = Self {
             listener_connections: ListenerConnections::new(
                 listener_list.capacity(),
-                service.__internal_state().shared_node.clone(),
+                service.__internal_state().clone(),
             ),
             default_event_id,
             listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
-            dynamic_storage,
             event_id_max_value: service
                 .__internal_state()
                 .static_config
@@ -235,12 +234,16 @@ impl<Service: service::Service> Notifier<Service> {
 
         // !MUST! be the last task otherwise a notifier is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_notifier_handle = match new_self.dynamic_storage.get().event().add_notifier_id(
-            NotifierDetails {
+        let dynamic_notifier_handle = match new_self
+            .listener_connections
+            .service_state
+            .dynamic_storage
+            .get()
+            .event()
+            .add_notifier_id(NotifierDetails {
                 notifier_id,
                 node_id: *service.__internal_state().shared_node.id(),
-            },
-        ) {
+            }) {
             Some(handle) => handle,
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
@@ -255,7 +258,9 @@ impl<Service: service::Service> Notifier<Service> {
 
     fn update_connections(&self) {
         if unsafe {
-            self.dynamic_storage
+            self.listener_connections
+                .service_state
+                .dynamic_storage
                 .get()
                 .event()
                 .listeners

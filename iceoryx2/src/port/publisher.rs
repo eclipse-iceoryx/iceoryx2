@@ -107,7 +107,6 @@ use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
-use crate::service;
 use crate::service::config_scheme::{connection_config, data_segment_config};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -116,6 +115,7 @@ use crate::service::naming_scheme::{
 };
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
 use crate::service::static_config::publish_subscribe::{self};
+use crate::service::{self, ServiceState};
 use crate::{config, sample_mut::SampleMut};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
@@ -241,7 +241,7 @@ pub(crate) struct DataSegment<Service: service::Service> {
     payload_type_layout: Layout,
     port_id: UniquePublisherId,
     config: LocalPublisherConfig,
-    dynamic_storage: Arc<Service::DynamicStorage>,
+    service_state: Arc<ServiceState<Service>>,
 
     subscriber_connections: SubscriberConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
@@ -481,7 +481,8 @@ impl<Service: service::Service> DataSegment<Service> {
 
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
-            self.dynamic_storage
+            self.service_state
+                .dynamic_storage
                 .get()
                 .publish_subscribe()
                 .subscribers
@@ -543,6 +544,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Drop
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_publisher_handle {
             self.data_segment
+                .service_state
                 .dynamic_storage
                 .get()
                 .publish_subscribe()
@@ -569,7 +571,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .publish_subscribe()
             .subscribers;
 
-        let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
         let number_of_samples = service
             .__internal_state()
             .static_config
@@ -599,7 +600,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 }
                 v
             },
-            dynamic_storage,
+            service_state: service.__internal_state().clone(),
             port_id,
             subscriber_connections: SubscriberConnections::new(
                 subscriber_list.capacity(),

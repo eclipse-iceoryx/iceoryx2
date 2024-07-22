@@ -12,10 +12,15 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType};
+use crate::api::{
+    iox2_port_factory_listener_builder_h, iox2_port_factory_listener_builder_t,
+    iox2_port_factory_notifier_builder_h, iox2_port_factory_notifier_builder_t,
+    iox2_service_name_ptr, iox2_service_type_e, HandleToType, PortFactoryListenerBuilderUnion,
+    PortFactoryNotifierBuilderUnion,
+};
 
 use iceoryx2::prelude::*;
-use iceoryx2::service::port_factory::event::PortFactory;
+use iceoryx2::service::port_factory::{event::PortFactory as PortFactoryEvent, PortFactory};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -24,17 +29,17 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 pub(super) union PortFactoryEventUnion {
-    ipc: ManuallyDrop<PortFactory<zero_copy::Service>>,
-    local: ManuallyDrop<PortFactory<process_local::Service>>,
+    ipc: ManuallyDrop<PortFactoryEvent<zero_copy::Service>>,
+    local: ManuallyDrop<PortFactoryEvent<process_local::Service>>,
 }
 
 impl PortFactoryEventUnion {
-    pub(super) fn new_ipc(port_factory: PortFactory<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(port_factory: PortFactoryEvent<zero_copy::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
-    pub(super) fn new_local(port_factory: PortFactory<process_local::Service>) -> Self {
+    pub(super) fn new_local(port_factory: PortFactoryEvent<process_local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),
         }
@@ -95,6 +100,158 @@ impl HandleToType for iox2_port_factory_event_ref_h {
 // END type definition
 
 // BEGIN C API
+
+/// This function casts an owning [`iox2_port_factory_event_h`] into a non-owning [`iox2_port_factory_event_ref_h`]
+///
+/// # Arguments
+///
+/// * `port_factory_handle` obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
+///
+/// Returns a [`iox2_port_factory_event_ref_h`]
+///
+/// # Safety
+///
+/// * The `port_factory_handle` must be a valid handle.
+/// * The `port_factory_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_port_factory_event_ref_h(
+    port_factory_handle: iox2_port_factory_event_h,
+) -> iox2_port_factory_event_ref_h {
+    debug_assert!(!port_factory_handle.is_null());
+
+    (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// Returns the [`iox2_service_name_ptr`], an immutable pointer to the service name.
+///
+/// # Safety
+///
+/// * The `_handle` must be valid and obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_service_name(
+    port_factory_handle: iox2_port_factory_event_ref_h,
+) -> iox2_service_name_ptr {
+    debug_assert!(!port_factory_handle.is_null());
+
+    let port_factory = &mut *port_factory_handle.as_type();
+
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.name(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.name(),
+    }
+}
+
+// TODO [#210] add all the other setter methods
+
+/// Instantiates a [`iox2_port_factory_notifier_builder_h`] to build a notifier.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_event_ref_h`] obtained
+///   by e.g. [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
+///   and casted by [`iox2_cast_port_factory_event_ref_h`]
+/// * `notifier_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_notifier_builder_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+///
+/// Returns the `iox2_port_factory_notifier_builder_h` handle for the notifier builder.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_notifier_builder(
+    port_factory_handle: iox2_port_factory_event_ref_h,
+    notifier_builder_struct_ptr: *mut iox2_port_factory_notifier_builder_t,
+) -> iox2_port_factory_notifier_builder_h {
+    debug_assert!(!port_factory_handle.is_null());
+
+    let mut notifier_builder_struct_ptr = notifier_builder_struct_ptr;
+    fn no_op(_: *mut iox2_port_factory_notifier_builder_t) {}
+    let mut deleter: fn(*mut iox2_port_factory_notifier_builder_t) = no_op;
+    if notifier_builder_struct_ptr.is_null() {
+        notifier_builder_struct_ptr = iox2_port_factory_notifier_builder_t::alloc();
+        deleter = iox2_port_factory_notifier_builder_t::dealloc;
+    }
+    debug_assert!(!notifier_builder_struct_ptr.is_null());
+
+    let port_factory = &mut *port_factory_handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => {
+            let notifier_builder = port_factory.value.as_ref().ipc.notifier_builder();
+            (*notifier_builder_struct_ptr).init(
+                port_factory.service_type,
+                PortFactoryNotifierBuilderUnion::new_ipc(notifier_builder),
+                deleter,
+            );
+        }
+        iox2_service_type_e::LOCAL => {
+            let notifier_builder = port_factory.value.as_ref().local.notifier_builder();
+            (*notifier_builder_struct_ptr).init(
+                port_factory.service_type,
+                PortFactoryNotifierBuilderUnion::new_local(notifier_builder),
+                deleter,
+            );
+        }
+    };
+
+    (*notifier_builder_struct_ptr).as_handle()
+}
+
+/// Instantiates a [`iox2_port_factory_listener_builder_h`] to build a listener.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_event_ref_h`] obtained
+///   by e.g. [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
+///   and casted by [`iox2_cast_port_factory_event_ref_h`]
+/// * `listener_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_listener_builder_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+///
+/// Returns the [`iox2_port_factory_listener_builder_h`] handle for the listener builder.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_listener_builder(
+    port_factory_handle: iox2_port_factory_event_ref_h,
+    listener_builder_struct_ptr: *mut iox2_port_factory_listener_builder_t,
+) -> iox2_port_factory_listener_builder_h {
+    debug_assert!(!port_factory_handle.is_null());
+
+    let mut listener_builder_struct_ptr = listener_builder_struct_ptr;
+    fn no_op(_: *mut iox2_port_factory_listener_builder_t) {}
+    let mut deleter: fn(*mut iox2_port_factory_listener_builder_t) = no_op;
+    if listener_builder_struct_ptr.is_null() {
+        listener_builder_struct_ptr = iox2_port_factory_listener_builder_t::alloc();
+        deleter = iox2_port_factory_listener_builder_t::dealloc;
+    }
+    debug_assert!(!listener_builder_struct_ptr.is_null());
+
+    let port_factory = &mut *port_factory_handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => {
+            let listener_builder = port_factory.value.as_ref().ipc.listener_builder();
+            (*listener_builder_struct_ptr).init(
+                port_factory.service_type,
+                PortFactoryListenerBuilderUnion::new_ipc(listener_builder),
+                deleter,
+            );
+        }
+        iox2_service_type_e::LOCAL => {
+            let listener_builder = port_factory.value.as_ref().local.listener_builder();
+            (*listener_builder_struct_ptr).init(
+                port_factory.service_type,
+                PortFactoryListenerBuilderUnion::new_local(listener_builder),
+                deleter,
+            );
+        }
+    };
+
+    (*listener_builder_struct_ptr).as_handle()
+}
 
 /// This function needs to be called to destroy the port factory!
 ///

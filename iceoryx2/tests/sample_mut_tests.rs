@@ -155,7 +155,7 @@ mod sample_mut {
             .publish_subscribe::<u64>()
             .create();
         assert_that!(result, is_err);
-        assert_that!(result.err().unwrap(), eq PublishSubscribeCreateError::OldConnectionsStillActive);
+        assert_that!(result.err().unwrap(), eq PublishSubscribeCreateError::AlreadyExists);
     }
 
     #[test]

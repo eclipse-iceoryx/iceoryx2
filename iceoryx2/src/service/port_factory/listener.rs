@@ -44,7 +44,7 @@ pub struct PortFactoryListener<'factory, Service: service::Service> {
 
 impl<'factory, Service: service::Service> PortFactoryListener<'factory, Service> {
     /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
-    pub fn create(&self) -> Result<Listener<Service>, ListenerCreateError> {
+    pub fn create(self) -> Result<Listener<Service>, ListenerCreateError> {
         Ok(fail!(from self, when Listener::new(&self.factory.service),
                     "Failed to create new Listener port."))
     }

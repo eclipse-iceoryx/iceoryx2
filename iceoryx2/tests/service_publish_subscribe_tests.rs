@@ -2068,14 +2068,12 @@ mod service_publish_subscribe {
         let subscriber = sut.subscriber_builder().create().unwrap();
 
         drop(sut);
-        assert_that!(Sut::does_exist(&service_name, Config::global_config(), MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
         const PAYLOAD: u64 = 98129312938;
 
         assert_that!(publisher.send_copy(PAYLOAD), eq Ok(1));
         assert_that!(*subscriber.receive().unwrap().unwrap(), eq PAYLOAD);
     }
-
     #[test]
     fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
         let service_name = generate_name();
@@ -2094,14 +2092,14 @@ mod service_publish_subscribe {
         assert_that!(node.service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create().err().unwrap(),
-            eq PublishSubscribeCreateError::OldConnectionsStillActive);
+            eq PublishSubscribeCreateError::AlreadyExists);
 
         drop(subscriber);
 
         assert_that!(node.service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create().err().unwrap(),
-            eq PublishSubscribeCreateError::OldConnectionsStillActive);
+            eq PublishSubscribeCreateError::AlreadyExists);
 
         drop(publisher);
 
@@ -2463,8 +2461,6 @@ mod service_publish_subscribe {
                                   "PublishSubscribeCreateError::InternalFailure");
         assert_that!(format!("{}", PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance), eq
                                   "PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance");
-        assert_that!(format!("{}", PublishSubscribeCreateError::OldConnectionsStillActive), eq
-                                  "PublishSubscribeCreateError::OldConnectionsStillActive");
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]

@@ -100,6 +100,28 @@ impl HandleToType for iox2_port_factory_pub_sub_ref_h {
 
 // BEGIN C API
 
+/// This function casts an owning [`iox2_port_factory_pub_sub_h`] into a non-owning [`iox2_port_factory_pub_sub_ref_h`]
+///
+/// # Arguments
+///
+/// * `port_factory_handle` obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
+///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)
+///
+/// Returns a [`iox2_port_factory_pub_sub_ref_h`]
+///
+/// # Safety
+///
+/// * The `port_factory_handle` must be a valid handle.
+/// * The `port_factory_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_port_factory_pub_sub_ref_h(
+    port_factory_handle: iox2_port_factory_pub_sub_h,
+) -> iox2_port_factory_pub_sub_ref_h {
+    debug_assert!(!port_factory_handle.is_null());
+
+    (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
 /// This function needs to be called to destroy the port factory!
 ///
 /// # Arguments

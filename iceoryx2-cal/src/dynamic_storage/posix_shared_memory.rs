@@ -385,6 +385,9 @@ pub struct Storage<T: Debug + Send + Sync> {
     _phantom_data: PhantomData<T>,
 }
 
+unsafe impl<T: Debug + Send + Sync> Send for Storage<T> {}
+unsafe impl<T: Debug + Send + Sync> Sync for Storage<T> {}
+
 impl<T: Debug + Send + Sync> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.shm.has_ownership() {

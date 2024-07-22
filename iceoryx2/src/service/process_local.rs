@@ -32,6 +32,8 @@
 //!
 //! See [`Service`](crate::service) for more detailed examples.
 
+use std::sync::Arc;
+
 use crate::service::dynamic_config::DynamicConfig;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;
@@ -41,7 +43,7 @@ use super::ServiceState;
 /// Defines a process local or single address space communication setup.
 #[derive(Debug)]
 pub struct Service {
-    state: ServiceState<Self>,
+    state: Arc<ServiceState<Self>>,
 }
 
 impl crate::service::Service for Service {
@@ -57,10 +59,12 @@ impl crate::service::Service for Service {
 
 impl crate::service::internal::ServiceInternal<Service> for Service {
     fn __internal_from_state(state: ServiceState<Self>) -> Self {
-        Self { state }
+        Self {
+            state: Arc::new(state),
+        }
     }
 
-    fn __internal_state(&self) -> &ServiceState<Self> {
+    fn __internal_state(&self) -> &Arc<ServiceState<Self>> {
         &self.state
     }
 }

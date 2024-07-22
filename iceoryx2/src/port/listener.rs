@@ -68,6 +68,7 @@ use crate::config::Config;
 use crate::service::config_scheme::event_config;
 use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
+use crate::service::ServiceState;
 use crate::{port::port_identifiers::UniqueListenerId, service};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -101,14 +102,15 @@ impl std::error::Error for ListenerCreateError {}
 pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
     listener: <Service::Event as iceoryx2_cal::event::Event>::Listener,
-    dynamic_storage: Arc<Service::DynamicStorage>,
+    service_state: Arc<ServiceState<Service>>,
     listener_id: UniqueListenerId,
 }
 
 impl<Service: service::Service> Drop for Listener<Service> {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_listener_handle {
-            self.dynamic_storage
+            self.service_state
+                .dynamic_storage
                 .get()
                 .event()
                 .release_listener_handle(handle)
@@ -122,7 +124,6 @@ impl<Service: service::Service> Listener<Service> {
         let origin = "Listener::new()";
         let listener_id = UniqueListenerId::new();
 
-        let dynamic_storage = Arc::clone(&service.__internal_state().dynamic_storage);
         let event_name = event_concept_name(&listener_id);
         let event_config = event_config::<Service>(service.__internal_state().shared_node.config());
 
@@ -134,7 +135,7 @@ impl<Service: service::Service> Listener<Service> {
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
 
         let mut new_self = Self {
-            dynamic_storage,
+            service_state: service.__internal_state().clone(),
             dynamic_listener_handle: None,
             listener,
             listener_id,

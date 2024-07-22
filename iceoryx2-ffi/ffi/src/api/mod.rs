@@ -19,10 +19,14 @@ use iceoryx2_bb_log::set_log_level;
 use core::ffi::c_int;
 
 mod config;
+mod listener;
 mod node;
 mod node_builder;
 mod node_name;
+mod notifier;
 mod port_factory_event;
+mod port_factory_listener_builder;
+mod port_factory_notifier_builder;
 mod port_factory_pub_sub;
 mod publisher;
 mod quirks_correction;
@@ -34,10 +38,14 @@ mod service_name;
 mod subscriber;
 
 pub use config::*;
+pub use listener::*;
 pub use node::*;
 pub use node_builder::*;
 pub use node_name::*;
+pub use notifier::*;
 pub use port_factory_event::*;
+pub use port_factory_listener_builder::*;
+pub use port_factory_notifier_builder::*;
 pub use port_factory_pub_sub::*;
 pub use publisher::*;
 pub use quirks_correction::*;
@@ -106,6 +114,7 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
 ///
 /// ```no_run
 /// use core::ffi::c_int;
+/// use iceoryx2_ffi::IOX2_OK;
 ///
 /// trait IntoCInt {
 ///     fn into_c_int(self) -> c_int;
@@ -119,7 +128,7 @@ pub extern "C" fn zero_copy_service_list() -> i32 {
 /// #[repr(C)]
 /// #[derive(Copy, Clone)]
 /// pub enum iox2_foo_error_e {
-///     BAR = 1, // start at 1 since IOX2_OK is already 0
+///     BAR = IOX2_OK as isize + 1, // start `IOX2_OK + 1` to prevent ambiguous values
 ///     BAZ,
 /// }
 ///

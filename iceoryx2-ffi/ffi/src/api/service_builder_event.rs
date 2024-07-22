@@ -15,9 +15,8 @@
 use crate::api::{
     c_size_t, iox2_port_factory_event_h, iox2_port_factory_event_t, iox2_service_builder_event_h,
     iox2_service_builder_event_ref_h, iox2_service_type_e, HandleToType, IntoCInt,
-    PortFactoryEventUnion, ServiceBuilderUnion,
+    PortFactoryEventUnion, ServiceBuilderUnion, IOX2_OK,
 };
-use crate::IOX2_OK;
 
 use iceoryx2::service::builder::event::{EventCreateError, EventOpenError, EventOpenOrCreateError};
 
@@ -29,7 +28,7 @@ use core::mem::ManuallyDrop;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_event_open_or_create_error_e {
-    O_DOES_NOT_EXIST = 1,
+    O_DOES_NOT_EXIST = IOX2_OK as isize + 1,
     O_INSUFFICIENT_PERMISSIONS,
     O_SERVICE_IN_CORRUPTED_STATE,
     O_INCOMPATIBLE_MESSAGING_PATTERN,
@@ -115,9 +114,6 @@ impl IntoCInt for EventCreateError {
             EventCreateError::InsufficientPermissions => {
                 iox2_event_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
             }
-            EventCreateError::OldConnectionsStillActive => {
-                iox2_event_open_or_create_error_e::C_OLD_CONNECTION_STILL_ACTIVE
-            }
         }) as c_int
     }
 }
@@ -139,7 +135,7 @@ impl IntoCInt for EventOpenOrCreateError {
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`](crate::iox2_service_builder_event_ref_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`]
 ///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event) and
 ///   casted by [`iox2_cast_service_builder_event_ref_h`](crate::iox2_cast_service_builder_event_ref_h).
 /// * `value` - The value to set the max notifiers to
@@ -182,7 +178,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`](crate::iox2_service_builder_event_ref_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`]
 ///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event) and
 ///   casted by [`iox2_cast_service_builder_event_ref_h`](crate::iox2_cast_service_builder_event_ref_h).
 /// * `value` - The value to set the max listeners to
@@ -227,10 +223,10 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`](crate::iox2_service_builder_event_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`]
 ///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
-///   [`iox2_port_factory_event_t`](crate::iox2_port_factory_event_t). If it is a NULL pointer, the storage will be allocated on the heap.
+///   [`iox2_port_factory_event_t`]). If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise.
@@ -311,10 +307,10 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`](crate::iox2_service_builder_event_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`]
 ///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
-///   [`iox2_port_factory_event_t`](crate::iox2_port_factory_event_t). If it is a NULL pointer, the storage will be allocated on the heap.
+///   [`iox2_port_factory_event_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise. Note, only the errors annotated with `O_` are relevant.

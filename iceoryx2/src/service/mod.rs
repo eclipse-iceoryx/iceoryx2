@@ -274,7 +274,7 @@ pub struct ServiceDetails<S: Service> {
 pub struct ServiceState<S: Service> {
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: Arc<SharedNode<S>>,
-    pub(crate) dynamic_storage: Arc<S::DynamicStorage>,
+    pub(crate) dynamic_storage: S::DynamicStorage,
     pub(crate) static_storage: S::StaticStorage,
 }
 
@@ -282,7 +282,7 @@ impl<S: Service> ServiceState<S> {
     pub(crate) fn new(
         static_config: StaticConfig,
         shared_node: Arc<SharedNode<S>>,
-        dynamic_storage: Arc<S::DynamicStorage>,
+        dynamic_storage: S::DynamicStorage,
         static_storage: S::StaticStorage,
     ) -> Self {
         let new_self = Self {
@@ -301,7 +301,7 @@ impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
         let id = self.static_config.uuid();
-        self.shared_node.registered_services.remove(id, |handle| {
+        self.shared_node.registered_services().remove(id, |handle| {
             if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), id, self.shared_node.config())
             {
                 debug!(from origin, "The service tag could not be removed from the node {:?} ({:?}).",
@@ -346,7 +346,7 @@ pub(crate) mod internal {
     pub(crate) trait ServiceInternal<S: Service> {
         fn __internal_from_state(state: ServiceState<S>) -> S;
 
-        fn __internal_state(&self) -> &ServiceState<S>;
+        fn __internal_state(&self) -> &Arc<ServiceState<S>>;
 
         fn __internal_remove_node_from_service(
             node_id: &NodeId,
