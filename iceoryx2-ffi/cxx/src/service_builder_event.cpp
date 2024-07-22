@@ -41,14 +41,36 @@ auto ServiceBuilderEvent<S>::open_or_create() && -> iox::expected<PortFactoryEve
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
-    const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
+auto ServiceBuilderEvent<S>::open() && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
     set_parameters();
-    IOX_TODO();
+
+    iox2_port_factory_event_h event_handle {};
+    auto result = iox2_service_builder_event_open(m_handle, nullptr, &event_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryEvent<S>(event_handle));
+    }
+
+    return iox::err(iox::into<EventOpenError>(result));
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::open() && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
+auto ServiceBuilderEvent<S>::create() && -> iox::expected<PortFactoryEvent<S>, EventCreateError> {
+    set_parameters();
+
+    iox2_port_factory_event_h event_handle {};
+    auto result = iox2_service_builder_event_create(m_handle, nullptr, &event_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryEvent<S>(event_handle));
+    }
+
+    return iox::err(iox::into<EventCreateError>(result));
+}
+
+template <ServiceType S>
+auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
+    const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
     set_parameters();
     IOX_TODO();
 }
@@ -61,14 +83,8 @@ auto ServiceBuilderEvent<S>::open_with_attributes(
 }
 
 template <ServiceType S>
-auto ServiceBuilderEvent<S>::create() && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
-    set_parameters();
-    IOX_TODO();
-}
-
-template <ServiceType S>
 auto ServiceBuilderEvent<S>::create_with_attributes(
-    const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
+    const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventCreateError> {
     set_parameters();
     IOX_TODO();
 }

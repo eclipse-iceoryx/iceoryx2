@@ -221,6 +221,64 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
     IOX_UNREACHABLE();
 }
 
+template <>
+constexpr auto from<int, iox2::EventOpenError>(const int value) noexcept -> iox2::EventOpenError {
+    const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
+    switch (error) {
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_EXIST:
+        return iox2::EventOpenError::DoesNotExist;
+    case iox2_event_open_or_create_error_e_O_INSUFFICIENT_PERMISSIONS:
+        return iox2::EventOpenError::InsufficientPermissions;
+    case iox2_event_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::EventOpenError::ServiceInCorruptedState;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_MESSAGING_PATTERN:
+        return iox2::EventOpenError::IncompatibleMessagingPattern;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_ATTRIBUTES:
+        return iox2::EventOpenError::IncompatibleAttributes;
+    case iox2_event_open_or_create_error_e_O_INTERNAL_FAILURE:
+        return iox2::EventOpenError::InternalFailure;
+    case iox2_event_open_or_create_error_e_O_HANGS_IN_CREATION:
+        return iox2::EventOpenError::HangsInCreation;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NOTIFIERS:
+        return iox2::EventOpenError::DoesNotSupportRequestedAmountOfNotifiers;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_LISTENERS:
+        return iox2::EventOpenError::DoesNotSupportRequestedAmountOfListeners;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MAX_EVENT_ID:
+        return iox2::EventOpenError::DoesNotSupportRequestedMaxEventId;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES:
+        return iox2::EventOpenError::DoesNotSupportRequestedAmountOfNodes;
+    case iox2_event_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES:
+        return iox2::EventOpenError::ExceedsMaxNumberOfNodes;
+    case iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
+        return iox2::EventOpenError::IsMarkedForDestruction;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> iox2::EventCreateError {
+    const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
+    switch (error) {
+    case iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::EventCreateError::ServiceInCorruptedState;
+    case iox2_event_open_or_create_error_e_C_INTERNAL_FAILURE:
+        return iox2::EventCreateError::InternalFailure;
+    case iox2_event_open_or_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE:
+        return iox2::EventCreateError::IsBeingCreatedByAnotherInstance;
+    case iox2_event_open_or_create_error_e_C_ALREADY_EXISTS:
+        return iox2::EventCreateError::AlreadyExists;
+    case iox2_event_open_or_create_error_e_C_HANGS_IN_CREATION:
+        return iox2::EventCreateError::HangsInCreation;
+    case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
+        return iox2::EventCreateError::InsufficientPermissions;
+    case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
+        return iox2::EventCreateError::OldConnectionsStillActive;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
 } // namespace iox
 
 #endif

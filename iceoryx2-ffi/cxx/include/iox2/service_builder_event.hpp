@@ -43,10 +43,10 @@ class ServiceBuilderEvent {
     auto open_with_attributes(
         const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError>;
 
-    auto create() && -> iox::expected<PortFactoryEvent<S>, EventOpenError>;
+    auto create() && -> iox::expected<PortFactoryEvent<S>, EventCreateError>;
 
     auto create_with_attributes(
-        const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError>;
+        const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventCreateError>;
 
   private:
     template <ServiceType>
