@@ -123,7 +123,7 @@ pub unsafe extern "C" fn iox2_cast_port_factory_event_ref_h(
     (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
-/// Returns the [`iox2_service_name_ptr`](crate::iox2_service_name_ptr), an immutable pointer to the service name.
+/// Returns the [`iox2_service_name_ptr`], an immutable pointer to the service name.
 ///
 /// # Safety
 ///
@@ -145,6 +145,21 @@ pub unsafe extern "C" fn iox2_port_factory_event_service_name(
 
 // TODO [#210] add all the other setter methods
 
+/// Instantiates a [`iox2_port_factory_notifier_builder_h`] to build a notifier.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_event_ref_h`] obtained
+///   by e.g. [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
+///   and casted by [`iox2_cast_port_factory_event_ref_h`]
+/// * `notifier_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_notifier_builder_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+///
+/// Returns the `iox2_port_factory_notifier_builder_h` handle for the notifier builder.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_notifier_builder(
     port_factory_handle: iox2_port_factory_event_ref_h,
@@ -184,6 +199,21 @@ pub unsafe extern "C" fn iox2_port_factory_event_notifier_builder(
     (*notifier_builder_struct_ptr).as_handle()
 }
 
+/// Instantiates a [`iox2_port_factory_listener_builder_h`] to build a listener.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_event_ref_h`] obtained
+///   by e.g. [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
+///   and casted by [`iox2_cast_port_factory_event_ref_h`]
+/// * `listener_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_listener_builder_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+///
+/// Returns the [`iox2_port_factory_listener_builder_h`] handle for the listener builder.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_listener_builder(
     port_factory_handle: iox2_port_factory_event_ref_h,

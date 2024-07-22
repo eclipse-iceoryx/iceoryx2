@@ -163,7 +163,7 @@ impl IntoCInt for PublishSubscribeOpenOrCreateError {
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`](crate::iox2_service_builder_pub_sub_ref_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
 ///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
 ///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
 /// * `value` - The value to set the max publishers to
@@ -206,7 +206,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_publishers(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`](crate::iox2_service_builder_pub_sub_ref_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
 ///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
 ///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
 /// * `value` - The value to set the max subscribers to
@@ -251,10 +251,10 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`](crate::iox2_service_builder_pub_sub_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`]
 ///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
-///   [`iox2_port_factory_pub_sub_t`](crate::iox2_port_factory_pub_sub_t). If it is a NULL pointer, the storage will be allocated on the heap.
+///   [`iox2_port_factory_pub_sub_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_pub_sub_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_pub_sub_open_or_create_error_e`] otherwise.
@@ -335,10 +335,10 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`](crate::iox2_service_builder_pub_sub_h)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`]
 ///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
-///   [`iox2_port_factory_pub_sub_t`](crate::iox2_port_factory_pub_sub_t). If it is a NULL pointer, the storage will be allocated on the heap.
+///   [`iox2_port_factory_pub_sub_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_pub_sub_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_pub_sub_open_or_create_error_e`] otherwise. Note, only the errors annotated with `O_` are relevant.

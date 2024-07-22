@@ -121,6 +121,21 @@ impl HandleToType for iox2_port_factory_notifier_builder_ref_h {
 
 // TODO [#210] add all the other setter methods
 
+/// Creates a notifier and consumes the builder
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_notifier_builder_h`] obtained by [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder).
+/// * `notifier_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_notifier_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `notifier_handle_ptr` - An uninitialized or dangling [`iox2_notifier_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_notifier_create_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_port_factory_notifier_builder_t`]
+///   can be re-used with a call to  [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_notifier_builder_create(
     port_factory_handle: iox2_port_factory_notifier_builder_h,
