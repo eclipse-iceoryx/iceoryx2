@@ -10,9 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod listener_tests;
 mod node_builder_tests;
 mod node_name_tests;
 mod node_tests;
+mod notifier_tests;
 mod service_builder_event_tests;
 mod service_builder_pub_sub_tests;
 mod service_name_tests;
@@ -66,5 +68,48 @@ fn create_node<S: Service + ServiceTypeMapping>(node_name: &str) -> iox2_node_h 
         assert_that!(ret_val, eq(IOX2_OK));
 
         node_handle
+    }
+}
+
+fn create_event_service(
+    node_handle: iox2_node_ref_h,
+    service_name: &str,
+) -> iox2_port_factory_event_h {
+    unsafe {
+        let mut service_name_handle: iox2_service_name_h = std::ptr::null_mut();
+        let ret_val = iox2_service_name_new(
+            std::ptr::null_mut(),
+            service_name.as_ptr() as *const _,
+            service_name.len(),
+            &mut service_name_handle,
+        );
+        assert_that!(ret_val, eq(IOX2_OK));
+
+        let service_builder_handle = iox2_node_service_builder(
+            node_handle,
+            std::ptr::null_mut(),
+            iox2_cast_service_name_ptr(service_name_handle),
+        );
+        iox2_service_name_drop(service_name_handle);
+
+        let service_builder_handle = iox2_service_builder_event(service_builder_handle);
+        iox2_service_builder_event_set_max_notifiers(
+            iox2_cast_service_builder_event_ref_h(service_builder_handle),
+            10,
+        );
+        iox2_service_builder_event_set_max_listeners(
+            iox2_cast_service_builder_event_ref_h(service_builder_handle),
+            10,
+        );
+
+        let mut event_factory: iox2_port_factory_event_h = std::ptr::null_mut();
+        let ret_val = iox2_service_builder_event_open_or_create(
+            service_builder_handle,
+            std::ptr::null_mut(),
+            &mut event_factory as *mut _,
+        );
+        assert_that!(ret_val, eq(IOX2_OK));
+
+        event_factory
     }
 }

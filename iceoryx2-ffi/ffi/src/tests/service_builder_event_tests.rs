@@ -48,7 +48,7 @@ mod service_builder {
             );
 
             let mut event_factory: iox2_port_factory_event_h = std::ptr::null_mut();
-            iox2_service_builder_event_open_or_create(
+            let ret_val = iox2_service_builder_event_open_or_create(
                 service_builder_handle,
                 std::ptr::null_mut(),
                 &mut event_factory as *mut _,
