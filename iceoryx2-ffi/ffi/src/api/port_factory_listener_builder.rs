@@ -31,7 +31,7 @@ use core::mem::ManuallyDrop;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_listener_create_error_e {
-    EXCEEDS_MAX_SUPPORTED_NOTIFIERS = IOX2_OK as isize + 1,
+    EXCEEDS_MAX_SUPPORTED_LISTENERS = IOX2_OK as isize + 1,
     RESOURCE_CREATION_FAILED,
 }
 
@@ -39,7 +39,7 @@ impl IntoCInt for ListenerCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
             ListenerCreateError::ExceedsMaxSupportedListeners => {
-                iox2_listener_create_error_e::EXCEEDS_MAX_SUPPORTED_NOTIFIERS
+                iox2_listener_create_error_e::EXCEEDS_MAX_SUPPORTED_LISTENERS
             }
             ListenerCreateError::ResourceCreationFailed => {
                 iox2_listener_create_error_e::RESOURCE_CREATION_FAILED
