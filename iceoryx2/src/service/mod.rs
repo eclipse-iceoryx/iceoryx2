@@ -301,7 +301,7 @@ impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
         let id = self.static_config.uuid();
-        self.shared_node.registered_services.remove(id, |handle| {
+        self.shared_node.registered_services().remove(id, |handle| {
             if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), id, self.shared_node.config())
             {
                 debug!(from origin, "The service tag could not be removed from the node {:?} ({:?}).",

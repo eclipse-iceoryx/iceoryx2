@@ -538,6 +538,9 @@ pub(crate) struct RegisteredServices {
     data: Mutex<HashMap<String, (ContainerHandle, u64)>>,
 }
 
+unsafe impl Send for RegisteredServices {}
+unsafe impl Sync for RegisteredServices {}
+
 impl RegisteredServices {
     pub(crate) fn add(&self, uuid: &str, handle: ContainerHandle) {
         if self
@@ -591,9 +594,12 @@ pub(crate) struct SharedNode<Service: service::Service> {
     id: NodeId,
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
-    pub(crate) registered_services: RegisteredServices,
+    registered_services: RegisteredServices,
     _details_storage: Service::StaticStorage,
 }
+
+unsafe impl<Service: service::Service> Send for SharedNode<Service> {}
+unsafe impl<Service: service::Service> Sync for SharedNode<Service> {}
 
 impl<Service: service::Service> SharedNode<Service> {
     pub(crate) fn config(&self) -> &Config {
@@ -602,6 +608,10 @@ impl<Service: service::Service> SharedNode<Service> {
 
     pub(crate) fn id(&self) -> &NodeId {
         &self.id
+    }
+
+    pub(crate) fn registered_services(&self) -> &RegisteredServices {
+        &self.registered_services
     }
 }
 

@@ -294,7 +294,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     let node_handle = fatal_panic!(from self,
                             when dynamic_storage.get().register_node_id(*node_id),
                             "{} since event the first NodeId could not be registered.", msg);
-                    self.shared_node.registered_services.add(self.service_config.uuid(), node_handle);
+                    self.shared_node.registered_services().add(self.service_config.uuid(), node_handle);
                     Ok(dynamic_storage)
                 },
                 Err(e) => {
@@ -319,7 +319,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             "{} since the dynamic storage could not be opened.", msg);
 
         self.shared_node
-            .registered_services
+            .registered_services()
             .add_or(self.service_config.uuid(), || {
                 let node_id = self.shared_node.id();
                 match storage.get().register_node_id(*node_id) {
