@@ -41,7 +41,7 @@ class PortFactoryEvent {
     auto operator=(const PortFactoryEvent&) -> PortFactoryEvent& = delete;
 
     /// Returns the [`ServiceName`] of the service
-    auto name() const -> const ServiceName&;
+    auto name() const -> ServiceNameView;
 
     /// Returns the uuid of the [`Service`]
     auto uuid() const -> iox::string<SERVICE_ID_LENGTH>;

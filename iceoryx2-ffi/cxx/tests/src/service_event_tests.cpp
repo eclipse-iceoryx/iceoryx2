@@ -122,4 +122,17 @@ TYPED_TEST(ServiceEventTest, opening_existing_service_works) {
     auto sut = node.service_builder(service_name).event().open();
     ASSERT_TRUE(sut.has_value());
 }
+
+TYPED_TEST(ServiceEventTest, service_name_is_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "Another one bites the toad.";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name).event().create().expect("");
+
+    auto sut_service_name = sut.name();
+    ASSERT_THAT(service_name.to_string(), Eq(sut_service_name.to_string()));
+}
 } // namespace

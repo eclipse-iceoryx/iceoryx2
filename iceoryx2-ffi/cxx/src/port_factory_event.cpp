@@ -50,8 +50,10 @@ void PortFactoryEvent<S>::drop() noexcept {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::name() const -> const ServiceName& {
-    IOX_TODO();
+auto PortFactoryEvent<S>::name() const -> ServiceNameView {
+    auto* ref_handle = iox2_cast_port_factory_event_ref_h(m_handle);
+    const auto* service_name_ptr = iox2_port_factory_event_service_name(ref_handle);
+    return ServiceNameView(service_name_ptr);
 }
 
 template <ServiceType S>
@@ -82,12 +84,14 @@ auto PortFactoryEvent<S>::nodes(const iox::function<CallbackProgression(NodeStat
 
 template <ServiceType S>
 auto PortFactoryEvent<S>::listener_builder() const -> PortFactoryListener<S> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_port_factory_event_ref_h(m_handle);
+    return PortFactoryListener<S> { iox2_port_factory_event_listener_builder(ref_handle, nullptr) };
 }
 
 template <ServiceType S>
 auto PortFactoryEvent<S>::notifier_builder() const -> PortFactoryNotifier<S> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_port_factory_event_ref_h(m_handle);
+    return PortFactoryNotifier<S> { iox2_port_factory_event_notifier_builder(ref_handle, nullptr) };
 }
 
 template class PortFactoryEvent<ServiceType::Ipc>;
