@@ -142,7 +142,9 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
 
 /// Is being built by the [`DynamicStorageBuilder`]. The [`DynamicStorage`] trait shall provide
 /// inter-process access to a modifyable piece of memory identified by some name.
-pub trait DynamicStorage<T: Send + Sync>: Sized + Debug + NamedConceptMgmt + NamedConcept {
+pub trait DynamicStorage<T: Send + Sync>:
+    Sized + Debug + NamedConceptMgmt + NamedConcept + Send + Sync
+{
     type Builder<'builder>: DynamicStorageBuilder<'builder, T, Self>;
 
     /// Returns if the [`DynamicStorage`] supports persistency, meaning that the underlying OS
