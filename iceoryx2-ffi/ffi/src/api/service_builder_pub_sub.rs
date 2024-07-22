@@ -21,9 +21,12 @@ use crate::api::{
 use iceoryx2::service::builder::publish_subscribe::{
     PublishSubscribeCreateError, PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
 };
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
+use core::{slice, str};
+use std::alloc::Layout;
 
 // BEGIN types definition
 
@@ -152,9 +155,113 @@ impl IntoCInt for PublishSubscribeOpenOrCreateError {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_type_variant_e {
+    FIXED_SIZE,
+    DYNAMIC,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_type_detail_error_e {
+    INVALID_TYPE_NAME = IOX2_OK as isize + 1,
+    INVALID_TYPE_VARIANT_VALUE,
+    INVALID_SIZE_OR_ALIGNMENT_VALUE,
+}
+
 // END type definition
 
 // BEGIN C API
+
+/// Sets the max publishers for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `type_variant` - The [`type_variant`] for the payload
+/// * `type_name_str` - Must string for the type name.
+/// * `type_name_len` - The length of the type name string, not including a null
+/// * `size` - The size of the payload
+/// * `alignment` - The alignment of the payload
+///
+/// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+/// * `type_name_str` must be a valid pointer to an utf8 string
+/// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
+    service_builder_handle: iox2_service_builder_pub_sub_ref_h,
+    type_variant: iox2_type_variant_e,
+    type_name_str: *const c_char,
+    type_name_len: c_size_t,
+    size: c_size_t,
+    alignment: c_size_t,
+) -> c_int {
+    debug_assert!(!service_builder_handle.is_null());
+    debug_assert!(!type_name_str.is_null());
+
+    let type_name = slice::from_raw_parts(type_name_str as _, type_name_len as _);
+
+    let type_name = if let Ok(type_name) = str::from_utf8(type_name) {
+        type_name.to_string()
+    } else {
+        return iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int;
+    };
+
+    match type_variant as usize {
+        0 => (),
+        1 => (),
+        _ => return iox2_type_detail_error_e::INVALID_TYPE_VARIANT_VALUE as c_int,
+    }
+
+    let variant = match type_variant {
+        iox2_type_variant_e::FIXED_SIZE => TypeVariant::FixedSize,
+        iox2_type_variant_e::DYNAMIC => TypeVariant::Dynamic,
+    };
+
+    match Layout::from_size_align(size, alignment) {
+        Ok(_) => (),
+        Err(_) => return iox2_type_detail_error_e::INVALID_SIZE_OR_ALIGNMENT_VALUE as c_int,
+    }
+
+    let value = TypeDetail {
+        variant,
+        type_name,
+        size,
+        alignment,
+    };
+
+    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builders_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builders_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.__internal_set_payload_type_details(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builders_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.__internal_set_payload_type_details(value),
+            ));
+        }
+    }
+
+    IOX2_OK
+}
 
 /// Sets the max publishers for the builder
 ///
