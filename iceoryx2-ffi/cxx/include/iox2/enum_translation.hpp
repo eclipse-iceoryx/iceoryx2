@@ -435,6 +435,17 @@ constexpr auto from<int, iox2::ListenerCreateError>(const int value) noexcept ->
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::NotifierNotifyError>(const int value) noexcept -> iox2::NotifierNotifyError {
+    const auto error = static_cast<iox2_notifier_notify_error_e>(value);
+    switch (error) {
+    case iox2_notifier_notify_error_e_EVENT_ID_OUT_OF_BOUNDS:
+        return iox2::NotifierNotifyError::EventIdOutOfBounds;
+    }
+
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif
