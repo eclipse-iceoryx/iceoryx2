@@ -99,12 +99,12 @@ class ServiceBuilderPublishSubscribe {
                                                      PublishSubscribeOpenError>;
 
     /// Creates a new [`Service`].
-    auto create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>;
+    auto create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
     auto create_with_attributes(
         const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                                  PublishSubscribeOpenError>;
+                                                                  PublishSubscribeCreateError>;
 
   private:
     template <ServiceType>
@@ -192,7 +192,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
 
 template <typename Payload, typename UserHeader, ServiceType S>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
-    create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
+    create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeCreateError> {
     set_parameters();
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
@@ -226,7 +226,7 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_with_at
 template <typename Payload, typename UserHeader, ServiceType S>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create_with_attributes(
     const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                              PublishSubscribeOpenError> {
+                                                              PublishSubscribeCreateError> {
     set_parameters();
     IOX_TODO();
 }

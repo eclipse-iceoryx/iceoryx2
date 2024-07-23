@@ -60,7 +60,7 @@ inline auto ServiceBuilder<S>::event() && -> ServiceBuilderEvent<S> {
 template <ServiceType S>
 template <typename Payload>
 inline auto ServiceBuilder<S>::publish_subscribe() && -> ServiceBuilderPublishSubscribe<Payload, void, S> {
-    IOX_TODO();
+    return ServiceBuilderPublishSubscribe<Payload, void, S> { m_handle };
 }
 } // namespace iox2
 #endif
