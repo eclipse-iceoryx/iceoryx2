@@ -18,6 +18,7 @@
 #include "iox2/callback_progression.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/listener_error.hpp"
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
@@ -417,6 +418,19 @@ constexpr auto from<int, iox2::NotifierCreateError>(const int value) noexcept ->
     switch (error) {
     case iox2_notifier_create_error_e_EXCEEDS_MAX_SUPPORTED_NOTIFIERS:
         return iox2::NotifierCreateError::ExceedsMaxSupportedNotifiers;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::ListenerCreateError>(const int value) noexcept -> iox2::ListenerCreateError {
+    const auto error = static_cast<iox2_listener_create_error_e>(value);
+    switch (error) {
+    case iox2_listener_create_error_e_EXCEEDS_MAX_SUPPORTED_LISTENERS:
+        return iox2::ListenerCreateError::ExceedsMaxSupportedListeners;
+    case iox2_listener_create_error_e_RESOURCE_CREATION_FAILED:
+        return iox2::ListenerCreateError::ResourceCreationFailed;
     }
 
     IOX_UNREACHABLE();

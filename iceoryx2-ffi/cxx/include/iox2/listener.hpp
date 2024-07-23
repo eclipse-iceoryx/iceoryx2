@@ -13,72 +13,81 @@
 #ifndef IOX2_LISTENER_HPP
 #define IOX2_LISTENER_HPP
 
-#include "event_id.hpp"
-#include "iox/assertions_addendum.hpp"
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/optional.hpp"
-#include "service_type.hpp"
-#include "unique_port_id.hpp"
-
-#include <cstdint>
+#include "iox2/event_id.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/listener_error.hpp"
+#include "iox2/service_type.hpp"
+#include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
-enum class ListenerCreateError : uint8_t {
-    /// The maximum amount of [`Listener`]s that can connect to a
-    /// [`Service`](crate::service::Service) is
-    /// defined in [`crate::config::Config`]. When this is exceeded no more
-    /// [`Listener`]s
-    /// can be created for a specific [`Service`](crate::service::Service).
-    ExceedsMaxSupportedListeners,
-    /// An underlying resource of the [`Service`](crate::service::Service) could
-    /// not be created
-    ResourceCreationFailed,
-};
-
-enum class ListenerWaitError : uint8_t {
-    ContractViolation,
-    InternalFailure,
-    InterruptSignal,
-};
-
+/// Represents the receiving endpoint of an event based communication.
 template <ServiceType>
 class Listener {
   public:
-    Listener() = default;
-    Listener(Listener&&) = default;
-    auto operator=(Listener&&) -> Listener& = default;
-    ~Listener() = default;
+    Listener(Listener&&) noexcept;
+    auto operator=(Listener&&) noexcept -> Listener&;
+    ~Listener();
 
     Listener(const Listener&) = delete;
     auto operator=(const Listener&) -> Listener& = delete;
 
-    auto id() const -> UniqueListenerId {
-        IOX_TODO();
-    }
+    /// Returns the [`UniqueListenerId`] of the [`Listener`]
+    auto id() const -> UniqueListenerId;
 
-    auto try_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError> {
-        IOX_TODO();
-    }
+    /// Non-blocking wait for new [`EventId`]s. Collects either all [`EventId`]s that were received
+    /// until the call of [`Listener::try_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
+    auto try_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError>;
+
+    /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
+    /// all [`EventId`]s that were received
+    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
     auto timed_wait_all(const iox::function<void(EventId)>& callback,
-                        const iox::units::Duration& timeout) -> iox::expected<void, ListenerWaitError> {
-        IOX_TODO();
-    }
-    auto blocking_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError> {
-        IOX_TODO();
-    }
+                        const iox::units::Duration& timeout) -> iox::expected<void, ListenerWaitError>;
 
-    auto try_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
-        IOX_TODO();
-    }
+    /// Blocking wait for new [`EventId`]s. Collects either
+    /// all [`EventId`]s that were received
+    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
+    /// currently available [`EventId`]s in buffer.
+    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
+    /// input argument.
+    auto blocking_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError>;
+
+    /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].
+    /// On error it returns [`ListenerWaitError`] is returned which describes the error
+    /// in detail.
+    auto try_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
+
+    /// Blocking wait for a new [`EventId`] until either an [`EventId`] was received or the timeout
+    /// has passed. If no [`EventId`] was notified it returns [`None`].
+    /// On error it returns [`ListenerWaitError`] is returned which describes the error
+    /// in detail.
     auto
-    timed_wait_one(const iox::units::Duration& timeout) -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
-        IOX_TODO();
-    }
-    auto blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
-        IOX_TODO();
-    }
+    timed_wait_one(const iox::units::Duration& timeout) -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
+
+    /// Blocking wait for a new [`EventId`].
+    /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
+    /// On error it returns [`ListenerWaitError`] is returned which describes the error
+    /// in detail.
+    auto blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
+
+  private:
+    template <ServiceType>
+    friend class PortFactoryListener;
+
+    explicit Listener(iox2_listener_h handle);
+    void drop();
+
+    iox2_listener_h m_handle;
 };
 } // namespace iox2
 
