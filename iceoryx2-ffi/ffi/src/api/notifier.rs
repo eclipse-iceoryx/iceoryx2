@@ -12,16 +12,33 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType};
+use crate::api::{iox2_service_type_e, HandleToType, IntoCInt, IOX2_OK};
 
-use iceoryx2::port::notifier::Notifier;
+use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use core::ffi::c_int;
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_notifier_notify_error_e {
+    EVENT_ID_OUT_OF_BOUNDS = IOX2_OK as isize + 1,
+}
+
+impl IntoCInt for NotifierNotifyError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            NotifierNotifyError::EventIdOutOfBounds => {
+                iox2_notifier_notify_error_e::EVENT_ID_OUT_OF_BOUNDS
+            }
+        }) as c_int
+    }
+}
 
 pub(super) union NotifierUnion {
     ipc: ManuallyDrop<Notifier<zero_copy::Service>>,
@@ -115,6 +132,34 @@ pub unsafe extern "C" fn iox2_cast_notifier_ref_h(
     debug_assert!(!notifier_handle.is_null());
 
     (*notifier_handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_notifier_notify(
+    notifier_handle: iox2_notifier_ref_h,
+    number_of_notified_listener_ptr: *mut usize,
+) -> c_int {
+    debug_assert!(!notifier_handle.is_null());
+
+    let notifier = &mut *notifier_handle.as_type();
+
+    let notify_result = match notifier.service_type {
+        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.notify(),
+        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.notify(),
+    };
+
+    match notify_result {
+        Ok(count) => {
+            if !number_of_notified_listener_ptr.is_null() {
+                *number_of_notified_listener_ptr = count;
+            }
+        }
+        Err(error) => {
+            return error.into_c_int();
+        }
+    }
+
+    IOX2_OK
 }
 
 /// This function needs to be called to destroy the notifier!
