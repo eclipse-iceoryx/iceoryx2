@@ -181,7 +181,7 @@ pub enum iox2_type_detail_error_e {
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
 ///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
 ///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
-/// * `type_variant` - The [`type_variant`] for the payload
+/// * `type_variant` - The [`iox2_type_variant_e`] for the payload
 /// * `type_name_str` - Must string for the type name.
 /// * `type_name_len` - The length of the type name string, not including a null
 /// * `size` - The size of the payload
