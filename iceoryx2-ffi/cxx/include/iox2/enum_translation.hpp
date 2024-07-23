@@ -17,7 +17,6 @@
 #include "iox/into.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/iceoryx2.h"
-#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/node_event.hpp"

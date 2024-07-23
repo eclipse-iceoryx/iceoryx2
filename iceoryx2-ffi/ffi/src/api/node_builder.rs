@@ -20,6 +20,7 @@ use crate::api::{
 use iceoryx2::node::NodeCreationFailure;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_int;
@@ -31,7 +32,6 @@ use core::ffi::c_int;
 pub enum iox2_node_creation_failure_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
-    INVALID_SERVICE_TYPE_VALUE,
 }
 
 impl IntoCInt for NodeCreationFailure {
@@ -216,7 +216,8 @@ pub unsafe extern "C" fn iox2_node_builder_create(
     match service_type as usize {
         0 => (),
         1 => (),
-        _ => return iox2_node_creation_failure_e::INVALID_SERVICE_TYPE_VALUE as c_int,
+        _ => fatal_panic!(from "iox2_node_builder_create",
+                            "The provided service_type has an invalid value."),
     }
 
     let node_builder_struct = &mut *node_builder_handle.as_type();
