@@ -14,20 +14,16 @@
 #include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
-EventId::EventId(const uint64_t low, const uint64_t high)
-    : m_value { high, low } {
+EventId::EventId(const size_t value)
+    : m_value { value } {
 }
 
-auto EventId::as_value_high() const -> uint64_t {
-    return m_value.high;
-}
-
-auto EventId::as_value_low() const -> uint64_t {
-    return m_value.low;
+auto EventId::as_value() const -> size_t {
+    return m_value.value;
 }
 
 auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream& {
-    std::cout << "EventId { m_value.high: " << value.m_value.high << ", m_value.low: " << value.m_value.low << "}";
+    std::cout << "EventId { m_value: " << value.as_value() << " }";
     return stream;
 }
 } // namespace iox2

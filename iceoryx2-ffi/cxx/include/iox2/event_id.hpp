@@ -29,13 +29,10 @@ class EventId {
     ~EventId() = default;
 
     /// Creates a new uint128_t [`EventId`] from the high bit and low bit part.
-    explicit EventId(uint64_t low, uint64_t high = 0);
+    explicit EventId(size_t value);
 
-    /// Returns the high part of the [`EventId`]
-    auto as_value_high() const -> uint64_t;
-
-    /// Returns the low part of the [`EventId`]
-    auto as_value_low() const -> uint64_t;
+    /// Returns the value of the [`EventId`]
+    auto as_value() const -> size_t;
 
   private:
     template <ServiceType>

@@ -22,6 +22,7 @@ use iceoryx2::service::builder::publish_subscribe::{
     PublishSubscribeCreateError, PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
 };
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2_bb_log::fatal_panic;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -166,7 +167,6 @@ pub enum iox2_type_variant_e {
 #[derive(Copy, Clone)]
 pub enum iox2_type_detail_error_e {
     INVALID_TYPE_NAME = IOX2_OK as isize + 1,
-    INVALID_TYPE_VARIANT_VALUE,
     INVALID_SIZE_OR_ALIGNMENT_VALUE,
 }
 
@@ -217,7 +217,8 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
     match type_variant as usize {
         0 => (),
         1 => (),
-        _ => return iox2_type_detail_error_e::INVALID_TYPE_VARIANT_VALUE as c_int,
+        _ => fatal_panic!(from "iox2_service_builder_pub_sub_set_payload_type_details",
+                            "The provided type_variant has an invalid value."),
     }
 
     let variant = match type_variant {
