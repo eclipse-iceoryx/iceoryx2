@@ -29,7 +29,7 @@ class EventId {
     ~EventId() = default;
 
     /// Creates a new uint128_t [`EventId`] from the high bit and low bit part.
-    EventId(uint64_t low, uint64_t high);
+    explicit EventId(uint64_t low, uint64_t high = 0);
 
     /// Returns the high part of the [`EventId`]
     auto as_value_high() const -> uint64_t;
@@ -38,6 +38,11 @@ class EventId {
     auto as_value_low() const -> uint64_t;
 
   private:
+    template <ServiceType>
+    friend class Notifier;
+    template <ServiceType>
+    friend class PortFactoryNotifier;
+
     friend auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream&;
     iox2_event_id_t m_value;
 };
