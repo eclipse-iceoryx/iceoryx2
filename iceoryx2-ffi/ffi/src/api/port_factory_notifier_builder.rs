@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_notifier_h, iox2_notifier_t, iox2_service_type_e, HandleToType, IntoCInt, NotifierUnion,
-    IOX2_OK,
+    iox2_event_id_t, iox2_notifier_h, iox2_notifier_t, iox2_service_type_e, HandleToType, IntoCInt,
+    NotifierUnion, IOX2_OK,
 };
 
 use iceoryx2::port::notifier::NotifierCreateError;
@@ -119,7 +119,67 @@ impl HandleToType for iox2_port_factory_notifier_builder_ref_h {
 
 // BEGIN C API
 
-// TODO [#210] add all the other setter methods
+/// This function casts an owning [`iox2_port_factory_notifier_builder_h`] into a non-owning [`iox2_port_factory_notifier_builder_ref_h`]
+///
+/// # Arguments
+///
+/// * `port_factory_handle` obtained by [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder)
+///
+/// Returns a [`iox2_port_factory_notifier_builder_ref_h`]
+///
+/// # Safety
+///
+/// * The `port_factory_handle` must be a valid handle.
+/// * The `port_factory_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_port_factory_notifier_builder_ref_h(
+    port_factory_handle: iox2_port_factory_notifier_builder_h,
+) -> iox2_port_factory_notifier_builder_ref_h {
+    debug_assert!(!port_factory_handle.is_null());
+
+    (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// Sets the default event id for the builder
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_notifier_builder_ref_h`]
+///   obtained by [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder) and
+///   casted by [`iox2_cast_port_factory_notifier_builder_ref_h`].
+/// * `value` - The value to set the default event id to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+/// * `value` must not be a NULL pointer but a pointer to an initialized `iox2_event_id_t`
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_notifier_builder_set_default_event_id(
+    port_factory_handle: iox2_port_factory_notifier_builder_ref_h,
+    value: *const iox2_event_id_t,
+) {
+    debug_assert!(!port_factory_handle.is_null());
+
+    let value = (*value).into();
+
+    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
+    match port_factory_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+            port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_ipc(
+                port_factory.default_event_id(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+            port_factory_struct.set(PortFactoryNotifierBuilderUnion::new_local(
+                port_factory.default_event_id(value),
+            ));
+        }
+    }
+}
 
 /// Creates a notifier and consumes the builder
 ///
