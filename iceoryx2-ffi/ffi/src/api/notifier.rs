@@ -13,6 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, IntoCInt, IOX2_OK};
+use crate::c_size_t;
 
 use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::prelude::*;
@@ -134,10 +135,25 @@ pub unsafe extern "C" fn iox2_cast_notifier_ref_h(
     (*notifier_handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
+/// with the default event id provided on creation.
+///
+/// # Arguments
+///
+/// * notifier_handle -  Must be a valid [`iox2_notifier_ref_h`]
+///   obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create) and
+///   casted by [`iox2_cast_notifier_ref_h`]
+/// * number_of_notified_listener_ptr - Must be either a NULL pointer or a pointer to a `size_t` to store the number of notified listener
+///
+/// Returns IOX2_OK on success, an [`iox2_notifier_notify_error_e`] otherwise.
+///
+/// # Safety
+///
+/// `notifier_handle` must be a valid handle and is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_notifier_notify(
     notifier_handle: iox2_notifier_ref_h,
-    number_of_notified_listener_ptr: *mut usize,
+    number_of_notified_listener_ptr: *mut c_size_t,
 ) -> c_int {
     debug_assert!(!notifier_handle.is_null());
 
