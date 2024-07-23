@@ -15,6 +15,7 @@
 use iceoryx2::prelude::*;
 
 #[derive(Clone, Copy)]
+#[repr(C)]
 pub struct iox2_event_id_t {
     pub high: u64,
     pub low: u64,

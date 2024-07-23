@@ -37,6 +37,7 @@ target_include_directories(includes-only-cxx
 
 add_library(iceoryx2-cxx-object-lib OBJECT
     src/config.cpp
+    src/event_id.cpp
     src/listener.cpp
     src/node.cpp
     src/node_details.cpp
