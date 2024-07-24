@@ -21,9 +21,13 @@ use crate::api::{
 use iceoryx2::service::builder::publish_subscribe::{
     PublishSubscribeCreateError, PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
 };
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2_bb_log::fatal_panic;
 
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
+use core::{slice, str};
+use std::alloc::Layout;
 
 // BEGIN types definition
 
@@ -152,9 +156,113 @@ impl IntoCInt for PublishSubscribeOpenOrCreateError {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_type_variant_e {
+    FIXED_SIZE,
+    DYNAMIC,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_type_detail_error_e {
+    INVALID_TYPE_NAME = IOX2_OK as isize + 1,
+    INVALID_SIZE_OR_ALIGNMENT_VALUE,
+}
+
 // END type definition
 
 // BEGIN C API
+
+/// Sets the max publishers for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `type_variant` - The [`iox2_type_variant_e`] for the payload
+/// * `type_name_str` - Must string for the type name.
+/// * `type_name_len` - The length of the type name string, not including a null
+/// * `size` - The size of the payload
+/// * `alignment` - The alignment of the payload
+///
+/// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+/// * `type_name_str` must be a valid pointer to an utf8 string
+/// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
+    service_builder_handle: iox2_service_builder_pub_sub_ref_h,
+    type_variant: iox2_type_variant_e,
+    type_name_str: *const c_char,
+    type_name_len: c_size_t,
+    size: c_size_t,
+    alignment: c_size_t,
+) -> c_int {
+    debug_assert!(!service_builder_handle.is_null());
+    debug_assert!(!type_name_str.is_null());
+
+    let type_name = slice::from_raw_parts(type_name_str as _, type_name_len as _);
+
+    let type_name = if let Ok(type_name) = str::from_utf8(type_name) {
+        type_name.to_string()
+    } else {
+        return iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int;
+    };
+
+    match type_variant as usize {
+        0 => (),
+        1 => (),
+        _ => fatal_panic!(from "iox2_service_builder_pub_sub_set_payload_type_details",
+                            "The provided type_variant has an invalid value."),
+    }
+
+    let variant = match type_variant {
+        iox2_type_variant_e::FIXED_SIZE => TypeVariant::FixedSize,
+        iox2_type_variant_e::DYNAMIC => TypeVariant::Dynamic,
+    };
+
+    match Layout::from_size_align(size, alignment) {
+        Ok(_) => (),
+        Err(_) => return iox2_type_detail_error_e::INVALID_SIZE_OR_ALIGNMENT_VALUE as c_int,
+    }
+
+    let value = TypeDetail {
+        variant,
+        type_name,
+        size,
+        alignment,
+    };
+
+    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builders_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builders_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.__internal_set_payload_type_details(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builders_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.__internal_set_payload_type_details(value),
+            ));
+        }
+    }
+
+    IOX2_OK
+}
 
 /// Sets the max publishers for the builder
 ///
@@ -393,6 +501,90 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
             let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
 
             match service_builder.open() {
+                Ok(port_factory) => {
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryPubSubUnion::new_local(port_factory),
+                        deleter,
+                    );
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+    }
+
+    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+
+    IOX2_OK
+}
+
+/// Creates a publish-subscribe service and returns a port factory to create publishers and subscribers.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_pub_sub_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_pub_sub_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_pub_sub_open_or_create_error_e`] otherwise. Note, only the errors annotated with `C_` are relevant.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_create(
+    service_builder_handle: iox2_service_builder_pub_sub_h,
+    port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
+) -> c_int {
+    debug_assert!(!service_builder_handle.is_null());
+    debug_assert!(!port_factory_handle_ptr.is_null());
+
+    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    let mut port_factory_struct_ptr = port_factory_struct_ptr;
+    fn no_op(_: *mut iox2_port_factory_pub_sub_t) {}
+    let mut deleter: fn(*mut iox2_port_factory_pub_sub_t) = no_op;
+    if port_factory_struct_ptr.is_null() {
+        port_factory_struct_ptr = iox2_port_factory_pub_sub_t::alloc();
+        deleter = iox2_port_factory_pub_sub_t::dealloc;
+    }
+    debug_assert!(!port_factory_struct_ptr.is_null());
+
+    let service_type = service_builders_struct.service_type;
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+
+            match service_builder.create() {
+                Ok(port_factory) => {
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryPubSubUnion::new_ipc(port_factory),
+                        deleter,
+                    );
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+
+            match service_builder.create() {
                 Ok(port_factory) => {
                     (*port_factory_struct_ptr).init(
                         service_type,

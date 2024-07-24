@@ -735,10 +735,15 @@ struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + 
 ///
 /// ```
 /// use iceoryx2_bb_posix::thread::*;
+/// use std::sync::atomic::{AtomicBool, Ordering};
+///
+/// static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 ///
 /// fn some_func() {
 ///     let handle = ThreadHandle::from_self();
 ///     println!("Hello from: {:?}", handle);
+///
+///     while KEEP_RUNNING.load(Ordering::Relaxed) {}
 /// }
 ///
 /// let thread = ThreadBuilder::new()
@@ -747,6 +752,7 @@ struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + 
 ///                          .expect("Failed to create thread");
 ///
 /// println!("Created thread: {:?}", thread);
+/// KEEP_RUNNING.store(false, Ordering::Relaxed);
 /// ```
 pub struct Thread<'thread> {
     handle: ThreadHandle,

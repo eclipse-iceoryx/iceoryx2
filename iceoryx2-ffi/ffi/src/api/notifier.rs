@@ -12,16 +12,34 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType};
+use crate::api::{iox2_service_type_e, HandleToType, IntoCInt, IOX2_OK};
+use crate::{c_size_t, iox2_event_id_t};
 
-use iceoryx2::port::notifier::Notifier;
+use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use core::ffi::c_int;
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_notifier_notify_error_e {
+    EVENT_ID_OUT_OF_BOUNDS = IOX2_OK as isize + 1,
+}
+
+impl IntoCInt for NotifierNotifyError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            NotifierNotifyError::EventIdOutOfBounds => {
+                iox2_notifier_notify_error_e::EVENT_ID_OUT_OF_BOUNDS
+            }
+        }) as c_int
+    }
+}
 
 pub(super) union NotifierUnion {
     ipc: ManuallyDrop<Notifier<zero_copy::Service>>,
@@ -115,6 +133,105 @@ pub unsafe extern "C" fn iox2_cast_notifier_ref_h(
     debug_assert!(!notifier_handle.is_null());
 
     (*notifier_handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
+/// with the default event id provided on creation.
+///
+/// # Arguments
+///
+/// * notifier_handle -  Must be a valid [`iox2_notifier_ref_h`]
+///   obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create) and
+///   casted by [`iox2_cast_notifier_ref_h`]
+/// * number_of_notified_listener_ptr - Must be either a NULL pointer or a pointer to a `size_t` to store the number of notified listener
+///
+/// Returns IOX2_OK on success, an [`iox2_notifier_notify_error_e`] otherwise.
+///
+/// # Safety
+///
+/// `notifier_handle` must be a valid handle and is still valid after the return of this function and can be use in another function call.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_notifier_notify(
+    notifier_handle: iox2_notifier_ref_h,
+    number_of_notified_listener_ptr: *mut c_size_t,
+) -> c_int {
+    debug_assert!(!notifier_handle.is_null());
+
+    let notifier = &mut *notifier_handle.as_type();
+
+    let notify_result = match notifier.service_type {
+        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.notify(),
+        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.notify(),
+    };
+
+    match notify_result {
+        Ok(count) => {
+            if !number_of_notified_listener_ptr.is_null() {
+                *number_of_notified_listener_ptr = count;
+            }
+        }
+        Err(error) => {
+            return error.into_c_int();
+        }
+    }
+
+    IOX2_OK
+}
+
+/// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
+/// with the custom event id.
+///
+/// # Arguments
+///
+/// * notifier_handle -  Must be a valid [`iox2_notifier_ref_h`]
+///   obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create) and
+///   casted by [`iox2_cast_notifier_ref_h`]
+/// * custom_event_id_ptr - Must be a pointer to an initialized [`iox2_event_id_t`](crate::iox2_event_id_t)
+/// * number_of_notified_listener_ptr - Must be either a NULL pointer or a pointer to a `size_t` to store the number of notified listener
+///
+/// Returns IOX2_OK on success, an [`iox2_notifier_notify_error_e`] otherwise.
+///
+/// # Safety
+///
+/// `notifier_handle` must be a valid handle and is still valid after the return of this function and can be use in another function call.
+/// `custom_event_id_ptr` must not be a NULL pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
+    notifier_handle: iox2_notifier_ref_h,
+    custom_event_id_ptr: *const iox2_event_id_t,
+    number_of_notified_listener_ptr: *mut c_size_t,
+) -> c_int {
+    debug_assert!(!notifier_handle.is_null());
+    debug_assert!(!custom_event_id_ptr.is_null());
+
+    let event_id = (*custom_event_id_ptr).into();
+
+    let notifier = &mut *notifier_handle.as_type();
+    let notify_result = match notifier.service_type {
+        iox2_service_type_e::IPC => notifier
+            .value
+            .as_mut()
+            .ipc
+            .notify_with_custom_event_id(event_id),
+        iox2_service_type_e::LOCAL => notifier
+            .value
+            .as_mut()
+            .local
+            .notify_with_custom_event_id(event_id),
+    };
+
+    match notify_result {
+        Ok(count) => {
+            if !number_of_notified_listener_ptr.is_null() {
+                *number_of_notified_listener_ptr = count;
+            }
+        }
+        Err(error) => {
+            return error.into_c_int();
+        }
+    }
+
+    IOX2_OK
 }
 
 /// This function needs to be called to destroy the notifier!

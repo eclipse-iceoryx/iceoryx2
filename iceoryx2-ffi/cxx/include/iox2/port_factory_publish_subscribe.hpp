@@ -30,45 +30,142 @@
 #include "static_config_publish_subscribe.hpp"
 
 namespace iox2 {
+/// The factory for [`MessagingPattern::PublishSubscribe`].
+/// It can acquire dynamic and static service informations and create
+/// [`Publisher`] or [`Subscriber`] ports.
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublishSubscribe {
   public:
-    PortFactoryPublishSubscribe() = default;
-    PortFactoryPublishSubscribe(PortFactoryPublishSubscribe&&) = default;
-    auto operator=(PortFactoryPublishSubscribe&&) -> PortFactoryPublishSubscribe& = default;
-    ~PortFactoryPublishSubscribe() = default;
+    PortFactoryPublishSubscribe(PortFactoryPublishSubscribe&& rhs) noexcept;
+    auto operator=(PortFactoryPublishSubscribe&& rhs) noexcept -> PortFactoryPublishSubscribe&;
+    ~PortFactoryPublishSubscribe();
 
     PortFactoryPublishSubscribe(const PortFactoryPublishSubscribe&) = delete;
     auto operator=(const PortFactoryPublishSubscribe&) -> PortFactoryPublishSubscribe& = delete;
 
-    auto service_name() const -> const ServiceName& {
-        IOX_TODO();
-    }
-    auto uuid() const -> iox::string<SERVICE_ID_LENGTH> {
-        IOX_TODO();
-    }
-    auto attributes() const -> const AttributeSet& {
-        IOX_TODO();
-    }
-    auto static_config() const -> const StaticConfigPublishSubscribe& {
-        IOX_TODO();
-    }
-    auto dynamic_config() const -> const DynamicConfigPublishSubscribe& {
-        IOX_TODO();
-    }
+    /// Returns the [`ServiceName`] of the service
+    auto name() const -> const ServiceName&;
 
-    auto nodes(const iox::function<CallbackProgression(NodeState<S>)> callback) const
-        -> iox::expected<void, NodeListFailure> {
-        IOX_TODO();
-    }
+    /// Returns the uuid of the [`Service`]
+    auto uuid() const -> iox::string<SERVICE_ID_LENGTH>;
 
-    auto subscriber_builder() const -> PortFactorySubscriber<S, Payload, UserHeader> {
-        IOX_TODO();
-    }
-    auto publisher_builder() const -> PortFactoryPublisher<S, Payload, UserHeader> {
-        IOX_TODO();
-    }
+    /// Returns the attributes defined in the [`Service`]
+    auto attributes() const -> const AttributeSet&;
+
+    /// Returns the StaticConfig of the [`Service`].
+    /// Contains all settings that never change during the lifetime of the service.
+    auto static_config() const -> const StaticConfigPublishSubscribe&;
+
+    /// Returns the DynamicConfig of the [`Service`].
+    /// Contains all dynamic settings, like the current participants etc..
+    auto dynamic_config() const -> const DynamicConfigPublishSubscribe&;
+
+    /// Iterates over all [`Node`]s of the [`Service`]
+    /// and calls for every [`Node`] the provided callback. If an error occurs
+    /// while acquiring the [`Node`]s corresponding [`NodeState`] the error is
+    /// forwarded to the callback as input argument.
+    auto nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
+        -> iox::expected<void, NodeListFailure>;
+
+    /// Returns a [`PortFactorySubscriber`] to create a new [`Subscriber`] port.
+    auto subscriber_builder() const -> PortFactorySubscriber<S, Payload, UserHeader>;
+
+    /// Returns a [`PortFactoryPublisher`] to create a new [`Publisher`] port.
+    auto publisher_builder() const -> PortFactoryPublisher<S, Payload, UserHeader>;
+
+  private:
+    template <typename, typename, ServiceType>
+    friend class ServiceBuilderPublishSubscribe;
+
+    explicit PortFactoryPublishSubscribe(iox2_port_factory_pub_sub_h handle);
+    void drop();
+
+    iox2_port_factory_pub_sub_h m_handle { nullptr };
 };
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline PortFactoryPublishSubscribe<S, Payload, UserHeader>::PortFactoryPublishSubscribe(
+    iox2_port_factory_pub_sub_h handle)
+    : m_handle { handle } {
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline void PortFactoryPublishSubscribe<S, Payload, UserHeader>::drop() {
+    if (m_handle != nullptr) {
+        iox2_port_factory_pub_sub_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline PortFactoryPublishSubscribe<S, Payload, UserHeader>::PortFactoryPublishSubscribe(
+    PortFactoryPublishSubscribe&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::operator=(PortFactoryPublishSubscribe&& rhs) noexcept
+    -> PortFactoryPublishSubscribe& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline PortFactoryPublishSubscribe<S, Payload, UserHeader>::~PortFactoryPublishSubscribe() {
+    drop();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const -> const ServiceName& {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::uuid() const -> iox::string<SERVICE_ID_LENGTH> {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::attributes() const -> const AttributeSet& {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto
+PortFactoryPublishSubscribe<S, Payload, UserHeader>::static_config() const -> const StaticConfigPublishSubscribe& {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto
+PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config() const -> const DynamicConfigPublishSubscribe& {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::nodes(
+    const iox::function<CallbackProgression(NodeState<S>)>& callback) const -> iox::expected<void, NodeListFailure> {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::subscriber_builder() const
+    -> PortFactorySubscriber<S, Payload, UserHeader> {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::publisher_builder() const
+    -> PortFactoryPublisher<S, Payload, UserHeader> {
+    IOX_TODO();
+}
+
+
 } // namespace iox2
 
 #endif

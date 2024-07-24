@@ -13,52 +13,52 @@
 #ifndef IOX2_NOTIFIER_HPP
 #define IOX2_NOTIFIER_HPP
 
-#include "event_id.hpp"
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
-#include "service_type.hpp"
-#include "unique_port_id.hpp"
+#include "iox2/event_id.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/notifier_error.hpp"
+#include "iox2/service_type.hpp"
+#include "iox2/unique_port_id.hpp"
 
 #include <cstdint>
 
 namespace iox2 {
-enum class NotifierCreateError : uint8_t {
-    /// The maximum amount of [`Notifier`]s that can connect to a
-    /// [`Service`](crate::service::Service) is
-    /// defined in [`crate::config::Config`]. When this is exceeded no more
-    /// [`Notifier`]s
-    /// can be created for a specific [`Service`](crate::service::Service).
-    ExceedsMaxSupportedNotifiers,
-};
-
-enum class NotifierNotifyError : uint8_t {
-    /// A [`Notifier::notify_with_custom_event_id()`] was called and the
-    /// provided [`EventId`]
-    /// is greater than the maximum supported [`EventId`] by the
-    /// [`Service`](crate::service::Service)
-    EventIdOutOfBounds,
-};
-
+/// Represents the sending endpoint of an event based communication.
 template <ServiceType S>
 class Notifier {
   public:
-    Notifier() = default;
-    Notifier(Notifier&&) = default;
-    auto operator=(Notifier&&) -> Notifier& = default;
-    ~Notifier() = default;
+    Notifier(Notifier&&) noexcept;
+    auto operator=(Notifier&&) noexcept -> Notifier&;
+    ~Notifier();
 
     Notifier(const Notifier&) = delete;
     auto operator=(const Notifier&) -> Notifier& = delete;
 
-    auto id() const -> UniqueNotifierId {
-        IOX_TODO();
-    }
-    auto notify() const -> iox::expected<uint64_t, NotifierNotifyError> {
-        IOX_TODO();
-    }
-    auto notify_with_custom_event_id(const EventId event_id) const -> iox::expected<uint64_t, NotifierNotifyError> {
-        IOX_TODO();
-    }
+    /// Returns the [`UniqueNotifierId`] of the [`Notifier`]
+    auto id() const -> UniqueNotifierId;
+
+    /// Notifies all [`Listener`] connected to the service with the default
+    /// event id provided on creation.
+    /// On success the number of
+    /// [`Listener`]s that were notified otherwise it returns
+    /// [`NotifierNotifyError`].
+    auto notify() const -> iox::expected<size_t, NotifierNotifyError>;
+
+    /// Notifies all [`Listener`] connected to the service with a custom
+    /// [`EventId`].
+    /// On success the number of
+    /// [`Listener`]s that were notified otherwise it returns
+    /// [`NotifierNotifyError`].
+    auto notify_with_custom_event_id(EventId event_id) const -> iox::expected<size_t, NotifierNotifyError>;
+
+  private:
+    template <ServiceType>
+    friend class PortFactoryNotifier;
+
+    explicit Notifier(iox2_notifier_h handle);
+    void drop();
+
+    iox2_notifier_h m_handle;
 };
 } // namespace iox2
 

@@ -20,6 +20,7 @@ use crate::api::{
 use iceoryx2::node::NodeCreationFailure;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_int;
@@ -211,6 +212,13 @@ pub unsafe extern "C" fn iox2_node_builder_create(
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!node_handle_ptr.is_null());
+
+    match service_type as usize {
+        0 => (),
+        1 => (),
+        _ => fatal_panic!(from "iox2_node_builder_create",
+                            "The provided service_type has an invalid value."),
+    }
 
     let node_builder_struct = &mut *node_builder_handle.as_type();
     let node_builder = node_builder_struct.take().unwrap();

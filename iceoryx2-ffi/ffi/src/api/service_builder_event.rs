@@ -387,4 +387,88 @@ pub unsafe extern "C" fn iox2_service_builder_event_open(
     IOX2_OK
 }
 
+/// Creates an event service and returns a port factory to create notifiers and listeners.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`](crate::iox2_service_builder_event_h)
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_event_t`](crate::iox2_port_factory_event_t). If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise. Note, only the errors annotated with `O_` are relevant.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_create(
+    service_builder_handle: iox2_service_builder_event_h,
+    port_factory_struct_ptr: *mut iox2_port_factory_event_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_event_h,
+) -> c_int {
+    debug_assert!(!service_builder_handle.is_null());
+    debug_assert!(!port_factory_handle_ptr.is_null());
+
+    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    let mut port_factory_struct_ptr = port_factory_struct_ptr;
+    fn no_op(_: *mut iox2_port_factory_event_t) {}
+    let mut deleter: fn(*mut iox2_port_factory_event_t) = no_op;
+    if port_factory_struct_ptr.is_null() {
+        port_factory_struct_ptr = iox2_port_factory_event_t::alloc();
+        deleter = iox2_port_factory_event_t::dealloc;
+    }
+    debug_assert!(!port_factory_struct_ptr.is_null());
+
+    let service_type = service_builders_struct.service_type;
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+
+            match service_builder.create() {
+                Ok(port_factory) => {
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryEventUnion::new_ipc(port_factory),
+                        deleter,
+                    );
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+
+            match service_builder.create() {
+                Ok(port_factory) => {
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryEventUnion::new_local(port_factory),
+                        deleter,
+                    );
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+    }
+
+    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+
+    IOX2_OK
+}
+
 // END C API

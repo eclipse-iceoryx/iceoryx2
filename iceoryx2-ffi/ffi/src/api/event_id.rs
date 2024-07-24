@@ -10,20 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/config.hpp"
-#include "iox/assertions_addendum.hpp"
+#![allow(non_camel_case_types)]
 
-namespace iox2 {
-ConfigView::ConfigView(iox2_config_ptr ptr)
-    : m_ptr { ptr } {
+use iceoryx2::prelude::*;
+
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct iox2_event_id_t {
+    pub value: usize,
 }
 
-auto ConfigView::to_owned() const -> Config {
-    // IOX_TODO();
-    return Config {};
+impl From<iox2_event_id_t> for EventId {
+    fn from(id: iox2_event_id_t) -> Self {
+        EventId::new(id.value)
+    }
 }
 
-auto Config::global_config() -> ConfigView {
-    return ConfigView { iox2_config_global_config() };
+impl From<EventId> for iox2_event_id_t {
+    fn from(id: EventId) -> Self {
+        iox2_event_id_t {
+            value: id.as_value(),
+        }
+    }
 }
-} // namespace iox2

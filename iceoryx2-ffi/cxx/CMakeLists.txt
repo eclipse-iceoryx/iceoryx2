@@ -37,11 +37,18 @@ target_include_directories(includes-only-cxx
 
 add_library(iceoryx2-cxx-object-lib OBJECT
     src/config.cpp
+    src/event_id.cpp
+    src/listener.cpp
     src/node.cpp
     src/node_details.cpp
     src/node_name.cpp
     src/node_state.cpp
+    src/notifier.cpp
+    src/port_factory_event.cpp
+    src/port_factory_listener.cpp
+    src/port_factory_notifier.cpp
     src/service.cpp
+    src/service_builder_event.cpp
     src/service_name.cpp
 )
 

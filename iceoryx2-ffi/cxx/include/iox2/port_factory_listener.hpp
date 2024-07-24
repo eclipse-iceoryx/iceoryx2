@@ -13,18 +13,35 @@
 #ifndef IOX2_PORTFACTORY_LISTENER_HPP
 #define IOX2_PORTFACTORY_LISTENER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
-#include "listener.hpp"
-#include "service_type.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/listener.hpp"
+#include "iox2/service_type.hpp"
 
 namespace iox2 {
+/// Factory to create a new [`Listener`] port/endpoint for
+/// [`MessagingPattern::Event`] based
+/// communication.
 template <ServiceType S>
 class PortFactoryListener {
   public:
-    auto create() && -> iox::expected<Listener<S>, ListenerCreateError> {
-        IOX_TODO();
-    }
+    PortFactoryListener(PortFactoryListener&&) noexcept = default;
+    auto operator=(PortFactoryListener&&) noexcept -> PortFactoryListener& = default;
+    ~PortFactoryListener() = default;
+
+    PortFactoryListener(const PortFactoryListener&) = delete;
+    auto operator=(const PortFactoryListener&) -> PortFactoryListener& = delete;
+
+    /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
+    auto create() && -> iox::expected<Listener<S>, ListenerCreateError>;
+
+  private:
+    template <ServiceType>
+    friend class PortFactoryEvent;
+
+    explicit PortFactoryListener(iox2_port_factory_listener_builder_h handle);
+
+    iox2_port_factory_listener_builder_h m_handle;
 };
 } // namespace iox2
 

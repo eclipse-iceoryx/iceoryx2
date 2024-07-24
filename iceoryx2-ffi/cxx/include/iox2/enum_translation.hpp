@@ -17,11 +17,14 @@
 #include "iox/into.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/iceoryx2.h"
-#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/listener_error.hpp"
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
+#include "iox2/notifier_error.hpp"
 #include "iox2/semantic_string.hpp"
+#include "iox2/service_builder_event_error.hpp"
+#include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_error_enums.hpp"
 #include "iox2/service_type.hpp"
 
@@ -170,6 +173,278 @@ constexpr auto from<int, iox2::ServiceDetailsError>(const int value) noexcept ->
     IOX_UNREACHABLE();
 }
 
+template <>
+constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept -> iox2::EventOpenOrCreateError {
+    const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
+    switch (error) {
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_EXIST:
+        return iox2::EventOpenOrCreateError::OpenDoesNotExist;
+    case iox2_event_open_or_create_error_e_O_INSUFFICIENT_PERMISSIONS:
+        return iox2::EventOpenOrCreateError::OpenInsufficientPermissions;
+    case iox2_event_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::EventOpenOrCreateError::OpenServiceInCorruptedState;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_MESSAGING_PATTERN:
+        return iox2::EventOpenOrCreateError::OpenIncompatibleMessagingPattern;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_ATTRIBUTES:
+        return iox2::EventOpenOrCreateError::OpenIncompatibleAttributes;
+    case iox2_event_open_or_create_error_e_O_INTERNAL_FAILURE:
+        return iox2::EventOpenOrCreateError::OpenInternalFailure;
+    case iox2_event_open_or_create_error_e_O_HANGS_IN_CREATION:
+        return iox2::EventOpenOrCreateError::OpenHangsInCreation;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NOTIFIERS:
+        return iox2::EventOpenOrCreateError::OpenDoesNotSupportRequestedAmountOfNotifiers;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_LISTENERS:
+        return iox2::EventOpenOrCreateError::OpenDoesNotSupportRequestedAmountOfListeners;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MAX_EVENT_ID:
+        return iox2::EventOpenOrCreateError::OpenDoesNotSupportRequestedMaxEventId;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES:
+        return iox2::EventOpenOrCreateError::OpenDoesNotSupportRequestedAmountOfNodes;
+    case iox2_event_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES:
+        return iox2::EventOpenOrCreateError::OpenExceedsMaxNumberOfNodes;
+    case iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
+        return iox2::EventOpenOrCreateError::OpenIsMarkedForDestruction;
+
+    case iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::EventOpenOrCreateError::CreateServiceInCorruptedState;
+    case iox2_event_open_or_create_error_e_C_INTERNAL_FAILURE:
+        return iox2::EventOpenOrCreateError::CreateInternalFailure;
+    case iox2_event_open_or_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE:
+        return iox2::EventOpenOrCreateError::CreateIsBeingCreatedByAnotherInstance;
+    case iox2_event_open_or_create_error_e_C_ALREADY_EXISTS:
+        return iox2::EventOpenOrCreateError::CreateAlreadyExists;
+    case iox2_event_open_or_create_error_e_C_HANGS_IN_CREATION:
+        return iox2::EventOpenOrCreateError::CreateHangsInCreation;
+    case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
+        return iox2::EventOpenOrCreateError::CreateInsufficientPermissions;
+    case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
+        return iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::EventOpenError>(const int value) noexcept -> iox2::EventOpenError {
+    const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
+    switch (error) {
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_EXIST:
+        return iox2::EventOpenError::DoesNotExist;
+    case iox2_event_open_or_create_error_e_O_INSUFFICIENT_PERMISSIONS:
+        return iox2::EventOpenError::InsufficientPermissions;
+    case iox2_event_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::EventOpenError::ServiceInCorruptedState;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_MESSAGING_PATTERN:
+        return iox2::EventOpenError::IncompatibleMessagingPattern;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_ATTRIBUTES:
+        return iox2::EventOpenError::IncompatibleAttributes;
+    case iox2_event_open_or_create_error_e_O_INTERNAL_FAILURE:
+        return iox2::EventOpenError::InternalFailure;
+    case iox2_event_open_or_create_error_e_O_HANGS_IN_CREATION:
+        return iox2::EventOpenError::HangsInCreation;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NOTIFIERS:
+        return iox2::EventOpenError::DoesNotSupportRequestedAmountOfNotifiers;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_LISTENERS:
+        return iox2::EventOpenError::DoesNotSupportRequestedAmountOfListeners;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MAX_EVENT_ID:
+        return iox2::EventOpenError::DoesNotSupportRequestedMaxEventId;
+    case iox2_event_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES:
+        return iox2::EventOpenError::DoesNotSupportRequestedAmountOfNodes;
+    case iox2_event_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES:
+        return iox2::EventOpenError::ExceedsMaxNumberOfNodes;
+    case iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
+        return iox2::EventOpenError::IsMarkedForDestruction;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> iox2::EventCreateError {
+    const auto error = static_cast<iox2_event_open_or_create_error_e>(value);
+    switch (error) {
+    case iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::EventCreateError::ServiceInCorruptedState;
+    case iox2_event_open_or_create_error_e_C_INTERNAL_FAILURE:
+        return iox2::EventCreateError::InternalFailure;
+    case iox2_event_open_or_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE:
+        return iox2::EventCreateError::IsBeingCreatedByAnotherInstance;
+    case iox2_event_open_or_create_error_e_C_ALREADY_EXISTS:
+        return iox2::EventCreateError::AlreadyExists;
+    case iox2_event_open_or_create_error_e_C_HANGS_IN_CREATION:
+        return iox2::EventCreateError::HangsInCreation;
+    case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
+        return iox2::EventCreateError::InsufficientPermissions;
+    case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
+        return iox2::EventCreateError::OldConnectionsStillActive;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int value) noexcept
+    -> iox2::PublishSubscribeOpenOrCreateError {
+    const auto error = static_cast<iox2_pub_sub_open_or_create_error_e>(value);
+    switch (error) {
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_EXIST:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotExist;
+    case iox2_pub_sub_open_or_create_error_e_O_INTERNAL_FAILURE:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenInternalFailure;
+    case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_TYPES:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenIncompatibleTypes;
+    case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_MESSAGING_PATTERN:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenIncompatibleMessagingPattern;
+    case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_ATTRIBUTES:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenIncompatibleAttributes;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MIN_BUFFER_SIZE:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotSupportRequestedMinBufferSize;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MIN_HISTORY_SIZE:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotSupportRequestedMinHistorySize;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MIN_SUBSCRIBER_BORROWED_SAMPLES:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotSupportRequestedMinSubscriberBorrowedSamples;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_PUBLISHERS:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotSupportRequestedAmountOfPublishers;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_SUBSCRIBERS:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotSupportRequestedAmountOfSubscribers;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenDoesNotSupportRequestedAmountOfNodes;
+    case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_OVERFLOW_BEHAVIOR:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenIncompatibleOverflowBehavior;
+    case iox2_pub_sub_open_or_create_error_e_O_INSUFFICIENT_PERMISSIONS:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenInsufficientPermissions;
+    case iox2_pub_sub_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenServiceInCorruptedState;
+    case iox2_pub_sub_open_or_create_error_e_O_HANGS_IN_CREATION:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenHangsInCreation;
+    case iox2_pub_sub_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenExceedsMaxNumberOfNodes;
+    case iox2_pub_sub_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
+        return iox2::PublishSubscribeOpenOrCreateError::OpenIsMarkedForDestruction;
+
+    case iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateServiceInCorruptedState;
+    case iox2_pub_sub_open_or_create_error_e_C_SUBSCRIBER_BUFFER_MUST_BE_LARGER_THAN_HISTORY_SIZE:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateSubscriberBufferMustBeLargerThanHistorySize;
+    case iox2_pub_sub_open_or_create_error_e_C_ALREADY_EXISTS:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateAlreadyExists;
+    case iox2_pub_sub_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateInsufficientPermissions;
+    case iox2_pub_sub_open_or_create_error_e_C_INTERNAL_FAILURE:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateInternalFailure;
+    case iox2_pub_sub_open_or_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateIsBeingCreatedByAnotherInstance;
+    case iox2_pub_sub_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateOldConnectionsStillActive;
+    case iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateHangsInCreation;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::PublishSubscribeOpenError>(const int value) noexcept -> iox2::PublishSubscribeOpenError {
+    const auto error = static_cast<iox2_pub_sub_open_or_create_error_e>(value);
+    switch (error) {
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_EXIST:
+        return iox2::PublishSubscribeOpenError::DoesNotExist;
+    case iox2_pub_sub_open_or_create_error_e_O_INTERNAL_FAILURE:
+        return iox2::PublishSubscribeOpenError::InternalFailure;
+    case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_TYPES:
+        return iox2::PublishSubscribeOpenError::IncompatibleTypes;
+    case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_MESSAGING_PATTERN:
+        return iox2::PublishSubscribeOpenError::IncompatibleMessagingPattern;
+    case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_ATTRIBUTES:
+        return iox2::PublishSubscribeOpenError::IncompatibleAttributes;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MIN_BUFFER_SIZE:
+        return iox2::PublishSubscribeOpenError::DoesNotSupportRequestedMinBufferSize;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MIN_HISTORY_SIZE:
+        return iox2::PublishSubscribeOpenError::DoesNotSupportRequestedMinHistorySize;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_MIN_SUBSCRIBER_BORROWED_SAMPLES:
+        return iox2::PublishSubscribeOpenError::DoesNotSupportRequestedMinSubscriberBorrowedSamples;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_PUBLISHERS:
+        return iox2::PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_SUBSCRIBERS:
+        return iox2::PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers;
+    case iox2_pub_sub_open_or_create_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES:
+        return iox2::PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfNodes;
+    case iox2_pub_sub_open_or_create_error_e_O_INCOMPATIBLE_OVERFLOW_BEHAVIOR:
+        return iox2::PublishSubscribeOpenError::IncompatibleOverflowBehavior;
+    case iox2_pub_sub_open_or_create_error_e_O_INSUFFICIENT_PERMISSIONS:
+        return iox2::PublishSubscribeOpenError::InsufficientPermissions;
+    case iox2_pub_sub_open_or_create_error_e_O_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::PublishSubscribeOpenError::ServiceInCorruptedState;
+    case iox2_pub_sub_open_or_create_error_e_O_HANGS_IN_CREATION:
+        return iox2::PublishSubscribeOpenError::HangsInCreation;
+    case iox2_pub_sub_open_or_create_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES:
+        return iox2::PublishSubscribeOpenError::ExceedsMaxNumberOfNodes;
+    case iox2_pub_sub_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
+        return iox2::PublishSubscribeOpenError::IsMarkedForDestruction;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto
+from<int, iox2::PublishSubscribeCreateError>(const int value) noexcept -> iox2::PublishSubscribeCreateError {
+    const auto error = static_cast<iox2_pub_sub_open_or_create_error_e>(value);
+    switch (error) {
+    case iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::PublishSubscribeCreateError::ServiceInCorruptedState;
+    case iox2_pub_sub_open_or_create_error_e_C_SUBSCRIBER_BUFFER_MUST_BE_LARGER_THAN_HISTORY_SIZE:
+        return iox2::PublishSubscribeCreateError::SubscriberBufferMustBeLargerThanHistorySize;
+    case iox2_pub_sub_open_or_create_error_e_C_ALREADY_EXISTS:
+        return iox2::PublishSubscribeCreateError::AlreadyExists;
+    case iox2_pub_sub_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
+        return iox2::PublishSubscribeCreateError::InsufficientPermissions;
+    case iox2_pub_sub_open_or_create_error_e_C_INTERNAL_FAILURE:
+        return iox2::PublishSubscribeCreateError::InternalFailure;
+    case iox2_pub_sub_open_or_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE:
+        return iox2::PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance;
+    case iox2_pub_sub_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
+        return iox2::PublishSubscribeCreateError::OldConnectionsStillActive;
+    case iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION:
+        return iox2::PublishSubscribeCreateError::HangsInCreation;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto from<int, iox2::NotifierCreateError>(const int value) noexcept -> iox2::NotifierCreateError {
+    const auto error = static_cast<iox2_notifier_create_error_e>(value);
+    switch (error) {
+    case iox2_notifier_create_error_e_EXCEEDS_MAX_SUPPORTED_NOTIFIERS:
+        return iox2::NotifierCreateError::ExceedsMaxSupportedNotifiers;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::ListenerCreateError>(const int value) noexcept -> iox2::ListenerCreateError {
+    const auto error = static_cast<iox2_listener_create_error_e>(value);
+    switch (error) {
+    case iox2_listener_create_error_e_EXCEEDS_MAX_SUPPORTED_LISTENERS:
+        return iox2::ListenerCreateError::ExceedsMaxSupportedListeners;
+    case iox2_listener_create_error_e_RESOURCE_CREATION_FAILED:
+        return iox2::ListenerCreateError::ResourceCreationFailed;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::NotifierNotifyError>(const int value) noexcept -> iox2::NotifierNotifyError {
+    const auto error = static_cast<iox2_notifier_notify_error_e>(value);
+    switch (error) {
+    case iox2_notifier_notify_error_e_EVENT_ID_OUT_OF_BOUNDS:
+        return iox2::NotifierNotifyError::EventIdOutOfBounds;
+    }
+
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif

@@ -10,20 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/config.hpp"
+#include "iox2/event_id.hpp"
 #include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
-ConfigView::ConfigView(iox2_config_ptr ptr)
-    : m_ptr { ptr } {
+EventId::EventId(const size_t value)
+    : m_value { value } {
 }
 
-auto ConfigView::to_owned() const -> Config {
-    // IOX_TODO();
-    return Config {};
+auto EventId::as_value() const -> size_t {
+    return m_value.value;
 }
 
-auto Config::global_config() -> ConfigView {
-    return ConfigView { iox2_config_global_config() };
+auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream& {
+    std::cout << "EventId { m_value: " << value.as_value() << " }";
+    return stream;
 }
 } // namespace iox2
