@@ -50,6 +50,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/service.cpp
     src/service_builder_event.cpp
     src/service_name.cpp
+    src/static_config_event.cpp
 )
 
 set_target_properties(iceoryx2-cxx-object-lib

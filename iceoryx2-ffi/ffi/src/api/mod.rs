@@ -36,6 +36,7 @@ mod service_builder;
 mod service_builder_event;
 mod service_builder_pub_sub;
 mod service_name;
+mod static_config_event;
 mod subscriber;
 
 pub use config::*;
@@ -56,6 +57,7 @@ pub use service_builder::*;
 pub use service_builder_event::*;
 pub use service_builder_pub_sub::*;
 pub use service_name::*;
+pub use static_config_event::*;
 pub use subscriber::*;
 
 /// This constant signals an successful function call

@@ -26,6 +26,8 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::mem::ManuallyDrop;
 
+use super::iox2_static_config_event_t;
+
 // BEGIN types definition
 
 pub(super) union PortFactoryEventUnion {
@@ -141,6 +143,31 @@ pub unsafe extern "C" fn iox2_port_factory_event_service_name(
         iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.name(),
         iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.name(),
     }
+}
+
+/// Set the values int the provided [`iox2_static_config_event_t`] pointer.
+///
+/// # Safety
+///
+/// * The `_handle` must be valid and obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)!
+/// * The `static_config` must be a valid pointer and non-null.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_static_config(
+    port_factory_handle: iox2_port_factory_event_ref_h,
+    static_config: *mut iox2_static_config_event_t,
+) {
+    debug_assert!(!port_factory_handle.is_null());
+    debug_assert!(!static_config.is_null());
+
+    let port_factory = &mut *port_factory_handle.as_type();
+
+    let config = match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.static_config(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.static_config(),
+    };
+
+    *static_config = (*config).into();
 }
 
 // TODO [#210] add all the other setter methods

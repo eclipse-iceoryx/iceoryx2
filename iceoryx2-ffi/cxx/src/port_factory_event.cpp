@@ -12,6 +12,7 @@
 
 #include "iox2/port_factory_event.hpp"
 #include "iox/assertions_addendum.hpp"
+#include "iox2/iceoryx2.h"
 
 namespace iox2 {
 template <ServiceType S>
@@ -67,8 +68,12 @@ auto PortFactoryEvent<S>::attributes() const -> const AttributeSet& {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::static_config() const -> const StaticConfigEvent& {
-    IOX_TODO();
+auto PortFactoryEvent<S>::static_config() const -> StaticConfigEvent {
+    auto* ref_handle = iox2_cast_port_factory_event_ref_h(m_handle);
+    iox2_static_config_event_t static_config {};
+    iox2_port_factory_event_static_config(ref_handle, &static_config);
+
+    return StaticConfigEvent(static_config);
 }
 
 template <ServiceType S>
