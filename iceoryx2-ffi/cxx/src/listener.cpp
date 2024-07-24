@@ -12,6 +12,7 @@
 
 #include "iox2/listener.hpp"
 #include "iox/assertions_addendum.hpp"
+#include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
 template <ServiceType S>
@@ -54,21 +55,52 @@ auto Listener<S>::id() const -> UniqueListenerId {
     IOX_TODO();
 }
 
+void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context context) {
+    auto* callback = internal::ctx_cast<iox::function<void(EventId)>>(context);
+    callback->value()(EventId(*event_id));
+}
+
 template <ServiceType S>
 auto Listener<S>::try_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto ctx = internal::ctx(callback);
+
+    auto result = iox2_listener_try_wait_all(ref_handle, wait_callback, static_cast<void*>(&ctx));
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
 auto Listener<S>::timed_wait_all(const iox::function<void(EventId)>& callback,
                                  const iox::units::Duration& timeout) -> iox::expected<void, ListenerWaitError> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto ctx = internal::ctx(callback);
+    auto timeout_timespec = timeout.timespec();
+
+    auto result = iox2_listener_timed_wait_all(
+        ref_handle, wait_callback, static_cast<void*>(&ctx), timeout_timespec.tv_sec, timeout_timespec.tv_nsec);
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
 auto Listener<S>::blocking_wait_all(const iox::function<void(EventId)>& callback)
     -> iox::expected<void, ListenerWaitError> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto ctx = internal::ctx(callback);
+
+    auto result = iox2_listener_blocking_wait_all(ref_handle, wait_callback, static_cast<void*>(&ctx));
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>

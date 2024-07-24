@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, IntoCInt};
-use crate::{iox2_event_id_t, IOX2_OK};
+use crate::{iox2_callback_context, iox2_event_id_t, IOX2_OK};
 
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
@@ -114,6 +114,9 @@ impl HandleToType for iox2_listener_ref_h {
     }
 }
 
+pub type iox2_listener_wait_all_callback =
+    extern "C" fn(*const iox2_event_id_t, iox2_callback_context);
+
 // END type definition
 
 // BEGIN C API
@@ -165,6 +168,133 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
         }
     }
     (listener.deleter)(listener);
+}
+
+/// Tries to wait on the listener and calls the callback for every received event providing the
+/// corresponding [`iox2_event_id_t`] pointer to the event.
+/// On error it returns [`iox2_listener_wait_error_e`].
+///
+/// # Arguments
+///
+/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
+///
+/// # Safety
+///
+/// * The `listener_handle` must be a valid handle.
+/// * The `callback` must be a valid function pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_try_wait_all(
+    listener_handle: iox2_listener_ref_h,
+    callback: iox2_listener_wait_all_callback,
+    callback_ctx: iox2_callback_context,
+) -> c_int {
+    debug_assert!(!listener_handle.is_null());
+
+    let listener = &mut *listener_handle.as_type();
+
+    let wait_result = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait_all(|event_id| {
+            callback(&event_id.into(), callback_ctx);
+        }),
+        iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait_all(|event_id| {
+            callback(&event_id.into(), callback_ctx);
+        }),
+    };
+
+    match wait_result {
+        Ok(()) => IOX2_OK,
+        Err(e) => e.into_c_int(),
+    }
+}
+
+/// Blocks the listener until at least one event was received or the provided timeout has passed.
+/// When an event was received then it calls the callback for
+/// every received event providing the corresponding [`iox2_event_id_t`] pointer to the event.
+/// On error it returns [`iox2_listener_wait_error_e`].
+///
+/// # Arguments
+///
+/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
+///
+/// # Safety
+///
+/// * The `listener_handle` must be a valid handle.
+/// * The `callback` must be a valid function pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_timed_wait_all(
+    listener_handle: iox2_listener_ref_h,
+    callback: iox2_listener_wait_all_callback,
+    callback_ctx: iox2_callback_context,
+    seconds: u64,
+    nanoseconds: u32,
+) -> c_int {
+    debug_assert!(!listener_handle.is_null());
+
+    let listener = &mut *listener_handle.as_type();
+    let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
+
+    let wait_result = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait_all(
+            |event_id| {
+                callback(&event_id.into(), callback_ctx);
+            },
+            timeout,
+        ),
+        iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait_all(
+            |event_id| {
+                callback(&event_id.into(), callback_ctx);
+            },
+            timeout,
+        ),
+    };
+
+    match wait_result {
+        Ok(()) => IOX2_OK,
+        Err(e) => e.into_c_int(),
+    }
+}
+
+/// Blocks the listener until at least one event was received and then calls the callback for
+/// every received event providing the corresponding [`iox2_event_id_t`] pointer to the event.
+/// On error it returns [`iox2_listener_wait_error_e`].
+///
+/// # Arguments
+///
+/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
+///
+/// # Safety
+///
+/// * The `listener_handle` must be a valid handle.
+/// * The `callback` must be a valid function pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_blocking_wait_all(
+    listener_handle: iox2_listener_ref_h,
+    callback: iox2_listener_wait_all_callback,
+    callback_ctx: iox2_callback_context,
+) -> c_int {
+    debug_assert!(!listener_handle.is_null());
+
+    let listener = &mut *listener_handle.as_type();
+
+    let wait_result = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait_all(|event_id| {
+            callback(&event_id.into(), callback_ctx);
+        }),
+        iox2_service_type_e::LOCAL => listener.value.as_mut().local.blocking_wait_all(|event_id| {
+            callback(&event_id.into(), callback_ctx);
+        }),
+    };
+
+    match wait_result {
+        Ok(()) => IOX2_OK,
+        Err(e) => e.into_c_int(),
+    }
 }
 
 /// Tries to wait on the listener. If there is no event id present it returns immediately and sets

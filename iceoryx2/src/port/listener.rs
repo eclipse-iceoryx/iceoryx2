@@ -167,23 +167,17 @@ impl<Service: service::Service> Listener<Service> {
         Ok(new_self)
     }
 
-    /// Non-blocking wait for new [`EventId`]s. Collects either all [`EventId`]s that were received
-    /// until the call of [`Listener::try_wait_all()`] or a reasonable batch that represent the
-    /// currently available [`EventId`]s in buffer.
-    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
-    /// input argument.
+    /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and
+    /// calls the provided callback is with the [`EventId`] as input argument.
     pub fn try_wait_all<F: FnMut(EventId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
         Ok(fail!(from self, when self.listener.try_wait_all(callback),
             "Failed to while calling try_wait on underlying event::Listener"))
     }
 
-    /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Collects either
-    /// all [`EventId`]s that were received
-    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
-    /// currently available [`EventId`]s in buffer.
-    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
-    /// input argument.
+    /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Unblocks as soon
+    /// as an [`EventId`] was received and then collects all [`EventId`]s that were received and
+    /// calls the provided callback is with the [`EventId`] as input argument.
     pub fn timed_wait_all<F: FnMut(EventId)>(
         &self,
         callback: F,
@@ -196,12 +190,9 @@ impl<Service: service::Service> Listener<Service> {
         )
     }
 
-    /// Blocking wait for new [`EventId`]s. Collects either
-    /// all [`EventId`]s that were received
-    /// until the call of [`Listener::timed_wait_all()`] or a reasonable batch that represent the
-    /// currently available [`EventId`]s in buffer.
-    /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
-    /// input argument.
+    /// Blocking wait for new [`EventId`]s. Unblocks as soon
+    /// as an [`EventId`] was received and then collects all [`EventId`]s that were received and
+    /// calls the provided callback is with the [`EventId`] as input argument.
     pub fn blocking_wait_all<F: FnMut(EventId)>(
         &self,
         callback: F,

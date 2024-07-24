@@ -17,13 +17,14 @@ use crate::api::{
     iox2_service_builder_t, iox2_service_name_ptr, iox2_service_type_e, HandleToType, IntoCInt,
     ServiceBuilderUnion, IOX2_OK,
 };
+use crate::iox2_callback_context;
 
 use iceoryx2::node::{NodeId, NodeListFailure, NodeView};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use core::ffi::{c_int, c_void};
+use core::ffi::c_int;
 use core::mem::ManuallyDrop;
 use std::time::Duration;
 
@@ -151,9 +152,6 @@ pub type iox2_node_id_ptr = *const NodeId;
 /// The mutable pointer to the underlying `NodeId`
 pub type iox2_node_id_mut_ptr = *mut NodeId;
 
-/// An alias to a `void *` which can be used to pass arbitrary data to the callback
-pub type iox2_node_list_callback_context = *mut c_void;
-
 /// The callback for [`iox2_node_list`]
 ///
 /// # Arguments
@@ -170,7 +168,7 @@ pub type iox2_node_list_callback = extern "C" fn(
     iox2_node_id_ptr,
     iox2_node_name_ptr,
     iox2_config_ptr,
-    iox2_node_list_callback_context,
+    iox2_callback_context,
 ) -> iox2_callback_progression_e;
 
 // END type definition
@@ -268,7 +266,7 @@ pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_ref_h) -> iox2_node
 fn iox2_node_list_impl<S: Service>(
     node_state: &NodeState<S>,
     callback: iox2_node_list_callback,
-    callback_ctx: iox2_node_list_callback_context,
+    callback_ctx: iox2_callback_context,
 ) -> CallbackProgression {
     match node_state {
         NodeState::Alive(alive_node_view) => {
@@ -328,7 +326,7 @@ fn iox2_node_list_impl<S: Service>(
 /// * `service_type` - A [`iox2_service_type_e`]
 /// * `config_ptr` - A valid [`iox2_config_ptr`](crate::iox2_config_ptr)
 /// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
-/// * `callback_ctx` - An optional callback context [`iox2_node_list_callback_context`} to e.g. store information across callback iterations
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 ///
 /// Returns IOX2_OK on success, an [`iox2_node_list_failure_e`] otherwise.
 ///
@@ -340,7 +338,7 @@ pub unsafe extern "C" fn iox2_node_list(
     service_type: iox2_service_type_e,
     config_ptr: iox2_config_ptr,
     callback: iox2_node_list_callback,
-    callback_ctx: iox2_node_list_callback_context,
+    callback_ctx: iox2_callback_context,
 ) -> c_int {
     debug_assert!(!config_ptr.is_null());
 
