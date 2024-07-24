@@ -160,7 +160,7 @@ pub type iox2_node_id_mut_ptr = *mut NodeId;
 /// * [`iox2_node_id_ptr`]
 /// * [`iox2_node_name_ptr`](crate::iox2_node_name_ptr) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
 /// * [`iox2_config_ptr`](crate::iox2_config_ptr) -> `NULL` for `iox2_node_state_e::INACCESSIBLE` and `iox2_node_state_e::UNDEFINED`
-/// * [`iox2_node_list_callback_context`] -> provided by the user to [`iox2_node_list`] and can be `NULL`
+/// * [`iox2_callback_context`] -> provided by the user to [`iox2_node_list`] and can be `NULL`
 ///
 /// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
 pub type iox2_node_list_callback = extern "C" fn(

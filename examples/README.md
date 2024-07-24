@@ -1,6 +1,7 @@
 # Examples
 
-**The examples are not yet functional in all languages. Check the list below to see what is already working!**
+> [!IMPORTANT]
+> The examples are not yet functional in all languages. Check the list below to see what is already working!
 
 ## Foundations of Communication in iceoryx2 Applications
 

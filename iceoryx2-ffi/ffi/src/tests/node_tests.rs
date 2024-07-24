@@ -77,7 +77,7 @@ mod node {
         _node_id_ptr: iox2_node_id_ptr,
         _node_name_ptr: iox2_node_name_ptr,
         _config_ptr: iox2_config_ptr,
-        ctx: iox2_node_list_callback_context,
+        ctx: iox2_callback_context,
     ) -> iox2_callback_progression_e {
         let ctx = unsafe { &mut *(ctx as *mut NodeListCtx) };
 
