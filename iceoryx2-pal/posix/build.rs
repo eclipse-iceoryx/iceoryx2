@@ -65,11 +65,6 @@ fn main() {
         .file("src/c/sigaction.c")
         .compile("libsigaction.a");
 
-    println!("cargo:rerun-if-changed=src/c/scandir.c");
-    cc::Build::new()
-        .file("src/c/scandir.c")
-        .compile("libscandir.a");
-
     println!("cargo:rerun-if-changed=src/c/socket_macros.c");
     cc::Build::new()
         .file("src/c/socket_macros.c")

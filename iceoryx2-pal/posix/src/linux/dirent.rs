@@ -13,10 +13,64 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
+use crate::posix::{free, malloc, types::*};
 
 pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> int {
-    internal::scandir_ext(path, namelist)
+    let dirfd = opendir(path);
+    if dirfd.is_null() {
+        return -1;
+    }
+
+    *namelist = core::ptr::null_mut::<*mut dirent>();
+    let mut entries = vec![];
+    const DIRENT_SIZE: usize = core::mem::size_of::<dirent>();
+
+    let cleanup = |entries: &Vec<*mut void>, namelist: *mut *mut dirent| {
+        for entry in entries {
+            free((*entry).cast());
+        }
+
+        if !namelist.is_null() {
+            free(namelist.cast());
+        }
+    };
+
+    loop {
+        let dirent_ptr = malloc(DIRENT_SIZE);
+        let result_ptr: *mut *mut dirent = malloc(core::mem::size_of::<*mut dirent>()).cast();
+
+        if readdir_r(dirfd, dirent_ptr.cast(), result_ptr) != 0 {
+            free(result_ptr.cast());
+            free(dirent_ptr);
+            cleanup(&entries, *namelist);
+
+            closedir(dirfd);
+            return -1;
+        }
+
+        if (*result_ptr).is_null() {
+            free(result_ptr.cast());
+            free(dirent_ptr);
+            break;
+        }
+
+        free(result_ptr.cast());
+        entries.push(dirent_ptr);
+    }
+
+    *namelist = malloc(core::mem::size_of::<*mut *mut dirent>() * entries.len()).cast();
+    if (*namelist).is_null() {
+        cleanup(&entries, *namelist);
+        closedir(dirfd);
+        return -1;
+    }
+
+    for (n, entry) in entries.iter().enumerate() {
+        (*namelist).add(n).write((*entry).cast());
+    }
+
+    closedir(dirfd);
+    entries.len() as _
 }
 
 pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
@@ -39,10 +93,6 @@ pub unsafe fn readdir(dirp: *mut DIR) -> *const dirent {
     crate::internal::readdir(dirp)
 }
 
-mod internal {
-    use super::*;
-
-    extern "C" {
-        pub(super) fn scandir_ext(path: *const c_char, namelist: *mut *mut *mut dirent) -> int;
-    }
+pub unsafe fn readdir_r(dirp: *mut DIR, entry: *mut dirent, result: *mut *mut dirent) -> int {
+    crate::internal::readdir_r(dirp, entry, result)
 }
