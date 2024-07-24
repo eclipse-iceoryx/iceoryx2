@@ -31,8 +31,9 @@ auto main() -> int {
     auto listener = service.listener_builder().create().expect("successful listener creation");
 
     while (node.wait(iox::units::Duration::zero()) == NodeEvent::Tick) {
-        listener.timed_wait_one(CYCLE_TIME).expect("successful wait").and_then([](auto event_id) {
-            std::cout << "event was triggered with id: " << event_id << std::endl;
+        listener.timed_wait_one(CYCLE_TIME).and_then([](auto maybe_event_id) {
+            maybe_event_id.and_then(
+                [](auto event_id) { std::cout << "event was triggered with id: " << event_id << std::endl; });
         });
     }
 
