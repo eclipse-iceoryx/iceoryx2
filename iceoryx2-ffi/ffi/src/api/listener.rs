@@ -12,16 +12,38 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType};
+use crate::api::{iox2_service_type_e, HandleToType, IntoCInt};
+use crate::{iox2_event_id_t, IOX2_OK};
 
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_cal::event::ListenerWaitError;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use core::ffi::c_int;
 use core::mem::ManuallyDrop;
+use core::time::Duration;
 
 // BEGIN types definition
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_listener_wait_error_e {
+    CONTRACT_VIOLATION = IOX2_OK as isize + 1,
+    INTERNAL_FAILURE,
+    INTERRUPT_SIGNAL,
+}
+
+impl IntoCInt for ListenerWaitError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            ListenerWaitError::ContractViolation => iox2_listener_wait_error_e::CONTRACT_VIOLATION,
+            ListenerWaitError::InterruptSignal => iox2_listener_wait_error_e::INTERRUPT_SIGNAL,
+            ListenerWaitError::InternalFailure => iox2_listener_wait_error_e::INTERNAL_FAILURE,
+        }) as c_int
+    }
+}
 
 pub(super) union ListenerUnion {
     ipc: ManuallyDrop<Listener<zero_copy::Service>>,
@@ -143,6 +165,152 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
         }
     }
     (listener.deleter)(listener);
+}
+
+/// Tries to wait on the listener. If there is no event id present it returns immediately and sets
+/// the out parameter `has_received_one` to false. Otherwise, it sets the `event_id` out parameter
+/// and `has_received_one` to true.
+/// On error it returns [`iox2_listener_wait_error_e`].
+///
+/// # Arguments
+///
+/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
+/// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
+///
+/// # Safety
+///
+/// * All input arguments must be non-null.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_try_wait_one(
+    listener_handle: iox2_listener_ref_h,
+    event_id: *mut iox2_event_id_t,
+    has_received_one: *mut bool,
+) -> c_int {
+    debug_assert!(!listener_handle.is_null());
+    debug_assert!(!event_id.is_null());
+    debug_assert!(!has_received_one.is_null());
+
+    let listener = &mut *listener_handle.as_type();
+
+    let wait_result = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_mut().ipc.try_wait_one(),
+        iox2_service_type_e::LOCAL => listener.value.as_mut().local.try_wait_one(),
+    };
+
+    *has_received_one = false;
+
+    match wait_result {
+        Ok(Some(e)) => {
+            *event_id = e.into();
+            *has_received_one = true;
+        }
+        Ok(None) => (),
+        Err(error) => {
+            return error.into_c_int();
+        }
+    }
+
+    IOX2_OK
+}
+
+/// Blocks on the listener until an event id was received or the provided timeout has passed.
+/// When no event id was received and the
+/// function was interrupted by a signal, `has_received_one` is set to false.
+/// Otherwise, it sets the `event_id` out parameter and `has_received_one` to true.
+/// On error it returns [`iox2_listener_wait_error_e`].
+///
+/// # Arguments
+///
+/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
+/// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
+/// * `seconds` - The timeout seconds part
+/// * `nanoseconds` - The timeout nanoseconds part
+///
+/// # Safety
+///
+/// * All input arguments must be non-null.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_timed_wait_one(
+    listener_handle: iox2_listener_ref_h,
+    event_id: *mut iox2_event_id_t,
+    has_received_one: *mut bool,
+    seconds: u64,
+    nanoseconds: u32,
+) -> c_int {
+    debug_assert!(!listener_handle.is_null());
+    debug_assert!(!event_id.is_null());
+    debug_assert!(!has_received_one.is_null());
+
+    let listener = &mut *listener_handle.as_type();
+    *has_received_one = false;
+
+    let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
+
+    let wait_result = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_mut().ipc.timed_wait_one(timeout),
+        iox2_service_type_e::LOCAL => listener.value.as_mut().local.timed_wait_one(timeout),
+    };
+
+    match wait_result {
+        Ok(Some(e)) => {
+            *event_id = e.into();
+            *has_received_one = true;
+        }
+        Ok(None) => (),
+        Err(error) => {
+            return error.into_c_int();
+        }
+    }
+
+    IOX2_OK
+}
+
+/// Blocks on the listener until an event id was received. When no event id was received and the
+/// function was interrupted by a signal, `has_received_one` is set to false.
+/// Otherwise, it sets the `event_id` out parameter and `has_received_one` to true.
+/// On error it returns [`iox2_listener_wait_error_e`].
+///
+/// # Arguments
+///
+/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
+/// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
+///
+/// # Safety
+///
+/// * All input arguments must be non-null.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_blocking_wait_one(
+    listener_handle: iox2_listener_ref_h,
+    event_id: *mut iox2_event_id_t,
+    has_received_one: *mut bool,
+) -> c_int {
+    debug_assert!(!listener_handle.is_null());
+    debug_assert!(!event_id.is_null());
+    debug_assert!(!has_received_one.is_null());
+
+    let listener = &mut *listener_handle.as_type();
+    *has_received_one = false;
+
+    let wait_result = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_mut().ipc.blocking_wait_one(),
+        iox2_service_type_e::LOCAL => listener.value.as_mut().local.blocking_wait_one(),
+    };
+
+    match wait_result {
+        Ok(Some(e)) => {
+            *event_id = e.into();
+            *has_received_one = true;
+        }
+        Ok(None) => (),
+        Err(error) => {
+            return error.into_c_int();
+        }
+    }
+
+    IOX2_OK
 }
 
 // END C API

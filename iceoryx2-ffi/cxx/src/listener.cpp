@@ -73,18 +73,64 @@ auto Listener<S>::blocking_wait_all(const iox::function<void(EventId)>& callback
 
 template <ServiceType S>
 auto Listener<S>::try_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    iox2_event_id_t event_id {};
+    bool has_received_one { false };
+
+    auto result = iox2_listener_try_wait_one(ref_handle, &event_id, &has_received_one);
+
+    if (result == IOX2_OK) {
+        if (has_received_one) {
+            return iox::ok(iox::optional<EventId>(EventId { event_id }));
+        }
+
+        return iox::ok(iox::optional<EventId>());
+    }
+
+    return iox::err(iox::into<ListenerWaitError>(result));
 }
 
 template <ServiceType S>
 auto Listener<S>::timed_wait_one(const iox::units::Duration& timeout)
     -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
+    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    iox2_event_id_t event_id {};
+    bool has_received_one { false };
+
+    auto timespec_timeout = timeout.timespec();
+    auto result = iox2_listener_timed_wait_one(
+        ref_handle, &event_id, &has_received_one, timespec_timeout.tv_sec, timespec_timeout.tv_nsec);
+
+    if (result == IOX2_OK) {
+        if (has_received_one) {
+            return iox::ok(iox::optional<EventId>(EventId { event_id }));
+        }
+
+        return iox::ok(iox::optional<EventId>());
+    }
+
+    return iox::err(iox::into<ListenerWaitError>(result));
+
     IOX_TODO();
 }
 
 template <ServiceType S>
 auto Listener<S>::blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    iox2_event_id_t event_id {};
+    bool has_received_one { false };
+
+    auto result = iox2_listener_blocking_wait_one(ref_handle, &event_id, &has_received_one);
+
+    if (result == IOX2_OK) {
+        if (has_received_one) {
+            return iox::ok(iox::optional<EventId>(EventId { event_id }));
+        }
+
+        return iox::ok(iox::optional<EventId>());
+    }
+
+    return iox::err(iox::into<ListenerWaitError>(result));
 }
 
 template class Listener<ServiceType::Ipc>;

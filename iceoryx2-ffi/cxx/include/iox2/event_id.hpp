@@ -39,6 +39,10 @@ class EventId {
     friend class Notifier;
     template <ServiceType>
     friend class PortFactoryNotifier;
+    template <ServiceType>
+    friend class Listener;
+
+    explicit EventId(iox2_event_id_t value);
 
     friend auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream&;
     iox2_event_id_t m_value;

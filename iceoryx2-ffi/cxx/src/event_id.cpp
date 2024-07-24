@@ -18,6 +18,10 @@ EventId::EventId(const size_t value)
     : m_value { value } {
 }
 
+EventId::EventId(iox2_event_id_t value)
+    : m_value { value } {
+}
+
 auto EventId::as_value() const -> size_t {
     return m_value.value;
 }
