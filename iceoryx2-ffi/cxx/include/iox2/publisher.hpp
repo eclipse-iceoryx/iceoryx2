@@ -100,7 +100,17 @@ inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload) const
     -> iox::expected<uint64_t, PublisherSendError> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+
+    size_t number_of_recipients = 0;
+    auto result = iox2_publisher_send_copy(
+        ref_handle, static_cast<const void*>(&payload), sizeof(Payload), &number_of_recipients);
+
+    if (result == IOX2_OK) {
+        return iox::ok(number_of_recipients);
+    }
+
+    return iox::err(iox::into<PublisherSendError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

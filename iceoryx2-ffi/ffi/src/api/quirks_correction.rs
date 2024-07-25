@@ -20,8 +20,8 @@ use crate::{
     iox2_node_creation_failure_e, iox2_node_event_e, iox2_node_list_failure_e,
     iox2_notifier_create_error_e, iox2_notifier_notify_error_e,
     iox2_pub_sub_open_or_create_error_e, iox2_publisher_create_error_e,
-    iox2_semantic_string_error_e, iox2_service_details_error_e, iox2_subscriber_create_error_e,
-    iox2_type_detail_error_e,
+    iox2_publisher_send_error_e, iox2_semantic_string_error_e, iox2_service_details_error_e,
+    iox2_subscriber_create_error_e, iox2_type_detail_error_e,
 };
 
 #[doc(hidden)]
@@ -130,4 +130,12 @@ pub unsafe extern "C" fn __iox2_internal_publisher_create_error_stub(
 pub unsafe extern "C" fn __iox2_internal_subscriber_create_error_stub(
 ) -> iox2_subscriber_create_error_e {
     iox2_subscriber_create_error_e::EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS
+}
+
+#[doc(hidden)]
+#[no_mangle]
+// TODO: enums are only exported when they are actually used by some function
+pub unsafe extern "C" fn __iox2_internal_publisher_send_error_stub() -> iox2_publisher_send_error_e
+{
+    iox2_publisher_send_error_e::CONNECTION_ERROR
 }

@@ -18,29 +18,12 @@
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/slice.hpp"
+#include "iox2/publisher_error.hpp"
 #include "service_type.hpp"
 
 #include <cstdint>
 
 namespace iox2 {
-/// Failure that can be emitted when a [`SampleMut`] is sent via
-/// [`SampleMut::send()`].
-enum PublisherSendError : uint8_t {
-    /// [`SampleMut::send()`] was called but the corresponding [`Publisher`]
-    /// went already out of
-    /// scope.
-    ConnectionBrokenSincePublisherNoLongerExists,
-    /// A connection between a
-    /// [`Subscriber`](crate::port::subscriber::Subscriber) and a
-    /// [`Publisher`] is corrupted.
-    ConnectionCorrupted,
-    /// A failure occurred while acquiring memory for the payload
-    LoanError,
-    /// A failure occurred while establishing a connection to a
-    /// [`Subscriber`](crate::port::subscriber::Subscriber)
-    ConnectionError,
-};
-
 template <ServiceType S, typename Payload, typename UserHeader>
 class SampleMut {
   public:

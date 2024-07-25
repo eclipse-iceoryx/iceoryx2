@@ -488,6 +488,29 @@ constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept 
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::PublisherSendError>(const int value) noexcept -> iox2::PublisherSendError {
+    const auto error = static_cast<iox2_publisher_send_error_e>(value);
+    switch (error) {
+    case iox2_publisher_send_error_e_CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS:
+        return iox2::PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists;
+    case iox2_publisher_send_error_e_CONNECTION_CORRUPTED:
+        return iox2::PublisherSendError::ConnectionCorrupted;
+    case iox2_publisher_send_error_e_LOAN_ERROR_OUT_OF_MEMORY:
+        return iox2::PublisherSendError::LoanErrorOutOfMemory;
+    case iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES:
+        return iox2::PublisherSendError::LoanErrorExceedsMaxLoanedSamples;
+    case iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE:
+        return iox2::PublisherSendError::LoanErrorInternalFailure;
+    case iox2_publisher_send_error_e_LOAN_ERROR_INTERNAL_FAILURE:
+        return iox2::PublisherSendError::LoanErrorInternalFailure;
+    case iox2_publisher_send_error_e_CONNECTION_ERROR:
+        return iox2::PublisherSendError::ConnectionError;
+    }
+
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif

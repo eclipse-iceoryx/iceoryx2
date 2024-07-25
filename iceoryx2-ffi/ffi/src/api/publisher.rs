@@ -13,15 +13,74 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi};
+use crate::IOX2_OK;
 
-use iceoryx2::port::publisher::Publisher;
+use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_publisher_send_error_e {
+    CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS = IOX2_OK as isize + 1,
+    CONNECTION_CORRUPTED,
+    LOAN_ERROR_OUT_OF_MEMORY,
+    LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES,
+    LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE,
+    LOAN_ERROR_INTERNAL_FAILURE,
+    CONNECTION_ERROR,
+}
+
+impl IntoCInt for PublisherSendError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists => {
+                iox2_publisher_send_error_e::CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS
+            }
+            PublisherSendError::ConnectionCorrupted => {
+                iox2_publisher_send_error_e::CONNECTION_CORRUPTED
+            }
+            PublisherSendError::LoanError(PublisherLoanError::OutOfMemory) => {
+                iox2_publisher_send_error_e::LOAN_ERROR_OUT_OF_MEMORY
+            }
+            PublisherSendError::LoanError(PublisherLoanError::ExceedsMaxLoanedSamples) => {
+                iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES
+            }
+            PublisherSendError::LoanError(PublisherLoanError::ExceedsMaxLoanSize) => {
+                iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE
+            }
+            PublisherSendError::LoanError(PublisherLoanError::InternalFailure) => {
+                iox2_publisher_send_error_e::LOAN_ERROR_INTERNAL_FAILURE
+            }
+            PublisherSendError::ConnectionError(_) => iox2_publisher_send_error_e::CONNECTION_ERROR,
+        }) as c_int
+    }
+}
+
+impl IntoCInt for PublisherLoanError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            PublisherLoanError::OutOfMemory => {
+                iox2_publisher_send_error_e::LOAN_ERROR_OUT_OF_MEMORY
+            }
+            PublisherLoanError::ExceedsMaxLoanedSamples => {
+                iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES
+            }
+            PublisherLoanError::ExceedsMaxLoanSize => {
+                iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE
+            }
+            PublisherLoanError::InternalFailure => {
+                iox2_publisher_send_error_e::LOAN_ERROR_INTERNAL_FAILURE
+            }
+        }) as c_int
+    }
+}
 
 pub(super) union PublisherUnion {
     ipc: ManuallyDrop<Publisher<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>>,
@@ -98,7 +157,77 @@ impl HandleToType for iox2_publisher_ref_h {
 
 // END type definition
 
+unsafe fn send_copy<S: Service>(
+    publisher: &Publisher<S, PayloadFfi, NoUserHeaderFfi>,
+    data_ptr: *const c_void,
+    data_len: usize,
+    number_of_recipients: *mut usize,
+) -> c_int {
+    // loan_slice_uninit(1) <= 1 is correct here since it defines the number of
+    // slice elements not bytes. The element was set via TypeDetails and has a
+    // defined size and alignment.
+    let mut sample = match publisher.loan_slice_uninit(1) {
+        Ok(sample) => sample,
+        Err(e) => return e.into_c_int(),
+    };
+
+    if sample.payload().len() < data_len {
+        return iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
+    }
+
+    let sample_ptr = sample.payload_mut().as_mut_ptr();
+    core::ptr::copy_nonoverlapping(data_ptr, sample_ptr.cast(), data_len);
+    match sample.assume_init().send() {
+        Ok(v) => {
+            if !number_of_recipients.is_null() {
+                *number_of_recipients = v;
+            }
+        }
+        Err(e) => return e.into_c_int(),
+    }
+
+    IOX2_OK
+}
+
 // BEGIN C API
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_publisher_ref_h(
+    handle: iox2_publisher_h,
+) -> iox2_publisher_ref_h {
+    debug_assert!(!handle.is_null());
+
+    (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publisher_send_copy(
+    publisher_handle: iox2_publisher_ref_h,
+    data_ptr: *const c_void,
+    data_len: usize,
+    number_of_recipients: *mut usize,
+) -> c_int {
+    debug_assert!(!publisher_handle.is_null());
+    debug_assert!(!data_ptr.is_null());
+    debug_assert!(data_len != 0);
+
+    let publisher = &mut *publisher_handle.as_type();
+
+    match publisher.service_type {
+        iox2_service_type_e::IPC => send_copy(
+            &publisher.value.as_mut().ipc,
+            data_ptr,
+            data_len,
+            number_of_recipients,
+        ),
+        iox2_service_type_e::LOCAL => send_copy(
+            &publisher.value.as_mut().local,
+            data_ptr,
+            data_len,
+            number_of_recipients,
+        ),
+    }
+}
 
 /// This function needs to be called to destroy the publisher!
 ///
@@ -132,6 +261,8 @@ pub unsafe extern "C" fn iox2_publisher_drop(publisher_handle: iox2_publisher_h)
 
 use core::time::Duration;
 use iceoryx2_bb_log::set_log_level;
+
+use super::IntoCInt;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
