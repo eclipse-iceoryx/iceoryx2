@@ -13,12 +13,14 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi};
+use crate::c_size_t;
 
 use iceoryx2::prelude::*;
 use iceoryx2::sample::Sample;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use core::ffi::c_void;
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
@@ -97,6 +99,33 @@ impl HandleToType for iox2_sample_ref_h {
 // END type definition
 
 // BEGIN C API
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_sample_ref_h(handle: iox2_sample_h) -> iox2_sample_ref_h {
+    debug_assert!(!handle.is_null());
+    (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_sample_payload(
+    sample_handle: iox2_sample_ref_h,
+    payload_ptr: *mut *const c_void,
+    payload_len: *mut c_size_t,
+) {
+    debug_assert!(!sample_handle.is_null());
+    debug_assert!(!payload_ptr.is_null());
+    debug_assert!(!payload_len.is_null());
+
+    let sample = &mut *sample_handle.as_type();
+
+    let payload = match sample.service_type {
+        iox2_service_type_e::IPC => sample.value.as_mut().ipc.payload(),
+        iox2_service_type_e::LOCAL => sample.value.as_mut().local.payload(),
+    };
+
+    *payload_ptr = payload.as_ptr().cast();
+    *payload_len = payload.len();
+}
 
 /// This function needs to be called to destroy the sample!
 ///
