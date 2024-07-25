@@ -183,7 +183,7 @@ pub unsafe extern "C" fn iox2_subscriber_buffer_size(
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
 ///
-/// Returns IOX2_OK on success, an [`SubscriberReceiveError`] otherwise.
+/// Returns IOX2_OK on success, an [`iox2_subscriber_receive_error_e`] otherwise.
 /// Attention, an empty subscriber queue is not an error and even with IOX2_OK it is possible to get a NULL in `sample_handle_ptr`.
 ///
 /// # Safety

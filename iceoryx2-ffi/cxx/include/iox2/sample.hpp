@@ -40,6 +40,9 @@ class Sample {
     auto origin() const -> UniquePublisherId;
 
   private:
+    template <ServiceType, typename, typename>
+    friend class Subscriber;
+
     explicit Sample(iox2_sample_h handle);
     void drop();
 

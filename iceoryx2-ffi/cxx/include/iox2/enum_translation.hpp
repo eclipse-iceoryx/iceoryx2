@@ -511,6 +511,19 @@ constexpr auto from<int, iox2::PublisherSendError>(const int value) noexcept -> 
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::SubscriberReceiveError>(const int value) noexcept -> iox2::SubscriberReceiveError {
+    const auto error = static_cast<iox2_subscriber_receive_error_e>(value);
+    switch (error) {
+    case iox2_subscriber_receive_error_e_CONNECTION_FAILURE:
+        return iox2::SubscriberReceiveError::ConnectionFailure;
+    case iox2_subscriber_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES:
+        return iox2::SubscriberReceiveError::ExceedsMaxBorrowedSamples;
+    }
+
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif

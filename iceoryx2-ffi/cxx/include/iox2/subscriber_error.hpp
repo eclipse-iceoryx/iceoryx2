@@ -16,18 +16,29 @@
 #include <cstdint>
 
 namespace iox2 {
+/// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
 enum class SubscriberReceiveError : uint8_t {
+    /// The maximum amount of [`Sample`]s a user can borrow with [`Subscriber::receive()`] is
+    /// defined in [`Config`]. When this is exceeded [`Subscriber::receive()`]
+    /// fails.
+    ExceedsMaxBorrowedSamples,
+
+    /// Occurs when a [`Subscriber`] is unable to connect to a corresponding
+    /// [`Publisher`].
+    ConnectionFailure,
 };
 
+/// Describes the failures when a new [`Subscriber`] is created via the
+/// [`PortFactorySubscriber`].
 enum class SubscriberCreateError : uint8_t {
     /// The maximum amount of [`Subscriber`]s that can connect to a
-    /// [`Service`](crate::service::Service) is
-    /// defined in [`crate::config::Config`]. When this is exceeded no more
+    /// [`Service`] is defined in [`Config`]. When this is exceeded no more
     /// [`Subscriber`]s
-    /// can be created for a specific [`Service`](crate::service::Service).
+    /// can be created for a specific [`Service`].
     ExceedsMaxSupportedSubscribers,
+
     /// When the [`Subscriber`] requires a larger buffer size than the
-    /// [`Service`](crate::service::Service) offers the creation will fail.
+    /// [`Service`] offers the creation will fail.
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
 };
 } // namespace iox2
