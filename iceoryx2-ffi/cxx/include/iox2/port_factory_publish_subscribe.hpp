@@ -162,7 +162,9 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::subscriber_buil
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::publisher_builder() const
     -> PortFactoryPublisher<S, Payload, UserHeader> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_port_factory_pub_sub_ref_h(m_handle);
+    return PortFactoryPublisher<S, Payload, UserHeader>(
+        iox2_port_factory_pub_sub_publisher_builder(ref_handle, nullptr));
 }
 
 
