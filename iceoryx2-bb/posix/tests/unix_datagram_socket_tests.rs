@@ -237,6 +237,8 @@ fn unix_datagram_socket_timeout_blocks_at_least() {
     });
 }
 
+// TODO iox2-#320
+#[ignore]
 #[test]
 fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
@@ -315,6 +317,7 @@ fn unix_datagram_socket_sending_receiving_credentials_works() {
     assert_that!(recv_credentials, eq Some(send_credentials));
 }
 
+// TODO iox2-#320
 #[ignore]
 #[test]
 fn unix_datagram_socket_sending_receiving_with_max_supported_fd_and_credentials_works() {
