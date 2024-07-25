@@ -13,56 +13,97 @@
 #ifndef IOX2_SUBSCRIBER_HPP
 #define IOX2_SUBSCRIBER_HPP
 
-#include "connection_failure.hpp"
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/optional.hpp"
-#include "sample.hpp"
-#include "service_type.hpp"
-#include "unique_port_id.hpp"
-
-#include <cstdint>
+#include "iox2/connection_failure.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/sample.hpp"
+#include "iox2/service_type.hpp"
+#include "iox2/subscriber_error.hpp"
+#include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
-enum class SubscriberReceiveError : uint8_t {
-};
-
-enum class SubscriberCreateError : uint8_t {
-    /// The maximum amount of [`Subscriber`]s that can connect to a
-    /// [`Service`](crate::service::Service) is
-    /// defined in [`crate::config::Config`]. When this is exceeded no more
-    /// [`Subscriber`]s
-    /// can be created for a specific [`Service`](crate::service::Service).
-    ExceedsMaxSupportedSubscribers,
-    /// When the [`Subscriber`] requires a larger buffer size than the
-    /// [`Service`](crate::service::Service) offers the creation will fail.
-    BufferSizeExceedsMaxSupportedBufferSizeOfService,
-};
-
 template <ServiceType S, typename Payload, typename UserHeader>
 class Subscriber {
   public:
-    Subscriber() = default;
-    Subscriber(Subscriber&&) = default;
-    auto operator=(Subscriber&&) -> Subscriber& = default;
-    ~Subscriber() = default;
+    Subscriber(Subscriber&&) noexcept;
+    auto operator=(Subscriber&&) noexcept -> Subscriber&;
+    ~Subscriber();
 
     Subscriber(const Subscriber&) = delete;
     auto operator=(const Subscriber&) -> Subscriber& = delete;
 
-    auto id() const -> UniqueSubscriberId {
-        IOX_TODO();
-    }
-    auto buffer_size() const -> uint64_t {
-        IOX_TODO();
-    }
-    auto receive() const -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> {
-        IOX_TODO();
-    }
-    auto update_connections() const -> iox::expected<void, ConnectionFailure> {
-        IOX_TODO();
-    }
+    auto id() const -> UniqueSubscriberId;
+    auto buffer_size() const -> uint64_t;
+    auto receive() const -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError>;
+    auto update_connections() const -> iox::expected<void, ConnectionFailure>;
+
+  private:
+    template <ServiceType, typename, typename>
+    friend class PortFactorySubscriber;
+
+    explicit Subscriber(iox2_subscriber_h handle);
+    void drop();
+
+    iox2_subscriber_h m_handle;
 };
+template <ServiceType S, typename Payload, typename UserHeader>
+inline Subscriber<S, Payload, UserHeader>::Subscriber(iox2_subscriber_h handle)
+    : m_handle { handle } {
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline Subscriber<S, Payload, UserHeader>::Subscriber(Subscriber&& rhs) noexcept
+    : m_handle { nullptr } {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Subscriber<S, Payload, UserHeader>::operator=(Subscriber&& rhs) noexcept -> Subscriber& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline Subscriber<S, Payload, UserHeader>::~Subscriber() {
+    drop();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline void Subscriber<S, Payload, UserHeader>::drop() {
+    if (m_handle != nullptr) {
+        iox2_subscriber_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Subscriber<S, Payload, UserHeader>::id() const -> UniqueSubscriberId {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Subscriber<S, Payload, UserHeader>::buffer_size() const -> uint64_t {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Subscriber<S, Payload, UserHeader>::receive() const
+    -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Subscriber<S, Payload, UserHeader>::update_connections() const -> iox::expected<void, ConnectionFailure> {
+    IOX_TODO();
+}
+
 } // namespace iox2
 
 #endif

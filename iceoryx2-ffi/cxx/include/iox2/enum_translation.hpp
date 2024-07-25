@@ -28,6 +28,7 @@
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_error_enums.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/subscriber_error.hpp"
 
 namespace iox {
 template <>
@@ -470,6 +471,19 @@ constexpr auto from<int, iox2::PublisherCreateError>(const int value) noexcept -
         return iox2::PublisherCreateError::ExceedsMaxSupportedPublishers;
     case iox2_publisher_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT:
         return iox2::PublisherCreateError::UnableToCreateDataSegment;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept -> iox2::SubscriberCreateError {
+    const auto error = static_cast<iox2_subscriber_create_error_e>(value);
+    switch (error) {
+    case iox2_subscriber_create_error_e_BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE:
+        return iox2::SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService;
+    case iox2_subscriber_create_error_e_EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS:
+        return iox2::SubscriberCreateError::ExceedsMaxSupportedSubscribers;
     }
 
     IOX_UNREACHABLE();

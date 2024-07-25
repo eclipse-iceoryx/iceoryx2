@@ -60,7 +60,14 @@ PortFactorySubscriber<S, Payload, UserHeader>::create() && -> iox::expected<Subs
     m_buffer_size.and_then(
         [&](auto value) { iox2_port_factory_subscriber_builder_set_buffer_size(ref_handle, value); });
 
-    IOX_TODO();
+    iox2_subscriber_h sub_handle {};
+    auto result = iox2_port_factory_subscriber_builder_create(m_handle, nullptr, &sub_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Subscriber<S, Payload, UserHeader>(sub_handle));
+    }
+
+    return iox::err(iox::into<SubscriberCreateError>(result));
 }
 } // namespace iox2
 
