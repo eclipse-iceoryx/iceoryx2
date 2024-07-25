@@ -21,6 +21,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::test_fail;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 struct TestFixture {
@@ -222,18 +223,11 @@ fn directory_list_contents_works() {
         false
     };
 
-    for i in 0..NUMBER_OF_DIRECTORIES {
-        assert_that!(is_part_of_dir(content[i].name().to_string()), eq true);
-        assert_that!(content[i].metadata().file_type(), eq FileType::Directory);
-    }
-
-    for i in 0..NUMBER_OF_FILES {
-        assert_that!(is_part_of_files(
-            content[i + NUMBER_OF_DIRECTORIES].name().to_string()
-        ), eq true);
-        assert_that!(
-            content[i + NUMBER_OF_DIRECTORIES].metadata().file_type(),
-            eq FileType::File
-        );
+    for entry in content {
+        match entry.metadata().file_type() {
+            FileType::File => assert_that!(is_part_of_files(entry.name().to_string()), eq true),
+            FileType::Directory => assert_that!(is_part_of_dir(entry.name().to_string()), eq true),
+            _ => test_fail!("The directory shall only contain files and directories."),
+        }
     }
 }
