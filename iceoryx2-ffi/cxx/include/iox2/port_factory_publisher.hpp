@@ -68,7 +68,15 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publi
     m_max_loaned_samples.and_then(
         [&](auto value) { iox2_port_factory_publisher_builder_set_max_loaned_samples(ref_handle, value); });
 
-    IOX_TODO();
+    iox2_publisher_h pub_handle {};
+
+    auto result = iox2_port_factory_publisher_builder_create(m_handle, nullptr, &pub_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Publisher<S, Payload, UserHeader>(pub_handle));
+    }
+
+    return iox::err(iox::into<PublisherCreateError>(result));
 }
 } // namespace iox2
 

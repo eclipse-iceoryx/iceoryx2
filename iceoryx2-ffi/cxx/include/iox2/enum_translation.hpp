@@ -22,6 +22,7 @@
 #include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/notifier_error.hpp"
+#include "iox2/publisher_error.hpp"
 #include "iox2/semantic_string.hpp"
 #include "iox2/service_builder_event_error.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
@@ -461,7 +462,18 @@ constexpr auto from<int, iox2::ListenerWaitError>(const int value) noexcept -> i
     IOX_UNREACHABLE();
 }
 
+template <>
+constexpr auto from<int, iox2::PublisherCreateError>(const int value) noexcept -> iox2::PublisherCreateError {
+    const auto error = static_cast<iox2_publisher_create_error_e>(value);
+    switch (error) {
+    case iox2_publisher_create_error_e_EXCEEDS_MAX_SUPPORTED_PUBLISHERS:
+        return iox2::PublisherCreateError::ExceedsMaxSupportedPublishers;
+    case iox2_publisher_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT:
+        return iox2::PublisherCreateError::UnableToCreateDataSegment;
+    }
 
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif
