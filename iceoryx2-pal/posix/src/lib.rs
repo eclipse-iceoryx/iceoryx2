@@ -10,6 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::missing_safety_doc)]
+
+use crate::posix::types::*;
+use crate::posix::{closedir, free, malloc, opendir, readdir_r};
+
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -100,6 +105,68 @@ pub mod posix {
 
         unreachable!()
     }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub unsafe fn scandir_impl(
+    path: *const c_char,
+    namelist: *mut *mut *mut crate::posix::types::dirent,
+) -> int {
+    let dirfd = opendir(path);
+    if dirfd.is_null() {
+        return -1;
+    }
+
+    *namelist = core::ptr::null_mut::<*mut dirent>();
+    let mut entries = vec![];
+    const DIRENT_SIZE: usize = core::mem::size_of::<dirent>();
+
+    let cleanup = |entries: &Vec<*mut void>, namelist: *mut *mut dirent| {
+        for entry in entries {
+            free((*entry).cast());
+        }
+
+        if !namelist.is_null() {
+            free(namelist.cast());
+        }
+    };
+
+    loop {
+        let dirent_ptr = malloc(DIRENT_SIZE);
+        let result_ptr: *mut *mut dirent = malloc(core::mem::size_of::<*mut dirent>()).cast();
+
+        if readdir_r(dirfd, dirent_ptr.cast(), result_ptr) != 0 {
+            free(result_ptr.cast());
+            free(dirent_ptr);
+            cleanup(&entries, *namelist);
+
+            closedir(dirfd);
+            return -1;
+        }
+
+        if (*result_ptr).is_null() {
+            free(result_ptr.cast());
+            free(dirent_ptr);
+            break;
+        }
+
+        free(result_ptr.cast());
+        entries.push(dirent_ptr);
+    }
+
+    *namelist = malloc(core::mem::size_of::<*mut *mut dirent>() * entries.len()).cast();
+    if (*namelist).is_null() {
+        cleanup(&entries, *namelist);
+        closedir(dirfd);
+        return -1;
+    }
+
+    for (n, entry) in entries.iter().enumerate() {
+        (*namelist).add(n).write((*entry).cast());
+    }
+
+    closedir(dirfd);
+    entries.len() as _
 }
 
 #[cfg(target_os = "windows")]
