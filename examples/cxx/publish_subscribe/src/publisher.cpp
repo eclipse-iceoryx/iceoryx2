@@ -36,11 +36,13 @@ auto main() -> int {
     auto counter = 0;
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         counter += 1;
-        auto sample = publisher.loan_uninit().expect("acquire sample");
+        publisher.send_copy(TransmissionData { counter, counter * 3, counter * 812.12 }).expect("successful send");
 
-        sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
+        // auto sample = publisher.loan_uninit().expect("acquire sample");
 
-        send_sample(std::move(sample)).expect("send successful");
+        // sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
+
+        // send_sample(std::move(sample)).expect("send successful");
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

@@ -970,7 +970,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                 slice_len, max_slice_len);
         }
 
-        let chunk = self.allocate(self.sample_layout(slice_len))?;
+        let sample_layout = self.sample_layout(slice_len);
+        let chunk = self.allocate(sample_layout)?;
         let header_ptr = chunk.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
@@ -982,11 +983,25 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
             ))
         };
 
+        let payload_size = self
+            .data_segment
+            .subscriber_connections
+            .static_config
+            .message_type_details
+            .payload
+            .size;
+
+        let slice_len_adjusted_to_payload_type_details =
+            payload_size * slice_len / core::mem::size_of::<Payload>();
+
         let sample = unsafe {
             RawSampleMut::new_unchecked(
                 header_ptr,
                 user_header_ptr,
-                core::slice::from_raw_parts_mut(payload_ptr, slice_len),
+                core::slice::from_raw_parts_mut(
+                    payload_ptr,
+                    slice_len_adjusted_to_payload_type_details,
+                ),
             )
         };
 

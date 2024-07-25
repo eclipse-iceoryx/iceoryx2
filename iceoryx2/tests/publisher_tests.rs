@@ -19,6 +19,7 @@ mod publisher {
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{service_name::ServiceName, Service};
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -375,6 +376,31 @@ mod publisher {
             assert_that!(publisher_id_set.insert(publisher.id()), eq true);
             publishers.push(publisher);
         }
+    }
+
+    #[test]
+    fn publisher_with_overridden_payload_details_adjusts_slice_len<Sut: Service>() -> TestResult<()>
+    {
+        const TYPE_SIZE_OVERRIDE: usize = 128;
+        let service_name = generate_name()?;
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let mut type_detail = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        type_detail.size = TYPE_SIZE_OVERRIDE;
+
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[u8]>()
+                .__internal_set_payload_type_details(type_detail)
+                .create()?
+        };
+
+        let sut = service.publisher_builder().create()?;
+
+        let sample = sut.loan_slice(1)?;
+
+        assert_that!(sample.payload(), len TYPE_SIZE_OVERRIDE);
+
+        Ok(())
     }
 
     #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
