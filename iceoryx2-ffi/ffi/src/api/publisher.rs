@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi};
+use crate::api::{iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi, SampleMutUnion};
 use crate::IOX2_OK;
 
 use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
@@ -80,6 +80,15 @@ impl IntoCInt for PublisherLoanError {
             }
         }) as c_int
     }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_publisher_loan_error_e {
+    OUT_OF_MEMORY = IOX2_OK as isize + 1,
+    EXCEEDS_MAX_LOANED_SAMPLES,
+    EXCEEDS_MAX_LOAN_SIZE,
+    INTERNAL_FAILURE,
 }
 
 pub(super) union PublisherUnion {
@@ -229,6 +238,67 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
     }
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publisher_loan(
+    publisher_handle: iox2_publisher_ref_h,
+    number_of_elements: c_size_t,
+    sample_struct_ptr: *mut iox2_sample_mut_t,
+    sample_handle_ptr: *mut iox2_sample_mut_h,
+) -> c_int {
+    debug_assert!(!publisher_handle.is_null());
+    debug_assert!(!sample_handle_ptr.is_null());
+
+    *sample_handle_ptr = std::ptr::null_mut();
+
+    let mut sample_struct_ptr = sample_struct_ptr;
+    fn no_op(_: *mut iox2_sample_mut_t) {}
+    let mut deleter: fn(*mut iox2_sample_mut_t) = no_op;
+    if sample_struct_ptr.is_null() {
+        sample_struct_ptr = iox2_sample_mut_t::alloc();
+        deleter = iox2_sample_mut_t::dealloc;
+    }
+    debug_assert!(!sample_struct_ptr.is_null());
+
+    let publisher = &mut *publisher_handle.as_type();
+
+    match publisher.service_type {
+        iox2_service_type_e::IPC => match publisher
+            .value
+            .as_ref()
+            .ipc
+            .loan_slice_uninit(number_of_elements)
+        {
+            Ok(sample) => {
+                (*sample_struct_ptr).init(
+                    publisher.service_type,
+                    SampleMutUnion::new_ipc(sample),
+                    deleter,
+                );
+                *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                IOX2_OK
+            }
+            Err(error) => error.into_c_int(),
+        },
+        iox2_service_type_e::LOCAL => match publisher
+            .value
+            .as_ref()
+            .local
+            .loan_slice_uninit(number_of_elements)
+        {
+            Ok(sample) => {
+                (*sample_struct_ptr).init(
+                    publisher.service_type,
+                    SampleMutUnion::new_local(sample),
+                    deleter,
+                );
+                *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                IOX2_OK
+            }
+            Err(error) => error.into_c_int(),
+        },
+    }
+}
+
 /// This function needs to be called to destroy the publisher!
 ///
 /// # Arguments
@@ -262,7 +332,7 @@ pub unsafe extern "C" fn iox2_publisher_drop(publisher_handle: iox2_publisher_h)
 use core::time::Duration;
 use iceoryx2_bb_log::set_log_level;
 
-use super::IntoCInt;
+use super::{c_size_t, iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 

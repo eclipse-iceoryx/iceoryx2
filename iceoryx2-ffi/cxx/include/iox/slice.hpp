@@ -23,6 +23,7 @@ class Slice {
   public:
     using Iterator = T*;
     using ConstIterator = const T*;
+    using ValueType = T;
 
     auto size() const -> uint64_t {
         IOX_TODO();
@@ -45,6 +46,16 @@ class Slice {
     auto end() const -> ConstIterator {
         IOX_TODO();
     }
+};
+
+template <typename>
+struct IsSlice {
+    static constexpr bool value = false;
+};
+
+template <typename T>
+struct IsSlice<Slice<T>> {
+    static constexpr bool value = true;
 };
 } // namespace iox
 

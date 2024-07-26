@@ -16,6 +16,7 @@
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/connection_failure.hpp"
+#include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/sample_mut.hpp"
@@ -116,7 +117,16 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
     -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    iox2_sample_mut_h sample_handle {};
+
+    auto result = iox2_publisher_loan(ref_handle, 1, nullptr, &sample_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(SampleMut<S, Payload, UserHeader>(sample_handle));
+    }
+
+    return iox::err(iox::into<PublisherLoanError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

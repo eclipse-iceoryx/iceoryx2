@@ -524,6 +524,23 @@ constexpr auto from<int, iox2::SubscriberReceiveError>(const int value) noexcept
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::PublisherLoanError>(const int value) noexcept -> iox2::PublisherLoanError {
+    const auto error = static_cast<iox2_publisher_loan_error_e>(value);
+    switch (error) {
+    case iox2_publisher_loan_error_e_EXCEEDS_MAX_LOANED_SAMPLES:
+        return iox2::PublisherLoanError::ExceedsMaxLoanedSamples;
+    case iox2_publisher_loan_error_e_OUT_OF_MEMORY:
+        return iox2::PublisherLoanError::OutOfMemory;
+    case iox2_publisher_loan_error_e_EXCEEDS_MAX_LOAN_SIZE:
+        return iox2::PublisherLoanError::ExceedsMaxLoanSize;
+    case iox2_publisher_loan_error_e_INTERNAL_FAILURE:
+        return iox2::PublisherLoanError::InternalFailure;
+    }
+
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif
