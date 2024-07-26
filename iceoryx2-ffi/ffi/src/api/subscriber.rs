@@ -200,20 +200,25 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
 
     *sample_handle_ptr = std::ptr::null_mut();
 
-    let mut sample_struct_ptr = sample_struct_ptr;
-    fn no_op(_: *mut iox2_sample_t) {}
-    let mut deleter: fn(*mut iox2_sample_t) = no_op;
-    if sample_struct_ptr.is_null() {
-        sample_struct_ptr = iox2_sample_t::alloc();
-        deleter = iox2_sample_t::dealloc;
-    }
-    debug_assert!(!sample_struct_ptr.is_null());
+    let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_t| {
+        let mut sample_struct_ptr = sample_struct_ptr;
+        fn no_op(_: *mut iox2_sample_t) {}
+        let mut deleter: fn(*mut iox2_sample_t) = no_op;
+        if sample_struct_ptr.is_null() {
+            sample_struct_ptr = iox2_sample_t::alloc();
+            deleter = iox2_sample_t::dealloc;
+        }
+        debug_assert!(!sample_struct_ptr.is_null());
+
+        (sample_struct_ptr, deleter)
+    };
 
     let subscriber = &mut *subscriber_handle.as_type();
 
     match subscriber.service_type {
         iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.receive() {
             Ok(Some(sample)) => {
+                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
                     subscriber.service_type,
                     SampleUnion::new_ipc(sample),
@@ -226,6 +231,7 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
         },
         iox2_service_type_e::LOCAL => match subscriber.value.as_ref().local.receive() {
             Ok(Some(sample)) => {
+                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
                     subscriber.service_type,
                     SampleUnion::new_local(sample),
