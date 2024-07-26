@@ -28,6 +28,7 @@ fn main() {
     let bindings = if std::env::var("DOCS_RS").is_ok() {
         bindgen::Builder::default()
             .header("src/c/posix.h")
+            .blocklist_type("max_align_t")
             .parse_callbacks(Box::new(CargoCallbacks::new()))
             .clang_arg("-D IOX2_DOCS_RS_SUPPORT")
             .use_core()
@@ -38,6 +39,7 @@ fn main() {
         {
             bindgen::Builder::default()
                 .header("src/c/posix.h")
+                .blocklist_type("max_align_t")
                 .parse_callbacks(Box::new(CargoCallbacks::new()))
                 .use_core()
                 .generate()
@@ -48,6 +50,7 @@ fn main() {
         {
             bindgen::Builder::default()
                 .header("src/c/posix.h")
+                .blocklist_type("max_align_t")
                 .parse_callbacks(Box::new(CargoCallbacks::new()))
                 .clang_arg("-D IOX2_ACL_SUPPORT")
                 .generate()
@@ -64,11 +67,6 @@ fn main() {
     cc::Build::new()
         .file("src/c/sigaction.c")
         .compile("libsigaction.a");
-
-    println!("cargo:rerun-if-changed=src/c/scandir.c");
-    cc::Build::new()
-        .file("src/c/scandir.c")
-        .compile("libscandir.a");
 
     println!("cargo:rerun-if-changed=src/c/socket_macros.c");
     cc::Build::new()

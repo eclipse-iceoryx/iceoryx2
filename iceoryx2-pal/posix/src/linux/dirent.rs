@@ -13,10 +13,10 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::types::*;
+use crate::{posix::types::*, scandir_impl};
 
 pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> int {
-    internal::scandir_ext(path, namelist)
+    scandir_impl(path, namelist)
 }
 
 pub unsafe fn mkdir(pathname: *const c_char, mode: mode_t) -> int {
@@ -39,10 +39,6 @@ pub unsafe fn readdir(dirp: *mut DIR) -> *const dirent {
     crate::internal::readdir(dirp)
 }
 
-mod internal {
-    use super::*;
-
-    extern "C" {
-        pub(super) fn scandir_ext(path: *const c_char, namelist: *mut *mut *mut dirent) -> int;
-    }
+pub unsafe fn readdir_r(dirp: *mut DIR, entry: *mut dirent, result: *mut *mut dirent) -> int {
+    crate::internal::readdir_r(dirp, entry, result)
 }

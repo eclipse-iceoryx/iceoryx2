@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(clippy::missing_safety_doc)]
+
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -31,6 +33,11 @@ mod linux;
 mod macos;
 #[cfg(target_os = "windows")]
 mod windows;
+
+#[cfg(not(target_os = "windows"))]
+mod scandir;
+#[cfg(not(target_os = "windows"))]
+use scandir::*;
 
 pub mod posix {
     #![allow(dead_code)]
