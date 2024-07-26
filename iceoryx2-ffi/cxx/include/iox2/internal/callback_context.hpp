@@ -30,8 +30,13 @@ class CallbackContext {
 };
 
 template <typename T>
-auto create_callback_context(const T& ptr) -> CallbackContext<T> {
+auto ctx(const T& ptr) -> CallbackContext<T> {
     return CallbackContext<T>(ptr);
+}
+
+template <typename T>
+auto ctx_cast(void* ptr) -> CallbackContext<T>* {
+    return static_cast<CallbackContext<T>*>(ptr);
 }
 } // namespace iox2::internal
 

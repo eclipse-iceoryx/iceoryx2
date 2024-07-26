@@ -51,7 +51,7 @@ class PortFactoryEvent {
 
     /// Returns the StaticConfig of the [`Service`].
     /// Contains all settings that never change during the lifetime of the service.
-    auto static_config() const -> const StaticConfigEvent&;
+    auto static_config() const -> StaticConfigEvent;
 
     /// Returns the DynamicConfig of the [`Service`].
     /// Contains all dynamic settings, like the current participants etc..

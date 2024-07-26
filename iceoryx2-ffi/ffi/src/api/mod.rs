@@ -16,7 +16,7 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_log::set_log_level;
 
-use core::ffi::c_int;
+use core::ffi::{c_int, c_void};
 
 mod config;
 mod event_id;
@@ -36,6 +36,7 @@ mod service_builder;
 mod service_builder_event;
 mod service_builder_pub_sub;
 mod service_name;
+mod static_config_event;
 mod subscriber;
 
 pub use config::*;
@@ -56,10 +57,14 @@ pub use service_builder::*;
 pub use service_builder_event::*;
 pub use service_builder_pub_sub::*;
 pub use service_name::*;
+pub use static_config_event::*;
 pub use subscriber::*;
 
 /// This constant signals an successful function call
 pub const IOX2_OK: c_int = 0;
+
+/// An alias to a `void *` which can be used to pass arbitrary data to the callback
+pub type iox2_callback_context = *mut c_void;
 
 #[repr(C)]
 #[derive(Copy, Clone)]

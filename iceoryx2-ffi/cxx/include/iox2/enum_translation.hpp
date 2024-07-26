@@ -445,6 +445,23 @@ constexpr auto from<int, iox2::NotifierNotifyError>(const int value) noexcept ->
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::ListenerWaitError>(const int value) noexcept -> iox2::ListenerWaitError {
+    const auto error = static_cast<iox2_listener_wait_error_e>(value);
+    switch (error) {
+    case iox2_listener_wait_error_e_CONTRACT_VIOLATION:
+        return iox2::ListenerWaitError::ContractViolation;
+    case iox2_listener_wait_error_e_INTERRUPT_SIGNAL:
+        return iox2::ListenerWaitError::InterruptSignal;
+    case iox2_listener_wait_error_e_INTERNAL_FAILURE:
+        return iox2::ListenerWaitError::InternalFailure;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+
 } // namespace iox
 
 #endif

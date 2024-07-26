@@ -71,7 +71,7 @@ auto list_callback(iox2_node_state_e node_state,
                    iox2_node_id_ptr node_id,
                    iox2_node_name_ptr node_name,
                    iox2_config_ptr config,
-                   iox2_node_list_callback_context context) -> iox2_callback_progression_e {
+                   iox2_callback_context context) -> iox2_callback_progression_e {
     auto node_details = [&] {
         if (node_id == nullptr || config == nullptr) {
             return iox::optional<NodeDetails>();
@@ -95,7 +95,7 @@ auto list_callback(iox2_node_state_e node_state,
         IOX_UNREACHABLE();
     }();
 
-    auto* callback = static_cast<internal::CallbackContext<iox::function<CallbackProgression(NodeState<T>)>>*>(context);
+    auto* callback = internal::ctx_cast<iox::function<CallbackProgression(NodeState<T>)>>(context);
     return iox::into<iox2_callback_progression_e>(callback->value()(node_state_object));
 }
 // NOLINTEND(readability-function-size)
@@ -103,7 +103,7 @@ auto list_callback(iox2_node_state_e node_state,
 template <ServiceType T>
 auto Node<T>::list(ConfigView config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
     -> iox::expected<void, NodeListFailure> {
-    auto ctx = internal::create_callback_context(callback);
+    auto ctx = internal::ctx(callback);
 
     const auto ret_val =
         iox2_node_list(iox::into<iox2_service_type_e>(T), config.m_ptr, list_callback<T>, static_cast<void*>(&ctx));
