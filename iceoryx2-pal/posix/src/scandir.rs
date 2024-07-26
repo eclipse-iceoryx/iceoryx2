@@ -26,50 +26,49 @@ pub unsafe fn scandir_impl(
     let mut entries = vec![];
     const DIRENT_SIZE: usize = core::mem::size_of::<dirent>();
 
-    let cleanup = |entries: &Vec<*mut void>, namelist: *mut *mut dirent| {
-        for entry in entries {
-            free((*entry).cast());
-        }
+    let cleanup = |entries: &mut Vec<*mut void>, namelist: *mut *mut *mut dirent| {
+        entries.drain(..).for_each(|entry| {
+            free(entry);
+        });
 
-        if !namelist.is_null() {
-            free(namelist.cast());
+        if !(*namelist).is_null() {
+            free((*namelist).cast());
         }
+        *namelist = core::ptr::null_mut();
     };
 
     loop {
         let dirent_ptr = malloc(DIRENT_SIZE);
-        let result_ptr: *mut *mut dirent = malloc(core::mem::size_of::<*mut dirent>()).cast();
+        let mut result_ptr: *mut dirent = core::ptr::null_mut();
 
-        if readdir_r(dirfd, dirent_ptr.cast(), result_ptr) != 0 {
-            free(result_ptr.cast());
+        if readdir_r(dirfd, dirent_ptr.cast(), &mut result_ptr as _) != 0 {
             free(dirent_ptr);
-            cleanup(&entries, *namelist);
+            cleanup(&mut entries, namelist);
 
             closedir(dirfd);
             return -1;
         }
 
-        if (*result_ptr).is_null() {
-            free(result_ptr.cast());
+        if result_ptr.is_null() {
             free(dirent_ptr);
             break;
         }
 
-        free(result_ptr.cast());
         entries.push(dirent_ptr);
     }
 
-    *namelist = malloc(core::mem::size_of::<*mut *mut dirent>() * entries.len()).cast();
+    let num_entries = entries.len();
+    *namelist = malloc(core::mem::size_of::<*mut *mut dirent>() * num_entries).cast();
     if (*namelist).is_null() {
-        cleanup(&entries, *namelist);
+        cleanup(&mut entries, namelist);
         closedir(dirfd);
         return -1;
     }
 
-    for (n, entry) in entries.iter().enumerate() {
-        (*namelist).add(n).write((*entry).cast());
-    }
+    entries.drain(..).enumerate().for_each(|(n, entry)| {
+        (*namelist).add(n).write(entry.cast());
+    });
 
     closedir(dirfd);
-    entries.len() as _
+    num_entries as _
 }
