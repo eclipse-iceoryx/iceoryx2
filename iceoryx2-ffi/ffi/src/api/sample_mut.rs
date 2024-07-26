@@ -162,40 +162,44 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
     debug_assert!(!sample_handle.is_null());
     debug_assert!(!number_of_recipients.is_null());
 
-    let sample = &mut *sample_handle.as_type();
+    let sample_struct = &mut *sample_handle.as_type();
+    let service_type = sample_struct.service_type;
 
-    match sample.service_type {
+    let sample = sample_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| panic!("Trying to send an already sent sample!"));
+    (sample_struct.deleter)(sample_struct);
+
+    match service_type {
         iox2_service_type_e::IPC => {
-            match ManuallyDrop::take(&mut sample.value.as_mut().ipc)
-                .assume_init()
-                .send()
-            {
+            let sample = ManuallyDrop::into_inner(sample.ipc);
+            match sample.assume_init().send() {
                 Ok(v) => {
                     *number_of_recipients = v;
-                    IOX2_OK
                 }
                 Err(e) => {
-                    (sample.deleter)(sample);
-                    e.into_c_int()
+                    (sample_struct.deleter)(sample_struct);
+                    return e.into_c_int();
                 }
             }
         }
         iox2_service_type_e::LOCAL => {
-            match ManuallyDrop::take(&mut sample.value.as_mut().local)
-                .assume_init()
-                .send()
-            {
+            let sample = ManuallyDrop::into_inner(sample.local);
+            match sample.assume_init().send() {
                 Ok(v) => {
                     *number_of_recipients = v;
-                    IOX2_OK
                 }
                 Err(e) => {
-                    (sample.deleter)(sample);
-                    e.into_c_int()
+                    (sample_struct.deleter)(sample_struct);
+                    return e.into_c_int();
                 }
             }
         }
     }
+
+    IOX2_OK
 }
 
 /// This function needs to be called to destroy the sample!

@@ -220,6 +220,7 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto send_sample(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<uint64_t, PublisherSendError> {
     size_t number_of_recipients = 0;
     auto result = iox2_sample_mut_send(sample.m_handle, &number_of_recipients);
+    sample.m_handle = nullptr;
 
     if (result == IOX2_OK) {
         return iox::ok(number_of_recipients);
