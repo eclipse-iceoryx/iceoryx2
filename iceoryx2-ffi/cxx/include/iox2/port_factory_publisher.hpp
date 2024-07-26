@@ -23,15 +23,31 @@
 #include <cstdint>
 
 namespace iox2 {
+/// Defines the strategy the [`Publisher`] shall pursue in
+/// [`send_sample(`] or
+/// [`Publisher::send_copy()`] when the buffer of a
+/// [`Subscriber`] is full and the service does not overflow.
 enum class UnableToDeliverStrategy : uint8_t {
+    /// Blocks until the [`Subscriber`] has consumed the
+    /// [`Sample`] from the buffer and there is space again
     Block,
+    /// Do not deliver the [`Sample`].
     DiscardSample
 };
 
+/// Factory to create a new [`Publisher`] port/endpoint for
+/// [`MessagingPattern::PublishSubscribe`] based communication.
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublisher {
+    /// Sets the [`UnableToDeliverStrategy`].
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
+
+    /// Defines how many [`SampleMut`] the [`Publisher`] can loan with
+    /// [`Publisher::loan()`] or [`Publisher::loan_uninit()`] in parallel.
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_samples);
+
+    /// Sets the maximum slice length that a user can allocate with
+    /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
     IOX_BUILDER_OPTIONAL(uint64_t, max_slice_len);
 
   public:
@@ -41,6 +57,7 @@ class PortFactoryPublisher {
     auto operator=(PortFactoryPublisher&&) -> PortFactoryPublisher& = default;
     ~PortFactoryPublisher() = default;
 
+    /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     auto create() && -> iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
 
   private:

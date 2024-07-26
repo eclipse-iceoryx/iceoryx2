@@ -20,6 +20,17 @@
 #include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
+/// It stores the payload and is acquired by the [`Subscriber`] whenever
+/// it receives new data from a [`Publisher`] via
+/// [`Subscriber::receive()`].
+/// # Notes
+///
+/// Does not implement [`Send`] since it releases unsent samples vie the [`Subscriber`] and the
+/// [`Subscriber`] is not thread-safe!
+///
+/// # Important
+///
+/// DO NOT MOVE THE SAMPLE INTO ANOTHER THREAD!
 template <ServiceType, typename Payload, typename UserHeader>
 class Sample {
   public:
@@ -30,13 +41,23 @@ class Sample {
     Sample(const Sample&) = delete;
     auto operator=(const Sample&) -> Sample& = delete;
 
+    /// Returns a reference to the payload of the [`Sample`]
     auto operator*() const -> const Payload&;
+
+    /// Returns a pointer to the payload of the [`Sample`]
     auto operator->() const -> const Payload*;
 
+    /// Returns a reference to the payload of the [`Sample`]
     auto payload() const -> const Payload&;
+
+    /// Returns a reference to the user_header of the [`Sample`]
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
     auto user_header() const -> const T&;
+
+    /// Returns a reference to the [`Header`] of the [`Sample`].
     auto header() const -> const HeaderPublishSubscribe&;
+
+    /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     auto origin() const -> UniquePublisherId;
 
   private:

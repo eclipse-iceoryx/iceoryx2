@@ -17,12 +17,14 @@
 
 namespace iox2 {
 
+/// Defines a failure that can occur when a [`Publisher`] is created with
+/// [`PortFactoryPublisher`].
 enum class PublisherCreateError : uint8_t {
     /// The maximum amount of [`Publisher`]s that can connect to a
-    /// [`Service`](crate::service::Service) is
-    /// defined in [`crate::config::Config`]. When this is exceeded no more
+    /// [`Service`] is
+    /// defined in [`Config`]. When this is exceeded no more
     /// [`Publisher`]s
-    /// can be created for a specific [`Service`](crate::service::Service).
+    /// can be created for a specific [`Service`].
     ExceedsMaxSupportedPublishers,
     /// The datasegment in which the payload of the [`Publisher`] is stored,
     /// could not be created.
@@ -38,7 +40,7 @@ enum class PublisherLoanError : uint8_t {
     /// The maximum amount of [`SampleMut`]s a user can borrow with
     /// [`Publisher::loan()`] or
     /// [`Publisher::loan_uninit()`] is
-    /// defined in [`crate::config::Config`]. When this is exceeded those calls
+    /// defined in [`Config`]. When this is exceeded those calls
     /// will fail.
     ExceedsMaxLoanedSamples,
     /// The provided slice size exceeds the configured max slice size of the
@@ -46,7 +48,7 @@ enum class PublisherLoanError : uint8_t {
     /// To send a [`SampleMut`] with this size a new [`Publisher`] has to be
     /// created with
     /// a
-    /// [`crate::service::port_factory::publisher::PortFactoryPublisher::max_slice_len()`]
+    /// [`PortFactoryPublisher::max_slice_len()`]
     /// greater or equal to the required len.
     ExceedsMaxLoanSize,
     /// Errors that indicate either an implementation issue or a wrongly

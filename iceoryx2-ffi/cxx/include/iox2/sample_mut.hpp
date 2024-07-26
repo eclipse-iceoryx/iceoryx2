@@ -27,6 +27,25 @@
 #include <cstdint>
 
 namespace iox2 {
+
+/// Acquired by a [`Publisher`] via
+///  * [`Publisher::loan()`],
+///  * [`Publisher::loan_uninit()`]
+///  * [`Publisher::loan_slice()`]
+///  * [`Publisher::loan_slice_uninit()`]
+///
+/// It stores the payload that will be sent
+/// to all connected [`Subscriber`]s. If the [`SampleMut`] is not sent
+/// it will release the loaned memory when going out of scope.
+///
+/// # Notes
+///
+/// Does not implement [`Send`] since it releases unsent samples in the [`Publisher`] and the
+/// [`Publisher`] is not thread-safe!
+///
+/// # Important
+///
+/// DO NOT MOVE THE SAMPLE INTO ANOTHER THREAD!
 template <ServiceType S, typename Payload, typename UserHeader>
 class SampleMut {
   public:
@@ -37,21 +56,40 @@ class SampleMut {
     SampleMut(const SampleMut&) = delete;
     auto operator=(const SampleMut&) -> SampleMut& = delete;
 
+    /// Returns a const reference to the payload of the [`Sample`]
+    auto operator*() const -> const Payload&;
+
+    /// Returns a reference to the payload of the [`Sample`]
+    auto operator*() -> Payload&;
+
+    /// Returns a const pointer to the payload of the [`Sample`]
+    auto operator->() const -> const Payload*;
+
+    /// Returns a pointer to the payload of the [`Sample`]
+    auto operator->() -> Payload*;
+
+    /// Returns a reference to the [`Header`] of the [`Sample`].
     auto header() const -> const HeaderPublishSubscribe&;
 
+    /// Returns a reference to the user_header of the [`Sample`]
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
     auto user_header() const -> const T&;
 
+    /// Returns a mutable reference to the user_header of the [`Sample`].
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
     auto user_header_mut() -> T&;
 
+    /// Returns a reference to the const payload of the sample.
     auto payload() const -> const Payload&;
 
+    /// Returns a reference to the payload of the sample.
     auto payload_mut() -> Payload&;
 
+    /// Writes the payload to the sample
     template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::value, T>>
     void write_payload(T&& value);
 
+    /// Writes the payload to the sample
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::value, T>>
     void write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer);
 
@@ -102,6 +140,26 @@ inline auto SampleMut<S, Payload, UserHeader>::operator=(SampleMut&& rhs) noexce
 template <ServiceType S, typename Payload, typename UserHeader>
 inline SampleMut<S, Payload, UserHeader>::~SampleMut() noexcept {
     drop();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator*() const -> const Payload& {
+    return payload();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator*() -> Payload& {
+    return payload_mut();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator->() const -> const Payload* {
+    return &payload();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator->() -> Payload* {
+    return &payload_mut();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

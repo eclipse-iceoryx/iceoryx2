@@ -26,6 +26,7 @@
 #include <cstdint>
 
 namespace iox2 {
+/// Sending endpoint of a publish-subscriber based communication.
 template <ServiceType S, typename Payload, typename UserHeader>
 class Publisher {
   public:
@@ -36,16 +37,49 @@ class Publisher {
     Publisher(const Publisher&) = delete;
     auto operator=(const Publisher&) -> Publisher& = delete;
 
+    /// Returns the [`UniquePublisherId`] of the [`Publisher`]
     auto id() const -> UniquePublisherId;
+
+    /// Copies the input `value` into a [`SampleMut`] and delivers it.
+    /// On success it returns the number of [`Subscriber`]s that received
+    /// the data, otherwise a [`PublisherSendError`] describing the failure.
     auto send_copy(const Payload& payload) const -> iox::expected<uint64_t, PublisherSendError>;
+
+    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
     auto loan_uninit() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
+
+    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
+    /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
+    /// can be used to loan an uninitalized [`SampleMut`].
+    ///
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
     auto loan() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
 
+    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
+    /// and initializes all slice elements with the default value. This can be a performance hit
+    /// and [`Publisher::loan_slice_uninit()`] can be used to loan a slice of uninitialized
+    /// [`Payload`].
+    ///
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
     auto loan_slice(const uint64_t number_of_elements)
         -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
+
+    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it returns [`PublisherLoanError`] describing the failure.
     auto loan_slice_uninit(const uint64_t number_of_elements)
         -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
 
+    /// Explicitly updates all connections to the [`Subscriber`]s. This is
+    /// required to be called whenever a new [`Subscriber`] is connected to
+    /// the service. It is called implicitly whenever [`SampleMut::send()`] or
+    /// [`Publisher::send_copy()`] is called.
+    /// When a [`Subscriber`] is connected that requires a history this
+    /// call will deliver it.
     auto update_connections() -> iox::expected<void, ConnectionFailure>;
 
   private:

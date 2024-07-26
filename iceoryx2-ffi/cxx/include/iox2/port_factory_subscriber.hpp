@@ -24,8 +24,11 @@
 
 namespace iox2 {
 
+/// Factory to create a new [`Subscriber`] port/endpoint for
+/// [`MessagingPattern::PublishSubscribe`] based communication.
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactorySubscriber {
+    /// Defines the required buffer size of the [`Subscriber`]. Smallest possible value is `1`.
     IOX_BUILDER_OPTIONAL(uint64_t, buffer_size);
 
   public:
@@ -35,6 +38,7 @@ class PortFactorySubscriber {
     auto operator=(PortFactorySubscriber&&) -> PortFactorySubscriber& = default;
     ~PortFactorySubscriber() = default;
 
+    /// Creates a new [`Subscriber`] or returns a [`SubscriberCreateError`] on failure.
     auto create() && -> iox::expected<Subscriber<S, Payload, UserHeader>, SubscriberCreateError>;
 
   private:
