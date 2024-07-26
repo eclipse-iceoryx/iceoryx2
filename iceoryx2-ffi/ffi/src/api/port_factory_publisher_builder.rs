@@ -235,12 +235,19 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_create(
     debug_assert!(!publisher_struct_ptr.is_null());
 
     let publisher_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-
     let service_type = publisher_builder_struct.service_type;
+    let publisher_builder = publisher_builder_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_port_factory_publisher_builder_h'!")
+        });
+    (publisher_builder_struct.deleter)(publisher_builder_struct);
+
     match service_type {
         iox2_service_type_e::IPC => {
-            let publisher_builder =
-                ManuallyDrop::take(&mut publisher_builder_struct.value.as_mut().ipc);
+            let publisher_builder = ManuallyDrop::into_inner(publisher_builder.ipc);
 
             match publisher_builder.create() {
                 Ok(publisher) => {
@@ -256,8 +263,7 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_create(
             }
         }
         iox2_service_type_e::LOCAL => {
-            let publisher_builder =
-                ManuallyDrop::take(&mut publisher_builder_struct.value.as_mut().local);
+            let publisher_builder = ManuallyDrop::into_inner(publisher_builder.local);
 
             match publisher_builder.create() {
                 Ok(publisher) => {

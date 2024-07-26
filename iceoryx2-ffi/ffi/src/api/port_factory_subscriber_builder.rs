@@ -235,12 +235,19 @@ pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_create(
     debug_assert!(!subscriber_struct_ptr.is_null());
 
     let subscriber_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-
     let service_type = subscriber_builder_struct.service_type;
+    let subscriber_builder = subscriber_builder_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_port_factory_subscriber_builder_h'!")
+        });
+    (subscriber_builder_struct.deleter)(subscriber_builder_struct);
+
     match service_type {
         iox2_service_type_e::IPC => {
-            let subscriber_builder =
-                ManuallyDrop::take(&mut subscriber_builder_struct.value.as_mut().ipc);
+            let subscriber_builder = ManuallyDrop::into_inner(subscriber_builder.ipc);
 
             match subscriber_builder.create() {
                 Ok(subscriber) => {
@@ -256,8 +263,7 @@ pub unsafe extern "C" fn iox2_port_factory_subscriber_builder_create(
             }
         }
         iox2_service_type_e::LOCAL => {
-            let subscriber_builder =
-                ManuallyDrop::take(&mut subscriber_builder_struct.value.as_mut().local);
+            let subscriber_builder = ManuallyDrop::into_inner(subscriber_builder.local);
 
             match subscriber_builder.create() {
                 Ok(subscriber) => {

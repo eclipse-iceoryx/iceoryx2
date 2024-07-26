@@ -159,12 +159,19 @@ pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(
     debug_assert!(!listener_struct_ptr.is_null());
 
     let listener_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-
     let service_type = listener_builder_struct.service_type;
+    let listener_builder = listener_builder_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_port_factory_listener_builder_h'!")
+        });
+    (listener_builder_struct.deleter)(listener_builder_struct);
+
     match service_type {
         iox2_service_type_e::IPC => {
-            let listener_builder =
-                ManuallyDrop::take(&mut listener_builder_struct.value.as_mut().ipc);
+            let listener_builder = ManuallyDrop::into_inner(listener_builder.ipc);
 
             match listener_builder.create() {
                 Ok(listener) => {
@@ -180,8 +187,7 @@ pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(
             }
         }
         iox2_service_type_e::LOCAL => {
-            let listener_builder =
-                ManuallyDrop::take(&mut listener_builder_struct.value.as_mut().local);
+            let listener_builder = ManuallyDrop::into_inner(listener_builder.local);
 
             match listener_builder.create() {
                 Ok(listener) => {

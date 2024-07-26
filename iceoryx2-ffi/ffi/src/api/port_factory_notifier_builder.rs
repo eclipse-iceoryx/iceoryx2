@@ -215,12 +215,19 @@ pub unsafe extern "C" fn iox2_port_factory_notifier_builder_create(
     debug_assert!(!notifier_struct_ptr.is_null());
 
     let notifier_builder_struct = unsafe { &mut *port_factory_handle.as_type() };
-
     let service_type = notifier_builder_struct.service_type;
+    let notifier_builder = notifier_builder_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_port_factory_notifier_builder_h'!")
+        });
+    (notifier_builder_struct.deleter)(notifier_builder_struct);
+
     match service_type {
         iox2_service_type_e::IPC => {
-            let notifier_builder =
-                ManuallyDrop::take(&mut notifier_builder_struct.value.as_mut().ipc);
+            let notifier_builder = ManuallyDrop::into_inner(notifier_builder.ipc);
 
             match notifier_builder.create() {
                 Ok(notifier) => {
@@ -236,8 +243,7 @@ pub unsafe extern "C" fn iox2_port_factory_notifier_builder_create(
             }
         }
         iox2_service_type_e::LOCAL => {
-            let notifier_builder =
-                ManuallyDrop::take(&mut notifier_builder_struct.value.as_mut().local);
+            let notifier_builder = ManuallyDrop::into_inner(notifier_builder.local);
 
             match notifier_builder.create() {
                 Ok(notifier) => {
