@@ -20,6 +20,8 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use super::{c_size_t, iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
+
 use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
 
@@ -200,6 +202,18 @@ unsafe fn send_copy<S: Service>(
 
 // BEGIN C API
 
+/// This function casts an owning [`iox2_publisher_h`] into a non-owning [`iox2_publisher_ref_h`]
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+///
+/// Returns a [`iox2_publisher_ref_h`]
+///
+/// # Safety
+///
+/// * The `handle` must be a valid handle.
+/// * The `handle` is still valid after the call to this function.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_cast_publisher_ref_h(
     handle: iox2_publisher_h,
@@ -209,6 +223,23 @@ pub unsafe extern "C" fn iox2_cast_publisher_ref_h(
     (*handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// Sends a copy of the provided data via the publisher. The data must be copyable via `memcpy`.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+/// * `data_ptr` pointer to the payload that shall be transmitted
+/// * `data_len` the size of the payload in bytes
+/// * `number_of_recipients` (optional) used to store the number of subscriber that received the data
+///
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_publisher_send_error_e`].
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+/// * `data_ptr` non-null pointer to a valid position in memory
+/// * `data_len` the size of the payload memory
+/// * `number_of_recipients` can be null, otherwise a valid pointer to an [`usize`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_send_copy(
     publisher_handle: iox2_publisher_ref_h,
@@ -238,6 +269,23 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
     }
 }
 
+/// Loans memory from the publishers data segment.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+/// * `number_of_elements` defines the number of elements that shall be loaned. The elements were
+///    defined via [`iox2_service_builder_pub_sub_set_payload_type_details()`](crate::iox2_service_builder_pub_sub_set_payload_type_details).
+/// * `sample_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_sample_mut_t`].
+///    If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+///
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_publisher_loan_error_e`].
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+/// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_mut_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_loan(
     publisher_handle: iox2_publisher_ref_h,
@@ -328,76 +376,3 @@ pub unsafe extern "C" fn iox2_publisher_drop(publisher_handle: iox2_publisher_h)
 }
 
 // END C API
-
-use core::time::Duration;
-use iceoryx2_bb_log::set_log_level;
-
-use super::{c_size_t, iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-#[no_mangle]
-pub extern "C" fn run_publisher(seconds: u32) -> i32 {
-    set_log_level(iceoryx2_bb_log::LogLevel::Info);
-
-    let service_name = ServiceName::new("Hello/from/C");
-    let node = NodeBuilder::new().create::<zero_copy::Service>();
-
-    if service_name.is_err() || node.is_err() {
-        return -1;
-    }
-
-    let service_name = service_name.unwrap();
-    let node = node.unwrap();
-
-    let service = node
-        .service_builder(&service_name)
-        .publish_subscribe::<u64>()
-        .open_or_create();
-
-    if service.is_err() {
-        return -1;
-    }
-
-    let service = service.unwrap();
-
-    let publisher = service.publisher_builder().create();
-
-    if publisher.is_err() {
-        return -1;
-    }
-
-    let publisher = publisher.unwrap();
-
-    let mut counter: u64 = 0;
-
-    let mut remaining_seconds = seconds;
-
-    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
-        counter += 1;
-        let sample = publisher.loan_uninit();
-
-        if sample.is_err() {
-            return -1;
-        }
-
-        let sample = sample.unwrap();
-
-        let sample = sample.write_payload(counter);
-
-        if sample.send().is_err() {
-            return -1;
-        }
-
-        println!("Send sample {} ...", counter);
-
-        remaining_seconds = remaining_seconds.saturating_sub(1);
-        if remaining_seconds == 0 {
-            break;
-        }
-    }
-
-    println!("exit");
-
-    0
-}

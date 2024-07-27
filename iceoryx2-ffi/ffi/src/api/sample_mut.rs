@@ -104,6 +104,18 @@ impl HandleToType for iox2_sample_mut_ref_h {
 
 // BEGIN C API
 
+/// This function casts an owning [`iox2_sample_mut_h`] into a non-owning [`iox2_sample_mut_ref_h`]
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+///
+/// Returns a [`iox2_sample_mut_ref_h`]
+///
+/// # Safety
+///
+/// * The `handle` must be a valid handle.
+/// * The `handle` is still valid after the call to this function.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_cast_sample_mut_ref_h(
     handle: iox2_sample_mut_h,
@@ -112,6 +124,13 @@ pub unsafe extern "C" fn iox2_cast_sample_mut_ref_h(
     (*handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// Acquires the samples mutable payload.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
+/// * `payload_len` a valid, non-null pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
     sample_handle: iox2_sample_mut_ref_h,
@@ -133,6 +152,13 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
     *payload_len = payload.len();
 }
 
+/// Acquires the samples payload.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
+/// * `payload_len` a valid, non-null pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_payload(
     sample_handle: iox2_sample_mut_ref_h,
@@ -154,13 +180,19 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
     *payload_len = payload.len();
 }
 
+/// Takes the ownership of the sample and sends it
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `number_of_recipients`, can be null or must point to a valid [`c_size_t`] to store the number
+///                 of subscribers that received the sample
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_send(
     sample_handle: iox2_sample_mut_h,
     number_of_recipients: *mut c_size_t,
 ) -> c_int {
     debug_assert!(!sample_handle.is_null());
-    debug_assert!(!number_of_recipients.is_null());
 
     let sample_struct = &mut *sample_handle.as_type();
     let service_type = sample_struct.service_type;
@@ -177,7 +209,9 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
             let sample = ManuallyDrop::into_inner(sample.ipc);
             match sample.assume_init().send() {
                 Ok(v) => {
-                    *number_of_recipients = v;
+                    if !number_of_recipients.is_null() {
+                        *number_of_recipients = v;
+                    }
                 }
                 Err(e) => {
                     (sample_struct.deleter)(sample_struct);
@@ -189,7 +223,9 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
             let sample = ManuallyDrop::into_inner(sample.local);
             match sample.assume_init().send() {
                 Ok(v) => {
-                    *number_of_recipients = v;
+                    if !number_of_recipients.is_null() {
+                        *number_of_recipients = v;
+                    }
                 }
                 Err(e) => {
                     (sample_struct.deleter)(sample_struct);

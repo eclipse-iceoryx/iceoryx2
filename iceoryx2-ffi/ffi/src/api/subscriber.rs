@@ -189,6 +189,7 @@ pub unsafe extern "C" fn iox2_subscriber_buffer_size(
 /// # Safety
 ///
 /// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
+/// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_subscriber_receive(
     subscriber_handle: iox2_subscriber_ref_h,
@@ -276,63 +277,3 @@ pub unsafe extern "C" fn iox2_subscriber_drop(subscriber_handle: iox2_subscriber
 }
 
 // END C API
-
-use core::time::Duration;
-use iceoryx2_bb_log::set_log_level;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-#[no_mangle]
-pub extern "C" fn run_subscriber(seconds: u32) -> i32 {
-    set_log_level(iceoryx2_bb_log::LogLevel::Info);
-
-    let service_name = ServiceName::new("Hello/from/C");
-    let node = NodeBuilder::new().create::<zero_copy::Service>();
-
-    if service_name.is_err() || node.is_err() {
-        return -1;
-    }
-
-    let service_name = service_name.unwrap();
-    let node = node.unwrap();
-
-    let service = node
-        .service_builder(&service_name)
-        .publish_subscribe::<u64>()
-        .open_or_create();
-
-    if service.is_err() {
-        return -1;
-    }
-
-    let service = service.unwrap();
-
-    let subscriber = service.subscriber_builder().create();
-
-    if subscriber.is_err() {
-        return -1;
-    }
-
-    let subscriber = subscriber.unwrap();
-
-    let mut remaining_seconds = seconds;
-
-    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
-        loop {
-            match subscriber.receive() {
-                Ok(Some(sample)) => println!("received: {:?}", *sample),
-                Ok(None) => break,
-                Err(_) => return -1,
-            }
-        }
-
-        remaining_seconds = remaining_seconds.saturating_sub(1);
-        if remaining_seconds == 0 {
-            break;
-        }
-    }
-
-    println!("exit");
-
-    0
-}
