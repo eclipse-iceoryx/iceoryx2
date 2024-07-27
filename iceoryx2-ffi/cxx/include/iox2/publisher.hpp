@@ -135,6 +135,8 @@ inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload) const
     -> iox::expected<uint64_t, PublisherSendError> {
+    static_assert(std::is_trivially_copyable<Payload>::value, "");
+
     auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
 
     size_t number_of_recipients = 0;
@@ -166,7 +168,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
 Publisher<S, Payload, UserHeader>::loan() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
-    IOX_TODO();
+    return loan_uninit().and_then([](auto& sample) { new (&sample.payload_mut()) Payload(); });
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

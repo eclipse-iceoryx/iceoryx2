@@ -206,7 +206,7 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> Payload& {
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline void SampleMut<S, Payload, UserHeader>::write_payload(T&& value) {
-    new (&payload_mut()) Payload(std::forward<Payload>(value));
+    new (&payload_mut()) Payload(std::forward<T>(value));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

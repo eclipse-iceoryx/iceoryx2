@@ -159,4 +159,68 @@ TYPED_TEST(ServicePublishSubscribeTest, open_or_create_existing_service_with_wro
     ASSERT_TRUE(sut.has_error());
     ASSERT_THAT(sut.error(), Eq(PublishSubscribeOpenOrCreateError::OpenIncompatibleTypes));
 }
+
+TYPED_TEST(ServicePublishSubscribeTest, send_copy_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    auto sut_publisher = service.publisher_builder().create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    const uint64_t payload = 123;
+    sut_publisher.send_copy(payload).expect("");
+    auto sample = sut_subscriber.receive().expect("");
+
+    ASSERT_TRUE(sample.has_value());
+    ASSERT_THAT(**sample, Eq(payload));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    auto sut_publisher = service.publisher_builder().create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto sample = sut_publisher.loan_uninit().expect("");
+    const uint64_t payload = 78123791;
+    sample.write_payload(payload);
+    send_sample(std::move(sample)).expect("");
+    auto recv_sample = sut_subscriber.receive().expect("");
+
+    ASSERT_TRUE(recv_sample.has_value());
+    ASSERT_THAT(**recv_sample, Eq(payload));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    auto sut_publisher = service.publisher_builder().create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto sample = sut_publisher.loan().expect("");
+    const uint64_t payload = 781891729871;
+    *sample = payload;
+    send_sample(std::move(sample)).expect("");
+    auto recv_sample = sut_subscriber.receive().expect("");
+
+    ASSERT_TRUE(recv_sample.has_value());
+    ASSERT_THAT(**recv_sample, Eq(payload));
+}
 } // namespace
