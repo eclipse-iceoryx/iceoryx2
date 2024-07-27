@@ -39,6 +39,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/config.cpp
     src/event_id.cpp
     src/listener.cpp
+    src/message_type_details.cpp
     src/node.cpp
     src/node_details.cpp
     src/node_name.cpp
@@ -51,6 +52,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/service_builder_event.cpp
     src/service_name.cpp
     src/static_config_event.cpp
+    src/static_config_publish_subscribe.cpp
 )
 
 set_target_properties(iceoryx2-cxx-object-lib

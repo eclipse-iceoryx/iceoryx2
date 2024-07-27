@@ -167,6 +167,15 @@ pub enum iox2_type_variant_e {
     DYNAMIC,
 }
 
+impl From<&TypeVariant> for iox2_type_variant_e {
+    fn from(value: &TypeVariant) -> Self {
+        match value {
+            TypeVariant::Dynamic => iox2_type_variant_e::DYNAMIC,
+            TypeVariant::FixedSize => iox2_type_variant_e::FIXED_SIZE,
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_type_detail_error_e {

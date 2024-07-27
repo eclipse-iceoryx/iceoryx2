@@ -18,6 +18,7 @@ use crate::api::{
     iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi,
     PortFactoryPublisherBuilderUnion, PortFactorySubscriberBuilderUnion,
 };
+use crate::iox2_static_config_publish_subscribe_t;
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
@@ -233,6 +234,32 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
     };
 
     (*subscriber_builder_struct_ptr).as_handle()
+}
+
+/// Set the values int the provided [`iox2_static_config_publish_subscribe_t`] pointer.
+///
+/// # Safety
+///
+/// * The `_handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
+///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
+/// * The `static_config` must be a valid pointer and non-null.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_pub_sub_static_config(
+    port_factory_handle: iox2_port_factory_pub_sub_ref_h,
+    static_config: *mut iox2_static_config_publish_subscribe_t,
+) {
+    debug_assert!(!port_factory_handle.is_null());
+    debug_assert!(!static_config.is_null());
+
+    let port_factory = &mut *port_factory_handle.as_type();
+
+    use iceoryx2::prelude::PortFactory;
+    let config = match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.static_config(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.static_config(),
+    };
+
+    *static_config = config.into();
 }
 
 /// This function needs to be called to destroy the port factory!

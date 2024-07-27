@@ -223,4 +223,27 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
     ASSERT_TRUE(recv_sample.has_value());
     ASSERT_THAT(**recv_sample, Eq(payload));
 }
+
+TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<uint64_t>()
+                       .max_publishers(11)
+                       .max_subscribers(12)
+                       .create()
+                       .expect("");
+
+    auto static_config = service.static_config();
+
+    ASSERT_THAT(static_config.max_publishers(), Eq(11));
+    ASSERT_THAT(static_config.max_subscribers(), Eq(12));
+    ASSERT_THAT(static_config.message_type_details().payload().size(), Eq(sizeof(uint64_t)));
+    ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
+    ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq(typeid(uint64_t).name()));
+}
 } // namespace

@@ -21,6 +21,7 @@ use core::ffi::{c_int, c_void};
 mod config;
 mod event_id;
 mod listener;
+mod message_type_details;
 mod node;
 mod node_builder;
 mod node_name;
@@ -41,11 +42,13 @@ mod service_builder_event;
 mod service_builder_pub_sub;
 mod service_name;
 mod static_config_event;
+mod static_config_publish_subscribe;
 mod subscriber;
 
 pub use config::*;
 pub use event_id::*;
 pub use listener::*;
+pub use message_type_details::*;
 pub use node::*;
 pub use node_builder::*;
 pub use node_name::*;
@@ -66,6 +69,7 @@ pub use service_builder_event::*;
 pub use service_builder_pub_sub::*;
 pub use service_name::*;
 pub use static_config_event::*;
+pub use static_config_publish_subscribe::*;
 pub use subscriber::*;
 
 /// This constant signals an successful function call

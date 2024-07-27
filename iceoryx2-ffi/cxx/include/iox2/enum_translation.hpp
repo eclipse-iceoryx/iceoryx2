@@ -29,6 +29,7 @@
 #include "iox2/service_error_enums.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/subscriber_error.hpp"
+#include "iox2/type_variant.hpp"
 
 namespace iox {
 template <>
@@ -541,6 +542,21 @@ constexpr auto from<int, iox2::PublisherLoanError>(const int value) noexcept -> 
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::TypeVariant>(const int value) noexcept -> iox2::TypeVariant {
+    const auto v = static_cast<iox2_type_variant_e>(value);
+    switch (v) {
+    case iox2_type_variant_e_DYNAMIC:
+        return iox2::TypeVariant::Dynamic;
+    case iox2_type_variant_e_FIXED_SIZE:
+        return iox2::TypeVariant::FixedSize;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+
 } // namespace iox
 
 #endif
