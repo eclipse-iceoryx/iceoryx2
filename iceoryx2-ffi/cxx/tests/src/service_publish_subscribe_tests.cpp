@@ -246,4 +246,44 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq(typeid(uint64_t).name()));
 }
+
+TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_publisher_requirement) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<uint64_t>()
+                       .max_publishers(11)
+                       .create()
+                       .expect("");
+
+    auto service_fail =
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().max_publishers(12).open();
+
+    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_THAT(service_fail.error(), Eq(PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_requirement) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<uint64_t>()
+                       .max_subscribers(11)
+                       .create()
+                       .expect("");
+
+    auto service_fail =
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().max_subscribers(12).open();
+
+    ASSERT_TRUE(service_fail.has_error());
+    ASSERT_THAT(service_fail.error(), Eq(PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers));
+}
 } // namespace
