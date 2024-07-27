@@ -10,10 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/iceoryx2.h"
+#ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_H
+#define IOX2_EXAMPLES_TRANSMISSION_DATA_H
 
 #include <stdint.h>
 
-int main(void) {
-    return 0;
-}
+struct TransmissionData {
+    int32_t x;
+    int32_t y;
+    double funky;
+};
+
+#endif

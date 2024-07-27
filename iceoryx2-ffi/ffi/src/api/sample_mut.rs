@@ -130,7 +130,7 @@ pub unsafe extern "C" fn iox2_cast_sample_mut_ref_h(
 ///
 /// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
-/// * `payload_len` a valid, non-null pointer pointing to a [`c_size_t`].
+/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
     sample_handle: iox2_sample_mut_ref_h,
@@ -139,7 +139,6 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
 ) {
     debug_assert!(!sample_handle.is_null());
     debug_assert!(!payload_ptr.is_null());
-    debug_assert!(!payload_len.is_null());
 
     let sample = &mut *sample_handle.as_type();
 
@@ -149,7 +148,9 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
     };
 
     *payload_ptr = payload.as_mut_ptr().cast();
-    *payload_len = payload.len();
+    if !payload_len.is_null() {
+        *payload_len = payload.len();
+    }
 }
 
 /// Acquires the samples payload.
@@ -158,7 +159,7 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
 ///
 /// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
-/// * `payload_len` a valid, non-null pointer pointing to a [`c_size_t`].
+/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_payload(
     sample_handle: iox2_sample_mut_ref_h,
@@ -167,7 +168,6 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
 ) {
     debug_assert!(!sample_handle.is_null());
     debug_assert!(!payload_ptr.is_null());
-    debug_assert!(!payload_len.is_null());
 
     let sample = &mut *sample_handle.as_type();
 
@@ -177,7 +177,9 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
     };
 
     *payload_ptr = payload.as_ptr().cast();
-    *payload_len = payload.len();
+    if !payload_len.is_null() {
+        *payload_len = payload.len();
+    }
 }
 
 /// Takes the ownership of the sample and sends it
