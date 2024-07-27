@@ -49,8 +49,8 @@ namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 class SampleMut {
   public:
-    SampleMut(SampleMut&&) noexcept;
-    auto operator=(SampleMut&&) noexcept -> SampleMut&;
+    SampleMut(SampleMut&& rhs) noexcept;
+    auto operator=(SampleMut&& rhs) noexcept -> SampleMut&;
     ~SampleMut() noexcept;
 
     SampleMut(const SampleMut&) = delete;
@@ -86,25 +86,25 @@ class SampleMut {
     auto payload_mut() -> Payload&;
 
     /// Writes the payload to the sample
-    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::value, T>>
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
     void write_payload(T&& value);
 
     /// Writes the payload to the sample
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::value, T>>
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     void write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer);
 
-  protected:
+  private:
     template <ServiceType, typename, typename>
     friend class Publisher;
 
-    template <ServiceType _S, typename _Payload, typename _UserHeader>
+    template <ServiceType ST, typename PayloadT, typename UserHeaderT>
     friend auto
-    send_sample(SampleMut<_S, _Payload, _UserHeader>&& sample) -> iox::expected<uint64_t, PublisherSendError>;
+    send_sample(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<uint64_t, PublisherSendError>;
 
     explicit SampleMut(iox2_sample_mut_h handle);
     void drop();
 
-    iox2_sample_mut_h m_handle;
+    iox2_sample_mut_h m_handle { nullptr };
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -121,8 +121,7 @@ inline void SampleMut<S, Payload, UserHeader>::drop() {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline SampleMut<S, Payload, UserHeader>::SampleMut(SampleMut&& rhs) noexcept
-    : m_handle { nullptr } {
+inline SampleMut<S, Payload, UserHeader>::SampleMut(SampleMut&& rhs) noexcept {
     *this = std::move(rhs);
 }
 

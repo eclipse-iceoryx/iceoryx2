@@ -23,7 +23,7 @@ auto TypeDetail::variant() const -> TypeVariant {
 }
 
 auto TypeDetail::type_name() const -> const char* {
-    return m_value.type_name;
+    return &m_value.type_name[0];
 }
 
 auto TypeDetail::size() const -> size_t {

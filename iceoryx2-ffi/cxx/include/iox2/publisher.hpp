@@ -30,8 +30,8 @@ namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 class Publisher {
   public:
-    Publisher(Publisher&&) noexcept;
-    auto operator=(Publisher&&) noexcept -> Publisher&;
+    Publisher(Publisher&& rhs) noexcept;
+    auto operator=(Publisher&& rhs) noexcept -> Publisher&;
     ~Publisher();
 
     Publisher(const Publisher&) = delete;
@@ -64,14 +64,14 @@ class Publisher {
     /// [`Payload`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
-    auto loan_slice(const uint64_t number_of_elements)
-        -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
+    auto
+    loan_slice(uint64_t number_of_elements) -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
-    auto loan_slice_uninit(const uint64_t number_of_elements)
+    auto loan_slice_uninit(uint64_t number_of_elements)
         -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
 
     /// Explicitly updates all connections to the [`Subscriber`]s. This is
@@ -89,7 +89,7 @@ class Publisher {
     explicit Publisher(iox2_publisher_h handle);
     void drop();
 
-    iox2_publisher_h m_handle;
+    iox2_publisher_h m_handle { nullptr };
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -106,8 +106,7 @@ inline void Publisher<S, Payload, UserHeader>::drop() {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline Publisher<S, Payload, UserHeader>::Publisher(Publisher&& rhs) noexcept
-    : m_handle { nullptr } {
+inline Publisher<S, Payload, UserHeader>::Publisher(Publisher&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
@@ -135,7 +134,7 @@ inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload) const
     -> iox::expected<uint64_t, PublisherSendError> {
-    static_assert(std::is_trivially_copyable<Payload>::value, "");
+    static_assert(std::is_trivially_copyable<Payload>::value);
 
     auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
 

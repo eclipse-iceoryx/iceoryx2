@@ -226,6 +226,8 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
 
 TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_PUBLISHERS = 11;
+    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
 
     const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
     const auto service_name = ServiceName::create(name_value).expect("");
@@ -233,15 +235,15 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name)
                        .template publish_subscribe<uint64_t>()
-                       .max_publishers(11)
-                       .max_subscribers(12)
+                       .max_publishers(NUMBER_OF_PUBLISHERS)
+                       .max_subscribers(NUMBER_OF_SUBSCRIBERS)
                        .create()
                        .expect("");
 
     auto static_config = service.static_config();
 
-    ASSERT_THAT(static_config.max_publishers(), Eq(11));
-    ASSERT_THAT(static_config.max_subscribers(), Eq(12));
+    ASSERT_THAT(static_config.max_publishers(), Eq(NUMBER_OF_PUBLISHERS));
+    ASSERT_THAT(static_config.max_subscribers(), Eq(NUMBER_OF_SUBSCRIBERS));
     ASSERT_THAT(static_config.message_type_details().payload().size(), Eq(sizeof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq(typeid(uint64_t).name()));
@@ -249,6 +251,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
 
 TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_publisher_requirement) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_PUBLISHERS = 11;
 
     const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
     const auto service_name = ServiceName::create(name_value).expect("");
@@ -256,12 +259,14 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_publisher_r
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name)
                        .template publish_subscribe<uint64_t>()
-                       .max_publishers(11)
+                       .max_publishers(NUMBER_OF_PUBLISHERS)
                        .create()
                        .expect("");
 
-    auto service_fail =
-        node.service_builder(service_name).template publish_subscribe<uint64_t>().max_publishers(12).open();
+    auto service_fail = node.service_builder(service_name)
+                            .template publish_subscribe<uint64_t>()
+                            .max_publishers(NUMBER_OF_PUBLISHERS + 1)
+                            .open();
 
     ASSERT_TRUE(service_fail.has_error());
     ASSERT_THAT(service_fail.error(), Eq(PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfPublishers));
@@ -269,6 +274,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_publisher_r
 
 TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_requirement) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
 
     const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
     const auto service_name = ServiceName::create(name_value).expect("");
@@ -276,12 +282,14 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name)
                        .template publish_subscribe<uint64_t>()
-                       .max_subscribers(11)
+                       .max_subscribers(NUMBER_OF_SUBSCRIBERS)
                        .create()
                        .expect("");
 
-    auto service_fail =
-        node.service_builder(service_name).template publish_subscribe<uint64_t>().max_subscribers(12).open();
+    auto service_fail = node.service_builder(service_name)
+                            .template publish_subscribe<uint64_t>()
+                            .max_subscribers(NUMBER_OF_SUBSCRIBERS + 1)
+                            .open();
 
     ASSERT_TRUE(service_fail.has_error());
     ASSERT_THAT(service_fail.error(), Eq(PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers));

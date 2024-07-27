@@ -45,8 +45,6 @@ int main(void) {
     iox2_node_ref_h node_ref_handle = iox2_cast_node_ref_h(node_handle);
     iox2_service_builder_h service_builder = iox2_node_service_builder(node_ref_handle, NULL, service_name_ptr);
     iox2_service_builder_event_h service_builder_event = iox2_service_builder_event(service_builder);
-    iox2_service_builder_event_ref_h service_builder_event_ref =
-        iox2_cast_service_builder_event_ref_h(service_builder_event);
     iox2_port_factory_event_h service = NULL;
     if (iox2_service_builder_event_open_or_create(service_builder_event, NULL, &service) != IOX2_OK) {
         printf("Unable to create service!\n");
@@ -67,7 +65,7 @@ int main(void) {
     uint64_t counter = 0;
     while (iox2_node_wait(node_ref_handle, 0, 0) == iox2_node_event_e_TICK) {
         counter += 1;
-        iox2_event_id_t event_id = { .value = counter % 12 };
+        iox2_event_id_t event_id = { .value = counter % 12 }; // NOLINT
         if (iox2_notifier_notify_with_custom_event_id(notifier_ref, &event_id, NULL) != IOX2_OK) {
             printf("Failed to notify listener!\n");
             goto drop_notifier;

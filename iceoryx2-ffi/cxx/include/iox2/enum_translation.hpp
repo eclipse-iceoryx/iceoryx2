@@ -503,7 +503,7 @@ constexpr auto from<int, iox2::PublisherSendError>(const int value) noexcept -> 
     case iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES:
         return iox2::PublisherSendError::LoanErrorExceedsMaxLoanedSamples;
     case iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE:
-        return iox2::PublisherSendError::LoanErrorInternalFailure;
+        return iox2::PublisherSendError::LoanErrorExceedsMaxLoanSize;
     case iox2_publisher_send_error_e_LOAN_ERROR_INTERNAL_FAILURE:
         return iox2::PublisherSendError::LoanErrorInternalFailure;
     case iox2_publisher_send_error_e_CONNECTION_ERROR:
@@ -545,8 +545,8 @@ constexpr auto from<int, iox2::PublisherLoanError>(const int value) noexcept -> 
 
 template <>
 constexpr auto from<int, iox2::TypeVariant>(const int value) noexcept -> iox2::TypeVariant {
-    const auto v = static_cast<iox2_type_variant_e>(value);
-    switch (v) {
+    const auto variant = static_cast<iox2_type_variant_e>(value);
+    switch (variant) {
     case iox2_type_variant_e_DYNAMIC:
         return iox2::TypeVariant::Dynamic;
     case iox2_type_variant_e_FIXED_SIZE:

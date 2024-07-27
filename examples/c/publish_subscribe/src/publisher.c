@@ -72,7 +72,7 @@ int main(void) {
     }
     iox2_publisher_ref_h publisher_ref = iox2_cast_publisher_ref_h(publisher);
 
-    uint64_t counter = 0;
+    int32_t counter = 0;
     while (iox2_node_wait(node_ref_handle, 1, 0) == iox2_node_event_e_TICK) {
         counter += 1;
 
@@ -85,11 +85,11 @@ int main(void) {
         iox2_sample_mut_ref_h sample_ref = iox2_cast_sample_mut_ref_h(sample);
 
         // write payload
-        struct TransmissionData* payload;
+        struct TransmissionData* payload = NULL;
         iox2_sample_mut_payload_mut(sample_ref, (void**) &payload, NULL);
         payload->x = counter;
         payload->y = counter * 3;
-        payload->funky = counter * 812.12;
+        payload->funky = counter * 812.12; // NOLINT
 
         // send sample
         if (iox2_sample_mut_send(sample, NULL) != IOX2_OK) {
@@ -97,7 +97,7 @@ int main(void) {
             goto drop_publisher;
         }
 
-        printf("Send sample %lu ...\n", counter);
+        printf("Send sample %d ...\n", counter);
     }
 
 

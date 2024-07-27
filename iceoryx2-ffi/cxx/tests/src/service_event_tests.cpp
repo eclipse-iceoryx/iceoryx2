@@ -36,7 +36,8 @@ struct ServiceEventTest : public ::testing::Test {
 
     static std::atomic<size_t> event_id_counter;
     static constexpr ServiceType TYPE = T::TYPE;
-    const char* service_name_value;
+    //NOLINTBEGIN(misc-non-private-member-variables-in-classes), required for tests
+    const char* service_name_value { nullptr };
     ServiceName service_name;
     Node<T::TYPE> node;
     PortFactoryEvent<T::TYPE> service;
@@ -44,6 +45,7 @@ struct ServiceEventTest : public ::testing::Test {
     Listener<T::TYPE> listener;
     EventId event_id_1;
     EventId event_id_2;
+    //NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 template <typename T>
@@ -89,28 +91,36 @@ TYPED_TEST(ServiceEventTest, creating_existing_service_fails) {
 
 TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_NOTIFIERS = 5;
+    constexpr uint64_t NUMBER_OF_LISTENERS = 7;
 
     const auto* name_value = "First time we met, I saw the ocean, it was wet!";
     const auto service_name = ServiceName::create(name_value).expect("");
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = node.service_builder(service_name).event().max_notifiers(5).max_listeners(7).create().expect("");
+    auto sut = node.service_builder(service_name)
+                   .event()
+                   .max_notifiers(NUMBER_OF_NOTIFIERS)
+                   .max_listeners(NUMBER_OF_LISTENERS)
+                   .create()
+                   .expect("");
 
     auto static_config = sut.static_config();
 
-    ASSERT_THAT(static_config.max_notifiers(), Eq(5));
-    ASSERT_THAT(static_config.max_listeners(), Eq(7));
+    ASSERT_THAT(static_config.max_notifiers(), Eq(NUMBER_OF_NOTIFIERS));
+    ASSERT_THAT(static_config.max_listeners(), Eq(NUMBER_OF_LISTENERS));
 }
 
 TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_notifiers_requirements) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_NOTIFIERS = 5;
 
     const auto* name_value = "First time we met, I saw the ocean, it was wet!";
     const auto service_name = ServiceName::create(name_value).expect("");
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = node.service_builder(service_name).event().max_notifiers(5).create().expect("");
-    auto sut_fail = node.service_builder(service_name).event().max_notifiers(6).open();
+    auto sut = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS).create().expect("");
+    auto sut_fail = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS + 1).open();
 
     ASSERT_TRUE(sut_fail.has_error());
     ASSERT_THAT(sut_fail.error(), Eq(EventOpenError::DoesNotSupportRequestedAmountOfNotifiers));
@@ -118,13 +128,14 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_notifiers_requirem
 
 TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_listeners_requirements) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_LISTENERS = 7;
 
     const auto* name_value = "First time we met, I saw the ocean, it was wet!";
     const auto service_name = ServiceName::create(name_value).expect("");
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut = node.service_builder(service_name).event().max_listeners(5).create().expect("");
-    auto sut_fail = node.service_builder(service_name).event().max_listeners(6).open();
+    auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS).create().expect("");
+    auto sut_fail = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS + 1).open();
 
     ASSERT_TRUE(sut_fail.has_error());
     ASSERT_THAT(sut_fail.error(), Eq(EventOpenError::DoesNotSupportRequestedAmountOfListeners));

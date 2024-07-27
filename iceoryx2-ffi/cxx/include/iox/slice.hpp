@@ -50,12 +50,12 @@ class Slice {
 
 template <typename>
 struct IsSlice {
-    static constexpr bool value = false;
+    static constexpr bool VALUE = false;
 };
 
 template <typename T>
 struct IsSlice<Slice<T>> {
-    static constexpr bool value = true;
+    static constexpr bool VALUE = true;
 };
 } // namespace iox
 

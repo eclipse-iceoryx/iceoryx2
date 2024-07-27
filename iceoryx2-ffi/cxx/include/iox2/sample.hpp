@@ -34,8 +34,8 @@ namespace iox2 {
 template <ServiceType, typename Payload, typename UserHeader>
 class Sample {
   public:
-    Sample(Sample&&) noexcept;
-    auto operator=(Sample&&) noexcept -> Sample&;
+    Sample(Sample&& rhs) noexcept;
+    auto operator=(Sample&& rhs) noexcept -> Sample&;
     ~Sample();
 
     Sample(const Sample&) = delete;
@@ -67,7 +67,7 @@ class Sample {
     explicit Sample(iox2_sample_h handle);
     void drop();
 
-    iox2_sample_h m_handle;
+    iox2_sample_h m_handle { nullptr };
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -84,8 +84,7 @@ inline void Sample<S, Payload, UserHeader>::drop() {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline Sample<S, Payload, UserHeader>::Sample(Sample&& rhs) noexcept
-    : m_handle { nullptr } {
+inline Sample<S, Payload, UserHeader>::Sample(Sample&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
@@ -121,7 +120,9 @@ inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
     const Payload* payload_ptr = nullptr;
     size_t payload_len = 0;
 
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast), no other way for type erasure
     iox2_sample_payload(ref_handle, reinterpret_cast<const void**>(&payload_ptr), &payload_len);
+    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
     IOX_ASSERT(sizeof(Payload) <= payload_len, "");
 
     return *payload_ptr;

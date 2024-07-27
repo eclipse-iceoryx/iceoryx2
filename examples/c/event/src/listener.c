@@ -39,8 +39,6 @@ int main(void) {
     iox2_node_ref_h node_ref_handle = iox2_cast_node_ref_h(node_handle);
     iox2_service_builder_h service_builder = iox2_node_service_builder(node_ref_handle, NULL, service_name_ptr);
     iox2_service_builder_event_h service_builder_event = iox2_service_builder_event(service_builder);
-    iox2_service_builder_event_ref_h service_builder_event_ref =
-        iox2_cast_service_builder_event_ref_h(service_builder_event);
     iox2_port_factory_event_h service = NULL;
     if (iox2_service_builder_event_open_or_create(service_builder_event, NULL, &service) != IOX2_OK) {
         printf("Unable to create service!\n");

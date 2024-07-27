@@ -28,8 +28,8 @@ namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 class Subscriber {
   public:
-    Subscriber(Subscriber&&) noexcept;
-    auto operator=(Subscriber&&) noexcept -> Subscriber&;
+    Subscriber(Subscriber&& rhs) noexcept;
+    auto operator=(Subscriber&& rhs) noexcept -> Subscriber&;
     ~Subscriber();
 
     Subscriber(const Subscriber&) = delete;
@@ -60,7 +60,7 @@ class Subscriber {
     explicit Subscriber(iox2_subscriber_h handle);
     void drop();
 
-    iox2_subscriber_h m_handle;
+    iox2_subscriber_h m_handle { nullptr };
 };
 template <ServiceType S, typename Payload, typename UserHeader>
 inline Subscriber<S, Payload, UserHeader>::Subscriber(iox2_subscriber_h handle)
@@ -68,8 +68,7 @@ inline Subscriber<S, Payload, UserHeader>::Subscriber(iox2_subscriber_h handle)
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline Subscriber<S, Payload, UserHeader>::Subscriber(Subscriber&& rhs) noexcept
-    : m_handle { nullptr } {
+inline Subscriber<S, Payload, UserHeader>::Subscriber(Subscriber&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
@@ -118,9 +117,8 @@ inline auto Subscriber<S, Payload, UserHeader>::receive() const
         if (sample_handle != nullptr) {
             return iox::ok(
                 iox::optional<Sample<S, Payload, UserHeader>>(Sample<S, Payload, UserHeader>(sample_handle)));
-        } else {
-            return iox::ok(iox::optional<Sample<S, Payload, UserHeader>>(iox::nullopt));
         }
+        return iox::ok(iox::optional<Sample<S, Payload, UserHeader>>(iox::nullopt));
     }
 
     return iox::err(iox::into<SubscriberReceiveError>(result));
