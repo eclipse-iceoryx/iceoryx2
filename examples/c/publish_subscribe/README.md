@@ -9,7 +9,7 @@ receiving end, the subscriber checks for new data every second.
 
 The subscriber is printing the sample on the console whenever new data arrives.
 
-First you have to build the C++ examples:
+First you have to build the C examples:
 
 ```sh
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
