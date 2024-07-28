@@ -12,7 +12,6 @@
 
 #include "iox2/iceoryx2.h"
 
-#include <stdalign.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

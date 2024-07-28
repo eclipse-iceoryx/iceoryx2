@@ -13,7 +13,11 @@
 #include "iox2/iceoryx2.h"
 #include "transmission_data.h"
 
+#ifdef _WIN64
+#define alignof __alignof
+#else
 #include <stdalign.h>
+#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

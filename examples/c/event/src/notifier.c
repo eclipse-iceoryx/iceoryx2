@@ -12,13 +12,13 @@
 
 #include "iox2/iceoryx2.h"
 
-#include <stdalign.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #ifdef _WIN64
 #include <windows.h>
+#define sleep Sleep
 #else
 #include <unistd.h>
 #endif
@@ -71,7 +71,7 @@ int main(void) {
             goto drop_notifier;
         }
 
-        printf("Trigger event with id %lu ...\n", event_id.value);
+        printf("Trigger event with id %lu ...\n", (long unsigned) event_id.value);
 
         sleep(1);
     }
