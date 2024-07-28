@@ -39,8 +39,8 @@ pub struct iox2_static_config_t {
     pub details: iox2_static_config_details_t,
 }
 
-impl From<StaticConfig> for iox2_static_config_t {
-    fn from(value: StaticConfig) -> Self {
+impl From<&StaticConfig> for iox2_static_config_t {
+    fn from(value: &StaticConfig) -> Self {
         Self {
             id: core::array::from_fn(|n| {
                 if n < value.uuid().as_bytes().len() {

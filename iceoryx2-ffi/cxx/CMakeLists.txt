@@ -51,6 +51,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/service.cpp
     src/service_builder_event.cpp
     src/service_name.cpp
+    src/static_config.cpp
     src/static_config_event.cpp
     src/static_config_publish_subscribe.cpp
 )

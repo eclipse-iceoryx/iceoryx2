@@ -14,7 +14,9 @@
 #include "iox/assertions_addendum.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/service_details.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/static_config.hpp"
 
 namespace iox2 {
 template <ServiceType S>
@@ -44,9 +46,24 @@ auto Service<S>::details(const ServiceName& service_name,
 }
 
 template <ServiceType S>
+auto list_callback(const iox2_static_config_t* const static_config, void* ctx) -> iox2_callback_progression_e {
+    auto callback = static_cast<iox::function<CallbackProgression(ServiceDetails<S>)>*>(ctx);
+    auto result = (*callback)(ServiceDetails<S> { StaticConfig(*static_config) });
+    return iox::into<iox2_callback_progression_e>(result);
+}
+
+template <ServiceType S>
 auto Service<S>::list(const ConfigView config, const iox::function<CallbackProgression(ServiceDetails<S>)>& callback)
     -> iox::expected<void, ServiceListError> {
-    IOX_TODO();
+    auto mutable_callback = callback;
+    auto result =
+        iox2_service_list(iox::into<iox2_service_type_e>(S), config.m_ptr, list_callback<S>, &mutable_callback);
+
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<ServiceListError>(result));
 }
 
 template class Service<ServiceType::Ipc>;

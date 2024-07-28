@@ -13,28 +13,31 @@
 #ifndef IOX2_STATIC_CONFIG_HPP
 #define IOX2_STATIC_CONFIG_HPP
 
-#include "iox/assertions_addendum.hpp"
-#include "iox/string.hpp"
 #include "iox2/attribute_set.hpp"
-#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/messaging_pattern.hpp"
-#include "iox2/service_name.hpp"
 
 namespace iox2 {
+/// Defines a common set of static service configuration details every service shares.
 class StaticConfig {
   public:
-    auto attributes() const -> const AttributeSet& {
-        IOX_TODO();
-    }
-    auto id() const -> iox::string<IOX2_SERVICE_ID_LENGTH> {
-        IOX_TODO();
-    }
-    auto name() const -> ServiceName {
-        IOX_TODO();
-    }
-    auto messaging_pattern() const -> MessagingPattern {
-        IOX_TODO();
-    }
+    /// Returns the attributes of the [`Service`]
+    auto attributes() const -> const AttributeSet&;
+
+    /// Returns the id of the [`Service`]
+    auto id() const -> const char*;
+
+    /// Returns the [`ServiceName`] of the [`Service`]
+    auto name() const -> const char*;
+
+    /// Returns the [`MessagingPattern`] of the [`Service`]
+    auto messaging_pattern() const -> MessagingPattern;
+
+  private:
+    template <ServiceType>
+    friend auto list_callback(const iox2_static_config_t*, void*) -> iox2_callback_progression_e;
+    explicit StaticConfig(iox2_static_config_t value);
+
+    iox2_static_config_t m_value;
 };
 } // namespace iox2
 

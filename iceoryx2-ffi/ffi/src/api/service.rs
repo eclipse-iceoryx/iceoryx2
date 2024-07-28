@@ -15,15 +15,17 @@
 
 // BEGIN type definition
 
-use std::ffi::{c_int, c_void};
+use std::ffi::c_int;
 
 use iceoryx2::service::{
-    messaging_pattern::MessagingPattern, process_local, zero_copy, Service, ServiceDetailsError,
+    messaging_pattern::MessagingPattern, process_local, zero_copy, Service, ServiceDetails,
+    ServiceDetailsError, ServiceListError,
 };
+use iceoryx2_bb_elementary::CallbackProgression;
 
 use crate::{
-    iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr, iox2_service_name_ptr,
-    IOX2_OK,
+    iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_service_name_ptr,
+    iox2_static_config_t, IOX2_OK,
 };
 
 use super::IntoCInt;
@@ -110,9 +112,21 @@ pub enum iox2_service_list_error_e {
     INTERNAL_ERROR,
 }
 
-pub type iox2_service_list_callback =
-    extern "C" fn(iox2_node_name_ptr) -> iox2_callback_progression_e;
-pub type iox2_service_list_context = *const c_void;
+impl IntoCInt for ServiceListError {
+    fn into_c_int(self) -> c_int {
+        match self {
+            ServiceListError::InternalError => iox2_service_list_error_e::INTERNAL_ERROR as _,
+            ServiceListError::InsufficientPermissions => {
+                iox2_service_list_error_e::INSUFFICIENT_PERMISSIONS as _
+            }
+        }
+    }
+}
+
+pub type iox2_service_list_callback = extern "C" fn(
+    *const iox2_static_config_t,
+    iox2_callback_context,
+) -> iox2_callback_progression_e;
 
 // END type definition
 
@@ -174,13 +188,21 @@ pub unsafe extern "C" fn iox2_service_details(
     service_name: iox2_service_name_ptr,
     config: iox2_config_ptr,
     _messaging_pattern: iox2_messaging_pattern_e,
-    service_details: iox2_service_name_ptr,
+    service_details: *mut iox2_static_config_t,
 ) -> c_int {
     debug_assert!(!service_name.is_null());
     debug_assert!(!config.is_null());
     debug_assert!(!service_details.is_null());
 
     todo!()
+}
+
+fn list_callback<S: Service>(
+    callback: iox2_service_list_callback,
+    callback_ctx: iox2_callback_context,
+    service_details: &ServiceDetails<S>,
+) -> CallbackProgression {
+    callback(&(&service_details.static_details).into(), callback_ctx).into()
 }
 
 /// Iterates over the all accessible services and calls the provided callback for
@@ -193,9 +215,26 @@ pub unsafe extern "C" fn iox2_service_details(
 /// * The `callback` must be valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_list(
-    _config_ptr: iox2_config_ptr,
-    _callback: iox2_service_list_callback,
-    _callback_ctx: iox2_service_list_context,
+    service_type: iox2_service_type_e,
+    config_ptr: iox2_config_ptr,
+    callback: iox2_service_list_callback,
+    callback_ctx: iox2_callback_context,
 ) -> c_int {
-    todo!()
+    debug_assert!(!config_ptr.is_null());
+
+    let result = match service_type {
+        iox2_service_type_e::IPC => zero_copy::Service::list(&*config_ptr, |service_details| {
+            list_callback::<zero_copy::Service>(callback, callback_ctx, &service_details)
+        }),
+        iox2_service_type_e::LOCAL => {
+            process_local::Service::list(&*config_ptr, |service_details| {
+                list_callback::<process_local::Service>(callback, callback_ctx, &service_details)
+            })
+        }
+    };
+
+    match result {
+        Ok(()) => IOX2_OK,
+        Err(e) => e.into_c_int(),
+    }
 }

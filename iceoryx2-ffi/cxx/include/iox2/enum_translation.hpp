@@ -556,7 +556,31 @@ constexpr auto from<int, iox2::TypeVariant>(const int value) noexcept -> iox2::T
     IOX_UNREACHABLE();
 }
 
+template <>
+constexpr auto from<int, iox2::ServiceListError>(const int value) noexcept -> iox2::ServiceListError {
+    const auto variant = static_cast<iox2_service_list_error_e>(value);
+    switch (variant) {
+    case iox2_service_list_error_e_INSUFFICIENT_PERMISSIONS:
+        return iox2::ServiceListError::InsufficientPermissions;
+    case iox2_service_list_error_e_INTERNAL_ERROR:
+        return iox2::ServiceListError::InternalError;
+    }
 
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::MessagingPattern>(const int value) noexcept -> iox2::MessagingPattern {
+    const auto variant = static_cast<iox2_messaging_pattern_e>(value);
+    switch (variant) {
+    case iox2_messaging_pattern_e_EVENT:
+        return iox2::MessagingPattern::Event;
+    case iox2_messaging_pattern_e_PUBLISH_SUBSCRIBE:
+        return iox2::MessagingPattern::PublishSubscribe;
+    }
+
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif

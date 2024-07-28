@@ -21,7 +21,7 @@ auto main() -> int {
     using namespace iox2;
 
     Service<ServiceType::Ipc>::list(Config::global_config(), [](auto service) {
-        std::cout << service.static_details.name().to_string().c_str() << std::endl;
+        std::cout << service.static_details.name() << std::endl;
         return CallbackProgression::Continue;
     }).expect("discover all available services");
 
