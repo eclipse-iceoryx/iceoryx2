@@ -34,3 +34,9 @@ auto StaticConfig::messaging_pattern() const -> MessagingPattern {
     return iox::into<MessagingPattern>(static_cast<int>(m_value.messaging_pattern));
 }
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::StaticConfig& value) -> std::ostream& {
+    stream << "iox2::StaticConfig { id: " << value.id() << ", name: " << value.name()
+           << ", messaging_pattern: " << value.messaging_pattern() << " }";
+    return stream;
+}

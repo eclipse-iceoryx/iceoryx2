@@ -14,6 +14,7 @@
 #define IOX2_MESSAGING_PATTERN_HPP
 
 #include <cstdint>
+#include <ostream>
 
 namespace iox2 {
 enum class MessagingPattern : uint8_t {
@@ -32,5 +33,7 @@ enum class MessagingPattern : uint8_t {
     Event,
 };
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::MessagingPattern& value) -> std::ostream&;
 
 #endif

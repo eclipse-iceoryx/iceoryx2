@@ -40,6 +40,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/event_id.cpp
     src/listener.cpp
     src/message_type_details.cpp
+    src/messaging_pattern.cpp
     src/node.cpp
     src/node_details.cpp
     src/node_name.cpp

@@ -41,4 +41,7 @@ class StaticConfig {
 };
 } // namespace iox2
 
+auto operator<<(std::ostream& stream, const iox2::StaticConfig& value) -> std::ostream&;
+
+
 #endif

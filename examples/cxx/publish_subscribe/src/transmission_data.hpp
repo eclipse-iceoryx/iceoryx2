@@ -23,7 +23,7 @@ struct TransmissionData {
 };
 
 inline auto operator<<(std::ostream& stream, const TransmissionData& value) -> std::ostream& {
-    std::cout << "TransmissionData { x: " << value.x << ", y: " << value.y << ", funky: " << value.funky << " }";
+    stream << "TransmissionData { x: " << value.x << ", y: " << value.y << ", funky: " << value.funky << " }";
     return stream;
 }
 

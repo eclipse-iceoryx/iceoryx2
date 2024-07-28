@@ -29,7 +29,7 @@ class AttributeSet {
 };
 
 inline auto operator<<(std::ostream& stream, const AttributeSet& value) -> std::ostream& {
-    std::cout << "AttributeSet { }";
+    stream << "AttributeSet { }";
     return stream;
 }
 

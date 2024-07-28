@@ -10,20 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/callback_progression.hpp"
-#include "iox2/config.hpp"
-#include "iox2/service.hpp"
-#include "iox2/service_type.hpp"
+#include "iox2/messaging_pattern.hpp"
 
-#include <iostream>
-
-auto main() -> int {
-    using namespace iox2;
-
-    Service<ServiceType::Ipc>::list(Config::global_config(), [](auto service) {
-        std::cout << service.static_details << std::endl;
-        return CallbackProgression::Continue;
-    }).expect("discover all available services");
-
-    return 0;
+auto operator<<(std::ostream& stream, const iox2::MessagingPattern& value) -> std::ostream& {
+    switch (value) {
+    case iox2::MessagingPattern::PublishSubscribe:
+        stream << "iox2::MessagingPattern::PublishSubscribe";
+    case iox2::MessagingPattern::Event:
+        stream << "iox2::MessagingPattern::Event";
+    }
+    return stream;
 }
+
