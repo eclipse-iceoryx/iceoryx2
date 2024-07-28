@@ -46,7 +46,7 @@ they interact and exchange data.
 | Name                                 | Language | Description |
 |--------------------------------------|----------|-------------|
 | complex data types                   | [Rust](rust/complex_data_types) | Send zero-copy compatible versions of `Vec` and `String`. Introduces `PlacementDefault` trait for large data types to perform an in place initialization where otherwise a stack overflow would be encountered.|
-| discovery                            | [Rust](rust/discovery) | List all available services in a system. |
+| discovery                            | [C](c/discovery) [C++](cxx/discovery) [Rust](rust/discovery) | List all available services in a system. |
 | docker                               | [all](rust/docker) | Communicate between different docker containers and the host. |
 | event                                | [C](c/event) [C++](cxx/event) [Rust](rust/event) | Push notifications - send event signals to wakeup processes that are waiting for them.|
 | publish subscribe                    | [C](c/publish_subscribe) [C++](cxx/publish_subscribe) [Rust](rust/publish_subscribe) | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern). |

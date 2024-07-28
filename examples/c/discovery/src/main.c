@@ -11,7 +11,15 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/iceoryx2.h"
+#include <stdio.h>
+
+iox2_callback_progression_e list_callback(const iox2_static_config_t* static_details, void* callback_context) {
+    printf("Found Service: %s, ServiceID: %s\n", static_details->name, static_details->id);
+    return iox2_callback_progression_e_CONTINUE;
+}
 
 int main(void) {
-    zero_copy_service_list();
+    if (iox2_service_list(iox2_service_type_e_IPC, iox2_config_global_config(), list_callback, NULL) != IOX2_OK) {
+        printf("Failed to list all services.");
+    }
 }

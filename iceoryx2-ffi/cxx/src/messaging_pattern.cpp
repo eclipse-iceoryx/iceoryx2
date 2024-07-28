@@ -21,4 +21,3 @@ auto operator<<(std::ostream& stream, const iox2::MessagingPattern& value) -> st
     }
     return stream;
 }
-
