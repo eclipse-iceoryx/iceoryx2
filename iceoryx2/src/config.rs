@@ -26,7 +26,7 @@
 //!
 //! let node = NodeBuilder::new()
 //!     .config(&custom_config)
-//!     .create::<zero_copy::Service>()?;
+//!     .create::<ipc::Service>()?;
 //!
 //! let service = node.service_builder(&"MyServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
