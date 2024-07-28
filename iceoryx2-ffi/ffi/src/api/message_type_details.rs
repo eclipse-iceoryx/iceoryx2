@@ -14,13 +14,13 @@ use core::ffi::c_char;
 
 use iceoryx2::service::static_config::message_type_details::*;
 
-use crate::iox2_type_variant_e;
+use crate::{iox2_type_variant_e, IOX2_TYPE_NAME_LENGTH};
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct iox2_type_detail_t {
     pub variant: iox2_type_variant_e,
-    pub type_name: [c_char; 256],
+    pub type_name: [c_char; IOX2_TYPE_NAME_LENGTH],
     pub size: usize,
     pub alignment: usize,
 }

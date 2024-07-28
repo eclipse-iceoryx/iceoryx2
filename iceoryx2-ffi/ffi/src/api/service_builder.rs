@@ -13,6 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType};
+use crate::IOX2_MAX_USER_HEADER_SIZE;
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::{
@@ -28,7 +29,7 @@ use core::mem::MaybeUninit;
 // BEGIN types definition
 
 pub(super) type NoUserHeaderFfi = ();
-pub(super) type _UserHeaderFfi = [u8; 128];
+pub(super) type _UserHeaderFfi = [u8; IOX2_MAX_USER_HEADER_SIZE];
 pub(super) type PayloadFfi = [u8];
 pub(super) type UninitPayloadFfi = [MaybeUninit<u8>];
 

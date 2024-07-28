@@ -17,6 +17,7 @@
 #include "iox/string.hpp"
 #include "iox2/attribute_set.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/messaging_pattern.hpp"
 #include "iox2/service_name.hpp"
 
 namespace iox2 {
@@ -25,10 +26,13 @@ class StaticConfig {
     auto attributes() const -> const AttributeSet& {
         IOX_TODO();
     }
-    auto uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH> {
+    auto id() const -> iox::string<IOX2_SERVICE_ID_LENGTH> {
         IOX_TODO();
     }
     auto name() const -> ServiceName {
+        IOX_TODO();
+    }
+    auto messaging_pattern() const -> MessagingPattern {
         IOX_TODO();
     }
 };

@@ -23,8 +23,8 @@ pub struct iox2_static_config_event_t {
     pub event_id_max_value: usize,
 }
 
-impl From<StaticConfig> for iox2_static_config_event_t {
-    fn from(c: StaticConfig) -> Self {
+impl From<&StaticConfig> for iox2_static_config_event_t {
+    fn from(c: &StaticConfig) -> Self {
         Self {
             max_notifiers: c.max_notifiers(),
             max_listeners: c.max_listeners(),
