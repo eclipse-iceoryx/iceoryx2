@@ -43,7 +43,7 @@ class Publisher {
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
-    auto send_copy(const Payload& payload) const -> iox::expected<uint64_t, PublisherSendError>;
+    auto send_copy(const Payload& payload) const -> iox::expected<size_t, PublisherSendError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
@@ -133,7 +133,7 @@ inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload) const
-    -> iox::expected<uint64_t, PublisherSendError> {
+    -> iox::expected<size_t, PublisherSendError> {
     static_assert(std::is_trivially_copyable<Payload>::value);
 
     auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);

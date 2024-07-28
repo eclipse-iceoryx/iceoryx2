@@ -98,8 +98,7 @@ class SampleMut {
     friend class Publisher;
 
     template <ServiceType ST, typename PayloadT, typename UserHeaderT>
-    friend auto
-    send_sample(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<uint64_t, PublisherSendError>;
+    friend auto send_sample(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<size_t, PublisherSendError>;
 
     explicit SampleMut(iox2_sample_mut_h handle);
     void drop();
@@ -216,7 +215,7 @@ SampleMut<S, Payload, UserHeader>::write_from_fn(const iox::function<typename T:
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto send_sample(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<uint64_t, PublisherSendError> {
+inline auto send_sample(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<size_t, PublisherSendError> {
     size_t number_of_recipients = 0;
     auto result = iox2_sample_mut_send(sample.m_handle, &number_of_recipients);
     sample.m_handle = nullptr;
