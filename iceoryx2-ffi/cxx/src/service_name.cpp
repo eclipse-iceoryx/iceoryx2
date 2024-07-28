@@ -17,7 +17,7 @@
 #include <cstring>
 
 namespace iox2 {
-auto ServiceNameView::to_string() const -> iox::string<NODE_NAME_LENGTH> {
+auto ServiceNameView::to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH> {
     size_t len = 0;
     const auto* c_ptr = iox2_service_name_as_c_str(m_ptr, &len);
     return { iox::TruncateToCapacity, c_ptr, len };
@@ -83,13 +83,13 @@ void ServiceName::drop() noexcept {
 }
 
 auto ServiceName::create(const char* value) -> iox::expected<ServiceName, SemanticStringError> {
-    return ServiceName::create_impl(value, strnlen(value, SERVICE_NAME_LENGTH + 1));
+    return ServiceName::create_impl(value, strnlen(value, IOX2_SERVICE_NAME_LENGTH + 1));
 }
 
 auto ServiceName::create_impl(const char* value,
                               const size_t value_len) -> iox::expected<ServiceName, SemanticStringError> {
     iox2_service_name_h handle {};
-    if (value_len > SERVICE_NAME_LENGTH) {
+    if (value_len > IOX2_SERVICE_NAME_LENGTH) {
         return iox::err(SemanticStringError::ExceedsMaximumLength);
     }
 
@@ -102,7 +102,7 @@ auto ServiceName::create_impl(const char* value,
     return iox::err(iox::into<SemanticStringError>(ret_val));
 }
 
-auto ServiceName::to_string() const -> iox::string<SERVICE_NAME_LENGTH> {
+auto ServiceName::to_string() const -> iox::string<IOX2_SERVICE_NAME_LENGTH> {
     return as_view().to_string();
 }
 

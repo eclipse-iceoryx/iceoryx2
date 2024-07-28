@@ -58,7 +58,7 @@ auto PortFactoryEvent<S>::name() const -> ServiceNameView {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::uuid() const -> iox::string<SERVICE_ID_LENGTH> {
+auto PortFactoryEvent<S>::uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH> {
     IOX_TODO();
 }
 

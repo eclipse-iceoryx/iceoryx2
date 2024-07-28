@@ -13,21 +13,21 @@
 #ifndef IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP
 
-#include "attribute_set.hpp"
-#include "callback_progression.hpp"
-#include "dynamic_config_publish_subscribe.hpp"
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/string.hpp"
-#include "iox2/iceoryx2_settings.hpp"
-#include "node_failure_enums.hpp"
-#include "node_state.hpp"
-#include "port_factory_publisher.hpp"
-#include "port_factory_subscriber.hpp"
-#include "service_name.hpp"
-#include "service_type.hpp"
-#include "static_config_publish_subscribe.hpp"
+#include "iox2/attribute_set.hpp"
+#include "iox2/callback_progression.hpp"
+#include "iox2/dynamic_config_publish_subscribe.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/node_failure_enums.hpp"
+#include "iox2/node_state.hpp"
+#include "iox2/port_factory_publisher.hpp"
+#include "iox2/port_factory_subscriber.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
+#include "iox2/static_config_publish_subscribe.hpp"
 
 namespace iox2 {
 /// The factory for [`MessagingPattern::PublishSubscribe`].
@@ -47,7 +47,7 @@ class PortFactoryPublishSubscribe {
     auto name() const -> const ServiceName&;
 
     /// Returns the uuid of the [`Service`]
-    auto uuid() const -> iox::string<SERVICE_ID_LENGTH>;
+    auto uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH>;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> const AttributeSet&;
@@ -126,7 +126,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const ->
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::uuid() const -> iox::string<SERVICE_ID_LENGTH> {
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH> {
     IOX_TODO();
 }
 

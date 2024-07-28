@@ -13,20 +13,20 @@
 #ifndef IOX2_PORTFACTORY_EVENT_HPP
 #define IOX2_PORTFACTORY_EVENT_HPP
 
-#include "attribute_set.hpp"
-#include "callback_progression.hpp"
-#include "dynamic_config_event.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/string.hpp"
-#include "iox2/iceoryx2_settings.hpp"
-#include "node_failure_enums.hpp"
-#include "node_state.hpp"
-#include "port_factory_listener.hpp"
-#include "port_factory_notifier.hpp"
-#include "service_name.hpp"
-#include "service_type.hpp"
-#include "static_config_event.hpp"
+#include "iox2/attribute_set.hpp"
+#include "iox2/callback_progression.hpp"
+#include "iox2/dynamic_config_event.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/node_failure_enums.hpp"
+#include "iox2/node_state.hpp"
+#include "iox2/port_factory_listener.hpp"
+#include "iox2/port_factory_notifier.hpp"
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
+#include "iox2/static_config_event.hpp"
 
 namespace iox2 {
 /// Represents the port factory of a [`Service`] with [`MessagingPattern::Event`].
@@ -44,7 +44,7 @@ class PortFactoryEvent {
     auto name() const -> ServiceNameView;
 
     /// Returns the uuid of the [`Service`]
-    auto uuid() const -> iox::string<SERVICE_ID_LENGTH>;
+    auto uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH>;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> const AttributeSet&;

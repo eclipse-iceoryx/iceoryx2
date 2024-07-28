@@ -13,11 +13,10 @@
 #ifndef IOX2_NODE_NAME_HPP
 #define IOX2_NODE_NAME_HPP
 
-#include "internal/iceoryx2.hpp"
 #include "iox/expected.hpp"
 #include "iox/string.hpp"
-#include "iox2/iceoryx2_settings.hpp"
-#include "semantic_string.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/semantic_string.hpp"
 
 namespace iox2 {
 class NodeName;
@@ -32,7 +31,7 @@ class NodeNameView {
     ~NodeNameView() = default;
 
     /// Returns a [`iox::string`] containing the [`NodeName`].
-    auto to_string() const -> iox::string<NODE_NAME_LENGTH>;
+    auto to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH>;
 
     /// Creates a copy of the corresponding [`NodeName`] and returns it.
     auto to_owned() const -> NodeName;
@@ -70,7 +69,7 @@ class NodeName {
     static auto create(const char* value) -> iox::expected<NodeName, SemanticStringError>;
 
     /// Returns a [`iox::string`] containing the [`NodeName`].
-    auto to_string() const -> iox::string<NODE_NAME_LENGTH>;
+    auto to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH>;
 
   private:
     friend class NodeBuilder;

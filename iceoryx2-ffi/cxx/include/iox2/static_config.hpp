@@ -13,11 +13,11 @@
 #ifndef IOX2_STATIC_CONFIG_HPP
 #define IOX2_STATIC_CONFIG_HPP
 
-#include "attribute_set.hpp"
 #include "iox/assertions_addendum.hpp"
 #include "iox/string.hpp"
-#include "iox2/iceoryx2_settings.hpp"
-#include "service_name.hpp"
+#include "iox2/attribute_set.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/service_name.hpp"
 
 namespace iox2 {
 class StaticConfig {
@@ -25,7 +25,7 @@ class StaticConfig {
     auto attributes() const -> const AttributeSet& {
         IOX_TODO();
     }
-    auto uuid() const -> iox::string<SERVICE_ID_LENGTH> {
+    auto uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH> {
         IOX_TODO();
     }
     auto name() const -> ServiceName {
