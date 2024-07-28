@@ -14,7 +14,6 @@
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
-use iceoryx2_bb_log::set_log_level;
 
 use core::ffi::{c_int, c_void};
 
@@ -113,21 +112,6 @@ impl IntoCInt for SemanticStringError {
                 iox2_semantic_string_error_e::EXCEEDS_MAXIMUM_LENGTH
             }
         }) as c_int
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn zero_copy_service_list() -> i32 {
-    set_log_level(iceoryx2_bb_log::LogLevel::Info);
-
-    let callback = |service| {
-        println!("\n{:#?}", service);
-        CallbackProgression::Continue
-    };
-
-    match zero_copy::Service::list(Config::global_config(), callback) {
-        Ok(_) => 0,
-        Err(_) => -1,
     }
 }
 

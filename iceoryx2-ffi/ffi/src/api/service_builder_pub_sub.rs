@@ -466,15 +466,11 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
     func_ipc: impl FnOnce(
-        Builder<PayloadFfi, NoUserHeaderFfi, zero_copy::Service>,
-    )
-        -> Result<PortFactory<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>, E>,
+        Builder<PayloadFfi, NoUserHeaderFfi, ipc::Service>,
+    ) -> Result<PortFactory<ipc::Service, PayloadFfi, NoUserHeaderFfi>, E>,
     func_local: impl FnOnce(
-        Builder<PayloadFfi, NoUserHeaderFfi, process_local::Service>,
-    ) -> Result<
-        PortFactory<process_local::Service, PayloadFfi, NoUserHeaderFfi>,
-        E,
-    >,
+        Builder<PayloadFfi, NoUserHeaderFfi, local::Service>,
+    ) -> Result<PortFactory<local::Service, PayloadFfi, NoUserHeaderFfi>, E>,
 ) -> c_int {
     debug_assert!(!service_builder_handle.is_null());
     debug_assert!(!port_factory_handle_ptr.is_null());

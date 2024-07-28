@@ -16,9 +16,9 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node = NodeBuilder::new().create::<process_local::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
-//! // use `process_local` as communication variant
+//! // use `ipc` as communication variant
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
@@ -40,21 +40,21 @@ use iceoryx2_cal::*;
 
 use super::ServiceState;
 
-/// Defines a process local or single address space communication setup.
+/// Defines a zero copy inter-process communication setup based on posix mechanisms.
 #[derive(Debug)]
 pub struct Service {
     state: Arc<ServiceState<Self>>,
 }
 
 impl crate::service::Service for Service {
-    type StaticStorage = static_storage::process_local::Storage;
+    type StaticStorage = static_storage::file::Storage;
     type ConfigSerializer = serialize::toml::Toml;
-    type DynamicStorage = dynamic_storage::process_local::Storage<DynamicConfig>;
+    type DynamicStorage = dynamic_storage::posix_shared_memory::Storage<DynamicConfig>;
     type ServiceNameHasher = hash::sha1::Sha1;
-    type SharedMemory = shared_memory::process_local::Memory<PoolAllocator>;
-    type Connection = zero_copy_connection::process_local::Connection;
-    type Event = event::process_local::EventImpl;
-    type Monitoring = monitoring::process_local::ProcessLocalMonitoring;
+    type SharedMemory = shared_memory::posix::Memory<PoolAllocator>;
+    type Connection = zero_copy_connection::posix_shared_memory::Connection;
+    type Event = event::unix_datagram_socket::EventImpl;
+    type Monitoring = monitoring::file_lock::FileLockMonitoring;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {

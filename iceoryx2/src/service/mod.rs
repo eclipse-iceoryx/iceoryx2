@@ -18,7 +18,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     // define the messaging pattern
@@ -45,7 +45,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     // define the messaging pattern
@@ -74,7 +74,7 @@
 //!
 //! let node = NodeBuilder::new()
 //!     .config(&custom_config)
-//!     .create::<zero_copy::Service>()?;
+//!     .create::<ipc::Service>()?;
 //!
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
@@ -91,7 +91,7 @@
 //! use iceoryx2::config::Config;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service_creator = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
@@ -153,10 +153,10 @@ pub mod static_config;
 pub mod attribute;
 
 /// A configuration when communicating within a single process or single address space.
-pub mod process_local;
+pub mod local;
 
 /// A configuration when communicating between different processes using posix mechanisms.
-pub mod zero_copy;
+pub mod ipc;
 
 pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
@@ -492,7 +492,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let name = ServiceName::new("Some/Name")?;
     /// let does_name_exist =
-    ///     zero_copy::Service::does_exist(
+    ///     ipc::Service::does_exist(
     ///                 &name,
     ///                 Config::global_config(),
     ///                 MessagingPattern::Event)?;
@@ -518,7 +518,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let name = ServiceName::new("Some/Name")?;
     /// let details =
-    ///     zero_copy::Service::details(
+    ///     ipc::Service::details(
     ///                 &name,
     ///                 Config::global_config(),
     ///                 MessagingPattern::Event)?;
@@ -555,7 +555,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     /// use iceoryx2::config::Config;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// zero_copy::Service::list(Config::global_config(), |service| {
+    /// ipc::Service::list(Config::global_config(), |service| {
     ///     println!("\n{:#?}", &service);
     ///     CallbackProgression::Continue
     /// })?;

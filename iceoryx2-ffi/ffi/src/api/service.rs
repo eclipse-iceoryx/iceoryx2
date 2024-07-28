@@ -18,8 +18,8 @@
 use std::ffi::c_int;
 
 use iceoryx2::service::{
-    messaging_pattern::MessagingPattern, process_local, zero_copy, Service, ServiceDetails,
-    ServiceDetailsError, ServiceListError,
+    ipc, local, messaging_pattern::MessagingPattern, Service, ServiceDetails, ServiceDetailsError,
+    ServiceListError,
 };
 use iceoryx2_bb_elementary::CallbackProgression;
 
@@ -157,10 +157,10 @@ pub unsafe extern "C" fn iox2_service_does_exist(
 
     let result = match service_type {
         iox2_service_type_e::IPC => {
-            zero_copy::Service::does_exist(service_name, config, messaging_pattern)
+            ipc::Service::does_exist(service_name, config, messaging_pattern)
         }
         iox2_service_type_e::LOCAL => {
-            process_local::Service::does_exist(service_name, config, messaging_pattern)
+            local::Service::does_exist(service_name, config, messaging_pattern)
         }
     };
 
@@ -223,14 +223,12 @@ pub unsafe extern "C" fn iox2_service_list(
     debug_assert!(!config_ptr.is_null());
 
     let result = match service_type {
-        iox2_service_type_e::IPC => zero_copy::Service::list(&*config_ptr, |service_details| {
-            list_callback::<zero_copy::Service>(callback, callback_ctx, &service_details)
+        iox2_service_type_e::IPC => ipc::Service::list(&*config_ptr, |service_details| {
+            list_callback::<ipc::Service>(callback, callback_ctx, &service_details)
         }),
-        iox2_service_type_e::LOCAL => {
-            process_local::Service::list(&*config_ptr, |service_details| {
-                list_callback::<process_local::Service>(callback, callback_ctx, &service_details)
-            })
-        }
+        iox2_service_type_e::LOCAL => local::Service::list(&*config_ptr, |service_details| {
+            list_callback::<local::Service>(callback, callback_ctx, &service_details)
+        }),
     };
 
     match result {

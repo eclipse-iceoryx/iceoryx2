@@ -46,17 +46,17 @@ impl IntoCInt for ListenerWaitError {
 }
 
 pub(super) union ListenerUnion {
-    ipc: ManuallyDrop<Listener<zero_copy::Service>>,
-    local: ManuallyDrop<Listener<process_local::Service>>,
+    ipc: ManuallyDrop<Listener<ipc::Service>>,
+    local: ManuallyDrop<Listener<local::Service>>,
 }
 
 impl ListenerUnion {
-    pub(super) fn new_ipc(listener: Listener<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(listener: Listener<ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(listener),
         }
     }
-    pub(super) fn new_local(listener: Listener<process_local::Service>) -> Self {
+    pub(super) fn new_local(listener: Listener<local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(listener),
         }

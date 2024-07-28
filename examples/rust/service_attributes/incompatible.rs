@@ -13,7 +13,7 @@
 use iceoryx2::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let _incompatible_service = node
         .service_builder(&"Service/With/Properties".try_into()?)

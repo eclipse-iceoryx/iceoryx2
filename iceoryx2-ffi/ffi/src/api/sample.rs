@@ -26,19 +26,17 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 pub(super) union SampleUnion {
-    ipc: ManuallyDrop<Sample<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<Sample<process_local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<Sample<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
+    local: ManuallyDrop<Sample<local::Service, PayloadFfi, NoUserHeaderFfi>>,
 }
 
 impl SampleUnion {
-    pub(super) fn new_ipc(sample: Sample<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
+    pub(super) fn new_ipc(sample: Sample<ipc::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
-    pub(super) fn new_local(
-        sample: Sample<process_local::Service, PayloadFfi, NoUserHeaderFfi>,
-    ) -> Self {
+    pub(super) fn new_local(sample: Sample<local::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
         Self {
             local: ManuallyDrop::new(sample),
         }

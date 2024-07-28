@@ -94,20 +94,18 @@ pub enum iox2_publisher_loan_error_e {
 }
 
 pub(super) union PublisherUnion {
-    ipc: ManuallyDrop<Publisher<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<Publisher<process_local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<Publisher<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
+    local: ManuallyDrop<Publisher<local::Service, PayloadFfi, NoUserHeaderFfi>>,
 }
 
 impl PublisherUnion {
-    pub(super) fn new_ipc(
-        publisher: Publisher<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>,
-    ) -> Self {
+    pub(super) fn new_ipc(publisher: Publisher<ipc::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
         Self {
             ipc: ManuallyDrop::new(publisher),
         }
     }
     pub(super) fn new_local(
-        publisher: Publisher<process_local::Service, PayloadFfi, NoUserHeaderFfi>,
+        publisher: Publisher<local::Service, PayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(publisher),

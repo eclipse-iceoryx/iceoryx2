@@ -15,9 +15,9 @@ pub use crate::node::{node_name::NodeName, Node, NodeBuilder, NodeEvent, NodeSta
 pub use crate::port::event_id::EventId;
 pub use crate::service::messaging_pattern::MessagingPattern;
 pub use crate::service::{
-    attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier,
-    port_factory::publisher::UnableToDeliverStrategy, port_factory::PortFactory, process_local,
-    service_name::ServiceName, zero_copy, Service,
+    attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier, ipc,
+    local, port_factory::publisher::UnableToDeliverStrategy, port_factory::PortFactory,
+    service_name::ServiceName, Service,
 };
 pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_elementary::alignment::Alignment;

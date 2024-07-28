@@ -111,6 +111,6 @@ fn main() {
         set_log_level(iceoryx2_bb_log::LogLevel::Info);
     }
 
-    perform_benchmark::<zero_copy::Service>(&args);
-    perform_benchmark::<process_local::Service>(&args);
+    perform_benchmark::<ipc::Service>(&args);
+    perform_benchmark::<local::Service>(&args);
 }

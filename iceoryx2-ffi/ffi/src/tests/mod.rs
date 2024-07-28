@@ -27,13 +27,13 @@ trait ServiceTypeMapping {
     fn service_type() -> iox2_service_type_e;
 }
 
-impl ServiceTypeMapping for iceoryx2::service::zero_copy::Service {
+impl ServiceTypeMapping for iceoryx2::service::ipc::Service {
     fn service_type() -> iox2_service_type_e {
         iox2_service_type_e::IPC
     }
 }
 
-impl ServiceTypeMapping for iceoryx2::service::process_local::Service {
+impl ServiceTypeMapping for iceoryx2::service::local::Service {
     fn service_type() -> iox2_service_type_e {
         iox2_service_type_e::LOCAL
     }

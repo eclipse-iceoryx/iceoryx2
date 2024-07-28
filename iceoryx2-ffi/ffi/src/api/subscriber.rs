@@ -48,20 +48,20 @@ impl IntoCInt for SubscriberReceiveError {
 }
 
 pub(super) union SubscriberUnion {
-    ipc: ManuallyDrop<Subscriber<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<Subscriber<process_local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<Subscriber<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
+    local: ManuallyDrop<Subscriber<local::Service, PayloadFfi, NoUserHeaderFfi>>,
 }
 
 impl SubscriberUnion {
     pub(super) fn new_ipc(
-        subscriber: Subscriber<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>,
+        subscriber: Subscriber<ipc::Service, PayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(subscriber),
         }
     }
     pub(super) fn new_local(
-        subscriber: Subscriber<process_local::Service, PayloadFfi, NoUserHeaderFfi>,
+        subscriber: Subscriber<local::Service, PayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(subscriber),

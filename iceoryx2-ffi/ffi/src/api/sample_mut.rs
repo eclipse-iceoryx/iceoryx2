@@ -28,20 +28,20 @@ use super::UninitPayloadFfi;
 // BEGIN types definition
 
 pub(super) union SampleMutUnion {
-    ipc: ManuallyDrop<SampleMut<zero_copy::Service, UninitPayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<SampleMut<process_local::Service, UninitPayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<SampleMut<ipc::Service, UninitPayloadFfi, NoUserHeaderFfi>>,
+    local: ManuallyDrop<SampleMut<local::Service, UninitPayloadFfi, NoUserHeaderFfi>>,
 }
 
 impl SampleMutUnion {
     pub(super) fn new_ipc(
-        sample: SampleMut<zero_copy::Service, UninitPayloadFfi, NoUserHeaderFfi>,
+        sample: SampleMut<ipc::Service, UninitPayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
     pub(super) fn new_local(
-        sample: SampleMut<process_local::Service, UninitPayloadFfi, NoUserHeaderFfi>,
+        sample: SampleMut<local::Service, UninitPayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(sample),

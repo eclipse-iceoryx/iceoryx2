@@ -937,8 +937,8 @@ mod service {
         assert_that!(sut.uuid(), eq sut2.uuid());
     }
 
-    mod zero_copy {
-        use iceoryx2::service::zero_copy::Service;
+    mod ipc {
+        use iceoryx2::service::ipc::Service;
 
         #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
         mod event {}
@@ -947,8 +947,8 @@ mod service {
         mod publish_subscribe {}
     }
 
-    mod process_local {
-        use iceoryx2::service::process_local::Service;
+    mod local {
+        use iceoryx2::service::local::Service;
 
         #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
         mod event {}

@@ -49,19 +49,17 @@ impl IntoCInt for ListenerCreateError {
 }
 
 pub(super) union PortFactoryListenerBuilderUnion {
-    ipc: ManuallyDrop<PortFactoryListener<'static, zero_copy::Service>>,
-    local: ManuallyDrop<PortFactoryListener<'static, process_local::Service>>,
+    ipc: ManuallyDrop<PortFactoryListener<'static, ipc::Service>>,
+    local: ManuallyDrop<PortFactoryListener<'static, local::Service>>,
 }
 
 impl PortFactoryListenerBuilderUnion {
-    pub(super) fn new_ipc(port_factory: PortFactoryListener<'static, zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(port_factory: PortFactoryListener<'static, ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
-    pub(super) fn new_local(
-        port_factory: PortFactoryListener<'static, process_local::Service>,
-    ) -> Self {
+    pub(super) fn new_local(port_factory: PortFactoryListener<'static, local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),
         }

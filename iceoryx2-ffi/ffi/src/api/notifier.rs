@@ -42,17 +42,17 @@ impl IntoCInt for NotifierNotifyError {
 }
 
 pub(super) union NotifierUnion {
-    ipc: ManuallyDrop<Notifier<zero_copy::Service>>,
-    local: ManuallyDrop<Notifier<process_local::Service>>,
+    ipc: ManuallyDrop<Notifier<ipc::Service>>,
+    local: ManuallyDrop<Notifier<local::Service>>,
 }
 
 impl NotifierUnion {
-    pub(super) fn new_ipc(notifier: Notifier<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(notifier: Notifier<ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(notifier),
         }
     }
-    pub(super) fn new_local(notifier: Notifier<process_local::Service>) -> Self {
+    pub(super) fn new_local(notifier: Notifier<local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(notifier),
         }
