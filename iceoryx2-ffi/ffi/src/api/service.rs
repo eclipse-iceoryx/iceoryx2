@@ -51,6 +51,22 @@ impl From<iox2_messaging_pattern_e> for MessagingPattern {
     }
 }
 
+impl From<&iceoryx2::service::static_config::messaging_pattern::MessagingPattern>
+    for iox2_messaging_pattern_e
+{
+    fn from(value: &iceoryx2::service::static_config::messaging_pattern::MessagingPattern) -> Self {
+        match value {
+            iceoryx2::service::static_config::messaging_pattern::MessagingPattern::Event(_) => {
+                iox2_messaging_pattern_e::EVENT
+            }
+            iceoryx2::service::static_config::messaging_pattern::MessagingPattern::PublishSubscribe(_) => {
+                iox2_messaging_pattern_e::PUBLISH_SUBSCRIBE
+            }
+            _ => todo!()
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_service_details_error_e {
