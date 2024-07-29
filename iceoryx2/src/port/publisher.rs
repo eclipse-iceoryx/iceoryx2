@@ -534,6 +534,7 @@ impl<Service: service::Service> DataSegment<Service> {
 pub struct Publisher<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> {
     pub(crate) data_segment: Arc<DataSegment<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
+    payload_size: usize,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -619,9 +620,17 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             loan_counter: IoxAtomicUsize::new(0),
         });
 
+        let payload_size = data_segment
+            .subscriber_connections
+            .static_config
+            .message_type_details
+            .payload
+            .size;
+
         let mut new_self = Self {
             data_segment,
             dynamic_publisher_handle: None,
+            payload_size,
             _payload: PhantomData,
             _user_header: PhantomData,
         };
@@ -983,16 +992,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
             ))
         };
 
-        let payload_size = self
-            .data_segment
-            .subscriber_connections
-            .static_config
-            .message_type_details
-            .payload
-            .size;
-
         let slice_len_adjusted_to_payload_type_details =
-            payload_size * slice_len / core::mem::size_of::<Payload>();
+            self.payload_size * slice_len / core::mem::size_of::<Payload>();
 
         let sample = unsafe {
             RawSampleMut::new_unchecked(
