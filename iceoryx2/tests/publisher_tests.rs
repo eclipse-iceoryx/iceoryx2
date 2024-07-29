@@ -293,6 +293,7 @@ mod publisher {
             .publisher_builder()
             .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
             .create()?;
+        assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::Block);
 
         let handle = BarrierHandle::new();
         let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
