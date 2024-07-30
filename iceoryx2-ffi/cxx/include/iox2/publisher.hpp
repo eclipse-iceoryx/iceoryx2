@@ -24,6 +24,7 @@
 #include "iox2/unique_port_id.hpp"
 
 #include <cstdint>
+#include <type_traits>
 
 namespace iox2 {
 /// Sending endpoint of a publish-subscriber based communication.
@@ -64,6 +65,7 @@ class Publisher {
     /// [`Payload`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     auto
     loan_slice(uint64_t number_of_elements) -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
 
@@ -71,6 +73,7 @@ class Publisher {
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     auto loan_slice_uninit(uint64_t number_of_elements)
         -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
 
@@ -171,12 +174,14 @@ Publisher<S, Payload, UserHeader>::loan() -> iox::expected<SampleMut<S, Payload,
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_slice(const uint64_t number_of_elements)
     -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
     IOX_TODO();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_slice_uninit(const uint64_t number_of_elements)
     -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
     IOX_TODO();

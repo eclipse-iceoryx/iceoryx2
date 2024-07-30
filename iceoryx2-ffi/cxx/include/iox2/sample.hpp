@@ -117,15 +117,13 @@ inline auto Sample<S, Payload, UserHeader>::operator->() const -> const Payload*
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
     auto* ref_handle = iox2_cast_sample_ref_h(m_handle);
-    const Payload* payload_ptr = nullptr;
+    const void* payload_ptr = nullptr;
     size_t payload_len = 0;
 
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast), no other way for type erasure
-    iox2_sample_payload(ref_handle, reinterpret_cast<const void**>(&payload_ptr), &payload_len);
-    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
+    iox2_sample_payload(ref_handle, &payload_ptr, &payload_len);
     IOX_ASSERT(sizeof(Payload) <= payload_len, "");
 
-    return *payload_ptr;
+    return *static_cast<const Payload*>(payload_ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
