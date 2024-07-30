@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi};
+use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, UserHeaderFfi};
 use crate::c_size_t;
 
 use iceoryx2::prelude::*;
@@ -26,17 +26,17 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 pub(super) union SampleUnion {
-    ipc: ManuallyDrop<Sample<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<Sample<local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<Sample<ipc::Service, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<Sample<local::Service, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl SampleUnion {
-    pub(super) fn new_ipc(sample: Sample<ipc::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
+    pub(super) fn new_ipc(sample: Sample<ipc::Service, PayloadFfi, UserHeaderFfi>) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
-    pub(super) fn new_local(sample: Sample<local::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
+    pub(super) fn new_local(sample: Sample<local::Service, PayloadFfi, UserHeaderFfi>) -> Self {
         Self {
             local: ManuallyDrop::new(sample),
         }

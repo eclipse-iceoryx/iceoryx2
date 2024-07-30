@@ -14,7 +14,7 @@
 
 use crate::api::{
     c_size_t, iox2_sample_h, iox2_sample_t, iox2_service_type_e, HandleToType, IntoCInt,
-    NoUserHeaderFfi, PayloadFfi, SampleUnion, IOX2_OK,
+    PayloadFfi, SampleUnion, UserHeaderFfi, IOX2_OK,
 };
 
 use iceoryx2::port::subscriber::{Subscriber, SubscriberReceiveError};
@@ -48,20 +48,18 @@ impl IntoCInt for SubscriberReceiveError {
 }
 
 pub(super) union SubscriberUnion {
-    ipc: ManuallyDrop<Subscriber<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<Subscriber<local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<Subscriber<ipc::Service, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<Subscriber<local::Service, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl SubscriberUnion {
-    pub(super) fn new_ipc(
-        subscriber: Subscriber<ipc::Service, PayloadFfi, NoUserHeaderFfi>,
-    ) -> Self {
+    pub(super) fn new_ipc(subscriber: Subscriber<ipc::Service, PayloadFfi, UserHeaderFfi>) -> Self {
         Self {
             ipc: ManuallyDrop::new(subscriber),
         }
     }
     pub(super) fn new_local(
-        subscriber: Subscriber<local::Service, PayloadFfi, NoUserHeaderFfi>,
+        subscriber: Subscriber<local::Service, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(subscriber),

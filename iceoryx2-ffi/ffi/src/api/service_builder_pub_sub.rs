@@ -15,8 +15,8 @@
 use crate::api::{
     c_size_t, iox2_port_factory_pub_sub_h, iox2_port_factory_pub_sub_t,
     iox2_service_builder_pub_sub_h, iox2_service_builder_pub_sub_ref_h, iox2_service_type_e,
-    HandleToType, IntoCInt, NoUserHeaderFfi, PayloadFfi, PortFactoryPubSubUnion,
-    ServiceBuilderUnion, IOX2_OK,
+    HandleToType, IntoCInt, PayloadFfi, PortFactoryPubSubUnion, ServiceBuilderUnion, UserHeaderFfi,
+    IOX2_OK,
 };
 
 use iceoryx2::prelude::*;
@@ -466,11 +466,11 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
     func_ipc: impl FnOnce(
-        Builder<PayloadFfi, NoUserHeaderFfi, ipc::Service>,
-    ) -> Result<PortFactory<ipc::Service, PayloadFfi, NoUserHeaderFfi>, E>,
+        Builder<PayloadFfi, UserHeaderFfi, ipc::Service>,
+    ) -> Result<PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi>, E>,
     func_local: impl FnOnce(
-        Builder<PayloadFfi, NoUserHeaderFfi, local::Service>,
-    ) -> Result<PortFactory<local::Service, PayloadFfi, NoUserHeaderFfi>, E>,
+        Builder<PayloadFfi, UserHeaderFfi, local::Service>,
+    ) -> Result<PortFactory<local::Service, PayloadFfi, UserHeaderFfi>, E>,
 ) -> c_int {
     debug_assert!(!service_builder_handle.is_null());
     debug_assert!(!port_factory_handle_ptr.is_null());
