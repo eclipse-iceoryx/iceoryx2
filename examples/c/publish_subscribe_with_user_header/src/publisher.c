@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "custom_header.h"
 #include "iox2/iceoryx2.h"
-#include "transmission_data.h"
 
 #ifdef _WIN64
 #define alignof __alignof
@@ -48,15 +48,28 @@ int main(void) {
         iox2_cast_service_builder_pub_sub_ref_h(service_builder_pub_sub);
 
     // set pub sub payload type
-    const char* payload_type_name = "16TransmissionData";
+    const char* payload_type_name = "m";
     if (iox2_service_builder_pub_sub_set_payload_type_details(service_builder_pub_sub_ref,
                                                               iox2_type_variant_e_FIXED_SIZE,
                                                               payload_type_name,
                                                               strlen(payload_type_name),
-                                                              sizeof(struct TransmissionData),
-                                                              alignof(struct TransmissionData))
+                                                              sizeof(uint64_t),
+                                                              alignof(uint64_t))
         != IOX2_OK) {
-        printf("Unable to set type details\n");
+        printf("Unable to set payload type details\n");
+        goto drop_node;
+    }
+
+    // set pub sub user header type
+    const char* user_header_type_name = "12CustomHeader";
+    if (iox2_service_builder_pub_sub_set_user_header_type_details(service_builder_pub_sub_ref,
+                                                                  iox2_type_variant_e_FIXED_SIZE,
+                                                                  user_header_type_name,
+                                                                  strlen(user_header_type_name),
+                                                                  sizeof(struct CustomHeader),
+                                                                  alignof(struct CustomHeader))
+        != IOX2_OK) {
+        printf("Unable to set user header type details\n");
         goto drop_node;
     }
 
@@ -84,18 +97,21 @@ int main(void) {
 
         // loan sample
         iox2_sample_mut_h sample = NULL;
-        if (iox2_publisher_loan(publisher_ref, NULL, &sample) != IOX2_OK) {
+        if (iox2_publisher_loan(publisher_ref, 1, NULL, &sample) != IOX2_OK) {
             printf("Failed to loan sample\n");
             goto drop_publisher;
         }
         iox2_sample_mut_ref_h sample_ref = iox2_cast_sample_mut_ref_h(sample);
 
         // write payload
-        struct TransmissionData* payload = NULL;
+        uint64_t* payload = NULL;
         iox2_sample_mut_payload_mut(sample_ref, (void**) &payload, NULL);
-        payload->x = counter;
-        payload->y = counter * 3;
-        payload->funky = counter * 812.12; // NOLINT
+        *payload = counter;
+
+        struct CustomHeader* header = NULL;
+        iox2_sample_mut_user_header_mut(sample_ref, (void**) &header);
+        header->version = 123;               // NOLINT
+        header->timestamp = 80337 + counter; // NOLINT
 
         // send sample
         if (iox2_sample_mut_send(sample, NULL) != IOX2_OK) {

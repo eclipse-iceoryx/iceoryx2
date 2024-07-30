@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "custom_header.h"
 #include "iox2/iceoryx2.h"
-#include "transmission_data.h"
 
 #ifdef _WIN64
 #define alignof __alignof
@@ -48,15 +48,28 @@ int main(void) {
         iox2_cast_service_builder_pub_sub_ref_h(service_builder_pub_sub);
 
     // set pub sub payload type
-    const char* payload_type_name = "16TransmissionData";
+    const char* payload_type_name = "m";
     if (iox2_service_builder_pub_sub_set_payload_type_details(service_builder_pub_sub_ref,
                                                               iox2_type_variant_e_FIXED_SIZE,
                                                               payload_type_name,
                                                               strlen(payload_type_name),
-                                                              sizeof(struct TransmissionData),
-                                                              alignof(struct TransmissionData))
+                                                              sizeof(uint64_t),
+                                                              alignof(uint64_t))
         != IOX2_OK) {
-        printf("Unable to set type details\n");
+        printf("Unable to set payload type details\n");
+        goto drop_node;
+    }
+
+    // set pub sub user header type
+    const char* user_header_type_name = "12CustomHeader";
+    if (iox2_service_builder_pub_sub_set_user_header_type_details(service_builder_pub_sub_ref,
+                                                                  iox2_type_variant_e_FIXED_SIZE,
+                                                                  user_header_type_name,
+                                                                  strlen(user_header_type_name),
+                                                                  sizeof(struct CustomHeader),
+                                                                  alignof(struct CustomHeader))
+        != IOX2_OK) {
+        printf("Unable to set user header type details\n");
         goto drop_node;
     }
 
@@ -67,48 +80,47 @@ int main(void) {
         goto drop_node;
     }
 
-    // create publisher
+    // create subscriber
     iox2_port_factory_pub_sub_ref_h ref_service = iox2_cast_port_factory_pub_sub_ref_h(service);
-    iox2_port_factory_publisher_builder_h publisher_builder =
-        iox2_port_factory_pub_sub_publisher_builder(ref_service, NULL);
-    iox2_publisher_h publisher = NULL;
-    if (iox2_port_factory_publisher_builder_create(publisher_builder, NULL, &publisher) != IOX2_OK) {
-        printf("Unable to create publisher!\n");
+    iox2_port_factory_subscriber_builder_h subscriber_builder =
+        iox2_port_factory_pub_sub_subscriber_builder(ref_service, NULL);
+    iox2_subscriber_h subscriber = NULL;
+    if (iox2_port_factory_subscriber_builder_create(subscriber_builder, NULL, &subscriber) != IOX2_OK) {
+        printf("Unable to create subscriber!\n");
         goto drop_service;
     }
-    iox2_publisher_ref_h publisher_ref = iox2_cast_publisher_ref_h(publisher);
+    iox2_subscriber_ref_h subscriber_ref = iox2_cast_subscriber_ref_h(subscriber);
 
-    int32_t counter = 0;
+    uint64_t counter = 0;
     while (iox2_node_wait(node_ref_handle, 1, 0) == iox2_node_event_e_TICK) {
         counter += 1;
 
-        // loan sample
-        iox2_sample_mut_h sample = NULL;
-        if (iox2_publisher_loan(publisher_ref, NULL, &sample) != IOX2_OK) {
-            printf("Failed to loan sample\n");
-            goto drop_publisher;
-        }
-        iox2_sample_mut_ref_h sample_ref = iox2_cast_sample_mut_ref_h(sample);
-
-        // write payload
-        struct TransmissionData* payload = NULL;
-        iox2_sample_mut_payload_mut(sample_ref, (void**) &payload, NULL);
-        payload->x = counter;
-        payload->y = counter * 3;
-        payload->funky = counter * 812.12; // NOLINT
-
-        // send sample
-        if (iox2_sample_mut_send(sample, NULL) != IOX2_OK) {
-            printf("Failed to send sample\n");
-            goto drop_publisher;
+        // receive sample
+        iox2_sample_h sample = NULL;
+        if (iox2_subscriber_receive(subscriber_ref, NULL, &sample) != IOX2_OK) {
+            printf("Failed to receive sample\n");
+            goto drop_subscriber;
         }
 
-        printf("Send sample %d ...\n", counter);
+        if (sample != NULL) {
+            iox2_sample_ref_h sample_ref = iox2_cast_sample_ref_h(sample);
+            uint64_t* payload = NULL;
+            iox2_sample_payload(sample_ref, (const void**) &payload, NULL);
+
+            const struct CustomHeader* user_header = NULL;
+            iox2_sample_user_header(sample_ref, (const void**) &user_header);
+
+            printf("received: %lu, user_header: version = %d, timestamp = %lu\n",
+                   (long unsigned) *payload,
+                   user_header->version,
+                   user_header->timestamp);
+            iox2_sample_drop(sample);
+        }
     }
 
 
-drop_publisher:
-    iox2_publisher_drop(publisher);
+drop_subscriber:
+    iox2_subscriber_drop(subscriber);
 
 drop_service:
     iox2_port_factory_pub_sub_drop(service);
