@@ -137,7 +137,7 @@ pub unsafe extern "C" fn iox2_sample_user_header(
         iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header(),
     };
 
-    *header_ptr = header.as_ptr().cast();
+    *header_ptr = (header as *const UserHeaderFfi).cast();
 }
 
 /// Acquires the samples payload.

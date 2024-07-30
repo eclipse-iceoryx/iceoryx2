@@ -21,6 +21,7 @@ mod service_publish_subscribe {
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::publish_subscribe::CustomHeaderMarker;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::messaging_pattern::MessagingPattern;
@@ -35,7 +36,7 @@ mod service_publish_subscribe {
 
     #[derive(Debug)]
     struct SomeUserHeader {
-        value: [u8; 123],
+        value: [u64; 1024],
     }
 
     fn generate_name() -> ServiceName {
@@ -2305,8 +2306,8 @@ mod service_publish_subscribe {
         assert_that!(subscriber.update_connections(), is_ok);
         let mut sample = publisher.loan().unwrap();
 
-        for i in 0..123 {
-            sample.user_header_mut().value[i] = i as u8;
+        for i in 0..1024 {
+            sample.user_header_mut().value[i] = i as u64;
         }
         *sample.payload_mut() = 1829731;
         sample.send().unwrap();
@@ -2317,8 +2318,8 @@ mod service_publish_subscribe {
         assert_that!(*sample, eq 1829731);
         assert_that!(*sample.payload(), eq 1829731);
 
-        for i in 0..123 {
-            assert_that!(sample.user_header().value[i], eq i as u8);
+        for i in 0..1024 {
+            assert_that!(sample.user_header().value[i], eq i as u64);
         }
     }
 
@@ -2378,27 +2379,29 @@ mod service_publish_subscribe {
     fn create_with_custom_user_header_type_works<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
+        const HEADER_SIZE: usize = 1024;
 
-        let _sut = unsafe {
+        let sut_pub = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
-                .__internal_set_user_header_type_details(TypeDetail::__internal_new::<u64>(
-                    TypeVariant::FixedSize,
-                ))
+                .user_header::<CustomHeaderMarker>()
+                .__internal_set_user_header_type_details(TypeDetail::__internal_new::<
+                    [u64; HEADER_SIZE],
+                >(TypeVariant::FixedSize))
                 .create()
                 .unwrap()
         };
 
-        let sut2 = unsafe {
+        let sut_sub = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
-                .__internal_set_user_header_type_details(TypeDetail::__internal_new::<u64>(
-                    TypeVariant::FixedSize,
-                ))
+                .user_header::<CustomHeaderMarker>()
+                .__internal_set_user_header_type_details(TypeDetail::__internal_new::<
+                    [u64; HEADER_SIZE],
+                >(TypeVariant::FixedSize))
                 .open()
+                .unwrap()
         };
-
-        assert_that!(sut2, is_ok);
 
         let sut3 = node
             .service_builder(&service_name)
@@ -2407,6 +2410,23 @@ mod service_publish_subscribe {
 
         assert_that!(sut3, is_err);
         assert_that!(sut3.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+
+        let publisher = sut_pub.publisher_builder().create().unwrap();
+        let subscriber = sut_sub.subscriber_builder().create().unwrap();
+
+        let mut sample = publisher.loan_slice(1).unwrap();
+        let header = (sample.user_header_mut() as *mut CustomHeaderMarker) as *mut u64;
+        for i in 0..HEADER_SIZE {
+            unsafe { *header.add(i) = (4 * i + 1) as u64 };
+        }
+        sample.send().unwrap();
+
+        let sample = subscriber.receive().unwrap().unwrap();
+        let header = (sample.user_header() as *const CustomHeaderMarker) as *const u64;
+
+        for i in 0..HEADER_SIZE {
+            assert_that!(unsafe { *header.add(i) }, eq(4 * i + 1) as u64);
+        }
     }
 
     #[test]
