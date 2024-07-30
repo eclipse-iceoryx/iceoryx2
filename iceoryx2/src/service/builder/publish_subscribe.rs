@@ -215,6 +215,7 @@ pub struct Builder<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: serv
     base: builder::BuilderWithServiceType<ServiceType>,
     override_alignment: Option<usize>,
     override_payload_type: Option<TypeDetail>,
+    override_user_header_type: Option<TypeDetail>,
     verify_number_of_subscribers: bool,
     verify_number_of_publishers: bool,
     verify_subscriber_max_buffer_size: bool,
@@ -241,6 +242,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
             verify_max_nodes: false,
             override_alignment: None,
             override_payload_type: None,
+            override_user_header_type: None,
             _data: PhantomData,
             _user_header: PhantomData,
         };
@@ -719,6 +721,12 @@ impl<UserHeader: Debug, ServiceType: service::Service> Builder<[u8], UserHeader,
         self.override_payload_type = Some(value);
         self
     }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_user_header_type_details(mut self, value: TypeDetail) -> Self {
+        self.override_user_header_type = Some(value);
+        self
+    }
 }
 
 impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
@@ -730,6 +738,10 @@ impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
 
         if let Some(details) = &self.override_payload_type {
             self.config_details_mut().message_type_details.payload = details.clone();
+        }
+
+        if let Some(details) = &self.override_user_header_type {
+            self.config_details_mut().message_type_details.user_header = details.clone();
         }
 
         self.adjust_payload_alignment();
@@ -816,6 +828,10 @@ impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
 
         if let Some(details) = &self.override_payload_type {
             self.config_details_mut().message_type_details.payload = details.clone();
+        }
+
+        if let Some(details) = &self.override_user_header_type {
+            self.config_details_mut().message_type_details.user_header = details.clone();
         }
 
         self.adjust_payload_alignment();

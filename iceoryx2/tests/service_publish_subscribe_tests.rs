@@ -2375,6 +2375,41 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn create_with_custom_user_header_type_works<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let _sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[u8]>()
+                .__internal_set_user_header_type_details(TypeDetail::__internal_new::<u64>(
+                    TypeVariant::FixedSize,
+                ))
+                .create()
+                .unwrap()
+        };
+
+        let sut2 = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[u8]>()
+                .__internal_set_user_header_type_details(TypeDetail::__internal_new::<u64>(
+                    TypeVariant::FixedSize,
+                ))
+                .open()
+        };
+
+        assert_that!(sut2, is_ok);
+
+        let sut3 = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .open();
+
+        assert_that!(sut3, is_err);
+        assert_that!(sut3.err().unwrap(), eq PublishSubscribeOpenError::IncompatibleTypes);
+    }
+
+    #[test]
     fn open_with_custom_payload_type_works<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
