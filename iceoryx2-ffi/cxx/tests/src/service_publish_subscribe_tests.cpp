@@ -346,7 +346,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     const uint64_t payload = 781891729871;
     *sample = payload;
     for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
-        sample.user_header_mut().value[idx] = 4 * idx + 3;
+        sample.user_header_mut().value.at(idx) = 4 * idx + 3;
     }
     send_sample(std::move(sample)).expect("");
     auto recv_sample = sut_subscriber.receive().expect("");
@@ -355,7 +355,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     ASSERT_THAT(**recv_sample, Eq(payload));
 
     for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
-        ASSERT_THAT(recv_sample->user_header().value[idx], Eq(4 * idx + 3));
+        ASSERT_THAT(recv_sample->user_header().value.at(idx), Eq(4 * idx + 3));
     }
 }
 
