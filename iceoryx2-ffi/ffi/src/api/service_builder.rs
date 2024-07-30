@@ -27,7 +27,7 @@ use core::mem::MaybeUninit;
 
 // BEGIN types definition
 
-pub(super) type UserHeaderFfi = ();
+pub(super) type UserHeaderFfi = [u8; 1];
 pub(super) type PayloadFfi = [u8];
 pub(super) type UninitPayloadFfi = [MaybeUninit<u8>];
 
@@ -309,7 +309,9 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.base);
             service_builders_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.publish_subscribe::<[u8]>(),
+                service_builder
+                    .publish_subscribe::<PayloadFfi>()
+                    .user_header::<UserHeaderFfi>(),
             ));
         }
         iox2_service_type_e::LOCAL => {
@@ -318,7 +320,9 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.base);
             service_builders_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.publish_subscribe::<[u8]>(),
+                service_builder
+                    .publish_subscribe::<PayloadFfi>()
+                    .user_header::<UserHeaderFfi>(),
             ));
         }
     }

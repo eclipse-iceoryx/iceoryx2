@@ -129,7 +129,12 @@ inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Sample<S, Payload, UserHeader>::user_header() const -> const T& {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_sample_ref_h(m_handle);
+    const void* header_ptr = nullptr;
+
+    iox2_sample_user_header(ref_handle, &header_ptr);
+
+    return *static_cast<const T*>(header_ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

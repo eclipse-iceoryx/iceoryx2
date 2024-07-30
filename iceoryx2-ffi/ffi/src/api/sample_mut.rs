@@ -124,6 +124,54 @@ pub unsafe extern "C" fn iox2_cast_sample_mut_ref_h(
     (*handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// Acquires the samples user header.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_sample_mut_user_header(
+    sample_handle: iox2_sample_mut_ref_h,
+    header_ptr: *mut *const c_void,
+) {
+    debug_assert!(!sample_handle.is_null());
+    debug_assert!(!header_ptr.is_null());
+
+    let sample = &mut *sample_handle.as_type();
+
+    let header = match sample.service_type {
+        iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header(),
+        iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header(),
+    };
+
+    *header_ptr = header.as_ptr().cast();
+}
+
+/// Acquires the samples mutable user header.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_sample_mut_user_header_mut(
+    sample_handle: iox2_sample_mut_ref_h,
+    header_ptr: *mut *mut c_void,
+) {
+    debug_assert!(!sample_handle.is_null());
+    debug_assert!(!header_ptr.is_null());
+
+    let sample = &mut *sample_handle.as_type();
+
+    let header = match sample.service_type {
+        iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header_mut(),
+        iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header_mut(),
+    };
+
+    *header_ptr = header.as_mut_ptr().cast();
+}
+
 /// Acquires the samples mutable payload.
 ///
 /// # Safety

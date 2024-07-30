@@ -116,6 +116,30 @@ pub unsafe extern "C" fn iox2_cast_sample_ref_h(handle: iox2_sample_h) -> iox2_s
     (*handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// Acquires the samples user header.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_subscriber_receive()`](crate::iox2_subscriber_receive())
+/// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_sample_user_header(
+    sample_handle: iox2_sample_ref_h,
+    header_ptr: *mut *const c_void,
+) {
+    debug_assert!(!sample_handle.is_null());
+    debug_assert!(!header_ptr.is_null());
+
+    let sample = &mut *sample_handle.as_type();
+
+    let header = match sample.service_type {
+        iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header(),
+        iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header(),
+    };
+
+    *header_ptr = header.as_ptr().cast();
+}
+
 /// Acquires the samples payload.
 ///
 /// # Safety
