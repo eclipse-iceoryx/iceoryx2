@@ -13,118 +13,218 @@
 #ifndef IOX2_SAMPLE_MUT_HPP
 #define IOX2_SAMPLE_MUT_HPP
 
-#include "header_publish_subscribe.hpp"
+#include "iox/assertions.hpp"
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox/slice.hpp"
-#include "service_type.hpp"
+#include "iox2/header_publish_subscribe.hpp"
+#include "iox2/iceoryx2.h"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/publisher_error.hpp"
+#include "iox2/service_type.hpp"
 
 #include <cstdint>
 
 namespace iox2 {
-/// Failure that can be emitted when a [`SampleMut`] is sent via
-/// [`SampleMut::send()`].
-enum PublisherSendError : uint8_t {
-    /// [`SampleMut::send()`] was called but the corresponding [`Publisher`]
-    /// went already out of
-    /// scope.
-    ConnectionBrokenSincePublisherNoLongerExists,
-    /// A connection between a
-    /// [`Subscriber`](crate::port::subscriber::Subscriber) and a
-    /// [`Publisher`] is corrupted.
-    ConnectionCorrupted,
-    /// A failure occurred while acquiring memory for the payload
-    LoanError,
-    /// A failure occurred while establishing a connection to a
-    /// [`Subscriber`](crate::port::subscriber::Subscriber)
-    ConnectionError,
-};
 
+/// Acquired by a [`Publisher`] via
+///  * [`Publisher::loan()`],
+///  * [`Publisher::loan_uninit()`]
+///  * [`Publisher::loan_slice()`]
+///  * [`Publisher::loan_slice_uninit()`]
+///
+/// It stores the payload that will be sent
+/// to all connected [`Subscriber`]s. If the [`SampleMut`] is not sent
+/// it will release the loaned memory when going out of scope.
+///
+/// # Notes
+///
+/// Does not implement [`Send`] since it releases unsent samples in the [`Publisher`] and the
+/// [`Publisher`] is not thread-safe!
+///
+/// # Important
+///
+/// DO NOT MOVE THE SAMPLE INTO ANOTHER THREAD!
 template <ServiceType S, typename Payload, typename UserHeader>
 class SampleMut {
   public:
-    SampleMut() = default;
-    SampleMut(SampleMut&&) = default;
-    auto operator=(SampleMut&&) -> SampleMut& = default;
-    ~SampleMut() = default;
+    SampleMut(SampleMut&& rhs) noexcept;
+    auto operator=(SampleMut&& rhs) noexcept -> SampleMut&;
+    ~SampleMut() noexcept;
 
     SampleMut(const SampleMut&) = delete;
     auto operator=(const SampleMut&) -> SampleMut& = delete;
 
-    auto header() const -> const HeaderPublishSubscribe& {
-        IOX_TODO();
-    }
-    auto user_header() const -> const UserHeader& {
-        IOX_TODO();
-    }
-    auto user_header_mut() -> UserHeader& {
-        IOX_TODO();
-    }
-    auto payload() const -> const Payload& {
-        IOX_TODO();
-    }
-    auto payload_mut() -> Payload& {
-        IOX_TODO();
-    }
-    void write_payload(const Payload& payload) {
-        IOX_TODO();
-    }
-};
+    /// Returns a const reference to the payload of the [`Sample`]
+    auto operator*() const -> const Payload&;
 
-template <ServiceType S, typename Payload>
-class SampleMut<S, Payload, void> {
-  public:
-    SampleMut() = default;
-    SampleMut(SampleMut&&) = default;
-    auto operator=(SampleMut&&) -> SampleMut& = default;
-    ~SampleMut() = default;
+    /// Returns a reference to the payload of the [`Sample`]
+    auto operator*() -> Payload&;
 
-    SampleMut(const SampleMut&) = delete;
-    auto operator=(const SampleMut&) -> SampleMut& = delete;
+    /// Returns a const pointer to the payload of the [`Sample`]
+    auto operator->() const -> const Payload*;
 
-    auto header() const -> const HeaderPublishSubscribe& {
-        IOX_TODO();
-    }
-    auto payload() const -> const Payload& {
-        IOX_TODO();
-    }
-    auto payload_mut() -> Payload& {
-        IOX_TODO();
-    }
-    void write_payload(const Payload& payload) {
-        IOX_TODO();
-    }
-};
+    /// Returns a pointer to the payload of the [`Sample`]
+    auto operator->() -> Payload*;
 
-template <ServiceType S, typename Payload>
-class SampleMut<S, iox::Slice<Payload>, void> {
-  public:
-    SampleMut() = default;
-    SampleMut(SampleMut&&) = default;
-    auto operator=(SampleMut&&) -> SampleMut& = default;
-    ~SampleMut() = default;
+    /// Returns a reference to the [`Header`] of the [`Sample`].
+    auto header() const -> const HeaderPublishSubscribe&;
 
-    SampleMut(const SampleMut&) = delete;
-    auto operator=(const SampleMut&) -> SampleMut& = delete;
+    /// Returns a reference to the user_header of the [`Sample`]
+    template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
+    auto user_header() const -> const T&;
 
-    auto header() const -> const HeaderPublishSubscribe& {
-        IOX_TODO();
-    }
-    auto payload() const -> const Payload& {
-        IOX_TODO();
-    }
-    auto payload_mut() -> Payload& {
-        IOX_TODO();
-    }
-    void write_from_fn(const iox::function<Payload(uint64_t)>& initializer) {
-        IOX_TODO();
-    }
+    /// Returns a mutable reference to the user_header of the [`Sample`].
+    template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
+    auto user_header_mut() -> T&;
+
+    /// Returns a reference to the const payload of the sample.
+    auto payload() const -> const Payload&;
+
+    /// Returns a reference to the payload of the sample.
+    auto payload_mut() -> Payload&;
+
+    /// Writes the payload to the sample
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
+    void write_payload(T&& value);
+
+    /// Writes the payload to the sample
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
+    void write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer);
+
+  private:
+    template <ServiceType, typename, typename>
+    friend class Publisher;
+
+    template <ServiceType ST, typename PayloadT, typename UserHeaderT>
+    friend auto send_sample(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<size_t, PublisherSendError>;
+
+    explicit SampleMut(iox2_sample_mut_h handle);
+    void drop();
+
+    iox2_sample_mut_h m_handle { nullptr };
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
-auto send_sample(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<uint64_t, PublisherSendError> {
+inline SampleMut<S, Payload, UserHeader>::SampleMut(iox2_sample_mut_h handle)
+    : m_handle { handle } {
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline void SampleMut<S, Payload, UserHeader>::drop() {
+    if (m_handle != nullptr) {
+        iox2_sample_mut_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline SampleMut<S, Payload, UserHeader>::SampleMut(SampleMut&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator=(SampleMut&& rhs) noexcept -> SampleMut& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline SampleMut<S, Payload, UserHeader>::~SampleMut() noexcept {
+    drop();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator*() const -> const Payload& {
+    return payload();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator*() -> Payload& {
+    return payload_mut();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator->() const -> const Payload* {
+    return &payload();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::operator->() -> Payload* {
+    return &payload_mut();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::header() const -> const HeaderPublishSubscribe& {
     IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto SampleMut<S, Payload, UserHeader>::user_header() const -> const T& {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto SampleMut<S, Payload, UserHeader>::user_header_mut() -> T& {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::payload() const -> const Payload& {
+    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
+    const void* ptr = nullptr;
+    size_t payload_len = 0;
+
+    iox2_sample_mut_payload(ref_handle, &ptr, &payload_len);
+    IOX_ASSERT(sizeof(Payload) <= payload_len, "");
+
+    return *static_cast<const Payload*>(ptr);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> Payload& {
+    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
+    void* ptr = nullptr;
+    size_t payload_len = 0;
+
+    iox2_sample_mut_payload_mut(ref_handle, &ptr, &payload_len);
+    IOX_ASSERT(sizeof(Payload) <= payload_len, "");
+
+    return *static_cast<Payload*>(ptr);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline void SampleMut<S, Payload, UserHeader>::write_payload(T&& value) {
+    new (&payload_mut()) Payload(std::forward<T>(value));
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline void
+SampleMut<S, Payload, UserHeader>::write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer) {
+    IOX_TODO();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto send_sample(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<size_t, PublisherSendError> {
+    size_t number_of_recipients = 0;
+    auto result = iox2_sample_mut_send(sample.m_handle, &number_of_recipients);
+    sample.m_handle = nullptr;
+
+    if (result == IOX2_OK) {
+        return iox::ok(number_of_recipients);
+    }
+
+    return iox::err(iox::into<PublisherSendError>(result));
 }
 
 } // namespace iox2

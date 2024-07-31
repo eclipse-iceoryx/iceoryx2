@@ -22,11 +22,14 @@
 #include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/notifier_error.hpp"
+#include "iox2/publisher_error.hpp"
 #include "iox2/semantic_string.hpp"
 #include "iox2/service_builder_event_error.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_error_enums.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/subscriber_error.hpp"
+#include "iox2/type_variant.hpp"
 
 namespace iox {
 template <>
@@ -456,6 +459,98 @@ constexpr auto from<int, iox2::ListenerWaitError>(const int value) noexcept -> i
         return iox2::ListenerWaitError::InterruptSignal;
     case iox2_listener_wait_error_e_INTERNAL_FAILURE:
         return iox2::ListenerWaitError::InternalFailure;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::PublisherCreateError>(const int value) noexcept -> iox2::PublisherCreateError {
+    const auto error = static_cast<iox2_publisher_create_error_e>(value);
+    switch (error) {
+    case iox2_publisher_create_error_e_EXCEEDS_MAX_SUPPORTED_PUBLISHERS:
+        return iox2::PublisherCreateError::ExceedsMaxSupportedPublishers;
+    case iox2_publisher_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT:
+        return iox2::PublisherCreateError::UnableToCreateDataSegment;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept -> iox2::SubscriberCreateError {
+    const auto error = static_cast<iox2_subscriber_create_error_e>(value);
+    switch (error) {
+    case iox2_subscriber_create_error_e_BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE:
+        return iox2::SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService;
+    case iox2_subscriber_create_error_e_EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS:
+        return iox2::SubscriberCreateError::ExceedsMaxSupportedSubscribers;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::PublisherSendError>(const int value) noexcept -> iox2::PublisherSendError {
+    const auto error = static_cast<iox2_publisher_send_error_e>(value);
+    switch (error) {
+    case iox2_publisher_send_error_e_CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS:
+        return iox2::PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists;
+    case iox2_publisher_send_error_e_CONNECTION_CORRUPTED:
+        return iox2::PublisherSendError::ConnectionCorrupted;
+    case iox2_publisher_send_error_e_LOAN_ERROR_OUT_OF_MEMORY:
+        return iox2::PublisherSendError::LoanErrorOutOfMemory;
+    case iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES:
+        return iox2::PublisherSendError::LoanErrorExceedsMaxLoanedSamples;
+    case iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE:
+        return iox2::PublisherSendError::LoanErrorExceedsMaxLoanSize;
+    case iox2_publisher_send_error_e_LOAN_ERROR_INTERNAL_FAILURE:
+        return iox2::PublisherSendError::LoanErrorInternalFailure;
+    case iox2_publisher_send_error_e_CONNECTION_ERROR:
+        return iox2::PublisherSendError::ConnectionError;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::SubscriberReceiveError>(const int value) noexcept -> iox2::SubscriberReceiveError {
+    const auto error = static_cast<iox2_subscriber_receive_error_e>(value);
+    switch (error) {
+    case iox2_subscriber_receive_error_e_CONNECTION_FAILURE:
+        return iox2::SubscriberReceiveError::ConnectionFailure;
+    case iox2_subscriber_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES:
+        return iox2::SubscriberReceiveError::ExceedsMaxBorrowedSamples;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::PublisherLoanError>(const int value) noexcept -> iox2::PublisherLoanError {
+    const auto error = static_cast<iox2_publisher_loan_error_e>(value);
+    switch (error) {
+    case iox2_publisher_loan_error_e_EXCEEDS_MAX_LOANED_SAMPLES:
+        return iox2::PublisherLoanError::ExceedsMaxLoanedSamples;
+    case iox2_publisher_loan_error_e_OUT_OF_MEMORY:
+        return iox2::PublisherLoanError::OutOfMemory;
+    case iox2_publisher_loan_error_e_EXCEEDS_MAX_LOAN_SIZE:
+        return iox2::PublisherLoanError::ExceedsMaxLoanSize;
+    case iox2_publisher_loan_error_e_INTERNAL_FAILURE:
+        return iox2::PublisherLoanError::InternalFailure;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::TypeVariant>(const int value) noexcept -> iox2::TypeVariant {
+    const auto variant = static_cast<iox2_type_variant_e>(value);
+    switch (variant) {
+    case iox2_type_variant_e_DYNAMIC:
+        return iox2::TypeVariant::Dynamic;
+    case iox2_type_variant_e_FIXED_SIZE:
+        return iox2::TypeVariant::FixedSize;
     }
 
     IOX_UNREACHABLE();

@@ -13,44 +13,54 @@
 #ifndef IOX2_MESSAGE_TYPE_DETAILS_HPP
 #define IOX2_MESSAGE_TYPE_DETAILS_HPP
 
-#include "iox/string.hpp"
-#include "iox2/iceoryx2_settings.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/type_variant.hpp"
 
-#include <cstdint>
 
 namespace iox2 {
-/// Defines if the type is a slice with a runtime-size
-/// ([`TypeVariant::Dynamic`]) or if its a type that satisfies [`Sized`]
-/// ([`TypeVariant::FixedSize`]).
-enum class TypeVariant : uint8_t {
-    /// A fixed size type like [`u64`]
-    FixedSize,
-    /// A dynamic sized type like a slice
-    Dynamic,
-};
-
 /// Contains all type details required to connect to a
 /// [`crate::service::Service`]
-struct TypeDetail {
+class TypeDetail {
+  public:
     /// The [`TypeVariant`] of the type
-    TypeVariant variant;
-    /// Contains the output of [`core::any::type_name()`].
-    iox::string<MAX_TYPENAME_LENGTH> type_name;
+    auto variant() const -> TypeVariant;
+
+    /// Contains the output of [`typeid().name`].
+    auto type_name() const -> const char*;
+
     /// The size of the underlying type.
-    uint64_t size;
+    auto size() const -> size_t;
+
     /// The alignment of the underlying type.
-    uint64_t alignment;
+    auto alignment() const -> size_t;
+
+  private:
+    friend class MessageTypeDetails;
+    explicit TypeDetail(iox2_type_detail_t value);
+
+    iox2_type_detail_t m_value;
 };
 
-struct MessageTypeDetails {
+/// Contains all type information to the header and payload type.
+class MessageTypeDetails {
+  public:
     /// The [`TypeDetail`] of the header of a message, the first iceoryx2
     /// internal part.
-    TypeDetail header;
+    auto header() const -> TypeDetail;
+
     /// The [`TypeDetail`] of the user_header or the custom header, is located
     /// directly after the header.
-    TypeDetail user_header;
+    auto user_header() const -> TypeDetail;
+
     /// The [`TypeDetail`] of the payload of the message, the last part.
-    TypeDetail payload;
+    auto payload() const -> TypeDetail;
+
+  private:
+    friend class StaticConfigPublishSubscribe;
+
+    explicit MessageTypeDetails(iox2_message_type_details_t value);
+
+    iox2_message_type_details_t m_value;
 };
 } // namespace iox2
 

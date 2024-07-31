@@ -10,21 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_HPP
-#define IOX2_EXAMPLES_TRANSMISSION_DATA_HPP
+#ifndef IOX2_TYPE_VARIANT_HPP
+#define IOX2_TYPE_VARIANT_HPP
 
 #include <cstdint>
-#include <iostream>
 
-struct TransmissionData {
-    std::int32_t x;
-    std::int32_t y;
-    double funky;
+namespace iox2 {
+/// Defines if the type is a slice with a runtime-size
+/// ([`TypeVariant::Dynamic`]) or if its a type that satisfies [`Sized`]
+/// ([`TypeVariant::FixedSize`]).
+enum class TypeVariant : uint8_t {
+    /// A fixed size type like [`u64`]
+    FixedSize,
+    /// A dynamic sized type like a slice
+    Dynamic,
 };
-
-inline auto operator<<(std::ostream& stream, const TransmissionData& value) -> std::ostream& {
-    std::cout << "TransmissionData { x: " << value.x << ", y: " << value.y << ", funky: " << value.funky << " }";
-    return stream;
-}
+} // namespace iox2
 
 #endif

@@ -23,12 +23,14 @@ use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::mem::ManuallyDrop;
+use core::mem::MaybeUninit;
 
 // BEGIN types definition
 
 pub(super) type NoUserHeaderFfi = ();
 pub(super) type _UserHeaderFfi = [u8; 128];
 pub(super) type PayloadFfi = [u8];
+pub(super) type UninitPayloadFfi = [MaybeUninit<u8>];
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,

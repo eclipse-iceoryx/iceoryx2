@@ -10,21 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_HPP
-#define IOX2_EXAMPLES_TRANSMISSION_DATA_HPP
+#ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_H
+#define IOX2_EXAMPLES_TRANSMISSION_DATA_H
 
-#include <cstdint>
-#include <iostream>
+#include <stdint.h>
 
 struct TransmissionData {
-    std::int32_t x;
-    std::int32_t y;
+    int32_t x;
+    int32_t y;
     double funky;
 };
-
-inline auto operator<<(std::ostream& stream, const TransmissionData& value) -> std::ostream& {
-    std::cout << "TransmissionData { x: " << value.x << ", y: " << value.y << ", funky: " << value.funky << " }";
-    return stream;
-}
 
 #endif
