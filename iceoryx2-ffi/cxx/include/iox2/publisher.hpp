@@ -65,17 +65,16 @@ class Publisher {
     /// [`Payload`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto
-    loan_slice(uint64_t number_of_elements) -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto loan_slice(uint64_t number_of_elements) -> iox::expected<SampleMut<S, T, UserHeader>, PublisherLoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto loan_slice_uninit(uint64_t number_of_elements)
-        -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto
+    loan_slice_uninit(uint64_t number_of_elements) -> iox::expected<SampleMut<S, T, UserHeader>, PublisherLoanError>;
 
     /// Explicitly updates all connections to the [`Subscriber`]s. This is
     /// required to be called whenever a new [`Subscriber`] is connected to
@@ -174,16 +173,16 @@ Publisher<S, Payload, UserHeader>::loan() -> iox::expected<SampleMut<S, Payload,
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-template <typename, typename>
+template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_slice(const uint64_t number_of_elements)
-    -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
+    -> iox::expected<SampleMut<S, T, UserHeader>, PublisherLoanError> {
     IOX_TODO();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-template <typename, typename>
+template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_slice_uninit(const uint64_t number_of_elements)
-    -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
+    -> iox::expected<SampleMut<S, T, UserHeader>, PublisherLoanError> {
     IOX_TODO();
 }
 
