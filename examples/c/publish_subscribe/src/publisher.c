@@ -82,7 +82,7 @@ int main(void) {
 
         // loan sample
         iox2_sample_mut_h sample = NULL;
-        if (iox2_publisher_loan(publisher_ref, 1, NULL, &sample) != IOX2_OK) {
+        if (iox2_publisher_loan(publisher_ref, NULL, &sample) != IOX2_OK) {
             printf("Failed to loan sample\n");
             goto drop_publisher;
         }

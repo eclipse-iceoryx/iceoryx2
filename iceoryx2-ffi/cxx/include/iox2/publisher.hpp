@@ -157,7 +157,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
     auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
     iox2_sample_mut_h sample_handle {};
 
-    auto result = iox2_publisher_loan(ref_handle, 1, nullptr, &sample_handle);
+    auto result = iox2_publisher_loan(ref_handle, nullptr, &sample_handle);
 
     if (result == IOX2_OK) {
         return iox::ok(SampleMut<S, Payload, UserHeader>(sample_handle));

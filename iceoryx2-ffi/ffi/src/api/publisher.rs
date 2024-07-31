@@ -20,7 +20,7 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use super::{c_size_t, iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
+use super::{iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
 
 use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
@@ -274,8 +274,6 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 /// # Arguments
 ///
 /// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
-/// * `number_of_elements` defines the number of elements that shall be loaned. The elements were
-///    defined via [`iox2_service_builder_pub_sub_set_payload_type_details()`](crate::iox2_service_builder_pub_sub_set_payload_type_details).
 /// * `sample_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_sample_mut_t`].
 ///    If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
@@ -289,7 +287,6 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_loan(
     publisher_handle: iox2_publisher_ref_h,
-    number_of_elements: c_size_t,
     sample_struct_ptr: *mut iox2_sample_mut_t,
     sample_handle_ptr: *mut iox2_sample_mut_h,
 ) -> c_int {
@@ -298,25 +295,25 @@ pub unsafe extern "C" fn iox2_publisher_loan(
 
     *sample_handle_ptr = std::ptr::null_mut();
 
-    let mut sample_struct_ptr = sample_struct_ptr;
-    fn no_op(_: *mut iox2_sample_mut_t) {}
-    let mut deleter: fn(*mut iox2_sample_mut_t) = no_op;
-    if sample_struct_ptr.is_null() {
-        sample_struct_ptr = iox2_sample_mut_t::alloc();
-        deleter = iox2_sample_mut_t::dealloc;
-    }
-    debug_assert!(!sample_struct_ptr.is_null());
+    let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_mut_t| {
+        let mut sample_struct_ptr = sample_struct_ptr;
+        fn no_op(_: *mut iox2_sample_mut_t) {}
+        let mut deleter: fn(*mut iox2_sample_mut_t) = no_op;
+        if sample_struct_ptr.is_null() {
+            sample_struct_ptr = iox2_sample_mut_t::alloc();
+            deleter = iox2_sample_mut_t::dealloc;
+        }
+        debug_assert!(!sample_struct_ptr.is_null());
+
+        (sample_struct_ptr, deleter)
+    };
 
     let publisher = &mut *publisher_handle.as_type();
 
     match publisher.service_type {
-        iox2_service_type_e::IPC => match publisher
-            .value
-            .as_ref()
-            .ipc
-            .loan_slice_uninit(number_of_elements)
-        {
+        iox2_service_type_e::IPC => match publisher.value.as_ref().ipc.loan_slice_uninit(1) {
             Ok(sample) => {
+                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
                     publisher.service_type,
                     SampleMutUnion::new_ipc(sample),
@@ -327,13 +324,9 @@ pub unsafe extern "C" fn iox2_publisher_loan(
             }
             Err(error) => error.into_c_int(),
         },
-        iox2_service_type_e::LOCAL => match publisher
-            .value
-            .as_ref()
-            .local
-            .loan_slice_uninit(number_of_elements)
-        {
+        iox2_service_type_e::LOCAL => match publisher.value.as_ref().local.loan_slice_uninit(1) {
             Ok(sample) => {
+                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
                     publisher.service_type,
                     SampleMutUnion::new_local(sample),
