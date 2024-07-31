@@ -13,12 +13,12 @@
 #ifndef IOX2_ATTRIBUTE_VERIFIER_HPP
 #define IOX2_ATTRIBUTE_VERIFIER_HPP
 
-#include "attribute_set.hpp"
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/vector.hpp"
 #include "iox2/attribute.hpp"
-#include "iox2/iceoryx2_settings.hpp"
+#include "iox2/attribute_set.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
 class AttributeVerifier {
@@ -33,7 +33,7 @@ class AttributeVerifier {
     auto attributes() const -> const AttributeSet& {
         IOX_TODO();
     }
-    auto keys() const -> iox::vector<Attribute::Key, MAX_ATTRIBUTES_PER_SERVICE> {
+    auto keys() const -> iox::vector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE> {
         IOX_TODO();
     }
 

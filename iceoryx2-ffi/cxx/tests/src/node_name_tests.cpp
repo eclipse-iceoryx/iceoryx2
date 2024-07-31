@@ -29,7 +29,7 @@ TEST(NodeName, valid_node_name_can_be_created) {
 TEST(NodeName, creating_node_name_with_too_long_name_fails) {
     constexpr uint64_t MAX_OVERLENGTH = 10;
     auto test = [](auto overlength) {
-        auto invalid_name = std::string(NODE_NAME_LENGTH + overlength, 's');
+        auto invalid_name = std::string(IOX2_NODE_NAME_LENGTH + overlength, 's');
         auto sut = NodeName::create(invalid_name.c_str());
 
         ASSERT_THAT(sut.has_value(), Eq(false));

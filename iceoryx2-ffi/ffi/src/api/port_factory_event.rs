@@ -167,7 +167,7 @@ pub unsafe extern "C" fn iox2_port_factory_event_static_config(
         iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.static_config(),
     };
 
-    *static_config = (*config).into();
+    *static_config = config.into();
 }
 
 // TODO [#210] add all the other setter methods

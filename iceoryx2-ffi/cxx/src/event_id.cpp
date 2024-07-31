@@ -27,7 +27,7 @@ auto EventId::as_value() const -> size_t {
 }
 
 auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream& {
-    std::cout << "EventId { m_value: " << value.as_value() << " }";
+    stream << "EventId { m_value: " << value.as_value() << " }";
     return stream;
 }
 } // namespace iox2

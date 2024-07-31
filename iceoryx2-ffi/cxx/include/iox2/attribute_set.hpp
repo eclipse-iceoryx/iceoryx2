@@ -16,20 +16,20 @@
 #include "iox/assertions_addendum.hpp"
 #include "iox/vector.hpp"
 #include "iox2/attribute.hpp"
-#include "iox2/iceoryx2_settings.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 #include <iostream>
 
 namespace iox2 {
 class AttributeSet {
   public:
-    auto get(const Attribute::Key& key) const -> iox::vector<Attribute::Value, MAX_VALUES_PER_ATTRIBUTE_KEY> {
+    auto get(const Attribute::Key& key) const -> iox::vector<Attribute::Value, IOX2_MAX_VALUES_PER_ATTRIBUTE_KEY> {
         IOX_TODO();
     }
 };
 
 inline auto operator<<(std::ostream& stream, const AttributeSet& value) -> std::ostream& {
-    std::cout << "AttributeSet { }";
+    stream << "AttributeSet { }";
     return stream;
 }
 

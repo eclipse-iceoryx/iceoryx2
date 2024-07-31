@@ -15,15 +15,15 @@
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/string.hpp"
-#include "iox2/iceoryx2_settings.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 #include <string>
 
 namespace iox2 {
 class Attribute {
   public:
-    using Key = iox::string<ATTRIBUTE_KEY_LENGTH>;
-    using Value = iox::string<ATTRIBUTE_VALUE_LENGTH>;
+    using Key = iox::string<IOX2_ATTRIBUTE_KEY_LENGTH>;
+    using Value = iox::string<IOX2_ATTRIBUTE_VALUE_LENGTH>;
 
     auto key() const -> Key {
         IOX_TODO();

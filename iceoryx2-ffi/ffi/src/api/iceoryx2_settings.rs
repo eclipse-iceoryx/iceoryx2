@@ -10,20 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/callback_progression.hpp"
-#include "iox2/config.hpp"
-#include "iox2/service.hpp"
-#include "iox2/service_type.hpp"
-
-#include <iostream>
-
-auto main() -> int {
-    using namespace iox2;
-
-    Service<ServiceType::Ipc>::list(Config::global_config(), [](auto service) {
-        std::cout << service.static_details << std::endl;
-        return CallbackProgression::Continue;
-    }).expect("discover all available services");
-
-    return 0;
-}
+pub const IOX2_ATTRIBUTE_KEY_LENGTH: usize = 64;
+pub const IOX2_ATTRIBUTE_VALUE_LENGTH: usize = 128;
+pub const IOX2_MAX_ATTRIBUTES_PER_SERVICE: usize = 16;
+pub const IOX2_MAX_USER_HEADER_SIZE: usize = 128;
+pub const IOX2_MAX_VALUES_PER_ATTRIBUTE_KEY: usize = 8;
+pub const IOX2_NODE_NAME_LENGTH: usize = 128;
+pub const IOX2_SERVICE_NAME_LENGTH: usize = 256;
+pub const IOX2_SERVICE_ID_LENGTH: usize = 64;
+pub const IOX2_TYPE_NAME_LENGTH: usize = 256;

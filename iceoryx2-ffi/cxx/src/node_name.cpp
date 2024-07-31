@@ -18,7 +18,7 @@
 #include <cstring>
 
 namespace iox2 {
-auto NodeNameView::to_string() const -> iox::string<NODE_NAME_LENGTH> {
+auto NodeNameView::to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH> {
     size_t len = 0;
     const auto* c_ptr = iox2_node_name_as_c_str(m_ptr, &len);
     return { iox::TruncateToCapacity, c_ptr, len };
@@ -84,11 +84,11 @@ void NodeName::drop() noexcept {
 }
 
 auto NodeName::create(const char* value) -> iox::expected<NodeName, SemanticStringError> {
-    return NodeName::create_impl(value, strnlen(value, NODE_NAME_LENGTH + 1));
+    return NodeName::create_impl(value, strnlen(value, IOX2_NODE_NAME_LENGTH + 1));
 }
 
 auto NodeName::create_impl(const char* value, size_t value_len) -> iox::expected<NodeName, SemanticStringError> {
-    if (value_len > NODE_NAME_LENGTH) {
+    if (value_len > IOX2_NODE_NAME_LENGTH) {
         return iox::err(SemanticStringError::ExceedsMaximumLength);
     }
 
@@ -101,7 +101,7 @@ auto NodeName::create_impl(const char* value, size_t value_len) -> iox::expected
     return iox::err(iox::into<SemanticStringError>(ret_val));
 }
 
-auto NodeName::to_string() const -> iox::string<NODE_NAME_LENGTH> {
+auto NodeName::to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH> {
     return as_view().to_string();
 }
 
