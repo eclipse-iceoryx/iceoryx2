@@ -216,7 +216,6 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
                     }
                 }
                 Err(e) => {
-                    (sample_struct.deleter)(sample_struct);
                     return e.into_c_int();
                 }
             }
@@ -230,7 +229,6 @@ pub unsafe extern "C" fn iox2_sample_mut_send(
                     }
                 }
                 Err(e) => {
-                    (sample_struct.deleter)(sample_struct);
                     return e.into_c_int();
                 }
             }
