@@ -40,62 +40,58 @@ pub(super) union ServiceBuilderUnionNested<S: Service> {
 }
 
 pub(super) union ServiceBuilderUnion {
-    pub(super) ipc: ManuallyDrop<ServiceBuilderUnionNested<zero_copy::Service>>,
-    pub(super) local: ManuallyDrop<ServiceBuilderUnionNested<process_local::Service>>,
+    pub(super) ipc: ManuallyDrop<ServiceBuilderUnionNested<ipc::Service>>,
+    pub(super) local: ManuallyDrop<ServiceBuilderUnionNested<local::Service>>,
 }
 
 impl ServiceBuilderUnion {
-    pub(super) fn new_ipc_base(service_builder: ServiceBuilderBase<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc_base(service_builder: ServiceBuilderBase<ipc::Service>) -> Self {
         Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<zero_copy::Service> {
+            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
                 base: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
-    pub(super) fn new_ipc_event(service_builder: ServiceBuilderEvent<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc_event(service_builder: ServiceBuilderEvent<ipc::Service>) -> Self {
         Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<zero_copy::Service> {
+            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
                 event: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
     pub(super) fn new_ipc_pub_sub(
-        service_builder: ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, zero_copy::Service>,
+        service_builder: ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, ipc::Service>,
     ) -> Self {
         Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<zero_copy::Service> {
+            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
                 pub_sub: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
-    pub(super) fn new_local_base(
-        service_builder: ServiceBuilderBase<process_local::Service>,
-    ) -> Self {
+    pub(super) fn new_local_base(service_builder: ServiceBuilderBase<local::Service>) -> Self {
         Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<process_local::Service> {
+            local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
                 base: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
-    pub(super) fn new_local_event(
-        service_builder: ServiceBuilderEvent<process_local::Service>,
-    ) -> Self {
+    pub(super) fn new_local_event(service_builder: ServiceBuilderEvent<local::Service>) -> Self {
         Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<process_local::Service> {
+            local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
                 event: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
     pub(super) fn new_local_pub_sub(
-        service_builder: ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, process_local::Service>,
+        service_builder: ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, local::Service>,
     ) -> Self {
         Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<process_local::Service> {
+            local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
                 pub_sub: ManuallyDrop::new(service_builder),
             }),
         }

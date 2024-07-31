@@ -69,17 +69,17 @@ impl IntoCInt for NodeEvent {
 }
 
 pub(super) union NodeUnion {
-    ipc: ManuallyDrop<Node<zero_copy::Service>>,
-    local: ManuallyDrop<Node<process_local::Service>>,
+    ipc: ManuallyDrop<Node<ipc::Service>>,
+    local: ManuallyDrop<Node<local::Service>>,
 }
 
 impl NodeUnion {
-    pub(super) fn new_ipc(node: Node<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(node: Node<ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(node),
         }
     }
-    pub(super) fn new_local(node: Node<process_local::Service>) -> Self {
+    pub(super) fn new_local(node: Node<local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(node),
         }
@@ -345,10 +345,10 @@ pub unsafe extern "C" fn iox2_node_list(
     let config = &*config_ptr;
 
     let list_result = match service_type {
-        iox2_service_type_e::IPC => Node::<zero_copy::Service>::list(config, |node_state| {
+        iox2_service_type_e::IPC => Node::<ipc::Service>::list(config, |node_state| {
             iox2_node_list_impl(&node_state, callback, callback_ctx)
         }),
-        iox2_service_type_e::LOCAL => Node::<process_local::Service>::list(config, |node_state| {
+        iox2_service_type_e::LOCAL => Node::<local::Service>::list(config, |node_state| {
             iox2_node_list_impl(&node_state, callback, callback_ctx)
         }),
     };

@@ -67,7 +67,7 @@ mod node_death_tests {
     struct ZeroCopy;
 
     impl Test for ZeroCopy {
-        type Service = iceoryx2::service::zero_copy::Service;
+        type Service = iceoryx2::service::ipc::Service;
 
         fn staged_death(node: &mut Node<Self::Service>) {
             use iceoryx2_cal::monitoring::testing::__InternalMonitoringTokenTestable;
@@ -430,5 +430,5 @@ mod node_death_tests {
     }
 
     #[instantiate_tests(<ZeroCopy>)]
-    mod zero_copy {}
+    mod ipc {}
 }

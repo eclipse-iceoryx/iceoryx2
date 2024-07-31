@@ -41,7 +41,7 @@ pub struct ComplexDataType {
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
         .service_builder(&"Complex Data Type Example".try_into()?)

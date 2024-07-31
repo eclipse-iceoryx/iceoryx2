@@ -124,9 +124,9 @@ mod node {
         }
     }
 
-    #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
+    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
-    #[instantiate_tests(<iceoryx2::service::process_local::Service>)]
+    #[instantiate_tests(<iceoryx2::service::local::Service>)]
     mod local {}
 }

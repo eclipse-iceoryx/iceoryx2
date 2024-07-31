@@ -49,34 +49,21 @@ impl IntoCInt for SubscriberCreateError {
 }
 
 pub(super) union PortFactorySubscriberBuilderUnion {
-    ipc: ManuallyDrop<
-        PortFactorySubscriber<'static, zero_copy::Service, PayloadFfi, NoUserHeaderFfi>,
-    >,
-    local: ManuallyDrop<
-        PortFactorySubscriber<'static, process_local::Service, PayloadFfi, NoUserHeaderFfi>,
-    >,
+    ipc: ManuallyDrop<PortFactorySubscriber<'static, ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
+    local:
+        ManuallyDrop<PortFactorySubscriber<'static, local::Service, PayloadFfi, NoUserHeaderFfi>>,
 }
 
 impl PortFactorySubscriberBuilderUnion {
     pub(super) fn new_ipc(
-        port_factory: PortFactorySubscriber<
-            'static,
-            zero_copy::Service,
-            PayloadFfi,
-            NoUserHeaderFfi,
-        >,
+        port_factory: PortFactorySubscriber<'static, ipc::Service, PayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
     pub(super) fn new_local(
-        port_factory: PortFactorySubscriber<
-            'static,
-            process_local::Service,
-            PayloadFfi,
-            NoUserHeaderFfi,
-        >,
+        port_factory: PortFactorySubscriber<'static, local::Service, PayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),

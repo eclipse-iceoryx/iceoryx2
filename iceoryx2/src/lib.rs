@@ -66,7 +66,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //!
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! // create our port factory by creating or opening the service
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -93,7 +93,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //!
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! // create our port factory by creating or opening the service
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -127,7 +127,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //!
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
@@ -154,7 +154,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //!
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
@@ -189,7 +189,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service = node.service_builder(&"PubSubQos".try_into()?)
 //!     .publish_subscribe::<u64>()
@@ -216,7 +216,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let event = node.service_builder(&"EventQos".try_into()?)
 //!     .event()
@@ -246,7 +246,7 @@
 //! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()

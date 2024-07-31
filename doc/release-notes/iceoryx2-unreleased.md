@@ -26,7 +26,7 @@
     use iceoryx2::prelude::*;
 
     fn main() -> Result<(), Box<dyn std::error::Error>> {
-        let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+        let node = NodeBuilder::new().create::<ipc::Service>()?;
         let service = node.service_builder("My/Funk/ServiceName".try_into()?)
             .publish_subscribe::<[usize]>()
             // set a custom alignment of 512, interesting for SIMD-operations
@@ -80,6 +80,7 @@
  * Remove `Service::does_exist_with_custom_config` and `Service::list_with_custom_config` [#238](https://github.com/eclipse-iceoryx/iceoryx2/issues/238)
  * Renamed `PortFactory::{publisher|subscriber|listener|notifier}` to `PortFactory::{publisher|subscriber|listener|notifier}_builder` [#244](https://github.com/eclipse-iceoryx/iceoryx2/issues/244)
  * Merged `Iox2::wait` with new `Node` and removed `Iox2` [#270](https://github.com/eclipse-iceoryx/iceoryx2/issues/270)
+ * Renamed `zero_copy::Service` and `process_local::Service` into `ipc::Service` and `local::Service` [#323](https://github.com/eclipse-iceoryx/iceoryx2/issues/323)
 
 ### Workflow
 
@@ -104,7 +105,7 @@
         .create()?;
 
     // new
-    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
     let service = node.service_builder(service_name) // service_name is moved into builder
         .event()
         .create()?;
@@ -122,7 +123,7 @@
     // new
     let node = NodeBuilder::new()
                     .config(&custom_config)
-                    .create::<zero_copy::Service>()?;
+                    .create::<ipc::Service>()?;
 
     let service = node.service_builder(service_name)
         .publish_subscribe::<u64>()
@@ -138,7 +139,7 @@
         .create::<u64>()?; // or open::<u64>(), or open_or_create::<u64>()
 
     // new
-    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
     let service = node.service_builder(service_name)
         .publish_subscribe::<u64>() // type is now up here
         .create()?; // or open(), or open_or_create()
@@ -147,7 +148,7 @@
 4. `service_name` was renamed into `name` for consistency reasons.
 
     ```rust
-    let services = zero_copy::Service::list()?;
+    let services = ipc::Service::list()?;
 
     for service in services {
         // old
@@ -189,7 +190,7 @@
     let services = zero_copy::Service::list_with_custom_config(Config::global_config())?;
 
     // new
-    let services = zero_copy::Service::list(Config::global_config())?;
+    let services = ipc::Service::list(Config::global_config())?;
     ```
 
 8. `Service::does_exist_with_custom_config` was removed.
@@ -200,7 +201,7 @@
     let services = zero_copy::Service::does_exist_with_custom_config(service_name, Config::global_config())?;
 
     // new
-    let services = zero_copy::Service::does_exist(service_name, Config::global_config())?;
+    let services = ipc::Service::does_exist(service_name, Config::global_config())?;
     ```
 
 9. Creating pub-sub ports with `service.{publisher|subscriber}_builder()`.
@@ -275,8 +276,8 @@
 
     // new
     struct SomeSamples {
-        sample_mut: SampleMut<zero_copy::Service, MyMessageType, ()>,
-        sample: Sample<zero_copy::Service, MyMessageType, ()>,
+        sample_mut: SampleMut<ipc::Service, MyMessageType, ()>,
+        sample: Sample<ipc::Service, MyMessageType, ()>,
     }
     ```
 
@@ -297,20 +298,20 @@
 
     // new, no custom user header
     struct SomeStruct {
-        service: publish_subscribe::PortFactory<zero_copy::Service, MyMessageType, ()>,
-        subscriber: Subscriber<zero_copy::Service, MyMessageType, ()>,
-        publisher: Publisher<zero_copy::Service, MyMessageType, ()>,
-        list_of_mut_samples: Vec<SampleMut<zero_copy::Service, MyMessageType, ()>>,
-        list_of_samples: Vec<Sample<zero_copy::Service, MyMessageType, ()>>,
+        service: publish_subscribe::PortFactory<ipc::Service, MyMessageType, ()>,
+        subscriber: Subscriber<ipc::Service, MyMessageType, ()>,
+        publisher: Publisher<ipc::Service, MyMessageType, ()>,
+        list_of_mut_samples: Vec<SampleMut<ipc::Service, MyMessageType, ()>>,
+        list_of_samples: Vec<Sample<ipc::Service, MyMessageType, ()>>,
     }
 
     // new, with custom user header
     struct SomeStruct {
-        service: publish_subscribe::PortFactory<zero_copy::Service, MyMessageType, MyCustomHeader>,
-        subscriber: Subscriber<zero_copy::Service, MyMessageType, MyCustomHeader>,
-        publisher: Publisher<zero_copy::Service, MyMessageType, MyCustomHeader>,
-        list_of_mut_samples: Vec<SampleMut<zero_copy::Service, MyMessageType, MyCustomHeader>>,
-        list_of_samples: Vec<Sample<zero_copy::Service, MyMessageType, MyCustomHeader>>,
+        service: publish_subscribe::PortFactory<ipc::Service, MyMessageType, MyCustomHeader>,
+        subscriber: Subscriber<ipc::Service, MyMessageType, MyCustomHeader>,
+        publisher: Publisher<ipc::Service, MyMessageType, MyCustomHeader>,
+        list_of_mut_samples: Vec<SampleMut<ipc::Service, MyMessageType, MyCustomHeader>>,
+        list_of_samples: Vec<Sample<ipc::Service, MyMessageType, MyCustomHeader>>,
     }
     ```
 
@@ -326,7 +327,7 @@
     }
 
     // new
-    zero_copy::Service::list(Config::global_config(), |service| {
+    ipc::Service::list(Config::global_config(), |service| {
         println!("\n{:#?}", &service?);
         Ok(CallbackProgression::Continue)
     })?;
@@ -368,10 +369,23 @@
     }
 
     // new
-    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
     while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
         // main loop stuff
     }
     ```
 
 18. Renamed `Config::get_global_config` to just `Config::global_config`
+
+19. Renamed `process_local::Service` into `local::Service` and `zero_copy::Service`
+    into `ipc::Service`.
+
+    ```rust
+    // old
+    let node = NodeBuilder::new().create::<zero_copy::Service>()?;
+    let node = NodeBuilder::new().create::<process_local::Service>()?;
+
+    // new
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+    let node = NodeBuilder::new().create::<local::Service>()?;
+    ```

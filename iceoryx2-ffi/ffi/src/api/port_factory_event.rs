@@ -31,17 +31,17 @@ use super::iox2_static_config_event_t;
 // BEGIN types definition
 
 pub(super) union PortFactoryEventUnion {
-    ipc: ManuallyDrop<PortFactoryEvent<zero_copy::Service>>,
-    local: ManuallyDrop<PortFactoryEvent<process_local::Service>>,
+    ipc: ManuallyDrop<PortFactoryEvent<ipc::Service>>,
+    local: ManuallyDrop<PortFactoryEvent<local::Service>>,
 }
 
 impl PortFactoryEventUnion {
-    pub(super) fn new_ipc(port_factory: PortFactoryEvent<zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(port_factory: PortFactoryEvent<ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
-    pub(super) fn new_local(port_factory: PortFactoryEvent<process_local::Service>) -> Self {
+    pub(super) fn new_local(port_factory: PortFactoryEvent<local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),
         }

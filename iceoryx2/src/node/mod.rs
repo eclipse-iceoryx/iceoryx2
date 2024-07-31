@@ -25,7 +25,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new()
 //!                 .name(&"my_little_node".try_into()?)
-//!                 .create::<zero_copy::Service>()?;
+//!                 .create::<ipc::Service>()?;
 //!
 //! println!("created node {:?}", node);
 //! # Ok(())
@@ -37,7 +37,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! Node::<zero_copy::Service>::list(Config::global_config(), |node_state| {
+//! Node::<ipc::Service>::list(Config::global_config(), |node_state| {
 //!     println!("found node {:?}", node_state);
 //!     CallbackProgression::Continue
 //! });
@@ -49,8 +49,8 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! Node::<zero_copy::Service>::list(Config::global_config(), |node_state| {
-//!     if let NodeState::<zero_copy::Service>::Dead(view) = node_state {
+//! Node::<ipc::Service>::list(Config::global_config(), |node_state| {
+//!     if let NodeState::<ipc::Service>::Dead(view) = node_state {
 //!         println!("cleanup resources of dead node {:?}", view);
 //!         if let Err(e) = view.remove_stale_resources() {
 //!             println!("failed to cleanup resources due to {:?}", e);
@@ -72,7 +72,7 @@
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //! let node = NodeBuilder::new()
 //!                 .name(&"my_little_node".try_into()?)
-//!                 .create::<zero_copy::Service>()?;
+//!                 .create::<ipc::Service>()?;
 //!
 //! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
 //!     // your algorithm in here
@@ -91,7 +91,7 @@
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //! let node = NodeBuilder::new()
 //!                 .name(&"my_little_node".try_into()?)
-//!                 .create::<zero_copy::Service>()?;
+//!                 .create::<ipc::Service>()?;
 //!
 //! loop {
 //!     match node.wait(CYCLE_TIME) {
@@ -668,7 +668,7 @@ impl<Service: service::Service> Node<Service> {
     /// [`CallbackProgression::Stop`] to stop the iteration immediately.
     /// ```
     /// # use iceoryx2::prelude::*;
-    /// Node::<zero_copy::Service>::list(Config::global_config(), |node_state| {
+    /// Node::<ipc::Service>::list(Config::global_config(), |node_state| {
     ///     println!("found node {:?}", node_state);
     ///     CallbackProgression::Continue
     /// });
@@ -972,7 +972,7 @@ impl<Service: service::Service> Node<Service> {
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let node = NodeBuilder::new()
 ///                 .name(&"my_little_node".try_into()?)
-///                 .create::<zero_copy::Service>()?;
+///                 .create::<ipc::Service>()?;
 ///
 /// // do things with your cool new node
 /// # Ok(())

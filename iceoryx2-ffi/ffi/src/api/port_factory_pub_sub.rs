@@ -30,20 +30,20 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 pub(super) union PortFactoryPubSubUnion {
-    ipc: ManuallyDrop<PortFactory<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<PortFactory<process_local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<PortFactory<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
+    local: ManuallyDrop<PortFactory<local::Service, PayloadFfi, NoUserHeaderFfi>>,
 }
 
 impl PortFactoryPubSubUnion {
     pub(super) fn new_ipc(
-        port_factory: PortFactory<zero_copy::Service, PayloadFfi, NoUserHeaderFfi>,
+        port_factory: PortFactory<ipc::Service, PayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
     pub(super) fn new_local(
-        port_factory: PortFactory<process_local::Service, PayloadFfi, NoUserHeaderFfi>,
+        port_factory: PortFactory<local::Service, PayloadFfi, NoUserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),

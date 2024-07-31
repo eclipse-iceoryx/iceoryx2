@@ -45,19 +45,17 @@ impl IntoCInt for NotifierCreateError {
 }
 
 pub(super) union PortFactoryNotifierBuilderUnion {
-    ipc: ManuallyDrop<PortFactoryNotifier<'static, zero_copy::Service>>,
-    local: ManuallyDrop<PortFactoryNotifier<'static, process_local::Service>>,
+    ipc: ManuallyDrop<PortFactoryNotifier<'static, ipc::Service>>,
+    local: ManuallyDrop<PortFactoryNotifier<'static, local::Service>>,
 }
 
 impl PortFactoryNotifierBuilderUnion {
-    pub(super) fn new_ipc(port_factory: PortFactoryNotifier<'static, zero_copy::Service>) -> Self {
+    pub(super) fn new_ipc(port_factory: PortFactoryNotifier<'static, ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
-    pub(super) fn new_local(
-        port_factory: PortFactoryNotifier<'static, process_local::Service>,
-    ) -> Self {
+    pub(super) fn new_local(port_factory: PortFactoryNotifier<'static, local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),
         }

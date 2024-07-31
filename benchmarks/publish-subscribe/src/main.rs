@@ -106,10 +106,10 @@ struct Args {
     bench_all: bool,
     /// Run benchmark for the IPC zero copy setup
     #[clap(long)]
-    bench_zero_copy: bool,
+    bench_ipc: bool,
     /// Run benchmark for the process local setup
     #[clap(long)]
-    bench_process_local: bool,
+    bench_local: bool,
     /// Activate full log output
     #[clap(short, long)]
     debug_mode: bool,
@@ -126,13 +126,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut at_least_one_benchmark_did_run = false;
 
-    if args.bench_zero_copy || args.bench_all {
-        perform_benchmark::<zero_copy::Service>(args.iterations)?;
+    if args.bench_ipc || args.bench_all {
+        perform_benchmark::<ipc::Service>(args.iterations)?;
         at_least_one_benchmark_did_run = true;
     }
 
-    if args.bench_process_local || args.bench_all {
-        perform_benchmark::<process_local::Service>(args.iterations)?;
+    if args.bench_local || args.bench_all {
+        perform_benchmark::<local::Service>(args.iterations)?;
         at_least_one_benchmark_did_run = true;
     }
 

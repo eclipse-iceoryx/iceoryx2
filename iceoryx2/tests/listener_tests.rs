@@ -61,9 +61,9 @@ mod listener {
         }
     }
 
-    #[instantiate_tests(<iceoryx2::service::zero_copy::Service>)]
-    mod zero_copy {}
+    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
+    mod ipc {}
 
-    #[instantiate_tests(<iceoryx2::service::process_local::Service>)]
-    mod process_local {}
+    #[instantiate_tests(<iceoryx2::service::local::Service>)]
+    mod local {}
 }
