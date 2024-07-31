@@ -128,7 +128,8 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     auto* ref_handle = iox2_cast_service_builder_pub_sub_ref_h(m_handle);
 
     m_payload_alignment.and_then([](auto) { IOX_TODO(); });
-    m_enable_safe_overflow.and_then([](auto) { IOX_TODO(); });
+    m_enable_safe_overflow.and_then(
+        [&](auto value) { iox2_service_builder_pub_sub_set_enable_safe_overflow(ref_handle, value); });
     m_subscriber_max_borrowed_samples.and_then([](auto) { IOX_TODO(); });
     m_history_size.and_then([](auto) { IOX_TODO(); });
     m_subscriber_max_buffer_size.and_then([](auto) { IOX_TODO(); });
