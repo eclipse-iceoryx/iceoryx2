@@ -19,22 +19,11 @@
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/unable_to_deliver_strategy.hpp"
 
 #include <cstdint>
 
 namespace iox2 {
-/// Defines the strategy the [`Publisher`] shall pursue in
-/// [`send_sample(`] or
-/// [`Publisher::send_copy()`] when the buffer of a
-/// [`Subscriber`] is full and the service does not overflow.
-enum class UnableToDeliverStrategy : uint8_t {
-    /// Blocks until the [`Subscriber`] has consumed the
-    /// [`Sample`] from the buffer and there is space again
-    Block,
-    /// Do not deliver the [`Sample`].
-    DiscardSample
-};
-
 /// Factory to create a new [`Publisher`] port/endpoint for
 /// [`MessagingPattern::PublishSubscribe`] based communication.
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -80,7 +69,10 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publi
                                                                            PublisherCreateError> {
     auto* ref_handle = iox2_cast_port_factory_publisher_builder_ref_h(m_handle);
 
-    m_unable_to_deliver_strategy.and_then([](auto) { IOX_TODO(); });
+    m_unable_to_deliver_strategy.and_then([&](auto value) {
+        iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
+            ref_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
+    });
     m_max_slice_len.and_then([](auto) { IOX_TODO(); });
     m_max_loaned_samples.and_then(
         [&](auto value) { iox2_port_factory_publisher_builder_set_max_loaned_samples(ref_handle, value); });

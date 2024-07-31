@@ -30,6 +30,7 @@
 #include "iox2/service_type.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/type_variant.hpp"
+#include "iox2/unable_to_deliver_strategy.hpp"
 
 namespace iox {
 template <>
@@ -577,6 +578,31 @@ constexpr auto from<int, iox2::MessagingPattern>(const int value) noexcept -> io
         return iox2::MessagingPattern::Event;
     case iox2_messaging_pattern_e_PUBLISH_SUBSCRIBE:
         return iox2::MessagingPattern::PublishSubscribe;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::UnableToDeliverStrategy>(const int value) noexcept -> iox2::UnableToDeliverStrategy {
+    const auto variant = static_cast<iox2_unable_to_deliver_strategy_e>(value);
+    switch (variant) {
+    case iox2_unable_to_deliver_strategy_e_BLOCK:
+        return iox2::UnableToDeliverStrategy::Block;
+    case iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE:
+        return iox2::UnableToDeliverStrategy::DiscardSample;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeliverStrategy value) noexcept -> int {
+    switch (value) {
+    case iox2::UnableToDeliverStrategy::DiscardSample:
+        return iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE;
+    case iox2::UnableToDeliverStrategy::Block:
+        return iox2_unable_to_deliver_strategy_e_BLOCK;
     }
 
     IOX_UNREACHABLE();

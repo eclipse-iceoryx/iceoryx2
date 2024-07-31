@@ -41,6 +41,10 @@ class Publisher {
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]
     auto id() const -> UniquePublisherId;
 
+    /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered
+    /// since the [`Subscriber`]s buffer is full.
+    auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
+
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
@@ -126,6 +130,12 @@ inline auto Publisher<S, Payload, UserHeader>::operator=(Publisher&& rhs) noexce
 template <ServiceType S, typename Payload, typename UserHeader>
 inline Publisher<S, Payload, UserHeader>::~Publisher() {
     drop();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Publisher<S, Payload, UserHeader>::unable_to_deliver_strategy() const -> UnableToDeliverStrategy {
+    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    return iox::into<UnableToDeliverStrategy>(static_cast<int>(iox2_publisher_unable_to_deliver_strategy(ref_handle)));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

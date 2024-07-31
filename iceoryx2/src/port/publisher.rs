@@ -694,6 +694,12 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         self.data_segment.port_id
     }
 
+    /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered
+    /// since the [`Subscriber`](crate::port::subscriber::Subscriber)s buffer is full.
+    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+        self.data_segment.config.unable_to_deliver_strategy
+    }
+
     fn allocate(&self, layout: Layout) -> Result<ShmPointer, PublisherLoanError> {
         let msg = "Unable to allocate Sample with";
 

@@ -71,6 +71,35 @@ impl PortFactoryPublisherBuilderUnion {
 }
 
 #[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_unable_to_deliver_strategy_e {
+    BLOCK,
+    DISCARD_SAMPLE,
+}
+
+impl From<iox2_unable_to_deliver_strategy_e> for UnableToDeliverStrategy {
+    fn from(value: iox2_unable_to_deliver_strategy_e) -> Self {
+        match value {
+            iox2_unable_to_deliver_strategy_e::BLOCK => UnableToDeliverStrategy::Block,
+            iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE => {
+                UnableToDeliverStrategy::DiscardSample
+            }
+        }
+    }
+}
+
+impl From<UnableToDeliverStrategy> for iox2_unable_to_deliver_strategy_e {
+    fn from(value: UnableToDeliverStrategy) -> Self {
+        match value {
+            UnableToDeliverStrategy::Block => iox2_unable_to_deliver_strategy_e::BLOCK,
+            UnableToDeliverStrategy::DiscardSample => {
+                iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE
+            }
+        }
+    }
+}
+
+#[repr(C)]
 #[repr(align(16))] // alignment of Option<PortFactoryPublisherBuilderUnion>
 pub struct iox2_port_factory_publisher_builder_storage_t {
     internal: [u8; 128], // magic number obtained with size_of::<Option<PortFactoryPublisherBuilderUnion>>()
@@ -186,6 +215,44 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_loaned_samp
 }
 
 // TODO [#210] add all the other setter methods
+
+/// Sets the unable to deliver strategy for the publisher
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_ref_h`]
+///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder) and
+///   casted by [`iox2_cast_port_factory_publisher_builder_ref_h`](crate::iox2_cast_port_factory_publisher_builder_ref_h).
+/// * `value` - The value to set the strategy to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
+    port_factory_handle: iox2_port_factory_publisher_builder_ref_h,
+    value: iox2_unable_to_deliver_strategy_e,
+) {
+    debug_assert!(!port_factory_handle.is_null());
+
+    let handle = unsafe { &mut *port_factory_handle.as_type() };
+    match handle.service_type {
+        iox2_service_type_e::IPC => {
+            let builder = ManuallyDrop::take(&mut handle.value.as_mut().ipc);
+
+            handle.set(PortFactoryPublisherBuilderUnion::new_ipc(
+                builder.unable_to_deliver_strategy(value.into()),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let builder = ManuallyDrop::take(&mut handle.value.as_mut().local);
+
+            handle.set(PortFactoryPublisherBuilderUnion::new_local(
+                builder.unable_to_deliver_strategy(value.into()),
+            ));
+        }
+    }
+}
 
 /// Creates a publisher and consumes the builder
 ///

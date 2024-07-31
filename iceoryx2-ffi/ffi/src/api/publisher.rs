@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi, SampleMutUnion};
-use crate::IOX2_OK;
+use crate::{iox2_unable_to_deliver_strategy_e, IOX2_OK};
 
 use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
 use iceoryx2::prelude::*;
@@ -219,6 +219,42 @@ pub unsafe extern "C" fn iox2_cast_publisher_ref_h(
     debug_assert!(!handle.is_null());
 
     (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// Returns the strategy the publisher follows when a sample cannot be delivered
+/// since the subscribers buffer is full.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+///
+/// Returns [`iox2_unable_to_deliver_strategy_e`].
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
+    publisher_handle: iox2_publisher_ref_h,
+) -> iox2_unable_to_deliver_strategy_e {
+    debug_assert!(!publisher_handle.is_null());
+
+    let publisher = &mut *publisher_handle.as_type();
+
+    match publisher.service_type {
+        iox2_service_type_e::IPC => publisher
+            .value
+            .as_mut()
+            .ipc
+            .unable_to_deliver_strategy()
+            .into(),
+        iox2_service_type_e::LOCAL => publisher
+            .value
+            .as_mut()
+            .local
+            .unable_to_deliver_strategy()
+            .into(),
+    }
 }
 
 /// Sends a copy of the provided data via the publisher. The data must be copyable via `memcpy`.

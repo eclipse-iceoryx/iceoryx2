@@ -294,4 +294,24 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_
     ASSERT_TRUE(service_fail.has_error());
     ASSERT_THAT(service_fail.error(), Eq(PublishSubscribeOpenError::DoesNotSupportRequestedAmountOfSubscribers));
 }
+
+TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_strategy) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    auto sut_pub_1 =
+        service.publisher_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::Block).create().expect("");
+    auto sut_pub_2 = service.publisher_builder()
+                         .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+                         .create()
+                         .expect("");
+
+    ASSERT_THAT(sut_pub_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
+    ASSERT_THAT(sut_pub_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
+}
 } // namespace
