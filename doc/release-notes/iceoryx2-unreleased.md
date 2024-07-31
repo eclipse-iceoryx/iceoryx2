@@ -100,7 +100,7 @@
 
     ```rust
     // old
-    let service = ipc::Service::new(&service_name)
+    let service = zero_copy::Service::new(&service_name)
         .event()
         .create()?;
 
@@ -116,7 +116,7 @@
 
     ```rust
     // old
-    let service = ipc::Service::new(&service_name)
+    let service = zero_copy::Service::new(&service_name)
         .publish_subscribe_with_custom_config::<u64>(&custom_config)
         .open_or_create()?;
 
@@ -134,7 +134,7 @@
 
     ```rust
     // old
-    let service = ipc::Service::new(&service_name)
+    let service = zero_copy::Service::new(&service_name)
         .publish_subscribe()
         .create::<u64>()?; // or open::<u64>(), or open_or_create::<u64>()
 
@@ -186,8 +186,8 @@
 
     ```rust
     // old
-    let services = ipc::Service::list()?;
-    let services = ipc::Service::list_with_custom_config(Config::global_config())?;
+    let services = zero_copy::Service::list()?;
+    let services = zero_copy::Service::list_with_custom_config(Config::global_config())?;
 
     // new
     let services = ipc::Service::list(Config::global_config())?;
@@ -197,8 +197,8 @@
 
     ```rust
     // old
-    let services = ipc::Service::does_exist(service_name)?;
-    let services = ipc::Service::does_exist_with_custom_config(service_name, Config::global_config())?;
+    let services = zero_copy::Service::does_exist(service_name)?;
+    let services = zero_copy::Service::does_exist_with_custom_config(service_name, Config::global_config())?;
 
     // new
     let services = ipc::Service::does_exist(service_name, Config::global_config())?;
@@ -270,8 +270,8 @@
     ```rust
     // old
     struct SomeSamples {
-        sample_mut: SampleMut<MyMessageType, ipc::Service>,
-        sample: Sample<MyMessageType, ipc::Service>,
+        sample_mut: SampleMut<MyMessageType, zero_copy::Service>,
+        sample: Sample<MyMessageType, zero_copy::Service>,
     }
 
     // new
@@ -289,11 +289,11 @@
     ```rust
     // old
     struct SomeStruct {
-        service: publish_subscribe::PortFactory<ipc::Service, MyMessageType>,
-        subscriber: Subscriber<ipc::Service, MyMessageType>,
-        publisher: Publisher<ipc::Service, MyMessageType>,
-        list_of_mut_samples: Vec<SampleMut<MyMessageType, ipc::Service>>,
-        list_of_samples: Vec<Sample<MyMessageType, ipc::Service>>,
+        service: publish_subscribe::PortFactory<zero_copy::Service, MyMessageType>,
+        subscriber: Subscriber<zero_copy::Service, MyMessageType>,
+        publisher: Publisher<zero_copy::Service, MyMessageType>,
+        list_of_mut_samples: Vec<SampleMut<MyMessageType, zero_copy::Service>>,
+        list_of_samples: Vec<Sample<MyMessageType, zero_copy::Service>>,
     }
 
     // new, no custom user header
@@ -320,7 +320,7 @@
 
     ```rust
     // old
-    let services = ipc::Service::list(Config::global_config())?;
+    let services = zero_copy::Service::list(Config::global_config())?;
 
     for service in services {
         println!("\n{:#?}", &service);
