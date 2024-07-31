@@ -43,6 +43,8 @@ impl From<&StaticConfig> for iox2_static_config_t {
     fn from(value: &StaticConfig) -> Self {
         Self {
             id: core::array::from_fn(|n| {
+                debug_assert!(value.uuid().as_bytes().len() + 1 < IOX2_SERVICE_ID_LENGTH);
+
                 if n < value.uuid().as_bytes().len() {
                     value.uuid().as_bytes()[n] as _
                 } else {
@@ -50,6 +52,8 @@ impl From<&StaticConfig> for iox2_static_config_t {
                 }
             }),
             name: core::array::from_fn(|n| {
+                debug_assert!(value.uuid().as_bytes().len() + 1 < IOX2_SERVICE_NAME_LENGTH);
+
                 if n < value.name().as_bytes().len() {
                     value.name().as_bytes()[n] as _
                 } else {

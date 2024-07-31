@@ -64,7 +64,7 @@ impl From<&iceoryx2::service::static_config::messaging_pattern::MessagingPattern
             iceoryx2::service::static_config::messaging_pattern::MessagingPattern::PublishSubscribe(_) => {
                 iox2_messaging_pattern_e::PUBLISH_SUBSCRIBE
             }
-            _ => todo!()
+            _ => unreachable!()
         }
     }
 }
