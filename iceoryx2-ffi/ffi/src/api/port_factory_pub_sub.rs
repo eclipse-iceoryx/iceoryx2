@@ -15,8 +15,8 @@
 use crate::api::{
     iox2_port_factory_publisher_builder_h, iox2_port_factory_publisher_builder_t,
     iox2_port_factory_subscriber_builder_h, iox2_port_factory_subscriber_builder_t,
-    iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi,
-    PortFactoryPublisherBuilderUnion, PortFactorySubscriberBuilderUnion,
+    iox2_service_type_e, HandleToType, PayloadFfi, PortFactoryPublisherBuilderUnion,
+    PortFactorySubscriberBuilderUnion, UserHeaderFfi,
 };
 use crate::iox2_static_config_publish_subscribe_t;
 
@@ -30,20 +30,20 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 pub(super) union PortFactoryPubSubUnion {
-    ipc: ManuallyDrop<PortFactory<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<PortFactory<local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<PortFactory<local::Service, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl PortFactoryPubSubUnion {
     pub(super) fn new_ipc(
-        port_factory: PortFactory<ipc::Service, PayloadFfi, NoUserHeaderFfi>,
+        port_factory: PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
     pub(super) fn new_local(
-        port_factory: PortFactory<local::Service, PayloadFfi, NoUserHeaderFfi>,
+        port_factory: PortFactory<local::Service, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),

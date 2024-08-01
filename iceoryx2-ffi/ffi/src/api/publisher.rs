@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi, SampleMutUnion};
+use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, SampleMutUnion, UserHeaderFfi};
 use crate::{iox2_unable_to_deliver_strategy_e, IOX2_OK};
 
 use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
@@ -94,18 +94,18 @@ pub enum iox2_publisher_loan_error_e {
 }
 
 pub(super) union PublisherUnion {
-    ipc: ManuallyDrop<Publisher<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<Publisher<local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<Publisher<ipc::Service, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<Publisher<local::Service, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl PublisherUnion {
-    pub(super) fn new_ipc(publisher: Publisher<ipc::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
+    pub(super) fn new_ipc(publisher: Publisher<ipc::Service, PayloadFfi, UserHeaderFfi>) -> Self {
         Self {
             ipc: ManuallyDrop::new(publisher),
         }
     }
     pub(super) fn new_local(
-        publisher: Publisher<local::Service, PayloadFfi, NoUserHeaderFfi>,
+        publisher: Publisher<local::Service, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(publisher),
@@ -167,7 +167,7 @@ impl HandleToType for iox2_publisher_ref_h {
 // END type definition
 
 unsafe fn send_copy<S: Service>(
-    publisher: &Publisher<S, PayloadFfi, NoUserHeaderFfi>,
+    publisher: &Publisher<S, PayloadFfi, UserHeaderFfi>,
     data_ptr: *const c_void,
     data_len: usize,
     number_of_recipients: *mut usize,

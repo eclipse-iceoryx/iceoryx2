@@ -14,7 +14,7 @@
 
 use crate::api::{
     c_size_t, iox2_publisher_h, iox2_publisher_t, iox2_service_type_e, HandleToType, IntoCInt,
-    NoUserHeaderFfi, PayloadFfi, PublisherUnion, IOX2_OK,
+    PayloadFfi, PublisherUnion, UserHeaderFfi, IOX2_OK,
 };
 
 use iceoryx2::port::publisher::PublisherCreateError;
@@ -49,20 +49,20 @@ impl IntoCInt for PublisherCreateError {
 }
 
 pub(super) union PortFactoryPublisherBuilderUnion {
-    ipc: ManuallyDrop<PortFactoryPublisher<'static, ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<PortFactoryPublisher<'static, local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<PortFactoryPublisher<'static, ipc::Service, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<PortFactoryPublisher<'static, local::Service, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl PortFactoryPublisherBuilderUnion {
     pub(super) fn new_ipc(
-        port_factory: PortFactoryPublisher<'static, ipc::Service, PayloadFfi, NoUserHeaderFfi>,
+        port_factory: PortFactoryPublisher<'static, ipc::Service, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
     pub(super) fn new_local(
-        port_factory: PortFactoryPublisher<'static, local::Service, PayloadFfi, NoUserHeaderFfi>,
+        port_factory: PortFactoryPublisher<'static, local::Service, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),

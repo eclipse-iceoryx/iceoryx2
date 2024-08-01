@@ -15,9 +15,15 @@
 #include "iox2/service.hpp"
 
 #include "test.hpp"
+#include <array>
 
 namespace {
 using namespace iox2;
+
+struct TestHeader {
+    static constexpr uint64_t CAPACITY = 1024;
+    std::array<uint64_t, CAPACITY> value;
+};
 
 template <typename T>
 class ServicePublishSubscribeTest : public ::testing::Test {
@@ -314,4 +320,44 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_stra
     ASSERT_THAT(sut_pub_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
     ASSERT_THAT(sut_pub_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
 }
+
+TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service_pub = node.service_builder(service_name)
+                           .template publish_subscribe<uint64_t>()
+                           .template user_header<TestHeader>()
+                           .create()
+                           .expect("");
+    auto service_sub = node.service_builder(service_name)
+                           .template publish_subscribe<uint64_t>()
+                           .template user_header<TestHeader>()
+                           .open()
+                           .expect("");
+
+    auto sut_publisher = service_pub.publisher_builder().create().expect("");
+    auto sut_subscriber = service_sub.subscriber_builder().create().expect("");
+
+    auto sample = sut_publisher.loan().expect("");
+    const uint64_t payload = 781891729871;
+    *sample = payload;
+    for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
+        sample.user_header_mut().value.at(idx) = 4 * idx + 3;
+    }
+    send_sample(std::move(sample)).expect("");
+    auto recv_sample = sut_subscriber.receive().expect("");
+
+    ASSERT_TRUE(recv_sample.has_value());
+    ASSERT_THAT(**recv_sample, Eq(payload));
+
+    for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
+        ASSERT_THAT(recv_sample->user_header().value.at(idx), Eq(4 * idx + 3));
+    }
+}
+
+
 } // namespace

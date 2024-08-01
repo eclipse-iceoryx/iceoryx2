@@ -15,8 +15,8 @@
 use crate::api::{
     c_size_t, iox2_port_factory_pub_sub_h, iox2_port_factory_pub_sub_t,
     iox2_service_builder_pub_sub_h, iox2_service_builder_pub_sub_ref_h, iox2_service_type_e,
-    HandleToType, IntoCInt, NoUserHeaderFfi, PayloadFfi, PortFactoryPubSubUnion,
-    ServiceBuilderUnion, IOX2_OK,
+    HandleToType, IntoCInt, PayloadFfi, PortFactoryPubSubUnion, ServiceBuilderUnion, UserHeaderFfi,
+    IOX2_OK,
 };
 
 use iceoryx2::prelude::*;
@@ -176,6 +176,19 @@ impl From<&TypeVariant> for iox2_type_variant_e {
     }
 }
 
+impl From<iox2_type_variant_e> for TypeVariant {
+    fn from(value: iox2_type_variant_e) -> Self {
+        const DYNAMIC: usize = iox2_type_variant_e::DYNAMIC as usize;
+        const FIXED_SIZE: usize = iox2_type_variant_e::FIXED_SIZE as usize;
+
+        match value as usize {
+            DYNAMIC => TypeVariant::Dynamic,
+            FIXED_SIZE => TypeVariant::FixedSize,
+            e => fatal_panic!("Invalid iox2_type_variant_e value {}", e),
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_type_detail_error_e {
@@ -187,7 +200,85 @@ pub enum iox2_type_detail_error_e {
 
 // BEGIN C API
 
-/// Sets the max publishers for the builder
+/// Sets the user header type details for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `type_variant` - The [`iox2_type_variant_e`] for the payload
+/// * `type_name_str` - Must string for the type name.
+/// * `type_name_len` - The length of the type name string, not including a null
+/// * `size` - The size of the payload
+/// * `alignment` - The alignment of the payload
+///
+/// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+/// * `type_name_str` must be a valid pointer to an utf8 string
+/// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_details(
+    service_builder_handle: iox2_service_builder_pub_sub_ref_h,
+    type_variant: iox2_type_variant_e,
+    type_name_str: *const c_char,
+    type_name_len: c_size_t,
+    size: c_size_t,
+    alignment: c_size_t,
+) -> c_int {
+    debug_assert!(!service_builder_handle.is_null());
+    debug_assert!(!type_name_str.is_null());
+
+    let type_name = slice::from_raw_parts(type_name_str as _, type_name_len as _);
+
+    let type_name = if let Ok(type_name) = str::from_utf8(type_name) {
+        type_name.to_string()
+    } else {
+        return iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int;
+    };
+
+    match Layout::from_size_align(size, alignment) {
+        Ok(_) => (),
+        Err(_) => return iox2_type_detail_error_e::INVALID_SIZE_OR_ALIGNMENT_VALUE as c_int,
+    }
+
+    let value = TypeDetail {
+        variant: type_variant.into(),
+        type_name,
+        size,
+        alignment,
+    };
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.__internal_set_user_header_type_details(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.__internal_set_user_header_type_details(value),
+            ));
+        }
+    }
+
+    IOX2_OK
+}
+
+/// Sets the payload type details for the builder
 ///
 /// # Arguments
 ///
@@ -227,25 +318,13 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
         return iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int;
     };
 
-    match type_variant as usize {
-        0 => (),
-        1 => (),
-        _ => fatal_panic!(from "iox2_service_builder_pub_sub_set_payload_type_details",
-                            "The provided type_variant has an invalid value."),
-    }
-
-    let variant = match type_variant {
-        iox2_type_variant_e::FIXED_SIZE => TypeVariant::FixedSize,
-        iox2_type_variant_e::DYNAMIC => TypeVariant::Dynamic,
-    };
-
     match Layout::from_size_align(size, alignment) {
         Ok(_) => (),
         Err(_) => return iox2_type_detail_error_e::INVALID_SIZE_OR_ALIGNMENT_VALUE as c_int,
     }
 
     let value = TypeDetail {
-        variant,
+        variant: type_variant.into(),
         type_name,
         size,
         alignment,
@@ -466,11 +545,11 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
     func_ipc: impl FnOnce(
-        Builder<PayloadFfi, NoUserHeaderFfi, ipc::Service>,
-    ) -> Result<PortFactory<ipc::Service, PayloadFfi, NoUserHeaderFfi>, E>,
+        Builder<PayloadFfi, UserHeaderFfi, ipc::Service>,
+    ) -> Result<PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi>, E>,
     func_local: impl FnOnce(
-        Builder<PayloadFfi, NoUserHeaderFfi, local::Service>,
-    ) -> Result<PortFactory<local::Service, PayloadFfi, NoUserHeaderFfi>, E>,
+        Builder<PayloadFfi, UserHeaderFfi, local::Service>,
+    ) -> Result<PortFactory<local::Service, PayloadFfi, UserHeaderFfi>, E>,
 ) -> c_int {
     debug_assert!(!service_builder_handle.is_null());
     debug_assert!(!port_factory_handle_ptr.is_null());

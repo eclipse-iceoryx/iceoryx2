@@ -39,7 +39,7 @@ int main(void) {
         goto drop_node;
     }
 
-    // create service
+    // create service builder
     iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(service_name);
     iox2_node_ref_h node_ref_handle = iox2_cast_node_ref_h(node_handle);
     iox2_service_builder_h service_builder = iox2_node_service_builder(node_ref_handle, NULL, service_name_ptr);
@@ -59,6 +59,8 @@ int main(void) {
         printf("Unable to set type details\n");
         goto drop_node;
     }
+
+    // create service
     iox2_port_factory_pub_sub_h service = NULL;
     if (iox2_service_builder_pub_sub_open_or_create(service_builder_pub_sub, NULL, &service) != IOX2_OK) {
         printf("Unable to create service!\n");

@@ -168,13 +168,23 @@ inline auto SampleMut<S, Payload, UserHeader>::header() const -> const HeaderPub
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMut<S, Payload, UserHeader>::user_header() const -> const T& {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
+    const void* ptr = nullptr;
+
+    iox2_sample_mut_user_header(ref_handle, &ptr);
+
+    return *static_cast<const T*>(ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMut<S, Payload, UserHeader>::user_header_mut() -> T& {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
+    void* ptr = nullptr;
+
+    iox2_sample_mut_user_header_mut(ref_handle, &ptr);
+
+    return *static_cast<T*>(ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

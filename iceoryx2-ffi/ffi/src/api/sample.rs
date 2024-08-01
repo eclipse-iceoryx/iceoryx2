@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, NoUserHeaderFfi, PayloadFfi};
+use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, UserHeaderFfi};
 use crate::c_size_t;
 
 use iceoryx2::prelude::*;
@@ -26,17 +26,17 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 pub(super) union SampleUnion {
-    ipc: ManuallyDrop<Sample<ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local: ManuallyDrop<Sample<local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<Sample<ipc::Service, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<Sample<local::Service, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl SampleUnion {
-    pub(super) fn new_ipc(sample: Sample<ipc::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
+    pub(super) fn new_ipc(sample: Sample<ipc::Service, PayloadFfi, UserHeaderFfi>) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
-    pub(super) fn new_local(sample: Sample<local::Service, PayloadFfi, NoUserHeaderFfi>) -> Self {
+    pub(super) fn new_local(sample: Sample<local::Service, PayloadFfi, UserHeaderFfi>) -> Self {
         Self {
             local: ManuallyDrop::new(sample),
         }
@@ -114,6 +114,30 @@ impl HandleToType for iox2_sample_ref_h {
 pub unsafe extern "C" fn iox2_cast_sample_ref_h(handle: iox2_sample_h) -> iox2_sample_ref_h {
     debug_assert!(!handle.is_null());
     (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// Acquires the samples user header.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_subscriber_receive()`](crate::iox2_subscriber_receive())
+/// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_sample_user_header(
+    sample_handle: iox2_sample_ref_h,
+    header_ptr: *mut *const c_void,
+) {
+    debug_assert!(!sample_handle.is_null());
+    debug_assert!(!header_ptr.is_null());
+
+    let sample = &mut *sample_handle.as_type();
+
+    let header = match sample.service_type {
+        iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header(),
+        iox2_service_type_e::LOCAL => sample.value.as_mut().local.user_header(),
+    };
+
+    *header_ptr = (header as *const UserHeaderFfi).cast();
 }
 
 /// Acquires the samples payload.

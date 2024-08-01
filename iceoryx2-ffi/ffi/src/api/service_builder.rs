@@ -13,9 +13,9 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType};
-use crate::IOX2_MAX_USER_HEADER_SIZE;
 
 use iceoryx2::prelude::*;
+use iceoryx2::service::builder::publish_subscribe::CustomHeaderMarker;
 use iceoryx2::service::builder::{
     event::Builder as ServiceBuilderEvent, publish_subscribe::Builder as ServiceBuilderPubSub,
     Builder as ServiceBuilderBase,
@@ -28,15 +28,14 @@ use core::mem::MaybeUninit;
 
 // BEGIN types definition
 
-pub(super) type NoUserHeaderFfi = ();
-pub(super) type _UserHeaderFfi = [u8; IOX2_MAX_USER_HEADER_SIZE];
+pub(super) type UserHeaderFfi = CustomHeaderMarker;
 pub(super) type PayloadFfi = [u8];
 pub(super) type UninitPayloadFfi = [MaybeUninit<u8>];
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,
     pub(super) event: ManuallyDrop<ServiceBuilderEvent<S>>,
-    pub(super) pub_sub: ManuallyDrop<ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, S>>,
+    pub(super) pub_sub: ManuallyDrop<ServiceBuilderPubSub<PayloadFfi, UserHeaderFfi, S>>,
 }
 
 pub(super) union ServiceBuilderUnion {
@@ -62,7 +61,7 @@ impl ServiceBuilderUnion {
     }
 
     pub(super) fn new_ipc_pub_sub(
-        service_builder: ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, ipc::Service>,
+        service_builder: ServiceBuilderPubSub<PayloadFfi, UserHeaderFfi, ipc::Service>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
@@ -88,7 +87,7 @@ impl ServiceBuilderUnion {
     }
 
     pub(super) fn new_local_pub_sub(
-        service_builder: ServiceBuilderPubSub<PayloadFfi, NoUserHeaderFfi, local::Service>,
+        service_builder: ServiceBuilderPubSub<PayloadFfi, UserHeaderFfi, local::Service>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
@@ -101,7 +100,7 @@ impl ServiceBuilderUnion {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<ServiceBuilderUnion>
 pub struct iox2_service_builder_storage_t {
-    internal: [u8; 360], // magic number obtained with size_of::<Option<ServiceBuilderUnion>>()
+    internal: [u8; 408], // magic number obtained with size_of::<Option<ServiceBuilderUnion>>()
 }
 
 #[repr(C)]
@@ -311,7 +310,9 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.base);
             service_builders_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.publish_subscribe::<[u8]>(),
+                service_builder
+                    .publish_subscribe::<PayloadFfi>()
+                    .user_header::<UserHeaderFfi>(),
             ));
         }
         iox2_service_type_e::LOCAL => {
@@ -320,7 +321,9 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.base);
             service_builders_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.publish_subscribe::<[u8]>(),
+                service_builder
+                    .publish_subscribe::<PayloadFfi>()
+                    .user_header::<UserHeaderFfi>(),
             ));
         }
     }

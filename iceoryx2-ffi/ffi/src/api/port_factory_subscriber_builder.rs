@@ -14,7 +14,7 @@
 
 use crate::api::{
     c_size_t, iox2_service_type_e, iox2_subscriber_h, iox2_subscriber_t, HandleToType, IntoCInt,
-    NoUserHeaderFfi, PayloadFfi, SubscriberUnion, IOX2_OK,
+    PayloadFfi, SubscriberUnion, UserHeaderFfi, IOX2_OK,
 };
 
 use iceoryx2::port::subscriber::SubscriberCreateError;
@@ -49,21 +49,20 @@ impl IntoCInt for SubscriberCreateError {
 }
 
 pub(super) union PortFactorySubscriberBuilderUnion {
-    ipc: ManuallyDrop<PortFactorySubscriber<'static, ipc::Service, PayloadFfi, NoUserHeaderFfi>>,
-    local:
-        ManuallyDrop<PortFactorySubscriber<'static, local::Service, PayloadFfi, NoUserHeaderFfi>>,
+    ipc: ManuallyDrop<PortFactorySubscriber<'static, ipc::Service, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<PortFactorySubscriber<'static, local::Service, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl PortFactorySubscriberBuilderUnion {
     pub(super) fn new_ipc(
-        port_factory: PortFactorySubscriber<'static, ipc::Service, PayloadFfi, NoUserHeaderFfi>,
+        port_factory: PortFactorySubscriber<'static, ipc::Service, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
     pub(super) fn new_local(
-        port_factory: PortFactorySubscriber<'static, local::Service, PayloadFfi, NoUserHeaderFfi>,
+        port_factory: PortFactorySubscriber<'static, local::Service, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),

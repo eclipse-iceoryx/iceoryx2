@@ -137,16 +137,40 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     m_max_publishers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_publishers(ref_handle, value); });
     m_max_nodes.and_then([](auto) { IOX_TODO(); });
 
-    const auto* type_name = typeid(Payload).name();
-    const auto type_name_len = strlen(type_name);
-    const auto type_size = sizeof(Payload);
-    const auto type_align = alignof(Payload);
+    // payload type details
+    const auto* payload_type_name = typeid(Payload).name();
+    const auto payload_type_name_len = strlen(payload_type_name);
+    const auto payload_type_size = sizeof(Payload);
+    const auto payload_type_align = alignof(Payload);
 
-    const auto result = iox2_service_builder_pub_sub_set_payload_type_details(
-        ref_handle, iox2_type_variant_e_FIXED_SIZE, type_name, type_name_len, type_size, type_align);
+    const auto payload_result = iox2_service_builder_pub_sub_set_payload_type_details(ref_handle,
+                                                                                      iox2_type_variant_e_FIXED_SIZE,
+                                                                                      payload_type_name,
+                                                                                      payload_type_name_len,
+                                                                                      payload_type_size,
+                                                                                      payload_type_align);
 
-    if (result != IOX2_OK) {
-        IOX_PANIC("This should never happen! Implementation while setting the Payload-Type.");
+    if (payload_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the Payload-Type.");
+    }
+
+    // user header type details
+    const auto header_layout = iox::Layout::from<UserHeader>();
+    const auto* user_header_type_name = typeid(UserHeader).name();
+    const auto user_header_type_name_len = strlen(user_header_type_name);
+    const auto user_header_type_size = header_layout.size();
+    const auto user_header_type_align = header_layout.alignment();
+
+    const auto user_header_result =
+        iox2_service_builder_pub_sub_set_user_header_type_details(ref_handle,
+                                                                  iox2_type_variant_e_FIXED_SIZE,
+                                                                  user_header_type_name,
+                                                                  user_header_type_name_len,
+                                                                  user_header_type_size,
+                                                                  user_header_type_align);
+
+    if (user_header_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the User-Header-Type.");
     }
 }
 
