@@ -255,6 +255,27 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq(typeid(uint64_t).name()));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, safe_overflow_can_be_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    for (auto has_safe_overflow : { true, false }) {
+        auto service = node.service_builder(service_name)
+                           .template publish_subscribe<uint64_t>()
+                           .enable_safe_overflow(has_safe_overflow)
+                           .create()
+                           .expect("");
+
+        auto static_config = service.static_config();
+
+        ASSERT_THAT(static_config.has_safe_overflow(), Eq(has_safe_overflow));
+    }
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_publisher_requirement) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_PUBLISHERS = 11;

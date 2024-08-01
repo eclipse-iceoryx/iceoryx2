@@ -442,6 +442,49 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
     }
 }
 
+/// Enables/disables safe overflow for the service
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `value` - defines if safe overflow shall be enabled (true) or not (false)
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_enable_safe_overflow(
+    service_builder_handle: iox2_service_builder_pub_sub_ref_h,
+    value: bool,
+) {
+    debug_assert!(!service_builder_handle.is_null());
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.enable_safe_overflow(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.enable_safe_overflow(value),
+            ));
+        }
+    }
+}
+
 // TODO [#210] add all the other setter methods
 
 /// Opens a publish-subscribe service or creates the service if it does not exist and returns a port factory to create publishers and subscribers.
