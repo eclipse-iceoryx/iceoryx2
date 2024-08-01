@@ -12,6 +12,23 @@ build:
     - rustc
     - cargo
     - git
+    - binutils-dev
+    - build-essential
+    - clang
+    - cmake
+    - curl
+    - flex
+    - gcc
+    - gcc-multilib
+    - g++
+    - g++-multilib
+    - libacl1-dev
+    - libc6-dev
+    - libc6-dev-i386
+    - libc6-dev-i386-cross
+    - libstdc++6-i386-cross
+    - libdwarf-dev
+    - libelf-dev
   tools:
     python: "3.12"
     # You can also specify other tool versions:
