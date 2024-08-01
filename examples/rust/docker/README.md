@@ -98,7 +98,7 @@ iceoryx root path with the following command:
 
 ```sh
 mkdir /tmp/iceoryx2
-docker-compose -f iceoryx_examples/icedocker/docker-compose.yml --project-directory . up
+docker-compose -f examples/rust/docker/docker-compose.yml --project-directory . up
 ```
 
 We can again open a new terminal and start an additional publisher or subscriber
