@@ -17,6 +17,7 @@
 #include "iox/expected.hpp"
 #include "iox/optional.hpp"
 #include "iox2/connection_failure.hpp"
+#include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/sample.hpp"
 #include "iox2/service_type.hpp"
@@ -52,6 +53,10 @@ class Subscriber {
     /// When a [`Subscriber`] is connected that requires a history this
     /// call will deliver it.
     auto update_connections() const -> iox::expected<void, ConnectionFailure>;
+
+    /// Returns true when the [`Subscriber`] has [`Sample`]s that can be
+    /// acquired via [`Subscriber::receive()`], otherwise false.
+    auto has_samples() const -> iox::expected<bool, ConnectionFailure>;
 
   private:
     template <ServiceType, typename, typename>
@@ -94,6 +99,19 @@ inline void Subscriber<S, Payload, UserHeader>::drop() {
         iox2_subscriber_drop(m_handle);
         m_handle = nullptr;
     }
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> iox::expected<bool, ConnectionFailure> {
+    auto* ref_handle = iox2_cast_subscriber_ref_h(m_handle);
+    bool has_samples_result = false;
+    auto result = iox2_subscriber_has_samples(ref_handle, &has_samples_result);
+
+    if (result == IOX2_OK) {
+        return iox::ok(has_samples_result);
+    }
+
+    return iox::err(iox::into<ConnectionFailure>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

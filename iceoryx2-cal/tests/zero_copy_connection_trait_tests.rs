@@ -326,6 +326,29 @@ mod zero_copy_connection {
     }
 
     #[test]
+    fn when_data_was_sent_receiver_has_data<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_sender(SAMPLE_SIZE)
+            .unwrap();
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples(NUMBER_OF_SAMPLES)
+            .create_receiver(SAMPLE_SIZE)
+            .unwrap();
+
+        let sample_offset = SAMPLE_SIZE * 2;
+        assert_that!(sut_receiver.has_data(), eq false);
+        assert_that!(
+            sut_sender.try_send(PointerOffset::new(sample_offset)),
+            is_ok
+        );
+
+        assert_that!(sut_receiver.has_data(), eq true);
+    }
+
+    #[test]
     fn send_until_buffer_is_full_works<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         const BUFFER_SIZE: usize = 89;

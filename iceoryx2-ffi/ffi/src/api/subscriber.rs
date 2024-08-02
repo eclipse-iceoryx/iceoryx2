@@ -18,6 +18,7 @@ use crate::api::{
 };
 
 use iceoryx2::port::subscriber::{Subscriber, SubscriberReceiveError};
+use iceoryx2::port::update_connections::ConnectionFailure;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -31,7 +32,8 @@ use core::mem::ManuallyDrop;
 #[derive(Copy, Clone)]
 pub enum iox2_subscriber_receive_error_e {
     EXCEEDS_MAX_BORROWED_SAMPLES = IOX2_OK as isize + 1,
-    CONNECTION_FAILURE,
+    FAILED_TO_ESTABLISH_CONNECTION,
+    UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT,
 }
 
 impl IntoCInt for SubscriberReceiveError {
@@ -40,8 +42,31 @@ impl IntoCInt for SubscriberReceiveError {
             SubscriberReceiveError::ExceedsMaxBorrowedSamples => {
                 iox2_subscriber_receive_error_e::EXCEEDS_MAX_BORROWED_SAMPLES
             }
-            SubscriberReceiveError::ConnectionFailure(_) => {
-                iox2_subscriber_receive_error_e::CONNECTION_FAILURE
+            SubscriberReceiveError::ConnectionFailure(
+                ConnectionFailure::FailedToEstablishConnection(_),
+            ) => iox2_subscriber_receive_error_e::FAILED_TO_ESTABLISH_CONNECTION,
+            SubscriberReceiveError::ConnectionFailure(
+                ConnectionFailure::UnableToMapPublishersDataSegment(_),
+            ) => iox2_subscriber_receive_error_e::UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT,
+        }) as c_int
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_connection_failure_e {
+    FAILED_TO_ESTABLISH_CONNECTION,
+    UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT,
+}
+
+impl IntoCInt for ConnectionFailure {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            ConnectionFailure::FailedToEstablishConnection(_) => {
+                iox2_connection_failure_e::FAILED_TO_ESTABLISH_CONNECTION
+            }
+            ConnectionFailure::UnableToMapPublishersDataSegment(_) => {
+                iox2_connection_failure_e::UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT
             }
         }) as c_int
     }
@@ -244,6 +269,50 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
     }
 
     IOX2_OK
+}
+
+/// Returns true when the subscriber has samples that can be acquired with [`iox2_subscriber_receive`], otherwise false.
+///
+/// # Arguments
+///
+/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_ref_h`]
+///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create) and
+///   casted by [`iox2_cast_subscriber_ref_h`].
+/// * `result_ptr` - A non-null pointer to a bool that will contain the result.
+///
+/// Returns IOX2_OK on success, an [`iox2_connection_failure_e`] otherwise.
+/// Attention, an empty subscriber queue is not an error and even with IOX2_OK it is possible to get a NULL in `sample_handle_ptr`.
+///
+/// # Safety
+///
+/// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
+/// * The `result_ptr` is pointing to a valid bool.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_subscriber_has_samples(
+    subscriber_handle: iox2_subscriber_ref_h,
+    result_ptr: *mut bool,
+) -> c_int {
+    debug_assert!(!subscriber_handle.is_null());
+    debug_assert!(!result_ptr.is_null());
+
+    let subscriber = &mut *subscriber_handle.as_type();
+
+    match subscriber.service_type {
+        iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.has_samples() {
+            Ok(v) => {
+                *result_ptr = v;
+                IOX2_OK
+            }
+            Err(error) => error.into_c_int(),
+        },
+        iox2_service_type_e::LOCAL => match subscriber.value.as_ref().local.has_samples() {
+            Ok(v) => {
+                *result_ptr = v;
+                IOX2_OK
+            }
+            Err(error) => error.into_c_int(),
+        },
+    }
 }
 
 /// This function needs to be called to destroy the subscriber!

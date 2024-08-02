@@ -16,6 +16,7 @@
 #include "iox/assertions.hpp"
 #include "iox/into.hpp"
 #include "iox2/callback_progression.hpp"
+#include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/listener_error.hpp"
 #include "iox2/messaging_pattern.hpp"
@@ -518,8 +519,10 @@ template <>
 constexpr auto from<int, iox2::SubscriberReceiveError>(const int value) noexcept -> iox2::SubscriberReceiveError {
     const auto error = static_cast<iox2_subscriber_receive_error_e>(value);
     switch (error) {
-    case iox2_subscriber_receive_error_e_CONNECTION_FAILURE:
-        return iox2::SubscriberReceiveError::ConnectionFailure;
+    case iox2_subscriber_receive_error_e_FAILED_TO_ESTABLISH_CONNECTION:
+        return iox2::SubscriberReceiveError::FailedToEstablishConnection;
+    case iox2_subscriber_receive_error_e_UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT:
+        return iox2::SubscriberReceiveError::UnableToMapPublishersDataSegment;
     case iox2_subscriber_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES:
         return iox2::SubscriberReceiveError::ExceedsMaxBorrowedSamples;
     }
@@ -603,6 +606,19 @@ constexpr auto from<iox2::UnableToDeliverStrategy, int>(const iox2::UnableToDeli
         return iox2_unable_to_deliver_strategy_e_DISCARD_SAMPLE;
     case iox2::UnableToDeliverStrategy::Block:
         return iox2_unable_to_deliver_strategy_e_BLOCK;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::ConnectionFailure>(const int value) noexcept -> iox2::ConnectionFailure {
+    const auto variant = static_cast<iox2_connection_failure_e>(value);
+    switch (variant) {
+    case iox2_connection_failure_e_FAILED_TO_ESTABLISH_CONNECTION:
+        return iox2::ConnectionFailure::FailedToEstablishConnection;
+    case iox2_connection_failure_e_UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT:
+        return iox2::ConnectionFailure::UnableToMapPublishersDataSegment;
     }
 
     IOX_UNREACHABLE();

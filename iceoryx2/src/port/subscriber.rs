@@ -303,6 +303,25 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         self.publisher_connections.buffer_size
     }
 
+    /// Returns true if the [`Subscriber`] has samples in the buffer that can be received with [`Subscriber::receive`].
+    pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
+        fail!(from self, when self.update_connections(),
+                "Some samples are not being received since not all connections to publishers could be established.");
+
+        for id in 0..self.publisher_connections.len() {
+            match &self.publisher_connections.get(id) {
+                Some(ref connection) => {
+                    if connection.receiver.has_data() {
+                        return Ok(true);
+                    }
+                }
+                None => (),
+            }
+        }
+
+        Ok(false)
+    }
+
     fn receive_impl(
         &self,
     ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {

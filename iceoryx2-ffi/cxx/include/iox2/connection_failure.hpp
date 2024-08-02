@@ -13,8 +13,17 @@
 #ifndef IOX2_CONNECTION_FAILURE_HPP
 #define IOX2_CONNECTION_FAILURE_HPP
 
+#include <cstdint>
+
 namespace iox2 {
-enum class ConnectionFailure {
+/// Describes the errors that can occur when a connection between two endpoints (ports) is
+/// established
+enum class ConnectionFailure : uint8_t {
+    /// Failures when creating the connection
+    FailedToEstablishConnection,
+
+    /// Failures when mapping the corresponding data segment
+    UnableToMapPublishersDataSegment
 };
 } // namespace iox2
 

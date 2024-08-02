@@ -23,9 +23,11 @@ enum class SubscriberReceiveError : uint8_t {
     /// fails.
     ExceedsMaxBorrowedSamples,
 
-    /// Occurs when a [`Subscriber`] is unable to connect to a corresponding
-    /// [`Publisher`].
-    ConnectionFailure,
+    /// Failures when creating the connection
+    FailedToEstablishConnection,
+
+    /// Failures when mapping the corresponding data segment
+    UnableToMapPublishersDataSegment
 };
 
 /// Describes the failures when a new [`Subscriber`] is created via the
