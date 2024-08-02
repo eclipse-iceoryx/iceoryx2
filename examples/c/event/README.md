@@ -1,5 +1,7 @@
 # Event
 
+Please install all dependencies first, as described in the [C Examples Readme](../README.md).
+
 ## Running The Example
 
 This example offers a practical demonstration of inter-process event signaling

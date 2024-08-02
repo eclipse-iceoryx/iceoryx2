@@ -14,11 +14,23 @@
 
 set -e
 
-cd $(git rev-parse --show-toplevel)
-
-sudo ./internal/scripts/install_dependencies_ubuntu.sh
-
-sudo useradd testuser1
-sudo useradd testuser2
-sudo groupadd testgroup1
-sudo groupadd testgroup2
+apt-get update
+apt-get install -y \
+     binutils-dev \
+     build-essential \
+     clang \
+     cmake \
+     curl \
+     flex \
+     gcc \
+     gcc-multilib \
+     g++ \
+     g++-multilib \
+     git \
+     libacl1-dev \
+     libc6-dev \
+     libc6-dev-i386 \
+     libc6-dev-i386-cross \
+     libstdc++6-i386-cross \
+     libdwarf-dev \
+     libelf-dev

@@ -1,5 +1,7 @@
 # Publish-Subscribe
 
+Please install all dependencies first, as described in the [C++ Examples Readme](../README.md).
+
 ## Running The Example
 
 This example illustrates a robust publisher-subscriber communication

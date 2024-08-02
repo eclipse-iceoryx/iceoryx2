@@ -1,5 +1,7 @@
 # Discovery
 
+Please install all dependencies first, as described in the [C++ Examples Readme](../README.md).
+
 ## Running The Example
 
 This example demonstrates how to list all active services within your iceoryx2

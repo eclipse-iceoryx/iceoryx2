@@ -14,13 +14,12 @@
 
 set -e
 
-pacman -Syu --noconfirm clang cmake gcc git rustup
-pacman -Scc --noconfirm 
-rustup toolchain add beta nightly stable 1.75.0
-rustup component add clippy llvm-tools-preview rustfmt
-rustup default stable
+cd $(git rev-parse --show-toplevel)
+
+./internal/scripts/install_dependencies_archlinux.sh
+
 groupadd users
-useradd testuser1 
-useradd testuser2 
-groupadd testgroup1 
+useradd testuser1
+useradd testuser2
+groupadd testgroup1
 groupadd testgroup2

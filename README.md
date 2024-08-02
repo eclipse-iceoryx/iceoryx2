@@ -17,15 +17,16 @@
 # iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust
 
  1. [Introduction](#introduction)
- 2. [Performance](#performance)
- 3. [Getting Started](#getting-started)
+ 2. [Documentation](#documentation)
+ 3. [Performance](#performance)
+ 4. [Getting Started](#getting-started)
     1. [Publish Subscribe](#publish-subscribe)
     2. [Events](#events)
     3. [Custom Configuration](#custom-configuration)
- 4. [Supported Platforms](#supported-platforms)
- 5. [Language Bindings](#language-bindings)
- 6. [Commercial Support](#commercial-support)
- 7. [Thanks To All Contributors](#thanks-to-all-contributors)
+ 5. [Supported Platforms](#supported-platforms)
+ 6. [Language Bindings](#language-bindings)
+ 7. [Commercial Support](#commercial-support)
+ 8. [Thanks To All Contributors](#thanks-to-all-contributors)
 
 ## Introduction
 
@@ -33,7 +34,19 @@ Welcome to iceoryx2, the efficient, and ultra-low latency inter-process communic
 middleware. This library is designed to provide you with fast and reliable
 zero-copy and lock-free inter-process communication mechanisms.
 
-iceoryx2 is all about providing a seamless experience for inter-process
+So if you want to communicate efficiently between multiple processes or applications
+iceoryx2 is for you. With iceoryx2, you can:
+
+* Send huge amounts of data using a publish/subscribe, request/response (planned),
+  pipeline (planned) or blackboard pattern (planned),
+  making it ideal for scenarios where large datasets need to be shared.
+* Exchange signals through events, enabling quick and reliable signaling
+  between processes.
+
+iceoryx2 is based on a service-oriented architecture (SOA) and facilitates
+seamless inter-process communication (IPC).
+
+It is all about providing a seamless experience for inter-process
 communication, featuring versatile messaging patterns. Whether you're diving
 into publish-subscribe, events, or the promise of upcoming features like
 request-response, pipelines, and blackboard, iceoryx2 has you covered.
@@ -53,6 +66,16 @@ ensuring a seamless transition and offering enhanced
 capabilities for your inter-process communication needs. So, if you're looking
 for lightning-fast, cross-platform communication that doesn't compromise on
 performance or modularity, iceoryx2 is your answer.
+
+## Documentation
+
+The documentation can be found at:
+
+| language | documentation link                          |
+|:--------:|--------------------------------------------:|
+| C        | https://iceoryx2.readthedocs.io             |
+| C++      | https://iceoryx2.readthedocs.io             |
+| Rust     | https://docs.rs/iceoryx2/latest/iceoryx2/   |
 
 ## Performance
 
@@ -275,6 +298,7 @@ The support levels can be adjusted when required.
 | Linux (32-bit)   | done         | tier 2                | tier 1               |
 | Mac OS           | done         | tier 2                | tier 2               |
 | QNX              | planned      | -                     | tier 1               |
+| VxWorks          | planned      | -                     | tier 1               |
 | WatchOS          | planned      | -                     | tier 2               |
 | Windows          | done         | tier 2                | tier 2               |
 
@@ -286,9 +310,14 @@ The support levels can be adjusted when required.
 
 | Language | State    |
 |----------|---------:|
-| C / C++  | planned  |
+| C / C++  | beta     |
+| C#       | planned  |
+| Go       | planned  |
+| Java     | planned  |
+| Kotlin   | planned  |
 | Lua      | planned  |
 | Python   | planned  |
+| Swift    | planned  |
 | Zig      | planned  |
 
 ## Commercial Support
