@@ -380,5 +380,26 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     }
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, has_sample_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    auto sut_publisher = service.publisher_builder().create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    ASSERT_FALSE(*sut_subscriber.has_samples());
+
+    const uint64_t payload = 123;
+    sut_publisher.send_copy(payload).expect("");
+    ASSERT_TRUE(*sut_subscriber.has_samples());
+    auto sample = sut_subscriber.receive().expect("");
+    ASSERT_FALSE(*sut_subscriber.has_samples());
+}
+
 
 } // namespace

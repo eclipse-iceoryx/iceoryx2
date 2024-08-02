@@ -14,7 +14,14 @@
 #define IOX2_CONNECTION_FAILURE_HPP
 
 namespace iox2 {
+/// Describes the errors that can occur when a connection between two endpoints (ports) is
+/// established
 enum class ConnectionFailure {
+    /// Failures when creating the connection
+    FailedToEstablishConnection,
+
+    /// Failures when mapping the corresponding data segment
+    UnableToMapPublishersDataSegment
 };
 } // namespace iox2
 

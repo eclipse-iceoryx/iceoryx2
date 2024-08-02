@@ -304,12 +304,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     }
 
     /// Returns true if the [`Subscriber`] has samples in the buffer that can be received with [`Subscriber::receive`].
-    pub fn has_samples(&self) -> Result<bool, SubscriberReceiveError> {
-        if let Err(e) = self.update_connections() {
-            fail!(from self,
-                with SubscriberReceiveError::ConnectionFailure(e),
+    pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
+        fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
-        }
 
         for id in 0..self.publisher_connections.len() {
             match &self.publisher_connections.get(id) {
