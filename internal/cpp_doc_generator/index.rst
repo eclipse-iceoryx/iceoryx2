@@ -1,7 +1,7 @@
 Welcome to iceoryx2's C / C++ documentation!
 ============================================
 
-.. image:: https://private-user-images.githubusercontent.com/56729169/320062101-3230a125-19e5-4e98-a752-da026a086782.png
+.. image:: https://user-images.githubusercontent.com/8661268/114321508-64a6b000-9b1b-11eb-95ef-b84c91387cff.png
    :width: 500
    :alt: iceoryx logo
 
