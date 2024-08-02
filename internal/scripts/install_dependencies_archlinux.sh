@@ -14,11 +14,8 @@
 
 set -e
 
-cd $(git rev-parse --show-toplevel)
-
-sudo ./internal/scripts/install_dependencies_ubuntu.sh
-
-sudo useradd testuser1
-sudo useradd testuser2
-sudo groupadd testgroup1
-sudo groupadd testgroup2
+pacman -Syu --noconfirm clang cmake gcc git rustup
+pacman -Scc --noconfirm
+rustup toolchain add beta nightly stable 1.75.0
+rustup component add clippy llvm-tools-preview rustfmt
+rustup default stable

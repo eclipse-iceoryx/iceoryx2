@@ -26,8 +26,8 @@ zero-copy and lock-free inter-process communication mechanisms.
 So if you want to communicate efficiently between multiple processes or applications
 iceoryx2 is for you. With iceoryx2, you can:
 
-* Send huge amounts of data using a publish/subscribe, request/response, pipeline
-  or blackboard pattern,
+* Send huge amounts of data using a publish/subscribe, request/response (planned),
+  pipeline (planned) or blackboard pattern (planned),
   making it ideal for scenarios where large datasets need to be shared.
 * Exchange signals through events, enabling quick and reliable signaling
   between processes.
@@ -156,6 +156,8 @@ Language Bindings
 
    * - C / C++
      - beta
+   * - C#
+     - planned
    * - Go
      - planned
    * - Lua
