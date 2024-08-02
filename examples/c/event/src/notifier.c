@@ -60,7 +60,6 @@ int main(void) {
         goto drop_service;
     }
     iox2_notifier_ref_h notifier_ref = iox2_cast_notifier_ref_h(notifier);
-    iox2_event_id_t event_id;
 
     uint64_t counter = 0;
     while (iox2_node_wait(node_ref_handle, 0, 0) == iox2_node_event_e_TICK) {
