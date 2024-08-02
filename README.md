@@ -275,6 +275,7 @@ The support levels can be adjusted when required.
 | Linux (32-bit)   | done         | tier 2                | tier 1               |
 | Mac OS           | done         | tier 2                | tier 2               |
 | QNX              | planned      | -                     | tier 1               |
+| VxWorks          | planned      | -                     | tier 1               |
 | WatchOS          | planned      | -                     | tier 2               |
 | Windows          | done         | tier 2                | tier 2               |
 
@@ -287,8 +288,12 @@ The support levels can be adjusted when required.
 | Language | State    |
 |----------|---------:|
 | C / C++  | planned  |
+| Go       | planned  |
+| Java     | planned  |
+| Kotlin   | planned  |
 | Lua      | planned  |
 | Python   | planned  |
+| Swift    | planned  |
 | Zig      | planned  |
 
 ## Commercial Support

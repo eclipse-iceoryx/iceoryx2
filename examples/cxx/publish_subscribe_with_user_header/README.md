@@ -1,5 +1,7 @@
 # Publish-Subscribe With User Header
 
+Please install all dependencies first, as described in the [C++ Examples Readme](../README.md).
+
 ## Running The Example
 
 This example illustrates a publisher-subscriber communication pattern between two separate
