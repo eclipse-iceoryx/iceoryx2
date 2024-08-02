@@ -138,6 +138,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
 }
 
 pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept {
+    fn has_data(&self) -> bool;
     fn receive(&self) -> Result<Option<PointerOffset>, ZeroCopyReceiveError>;
     fn release(&self, ptr: PointerOffset) -> Result<(), ZeroCopyReleaseError>;
 }

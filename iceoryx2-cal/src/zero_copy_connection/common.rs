@@ -604,6 +604,10 @@ pub mod details {
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyReceiver for Receiver<Storage> {
+        fn has_data(&self) -> bool {
+            !self.storage.get().submission_channel.is_empty()
+        }
+
         fn receive(&self) -> Result<Option<PointerOffset>, ZeroCopyReceiveError> {
             if *self.borrow_counter() >= self.storage.get().max_borrowed_samples {
                 fail!(from self, with ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue,
