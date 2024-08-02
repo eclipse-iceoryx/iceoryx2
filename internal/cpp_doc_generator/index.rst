@@ -1,7 +1,7 @@
 Welcome to iceoryx2's C / C++ documentation!
 ============================================
 
-.. image:: https://private-user-images.githubusercontent.com/56729169/320062101-3230a125-19e5-4e98-a752-da026a086782.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjI1OTc4NzEsIm5iZiI6MTcyMjU5NzU3MSwicGF0aCI6Ii81NjcyOTE2OS8zMjAwNjIxMDEtMzIzMGExMjUtMTllNS00ZTk4LWE3NTItZGEwMjZhMDg2NzgyLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODAyVDExMTkzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTdhMmVhMDkzY2E2YTZiYWMxNmYwZjdmMjE0OTc1Njg3YjNkN2E4YTMxMTVjOGRlYzk5NmNkYjMzMDRkMTQ4MTEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.xCVM3ZML31OCHnAGz929j0Dp86zv60lgKSW5P73RSIA
+.. image:: https://private-user-images.githubusercontent.com/56729169/320062101-3230a125-19e5-4e98-a752-da026a086782.png
    :width: 500
    :alt: iceoryx logo
 
