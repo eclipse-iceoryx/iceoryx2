@@ -13,10 +13,12 @@
 #ifndef IOX2_CONNECTION_FAILURE_HPP
 #define IOX2_CONNECTION_FAILURE_HPP
 
+#include <cstdint>
+
 namespace iox2 {
 /// Describes the errors that can occur when a connection between two endpoints (ports) is
 /// established
-enum class ConnectionFailure {
+enum class ConnectionFailure : uint8_t {
     /// Failures when creating the connection
     FailedToEstablishConnection,
 

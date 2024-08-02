@@ -59,6 +59,8 @@
         * `FixedSizeVec`
  * TryInto implemented for `{Node|Service}Name` [#243](https://github.com/eclipse-iceoryx/iceoryx2/issues/243)
  * Add custom user header [#253](https://github.com/eclipse-iceoryx/iceoryx2/issues/253)
+ * Add `Subscriber::has_samples` [#335](https://github.com/eclipse-iceoryx/iceoryx2/issues/335)
+
 ### Bugfixes
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
