@@ -17,15 +17,16 @@
 # iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust
 
  1. [Introduction](#introduction)
- 2. [Performance](#performance)
- 3. [Getting Started](#getting-started)
+ 2. [Documentation](#documentation)
+ 3. [Performance](#performance)
+ 4. [Getting Started](#getting-started)
     1. [Publish Subscribe](#publish-subscribe)
     2. [Events](#events)
     3. [Custom Configuration](#custom-configuration)
- 4. [Supported Platforms](#supported-platforms)
- 5. [Language Bindings](#language-bindings)
- 6. [Commercial Support](#commercial-support)
- 7. [Thanks To All Contributors](#thanks-to-all-contributors)
+ 5. [Supported Platforms](#supported-platforms)
+ 6. [Language Bindings](#language-bindings)
+ 7. [Commercial Support](#commercial-support)
+ 8. [Thanks To All Contributors](#thanks-to-all-contributors)
 
 ## Introduction
 
@@ -65,6 +66,16 @@ ensuring a seamless transition and offering enhanced
 capabilities for your inter-process communication needs. So, if you're looking
 for lightning-fast, cross-platform communication that doesn't compromise on
 performance or modularity, iceoryx2 is your answer.
+
+## Documentation
+
+The documentation can be found at:
+
+| language | documentation link                          |
+|:--------:|--------------------------------------------:|
+| C        | https://iceoryx2.readthedocs.io             |
+| C++      | https://iceoryx2.readthedocs.io             |
+| Rust     | https://docs.rs/iceoryx2/latest/iceoryx2/   |
 
 ## Performance
 
