@@ -1,0 +1,69 @@
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+cmake(
+    name = "iceoryx_platform",
+    cache_entries = {
+        "BUILD_SHARED_LIBS": "OFF",
+    },
+    lib_source = "@iceoryx_platform//:all_srcs",
+    out_static_libs = ["libiceoryx_platform.a"],
+    out_include_dir = "include/iceoryx/v2.95.0/",
+    visibility = ["//visibility:public"],
+)
+
+cmake(
+    name = "iceoryx_hoofs",
+    cache_entries = {
+        "BUILD_SHARED_LIBS": "OFF",
+    },
+    lib_source = "@iceoryx_hoofs//:all_srcs",
+    out_static_libs = ["libiceoryx_hoofs.a"],
+    out_include_dir = "include/iceoryx/v2.95.0/",
+    deps = [
+        "//:iceoryx_platform",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cmake(
+    name = "iceoryx2-c",
+    cache_entries = {
+        "IOX2_VERSION_STRING": "0.3.0",
+    },
+    lib_source = "//:iceoryx2-ffi/c/CMakeLists.txt",
+    out_static_libs = ["libiceoryx2_ffi.a"],
+    out_shared_libs = ["libiceoryx2_ffi.so"],
+    out_include_dir = "include/iceoryx2/v0.3.0/",
+    exec_properties = {
+        "requires-network": "true",
+    },
+    visibility = ["//visibility:public"],
+)
+
+cmake(
+    name = "iceoryx2-cxx",
+    cache_entries = {
+        "IOX2_VERSION_STRING": "0.3.0",
+    },
+    lib_source = "//:iceoryx2-ffi/cxx/CMakeLists.txt",
+    out_static_libs = ["libiceoryx2_cxx.a"],
+    out_shared_libs = ["libiceoryx2_cxx.so"],
+    out_include_dir = "include/iceoryx2/v0.3.0/",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//:iceoryx2-c",
+        "//:iceoryx_hoofs",
+    ],
+)
