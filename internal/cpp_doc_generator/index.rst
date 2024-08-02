@@ -23,7 +23,19 @@ Welcome to iceoryx2, the efficient, and ultra-low latency inter-process communic
 middleware. This library is designed to provide you with fast and reliable
 zero-copy and lock-free inter-process communication mechanisms.
 
-iceoryx2 is all about providing a seamless experience for inter-process
+So if you want to communicate efficiently between multiple processes or applications
+iceoryx2 is for you. With iceoryx2, you can:
+
+* Send huge amounts of data using a publish/subscribe, request/response, pipeline
+  or blackboard pattern,
+  making it ideal for scenarios where large datasets need to be shared.
+* Exchange signals through events, enabling quick and reliable signaling
+  between processes.
+
+iceoryx2 is based on a service-oriented architecture (SOA) and facilitates
+seamless inter-process communication (IPC).
+
+It is all about providing a seamless experience for inter-process
 communication, featuring versatile messaging patterns. Whether you're diving
 into publish-subscribe, events, or the promise of upcoming features like
 request-response, pipelines, and blackboard, iceoryx2 has you covered.
