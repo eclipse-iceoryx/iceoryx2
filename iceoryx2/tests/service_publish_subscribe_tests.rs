@@ -2518,6 +2518,29 @@ mod service_publish_subscribe {
                                   "PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance");
     }
 
+    #[test]
+    fn has_samples_tracks_receivable_samples_in_subscriber<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()
+            .unwrap();
+
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
+
+        assert_that!(subscriber.has_samples().unwrap(), eq false);
+        assert_that!(publisher.send_copy(1234), is_ok);
+        assert_that!(subscriber.has_samples().unwrap(), eq true);
+
+        let _ = subscriber.receive().unwrap();
+
+        assert_that!(subscriber.has_samples().unwrap(), eq false);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
