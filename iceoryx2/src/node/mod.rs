@@ -158,7 +158,9 @@ pub enum NodeEvent {
 }
 
 /// The system-wide unique id of a [`Node`]
-#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Eq, Hash, PartialEq, Clone, Copy, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub struct NodeId(UniqueSystemId);
 
 impl NodeId {
@@ -260,7 +262,7 @@ impl NodeDetails {
 
 /// The current state of the [`Node`]. If the [`Node`] is dead all of its resources can be removed
 /// with [`DeadNodeView::remove_stale_resources()`].
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum NodeState<Service: service::Service> {
     /// The [`Node`]s process is still alive.
     Alive(AliveNodeView<Service>),
@@ -273,6 +275,17 @@ pub enum NodeState<Service: service::Service> {
     /// misconfigured or inconsistent. This can only happen due to an implementation failure or
     /// when the corresponding [`Node`] resources were altered.
     Undefined(NodeId),
+}
+
+impl<Service: service::Service> Clone for NodeState<Service> {
+    fn clone(&self) -> Self {
+        match self {
+            NodeState::Alive(n) => NodeState::Alive(n.clone()),
+            NodeState::Dead(n) => NodeState::Dead(n.clone()),
+            NodeState::Inaccessible(n) => NodeState::Inaccessible(*n),
+            NodeState::Undefined(n) => NodeState::Undefined(*n),
+        }
+    }
 }
 
 impl<Service: service::Service> NodeState<Service> {
@@ -299,6 +312,16 @@ impl<Service: service::Service> NodeState<Service> {
             Err(e) => Err(e),
         }
     }
+
+    /// Returns the [`NodeId`] of the corresponding [`Node`].
+    pub fn node_id(&self) -> &NodeId {
+        match self {
+            NodeState::Dead(node) => node.id(),
+            NodeState::Alive(node) => node.id(),
+            NodeState::Inaccessible(ref node_id) => node_id,
+            NodeState::Undefined(ref node_id) => node_id,
+        }
+    }
 }
 
 /// Returned by [`Node::cleanup_dead_nodes()`]. Contains the cleanup report of the call
@@ -323,11 +346,21 @@ pub trait NodeView {
 }
 
 /// All the informations of a [`Node`] that is alive.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AliveNodeView<Service: service::Service> {
     id: NodeId,
     details: Option<NodeDetails>,
     _service: PhantomData<Service>,
+}
+
+impl<Service: service::Service> Clone for AliveNodeView<Service> {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            details: self.details.clone(),
+            _service: PhantomData,
+        }
+    }
 }
 
 impl<Service: service::Service> NodeView for AliveNodeView<Service> {
@@ -341,8 +374,14 @@ impl<Service: service::Service> NodeView for AliveNodeView<Service> {
 }
 
 /// All the informations and management operations belonging to a dead [`Node`].
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DeadNodeView<Service: service::Service>(AliveNodeView<Service>);
+
+impl<Service: service::Service> Clone for DeadNodeView<Service> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 impl<Service: service::Service> NodeView for DeadNodeView<Service> {
     fn id(&self) -> &NodeId {
