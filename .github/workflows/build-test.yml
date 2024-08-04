@@ -410,6 +410,34 @@ jobs:
             ./internal/scripts/ci_prepare_freebsd.sh
             ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
 
+  x86_64_bazel:
+    needs: [preflight-check, static-code-analysis]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        toolchain: [stable]
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+
+      - name: Prepare Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Run bazel build
+        run: bazel build //...
+
   grcov:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
