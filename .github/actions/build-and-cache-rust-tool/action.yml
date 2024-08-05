@@ -68,7 +68,7 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-upload-name }}
-        path: ~/.cargo/bin/${{ inputs.artifact-artifact-bin-name }}
+        path: ~/.cargo/bin/${{ inputs.artifact-bin-name }}
         retention-days: 1
         if-no-files-found: error
     - name: Upload artifact
