@@ -13,13 +13,36 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
+#
+# Config & Platform support
+#
+config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "win-gcc",
+    constraint_values = ["@platforms//os:windows"],
+    flag_values = {"@bazel_tools//tools/cpp:compiler": "mingw-gcc"},
+)
+
+config_setting(
+    name = "win-msvc",
+    constraint_values = ["@platforms//os:windows"],
+    flag_values = {"@bazel_tools//tools/cpp:compiler": "msvc-cl"},
+)
+
 cmake(
     name = "iceoryx_platform",
     cache_entries = {
         "BUILD_SHARED_LIBS": "OFF",
     },
     lib_source = "@iceoryx_platform//:all_srcs",
-    out_static_libs = ["libiceoryx_platform.a"],
+    out_static_libs = select({
+        ":win-msvc": ["iceoryx_platform.lib"],
+        "//conditions:default": ["libiceoryx_platform.a"],
+    }),
     out_include_dir = "include/iceoryx/v2.95.0/",
     visibility = ["//visibility:public"],
 )
@@ -30,7 +53,10 @@ cmake(
         "BUILD_SHARED_LIBS": "OFF",
     },
     lib_source = "@iceoryx_hoofs//:all_srcs",
-    out_static_libs = ["libiceoryx_hoofs.a"],
+    out_static_libs = select({
+        ":win-msvc": ["iceoryx_hoofs.lib"],
+        "//conditions:default": ["libiceoryx_hoofs.a"],
+    }),
     out_include_dir = "include/iceoryx/v2.95.0/",
     deps = [
         "//:iceoryx_platform",
@@ -44,12 +70,47 @@ cmake(
         "IOX2_VERSION_STRING": "0.3.0",
     },
     lib_source = "//:iceoryx2-ffi/c/CMakeLists.txt",
-    out_static_libs = ["libiceoryx2_ffi.a"],
-    out_shared_libs = ["libiceoryx2_ffi.so"],
+    out_static_libs = select({
+        ":win-msvc": ["iceoryx2_ffi.lib"],
+        "//conditions:default": ["libiceoryx2_ffi.a"],
+    }),
+    out_interface_libs = select({
+        ":win-msvc": ["iceoryx2_ffi.dll.lib"],
+        "//conditions:default": [],
+    }),
+    out_shared_libs = select({
+        ":win-msvc": ["iceoryx2_ffi.dll"],
+        "//conditions:default": ["libiceoryx2_ffi.so"],
+    }),
+    out_dll_dir = select({
+        ":win-msvc": "lib",
+        "//conditions:default": "",
+    }),
     out_include_dir = "include/iceoryx2/v0.3.0/",
     exec_properties = {
         "requires-network": "true",
     },
+    linkopts = select({
+        ":win-msvc": [
+            "advapi32.lib",
+            "bcrypt.lib",
+            "ntdll.lib",
+            "userenv.lib",
+            "synchronization.lib",
+            "ws2_32.lib",
+            "wsock32.lib",
+        ],
+        ":win-gcc": [
+            "advapi32.lib",
+            "bcrypt.lib",
+            "ntdll.lib",
+            "userenv.lib",
+            "synchronization.lib",
+            "ws2_32.lib",
+            "wsock32.lib",
+        ],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
 )
 
