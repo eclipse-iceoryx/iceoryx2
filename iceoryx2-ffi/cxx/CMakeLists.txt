@@ -113,7 +113,7 @@ target_link_libraries(shared-lib-cxx
 
 # include install setup
 
-include(cmake/install.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
 # add tests
 
