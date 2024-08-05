@@ -123,9 +123,9 @@ jobs:
         check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
         print-version-cmd: cargo-nextest --version
         # increment cache-N-${{}} if a new nextest version is required
-        cache-key: cache-2-${{ runner.os }}-cargo-nextest
+        cache-key: cache-2-${{ matrix.os }}-cargo-nextest
         artifact-bin-name: cargo-nextest
-        artifact-upload-name: ${{ runner.os }}-cargo-nextest
+        artifact-upload-name: ${{ matrix.os }}-cargo-nextest
 
   x86_32:
     if: false
@@ -159,7 +159,7 @@ jobs:
         uses: ./.github/actions/download-cached-rust-tool
         with:
           artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+          artifact-upload-name: ${{ matrix.os }}-cargo-nextest
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
@@ -262,7 +262,7 @@ jobs:
         uses: ./.github/actions/download-cached-rust-tool
         with:
           artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+          artifact-upload-name: ${{ matrix.os }}-cargo-nextest
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
@@ -362,7 +362,7 @@ jobs:
         uses: ./.github/actions/download-cached-rust-tool
         with:
           artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+          artifact-upload-name: ${{ matrix.os }}-cargo-nextest
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
