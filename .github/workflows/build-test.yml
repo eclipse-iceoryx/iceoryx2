@@ -342,14 +342,14 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: So some stuff
-        run: |
-          brew update
-          brew list
-          echo "#### before brew deps"
-          brew deps rustup
-          echo "#### before uninstall"
-          brew uninstall rustup
+      # - name: So some stuff
+      #   run: |
+      #     brew update
+      #     brew list
+      #     echo "#### before brew deps"
+      #     brew deps rustup
+      #     echo "#### before uninstall"
+      #     brew uninstall rustup
 
 
       - name: Setup Rust
@@ -358,11 +358,11 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy, cargo
 
-      - name: Download artifact cargo-nextest
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ matrix.os }}-cargo-nextest
+      # - name: Download artifact cargo-nextest
+      #   uses: ./.github/actions/download-cached-rust-tool
+      #   with:
+      #     artifact-bin-name: cargo-nextest
+      #     artifact-upload-name: ${{ matrix.os }}-cargo-nextest
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
@@ -379,10 +379,8 @@ jobs:
           ls -la .
           echo "#### before output b"
           ls -la .cargo/
-          echo "#### before output c"
-          ls -la .cargo/bin/
-          echo "#### before cargo version"
-          cargo --version
+          # echo "#### before output c"
+          # ls -la .cargo/bin/
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
