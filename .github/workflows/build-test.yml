@@ -342,27 +342,31 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      # - name: So some stuff
-      #   run: |
-      #     brew update
-      #     brew list
-      #     echo "#### before brew deps"
-      #     brew deps rustup
-      #     echo "#### before uninstall"
-      #     brew uninstall rustup
-
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy, cargo
 
+      - name: Do some stuff
+        run: |
+          echo "#### before output a"
+          ls -la .
+          echo "#### before output b"
+          ls -la .cargo/
+
       - name: Download artifact cargo-nextest
         uses: ./.github/actions/download-cached-rust-tool
         with:
           artifact-bin-name: cargo-nextest
           artifact-upload-name: ${{ matrix.os }}-cargo-nextest
+
+      - name: Do more stuff
+        run: |
+          echo "#### before output a"
+          ls -la .
+          echo "#### before output b"
+          ls -la .cargo/
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
