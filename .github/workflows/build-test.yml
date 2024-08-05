@@ -358,11 +358,11 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy, cargo
 
-      # - name: Download artifact cargo-nextest
-      #   uses: ./.github/actions/download-cached-rust-tool
-      #   with:
-      #     artifact-bin-name: cargo-nextest
-      #     artifact-upload-name: ${{ matrix.os }}-cargo-nextest
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ matrix.os }}-cargo-nextest
 
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}

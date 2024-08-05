@@ -42,20 +42,20 @@ runs:
       uses: actions/cache@v4
       with:
         path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
+          ~/.cargo/bin/${{ inputs.artifact-bin-name }}
+          # ~/.cargo/registry/index/
+          # ~/.cargo/registry/cache/
+          # ~/.cargo/git/db/
         key: ${{ inputs.cache-key }}-${{ hashFiles('version_info') }}
     - name: Setup cache
       if: runner.os == 'Windows'
       uses: actions/cache@v4
       with:
         path: |
-          C:/Users/runneradmin/.cargo/bin/
-          C:/Users/runneradmin/.cargo/registry/index/
-          C:/Users/runneradmin/.cargo/registry/cache/
-          C:/Users/runneradmin/.cargo/git/db/
+          C:/Users/runneradmin/.cargo/bin/${{ inputs.artifact-bin-name }}.exe
+          # C:/Users/runneradmin/.cargo/registry/index/
+          # C:/Users/runneradmin/.cargo/registry/cache/
+          # C:/Users/runneradmin/.cargo/git/db/
         key: ${{ inputs.cache-key }}-${{ hashFiles('version_info') }}
     - name: Install if not available
       run: ${{ inputs.check-and-install-cmd }}
