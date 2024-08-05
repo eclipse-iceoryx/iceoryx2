@@ -16,12 +16,14 @@ runs:
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: ~/.cargo/bin/
+        merge-multiple: true
     - name: Download artifact
       if: runner.os == 'Windows'
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.artifact-upload-name }}
         path: C:/Users/runneradmin/.cargo/bin/
+        merge-multiple: true
     - name: Make artifact executable
       if: runner.os != 'Windows'
       run: chmod +x ~/.cargo/bin/${{ inputs.artifact-bin-name }}

@@ -123,7 +123,7 @@ jobs:
         check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
         print-version-cmd: cargo-nextest --version
         # increment cache-N-${{}} if a new nextest version is required
-        cache-key: cache-2-${{ matrix.os }}-cargo-nextest
+        cache-key: cache-3-${{ matrix.os }}-cargo-nextest
         artifact-bin-name: cargo-nextest
         artifact-upload-name: ${{ matrix.os }}-cargo-nextest
 
