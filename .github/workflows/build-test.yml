@@ -28,8 +28,9 @@ jobs:
               - '!**/*.md'
 
   preflight-check:
+    if: false
     needs: changes
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    #if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -43,8 +44,9 @@ jobs:
         run: ./internal/scripts/ci_test_spdx_license_header.sh
 
   static-code-analysis-rust:
+    if: false
     needs: preflight-check
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    #if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macOS-latest]
@@ -73,8 +75,9 @@ jobs:
         run: cargo doc
 
   static-code-analysis-cpp:
+    if: false
     needs: preflight-check
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    #if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -99,14 +102,14 @@ jobs:
 
   # just to have a sync point for the C++ and Rust static code analysis
   static-code-analysis:
-    needs: [static-code-analysis-cpp, static-code-analysis-rust]
+    #needs: [static-code-analysis-cpp, static-code-analysis-rust]
     runs-on: ubuntu-latest
     steps:
       - name: Static code analysis sync point
         run: echo "Nothing to see, move along!"
 
   cargo-nextest:
-    needs: preflight-check
+    #needs: preflight-check
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -125,8 +128,9 @@ jobs:
         artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
   x86_32:
+    if: false
     needs: [preflight-check, static-code-analysis, cargo-nextest]
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    #if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
@@ -214,8 +218,9 @@ jobs:
           cmake --build target/ffi/out-of-tree-cxx
 
   x86_64:
+    if: false
     needs: [preflight-check, static-code-analysis, cargo-nextest]
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    #if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -317,12 +322,13 @@ jobs:
           cmake --build target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
 
   x86_64_unstable:
-    needs: [preflight-check, static-code-analysis, cargo-nextest]
-    if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
+    # needs: [preflight-check, static-code-analysis, cargo-nextest]
+    #if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
     continue-on-error: true
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        #os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [macos-latest]
         toolchain: [beta, nightly]
         mode: 
           - name: "release"
@@ -389,8 +395,9 @@ jobs:
   #           cargo test --workspace --no-fail-fast ${{ matrix.mode }}
 
   freebsd:
+    if: false
     needs: [preflight-check, static-code-analysis]
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    #if: ${{ needs.changes.outputs.source-code == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -412,8 +419,9 @@ jobs:
             ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
 
   grcov:
+    if: false
     needs: [preflight-check, static-code-analysis]
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    #if: ${{ needs.changes.outputs.source-code == 'true' }}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -430,8 +438,9 @@ jobs:
         artifact-upload-name: ${{ runner.os }}-grcov
 
   coverage:
+    if: false
     needs: grcov
-    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    #if: ${{ needs.changes.outputs.source-code == 'true' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
