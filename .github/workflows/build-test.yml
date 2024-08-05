@@ -112,7 +112,7 @@ jobs:
     #needs: preflight-check
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-13, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
@@ -323,12 +323,13 @@ jobs:
 
   x86_64_unstable:
     # needs: [preflight-check, static-code-analysis, cargo-nextest]
+    needs: [cargo-nextest]
     #if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
     continue-on-error: true
     strategy:
       matrix:
         #os: [windows-latest, ubuntu-latest, macos-latest]
-        os: [macos-latest]
+        os: [macos-latest, macos-13]
         toolchain: [beta, nightly]
         mode: 
           - name: "release"
@@ -340,6 +341,16 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+
+      - name: So some stuff
+        run: |
+          brew update
+          brew list
+          echo "#### before brew deps"
+          brew deps rustup
+          echo "#### before uninstall"
+          brew uninstall rustup
+
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
@@ -361,6 +372,17 @@ jobs:
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
+
+      - name: So more stuff
+        run: |
+          echo "#### before output a"
+          ls -la .
+          echo "#### before output b"
+          ls -la .cargo/
+          echo "#### before output c"
+          ls -la .cargo/bin/
+          echo "#### before cargo version"
+          cargo --version
 
       - name: Run cargo build
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
