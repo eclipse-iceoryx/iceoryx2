@@ -58,7 +58,7 @@ jobs:
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
-          components: rustfmt, clippy
+          components: rustfmt, clippy, cargo
 
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
@@ -149,7 +149,7 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
           targets: i686-unknown-linux-gnu
-          components: rustfmt, clippy
+          components: rustfmt, clippy, cargo
 
       - name: Download artifact cargo-nextest
         uses: ./.github/actions/download-cached-rust-tool
@@ -247,10 +247,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Rust
+        if: ${{ matrix.os != 'macos-latest' }}
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
+          components: rustfmt, clippy, cargo
 
       - name: Download artifact cargo-nextest
         uses: ./.github/actions/download-cached-rust-tool
@@ -338,7 +339,7 @@ jobs:
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
+          components: rustfmt, clippy, cargo
 
       - name: Download artifact cargo-nextest
         uses: ./.github/actions/download-cached-rust-tool
@@ -421,7 +422,7 @@ jobs:
       uses: ./.github/actions/build-and-cache-rust-tool
       with:
         rust-toolchain: stable
-        rust-components: llvm-tools-preview
+        rust-components: llvm-tools-preview, cargo
         check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
         print-version-cmd: grcov --version
         cache-key: cache-1-${{ runner.os }}-grcov
@@ -449,7 +450,7 @@ jobs:
       uses: dtolnay/rust-toolchain@v1
       with:
         toolchain: stable
-        components: llvm-tools-preview
+        components: llvm-tools-preview, cargo
 
     - name: Download artifact grcov
       uses: ./.github/actions/download-cached-rust-tool
