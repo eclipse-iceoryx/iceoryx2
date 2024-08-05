@@ -10,6 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
 cmake(
@@ -52,15 +53,15 @@ cmake(
     visibility = ["//visibility:public"],
 )
 
-cmake(
+cc_library(
     name = "iceoryx2-cxx",
-    cache_entries = {
-        "IOX2_VERSION_STRING": "0.3.0",
-    },
-    lib_source = "//:iceoryx2-ffi/cxx/CMakeLists.txt",
-    out_static_libs = ["libiceoryx2_cxx.a"],
-    out_shared_libs = ["libiceoryx2_cxx.so"],
-    out_include_dir = "include/iceoryx2/v0.3.0/",
+    srcs = glob(
+        [
+            "iceoryx2-ffi/cxx/src/**",
+        ],
+    ),
+    hdrs = glob(["iceoryx2-ffi/cxx/include/**"]),
+    strip_include_prefix = "iceoryx2-ffi/cxx/include",
     visibility = ["//visibility:public"],
     deps = [
         "//:iceoryx2-c",
