@@ -1,0 +1,76 @@
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+#
+# Config & Platform support
+#
+config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "win-gcc",
+    constraint_values = ["@platforms//os:windows"],
+    flag_values = {"@bazel_tools//tools/cpp:compiler": "mingw-gcc"},
+)
+
+config_setting(
+    name = "win-msvc",
+    constraint_values = ["@platforms//os:windows"],
+    flag_values = {"@bazel_tools//tools/cpp:compiler": "msvc-cl"},
+)
+
+cmake(
+    name = "iceoryx_platform",
+    cache_entries = {
+        "BUILD_SHARED_LIBS": "OFF",
+    },
+    lib_source = "@iceoryx_platform//:all_srcs",
+    out_static_libs = select({
+        "//:win-msvc": ["iceoryx_platform.lib"],
+        "//conditions:default": ["libiceoryx_platform.a"],
+    }),
+    out_include_dir = "include/iceoryx/v2.95.0/",
+    visibility = ["//visibility:public"],
+)
+
+cmake(
+    name = "iceoryx_hoofs",
+    cache_entries = {
+        "BUILD_SHARED_LIBS": "OFF",
+    },
+    lib_source = "@iceoryx_hoofs//:all_srcs",
+    out_static_libs = select({
+        "//:win-msvc": ["iceoryx_hoofs.lib"],
+        "//conditions:default": ["libiceoryx_hoofs.a"],
+    }),
+    out_include_dir = "include/iceoryx/v2.95.0/",
+    deps = [
+        "//:iceoryx_platform",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "iceoryx2-c",
+    actual = "//iceoryx2-ffi/c:iceoryx2-c",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "iceoryx2-cxx",
+    actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx",
+    visibility = ["//visibility:public"],
+)

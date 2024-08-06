@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 set(ICEORYX_HOOFS_VERSION 2.95.0)
-include(cmake/fetch-iceoryx-hoofs.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/fetch-iceoryx-hoofs.cmake)
 
 project(iceoryx2-cxx VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
 
@@ -113,7 +113,7 @@ target_link_libraries(shared-lib-cxx
 
 # include install setup
 
-include(cmake/install.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
 # add tests
 

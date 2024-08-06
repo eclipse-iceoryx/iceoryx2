@@ -127,7 +127,7 @@ target_link_libraries(shared-lib INTERFACE
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/${ICEORYX2_C_SHARED_LIB_LINK_NAME}>
 )
 
-include(cmake/install.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
 if(${BUILD_TESTING})
     add_subdirectory(tests)

@@ -93,10 +93,18 @@ check_cmake() {
     check_license_header
 }
 
+check_bazel() {
+    FILE_SUFFIX="*.bazel"
+    COMMENT_SYMBOL="#"
+    COMMENT_SYMBOL_GREP="#"
+    check_license_header
+}
+
 check_rust
 check_shell
 check_c_cpp
 check_cmake
+check_bazel
 
 # no toml check for now
 # it is usually only some configuration files which can be used without copyright notice

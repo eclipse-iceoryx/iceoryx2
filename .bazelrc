@@ -1,0 +1,5 @@
+build --spawn_strategy=standalone --strategy=Genrule=standalone
+
+build:gcc --cxxopt="-std=c++17"
+build:clang --cxxopt="-std=c++17"
+build:msvc --cxxopt="/std:c++17"
