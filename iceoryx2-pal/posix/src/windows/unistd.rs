@@ -46,6 +46,60 @@ use crate::win32call;
 
 impl Struct for SYSTEM_INFO {}
 
+pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
+    -1
+    // HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    // PROCESSENTRY32 pe;
+
+    // auto zerope = [&]() {
+    //   memset(&pe, 0, sizeof(pe));
+    //   pe.dwSize = sizeof(PROCESSENTRY32);
+    // };
+
+    // zerope();
+
+    // auto pid = GetCurrentProcessId();
+    // decltype(pid) ppid = -1;
+
+    // if (Process32First(h, &pe)) {
+    //   do {
+    //     if (pe.th32ProcessID == pid) {
+    //       ppid = pe.th32ParentProcessID;
+    //       break;
+    //     }
+    //   } while (Process32Next(h, &pe));
+    // }
+
+    // if (ppid != static_cast<decltype(ppid)>(-1)) {
+    //   PROCESSENTRY32 *ppe = nullptr;
+    //   zerope();
+
+    //   if (Process32First(h, &pe)) {
+    //     do {
+    //       if (pe.th32ProcessID == ppid) {
+    //         ppe = &pe;
+    //         break;
+    //       }
+    //     } while (Process32Next(h, &pe));
+    //   }
+
+    //   if (ppe) {
+    //     char *p = strrchr(ppe->szExeFile, '\\');
+    //     if (p) {
+    //       name = p + 1;
+    //     } else {
+    //       name = ppe->szExeFile;
+    //     }
+    //   }
+    // }
+
+    // CloseHandle(h);
+
+    // if (!name.empty()) {
+    //   return name;
+    // }
+}
+
 pub unsafe fn sysconf(name: int) -> long {
     let mut system_info = SYSTEM_INFO::new();
     win32call! { GetSystemInfo(&mut system_info)};

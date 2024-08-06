@@ -17,6 +17,10 @@ use crate::posix::constants::*;
 use crate::posix::settings::*;
 use crate::posix::types::*;
 
+pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
+    crate::internal::proc_pidpath(pid as _, buffer.cast(), buffer_len as _) as _
+}
+
 pub unsafe fn sysconf(name: int) -> long {
     crate::internal::sysconf(name)
 }

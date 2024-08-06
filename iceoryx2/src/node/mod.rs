@@ -141,10 +141,7 @@ use iceoryx2_cal::{
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
-use std::ffi::OsStr;
 use std::marker::PhantomData;
-use std::os::unix::ffi::OsStrExt;
-use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
