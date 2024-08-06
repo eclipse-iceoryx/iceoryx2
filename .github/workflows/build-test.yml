@@ -402,7 +402,7 @@ jobs:
       - uses: vmactions/freebsd-vm@v1
         with:
           release: ${{ matrix.freebsd_version }}
-          mem: 8192
+          mem: 16384
           copyback: false
           prepare: pkg install -y cmake curl gcc git llvm
           run: |
