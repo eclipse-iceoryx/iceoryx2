@@ -1,0 +1,61 @@
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//bindgen:defs.bzl", "rust_bindgen_library")
+
+# Generate the binding lib
+cc_library(
+    name = "iceoryx2-pal-posix-c-lib",
+    srcs = [
+        "src/c/dirent.c",
+        "src/c/sigaction.c",
+        "src/c/socket_macros.c",
+    ],
+    hdrs = glob(["src/c/**"]),
+    strip_include_prefix = "src/c",
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+)
+
+# Generate the Rust binding file
+# This will generate 'posix_generated__bindgen.rs'
+rust_bindgen_library(
+    name = "posix_generated",
+    bindgen_flags = [
+        "--blocklist-type=max_align_t",
+    ],
+    cc_lib = "iceoryx2-pal-posix-c-lib",
+    header = "src/c/posix.h",
+    wrap_static_fns = True,
+)
+
+# Create the actual crate
+rust_library(
+    name = "iceoryx2-pal-posix",
+    srcs = glob(["src/**/*.rs"]) + [ ":posix_generated__bindgen.rs" ],
+    deps = [
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
+        "@crate_index//:lazy_static",
+        ":iceoryx2-pal-posix-c-lib",
+    ],
+    rustc_env = {
+        "OUT_DIR": ".." # the file is generated in 'posix', not in 'posix/src' where the 'lib.rs' is located; therefore the relative path of '..'
+    },
+)
+
+# TODO: [349] add feature flags
+# TODO: [349] add tests

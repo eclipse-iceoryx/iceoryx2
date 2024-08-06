@@ -29,6 +29,7 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_depende
 # https://bazelbuild.github.io/rules_foreign_cc/0.11.1/flatten.html#rules_foreign_cc_dependencies
 rules_foreign_cc_dependencies()
 
+
 # Setup gtest
 GOOGLETEST_VERSION = "1.14.0"
 maybe(
@@ -39,8 +40,81 @@ maybe(
     strip_prefix = "googletest-{version}".format(version = GOOGLETEST_VERSION),
 )
 
-# Fetch iceoryx_hoofs and iceoryx_platform
 
+# Load Rust rules
+http_archive(
+    name = "rules_rust",
+    integrity = "sha256-CRrEsKZ7wlLCyE2Eu7lBq3mrwecfvTIk2kr9+6c3VPA=",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.52.1/rules_rust-v0.52.1.tar.gz"],
+)
+
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
+
+rules_rust_dependencies()
+rust_register_toolchains(
+    edition = "2021",
+    versions = [
+        "1.80.0"
+    ],
+)
+
+
+# Load bindgen rules
+load("@rules_rust//bindgen:repositories.bzl", "rust_bindgen_dependencies", "rust_bindgen_register_toolchains")
+
+rust_bindgen_dependencies()
+
+rust_bindgen_register_toolchains()
+
+load("@rules_rust//bindgen:transitive_repositories.bzl", "rust_bindgen_transitive_dependencies")
+
+rust_bindgen_transitive_dependencies()
+
+
+# Load external crates
+load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
+
+crate_universe_dependencies()
+
+load("@rules_rust//crate_universe:defs.bzl", "crates_repository")
+
+crates_repository(
+    name = "crate_index",
+    cargo_lockfile = "//:Cargo.lock",
+    lockfile = "//:Cargo.Bazel.lock",
+    manifests = [
+        "//:Cargo.toml",
+        "//:benchmarks/event/Cargo.toml",
+        "//:benchmarks/publish-subscribe/Cargo.toml",
+        "//:examples/Cargo.toml",
+        "//:iceoryx2-bb/container/Cargo.toml",
+        "//:iceoryx2-bb/derive-macros/Cargo.toml",
+        "//:iceoryx2-bb/elementary/Cargo.toml",
+        "//:iceoryx2-bb/lock-free/Cargo.toml",
+        "//:iceoryx2-bb/log/Cargo.toml",
+        "//:iceoryx2-bb/memory/Cargo.toml",
+        "//:iceoryx2-bb/posix/Cargo.toml",
+        "//:iceoryx2-bb/system-types/Cargo.toml",
+        "//:iceoryx2-bb/testing/Cargo.toml",
+        "//:iceoryx2-bb/threadsafe/Cargo.toml",
+        "//:iceoryx2-bb/trait-tests/Cargo.toml",
+        "//:iceoryx2-cal/Cargo.toml",
+        "//:iceoryx2-cli/Cargo.toml",
+        "//:iceoryx2-ffi/ffi-macros/Cargo.toml",
+        "//:iceoryx2/Cargo.toml",
+        "//iceoryx2-ffi/ffi:Cargo.toml",
+        "//iceoryx2-pal/concurrency-sync:Cargo.toml",
+        "//iceoryx2-pal/configuration:Cargo.toml",
+        "//iceoryx2-pal/posix:Cargo.toml",
+    ],
+)
+
+load("@crate_index//:defs.bzl", "crate_repositories")
+
+crate_repositories()
+
+
+# Load iceoryx rules
 ICEORYX_VERSION = "2.95.2"
 
 maybe(

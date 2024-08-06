@@ -20,7 +20,7 @@ pub(crate) mod internal {
     #![allow(improper_ctypes)]
     #![allow(unknown_lints)]
     #![allow(clippy::all)]
-    include!(concat!(env!("OUT_DIR"), "/posix_generated.rs"));
+    include!(concat!(env!("OUT_DIR"), "/posix_generated__bindgen.rs"));
 
     pub const ESUCCES: u32 = 0;
 }
