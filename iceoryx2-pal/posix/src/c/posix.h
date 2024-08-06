@@ -25,6 +25,11 @@
 #include <sys/user.h>
 #endif
 
+#ifdef __APPLE__
+#include <libproc.h>
+#include <mach-o/dyld.h>
+#endif
+
 #ifdef __linux__
 #if defined(IOX2_ACL_SUPPORT) && !defined(IOX2_DOCS_RS_SUPPORT)
 #include <acl/libacl.h>
