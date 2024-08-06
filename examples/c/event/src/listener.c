@@ -63,7 +63,7 @@ int main(void) {
         }
 
         if (has_received_one) {
-            printf("event was triggered with id: %lu\n", event_id.value);
+            printf("event was triggered with id: %lu\n", (long unsigned) event_id.value);
         }
     }
 
