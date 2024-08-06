@@ -129,8 +129,8 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
-use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError};
-use iceoryx2_bb_posix::process::Process;
+use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError, Time};
+use iceoryx2_bb_posix::process::{Process, ProcessId};
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -141,7 +141,10 @@ use iceoryx2_cal::{
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::marker::PhantomData;
+use std::os::unix::ffi::OsStrExt;
+use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -167,6 +170,16 @@ impl NodeId {
     pub(crate) fn as_file_name(&self) -> FileName {
         fatal_panic!(from self, when FileName::new(self.0.to_string().as_bytes()),
                         "This should never happen! The NodeId shall be always a valid FileName.")
+    }
+
+    /// Returns the [`ProcessId`] of the process that owns the [`Node`].
+    pub fn pid(&self) -> ProcessId {
+        self.0.pid()
+    }
+
+    /// Returns the time the [`Node`] was created.
+    pub fn creation_time(&self) -> Time {
+        self.0.creation_time()
     }
 }
 
@@ -243,11 +256,39 @@ enum NodeReadServiceTagsFailure {
 /// process has sufficient access permissions.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NodeDetails {
+    executable: FileName,
     name: NodeName,
     config: Config,
 }
 
 impl NodeDetails {
+    fn new(node_name: &Option<NodeName>, config: &Config) -> Self {
+        const FALLBACK_EXEC: &[u8] = b"undefined";
+        Self {
+            executable: FileName::new(
+                std::env::current_exe()
+                    .as_ref()
+                    .map(Path::new)
+                    .ok()
+                    .and_then(Path::file_name)
+                    .map(OsStr::as_bytes)
+                    .unwrap_or(FALLBACK_EXEC),
+            )
+            .unwrap_or(FileName::new(FALLBACK_EXEC).unwrap()),
+            name: if let Some(name) = node_name {
+                name.clone()
+            } else {
+                NodeName::new("").expect("An empty NodeName is always valid.")
+            },
+            config: config.clone(),
+        }
+    }
+
+    /// Returns the executable [`FileName`] of the [`Node`]s owner process.
+    pub fn executable(&self) -> &FileName {
+        &self.executable
+    }
+
     /// Returns the [`NodeName`]. Multiple [`Node`]s are allowed to have the same [`NodeName`], it
     /// is not unique!
     pub fn name(&self) -> &NodeName {
@@ -1120,14 +1161,7 @@ impl NodeBuilder {
         node_id: &NodeId,
     ) -> Result<(Service::StaticStorage, NodeDetails), NodeCreationFailure> {
         let msg = "Unable to create node details storage";
-        let details = NodeDetails {
-            name: if let Some(ref name) = self.name {
-                name.clone()
-            } else {
-                NodeName::new("").expect("An empty NodeName is always valid.")
-            },
-            config: config.clone(),
-        };
+        let details = NodeDetails::new(&self.name, config);
 
         let details_config = node_details_config::<Service>(&details.config, node_id);
         let serialized_details = match <Service::ConfigSerializer>::serialize(&details) {
