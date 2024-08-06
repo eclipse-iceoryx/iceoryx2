@@ -169,6 +169,11 @@ impl NodeId {
                         "This should never happen! The NodeId shall be always a valid FileName.")
     }
 
+    /// Returns the underlying value of the [`NodeId`].
+    pub fn value(&self) -> u128 {
+        self.0.value()
+    }
+
     /// Returns the [`ProcessId`] of the process that owns the [`Node`].
     pub fn pid(&self) -> ProcessId {
         self.0.pid()
