@@ -44,6 +44,7 @@ use std::fmt::Display;
 use crate::handle_errno;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
@@ -52,6 +53,12 @@ use crate::{
     scheduler::{Scheduler, SchedulerConversionError},
     signal::Signal,
 };
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ProcessExecutablePathError {
+    ContainsInvalidCharacters,
+    UnableToRead,
+}
 
 enum_gen! { ProcessSendSignalError
   entry:
@@ -161,6 +168,25 @@ impl Process {
     /// Returns the id of the process.
     pub fn id(&self) -> ProcessId {
         self.pid
+    }
+
+    /// Returns the executable path of the [`Process`].
+    pub fn executable(&self) -> Result<FilePath, ProcessExecutablePathError> {
+        let msg = "Unable to read executable path";
+        let mut buffer = [0u8; FilePath::max_len()];
+        let path_len =
+            unsafe { posix::proc_pidpath(self.pid.0, buffer.as_mut_ptr().cast(), buffer.len()) };
+        if path_len < 0 {
+            fail!(from self, with ProcessExecutablePathError::UnableToRead,
+                "{} since the name could not be acquired.", msg);
+        }
+
+        let path = fail!(from self,
+                            when FilePath::new(&buffer[..(path_len as usize)]),
+                            with ProcessExecutablePathError::ContainsInvalidCharacters,
+                            "{} since the acquired name contains invalid characters.", msg);
+
+        Ok(path)
     }
 
     /// Sends a signal to the process.
