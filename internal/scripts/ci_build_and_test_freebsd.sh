@@ -70,13 +70,21 @@ echo "#####################"
 
 cargo nextest run --workspace --no-fail-fast $RUST_BUILD_TYPE_FLAG
 
+echo "###########################################################"
+echo "# Clean the target directory to reduce memory usage on VM #"
+echo "###########################################################"
+
+cargo clean
+
 echo "###########################"
 echo "# Build language bindings #"
 echo "###########################"
 
 ./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+rm -rf target/iceoryx/build
 
-cmake -S . -B target/ffi/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install"
+# Build examples only in out-of-tree, else we are running out of disk space on the VM
+cmake -S . -B target/ffi/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install"
 cmake --build target/ffi/build
 cmake --install target/ffi/build
 
@@ -87,6 +95,9 @@ echo "##############################"
 target/ffi/build/tests/iceoryx2-c-tests
 target/ffi/build/tests/iceoryx2-cxx-tests
 
+# Skip the out-of-tree build on FreeBSD due to limitations on the disk space when building on the VM
+exit 0
+
 echo "################################################################"
 echo "# Build language binding examples in out-of-tree configuration #"
 echo "################################################################"
@@ -94,6 +105,8 @@ echo "################################################################"
 rm -rf target/ffi/build
 cmake -S examples/c -B target/ffi/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install"
 cmake --build target/ffi/out-of-tree-c
+rm -rf target/ffi/out-of-tree-c
 
 cmake -S examples/cxx -B target/ffi/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install;$( pwd )/target/iceoryx/install"
 cmake --build target/ffi/out-of-tree-cxx
+rm -rf target/ffi/out-of-tree-cxx
