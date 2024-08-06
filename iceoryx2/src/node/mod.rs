@@ -263,18 +263,17 @@ pub struct NodeDetails {
 
 impl NodeDetails {
     fn new(node_name: &Option<NodeName>, config: &Config) -> Self {
-        const FALLBACK_EXEC: &[u8] = b"undefined";
+        let executable = match Process::from_self().executable() {
+            Ok(n) => n.file_name(),
+            Err(e) => {
+                debug!(from "NodeDetails::new()", "Unable to acquire executable name of the Node's process ({:?}).", e);
+                const FALLBACK_EXEC: &[u8] = b"undefined";
+                unsafe { FileName::new_unchecked(FALLBACK_EXEC) }
+            }
+        };
+
         Self {
-            executable: FileName::new(
-                std::env::current_exe()
-                    .as_ref()
-                    .map(Path::new)
-                    .ok()
-                    .and_then(Path::file_name)
-                    .map(OsStr::as_bytes)
-                    .unwrap_or(FALLBACK_EXEC),
-            )
-            .unwrap_or(FileName::new(FALLBACK_EXEC).unwrap()),
+            executable,
             name: if let Some(name) = node_name {
                 name.clone()
             } else {
