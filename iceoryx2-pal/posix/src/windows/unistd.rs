@@ -29,8 +29,9 @@ use windows_sys::Win32::{
             CreateToolhelp32Snapshot, Process32First, Process32Next, PROCESSENTRY32,
             TH32CS_SNAPPROCESS,
         },
+        ProcessStatus::GetModuleFileNameExA,
         SystemInformation::{GetSystemInfo, SYSTEM_INFO},
-        Threading::GetCurrentProcessId,
+        Threading::{GetCurrentProcessId, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ},
         IO::OVERLAPPED,
     },
 };
@@ -45,6 +46,23 @@ use super::{settings::MAX_PATH_LENGTH, win32_handle_translator::HandleTranslator
 use crate::win32call;
 
 impl Struct for SYSTEM_INFO {}
+
+pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
+    let process_handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid as _);
+
+    if process_handle == 0 {
+        return -1;
+    }
+
+    let ret_val = GetModuleFileNameExA(process_handle, 0, buffer.cast(), buffer_len as _);
+    CloseHandle(process_handle);
+
+    if ret_val == 0 {
+        return -1;
+    }
+
+    ret_val as _
+}
 
 pub unsafe fn sysconf(name: int) -> long {
     let mut system_info = SYSTEM_INFO::new();

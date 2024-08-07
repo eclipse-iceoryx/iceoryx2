@@ -45,3 +45,15 @@ pub fn process_is_alive_works() {
     let process2 = Process::from_pid(ProcessId::new(posix::pid_t::MAX - 1));
     assert_that!(process2.is_alive(), eq false);
 }
+
+#[test]
+pub fn process_executable_path_works() {
+    let process = Process::from_self();
+    let executable_path = process.executable();
+
+    assert_that!(executable_path, is_ok);
+    let file_name = executable_path.as_ref().unwrap().file_name();
+    let executable_file = std::str::from_utf8(&file_name).unwrap();
+    println!("{}", executable_file);
+    assert_that!(executable_file.starts_with("process_tests"), eq true);
+}

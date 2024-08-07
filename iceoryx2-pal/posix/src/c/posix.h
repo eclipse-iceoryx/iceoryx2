@@ -14,6 +14,7 @@
 #define IOX2_PAL_POSIX_H
 
 #ifdef __FreeBSD__
+#include <libutil.h>
 #include <mqueue.h>
 #if defined(IOX2_ACL_SUPPORT) && !defined(IOX2_DOCS_RS_SUPPORT)
 #include <sys/acl.h>
@@ -22,6 +23,11 @@
 #include <sys/sysctl.h>
 #include <sys/ucred.h>
 #include <sys/user.h>
+#endif
+
+#ifdef __APPLE__
+#include <libproc.h>
+#include <mach-o/dyld.h>
 #endif
 
 #ifdef __linux__

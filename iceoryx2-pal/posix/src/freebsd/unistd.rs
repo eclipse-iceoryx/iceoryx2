@@ -15,6 +15,18 @@
 
 use crate::posix::types::*;
 
+pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
+    let proc = crate::internal::kinfo_getproc(pid);
+    let comm_len = crate::internal::strlen((*proc).ki_comm.as_ptr());
+    if !proc.is_null() && comm_len <= buffer_len as _ {
+        crate::internal::strncpy(buffer.cast(), (*proc).ki_comm.as_ptr(), buffer_len as _);
+        crate::internal::free(proc.cast());
+        return comm_len as _;
+    }
+
+    -1
+}
+
 pub unsafe fn sysconf(name: int) -> long {
     crate::internal::sysconf(name)
 }

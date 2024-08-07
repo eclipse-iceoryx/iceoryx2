@@ -17,6 +17,24 @@ use crate::posix::constants::*;
 use crate::posix::settings::*;
 use crate::posix::types::*;
 
+pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
+    if crate::internal::getpid() == pid as _ {
+        let mut size: u32 = buffer_len as u32;
+        if crate::internal::_NSGetExecutablePath(buffer.cast(), &mut size) != 0 {
+            return -1;
+        }
+
+        return crate::internal::strnlen(buffer.cast(), buffer_len) as _;
+    }
+
+    let ret_val = crate::internal::proc_pidpath(pid as _, buffer.cast(), buffer_len as _);
+    if ret_val <= 0 {
+        return -1;
+    }
+
+    crate::internal::strnlen(buffer.cast(), buffer_len) as _
+}
+
 pub unsafe fn sysconf(name: int) -> long {
     crate::internal::sysconf(name)
 }

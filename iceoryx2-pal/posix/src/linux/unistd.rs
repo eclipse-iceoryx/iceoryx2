@@ -15,6 +15,15 @@
 
 use crate::posix::types::*;
 
+pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
+    let path = if pid == crate::internal::getpid() {
+        "/proc/self/exe".to_owned()
+    } else {
+        "/proc/".to_owned() + &pid.to_string() + "/exe"
+    };
+    crate::internal::readlink(path.as_bytes().as_ptr().cast(), buffer.cast(), buffer_len)
+}
+
 pub unsafe fn sysconf(name: int) -> long {
     crate::internal::sysconf(name)
 }
