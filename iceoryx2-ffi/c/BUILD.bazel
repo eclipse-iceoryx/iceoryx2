@@ -12,11 +12,23 @@
 
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
+
+filegroup(
+    name = "cmake_srcs",
+    srcs = glob(["cmake/**"]),
+    visibility = ["//visibility:public"],
+)
+
 cmake(
     name = "iceoryx2-c",
     cache_entries = {
         "IOX2_VERSION_STRING": "0.3.0",
     },
+    build_data = [
+        ":cmake_srcs",
+        "//:all_srcs",
+        "//iceoryx2-ffi/ffi:all_srcs",
+    ],
     lib_source = "CMakeLists.txt",
     out_static_libs = select({
         "//:win-msvc": ["iceoryx2_ffi.lib"],

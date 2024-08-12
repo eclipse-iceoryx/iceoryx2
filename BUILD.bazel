@@ -74,3 +74,9 @@ alias(
     actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx",
     visibility = ["//visibility:public"],
 )
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)
