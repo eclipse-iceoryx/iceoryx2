@@ -12,7 +12,6 @@
 
 workspace(name = "org_eclipse_iceoryx_iceoryx2")
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
@@ -39,7 +38,7 @@ maybe(
     strip_prefix = "googletest-{version}".format(version = GOOGLETEST_VERSION),
 )
 
-# TODO use http_archive once iceoyx v3.0 is release
+# Fetch iceoryx_hoofs and iceoryx_platform
 
 _ALL_CONTENT = """\
 filegroup(
@@ -49,18 +48,20 @@ filegroup(
 )
 """
 
-git_repository(
+ICEORYX_VERSION = "2.95.0"
+
+http_archive(
     name = "iceoryx_platform",
-    strip_prefix = "iceoryx_platform",
+    sha256 = "78468cda7c1a85fe51d5bd51adf5bc76e43f607ed8813aa3804d4409d2165b6f",
+    strip_prefix = "iceoryx-{}/iceoryx_platform".format(ICEORYX_VERSION),
     build_file_content = _ALL_CONTENT,
-    remote = "https://github.com/eclipse-iceoryx/iceoryx.git",
-    tag = "v2.95.0",
+    url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
 )
 
-git_repository(
+http_archive(
     name = "iceoryx_hoofs",
-    strip_prefix = "iceoryx_hoofs",
+    sha256 = "78468cda7c1a85fe51d5bd51adf5bc76e43f607ed8813aa3804d4409d2165b6f",
+    strip_prefix = "iceoryx-{}/iceoryx_hoofs".format(ICEORYX_VERSION),
     build_file_content = _ALL_CONTENT,
-    remote = "https://github.com/eclipse-iceoryx/iceoryx.git",
-    tag = "v2.95.0",
+    url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
 )
