@@ -77,6 +77,16 @@ alias(
 
 filegroup(
     name = "all_srcs",
-    srcs = glob(["**"]),
+    srcs = glob([
+        "benchmarks/**",
+        "config/**",
+        "examples/**",
+        "iceoryx2-bb/**",
+        "iceoryx2-cal/**",
+        "iceoryx2-cli/**",
+        "iceoryx2-ffi/**",
+        "iceoryx2-pal/**",
+        "iceoryx2/**",
+    ]),
     visibility = ["//visibility:public"],
 )
