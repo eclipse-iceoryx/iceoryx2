@@ -1,5 +1,8 @@
 build --spawn_strategy=standalone --strategy=Genrule=standalone
 
-build:gcc --cxxopt="-std=c++17"
-build:clang --cxxopt="-std=c++17"
-build:msvc --cxxopt="/std:c++17"
+build --enable_platform_specific_config
+build:linux --cxxopt="-std=c++17"
+build:windows --cxxopt="/std:c++17"
+
+# this has to be specified manually
+build:mingw --cxxopt="-std=c++17"
