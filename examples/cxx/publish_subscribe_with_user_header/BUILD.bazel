@@ -19,7 +19,7 @@ cc_binary(
         "src/publisher.cpp",
     ],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
     ],
 )
@@ -31,7 +31,7 @@ cc_binary(
         "src/subscriber.cpp",
     ],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
     ],
 )

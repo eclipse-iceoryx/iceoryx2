@@ -32,37 +32,6 @@ config_setting(
     flag_values = {"@bazel_tools//tools/cpp:compiler": "msvc-cl"},
 )
 
-cmake(
-    name = "iceoryx_platform",
-    cache_entries = {
-        "BUILD_SHARED_LIBS": "OFF",
-    },
-    lib_source = "@iceoryx_platform//:all_srcs",
-    out_static_libs = select({
-        "//:win-msvc": ["iceoryx_platform.lib"],
-        "//conditions:default": ["libiceoryx_platform.a"],
-    }),
-    out_include_dir = "include/iceoryx/v2.95.0/",
-    visibility = ["//visibility:public"],
-)
-
-cmake(
-    name = "iceoryx_hoofs",
-    cache_entries = {
-        "BUILD_SHARED_LIBS": "OFF",
-    },
-    lib_source = "@iceoryx_hoofs//:all_srcs",
-    out_static_libs = select({
-        "//:win-msvc": ["iceoryx_hoofs.lib"],
-        "//conditions:default": ["libiceoryx_hoofs.a"],
-    }),
-    out_include_dir = "include/iceoryx/v2.95.0/",
-    deps = [
-        "//:iceoryx_platform",
-    ],
-    visibility = ["//visibility:public"],
-)
-
 alias(
     name = "iceoryx2-c",
     actual = "//iceoryx2-ffi/c:iceoryx2-c",
@@ -72,5 +41,21 @@ alias(
 alias(
     name = "iceoryx2-cxx",
     actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob([
+        "benchmarks/**",
+        "config/**",
+        "examples/**",
+        "iceoryx2-bb/**",
+        "iceoryx2-cal/**",
+        "iceoryx2-cli/**",
+        "iceoryx2-ffi/**",
+        "iceoryx2-pal/**",
+        "iceoryx2/**",
+    ]),
     visibility = ["//visibility:public"],
 )

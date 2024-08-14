@@ -24,6 +24,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//:iceoryx2-c",
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
     ],
 )

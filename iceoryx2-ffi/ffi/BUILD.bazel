@@ -10,15 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
-
-cc_binary(
-    name = "example_cxx_discovery",
-    srcs = [
-        "src/discovery.cpp",
-    ],
-    deps = [
-        "@iceoryx//:iceoryx_hoofs",
-        "//:iceoryx2-cxx",
-    ],
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
 )

@@ -18,7 +18,7 @@ cc_binary(
         "src/listener.cpp",
     ],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
     ],
 )
@@ -29,7 +29,7 @@ cc_binary(
         "src/notifier.cpp",
     ],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
     ],
 )

@@ -438,19 +438,11 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
-      - name: Run bazel build on Windows MSVC
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: bazel build --config=msvc //...
-      - name: Run bazel build on Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: bazel build --config=gcc //...
+      - name: Run bazel build
+        run: bazel build //...
 
-      - name: Run bazel test on Windows MSVC
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: bazel test --config=msvc //...
-      - name: Run bazel test on Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: bazel test --config=gcc //...
+      - name: Run bazel test
+        run: bazel test //...
 
   grcov:
     needs: [preflight-check, static-code-analysis]
