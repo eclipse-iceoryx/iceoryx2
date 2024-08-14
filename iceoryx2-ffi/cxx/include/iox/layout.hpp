@@ -18,7 +18,7 @@
 #include <type_traits>
 
 namespace iox {
-enum class LayoutCreationError {
+enum class LayoutCreationError : uint8_t {
     InvalidAlignment
 };
 
