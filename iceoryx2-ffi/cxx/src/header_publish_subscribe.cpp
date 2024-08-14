@@ -59,6 +59,4 @@ auto HeaderPublishSubscribe::payload_type_layout() const -> iox::Layout {
 
     return iox::Layout::create(size, alignment).expect("Payload layout is always valid.");
 }
-
-
 } // namespace iox2

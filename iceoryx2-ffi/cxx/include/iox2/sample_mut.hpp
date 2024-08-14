@@ -69,7 +69,7 @@ class SampleMut {
     auto operator->() -> Payload*;
 
     /// Returns a reference to the [`Header`] of the [`Sample`].
-    auto header() const -> const HeaderPublishSubscribe&;
+    auto header() const -> HeaderPublishSubscribe;
 
     /// Returns a reference to the user_header of the [`Sample`]
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
@@ -161,8 +161,12 @@ inline auto SampleMut<S, Payload, UserHeader>::operator->() -> Payload* {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMut<S, Payload, UserHeader>::header() const -> const HeaderPublishSubscribe& {
-    IOX_TODO();
+inline auto SampleMut<S, Payload, UserHeader>::header() const -> HeaderPublishSubscribe {
+    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
+    iox2_publish_subscribe_header_h header_handle = nullptr;
+    iox2_sample_mut_header(ref_handle, nullptr, &header_handle);
+
+    return HeaderPublishSubscribe { header_handle };
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

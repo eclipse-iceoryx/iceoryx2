@@ -55,7 +55,7 @@ class Sample {
     auto user_header() const -> const T&;
 
     /// Returns a reference to the [`Header`] of the [`Sample`].
-    auto header() const -> const HeaderPublishSubscribe&;
+    auto header() const -> HeaderPublishSubscribe;
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     auto origin() const -> UniquePublisherId;
@@ -138,13 +138,17 @@ inline auto Sample<S, Payload, UserHeader>::user_header() const -> const T& {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Sample<S, Payload, UserHeader>::header() const -> const HeaderPublishSubscribe& {
-    IOX_TODO();
+inline auto Sample<S, Payload, UserHeader>::header() const -> HeaderPublishSubscribe {
+    auto* ref_handle = iox2_cast_sample_ref_h(m_handle);
+    iox2_publish_subscribe_header_h header_handle = nullptr;
+    iox2_sample_header(ref_handle, nullptr, &header_handle);
+
+    return HeaderPublishSubscribe { header_handle };
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Sample<S, Payload, UserHeader>::origin() const -> UniquePublisherId {
-    IOX_TODO();
+    return header().publisher_id();
 }
 
 

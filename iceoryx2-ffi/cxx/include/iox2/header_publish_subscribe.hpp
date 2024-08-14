@@ -34,6 +34,11 @@ class HeaderPublishSubscribe {
     auto payload_type_layout() const -> iox::Layout;
 
   private:
+    template <ServiceType, typename, typename>
+    friend class Sample;
+    template <ServiceType, typename, typename>
+    friend class SampleMut;
+
     explicit HeaderPublishSubscribe(iox2_publish_subscribe_header_h handle);
     void drop();
 
