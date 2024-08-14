@@ -31,14 +31,14 @@ UniquePublisherId::~UniquePublisherId() {
     drop();
 }
 
-auto UniquePublisherId::operator==(const UniquePublisherId& rhs) -> bool {
-    auto* lhs_ref = iox2_cast_unique_publisher_id_ref_h(m_handle);
+auto operator==(const UniquePublisherId& lhs, const UniquePublisherId& rhs) -> bool {
+    auto* lhs_ref = iox2_cast_unique_publisher_id_ref_h(lhs.m_handle);
     auto* rhs_ref = iox2_cast_unique_publisher_id_ref_h(rhs.m_handle);
     return iox2_unique_publisher_id_eq(lhs_ref, rhs_ref);
 }
 
-auto UniquePublisherId::operator<(const UniquePublisherId& rhs) -> bool {
-    auto* lhs_ref = iox2_cast_unique_publisher_id_ref_h(m_handle);
+auto operator<(const UniquePublisherId& lhs, const UniquePublisherId& rhs) -> bool {
+    auto* lhs_ref = iox2_cast_unique_publisher_id_ref_h(lhs.m_handle);
     auto* rhs_ref = iox2_cast_unique_publisher_id_ref_h(rhs.m_handle);
     return iox2_unique_publisher_id_less(lhs_ref, rhs_ref);
 }
@@ -72,14 +72,14 @@ UniqueSubscriberId::~UniqueSubscriberId() {
     drop();
 }
 
-auto UniqueSubscriberId::operator==(const UniqueSubscriberId& rhs) -> bool {
-    auto* lhs_ref = iox2_cast_unique_subscriber_id_ref_h(m_handle);
+auto operator==(const UniqueSubscriberId& lhs, const UniqueSubscriberId& rhs) -> bool {
+    auto* lhs_ref = iox2_cast_unique_subscriber_id_ref_h(lhs.m_handle);
     auto* rhs_ref = iox2_cast_unique_subscriber_id_ref_h(rhs.m_handle);
     return iox2_unique_subscriber_id_eq(lhs_ref, rhs_ref);
 }
 
-auto UniqueSubscriberId::operator<(const UniqueSubscriberId& rhs) -> bool {
-    auto* lhs_ref = iox2_cast_unique_subscriber_id_ref_h(m_handle);
+auto operator<(const UniqueSubscriberId& lhs, const UniqueSubscriberId& rhs) -> bool {
+    auto* lhs_ref = iox2_cast_unique_subscriber_id_ref_h(lhs.m_handle);
     auto* rhs_ref = iox2_cast_unique_subscriber_id_ref_h(rhs.m_handle);
     return iox2_unique_subscriber_id_less(lhs_ref, rhs_ref);
 }
@@ -114,14 +114,14 @@ UniqueNotifierId::~UniqueNotifierId() {
     drop();
 }
 
-auto UniqueNotifierId::operator==(const UniqueNotifierId& rhs) -> bool {
-    auto* lhs_ref = iox2_cast_unique_notifier_id_ref_h(m_handle);
+auto operator==(const UniqueNotifierId& lhs, const UniqueNotifierId& rhs) -> bool {
+    auto* lhs_ref = iox2_cast_unique_notifier_id_ref_h(lhs.m_handle);
     auto* rhs_ref = iox2_cast_unique_notifier_id_ref_h(rhs.m_handle);
     return iox2_unique_notifier_id_eq(lhs_ref, rhs_ref);
 }
 
-auto UniqueNotifierId::operator<(const UniqueNotifierId& rhs) -> bool {
-    auto* lhs_ref = iox2_cast_unique_notifier_id_ref_h(m_handle);
+auto operator<(const UniqueNotifierId& lhs, const UniqueNotifierId& rhs) -> bool {
+    auto* lhs_ref = iox2_cast_unique_notifier_id_ref_h(lhs.m_handle);
     auto* rhs_ref = iox2_cast_unique_notifier_id_ref_h(rhs.m_handle);
     return iox2_unique_notifier_id_less(lhs_ref, rhs_ref);
 }
@@ -155,14 +155,14 @@ UniqueListenerId::~UniqueListenerId() {
     drop();
 }
 
-auto UniqueListenerId::operator==(const UniqueListenerId& rhs) -> bool {
-    auto* lhs_ref = iox2_cast_unique_listener_id_ref_h(m_handle);
+auto operator==(const UniqueListenerId& lhs, const UniqueListenerId& rhs) -> bool {
+    auto* lhs_ref = iox2_cast_unique_listener_id_ref_h(lhs.m_handle);
     auto* rhs_ref = iox2_cast_unique_listener_id_ref_h(rhs.m_handle);
     return iox2_unique_listener_id_eq(lhs_ref, rhs_ref);
 }
 
-auto UniqueListenerId::operator<(const UniqueListenerId& rhs) -> bool {
-    auto* lhs_ref = iox2_cast_unique_listener_id_ref_h(m_handle);
+auto operator<(const UniqueListenerId& lhs, const UniqueListenerId& rhs) -> bool {
+    auto* lhs_ref = iox2_cast_unique_listener_id_ref_h(lhs.m_handle);
     auto* rhs_ref = iox2_cast_unique_listener_id_ref_h(rhs.m_handle);
     return iox2_unique_listener_id_less(lhs_ref, rhs_ref);
 }

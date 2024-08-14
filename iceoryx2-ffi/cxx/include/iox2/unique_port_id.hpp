@@ -25,16 +25,17 @@ class UniquePublisherId {
     auto operator=(UniquePublisherId&& rhs) noexcept -> UniquePublisherId&;
     ~UniquePublisherId();
 
-    auto operator==(const UniquePublisherId& rhs) -> bool;
-    auto operator<(const UniquePublisherId& rhs) -> bool;
-
   private:
     friend class HeaderPublishSubscribe;
+    friend auto operator==(const UniquePublisherId&, const UniquePublisherId&) -> bool;
+    friend auto operator<(const UniquePublisherId&, const UniquePublisherId&) -> bool;
+
     explicit UniquePublisherId(iox2_unique_publisher_id_h handle);
     void drop();
 
     iox2_unique_publisher_id_h m_handle = nullptr;
 };
+
 
 /// The system-wide unique id of a [`Subscriber`].
 class UniqueSubscriberId {
@@ -45,10 +46,10 @@ class UniqueSubscriberId {
     auto operator=(UniqueSubscriberId&& rhs) noexcept -> UniqueSubscriberId&;
     ~UniqueSubscriberId();
 
-    auto operator==(const UniqueSubscriberId& rhs) -> bool;
-    auto operator<(const UniqueSubscriberId& rhs) -> bool;
-
   private:
+    friend auto operator==(const UniqueSubscriberId&, const UniqueSubscriberId&) -> bool;
+    friend auto operator<(const UniqueSubscriberId&, const UniqueSubscriberId&) -> bool;
+
     explicit UniqueSubscriberId(iox2_unique_subscriber_id_h handle);
     void drop();
 
@@ -64,10 +65,10 @@ class UniqueNotifierId {
     auto operator=(UniqueNotifierId&& rhs) noexcept -> UniqueNotifierId&;
     ~UniqueNotifierId();
 
-    auto operator==(const UniqueNotifierId& rhs) -> bool;
-    auto operator<(const UniqueNotifierId& rhs) -> bool;
-
   private:
+    friend auto operator==(const UniqueNotifierId&, const UniqueNotifierId&) -> bool;
+    friend auto operator<(const UniqueNotifierId&, const UniqueNotifierId&) -> bool;
+
     explicit UniqueNotifierId(iox2_unique_notifier_id_h handle);
     void drop();
 
@@ -83,15 +84,25 @@ class UniqueListenerId {
     auto operator=(UniqueListenerId&& rhs) noexcept -> UniqueListenerId&;
     ~UniqueListenerId();
 
-    auto operator==(const UniqueListenerId& rhs) -> bool;
-    auto operator<(const UniqueListenerId& rhs) -> bool;
-
   private:
+    friend auto operator==(const UniqueListenerId&, const UniqueListenerId&) -> bool;
+    friend auto operator<(const UniqueListenerId&, const UniqueListenerId&) -> bool;
+
     explicit UniqueListenerId(iox2_unique_listener_id_h handle);
     void drop();
 
     iox2_unique_listener_id_h m_handle = nullptr;
 };
+
+auto operator==(const UniquePublisherId& lhs, const UniquePublisherId& rhs) -> bool;
+auto operator<(const UniquePublisherId& lhs, const UniquePublisherId& rhs) -> bool;
+auto operator==(const UniqueSubscriberId& lhs, const UniqueSubscriberId& rhs) -> bool;
+auto operator<(const UniqueSubscriberId& lhs, const UniqueSubscriberId& rhs) -> bool;
+auto operator==(const UniqueNotifierId& lhs, const UniqueNotifierId& rhs) -> bool;
+auto operator<(const UniqueNotifierId& lhs, const UniqueNotifierId& rhs) -> bool;
+auto operator==(const UniqueListenerId& lhs, const UniqueListenerId& rhs) -> bool;
+auto operator<(const UniqueListenerId& lhs, const UniqueListenerId& rhs) -> bool;
+
 } // namespace iox2
 
 #endif
