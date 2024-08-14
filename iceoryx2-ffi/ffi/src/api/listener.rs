@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, IntoCInt};
-use crate::{iox2_callback_context, iox2_event_id_t, IOX2_OK};
+use crate::{iox2_callback_context, iox2_event_id_t, iox2_unique_listener_id_t, IOX2_OK};
 
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
@@ -256,6 +256,33 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_all(
         Ok(()) => IOX2_OK,
         Err(e) => e.into_c_int(),
     }
+}
+
+/// Returns the unique listener id of the listener.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
+/// * `id` valid pointer to a [`iox2_unique_listener_id_t`].
+///
+/// # Safety
+///
+/// * `listener_handle` is valid, non-null and was obtained via [`iox2_cast_listener_ref_h`]
+/// * `id` is valid and non-null
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_id(
+    listener_handle: iox2_listener_ref_h,
+    id: *mut iox2_unique_listener_id_t,
+) {
+    debug_assert!(!listener_handle.is_null());
+    debug_assert!(!id.is_null());
+
+    let listener = &mut *listener_handle.as_type();
+
+    (*id).value = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_mut().ipc.id(),
+        iox2_service_type_e::LOCAL => listener.value.as_mut().local.id(),
+    };
 }
 
 /// Blocks the listener until at least one event was received and then calls the callback for

@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, IntoCInt, IOX2_OK};
-use crate::{c_size_t, iox2_event_id_t};
+use crate::{c_size_t, iox2_event_id_t, iox2_unique_notifier_id_t};
 
 use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::prelude::*;
@@ -176,6 +176,33 @@ pub unsafe extern "C" fn iox2_notifier_notify(
     }
 
     IOX2_OK
+}
+
+/// Returns the unique notifier id of the notifier.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)
+/// * `id` valid pointer to a [`iox2_unique_notifier_id_t`].
+///
+/// # Safety
+///
+/// * `notifier_handle` is valid, non-null and was obtained via [`iox2_cast_notifier_ref_h`]
+/// * `id` is valid and non-null
+#[no_mangle]
+pub unsafe extern "C" fn iox2_notifier_id(
+    notifier_handle: iox2_notifier_ref_h,
+    id: *mut iox2_unique_notifier_id_t,
+) {
+    debug_assert!(!notifier_handle.is_null());
+    debug_assert!(!id.is_null());
+
+    let notifier = &mut *notifier_handle.as_type();
+
+    (*id).value = match notifier.service_type {
+        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.id(),
+        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.id(),
+    };
 }
 
 /// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
