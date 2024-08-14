@@ -18,7 +18,7 @@ cc_binary(
         "src/creator.cpp",
     ],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
     ],
 )
@@ -29,7 +29,7 @@ cc_binary(
         "src/opener.cpp",
     ],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
     ],
 )
@@ -40,7 +40,7 @@ cc_binary(
         "src/incompatible.cpp",
     ],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
     ],
 )

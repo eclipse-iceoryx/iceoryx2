@@ -40,28 +40,21 @@ maybe(
 
 # Fetch iceoryx_hoofs and iceoryx_platform
 
-_ALL_CONTENT = """\
-filegroup(
-    name = "all_srcs",
-    srcs = glob(["**"]),
-    visibility = ["//visibility:public"],
-)
-"""
-
 ICEORYX_VERSION = "2.95.0"
 
 http_archive(
-    name = "iceoryx_platform",
+    name = "iceoryx",
     sha256 = "78468cda7c1a85fe51d5bd51adf5bc76e43f607ed8813aa3804d4409d2165b6f",
-    strip_prefix = "iceoryx-{}/iceoryx_platform".format(ICEORYX_VERSION),
-    build_file_content = _ALL_CONTENT,
+    strip_prefix = "iceoryx-{}".format(ICEORYX_VERSION),
     url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
 )
 
-http_archive(
-    name = "iceoryx_hoofs",
-    sha256 = "78468cda7c1a85fe51d5bd51adf5bc76e43f607ed8813aa3804d4409d2165b6f",
-    strip_prefix = "iceoryx-{}/iceoryx_hoofs".format(ICEORYX_VERSION),
-    build_file_content = _ALL_CONTENT,
-    url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
-)
+# Load dependency googletest
+load("@iceoryx//bazel:load_repositories.bzl", "load_repositories")
+
+load_repositories()
+
+# Load dependency cpptoml
+load("@iceoryx//bazel:setup_repositories.bzl", "setup_repositories")
+
+setup_repositories()

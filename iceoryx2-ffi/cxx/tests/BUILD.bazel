@@ -29,7 +29,7 @@ cc_test(
     tags = ["exclusive"],
     visibility = ["//visibility:private"],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
         "@googletest//:gtest",
     ],

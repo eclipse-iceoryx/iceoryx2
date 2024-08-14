@@ -18,7 +18,7 @@ cc_binary(
         "src/complex_data_types.cpp",
     ],
     deps = [
-        "//:iceoryx_hoofs",
+        "@iceoryx//:iceoryx_hoofs",
         "//:iceoryx2-cxx",
     ],
 )
