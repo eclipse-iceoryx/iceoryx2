@@ -32,14 +32,17 @@ cmake(
     lib_source = "CMakeLists.txt",
     out_static_libs = select({
         "//:win-msvc": ["iceoryx2_ffi.lib"],
+        "//:win-gcc": ["libiceoryx2_ffi.a"],
         "//conditions:default": ["libiceoryx2_ffi.a"],
     }),
     out_interface_libs = select({
         "//:win-msvc": ["iceoryx2_ffi.dll.lib"],
+        "//:win-gcc": ["libiceoryx2_ffi.dll.a"],
         "//conditions:default": [],
     }),
     out_shared_libs = select({
         "//:win-msvc": ["iceoryx2_ffi.dll"],
+        "//:win-gcc": ["iceoryx2_ffi.dll"],
         "//conditions:default": ["libiceoryx2_ffi.so"],
     }),
     out_dll_dir = select({
@@ -61,16 +64,7 @@ cmake(
             "ws2_32.lib",
             "wsock32.lib",
         ],
-        "//:win-gcc": [
-            "advapi32.lib",
-            "bcrypt.lib",
-            "ntdll.lib",
-            "psapi.lib",
-            "userenv.lib",
-            "synchronization.lib",
-            "ws2_32.lib",
-            "wsock32.lib",
-        ],
+        "//:win-gcc": [],
         "//conditions:default": [],
     }),
     visibility = ["//visibility:public"],
