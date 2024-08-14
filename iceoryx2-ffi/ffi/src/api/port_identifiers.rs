@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(non_camel_case_types)]
+
 use iceoryx2::port::port_identifiers::{
     UniqueListenerId, UniqueNotifierId, UniquePublisherId, UniqueSubscriberId,
 };
@@ -17,28 +19,16 @@ use iceoryx2::port::port_identifiers::{
 // BEGIN types definition
 
 /// The system-wide unique id of a [`iox2_publisher_t`].
-#[repr(C)]
-pub struct iox2_unique_publisher_id_t {
-    pub(super) value: UniquePublisherId,
-}
+pub type iox2_unique_publisher_id_t = UniquePublisherId;
 
 /// The system-wide unique id of a [`iox2_subscriber_t`].
-#[repr(C)]
-pub struct iox2_unique_subscriber_id_t {
-    pub(super) value: UniqueSubscriberId,
-}
+pub type iox2_unique_subscriber_id_t = UniqueSubscriberId;
 
 /// The system-wide unique id of a [`iox2_listener_t`].
-#[repr(C)]
-pub struct iox2_unique_listener_id_t {
-    pub(super) value: UniqueListenerId,
-}
+pub type iox2_unique_listener_id_t = UniqueListenerId;
 
 /// The system-wide unique id of a [`iox2_notifier_t`].
-#[repr(C)]
-pub struct iox2_unique_notifier_id_t {
-    pub(super) value: UniqueNotifierId,
-}
+pub type iox2_unique_notifier_id_t = UniqueNotifierId;
 
 // END types definition
 
@@ -58,7 +48,7 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_eq(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).value == (*rhs).value
+    (*lhs) == (*rhs)
 }
 
 /// Checks the ordering of two [`iox2_unique_publisher_id_t`].
@@ -75,7 +65,7 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_less(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).value < (*rhs).value
+    (*lhs) < (*rhs)
 }
 
 /// Checks two [`iox2_unique_subscriber_id_t`] for equality.
@@ -92,7 +82,7 @@ pub unsafe extern "C" fn iox2_unique_subscriber_id_eq(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).value == (*rhs).value
+    (*lhs) == (*rhs)
 }
 
 /// Checks the ordering of two [`iox2_unique_subscriber_id_t`].
@@ -109,7 +99,7 @@ pub unsafe extern "C" fn iox2_unique_subscriber_id_less(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).value < (*rhs).value
+    (*lhs) < (*rhs)
 }
 
 /// Checks two [`iox2_unique_notifier_id_t`] for equality.
@@ -126,7 +116,7 @@ pub unsafe extern "C" fn iox2_unique_notifier_id_eq(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).value == (*rhs).value
+    (*lhs) == (*rhs)
 }
 
 /// Checks the ordering of two [`iox2_unique_notifier_id_t`].
@@ -143,7 +133,7 @@ pub unsafe extern "C" fn iox2_unique_notifier_id_less(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).value < (*rhs).value
+    (*lhs) < (*rhs)
 }
 
 /// Checks two [`iox2_unique_listener_id_t`] for equality.
@@ -160,7 +150,7 @@ pub unsafe extern "C" fn iox2_unique_listener_id_eq(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).value == (*rhs).value
+    (*lhs) == (*rhs)
 }
 
 /// Checks the ordering of two [`iox2_unique_listener_id_t`].
@@ -177,7 +167,7 @@ pub unsafe extern "C" fn iox2_unique_listener_id_less(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).value < (*rhs).value
+    (*lhs) < (*rhs)
 }
 
 // END C API
