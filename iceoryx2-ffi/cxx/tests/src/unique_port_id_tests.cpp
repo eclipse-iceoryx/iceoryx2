@@ -84,4 +84,24 @@ TYPED_TEST(UniquePortIdTest, unique_port_id_from_different_ports_is_not_equal) {
     ASSERT_TRUE(this->publisher_1.id() < this->publisher_2.id() || this->publisher_2.id() < this->publisher_1.id());
     ASSERT_TRUE(this->subscriber_1.id() < this->subscriber_2.id() || this->subscriber_2.id() < this->subscriber_1.id());
 }
+
+TYPED_TEST(UniquePortIdTest, unique_port_id_identifies_origin) {
+    auto sample_1 = this->publisher_1.loan().expect("");
+    auto sample_2 = this->publisher_2.loan().expect("");
+
+    ASSERT_TRUE(this->publisher_1.id() == sample_1.header().publisher_id());
+    ASSERT_TRUE(this->publisher_2.id() == sample_2.header().publisher_id());
+
+    send_sample(std::move(sample_1)).expect("");
+
+    auto recv_sample_1 = this->subscriber_1.receive().expect("").value();
+    ASSERT_TRUE(this->publisher_1.id() == recv_sample_1.header().publisher_id());
+    ASSERT_TRUE(this->publisher_1.id() == recv_sample_1.origin());
+
+    send_sample(std::move(sample_2)).expect("");
+
+    auto recv_sample_2 = this->subscriber_1.receive().expect("").value();
+    ASSERT_TRUE(this->publisher_2.id() == recv_sample_2.header().publisher_id());
+    ASSERT_TRUE(this->publisher_2.id() == recv_sample_2.origin());
+}
 } // namespace
