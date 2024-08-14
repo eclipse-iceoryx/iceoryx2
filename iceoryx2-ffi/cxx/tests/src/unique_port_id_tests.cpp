@@ -61,7 +61,7 @@ struct UniquePortIdTest : public ::testing::Test {
 
 TYPED_TEST_SUITE(UniquePortIdTest, iox2_testing::ServiceTypes);
 
-TYPED_TEST(UniquePortIdTest, unique_port_id_frosame_port_is_equal) {
+TYPED_TEST(UniquePortIdTest, unique_port_id_from_same_port_is_equal) {
     ASSERT_TRUE(this->listener_1.id() == this->listener_1.id());
     ASSERT_TRUE(this->notifier_1.id() == this->notifier_1.id());
     ASSERT_TRUE(this->publisher_1.id() == this->publisher_1.id());
@@ -71,5 +71,17 @@ TYPED_TEST(UniquePortIdTest, unique_port_id_frosame_port_is_equal) {
     ASSERT_FALSE(this->notifier_1.id() < this->notifier_1.id());
     ASSERT_FALSE(this->publisher_1.id() < this->publisher_1.id());
     ASSERT_FALSE(this->subscriber_1.id() < this->subscriber_1.id());
+}
+
+TYPED_TEST(UniquePortIdTest, unique_port_id_from_different_ports_is_not_equal) {
+    ASSERT_FALSE(this->listener_1.id() == this->listener_2.id());
+    ASSERT_FALSE(this->notifier_1.id() == this->notifier_2.id());
+    ASSERT_FALSE(this->publisher_1.id() == this->publisher_2.id());
+    ASSERT_FALSE(this->subscriber_1.id() == this->subscriber_2.id());
+
+    ASSERT_TRUE(this->listener_1.id() < this->listener_2.id() || this->listener_2.id() < this->listener_1.id());
+    ASSERT_TRUE(this->notifier_1.id() < this->notifier_2.id() || this->notifier_2.id() < this->notifier_1.id());
+    ASSERT_TRUE(this->publisher_1.id() < this->publisher_2.id() || this->publisher_2.id() < this->publisher_1.id());
+    ASSERT_TRUE(this->subscriber_1.id() < this->subscriber_2.id() || this->subscriber_2.id() < this->subscriber_1.id());
 }
 } // namespace
