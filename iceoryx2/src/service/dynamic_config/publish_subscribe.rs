@@ -133,6 +133,26 @@ impl DynamicConfig {
         self.subscribers.len()
     }
 
+    #[doc(hidden)]
+    pub fn __internal_subscriber_owners<F: FnMut(&NodeId)>(&self, mut callback: F) {
+        let state = unsafe { self.subscribers.get_state() };
+
+        state.for_each(|_, details| {
+            callback(&details.node_id);
+            CallbackProgression::Continue
+        });
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_publisher_owners<F: FnMut(&NodeId)>(&self, mut callback: F) {
+        let state = unsafe { self.publishers.get_state() };
+
+        state.for_each(|_, details| {
+            callback(&details.node_id);
+            CallbackProgression::Continue
+        });
+    }
+
     pub(crate) fn add_subscriber_id(&self, details: SubscriberDetails) -> Option<ContainerHandle> {
         unsafe { self.subscribers.add(details).ok() }
     }

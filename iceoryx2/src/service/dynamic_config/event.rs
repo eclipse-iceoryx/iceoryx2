@@ -96,6 +96,26 @@ impl DynamicConfig {
         self.notifiers.len()
     }
 
+    #[doc(hidden)]
+    pub fn __internal_listener_owners<F: FnMut(&NodeId)>(&self, mut callback: F) {
+        let state = unsafe { self.listeners.get_state() };
+
+        state.for_each(|_, details| {
+            callback(&details.node_id);
+            CallbackProgression::Continue
+        });
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_notifier_owners<F: FnMut(&NodeId)>(&self, mut callback: F) {
+        let state = unsafe { self.notifiers.get_state() };
+
+        state.for_each(|_, details| {
+            callback(&details.node_id);
+            CallbackProgression::Continue
+        });
+    }
+
     pub(crate) unsafe fn remove_dead_node_id<
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
