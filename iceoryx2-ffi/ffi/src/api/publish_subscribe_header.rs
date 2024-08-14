@@ -102,6 +102,28 @@ pub unsafe extern "C" fn iox2_cast_publish_subscribe_header_ref_h(
     (*handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// This function needs to be called to destroy the publish_subscribe_header!
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_publish_subscribe_header_builder_create`](crate::iox2_port_factory_publish_subscribe_header_builder_create)
+///
+/// # Safety
+///
+/// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_publish_subscribe_header_t`] can be re-used
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publish_subscribe_header_drop(
+    handle: iox2_publish_subscribe_header_h,
+) {
+    debug_assert!(!handle.is_null());
+
+    let header = &mut *handle.as_type();
+    core::ptr::drop_in_place(header.value.as_option_mut());
+
+    (header.deleter)(header);
+}
+
 /// Returns the unique publisher id of the source of the sample.
 ///
 /// # Arguments
@@ -114,10 +136,11 @@ pub unsafe extern "C" fn iox2_cast_publish_subscribe_header_ref_h(
 ///
 /// # Safety
 ///
-/// * `header_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
-/// * `id` is valid and non-null
+/// * `header_handle` is valid, non-null and was obtained via [`iox2_cast_publish_subscribe_header_ref_h`]
+/// * `id_struct_ptr` is either null or valid and non-null
+/// * `id_handle_ptr` is valid and non-null
 #[no_mangle]
-pub unsafe extern "C" fn iox2_publish_subscribe_header_id(
+pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
     header_handle: iox2_publish_subscribe_header_ref_h,
     id_struct_ptr: *mut iox2_unique_publisher_id_t,
     id_handle_ptr: *mut iox2_unique_publisher_id_h,
@@ -140,6 +163,48 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_id(
 
     (*storage_ptr).init(id, deleter);
     *id_handle_ptr = (*storage_ptr).as_handle();
+}
+
+/// Returns the payloads type size.
+///
+/// # Arguments
+///
+/// * `handle` is valid, non-null and was initialized with
+///    [`iox2_sample_header()`](crate::iox2_sample_header)
+///
+/// # Safety
+///
+/// * `header_handle` is valid, non-null and was obtained via [`iox2_cast_publish_subscribe_header_ref_h`]
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_size(
+    header_handle: iox2_publish_subscribe_header_ref_h,
+) -> usize {
+    debug_assert!(!header_handle.is_null());
+
+    let header = &mut *header_handle.as_type();
+
+    header.value.as_ref().payload_type_layout().size()
+}
+
+/// Returns the payloads type alignment.
+///
+/// # Arguments
+///
+/// * `handle` is valid, non-null and was initialized with
+///    [`iox2_sample_header()`](crate::iox2_sample_header)
+///
+/// # Safety
+///
+/// * `header_handle` is valid, non-null and was obtained via [`iox2_cast_publish_subscribe_header_ref_h`]
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_alignment(
+    header_handle: iox2_publish_subscribe_header_ref_h,
+) -> usize {
+    debug_assert!(!header_handle.is_null());
+
+    let header = &mut *header_handle.as_type();
+
+    header.value.as_ref().payload_type_layout().align()
 }
 
 // END C API

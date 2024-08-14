@@ -13,10 +13,15 @@
 #ifndef IOX_LAYOUT_HPP
 #define IOX_LAYOUT_HPP
 
+#include "iox/expected.hpp"
 #include <cstdint>
 #include <type_traits>
 
 namespace iox {
+enum class LayoutCreationError {
+    InvalidAlignment
+};
+
 class Layout {
   public:
     template <typename T>
@@ -29,6 +34,14 @@ class Layout {
         return Layout { 0, 1 };
     }
 
+    static auto create(const uint64_t size, const uint64_t align) -> iox::expected<Layout, LayoutCreationError> {
+        if (!is_power_of_two(align)) {
+            return iox::err(LayoutCreationError::InvalidAlignment);
+        }
+
+        return iox::ok(Layout(round_up_to(size, align), align));
+    }
+
     auto size() const -> uint64_t {
         return m_size;
     }
@@ -37,6 +50,18 @@ class Layout {
     }
 
   private:
+    static auto is_power_of_two(const uint64_t value) -> bool {
+        return (value != 0) && ((value & (value - 1)) == 0);
+    }
+
+    static auto round_up_to(const uint64_t value, const uint64_t multiple) -> uint64_t {
+        if (value % multiple == 0) {
+            return value;
+        }
+
+        return value * (value / multiple + 1);
+    }
+
     Layout(const uint64_t size, const uint64_t align)
         : m_size { size }
         , m_align { align } {

@@ -18,8 +18,13 @@
 namespace iox2 {
 class UniquePublisherId {
   public:
+    auto operator==(const UniquePublisherId& rhs) -> bool;
+    auto operator<(const UniquePublisherId& rhs) -> bool;
+
   private:
-    iox2_unique_publisher_id_t m_value;
+    friend class HeaderPublishSubscribe;
+    explicit UniquePublisherId(iox2_unique_publisher_id_h handle);
+    iox2_unique_publisher_id_h m_handle;
 };
 class UniqueSubscriberId { };
 class UniqueNotifierId { };
