@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, IntoCInt, IOX2_OK};
-use crate::{c_size_t, iox2_event_id_t, iox2_unique_notifier_id_t};
+use crate::{c_size_t, iox2_event_id_t, iox2_unique_notifier_id_h, iox2_unique_notifier_id_t};
 
 use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::prelude::*;
@@ -135,6 +135,43 @@ pub unsafe extern "C" fn iox2_cast_notifier_ref_h(
     (*notifier_handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// Returns the unique port id of the notifier.
+///
+/// # Safety
+///
+/// * `notifier_handle` is valid, non-null and was obtained via [`iox2_cast_notifier_ref_h`]
+/// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_notifier_id_t`].
+///                         If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `id_handle_ptr` valid pointer to a [`iox2_unique_notifier_id_h`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_notifier_id(
+    notifier_handle: iox2_notifier_ref_h,
+    id_struct_ptr: *mut iox2_unique_notifier_id_t,
+    id_handle_ptr: *mut iox2_unique_notifier_id_h,
+) {
+    debug_assert!(!notifier_handle.is_null());
+    debug_assert!(!id_handle_ptr.is_null());
+
+    fn no_op(_: *mut iox2_unique_notifier_id_t) {}
+    let mut deleter: fn(*mut iox2_unique_notifier_id_t) = no_op;
+    let mut storage_ptr = id_struct_ptr;
+    if id_struct_ptr.is_null() {
+        deleter = iox2_unique_notifier_id_t::dealloc;
+        storage_ptr = iox2_unique_notifier_id_t::alloc();
+    }
+    debug_assert!(!storage_ptr.is_null());
+
+    let notifier = &mut *notifier_handle.as_type();
+
+    let id = match notifier.service_type {
+        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.id(),
+        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.id(),
+    };
+
+    (*storage_ptr).init(id, deleter);
+    *id_handle_ptr = (*storage_ptr).as_handle();
+}
+
 /// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
 /// with the default event id provided on creation.
 ///
@@ -176,33 +213,6 @@ pub unsafe extern "C" fn iox2_notifier_notify(
     }
 
     IOX2_OK
-}
-
-/// Returns the unique notifier id of the notifier.
-///
-/// # Arguments
-///
-/// * `handle` obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)
-/// * `id` valid pointer to a [`iox2_unique_notifier_id_t`].
-///
-/// # Safety
-///
-/// * `notifier_handle` is valid, non-null and was obtained via [`iox2_cast_notifier_ref_h`]
-/// * `id` is valid and non-null
-#[no_mangle]
-pub unsafe extern "C" fn iox2_notifier_id(
-    notifier_handle: iox2_notifier_ref_h,
-    id: *mut iox2_unique_notifier_id_t,
-) {
-    debug_assert!(!notifier_handle.is_null());
-    debug_assert!(!id.is_null());
-
-    let notifier = &mut *notifier_handle.as_type();
-
-    *(*id).as_mut() = match notifier.service_type {
-        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.id(),
-        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.id(),
-    };
 }
 
 /// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service

@@ -14,70 +14,133 @@
 
 use iceoryx2::port::port_identifiers::UniqueSubscriberId;
 use iceoryx2_bb_elementary::static_assert::static_assert_ge;
+use iceoryx2_ffi_macros::iceoryx2_ffi;
+
+use super::HandleToType;
 
 // BEGIN types definition
 
 /// The system-wide unique id of a [`iox2_subscriber_t`].
 #[repr(C)]
 #[repr(align(4))] // core::mem::align_of::<UniqueSubscriberId>()
+pub struct iox2_unique_subscriber_id_storage_t {
+    internal: [u8; 20], // core::mem::size_of::<Option<UniqueSubscriberId>>()
+}
+
+#[repr(C)]
+#[iceoryx2_ffi(UniqueSubscriberId)]
 pub struct iox2_unique_subscriber_id_t {
-    value: [u8; 16], // core::mem::size_of::<UniqueSubscriberId>()
+    pub value: iox2_unique_subscriber_id_storage_t,
+    pub(super) deleter: fn(*mut iox2_unique_subscriber_id_t),
 }
 
 impl iox2_unique_subscriber_id_t {
-    pub(super) fn as_ref(&self) -> &UniqueSubscriberId {
-        static_assert_ge::<
-            { core::mem::align_of::<Self>() },
-            { core::mem::align_of::<UniqueSubscriberId>() },
-        >();
-        static_assert_ge::<
-            { core::mem::size_of::<Self>() },
-            { core::mem::size_of::<UniqueSubscriberId>() },
-        >();
-
-        unsafe { core::mem::transmute(self.value.as_ptr()) }
-    }
-
-    pub(super) fn as_mut(&mut self) -> &mut UniqueSubscriberId {
-        unsafe { core::mem::transmute(self.value.as_ptr()) }
+    pub(super) fn init(
+        &mut self,
+        value: UniqueSubscriberId,
+        deleter: fn(*mut iox2_unique_subscriber_id_t),
+    ) {
+        self.value.init(value);
+        self.deleter = deleter;
     }
 }
+
+pub struct iox2_unique_subscriber_id_h_t;
+/// The owning handle for `iox2_unique_subscriber_id_t`. Passing the handle to an function transfers the ownership.
+pub type iox2_unique_subscriber_id_h = *mut iox2_unique_subscriber_id_h_t;
+
+pub struct iox2_unique_subscriber_id_ref_h_t;
+/// The non-owning handle for `iox2_unique_subscriber_id_t`. Passing the handle to an function does not transfers the ownership.
+pub type iox2_unique_subscriber_id_ref_h = *mut iox2_unique_subscriber_id_ref_h_t;
+
+impl HandleToType for iox2_unique_subscriber_id_h {
+    type Target = *mut iox2_unique_subscriber_id_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
+impl HandleToType for iox2_unique_subscriber_id_ref_h {
+    type Target = *mut iox2_unique_subscriber_id_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
 // END types definition
 
 // BEGIN C API
+
+/// This function needs to be called to destroy the unique subscriber id!
+///
+/// # Arguments
+///
+/// * `handle` - A valid [`iox2_unique_subscriber_id_h`]
+///
+/// # Safety
+///
+/// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_unique_subscriber_id_drop(handle: iox2_unique_subscriber_id_h) {
+    debug_assert!(!handle.is_null());
+
+    let h = &mut *handle.as_type();
+    core::ptr::drop_in_place(h.value.as_option_mut());
+    (h.deleter)(h);
+}
+
+/// This function casts an owning [`iox2_unique_subscriber_id_h`] into a non-owning
+/// [`iox2_unique_subscriber_id_ref_h`]
+///
+/// Returns a [`iox2_subscriber_ref_h`]
+///
+/// # Safety
+///
+/// * The `subscriber_handle` must be a valid handle.
+/// * The `subscriber_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_unique_subscriber_id_ref_h(
+    handle: iox2_unique_subscriber_id_h,
+) -> iox2_unique_subscriber_id_ref_h {
+    debug_assert!(!handle.is_null());
+
+    (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
 
 /// Checks two [`iox2_unique_subscriber_id_t`] for equality.
 ///
 /// # Safety
 ///
-/// * `lhs` - A valid [`iox2_unique_subscriber_id_t`]
-/// * `rhs` - A valid [`iox2_unique_subscriber_id_t`]
+/// * `lhs` - Must be a valid [`iox2_unique_subscriber_id_ref_h`]
+/// * `rhs` - Must be a valid [`iox2_unique_subscriber_id_ref_h`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_unique_subscriber_id_eq(
-    lhs: *const iox2_unique_subscriber_id_t,
-    rhs: *const iox2_unique_subscriber_id_t,
+    lhs: iox2_unique_subscriber_id_ref_h,
+    rhs: iox2_unique_subscriber_id_ref_h,
 ) -> bool {
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).as_ref() == (*rhs).as_ref()
+    lhs.as_type() == rhs.as_type()
 }
 
 /// Checks the ordering of two [`iox2_unique_subscriber_id_t`].
 ///
 /// # Safety
 ///
-/// * `lhs` - A valid [`iox2_unique_subscriber_id_t`]
-/// * `rhs` - A valid [`iox2_unique_subscriber_id_t`]
+/// * `lhs` - Must be a valid [`iox2_unique_subscriber_id_ref_h`]
+/// * `rhs` - Must be a valid [`iox2_unique_subscriber_id_ref_h`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_unique_subscriber_id_less(
-    lhs: *const iox2_unique_subscriber_id_t,
-    rhs: *const iox2_unique_subscriber_id_t,
+    lhs: iox2_unique_subscriber_id_ref_h,
+    rhs: iox2_unique_subscriber_id_ref_h,
 ) -> bool {
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    (*lhs).as_ref() < (*rhs).as_ref()
+    lhs.as_type() == rhs.as_type()
 }
 
 // END C API

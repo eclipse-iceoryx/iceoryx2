@@ -261,7 +261,7 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_all(
     }
 }
 
-/// Returns the unique listener id of the listener.
+/// Returns the unique port id of the listener.
 ///
 /// # Arguments
 ///
