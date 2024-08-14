@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, SampleMutUnion, UserHeaderFfi};
-use crate::{iox2_unable_to_deliver_strategy_e, IOX2_OK};
+use crate::{iox2_unable_to_deliver_strategy_e, iox2_unique_publisher_id_t, IOX2_OK};
 
 use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
 use iceoryx2::prelude::*;
@@ -255,6 +255,33 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
             .unable_to_deliver_strategy()
             .into(),
     }
+}
+
+/// Returns the unique publisher id of the publisher.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+/// * `id` valid pointer to a [`iox2_unique_publisher_id_t`].
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+/// * `id` is valid and non-null
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publisher_id(
+    publisher_handle: iox2_publisher_ref_h,
+    id: *mut iox2_unique_publisher_id_t,
+) {
+    debug_assert!(!publisher_handle.is_null());
+    debug_assert!(!id.is_null());
+
+    let publisher = &mut *publisher_handle.as_type();
+
+    (*id).value = match publisher.service_type {
+        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.id(),
+        iox2_service_type_e::LOCAL => publisher.value.as_mut().local.id(),
+    };
 }
 
 /// Sends a copy of the provided data via the publisher. The data must be copyable via `memcpy`.
