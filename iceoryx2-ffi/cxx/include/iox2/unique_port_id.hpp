@@ -26,6 +26,8 @@ class UniquePublisherId {
     ~UniquePublisherId();
 
   private:
+    template <ServiceType, typename, typename>
+    friend class Publisher;
     friend class HeaderPublishSubscribe;
     friend auto operator==(const UniquePublisherId&, const UniquePublisherId&) -> bool;
     friend auto operator<(const UniquePublisherId&, const UniquePublisherId&) -> bool;
@@ -47,6 +49,8 @@ class UniqueSubscriberId {
     ~UniqueSubscriberId();
 
   private:
+    template <ServiceType, typename, typename>
+    friend class Subscriber;
     friend auto operator==(const UniqueSubscriberId&, const UniqueSubscriberId&) -> bool;
     friend auto operator<(const UniqueSubscriberId&, const UniqueSubscriberId&) -> bool;
 
@@ -66,6 +70,8 @@ class UniqueNotifierId {
     ~UniqueNotifierId();
 
   private:
+    template <ServiceType>
+    friend class Notifier;
     friend auto operator==(const UniqueNotifierId&, const UniqueNotifierId&) -> bool;
     friend auto operator<(const UniqueNotifierId&, const UniqueNotifierId&) -> bool;
 
@@ -85,6 +91,8 @@ class UniqueListenerId {
     ~UniqueListenerId();
 
   private:
+    template <ServiceType>
+    friend class Listener;
     friend auto operator==(const UniqueListenerId&, const UniqueListenerId&) -> bool;
     friend auto operator<(const UniqueListenerId&, const UniqueListenerId&) -> bool;
 

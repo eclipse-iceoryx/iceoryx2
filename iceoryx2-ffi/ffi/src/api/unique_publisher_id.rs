@@ -123,7 +123,10 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_eq(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    lhs.as_type() == rhs.as_type()
+    let lhs = &mut *lhs.as_type();
+    let rhs = &mut *rhs.as_type();
+
+    lhs.value.as_ref() == rhs.value.as_ref()
 }
 
 /// Checks the ordering of two [`iox2_unique_publisher_id_t`].
@@ -140,7 +143,10 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_less(
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
 
-    lhs.as_type() == rhs.as_type()
+    let lhs = &mut *lhs.as_type();
+    let rhs = &mut *rhs.as_type();
+
+    lhs.value.as_ref() < rhs.value.as_ref()
 }
 
 // END C API

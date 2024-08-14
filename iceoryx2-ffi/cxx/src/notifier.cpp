@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/notifier.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 template <ServiceType S>
@@ -43,7 +42,11 @@ Notifier<S>::~Notifier() {
 
 template <ServiceType S>
 auto Notifier<S>::id() const -> UniqueNotifierId {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_notifier_ref_h(m_handle);
+    iox2_unique_notifier_id_h id_handle = nullptr;
+
+    iox2_notifier_id(ref_handle, nullptr, &id_handle);
+    return UniqueNotifierId { id_handle };
 }
 
 template <ServiceType S>

@@ -116,7 +116,11 @@ inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> iox::expe
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::id() const -> UniqueSubscriberId {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_subscriber_ref_h(m_handle);
+    iox2_unique_subscriber_id_h id_handle = nullptr;
+
+    iox2_subscriber_id(ref_handle, nullptr, &id_handle);
+    return UniqueSubscriberId { id_handle };
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
