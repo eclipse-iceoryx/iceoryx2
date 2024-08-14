@@ -18,6 +18,7 @@ use crate::iox2_unique_publisher_id_t;
 
 // BEGIN types definition
 
+/// Sample header used by [`MessagingPattern::PublishSubscribe`]
 pub type iox2_publish_subscribe_header_t = Header;
 
 // END types definition
@@ -28,7 +29,8 @@ pub type iox2_publish_subscribe_header_t = Header;
 ///
 /// # Safety
 ///
-/// * `handle` is valid, non-null and was initialized
+/// * `handle` is valid, non-null and was initialized with
+///    [`iox2_sample_header()`](crate::iox2_sample_header)
 /// * `id` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(

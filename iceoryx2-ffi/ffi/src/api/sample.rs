@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, UserHeaderFfi};
-use crate::c_size_t;
+use crate::{c_size_t, iox2_publish_subscribe_header_t};
 
 use iceoryx2::prelude::*;
 use iceoryx2::sample::Sample;
@@ -114,6 +114,28 @@ impl HandleToType for iox2_sample_ref_h {
 pub unsafe extern "C" fn iox2_cast_sample_ref_h(handle: iox2_sample_h) -> iox2_sample_ref_h {
     debug_assert!(!handle.is_null());
     (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// Acquires the samples header.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_subscriber_receive()`](crate::iox2_subscriber_receive())
+/// * `header_ptr` a valid, non-null pointer.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_sample_header(
+    sample_handle: iox2_sample_ref_h,
+    header_ptr: *mut *const iox2_publish_subscribe_header_t,
+) {
+    debug_assert!(!sample_handle.is_null());
+    debug_assert!(!header_ptr.is_null());
+
+    let sample = &mut *sample_handle.as_type();
+
+    (*header_ptr) = match sample.service_type {
+        iox2_service_type_e::IPC => sample.value.as_mut().ipc.header(),
+        iox2_service_type_e::LOCAL => sample.value.as_mut().local.header(),
+    };
 }
 
 /// Acquires the samples user header.
