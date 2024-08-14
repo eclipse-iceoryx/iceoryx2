@@ -13,8 +13,14 @@
 #ifndef IOX2_UNIQUE_PORT_ID_HPP
 #define IOX2_UNIQUE_PORT_ID_HPP
 
+#include "iox2/internal/iceoryx2.hpp"
+
 namespace iox2 {
-class UniquePublisherId { };
+class UniquePublisherId {
+  public:
+  private:
+    iox2_unique_publisher_id_t m_value;
+};
 class UniqueSubscriberId { };
 class UniqueNotifierId { };
 class UniqueListenerId { };

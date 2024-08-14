@@ -13,7 +13,10 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, IntoCInt};
-use crate::{iox2_callback_context, iox2_event_id_t, iox2_unique_listener_id_t, IOX2_OK};
+use crate::{
+    iox2_callback_context, iox2_event_id_t, iox2_unique_listener_id_h, iox2_unique_listener_id_t,
+    IOX2_OK,
+};
 
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
@@ -263,7 +266,9 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_all(
 /// # Arguments
 ///
 /// * `handle` obtained by [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
-/// * `id` valid pointer to a [`iox2_unique_listener_id_t`].
+/// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_listener_id_t`].
+///                         If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `id_handle_ptr` valid pointer to a [`iox2_unique_listener_id_h`].
 ///
 /// # Safety
 ///
@@ -272,17 +277,30 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_all(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_id(
     listener_handle: iox2_listener_ref_h,
-    id: *mut iox2_unique_listener_id_t,
+    id_struct_ptr: *mut iox2_unique_listener_id_t,
+    id_handle_ptr: *mut iox2_unique_listener_id_h,
 ) {
     debug_assert!(!listener_handle.is_null());
-    debug_assert!(!id.is_null());
+    debug_assert!(!id_handle_ptr.is_null());
+
+    fn no_op(_: *mut iox2_unique_listener_id_t) {}
+    let mut deleter: fn(*mut iox2_unique_listener_id_t) = no_op;
+    let mut storage_ptr = id_struct_ptr;
+    if id_struct_ptr.is_null() {
+        deleter = iox2_unique_listener_id_t::dealloc;
+        storage_ptr = iox2_unique_listener_id_t::alloc();
+    }
+    debug_assert!(!storage_ptr.is_null());
 
     let listener = &mut *listener_handle.as_type();
 
-    (*id).value = match listener.service_type {
+    let id = match listener.service_type {
         iox2_service_type_e::IPC => listener.value.as_mut().ipc.id(),
         iox2_service_type_e::LOCAL => listener.value.as_mut().local.id(),
     };
+
+    (*storage_ptr).init(id, deleter);
+    *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Blocks the listener until at least one event was received and then calls the callback for

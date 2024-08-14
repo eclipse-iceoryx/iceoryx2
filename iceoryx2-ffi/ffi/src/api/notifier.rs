@@ -199,7 +199,7 @@ pub unsafe extern "C" fn iox2_notifier_id(
 
     let notifier = &mut *notifier_handle.as_type();
 
-    (*id).value = match notifier.service_type {
+    *(*id).as_mut() = match notifier.service_type {
         iox2_service_type_e::IPC => notifier.value.as_mut().ipc.id(),
         iox2_service_type_e::LOCAL => notifier.value.as_mut().local.id(),
     };

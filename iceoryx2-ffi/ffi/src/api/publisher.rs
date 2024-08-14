@@ -278,7 +278,7 @@ pub unsafe extern "C" fn iox2_publisher_id(
 
     let publisher = &mut *publisher_handle.as_type();
 
-    (*id).value = match publisher.service_type {
+    *(*id).as_mut() = match publisher.service_type {
         iox2_service_type_e::IPC => publisher.value.as_mut().ipc.id(),
         iox2_service_type_e::LOCAL => publisher.value.as_mut().local.id(),
     };

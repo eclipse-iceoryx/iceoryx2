@@ -215,7 +215,7 @@ pub unsafe extern "C" fn iox2_subscriber_id(
 
     let subscriber = &mut *subscriber_handle.as_type();
 
-    (*id).value = match subscriber.service_type {
+    *(*id).as_mut() = match subscriber.service_type {
         iox2_service_type_e::IPC => subscriber.value.as_mut().ipc.id(),
         iox2_service_type_e::LOCAL => subscriber.value.as_mut().local.id(),
     };

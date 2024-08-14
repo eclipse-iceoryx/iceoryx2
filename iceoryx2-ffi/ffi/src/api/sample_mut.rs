@@ -157,14 +157,14 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_header(
     sample_handle: iox2_sample_mut_ref_h,
-    header_ptr: *mut *const iox2_publish_subscribe_header_t,
+    header_ptr: *mut iox2_publish_subscribe_header_t,
 ) {
     debug_assert!(!sample_handle.is_null());
     debug_assert!(!header_ptr.is_null());
 
     let sample = &mut *sample_handle.as_type();
 
-    (*header_ptr) = match sample.service_type {
+    *(*header_ptr).as_mut() = *match sample.service_type {
         iox2_service_type_e::IPC => sample.value.as_mut().ipc.header(),
         iox2_service_type_e::LOCAL => sample.value.as_mut().local.header(),
     };

@@ -36,7 +36,7 @@ use crate::port::port_identifiers::UniquePublisherId;
 
 /// Sample header used by
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Header {
     publisher_port_id: UniquePublisherId,

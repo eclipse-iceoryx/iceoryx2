@@ -32,7 +32,6 @@ mod port_factory_notifier_builder;
 mod port_factory_pub_sub;
 mod port_factory_publisher_builder;
 mod port_factory_subscriber_builder;
-mod port_identifiers;
 mod publish_subscribe_header;
 mod publisher;
 mod quirks_correction;
@@ -47,6 +46,10 @@ mod static_config;
 mod static_config_event;
 mod static_config_publish_subscribe;
 mod subscriber;
+mod unique_listener_id;
+mod unique_notifier_id;
+mod unique_publisher_id;
+mod unique_subscriber_id;
 
 pub use config::*;
 pub use event_id::*;
@@ -63,7 +66,6 @@ pub use port_factory_notifier_builder::*;
 pub use port_factory_pub_sub::*;
 pub use port_factory_publisher_builder::*;
 pub use port_factory_subscriber_builder::*;
-pub use port_identifiers::*;
 pub use publish_subscribe_header::*;
 pub use publisher::*;
 pub use quirks_correction::*;
@@ -78,6 +80,10 @@ pub use static_config::*;
 pub use static_config_event::*;
 pub use static_config_publish_subscribe::*;
 pub use subscriber::*;
+pub use unique_listener_id::*;
+pub use unique_notifier_id::*;
+pub use unique_publisher_id::*;
+pub use unique_subscriber_id::*;
 
 /// This constant signals an successful function call
 pub const IOX2_OK: c_int = 0;
