@@ -33,7 +33,7 @@
 //! **Note:** This does **not** send or receive POSIX signals nor is it based on them.
 
 /// Identifies the kind of messaging pattern the [`Service`](crate::service::Service) will use.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(u32)]
 pub enum MessagingPattern {
     /// Unidirectional communication pattern where the
