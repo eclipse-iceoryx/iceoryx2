@@ -22,7 +22,7 @@ use super::HandleToType;
 
 // BEGIN types definition
 
-/// Sample header used by [`MessagingPattern::PublishSubscribe`]
+/// Sample header used by `MessagingPattern::PublishSubscribe`
 #[repr(C)]
 #[repr(align(8))] // core::mem::align_of::<Option<Header>>()
 pub struct iox2_publish_subscribe_header_storage_t {
@@ -48,11 +48,11 @@ impl iox2_publish_subscribe_header_t {
 }
 
 pub struct iox2_publish_subscribe_header_h_t;
-/// The owning handle for `iox2_publish_subscribe_header_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for [`iox2_publish_subscribe_header_t`]. Passing the handle to an function transfers the ownership.
 pub type iox2_publish_subscribe_header_h = *mut iox2_publish_subscribe_header_h_t;
 
 pub struct iox2_publish_subscribe_header_ref_h_t;
-/// The non-owning handle for `iox2_publish_subscribe_header_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for [`iox2_publish_subscribe_header_t`]. Passing the handle to an function does not transfers the ownership.
 pub type iox2_publish_subscribe_header_ref_h = *mut iox2_publish_subscribe_header_ref_h_t;
 
 // NOTE check the README.md for using opaque types with renaming
@@ -83,10 +83,6 @@ impl HandleToType for iox2_publish_subscribe_header_ref_h {
 
 /// This function casts an owning [`iox2_publish_subscribe_header_h`] into a non-owning [`iox2_publish_subscribe_header_ref_h`]
 ///
-/// # Arguments
-///
-/// * `handle` obtained by [`iox2_port_factory_publish_subscribe_header_builder_create`](crate::iox2_port_factory_publish_subscribe_header_builder_create)
-///
 /// Returns a [`iox2_publish_subscribe_header_ref_h`]
 ///
 /// # Safety
@@ -103,10 +99,6 @@ pub unsafe extern "C" fn iox2_cast_publish_subscribe_header_ref_h(
 }
 
 /// This function needs to be called to destroy the publish_subscribe_header!
-///
-/// # Arguments
-///
-/// * `handle` obtained by [`iox2_port_factory_publish_subscribe_header_builder_create`](crate::iox2_port_factory_publish_subscribe_header_builder_create)
 ///
 /// # Safety
 ///

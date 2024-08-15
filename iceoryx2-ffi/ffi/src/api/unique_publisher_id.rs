@@ -20,7 +20,7 @@ use super::HandleToType;
 
 // BEGIN types definition
 
-/// The system-wide unique id of a [`iox2_publisher_t`].
+/// The system-wide unique id of a `iox2_publisher_t`.
 #[repr(C)]
 #[repr(align(4))] // core::mem::align_of::<UniquePublisherId>()
 pub struct iox2_unique_publisher_id_storage_t {
@@ -46,11 +46,11 @@ impl iox2_unique_publisher_id_t {
 }
 
 pub struct iox2_unique_publisher_id_h_t;
-/// The owning handle for `iox2_unique_publisher_id_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for [`iox2_unique_publisher_id_t`]. Passing the handle to an function transfers the ownership.
 pub type iox2_unique_publisher_id_h = *mut iox2_unique_publisher_id_h_t;
 
 pub struct iox2_unique_publisher_id_ref_h_t;
-/// The non-owning handle for `iox2_unique_publisher_id_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for [`iox2_unique_publisher_id_t`]. Passing the handle to an function does not transfers the ownership.
 pub type iox2_unique_publisher_id_ref_h = *mut iox2_unique_publisher_id_ref_h_t;
 
 impl HandleToType for iox2_unique_publisher_id_h {
@@ -94,7 +94,7 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_drop(handle: iox2_unique_publi
 /// This function casts an owning [`iox2_unique_publisher_id_h`] into a non-owning
 /// [`iox2_unique_publisher_id_ref_h`]
 ///
-/// Returns a [`iox2_publisher_ref_h`]
+/// Returns a [`iox2_unique_publisher_id_ref_h`]
 ///
 /// # Safety
 ///
