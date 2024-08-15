@@ -25,7 +25,7 @@ enum class LayoutCreationError : uint8_t {
 };
 
 /// Contains a valid [`Layout`], meaning the alignment is a power of two and
-/// the size is a multiple of the alignment.
+/// the size is zero or a multiple of the alignment.
 class Layout {
   public:
     /// Creates a new [`Layout`] from the provided type `T` by using `sizeof(T)`
