@@ -55,11 +55,8 @@ class Layout {
     }
 
     static auto round_up_to(const uint64_t value, const uint64_t multiple) -> uint64_t {
-        if (value % multiple == 0) {
-            return value;
-        }
-
-        return value * (value / multiple + 1);
+        auto remainder = value % multiple;
+        return value + ((remainder == 0U) ? 0U : value - remainder);
     }
 
     Layout(const uint64_t size, const uint64_t align)
