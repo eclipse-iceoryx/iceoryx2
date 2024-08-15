@@ -140,7 +140,11 @@ inline auto Publisher<S, Payload, UserHeader>::unable_to_deliver_strategy() cons
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    iox2_unique_publisher_id_h id_handle = nullptr;
+
+    iox2_publisher_id(ref_handle, nullptr, &id_handle);
+    return UniquePublisherId { id_handle };
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

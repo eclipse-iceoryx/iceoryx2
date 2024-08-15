@@ -13,19 +13,36 @@
 #ifndef IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/layout.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "unique_port_id.hpp"
 
 namespace iox2 {
+/// Sample header used by [`MessagingPattern::PublishSubscribe`]
 class HeaderPublishSubscribe {
   public:
-    auto publisher_id() const -> UniquePublisherId {
-        IOX_TODO();
-    }
-    auto payload_type_layout() const -> iox::Layout {
-        IOX_TODO();
-    }
+    HeaderPublishSubscribe(const HeaderPublishSubscribe&) = delete;
+    HeaderPublishSubscribe(HeaderPublishSubscribe&& rhs) noexcept;
+    auto operator=(const HeaderPublishSubscribe&) -> HeaderPublishSubscribe& = delete;
+    auto operator=(HeaderPublishSubscribe&& rhs) noexcept -> HeaderPublishSubscribe&;
+    ~HeaderPublishSubscribe();
+
+    /// Returns the [`UniquePublisherId`] of the source [`Publisher`].
+    auto publisher_id() const -> UniquePublisherId;
+
+    /// Returns the [`Layout`] of the corresponding payload.
+    auto payload_type_layout() const -> iox::Layout;
+
+  private:
+    template <ServiceType, typename, typename>
+    friend class Sample;
+    template <ServiceType, typename, typename>
+    friend class SampleMut;
+
+    explicit HeaderPublishSubscribe(iox2_publish_subscribe_header_h handle);
+    void drop();
+
+    iox2_publish_subscribe_header_h m_handle;
 };
 } // namespace iox2
 

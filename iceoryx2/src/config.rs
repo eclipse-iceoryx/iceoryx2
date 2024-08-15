@@ -281,7 +281,7 @@ impl Default for Config {
         Self {
             global: Global {
                 root_path_unix: Path::new(b"/tmp/iceoryx2/").unwrap(),
-                root_path_windows: Path::new(b"C:\\Temp\\iceoryx2\\").unwrap(),
+                root_path_windows: Path::new(b"c:\\Temp\\iceoryx2\\").unwrap(),
                 prefix: FileName::new(b"iox2_").unwrap(),
                 service: Service {
                     directory: Path::new(b"services").unwrap(),
@@ -314,7 +314,7 @@ impl Default for Config {
                     unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                 },
                 event: Event {
-                    max_listeners: 1,
+                    max_listeners: 2,
                     max_notifiers: 16,
                     max_nodes: 36,
                     event_id_max_value: 32,

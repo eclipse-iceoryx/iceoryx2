@@ -13,7 +13,10 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, SampleMutUnion, UserHeaderFfi};
-use crate::{iox2_unable_to_deliver_strategy_e, IOX2_OK};
+use crate::{
+    iox2_unable_to_deliver_strategy_e, iox2_unique_publisher_id_h, iox2_unique_publisher_id_t,
+    IOX2_OK,
+};
 
 use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
 use iceoryx2::prelude::*;
@@ -255,6 +258,48 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
             .unable_to_deliver_strategy()
             .into(),
     }
+}
+
+/// Returns the unique port id of the publisher.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+/// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_publisher_id_t`].
+///                         If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `id_handle_ptr` valid pointer to a [`iox2_unique_publisher_id_h`].
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+/// * `id` is valid and non-null
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publisher_id(
+    publisher_handle: iox2_publisher_ref_h,
+    id_struct_ptr: *mut iox2_unique_publisher_id_t,
+    id_handle_ptr: *mut iox2_unique_publisher_id_h,
+) {
+    debug_assert!(!publisher_handle.is_null());
+    debug_assert!(!id_handle_ptr.is_null());
+
+    fn no_op(_: *mut iox2_unique_publisher_id_t) {}
+    let mut deleter: fn(*mut iox2_unique_publisher_id_t) = no_op;
+    let mut storage_ptr = id_struct_ptr;
+    if id_struct_ptr.is_null() {
+        deleter = iox2_unique_publisher_id_t::dealloc;
+        storage_ptr = iox2_unique_publisher_id_t::alloc();
+    }
+    debug_assert!(!storage_ptr.is_null());
+
+    let publisher = &mut *publisher_handle.as_type();
+
+    let id = match publisher.service_type {
+        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.id(),
+        iox2_service_type_e::LOCAL => publisher.value.as_mut().local.id(),
+    };
+
+    (*storage_ptr).init(id, deleter);
+    *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Sends a copy of the provided data via the publisher. The data must be copyable via `memcpy`.

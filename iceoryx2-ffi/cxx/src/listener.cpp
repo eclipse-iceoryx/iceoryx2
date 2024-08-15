@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/listener.hpp"
-#include "iox/assertions_addendum.hpp"
 #include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
@@ -52,7 +51,11 @@ void Listener<S>::drop() {
 
 template <ServiceType S>
 auto Listener<S>::id() const -> UniqueListenerId {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    iox2_unique_listener_id_h id_handle = nullptr;
+
+    iox2_listener_id(ref_handle, nullptr, &id_handle);
+    return UniqueListenerId { id_handle };
 }
 
 void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context context) {
@@ -142,8 +145,6 @@ auto Listener<S>::timed_wait_one(const iox::units::Duration& timeout)
     }
 
     return iox::err(iox::into<ListenerWaitError>(result));
-
-    IOX_TODO();
 }
 
 template <ServiceType S>

@@ -17,7 +17,8 @@ macro_rules! generate_id {
     { $(#[$documentation:meta])*
         $id_name:ident } => {
         $(#[$documentation])*
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[repr(C)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
         pub struct $id_name(pub(crate) UniqueSystemId);
 
         impl Default for $id_name {

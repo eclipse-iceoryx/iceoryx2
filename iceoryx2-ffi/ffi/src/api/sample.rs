@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, UserHeaderFfi};
-use crate::c_size_t;
+use crate::{c_size_t, iox2_publish_subscribe_header_h, iox2_publish_subscribe_header_t};
 
 use iceoryx2::prelude::*;
 use iceoryx2::sample::Sample;
@@ -114,6 +114,43 @@ impl HandleToType for iox2_sample_ref_h {
 pub unsafe extern "C" fn iox2_cast_sample_ref_h(handle: iox2_sample_h) -> iox2_sample_ref_h {
     debug_assert!(!handle.is_null());
     (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// Acquires the samples header.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_subscriber_receive()`](crate::iox2_subscriber_receive())
+/// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///     [`iox2_publish_subscribe_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `header_handle_ptr` valid pointer to a [`iox2_publish_subscribe_header_h`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_sample_header(
+    handle: iox2_sample_ref_h,
+    header_struct_ptr: *mut iox2_publish_subscribe_header_t,
+    header_handle_ptr: *mut iox2_publish_subscribe_header_h,
+) {
+    debug_assert!(!handle.is_null());
+    debug_assert!(!header_handle_ptr.is_null());
+
+    fn no_op(_: *mut iox2_publish_subscribe_header_t) {}
+    let mut deleter: fn(*mut iox2_publish_subscribe_header_t) = no_op;
+    let mut storage_ptr = header_struct_ptr;
+    if header_struct_ptr.is_null() {
+        deleter = iox2_publish_subscribe_header_t::dealloc;
+        storage_ptr = iox2_publish_subscribe_header_t::alloc();
+    }
+    debug_assert!(!storage_ptr.is_null());
+
+    let sample = &mut *handle.as_type();
+
+    let header = *match sample.service_type {
+        iox2_service_type_e::IPC => sample.value.as_mut().ipc.header(),
+        iox2_service_type_e::LOCAL => sample.value.as_mut().local.header(),
+    };
+
+    (*storage_ptr).init(header, deleter);
+    *header_handle_ptr = (*storage_ptr).as_handle();
 }
 
 /// Acquires the samples user header.
