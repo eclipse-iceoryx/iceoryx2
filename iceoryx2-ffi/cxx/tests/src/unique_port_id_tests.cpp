@@ -43,8 +43,8 @@ struct UniquePortIdTest : public ::testing::Test {
     }
 
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes), come on, its a test
-    ServiceName service_name;
     Node<TYPE> node;
+    ServiceName service_name;
     PortFactoryEvent<TYPE> event;
     PortFactoryPublishSubscribe<TYPE, uint64_t, void> pubsub;
 
