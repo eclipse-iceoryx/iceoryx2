@@ -4,7 +4,6 @@ debug/
 .idea
 build
 bazel-*
-MODULE.bazel*
 
 Cargo.lock
 **/*.rs.bk

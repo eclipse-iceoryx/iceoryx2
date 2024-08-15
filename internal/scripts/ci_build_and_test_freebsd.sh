@@ -76,6 +76,9 @@ echo "###########################################################"
 
 cargo clean
 
+# Skip everything from here onwards on FreeBSD due to limitations on the disk space when building on the VM
+exit 0
+
 echo "###########################"
 echo "# Build language bindings #"
 echo "###########################"
@@ -94,9 +97,6 @@ echo "##############################"
 
 target/ffi/build/tests/iceoryx2-c-tests
 target/ffi/build/tests/iceoryx2-cxx-tests
-
-# Skip the out-of-tree build on FreeBSD due to limitations on the disk space when building on the VM
-exit 0
 
 echo "################################################################"
 echo "# Build language binding examples in out-of-tree configuration #"

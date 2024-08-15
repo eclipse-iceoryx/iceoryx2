@@ -12,6 +12,11 @@
 
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
+exports_files([
+    "LICENSE-APACHE",
+    "LICENSE-MIT",
+])
+
 #
 # Config & Platform support
 #
@@ -56,6 +61,10 @@ filegroup(
         "iceoryx2-ffi/**",
         "iceoryx2-pal/**",
         "iceoryx2/**",
+        "*.bazel",
+        "*.toml",
+        "*.txt",
+        "*.md",
     ]),
     visibility = ["//visibility:public"],
 )

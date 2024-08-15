@@ -41,12 +41,12 @@ maybe(
 
 # Fetch iceoryx_hoofs and iceoryx_platform
 
-ICEORYX_VERSION = "2.95.1"
+ICEORYX_VERSION = "2.95.2"
 
 maybe(
     name = "iceoryx",
     repo_rule = http_archive,
-    sha256 = "911a25900d23b88a31508fb1a8c1098f5f987fe67477e87e9fbe5c75c37f0eae",
+    sha256 = "585d92dac3d9fefd3f6e0cd2275667fb0cd31dddcd07183accdbcd3ae2a000bd",
     strip_prefix = "iceoryx-{}".format(ICEORYX_VERSION),
     url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
 )
