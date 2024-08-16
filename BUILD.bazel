@@ -65,6 +65,7 @@ filegroup(
         "*.toml",
         "*.txt",
         "*.md",
+        "LICENSE-*",
     ]),
     visibility = ["//visibility:public"],
 )
