@@ -47,6 +47,7 @@ namespace iox2 {
 ///
 /// DO NOT MOVE THE SAMPLE INTO ANOTHER THREAD!
 template <ServiceType S, typename Payload, typename UserHeader>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_sample' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class SampleMut {
   public:
     SampleMut(SampleMut&& rhs) noexcept;
@@ -100,16 +101,14 @@ class SampleMut {
     template <ServiceType ST, typename PayloadT, typename UserHeaderT>
     friend auto send_sample(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<size_t, PublisherSendError>;
 
-    explicit SampleMut(iox2_sample_mut_h handle);
+    // The sample is defaulted since both members are initialized in Subscriber::receive
+    explicit SampleMut() = default;
     void drop();
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) will not be accessed directly but only via m_handle and will be set together with m_handle
+    iox2_sample_mut_t m_sample;
     iox2_sample_mut_h m_handle { nullptr };
 };
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline SampleMut<S, Payload, UserHeader>::SampleMut(iox2_sample_mut_h handle)
-    : m_handle { handle } {
-}
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline void SampleMut<S, Payload, UserHeader>::drop() {
@@ -119,16 +118,24 @@ inline void SampleMut<S, Payload, UserHeader>::drop() {
     }
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_sample will be initialized in the move assignment operator
 template <ServiceType S, typename Payload, typename UserHeader>
 inline SampleMut<S, Payload, UserHeader>::SampleMut(SampleMut&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
+namespace internal {
+extern "C" {
+void iox2_sample_mut_move(iox2_sample_mut_t*, iox2_sample_mut_t*, iox2_sample_mut_h*);
+}
+} // namespace internal
+
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto SampleMut<S, Payload, UserHeader>::operator=(SampleMut&& rhs) noexcept -> SampleMut& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+
+        internal::iox2_sample_mut_move(&rhs.m_sample, &m_sample, &m_handle);
         rhs.m_handle = nullptr;
     }
 

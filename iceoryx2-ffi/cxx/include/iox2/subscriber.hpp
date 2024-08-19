@@ -132,13 +132,14 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::receive() const
     -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> {
     auto* ref_handle = iox2_cast_subscriber_ref_h(m_handle);
+
+    Sample<S, Payload, UserHeader> sample;
     iox2_sample_h sample_handle {};
-    auto result = iox2_subscriber_receive(ref_handle, nullptr, &sample_handle);
+    auto result = iox2_subscriber_receive(ref_handle, &sample.m_sample, &sample.m_handle);
 
     if (result == IOX2_OK) {
-        if (sample_handle != nullptr) {
-            return iox::ok(
-                iox::optional<Sample<S, Payload, UserHeader>>(Sample<S, Payload, UserHeader>(sample_handle)));
+        if (sample.m_handle != nullptr) {
+            return iox::ok(iox::optional<Sample<S, Payload, UserHeader>>(std::move(sample)));
         }
         return iox::ok(iox::optional<Sample<S, Payload, UserHeader>>(iox::nullopt));
     }

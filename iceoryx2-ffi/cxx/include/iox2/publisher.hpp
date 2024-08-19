@@ -169,12 +169,12 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
     -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
     auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
-    iox2_sample_mut_h sample_handle {};
+    SampleMut<S, Payload, UserHeader> sample;
 
-    auto result = iox2_publisher_loan(ref_handle, nullptr, &sample_handle);
+    auto result = iox2_publisher_loan(ref_handle, &sample.m_sample, &sample.m_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(SampleMut<S, Payload, UserHeader>(sample_handle));
+        return iox::ok(std::move(sample));
     }
 
     return iox::err(iox::into<PublisherLoanError>(result));
