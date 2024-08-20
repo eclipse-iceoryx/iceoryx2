@@ -32,6 +32,7 @@ namespace iox2 {
 ///
 /// DO NOT MOVE THE SAMPLE INTO ANOTHER THREAD!
 template <ServiceType, typename Payload, typename UserHeader>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_sample' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class Sample {
   public:
     Sample(Sample&& rhs) noexcept;
@@ -64,16 +65,13 @@ class Sample {
     template <ServiceType, typename, typename>
     friend class Subscriber;
 
-    explicit Sample(iox2_sample_h handle);
+    // The sample is defaulted since both members are initialized in Subscriber::receive
+    explicit Sample() = default;
     void drop();
 
+    iox2_sample_t m_sample;
     iox2_sample_h m_handle { nullptr };
 };
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline Sample<S, Payload, UserHeader>::Sample(iox2_sample_h handle)
-    : m_handle { handle } {
-}
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline void Sample<S, Payload, UserHeader>::drop() {
@@ -83,16 +81,24 @@ inline void Sample<S, Payload, UserHeader>::drop() {
     }
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_sample will be initialized in the move assignment operator
 template <ServiceType S, typename Payload, typename UserHeader>
 inline Sample<S, Payload, UserHeader>::Sample(Sample&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
+namespace internal {
+extern "C" {
+void iox2_sample_move(iox2_sample_t*, iox2_sample_t*, iox2_sample_h*);
+}
+} // namespace internal
+
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Sample<S, Payload, UserHeader>::operator=(Sample&& rhs) noexcept -> Sample& {
     if (this != &rhs) {
         drop();
-        m_handle = std::move(rhs.m_handle);
+
+        internal::iox2_sample_move(&rhs.m_sample, &m_sample, &m_handle);
         rhs.m_handle = nullptr;
     }
 
