@@ -133,7 +133,7 @@ mod shm_allocator {
         let layout = unsafe {
             Layout::from_size_align_unchecked(
                 CHUNK_SIZE,
-                (test.sut().max_alignment().next_power_of_two() as u64 + 1) as usize,
+                (test.sut().max_alignment() + 1).next_power_of_two() as usize,
             )
         };
         let distance = unsafe { test.sut().allocate(layout) };
