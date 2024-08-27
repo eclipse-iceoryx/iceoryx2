@@ -18,9 +18,11 @@ use serde::{Deserialize, Serialize};
 
 use super::{messaging_pattern::MessagingPattern, service_name::ServiceName};
 
+const SERVICE_ID_CAPACITY: usize = 64;
+
 /// The unique id of a [`Service`](crate::service::Service)
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Hash)]
-pub struct ServiceId(pub(crate) RestrictedFileName<64>);
+pub struct ServiceId(pub(crate) RestrictedFileName<SERVICE_ID_CAPACITY>);
 
 impl ServiceId {
     pub(crate) fn new<Hasher: Hash>(
@@ -37,6 +39,11 @@ impl ServiceId {
                    when RestrictedFileName::new(&value),
                    "This should never happen! The Hasher used to create the ServiceId created an illegal value ({value}, len = {}).", value.len()),
         }
+    }
+
+    /// Returns the maximum string length of a [`ServiceId`]
+    pub const fn max_len() -> usize {
+        SERVICE_ID_CAPACITY
     }
 
     /// Returns a str reference to the [`ServiceId`]

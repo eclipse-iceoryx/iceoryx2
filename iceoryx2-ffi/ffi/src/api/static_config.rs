@@ -14,13 +14,13 @@
 
 use core::ffi::c_char;
 
-use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::service::{service_id::*, static_config::messaging_pattern::MessagingPattern};
 use iceoryx2_bb_log::fatal_panic;
 
 use crate::{
     iox2_messaging_pattern_e, iox2_static_config_event_t, iox2_static_config_publish_subscribe_t,
-    IOX2_SERVICE_ID_LENGTH, IOX2_SERVICE_NAME_LENGTH,
+    IOX2_SERVICE_NAME_LENGTH,
 };
 
 #[derive(Clone, Copy)]
@@ -33,7 +33,7 @@ pub union iox2_static_config_details_t {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct iox2_static_config_t {
-    pub id: [c_char; IOX2_SERVICE_ID_LENGTH],
+    pub id: [c_char; ServiceId::max_len()],
     pub name: [c_char; IOX2_SERVICE_NAME_LENGTH],
     pub messaging_pattern: iox2_messaging_pattern_e,
     pub details: iox2_static_config_details_t,
@@ -43,16 +43,15 @@ impl From<&StaticConfig> for iox2_static_config_t {
     fn from(value: &StaticConfig) -> Self {
         Self {
             id: core::array::from_fn(|n| {
-                debug_assert!(value.uuid().as_bytes().len() + 1 < IOX2_SERVICE_ID_LENGTH);
-
-                if n < value.uuid().as_bytes().len() {
-                    value.uuid().as_bytes()[n] as _
+                let raw_service_id = value.service_id().as_str().as_bytes();
+                if n < raw_service_id.len() {
+                    raw_service_id[n] as _
                 } else {
                     0
                 }
             }),
             name: core::array::from_fn(|n| {
-                debug_assert!(value.uuid().as_bytes().len() + 1 < IOX2_SERVICE_NAME_LENGTH);
+                debug_assert!(value.name().as_bytes().len() + 1 < IOX2_SERVICE_NAME_LENGTH);
 
                 if n < value.name().as_bytes().len() {
                     value.name().as_bytes()[n] as _

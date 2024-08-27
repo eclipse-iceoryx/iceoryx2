@@ -16,5 +16,4 @@ pub const IOX2_MAX_ATTRIBUTES_PER_SERVICE: usize = 16;
 pub const IOX2_MAX_VALUES_PER_ATTRIBUTE_KEY: usize = 8;
 pub const IOX2_NODE_NAME_LENGTH: usize = 128;
 pub const IOX2_SERVICE_NAME_LENGTH: usize = 256;
-pub const IOX2_SERVICE_ID_LENGTH: usize = 64;
 pub const IOX2_TYPE_NAME_LENGTH: usize = 256;
