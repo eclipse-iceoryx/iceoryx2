@@ -24,18 +24,6 @@ pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     file
 }
 
-pub(crate) fn dynamic_config_storage_name(service_uuid: &str) -> FileName {
-    FileName::new(service_uuid.as_bytes()).unwrap()
-}
-
-pub(crate) fn static_config_storage_name(uuid: &str) -> FileName {
-    FileName::new(uuid.as_bytes()).unwrap()
-}
-
-pub(crate) fn service_tag_name(uuid: &str) -> FileName {
-    FileName::new(uuid.as_bytes()).unwrap()
-}
-
 pub(crate) fn connection_name(
     publisher_id: UniquePublisherId,
     subscriber_id: UniqueSubscriberId,

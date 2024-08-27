@@ -266,6 +266,9 @@ mod semantic_string {
     #[instantiate_tests(<{FileName::max_len()}, FileName>)]
     mod file_name {}
 
+    #[instantiate_tests(<64, RestrictedFileName::<64>>)]
+    mod restricted_file_name {}
+
     #[instantiate_tests(<{Path::max_len()}, Path>)]
     mod path {}
 

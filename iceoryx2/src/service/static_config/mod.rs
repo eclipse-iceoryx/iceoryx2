@@ -34,12 +34,12 @@ use crate::config;
 
 use self::messaging_pattern::MessagingPattern;
 
-use super::{attribute::AttributeSet, service_name::ServiceName};
+use super::{attribute::AttributeSet, service_id::ServiceId, service_name::ServiceName};
 
 /// Defines a common set of static service configuration details every service shares.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct StaticConfig {
-    uuid: String,
+    service_id: ServiceId,
     service_name: ServiceName,
     pub(crate) attributes: AttributeSet,
     pub(crate) messaging_pattern: MessagingPattern,
@@ -60,12 +60,10 @@ impl StaticConfig {
     ) -> Self {
         let messaging_pattern = MessagingPattern::Event(event::StaticConfig::new(config));
         Self {
-            uuid: create_uuid::<Hasher>(
+            service_id: ServiceId::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::Event,
-            )
-            .value()
-            .into(),
+            ),
             service_name: service_name.clone(),
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -79,12 +77,10 @@ impl StaticConfig {
         let messaging_pattern =
             MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(config));
         Self {
-            uuid: create_uuid::<Hasher>(
+            service_id: ServiceId::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
-            )
-            .value()
-            .into(),
+            ),
             service_name: service_name.clone(),
             messaging_pattern,
             attributes: AttributeSet::new(),
@@ -97,8 +93,8 @@ impl StaticConfig {
     }
 
     /// Returns the uuid of the [`crate::service::Service`]
-    pub fn uuid(&self) -> &str {
-        &self.uuid
+    pub fn service_id(&self) -> &ServiceId {
+        &self.service_id
     }
 
     /// Returns the [`ServiceName`] of the [`crate::service::Service`]

@@ -47,6 +47,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
+use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config};
 
@@ -85,8 +86,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         self.service.__internal_state().static_config.name()
     }
 
-    fn uuid(&self) -> &str {
-        self.service.__internal_state().static_config.uuid()
+    fn service_id(&self) -> &ServiceId {
+        self.service.__internal_state().static_config.service_id()
     }
 
     fn attributes(&self) -> &AttributeSet {
