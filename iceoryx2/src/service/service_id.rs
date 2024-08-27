@@ -30,15 +30,12 @@ impl ServiceId {
         messaging_pattern: MessagingPattern,
     ) -> Self {
         let pattern_and_service = (messaging_pattern as u32).to_string() + service_name.as_str();
-        let value = Hasher::new(pattern_and_service.as_bytes())
+        let value = *Hasher::new(pattern_and_service.as_bytes())
             .value()
-            .as_base64url()
-            .clone();
-        Self {
-            0: fatal_panic!(from "ServiceId::new()",
+            .as_base64url();
+        Self(fatal_panic!(from "ServiceId::new()",
                    when RestrictedFileName::new(&value),
-                   "This should never happen! The Hasher used to create the ServiceId created an illegal value ({value}, len = {}).", value.len()),
-        }
+                   "This should never happen! The Hasher used to create the ServiceId created an illegal value ({value}, len = {}).", value.len()))
     }
 
     /// Returns the maximum string length of a [`ServiceId`]

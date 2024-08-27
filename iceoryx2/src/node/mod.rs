@@ -1031,7 +1031,7 @@ impl<Service: service::Service> Node<Service> {
             Ok(tags) => {
                 for tag in &tags {
                     if let Ok(v) = tag.try_into() {
-                        if callback(&ServiceId { 0: v }) == CallbackProgression::Stop {
+                        if callback(&ServiceId(v)) == CallbackProgression::Stop {
                             break;
                         }
                     } else {

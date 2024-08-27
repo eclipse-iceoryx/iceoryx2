@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! println!("name:                         {:?}", event.name());
-//! println!("uuid:                         {:?}", event.uuid());
+//! println!("service id:                   {:?}", event.service_id());
 //! println!("max listeners:                {:?}", event.static_config().max_listeners());
 //! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("number of active listeners:   {:?}", event.dynamic_config().number_of_listeners());

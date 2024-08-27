@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! println!("name:                             {:?}", pubsub.name());
-//! println!("uuid:                             {:?}", pubsub.uuid());
+//! println!("service id:                       {:?}", pubsub.service_id());
 //! println!("type details:                     {:?}", pubsub.static_config().message_type_details());
 //! println!("max publishers:                   {:?}", pubsub.static_config().max_publishers());
 //! println!("max subscribers:                  {:?}", pubsub.static_config().max_subscribers());
