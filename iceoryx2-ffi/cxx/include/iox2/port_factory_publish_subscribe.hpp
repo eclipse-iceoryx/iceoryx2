@@ -25,6 +25,7 @@
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_publisher.hpp"
 #include "iox2/port_factory_subscriber.hpp"
+#include "iox2/service_id.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/static_config_publish_subscribe.hpp"
@@ -46,8 +47,8 @@ class PortFactoryPublishSubscribe {
     /// Returns the [`ServiceName`] of the service
     auto name() const -> const ServiceName&;
 
-    /// Returns the uuid of the [`Service`]
-    auto uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH>;
+    /// Returns the [`ServiceId`] of the [`Service`]
+    auto service_id() const -> const ServiceId&;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> const AttributeSet&;
@@ -126,7 +127,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const ->
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH> {
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() const -> const ServiceId& {
     IOX_TODO();
 }
 

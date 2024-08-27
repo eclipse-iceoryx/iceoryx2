@@ -171,7 +171,7 @@ impl<const CAPACITY: usize> iceoryx2_bb_container::semantic_string::SemanticStri
     }
 
     fn normalize(&self) -> Self {
-        self.clone()
+        *self
     }
 
     unsafe fn new_unchecked(bytes: &[u8]) -> Self {
@@ -285,6 +285,8 @@ impl<const CAPACITY: usize> PartialEq<[u8; CAPACITY]> for RestrictedFileName<CAP
 
 impl<const CAPACITY: usize> PartialEq<&[u8; CAPACITY]> for RestrictedFileName<CAPACITY> {
     fn eq(&self, other: &&[u8; CAPACITY]) -> bool {
+        // TODO: false positive from clippy
+        #[allow(clippy::explicit_auto_deref)]
         let other = match RestrictedFileName::<CAPACITY>::new(*other) {
             Ok(other) => other,
             Err(_) => return false,
