@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! println!("name:                         {:?}", event.name());
-//! println!("uuid:                         {:?}", event.uuid());
+//! println!("service id:                   {:?}", event.service_id());
 //! println!("max listeners:                {:?}", event.static_config().max_listeners());
 //! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("number of active listeners:   {:?}", event.dynamic_config().number_of_listeners());
@@ -38,6 +38,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
+use crate::service::service_id::ServiceId;
 use crate::service::{self, static_config};
 use crate::service::{dynamic_config, ServiceName};
 
@@ -66,8 +67,8 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
         self.service.__internal_state().static_config.name()
     }
 
-    fn uuid(&self) -> &str {
-        self.service.__internal_state().static_config.uuid()
+    fn service_id(&self) -> &ServiceId {
+        self.service.__internal_state().static_config.service_id()
     }
 
     fn attributes(&self) -> &AttributeSet {

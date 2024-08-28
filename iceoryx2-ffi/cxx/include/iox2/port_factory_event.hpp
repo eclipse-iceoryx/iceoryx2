@@ -15,7 +15,6 @@
 
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
-#include "iox/string.hpp"
 #include "iox2/attribute_set.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_event.hpp"
@@ -24,6 +23,7 @@
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_listener.hpp"
 #include "iox2/port_factory_notifier.hpp"
+#include "iox2/service_id.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/static_config_event.hpp"
@@ -43,8 +43,8 @@ class PortFactoryEvent {
     /// Returns the [`ServiceName`] of the service
     auto name() const -> ServiceNameView;
 
-    /// Returns the uuid of the [`Service`]
-    auto uuid() const -> iox::string<IOX2_SERVICE_ID_LENGTH>;
+    /// Returns the [`ServiceId`] of the [`Service`]
+    auto service_id() const -> const ServiceId&;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> const AttributeSet&;

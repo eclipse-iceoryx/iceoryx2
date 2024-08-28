@@ -25,13 +25,11 @@ use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
-use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
-use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
@@ -47,9 +45,6 @@ use std::sync::Arc;
 use super::config_scheme::dynamic_config_storage_config;
 use super::config_scheme::service_tag_config;
 use super::config_scheme::static_config_storage_config;
-use super::naming_scheme::dynamic_config_storage_name;
-use super::naming_scheme::service_tag_name;
-use super::naming_scheme::static_config_storage_name;
 use super::service_name::ServiceName;
 use super::Service;
 
@@ -176,9 +171,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceState> {
         let static_storage_config =
             static_config_storage_config::<ServiceType>(self.shared_node.config());
-        let file_name_uuid = fatal_panic!(from self,
-                        when FileName::new(self.service_config.uuid().as_bytes()),
-                        "This should never happen! The uuid should be always a valid file name.");
+        let file_name_uuid = self.service_config.service_id().0.into();
         let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new().create(),
                                         with ServiceState::InternalFailure,
                                         "{} since the adaptive wait could not be created.", msg);
@@ -244,9 +237,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                                             read_content.as_mut_vec() }),
                                      with ServiceState::Corrupted, "Unable to deserialize the service config. Is the service corrupted?");
 
-                    if service_config.uuid() != self.service_config.uuid() {
+                    if service_config.service_id() != self.service_config.service_id() {
                         fail!(from self, with ServiceState::Corrupted,
-                        "{} a service with that name exist but different uuid.", msg);
+                        "{} a service with that name exist but different ServiceId.", msg);
                     }
 
                     let msg = "Service exist but is not compatible";
@@ -283,7 +276,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             DynamicConfig,
         >>::Builder<'_> as NamedConceptBuilder<
             ServiceType::DynamicStorage,
-        >>::new(&dynamic_config_storage_name(self.service_config.uuid()))
+        >>::new(&self.service_config.service_id().0.into())
             .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
             .supplementary_size(additional_size + required_memory_size)
             .has_ownership(false)
@@ -294,7 +287,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     let node_handle = fatal_panic!(from self,
                             when dynamic_storage.get().register_node_id(*node_id),
                             "{} since event the first NodeId could not be registered.", msg);
-                    self.shared_node.registered_services().add(self.service_config.uuid(), node_handle);
+                    self.shared_node.registered_services().add(self.service_config.service_id(), node_handle);
                     Ok(dynamic_storage)
                 },
                 Err(e) => {
@@ -312,7 +305,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage,
-                >>::new(&dynamic_config_storage_name(self.service_config.uuid()))
+                >>::new(&self.service_config.service_id().0.into())
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
                 .open(),
@@ -320,7 +313,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
         self.shared_node
             .registered_services()
-            .add_or(self.service_config.uuid(), || {
+            .add_or(self.service_config.service_id(), || {
                 let node_id = self.shared_node.id();
                 match storage.get().register_node_id(*node_id) {
                     Ok(handle) => Ok(handle),
@@ -345,7 +338,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
     ) -> Result<Option<ServiceType::StaticStorage>, ErrorType> {
         match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
             ServiceType::StaticStorage,
-        >>::new(&service_tag_name(self.service_config.uuid()))
+        >>::new(&self.service_config.service_id().0.into())
         .config(&service_tag_config::<ServiceType>(
             self.shared_node.config(),
             self.shared_node.id(),
@@ -369,7 +362,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         Ok(
             fail!(from self, when <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
                         ServiceType::StaticStorage,
-                    >>::new(&static_config_storage_name(self.service_config.uuid()))
+                    >>::new(&self.service_config.service_id().0.into())
                     .config(&static_config_storage_config::<ServiceType>(
                         self.shared_node.config(),
                     ))

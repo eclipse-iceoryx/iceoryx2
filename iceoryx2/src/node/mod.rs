@@ -122,6 +122,7 @@ use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
 };
+use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, remove_service_tag};
 use crate::{config::Config, service::config_scheme::node_details_config};
@@ -468,11 +469,9 @@ impl<Service: service::Service> DeadNodeView<Service> {
         }
         let cleaner = cleaner.unwrap();
 
-        let remove_node_from_service = |service_uuid: &FileName| {
-            if Service::__internal_remove_node_from_service(self.id(), service_uuid, config).is_ok()
-            {
-                let service_uuid_str = core::str::from_utf8(service_uuid.as_bytes()).unwrap();
-                if let Err(e) = remove_service_tag::<Service>(self.id(), service_uuid_str, config) {
+        let remove_node_from_service = |service_id: &ServiceId| {
+            if Service::__internal_remove_node_from_service(self.id(), service_id, config).is_ok() {
+                if let Err(e) = remove_service_tag::<Service>(self.id(), service_id, config) {
                     debug!(from self,
                                     "The service tag coult not be removed from the dead node ({:?}).",
                                     e);
@@ -616,56 +615,60 @@ fn remove_node<Service: service::Service>(
 
 #[derive(Debug)]
 pub(crate) struct RegisteredServices {
-    data: Mutex<HashMap<String, (ContainerHandle, u64)>>,
+    data: Mutex<HashMap<ServiceId, (ContainerHandle, u64)>>,
 }
 
 unsafe impl Send for RegisteredServices {}
 unsafe impl Sync for RegisteredServices {}
 
 impl RegisteredServices {
-    pub(crate) fn add(&self, uuid: &str, handle: ContainerHandle) {
+    pub(crate) fn add(&self, service_id: &ServiceId, handle: ContainerHandle) {
         if self
             .data
             .lock()
             .unwrap()
-            .insert(uuid.to_string(), (handle, 1))
+            .insert(service_id.clone(), (handle, 1))
             .is_some()
         {
             fatal_panic!(from "RegisteredServices::add()",
-                "This should never happen! The service with the uuid {} was already registered.", uuid);
+                "This should never happen! The service with the {:?} was already registered.", service_id);
         }
     }
 
     pub(crate) fn add_or<F: FnMut() -> Result<ContainerHandle, OpenDynamicStorageFailure>>(
         &self,
-        uuid: &str,
+        service_id: &ServiceId,
         mut or_callback: F,
     ) -> Result<(), OpenDynamicStorageFailure> {
         let mut data = self.data.lock().unwrap();
-        match data.get_mut(uuid) {
+        match data.get_mut(service_id) {
             Some(handle) => {
                 handle.1 += 1;
             }
             None => {
                 drop(data);
                 let handle = or_callback()?;
-                self.add(uuid, handle);
+                self.add(service_id, handle);
             }
         };
         Ok(())
     }
 
-    pub(crate) fn remove<F: FnMut(ContainerHandle)>(&self, uuid: &str, mut cleanup_call: F) {
+    pub(crate) fn remove<F: FnMut(ContainerHandle)>(
+        &self,
+        service_id: &ServiceId,
+        mut cleanup_call: F,
+    ) {
         let mut data = self.data.lock().unwrap();
-        if let Some(entry) = data.get_mut(uuid) {
+        if let Some(entry) = data.get_mut(service_id) {
             entry.1 -= 1;
             if entry.1 == 0 {
                 cleanup_call(entry.0);
-                data.remove(uuid);
+                data.remove(service_id);
             }
         } else {
             fatal_panic!(from "RegisteredServices::remove()",
-                "This should never happen! The service with the uuid {} was not registered.", uuid);
+                "This should never happen! The service with the {:?} was not registered.", service_id);
         }
     }
 }
@@ -1012,7 +1015,7 @@ impl<Service: service::Service> Node<Service> {
         Ok(Some(node_details))
     }
 
-    fn service_tags<F: FnMut(&FileName) -> CallbackProgression>(
+    fn service_tags<F: FnMut(&ServiceId) -> CallbackProgression>(
         config: &Config,
         node_id: &NodeId,
         mut callback: F,
@@ -1026,9 +1029,13 @@ impl<Service: service::Service> Node<Service> {
             &service_tag_config::<Service>(config, node_id),
         ) {
             Ok(tags) => {
-                for tag in tags {
-                    if callback(&tag) == CallbackProgression::Stop {
-                        break;
+                for tag in &tags {
+                    if let Ok(v) = tag.try_into() {
+                        if callback(&ServiceId(v)) == CallbackProgression::Stop {
+                            break;
+                        }
+                    } else {
+                        continue;
                     }
                 }
                 Ok(())

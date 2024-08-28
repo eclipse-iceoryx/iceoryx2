@@ -141,6 +141,9 @@ pub mod port_factory;
 /// Represents the name of a [`Service`]
 pub mod service_name;
 
+/// Represents the unique id of a [`Service`]
+pub mod service_id;
+
 /// Represents the static configuration of a [`Service`]. These are the settings that never change
 /// during the runtime of a service, like:
 ///
@@ -168,7 +171,6 @@ use crate::config;
 use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};
 use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
-use crate::service::naming_scheme::dynamic_config_storage_name;
 use crate::service::static_config::*;
 use config_scheme::service_tag_config;
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -187,7 +189,7 @@ use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
-use naming_scheme::service_tag_name;
+use service_id::ServiceId;
 
 use self::dynamic_config::DeregisterNodeState;
 use self::messaging_pattern::MessagingPattern;
@@ -291,8 +293,8 @@ impl<S: Service> ServiceState<S> {
             dynamic_storage,
             static_storage,
         };
-        trace!(from "Service::open()", "open service: {} (uuid={:?})",
-            new_self.static_config.name(), new_self.static_config.uuid());
+        trace!(from "Service::open()", "open service: {} ({:?})",
+            new_self.static_config.name(), new_self.static_config.service_id());
         new_self
     }
 }
@@ -300,7 +302,7 @@ impl<S: Service> ServiceState<S> {
 impl<S: Service> Drop for ServiceState<S> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
-        let id = self.static_config.uuid();
+        let id = self.static_config.service_id();
         self.shared_node.registered_services().remove(id, |handle| {
             if let Err(e) = remove_service_tag::<S>(self.shared_node.id(), id, self.shared_node.config())
             {
@@ -310,13 +312,13 @@ impl<S: Service> Drop for ServiceState<S> {
 
             match self.dynamic_storage.get().deregister_node_id(handle) {
                 DeregisterNodeState::HasOwners => {
-                    trace!(from origin, "close service: {} (uuid={:?})",
+                    trace!(from origin, "close service: {} ({:?})",
                             self.static_config.name(), id);
                 }
                 DeregisterNodeState::NoMoreOwners => {
                     self.static_storage.acquire_ownership();
                     self.dynamic_storage.acquire_ownership();
-                    trace!(from origin, "close and remove service: {} (uuid={:?})",
+                    trace!(from origin, "close and remove service: {} ({:?})",
                             self.static_config.name(), id);
                 }
             }
@@ -327,7 +329,6 @@ impl<S: Service> Drop for ServiceState<S> {
 pub(crate) mod internal {
     use config_scheme::static_config_storage_config;
     use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
-    use naming_scheme::static_config_storage_name;
 
     use crate::{
         node::NodeId,
@@ -350,19 +351,16 @@ pub(crate) mod internal {
 
         fn __internal_remove_node_from_service(
             node_id: &NodeId,
-            service_uuid: &FileName,
+            service_id: &ServiceId,
             config: &config::Config,
         ) -> Result<(), ServiceRemoveNodeError> {
             let origin = format!(
                 "Service::remove_node_from_service({:?}, {:?})",
-                node_id, service_uuid
+                node_id, service_id
             );
             let msg = "Unable to remove node from service";
 
-            let dynamic_config = match open_dynamic_config::<S>(
-                config,
-                core::str::from_utf8(service_uuid.as_bytes()).unwrap(),
-            ) {
+            let dynamic_config = match open_dynamic_config::<S>(config, service_id) {
                 Ok(Some(c)) => c,
                 Ok(None) => return Ok(()),
                 Err(ServiceDetailsError::VersionMismatch) => {
@@ -427,9 +425,7 @@ pub(crate) mod internal {
             if remove_service {
                 match unsafe {
                     <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
-                        &static_config_storage_name(
-                            core::str::from_utf8(service_uuid.as_bytes()).unwrap(),
-                        ),
+                        &service_id.0.into(),
                         &static_config_storage_config::<S>(config),
                     )
                 } {
@@ -629,13 +625,13 @@ fn details<S: Service>(
             }
         };
 
-    if uuid.as_bytes() != service_config.uuid().as_bytes() {
+    if uuid.as_bytes() != service_config.service_id().0.as_bytes() {
         fail!(from origin, with ServiceDetailsError::ServiceInInconsistentState,
                 "{} since the service {:?} has an inconsistent hash of {} according to config {:?}",
                 msg, service_config, uuid, config);
     }
 
-    let dynamic_config = open_dynamic_config::<S>(config, service_config.uuid())?;
+    let dynamic_config = open_dynamic_config::<S>(config, service_config.service_id())?;
     let dynamic_details = if let Some(d) = dynamic_config {
         let mut nodes = vec![];
         d.get().list_node_ids(|node_id| {
@@ -663,12 +659,12 @@ fn details<S: Service>(
 
 fn open_dynamic_config<S: Service>(
     config: &config::Config,
-    service_uuid: &str,
+    service_id: &ServiceId,
 ) -> Result<Option<S::DynamicStorage>, ServiceDetailsError> {
     let origin = format!(
-        "Service::open_dynamic_details<{}>(service_uuid: {})",
+        "Service::open_dynamic_details<{}>({:?})",
         core::any::type_name::<S>(),
-        service_uuid
+        service_id
     );
     let msg = "Unable to open the services dynamic config";
     match
@@ -676,7 +672,7 @@ fn open_dynamic_config<S: Service>(
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     S::DynamicStorage,
-                >>::new(&dynamic_config_storage_name(service_uuid))
+                >>::new(&service_id.0.into())
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)
                 .open() {
@@ -695,19 +691,19 @@ fn open_dynamic_config<S: Service>(
 
 pub(crate) fn remove_service_tag<S: Service>(
     node_id: &NodeId,
-    service_uuid: &str,
+    service_id: &ServiceId,
     config: &config::Config,
 ) -> Result<(), ServiceRemoveTagError> {
     let origin = format!(
-        "remove_service_tag<{}>({:?}, service_uuid: {:?})",
+        "remove_service_tag<{}>({:?}, service_id: {:?})",
         core::any::type_name::<S>(),
         node_id,
-        service_uuid
+        service_id
     );
 
     match unsafe {
         <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
-            &service_tag_name(service_uuid),
+            &service_id.0.into(),
             &service_tag_config::<S>(config, node_id),
         )
     } {

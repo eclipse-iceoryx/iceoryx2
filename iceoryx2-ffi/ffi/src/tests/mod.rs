@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod iceoryx2_settings_tests;
 mod listener_tests;
 mod node_builder_tests;
 mod node_name_tests;

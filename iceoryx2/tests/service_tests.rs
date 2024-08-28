@@ -618,14 +618,14 @@ mod service {
                 .create(&node, &service_name, &AttributeSpecifier::new())
                 .unwrap();
 
-            service_ids.push(sut.uuid().to_string());
+            service_ids.push(sut.service_id().clone());
             services.push(sut);
             nodes.push(node);
         }
 
         let mut listed_services = vec![];
         let result = Sut::list(Config::global_config(), |service| {
-            listed_services.push(service.static_details.uuid().to_string());
+            listed_services.push(service.static_details.service_id().clone());
             CallbackProgression::Continue
         });
         assert_that!(result, is_ok);
@@ -686,7 +686,7 @@ mod service {
 
                         let mut found_me = false;
                         let result = Sut::list(Config::global_config(), |s| {
-                            if sut.uuid() == s.static_details.uuid() {
+                            if sut.service_id() == s.static_details.service_id() {
                                 found_me = true;
                             }
                             CallbackProgression::Continue
@@ -934,7 +934,7 @@ mod service {
             .open(&node, &service_name, &AttributeVerifier::new())
             .unwrap();
 
-        assert_that!(sut.uuid(), eq sut2.uuid());
+        assert_that!(sut.service_id(), eq sut2.service_id());
     }
 
     mod ipc {
