@@ -133,14 +133,14 @@ impl<'de, const CAPACITY: usize> serde::de::Visitor<'de>
     where
         E: serde::de::Error,
     {
-        match RestrictedFileName::<CAPACITY>::new(v.as_bytes()) {
-            Ok(v) => Ok(v),
-            Err(v) => Err(E::custom(std::format!(
-                "invalid RestrictedFileName<{}> provided {:?}.",
+        RestrictedFileName::<CAPACITY>::new(v.as_bytes()).map_err(|e| {
+            E::custom(std::format!(
+                "invalid RestrictedFileName<{}> provided {:?} ({:?}).",
                 CAPACITY,
-                v
-            ))),
-        }
+                v,
+                e
+            ))
+        })
     }
 }
 
