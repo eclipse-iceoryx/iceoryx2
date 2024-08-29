@@ -26,7 +26,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
 
     let service_a2b = node
         .service_builder(&service_name_a2b)
-        .publish_subscribe::<u64>()
+        .publish_subscribe::<[u8]>()
         .max_publishers(1)
         .max_subscribers(1)
         .history_size(0)
@@ -36,7 +36,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
 
     let service_b2a = node
         .service_builder(&service_name_b2a)
-        .publish_subscribe::<u64>()
+        .publish_subscribe::<[u8]>()
         .max_publishers(1)
         .max_subscribers(1)
         .history_size(0)
@@ -51,16 +51,30 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
         .affinity(args.cpu_core_thread_1)
         .priority(255)
         .spawn(|| {
-            let sender_a2b = service_a2b.publisher_builder().create().unwrap();
+            let sender_a2b = service_a2b
+                .publisher_builder()
+                .max_slice_len(args.payload_size)
+                .create()
+                .unwrap();
             let receiver_b2a = service_b2a.subscriber_builder().create().unwrap();
 
             barrier.wait();
 
-            let mut sample = sender_a2b.loan().unwrap();
+            let mut sample = unsafe {
+                sender_a2b
+                    .loan_slice_uninit(args.payload_size)
+                    .unwrap()
+                    .assume_init()
+            };
 
             for _ in 0..args.iterations {
                 sample.send().unwrap();
-                sample = sender_a2b.loan().unwrap();
+                sample = unsafe {
+                    sender_a2b
+                        .loan_slice_uninit(args.payload_size)
+                        .unwrap()
+                        .assume_init()
+                };
                 while receiver_b2a.receive().unwrap().is_none() {}
             }
         });
@@ -69,13 +83,22 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
         .affinity(args.cpu_core_thread_2)
         .priority(255)
         .spawn(|| {
-            let sender_b2a = service_b2a.publisher_builder().create().unwrap();
+            let sender_b2a = service_b2a
+                .publisher_builder()
+                .max_slice_len(args.payload_size)
+                .create()
+                .unwrap();
             let receiver_a2b = service_a2b.subscriber_builder().create().unwrap();
 
             barrier.wait();
 
             for _ in 0..args.iterations {
-                let sample = sender_b2a.loan().unwrap();
+                let sample = unsafe {
+                    sender_b2a
+                        .loan_slice_uninit(args.payload_size)
+                        .unwrap()
+                        .assume_init()
+                };
                 while receiver_a2b.receive().unwrap().is_none() {}
 
                 sample.send().unwrap();
@@ -91,11 +114,12 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
 
     let stop = start.elapsed().expect("failed to measure time");
     println!(
-        "{} ::: Iterations: {}, Time: {}, Latency: {} ns",
+        "{} ::: Iterations: {}, Time: {}, Latency: {} ns, Sample Size: {}",
         std::any::type_name::<T>(),
         args.iterations,
         stop.as_secs_f64(),
-        stop.as_nanos() / (args.iterations as u128 * 2)
+        stop.as_nanos() / (args.iterations as u128 * 2),
+        args.payload_size
     );
 
     Ok(())
@@ -125,6 +149,9 @@ struct Args {
     /// The cpu core that shall be used by thread 2
     #[clap(long, default_value_t = 1)]
     cpu_core_thread_2: usize,
+    /// The size in bytes of the payload that shall be used
+    #[clap(short, long, default_value_t = 8192)]
+    payload_size: usize,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
