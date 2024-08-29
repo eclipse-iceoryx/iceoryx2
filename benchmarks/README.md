@@ -29,7 +29,7 @@ reception to promptly respond with a return signal notification. This process re
 times, and the average latency is subsequently computed.
 
 ```sh
-cargo run --bin benchmark-event --release -- -i 10000
+cargo run --bin benchmark-event --release -- --bench-all
 ```
 
 For more benchmark configuration details, see

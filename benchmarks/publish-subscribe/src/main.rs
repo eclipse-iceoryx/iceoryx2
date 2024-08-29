@@ -19,7 +19,7 @@ use iceoryx2_bb_posix::thread::ThreadBuilder;
 
 const ITERATIONS: u64 = 10000000;
 
-fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::error::Error>> {
+fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let service_name_a2b = ServiceName::new("a2b")?;
     let service_name_b2a = ServiceName::new("b2a")?;
     let node = NodeBuilder::new().create::<T>()?;
@@ -47,34 +47,40 @@ fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::err
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
 
-    let t1 = ThreadBuilder::new().affinity(0).priority(255).spawn(|| {
-        let sender_a2b = service_a2b.publisher_builder().create().unwrap();
-        let receiver_b2a = service_b2a.subscriber_builder().create().unwrap();
+    let t1 = ThreadBuilder::new()
+        .affinity(args.cpu_core_thread_1)
+        .priority(255)
+        .spawn(|| {
+            let sender_a2b = service_a2b.publisher_builder().create().unwrap();
+            let receiver_b2a = service_b2a.subscriber_builder().create().unwrap();
 
-        barrier.wait();
+            barrier.wait();
 
-        let mut sample = sender_a2b.loan().unwrap();
+            let mut sample = sender_a2b.loan().unwrap();
 
-        for _ in 0..iterations {
-            sample.send().unwrap();
-            sample = sender_a2b.loan().unwrap();
-            while receiver_b2a.receive().unwrap().is_none() {}
-        }
-    });
+            for _ in 0..args.iterations {
+                sample.send().unwrap();
+                sample = sender_a2b.loan().unwrap();
+                while receiver_b2a.receive().unwrap().is_none() {}
+            }
+        });
 
-    let t2 = ThreadBuilder::new().affinity(1).priority(255).spawn(|| {
-        let sender_b2a = service_b2a.publisher_builder().create().unwrap();
-        let receiver_a2b = service_a2b.subscriber_builder().create().unwrap();
+    let t2 = ThreadBuilder::new()
+        .affinity(args.cpu_core_thread_2)
+        .priority(255)
+        .spawn(|| {
+            let sender_b2a = service_b2a.publisher_builder().create().unwrap();
+            let receiver_a2b = service_a2b.subscriber_builder().create().unwrap();
 
-        barrier.wait();
+            barrier.wait();
 
-        for _ in 0..iterations {
-            let sample = sender_b2a.loan().unwrap();
-            while receiver_a2b.receive().unwrap().is_none() {}
+            for _ in 0..args.iterations {
+                let sample = sender_b2a.loan().unwrap();
+                while receiver_a2b.receive().unwrap().is_none() {}
 
-            sample.send().unwrap();
-        }
-    });
+                sample.send().unwrap();
+            }
+        });
 
     std::thread::sleep(std::time::Duration::from_millis(100));
     let start = Time::now().expect("failed to acquire time");
@@ -87,9 +93,9 @@ fn perform_benchmark<T: Service>(iterations: u64) -> Result<(), Box<dyn std::err
     println!(
         "{} ::: Iterations: {}, Time: {}, Latency: {} ns",
         std::any::type_name::<T>(),
-        iterations,
+        args.iterations,
         stop.as_secs_f64(),
-        stop.as_nanos() / (iterations as u128 * 2)
+        stop.as_nanos() / (args.iterations as u128 * 2)
     );
 
     Ok(())
@@ -113,6 +119,12 @@ struct Args {
     /// Activate full log output
     #[clap(short, long)]
     debug_mode: bool,
+    /// The cpu core that shall be used by thread 1
+    #[clap(long, default_value_t = 0)]
+    cpu_core_thread_1: usize,
+    /// The cpu core that shall be used by thread 2
+    #[clap(long, default_value_t = 1)]
+    cpu_core_thread_2: usize,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -127,18 +139,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut at_least_one_benchmark_did_run = false;
 
     if args.bench_ipc || args.bench_all {
-        perform_benchmark::<ipc::Service>(args.iterations)?;
+        perform_benchmark::<ipc::Service>(&args)?;
         at_least_one_benchmark_did_run = true;
     }
 
     if args.bench_local || args.bench_all {
-        perform_benchmark::<local::Service>(args.iterations)?;
+        perform_benchmark::<local::Service>(&args)?;
         at_least_one_benchmark_did_run = true;
     }
 
     if !at_least_one_benchmark_did_run {
         println!(
-            "Please use either '--bench_all' or select a specific benchmark. See `--help` for details."
+            "Please use either '--bench-all' or select a specific benchmark. See `--help` for details."
         );
     }
 

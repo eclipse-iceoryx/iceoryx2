@@ -43,29 +43,35 @@ fn perform_benchmark<T: Service>(args: &Args) {
     let barrier_handle = BarrierHandle::new();
     let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
 
-    let t1 = ThreadBuilder::new().affinity(0).priority(255).spawn(|| {
-        let notifier_a2b = service_a2b.notifier_builder().create().unwrap();
-        let listener_b2a = service_b2a.listener_builder().create().unwrap();
+    let t1 = ThreadBuilder::new()
+        .affinity(args.cpu_core_thread_1)
+        .priority(255)
+        .spawn(|| {
+            let notifier_a2b = service_a2b.notifier_builder().create().unwrap();
+            let listener_b2a = service_b2a.listener_builder().create().unwrap();
 
-        barrier.wait();
-        notifier_a2b.notify().expect("failed to notify");
-
-        for _ in 0..args.iterations {
-            while listener_b2a.blocking_wait_one().unwrap().is_none() {}
+            barrier.wait();
             notifier_a2b.notify().expect("failed to notify");
-        }
-    });
 
-    let t2 = ThreadBuilder::new().affinity(1).priority(255).spawn(|| {
-        let notifier_b2a = service_b2a.notifier_builder().create().unwrap();
-        let listener_a2b = service_a2b.listener_builder().create().unwrap();
+            for _ in 0..args.iterations {
+                while listener_b2a.blocking_wait_one().unwrap().is_none() {}
+                notifier_a2b.notify().expect("failed to notify");
+            }
+        });
 
-        barrier.wait();
-        for _ in 0..args.iterations {
-            while listener_a2b.blocking_wait_one().unwrap().is_none() {}
-            notifier_b2a.notify().expect("failed to notify");
-        }
-    });
+    let t2 = ThreadBuilder::new()
+        .affinity(args.cpu_core_thread_2)
+        .priority(255)
+        .spawn(|| {
+            let notifier_b2a = service_b2a.notifier_builder().create().unwrap();
+            let listener_a2b = service_a2b.listener_builder().create().unwrap();
+
+            barrier.wait();
+            for _ in 0..args.iterations {
+                while listener_a2b.blocking_wait_one().unwrap().is_none() {}
+                notifier_b2a.notify().expect("failed to notify");
+            }
+        });
 
     std::thread::sleep(std::time::Duration::from_millis(100));
     let start = Time::now().expect("failed to acquire time");
@@ -94,12 +100,27 @@ struct Args {
     /// Number of iterations the A --> B --> A communication is repeated
     #[clap(short, long, default_value_t = ITERATIONS)]
     iterations: usize,
+    /// Run benchmark for every service setup
+    #[clap(short, long)]
+    bench_all: bool,
+    /// Run benchmark for the IPC zero copy setup
+    #[clap(long)]
+    bench_ipc: bool,
+    /// Run benchmark for the process local setup
+    #[clap(long)]
+    bench_local: bool,
     /// The greatest supported EventId
     #[clap(short, long, default_value_t = EVENT_ID_MAX_VALUE)]
     max_event_id: usize,
     /// Activate full log output
     #[clap(short, long)]
     debug_mode: bool,
+    /// The cpu core that shall be used by thread 1
+    #[clap(long, default_value_t = 0)]
+    cpu_core_thread_1: usize,
+    /// The cpu core that shall be used by thread 2
+    #[clap(long, default_value_t = 1)]
+    cpu_core_thread_2: usize,
 }
 
 fn main() {
@@ -111,6 +132,21 @@ fn main() {
         set_log_level(iceoryx2_bb_log::LogLevel::Info);
     }
 
-    perform_benchmark::<ipc::Service>(&args);
-    perform_benchmark::<local::Service>(&args);
+    let mut at_least_one_benchmark_did_run = false;
+
+    if args.bench_ipc || args.bench_all {
+        perform_benchmark::<ipc::Service>(&args);
+        at_least_one_benchmark_did_run = true;
+    }
+
+    if args.bench_local || args.bench_all {
+        perform_benchmark::<local::Service>(&args);
+        at_least_one_benchmark_did_run = true;
+    }
+
+    if !at_least_one_benchmark_did_run {
+        println!(
+            "Please use either '--bench-all' or select a specific benchmark. See `--help` for details."
+        );
+    }
 }
