@@ -212,6 +212,7 @@ pub mod details {
         max_borrowed_samples: usize,
         sample_size: usize,
         number_of_samples: usize,
+        timeout: Duration,
         config: Configuration<Storage>,
     }
 
@@ -238,6 +239,7 @@ pub mod details {
             Storage,
         >>::new(&self.name)
         .config(&dynamic_storage_config)
+        .timeout(self.timeout)
         .supplementary_size(supplementary_size)
         .initializer(|data, allocator| {
             fatal_panic!(from self, when unsafe { data.submission_channel.init(allocator) },
@@ -274,8 +276,14 @@ pub mod details {
                     fail!(from self, with ZeroCopyCreationError::VersionMismatch,
                     "{} since the version of the connection does not match.", msg);
                 }
+                Err(DynamicStorageOpenOrCreateError::DynamicStorageOpenError(
+                    DynamicStorageOpenError::InitializationNotYetFinalized,
+                )) => {
+                    fail!(from self, with ZeroCopyCreationError::InitializationNotYetFinalized,
+                    "{} since the initialization of the zero copy connection is not finalized.", msg);
+                }
                 Err(e) => {
-                    fail!(from self, with ZeroCopyCreationError::VersionMismatch,
+                    fail!(from self, with ZeroCopyCreationError::InternalError,
                     "{} due to an internal failure ({:?}).", msg, e);
                 }
             };
@@ -364,6 +372,7 @@ pub mod details {
                 sample_size: 0,
                 number_of_samples: 0,
                 config: Configuration::default(),
+                timeout: Duration::ZERO,
             }
         }
 
@@ -378,6 +387,11 @@ pub mod details {
     {
         fn buffer_size(mut self, value: usize) -> Self {
             self.buffer_size = value.clamp(1, usize::MAX);
+            self
+        }
+
+        fn timeout(mut self, value: Duration) -> Self {
+            self.timeout = value;
             self
         }
 

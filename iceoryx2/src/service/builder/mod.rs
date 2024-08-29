@@ -306,6 +306,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                 >>::Builder<'_> as NamedConceptBuilder<
                     ServiceType::DynamicStorage,
                 >>::new(&self.service_config.service_id().0.into())
+                    .timeout(self.shared_node.config().global.service.creation_timeout)
                     .config(&dynamic_config_storage_config::<ServiceType>(self.shared_node.config()))
                 .has_ownership(false)
                 .open(),
