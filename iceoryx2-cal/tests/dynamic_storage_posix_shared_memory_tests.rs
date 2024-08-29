@@ -21,6 +21,9 @@ mod dynamic_storage_posix_shared_memory {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
+    use std::time::Duration;
+
+    const TIMEOUT: Duration = Duration::from_millis(100);
 
     fn generate_name() -> FileName {
         let mut file = FileName::new(b"test_").unwrap();
@@ -78,6 +81,32 @@ mod dynamic_storage_posix_shared_memory {
 
         let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name).open();
 
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::InitializationNotYetFinalized);
+    }
+
+    #[test]
+    fn waiting_for_initialization_works() {
+        type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
+        let storage_name = generate_name();
+        let file_name = <Sut as NamedConceptMgmt>::Configuration::default()
+            .path_for(&storage_name)
+            .file_name();
+
+        let _raw_shm = SharedMemoryBuilder::new(&file_name)
+            .creation_mode(CreationMode::PurgeAndCreate)
+            .size(1234)
+            .has_ownership(true)
+            .permission(Permission::OWNER_WRITE)
+            .create()
+            .unwrap();
+
+        let start = std::time::SystemTime::now();
+        let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name)
+            .timeout(TIMEOUT)
+            .open();
+
+        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::InitializationNotYetFinalized);
     }
