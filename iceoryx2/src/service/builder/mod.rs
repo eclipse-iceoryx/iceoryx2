@@ -176,7 +176,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             &file_name_uuid,
             &static_storage_config,
         ) {
-            Ok(false) => return Ok(None),
+            Ok(false) => Ok(None),
             Ok(true) | Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp) => {
                 let storage = match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
                                        ServiceType::StaticStorage>>
@@ -225,7 +225,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         msg, service_config.messaging_pattern(), self.service_config.messaging_pattern());
                 }
 
-                return Ok(Some((service_config, storage)));
+                Ok(Some((service_config, storage)))
             }
             Err(v) => {
                 fail!(from self, with ServiceState::Corrupted,
