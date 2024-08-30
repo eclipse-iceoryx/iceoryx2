@@ -108,9 +108,6 @@ impl From<ServiceAvailabilityState> for PublishSubscribeOpenError {
             ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
                 PublishSubscribeOpenError::ServiceInCorruptedState
             }
-            ServiceAvailabilityState::ServiceState(ServiceState::InternalFailure) => {
-                PublishSubscribeOpenError::InternalFailure
-            }
         }
     }
 }
@@ -160,9 +157,6 @@ impl From<ServiceAvailabilityState> for PublishSubscribeCreateError {
             }
             ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
                 PublishSubscribeCreateError::ServiceInCorruptedState
-            }
-            ServiceAvailabilityState::ServiceState(ServiceState::InternalFailure) => {
-                PublishSubscribeCreateError::InternalFailure
             }
         }
     }

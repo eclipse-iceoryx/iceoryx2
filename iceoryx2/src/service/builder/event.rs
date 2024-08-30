@@ -79,7 +79,6 @@ impl From<ServiceState> for EventOpenError {
             ServiceState::InsufficientPermissions => EventOpenError::InsufficientPermissions,
             ServiceState::HangsInCreation => EventOpenError::HangsInCreation,
             ServiceState::Corrupted => EventOpenError::ServiceInCorruptedState,
-            ServiceState::InternalFailure => EventOpenError::InternalFailure,
         }
     }
 }
@@ -117,7 +116,6 @@ impl From<ServiceState> for EventCreateError {
             ServiceState::InsufficientPermissions => EventCreateError::InsufficientPermissions,
             ServiceState::HangsInCreation => EventCreateError::HangsInCreation,
             ServiceState::Corrupted => EventCreateError::ServiceInCorruptedState,
-            ServiceState::InternalFailure => EventCreateError::InternalFailure,
         }
     }
 }
