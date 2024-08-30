@@ -39,6 +39,7 @@
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -301,30 +302,46 @@ impl StaticStorageBuilder<Storage> for Builder {
         self
     }
 
-    fn open(self) -> Result<Storage, StaticStorageOpenError> {
+    fn open(self, timeout: Duration) -> Result<Storage, StaticStorageOpenError> {
         let msg = "Failed to open static storage";
+        let mut wait_for_read_access = fail!(from self,
+            when AdaptiveWaitBuilder::new().create(),
+            with StaticStorageOpenError::InternalError,
+            "{} since the AdaptiveWait could not be initialized.", msg);
 
-        let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
+        let mut elapsed_time = Duration::ZERO;
+
+        loop {
+            let mut guard = fail!(from self, when PROCESS_LOCAL_STORAGE.lock(),
                 with StaticStorageOpenError::InternalError,
                 "{} due to a failure while acquiring the lock.", msg);
-        let entry = guard.get_mut(&self.config.path_for(&self.name));
-        if entry.is_none() {
-            fail!(from self, with StaticStorageOpenError::DoesNotExist,
+
+            let entry = guard.get_mut(&self.config.path_for(&self.name));
+            if entry.is_none() {
+                fail!(from self, with StaticStorageOpenError::DoesNotExist,
                                 "{} since the storage does not exist.", msg);
-        }
+            }
 
-        let entry = entry.unwrap();
-        if entry.content.is_locked {
-            fail!(from self, with StaticStorageOpenError::IsLocked,
-                    "{} since the static storage is still being created (in locked state), try later.", msg);
-        }
+            let entry = entry.unwrap();
+            if entry.content.is_locked {
+                if elapsed_time >= timeout {
+                    fail!(from self, with StaticStorageOpenError::InitializationNotYetFinalized,
+                        "{} since the static storage is still being created (in locked state), try later.", msg);
+                }
 
-        Ok(Storage {
-            name: self.name,
-            has_ownership: self.has_ownership,
-            config: self.config,
-            content: entry.content.clone(),
-        })
+                elapsed_time = fail!(from self,
+                    when wait_for_read_access.wait(),
+                    with StaticStorageOpenError::InternalError,
+                    "{} since the adaptive wait call failed.", msg);
+            } else {
+                return Ok(Storage {
+                    name: self.name,
+                    has_ownership: self.has_ownership,
+                    config: self.config,
+                    content: entry.content.clone(),
+                });
+            }
+        }
     }
 
     fn create_locked(self) -> Result<<Storage as StaticStorage>::Locked, StaticStorageCreateError> {
