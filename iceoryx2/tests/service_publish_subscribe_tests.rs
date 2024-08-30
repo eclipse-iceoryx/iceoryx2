@@ -2541,6 +2541,70 @@ mod service_publish_subscribe {
         assert_that!(subscriber.has_samples().unwrap(), eq false);
     }
 
+    #[test]
+    fn subscriber_can_still_receive_sample_when_publisher_was_disconnected<Sut: Service>() {
+        const NUMBER_OF_SAMPLES: usize = 4;
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<usize>()
+            .subscriber_max_buffer_size(NUMBER_OF_SAMPLES)
+            .max_publishers(1)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        for i in 0..NUMBER_OF_SAMPLES {
+            assert_that!(publisher.send_copy(i), is_ok);
+        }
+
+        drop(publisher);
+
+        for i in 0..NUMBER_OF_SAMPLES {
+            let result = subscriber.receive().unwrap();
+            assert_that!(result, is_some);
+            let sample = result.unwrap();
+            assert_that!(*sample, eq i);
+        }
+    }
+
+    #[test]
+    fn subscriber_disconnected_publisher_does_not_block_new_publishers<Sut: Service>() {
+        const NUMBER_OF_SAMPLES: usize = 4;
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<usize>()
+            .subscriber_max_buffer_size(NUMBER_OF_SAMPLES)
+            .max_publishers(1)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        for i in 0..NUMBER_OF_SAMPLES {
+            assert_that!(publisher.send_copy(i), is_ok);
+        }
+
+        drop(publisher);
+
+        let _publisher = sut.publisher_builder().create().unwrap();
+
+        for i in 0..NUMBER_OF_SAMPLES {
+            let result = subscriber.receive().unwrap();
+            assert_that!(result, is_some);
+            let sample = result.unwrap();
+            assert_that!(*sample, eq i);
+        }
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
