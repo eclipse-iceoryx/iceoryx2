@@ -89,7 +89,7 @@
 
  <!-- NOTE: Add new entries sorted by issue number to minimize the possibility of conflicts when merging. -->
 
- * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+ * Extended CLI parameters for benchmarks [#360](https://github.com/eclipse-iceoryx/iceoryx2/issues/360)
 
 ### New API features
 

@@ -1,8 +1,8 @@
-# System                        OS          Latency
-  "Raspberry Pi 4B"             "Linux"     875
-  "Intel i7-13700H"             "Linux"     366
+# System                        OS          Latency Same Core       Latency Different Cores
+  "Raspberry Pi 4B"             "Linux"     875                     0
+  "Intel i7-13700H"             "Linux"     92                      326
   "Intel i7-8565U"              "Linux"     238
   "Intel i7-7500U"              "Linux"     276
-  "AMD Ryzen 7 7840S"           "Linux"     217
-  "AMD Ryzen 9 5950X"           "Windows"   205
+  "AMD Ryzen 7 7840S"           "Linux"     109                     222
+  "AMD Ryzen 9 5950X"           "Windows"   205                     
   "AMD Ryzen 9 5950X"           "Linux"     675
