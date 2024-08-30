@@ -71,6 +71,7 @@
  * Mem-leak in `iceoryx2-bb-posix::Directory::contents()` and skip empty file names [#287](https://github.com/eclipse-iceoryx/iceoryx2/issues/287)
  * Log macros do no longer return values [#292](https://github.com/eclipse-iceoryx/iceoryx2/issues/292)
  * Fix cross-compilation issue with `scandir.c` [#318](https://github.com/eclipse-iceoryx/iceoryx2/issues/318)
+ * Service-creation-timeout is considered also for the data segment and zero copy connection [#361](https://github.com/eclipse-iceoryx/iceoryx2/issues/361)
 
 ### Refactoring
 

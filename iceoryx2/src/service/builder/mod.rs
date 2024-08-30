@@ -172,14 +172,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         let file_name_uuid = self.service_config.service_id().0.into();
         let creation_timeout = self.shared_node.config().global.service.creation_timeout;
 
-        loop {
-            match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
-                &file_name_uuid,
-                &static_storage_config,
-            ) {
-                Ok(false) => return Ok(None),
-                Ok(true) | Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp) => {
-                    let storage = match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
+        match <ServiceType::StaticStorage as NamedConceptMgmt>::does_exist_cfg(
+            &file_name_uuid,
+            &static_storage_config,
+        ) {
+            Ok(false) => return Ok(None),
+            Ok(true) | Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp) => {
+                let storage = match <<ServiceType::StaticStorage as StaticStorage>::Builder as NamedConceptBuilder<
                                        ServiceType::StaticStorage>>
                                        ::new(&file_name_uuid)
                                         .has_ownership(false)
@@ -200,38 +199,37 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                         }
                     };
 
-                    let mut read_content =
-                        String::from_utf8(vec![b' '; storage.len() as usize]).expect("");
-                    if storage
-                        .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
-                        .is_err()
-                    {
-                        fail!(from self, with ServiceState::InsufficientPermissions,
+                let mut read_content =
+                    String::from_utf8(vec![b' '; storage.len() as usize]).expect("");
+                if storage
+                    .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
+                    .is_err()
+                {
+                    fail!(from self, with ServiceState::InsufficientPermissions,
                             "{} since it is not possible to read the services underlying static details. Is the service accessible?", msg);
-                    }
+                }
 
-                    let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
+                let service_config = fail!(from self, when ServiceType::ConfigSerializer::deserialize::<StaticConfig>(unsafe {
                                             read_content.as_mut_vec() }),
                                      with ServiceState::Corrupted, "Unable to deserialize the service config. Is the service corrupted?");
 
-                    if service_config.service_id() != self.service_config.service_id() {
-                        fail!(from self, with ServiceState::Corrupted,
+                if service_config.service_id() != self.service_config.service_id() {
+                    fail!(from self, with ServiceState::Corrupted,
                         "{} a service with that name exist but different ServiceId.", msg);
-                    }
+                }
 
-                    let msg = "Service exist but is not compatible";
-                    if !service_config.has_same_messaging_pattern(&self.service_config) {
-                        fail!(from self, with ServiceState::IncompatibleMessagingPattern,
+                let msg = "Service exist but is not compatible";
+                if !service_config.has_same_messaging_pattern(&self.service_config) {
+                    fail!(from self, with ServiceState::IncompatibleMessagingPattern,
                         "{} since the messaging pattern \"{:?}\" does not fit the requested pattern \"{:?}\".",
                         msg, service_config.messaging_pattern(), self.service_config.messaging_pattern());
-                    }
+                }
 
-                    return Ok(Some((service_config, storage)));
-                }
-                Err(v) => {
-                    fail!(from self, with ServiceState::Corrupted,
+                return Ok(Some((service_config, storage)));
+            }
+            Err(v) => {
+                fail!(from self, with ServiceState::Corrupted,
                     "{} since the service seems to be in a corrupted/inaccessible state ({:?}).", msg, v);
-                }
             }
         }
     }
