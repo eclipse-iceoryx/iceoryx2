@@ -65,8 +65,9 @@ impl<Service: service::Service> Connection<Service> {
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
                                 Builder::new(&data_segment_name(&details.publisher_id))
                                 .config(&data_segment_config::<Service>(this.service_state.shared_node.config()))
+                                .timeout(this.service_state.shared_node.config().global.service.creation_timeout)
                                 .open(),
-                            "{} since the publishers data segment could not be mapped into the process.", msg);
+                            "{} since the publishers data segment could not be opened.", msg);
 
         Ok(Self {
             receiver,
