@@ -408,6 +408,25 @@ mod static_storage {
     }
 
     #[test]
+    fn open_locked_with_timeout_works<Sut: StaticStorage>() {
+        const TIMEOUT: Duration = Duration::from_millis(100);
+        let _test_guard = TEST_MUTEX.lock();
+        let storage_name = generate_name();
+
+        let _storage_guard = Sut::Builder::new(&storage_name).create_locked();
+
+        let start = std::time::SystemTime::now();
+        let storage_reader = Sut::Builder::new(&storage_name).open(TIMEOUT);
+
+        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
+        assert_that!(storage_reader, is_err);
+        assert_that!(
+            storage_reader.err().unwrap(), eq
+            StaticStorageOpenError::InitializationNotYetFinalized
+        );
+    }
+
+    #[test]
     fn releasing_ownership_works<Sut: StaticStorage>() {
         let _test_guard = TEST_MUTEX.lock();
         let storage_name = generate_name();
