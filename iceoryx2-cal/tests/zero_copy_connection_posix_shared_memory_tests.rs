@@ -40,7 +40,7 @@ mod zero_copy_connection_posix_shared_memory_tests {
 
         let _raw_shm = iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder::new(&file_name)
             .creation_mode(CreationMode::PurgeAndCreate)
-            .size(1234)
+            .size(4096)
             .has_ownership(true)
             .permission(Permission::OWNER_WRITE)
             .create()
@@ -49,6 +49,8 @@ mod zero_copy_connection_posix_shared_memory_tests {
         let start = std::time::SystemTime::now();
         let sut = <Sut as ZeroCopyConnection>::Builder::new(&storage_name)
             .timeout(TIMEOUT)
+            .number_of_samples(1)
+            .receiver_max_borrowed_samples(1)
             .create_sender(1);
 
         assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
