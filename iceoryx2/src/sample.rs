@@ -33,18 +33,17 @@
 use std::sync::Arc;
 use std::{fmt::Debug, ops::Deref};
 
-use iceoryx2_bb_log::{fatal_panic, warn};
+use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyReceiver, ZeroCopyReleaseError};
 
-use crate::port::details::publisher_connections::PublisherConnections;
+use crate::port::details::publisher_connections::Connection;
 use crate::port::port_identifiers::UniquePublisherId;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
 
 #[derive(Debug)]
 pub(crate) struct SampleDetails<Service: crate::service::Service> {
-    pub(crate) publisher_connections: Arc<PublisherConnections<Service>>,
-    pub(crate) channel_id: usize,
+    pub(crate) publisher_connection: Arc<Connection<Service>>,
     pub(crate) offset: PointerOffset,
     pub(crate) origin: UniquePublisherId,
 }
@@ -87,21 +86,13 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
     fn drop(&mut self) {
         match self
             .details
-            .publisher_connections
-            .get(self.details.channel_id)
+            .publisher_connection
+            .receiver
+            .release(self.details.offset)
         {
-            Some(c) => {
-                if c.publisher_id == self.details.origin {
-                    match c.receiver.release(self.details.offset) {
-                        Ok(()) => (),
-                        Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                            fatal_panic!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
-                        }
-                    }
-                }
-            }
-            None => {
-                warn!(from self, "Unable to release sample since the connection is broken. The sample will be discarded and has to be reclaimed manually by the publisher.");
+            Ok(()) => (),
+            Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
+                fatal_panic!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
             }
         }
     }

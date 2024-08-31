@@ -81,7 +81,7 @@ mod sample {
     }
 
     #[test]
-    fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
+    fn sample_of_dropped_service_does_not_block_new_service_creation<Sut: Service>() {
         let test_context = TestContext::<Sut>::new();
 
         let service_name = test_context.service_name.clone();
@@ -99,11 +99,7 @@ mod sample {
             .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
-        assert_that!(result, is_err);
-        assert_that!(
-            result.err().unwrap(),
-            eq PublishSubscribeCreateError::AlreadyExists
-        );
+        assert_that!(result, is_ok);
     }
 
     #[test]

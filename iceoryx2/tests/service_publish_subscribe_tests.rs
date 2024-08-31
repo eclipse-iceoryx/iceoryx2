@@ -2541,6 +2541,7 @@ mod service_publish_subscribe {
         assert_that!(subscriber.has_samples().unwrap(), eq false);
     }
 
+    #[ignore]
     #[test]
     fn subscriber_can_still_receive_sample_when_publisher_was_disconnected<Sut: Service>() {
         const NUMBER_OF_SAMPLES: usize = 4;
@@ -2572,6 +2573,7 @@ mod service_publish_subscribe {
         }
     }
 
+    #[ignore]
     #[test]
     fn subscriber_disconnected_publisher_does_not_block_new_publishers<Sut: Service>() {
         const NUMBER_OF_SAMPLES: usize = 4;

@@ -103,7 +103,7 @@ impl std::error::Error for SubscriberCreateError {}
 #[derive(Debug)]
 pub struct Subscriber<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    publisher_connections: Arc<PublisherConnections<Service>>,
+    publisher_connections: PublisherConnections<Service>,
     static_config: crate::service::static_config::StaticConfig,
     degration_callback: Option<DegrationCallback<'static>>,
 
@@ -158,13 +158,13 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             None => static_config.subscriber_max_buffer_size,
         };
 
-        let publisher_connections = Arc::new(PublisherConnections::new(
+        let publisher_connections = PublisherConnections::new(
             publisher_list.capacity(),
             subscriber_id,
             service.__internal_state().clone(),
             static_config,
             buffer_size,
-        ));
+        );
 
         let mut new_self = Self {
             degration_callback: config.degration_callback,
@@ -264,8 +264,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
     fn receive_from_connection(
         &self,
-        channel_id: usize,
-        connection: &mut Connection<Service>,
+        connection: &Arc<Connection<Service>>,
     ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
         let msg = "Unable to receive another sample";
         match connection.receiver.receive() {
@@ -276,8 +275,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                         offset.value() + connection.data_segment.payload_start_address();
 
                     let details = SampleDetails {
-                        publisher_connections: Arc::clone(&self.publisher_connections),
-                        channel_id,
+                        publisher_connection: connection.clone(),
                         offset,
                         origin: connection.publisher_id,
                     };
@@ -335,7 +333,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             match &mut self.publisher_connections.get_mut(id) {
                 Some(ref mut connection) => {
                     if let Some((details, absolute_address)) =
-                        self.receive_from_connection(id, connection)?
+                        self.receive_from_connection(connection)?
                     {
                         return Ok(Some((details, absolute_address)));
                     }
