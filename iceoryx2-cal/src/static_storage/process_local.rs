@@ -27,8 +27,9 @@
 //!                 .create(content.as_bytes()).unwrap();
 //!
 //! // at some other place in the local process, can be another thread
+//! let initialization_timeout = std::time::Duration::from_millis(100);
 //! let reader = Builder::new(&storage_name)
-//!                 .open().unwrap();
+//!                 .open(initialization_timeout).unwrap();
 //!
 //! let content_length = reader.len();
 //! let mut content = String::from_utf8(vec![b' '; content_length as usize]).unwrap();
