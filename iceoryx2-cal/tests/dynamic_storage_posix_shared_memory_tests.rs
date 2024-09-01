@@ -106,8 +106,8 @@ mod dynamic_storage_posix_shared_memory {
             .timeout(TIMEOUT)
             .open();
 
-        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::InitializationNotYetFinalized);
+        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
     }
 }

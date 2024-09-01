@@ -53,8 +53,8 @@ mod zero_copy_connection_posix_shared_memory_tests {
             .receiver_max_borrowed_samples(1)
             .create_sender(1);
 
-        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq ZeroCopyCreationError::InitializationNotYetFinalized);
+        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
     }
 }

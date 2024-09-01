@@ -418,12 +418,12 @@ mod static_storage {
         let start = std::time::SystemTime::now();
         let storage_reader = Sut::Builder::new(&storage_name).open(TIMEOUT);
 
-        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
         assert_that!(storage_reader, is_err);
         assert_that!(
             storage_reader.err().unwrap(), eq
             StaticStorageOpenError::InitializationNotYetFinalized
         );
+        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
     }
 
     #[test]
