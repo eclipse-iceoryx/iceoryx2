@@ -48,7 +48,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
     let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
 
     let t1 = ThreadBuilder::new()
-        .affinity(args.cpu_core_thread_1)
+        .affinity(args.cpu_core_participant_1)
         .priority(255)
         .spawn(|| {
             let sender_a2b = service_a2b
@@ -80,7 +80,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
         });
 
     let t2 = ThreadBuilder::new()
-        .affinity(args.cpu_core_thread_2)
+        .affinity(args.cpu_core_participant_2)
         .priority(255)
         .spawn(|| {
             let sender_b2a = service_b2a
@@ -143,12 +143,12 @@ struct Args {
     /// Activate full log output
     #[clap(short, long)]
     debug_mode: bool,
-    /// The cpu core that shall be used by thread 1
+    /// The cpu core that shall be used by participant 1
     #[clap(long, default_value_t = 0)]
-    cpu_core_thread_1: usize,
-    /// The cpu core that shall be used by thread 2
+    cpu_core_participant_1: usize,
+    /// The cpu core that shall be used by participant 2
     #[clap(long, default_value_t = 1)]
-    cpu_core_thread_2: usize,
+    cpu_core_participant_2: usize,
     /// The size in bytes of the payload that shall be used
     #[clap(short, long, default_value_t = 8192)]
     payload_size: usize,
