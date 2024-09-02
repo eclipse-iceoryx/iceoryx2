@@ -30,6 +30,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_elementary::CallbackProgression;
+    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -2541,7 +2542,6 @@ mod service_publish_subscribe {
         assert_that!(subscriber.has_samples().unwrap(), eq false);
     }
 
-    #[ignore]
     #[test]
     fn subscriber_can_still_receive_sample_when_publisher_was_disconnected<Sut: Service>() {
         const NUMBER_OF_SAMPLES: usize = 4;
@@ -2573,9 +2573,9 @@ mod service_publish_subscribe {
         }
     }
 
-    #[ignore]
     #[test]
     fn subscriber_disconnected_publisher_does_not_block_new_publishers<Sut: Service>() {
+        set_log_level(LogLevel::Error);
         const NUMBER_OF_SAMPLES: usize = 4;
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();

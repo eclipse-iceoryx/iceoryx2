@@ -104,6 +104,7 @@ impl std::error::Error for SubscriberCreateError {}
 pub struct Subscriber<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: PublisherConnections<Service>,
+    to_be_removed_connections: UnsafeCell<Vec<Arc<Connection<Service>>>>,
     static_config: crate::service::static_config::StaticConfig,
     degration_callback: Option<DegrationCallback<'static>>,
 
@@ -167,6 +168,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         );
 
         let mut new_self = Self {
+            to_be_removed_connections: UnsafeCell::new(vec![]),
             degration_callback: config.degration_callback,
             publisher_connections,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
@@ -218,6 +220,14 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             })
         };
 
+        let prepare_connection_removal = |i| {
+            if let Some(connection) = self.publisher_connections.get(i) {
+                if connection.receiver.has_data() {
+                    unsafe { &mut *self.to_be_removed_connections.get() }.push(connection.clone());
+                }
+            }
+        };
+
         // update all connections
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
@@ -228,6 +238,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     };
 
                     if create_connection {
+                        prepare_connection_removal(i);
+
                         match self.publisher_connections.create(i, details) {
                             Ok(()) => (),
                             Err(e) => match &self.degration_callback {
@@ -255,7 +267,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                         }
                     }
                 }
-                None => self.publisher_connections.remove(i),
+                None => {
+                    prepare_connection_removal(i);
+
+                    self.publisher_connections.remove(i)
+                }
             }
         }
 
@@ -327,6 +343,16 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             fail!(from self,
                 with SubscriberReceiveError::ConnectionFailure(e),
                 "Some samples are not being received since not all connections to publishers could be established.");
+        }
+
+        let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
+
+        if let Some(connection) = to_be_removed_connections.last_mut() {
+            if let Some((details, absolute_address)) = self.receive_from_connection(connection)? {
+                return Ok(Some((details, absolute_address)));
+            } else {
+                to_be_removed_connections.pop();
+            }
         }
 
         for id in 0..self.publisher_connections.len() {

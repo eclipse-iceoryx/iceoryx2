@@ -15,7 +15,6 @@ mod sample {
     use iceoryx2::port::publisher::Publisher;
     use iceoryx2::port::subscriber::Subscriber;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
