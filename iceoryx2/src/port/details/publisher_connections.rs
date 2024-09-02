@@ -57,6 +57,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                     .number_of_samples(details.number_of_samples)
+                                    .timeout(this.service_state.shared_node.config().global.service.creation_timeout)
                                     .create_receiver(this.static_config.message_type_details().sample_layout(details.max_slice_len).size()),
                         "{} since the zero copy connection could not be established.", msg);
 
@@ -64,8 +65,9 @@ impl<Service: service::Service> Connection<Service> {
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
                                 Builder::new(&data_segment_name(&details.publisher_id))
                                 .config(&data_segment_config::<Service>(this.service_state.shared_node.config()))
+                                .timeout(this.service_state.shared_node.config().global.service.creation_timeout)
                                 .open(),
-                            "{} since the publishers data segment could not be mapped into the process.", msg);
+                            "{} since the publishers data segment could not be opened.", msg);
 
         Ok(Self {
             receiver,

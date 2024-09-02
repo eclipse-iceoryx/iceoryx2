@@ -16,7 +16,7 @@
 pub mod file;
 pub mod process_local;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::*;
@@ -38,7 +38,7 @@ pub enum StaticStorageCreateError {
 pub enum StaticStorageOpenError {
     DoesNotExist,
     Read,
-    IsLocked,
+    InitializationNotYetFinalized,
     InternalError,
 }
 
@@ -87,7 +87,10 @@ pub trait StaticStorageBuilder<T: StaticStorage>: Sized + NamedConceptBuilder<T>
 
     /// Opens an already existing [`StaticStorage`]. If the creation of the [`StaticStorage`] is
     /// not finalized it shall return an error.
-    fn open(self) -> Result<T, StaticStorageOpenError>;
+    /// The provided defines how long the [`StaticStorageBuilder`]
+    /// shall wait for [`StaticStorageBuilder::create_locked()`]
+    /// to finalize the initialization and unlock the storage.
+    fn open(self, timeout: Duration) -> Result<T, StaticStorageOpenError>;
 }
 
 /// A locked (uninitialized) static storage which is present but without content

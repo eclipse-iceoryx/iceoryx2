@@ -166,6 +166,7 @@ pub(crate) mod naming_scheme;
 
 use std::fmt::Debug;
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::config;
 use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};
@@ -597,10 +598,11 @@ fn details<S: Service>(
     >>::new(uuid)
     .config(&static_storage_config.clone())
     .has_ownership(false)
-    .open()
+    .open(Duration::ZERO)
     {
         Ok(reader) => reader,
-        Err(StaticStorageOpenError::DoesNotExist) => return Ok(None),
+        Err(StaticStorageOpenError::DoesNotExist)
+        | Err(StaticStorageOpenError::InitializationNotYetFinalized) => return Ok(None),
         Err(e) => {
             fail!(from origin, with ServiceDetailsError::FailedToOpenStaticServiceInfo,
                         "{} due to a failure while opening the static service info \"{}\" for reading ({:?})",

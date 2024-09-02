@@ -34,37 +34,28 @@ pub mod details {
 
     use self::used_chunk_list::RelocatableUsedChunkList;
 
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq, Copy)]
     pub struct Configuration<Storage: DynamicStorage<SharedManagementData>> {
-        suffix: FileName,
-        prefix: FileName,
-        path_hint: Path,
+        dynamic_storage_config: Storage::Configuration,
         _data: PhantomData<Storage>,
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Clone for Configuration<Storage> {
         fn clone(&self) -> Self {
-            *self
-        }
-    }
-
-    impl<Storage: DynamicStorage<SharedManagementData>> Copy for Configuration<Storage> {}
-
-    impl<Storage: DynamicStorage<SharedManagementData>> Configuration<Storage> {
-        fn convert(&self) -> <Storage as NamedConceptMgmt>::Configuration {
-            <Storage as NamedConceptMgmt>::Configuration::default()
-                .prefix(self.prefix)
-                .suffix(self.suffix)
-                .path_hint(self.path_hint)
+            Self {
+                dynamic_storage_config: self.dynamic_storage_config.clone(),
+                _data: PhantomData,
+            }
         }
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Default for Configuration<Storage> {
         fn default() -> Self {
             Self {
-                suffix: Connection::<Storage>::default_suffix(),
-                prefix: Connection::<Storage>::default_prefix(),
-                path_hint: Connection::<Storage>::default_path_hint(),
+                dynamic_storage_config: Storage::Configuration::default()
+                    .path_hint(Connection::<Storage>::default_path_hint())
+                    .prefix(Connection::<Storage>::default_prefix())
+                    .suffix(Connection::<Storage>::default_suffix()),
                 _data: PhantomData,
             }
         }
@@ -74,30 +65,38 @@ pub mod details {
         for Configuration<Storage>
     {
         fn prefix(mut self, value: FileName) -> Self {
-            self.prefix = value;
+            self.dynamic_storage_config = self.dynamic_storage_config.prefix(value);
             self
         }
 
         fn get_prefix(&self) -> &FileName {
-            &self.prefix
+            self.dynamic_storage_config.get_prefix()
         }
 
         fn suffix(mut self, value: FileName) -> Self {
-            self.suffix = value;
+            self.dynamic_storage_config = self.dynamic_storage_config.suffix(value);
             self
         }
 
         fn path_hint(mut self, value: Path) -> Self {
-            self.path_hint = value;
+            self.dynamic_storage_config = self.dynamic_storage_config.path_hint(value);
             self
         }
 
         fn get_suffix(&self) -> &FileName {
-            &self.suffix
+            self.dynamic_storage_config.get_suffix()
         }
 
         fn get_path_hint(&self) -> &Path {
-            &self.path_hint
+            self.dynamic_storage_config.get_path_hint()
+        }
+
+        fn path_for(&self, value: &FileName) -> FilePath {
+            self.dynamic_storage_config.path_for(value)
+        }
+
+        fn extract_name_from_file(&self, value: &FileName) -> Option<FileName> {
+            self.dynamic_storage_config.extract_name_from_file(value)
         }
     }
 
@@ -212,6 +211,7 @@ pub mod details {
         max_borrowed_samples: usize,
         sample_size: usize,
         number_of_samples: usize,
+        timeout: Duration,
         config: Configuration<Storage>,
     }
 
@@ -231,13 +231,12 @@ pub mod details {
                 self.number_of_samples,
             );
 
-            let dynamic_storage_config = self.config.convert();
-
             let msg = "Failed to acquire underlying shared memory";
             let storage = <<Storage as DynamicStorage<SharedManagementData>>::Builder<'_> as NamedConceptBuilder<
             Storage,
         >>::new(&self.name)
-        .config(&dynamic_storage_config)
+        .config(&self.config.dynamic_storage_config)
+        .timeout(self.timeout)
         .supplementary_size(supplementary_size)
         .initializer(|data, allocator| {
             fatal_panic!(from self, when unsafe { data.submission_channel.init(allocator) },
@@ -274,8 +273,14 @@ pub mod details {
                     fail!(from self, with ZeroCopyCreationError::VersionMismatch,
                     "{} since the version of the connection does not match.", msg);
                 }
+                Err(DynamicStorageOpenOrCreateError::DynamicStorageOpenError(
+                    DynamicStorageOpenError::InitializationNotYetFinalized,
+                )) => {
+                    fail!(from self, with ZeroCopyCreationError::InitializationNotYetFinalized,
+                    "{} since the initialization of the zero copy connection is not finalized.", msg);
+                }
                 Err(e) => {
-                    fail!(from self, with ZeroCopyCreationError::VersionMismatch,
+                    fail!(from self, with ZeroCopyCreationError::InternalError,
                     "{} due to an internal failure ({:?}).", msg, e);
                 }
             };
@@ -364,11 +369,12 @@ pub mod details {
                 sample_size: 0,
                 number_of_samples: 0,
                 config: Configuration::default(),
+                timeout: Duration::ZERO,
             }
         }
 
         fn config(mut self, config: &Configuration<Storage>) -> Self {
-            self.config = *config;
+            self.config = config.clone();
             self
         }
     }
@@ -378,6 +384,11 @@ pub mod details {
     {
         fn buffer_size(mut self, value: usize) -> Self {
             self.buffer_size = value.clamp(1, usize::MAX);
+            self
+        }
+
+        fn timeout(mut self, value: Duration) -> Self {
+            self.timeout = value;
             self
         }
 
@@ -651,7 +662,7 @@ pub mod details {
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
             Ok(fail!(from "ZeroCopyConnection::does_exist_cfg()",
-                    when Storage::does_exist_cfg(name, &cfg.convert()),
+                    when Storage::does_exist_cfg(name, &cfg.dynamic_storage_config),
                     "Failed to check if ZeroCopyConnection \"{}\" exists.",
                     name))
         }
@@ -660,7 +671,7 @@ pub mod details {
             cfg: &Self::Configuration,
         ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
             Ok(fail!(from "ZeroCopyConnection::list_cfg()",
-                    when Storage::list_cfg(&cfg.convert()),
+                    when Storage::list_cfg(&cfg.dynamic_storage_config),
                     "Failed to list all ZeroCopyConnections."))
         }
 
@@ -669,7 +680,7 @@ pub mod details {
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
             Ok(fail!(from "ZeroCopyConnection::remove_cfg()",
-                    when Storage::remove_cfg(name, &cfg.convert()),
+                    when Storage::remove_cfg(name, &cfg.dynamic_storage_config),
                     "Failed to remove ZeroCopyConnection \"{}\".", name))
         }
 

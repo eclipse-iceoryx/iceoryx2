@@ -23,6 +23,7 @@ mod static_storage {
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::Barrier;
     use std::sync::Mutex;
+    use std::time::Duration;
 
     /// The list all storage tests requires that all other tests are not interfering and therefore
     /// we cannot let them run concurrently.
@@ -54,7 +55,9 @@ mod static_storage {
 
         assert_that!(*storage_guard.name(), eq storage_name);
 
-        let storage_reader = Sut::Builder::new(&storage_name).open().unwrap();
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .open(Duration::ZERO)
+            .unwrap();
 
         assert_that!(*storage_reader.name(), eq storage_name);
         let content_len = content.len() as u64;
@@ -72,7 +75,7 @@ mod static_storage {
         let storage_name = generate_name();
 
         let _test_guard = TEST_MUTEX.lock();
-        let storage_reader = Sut::Builder::new(&storage_name).open();
+        let storage_reader = Sut::Builder::new(&storage_name).open(Duration::ZERO);
 
         assert_that!(storage_reader, is_err);
         assert_that!(
@@ -91,7 +94,7 @@ mod static_storage {
             Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
 
         drop(storage_guard);
-        let result = Sut::Builder::new(&storage_name).open();
+        let result = Sut::Builder::new(&storage_name).open(Duration::ZERO);
         assert_that!(result, is_err);
         assert_that!(result.err().unwrap(), eq StaticStorageOpenError::DoesNotExist);
     }
@@ -123,7 +126,9 @@ mod static_storage {
         let storage_guard =
             Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
 
-        let storage_reader = Sut::Builder::new(&storage_name).open().unwrap();
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .open(Duration::ZERO)
+            .unwrap();
         drop(storage_guard);
 
         let content_len = content.len() as u64;
@@ -135,7 +140,7 @@ mod static_storage {
             .unwrap();
         assert_that!(read_content, eq content.clone());
 
-        let storage_reader = Sut::Builder::new(&storage_name).open();
+        let storage_reader = Sut::Builder::new(&storage_name).open(Duration::ZERO);
         assert_that!(storage_reader, is_err);
         assert_that!(
             storage_reader.err().unwrap(), eq
@@ -156,11 +161,13 @@ mod static_storage {
         let storage_guard =
             Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
 
-        let storage_reader = Sut::Builder::new(&storage_name).open().unwrap();
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .open(Duration::ZERO)
+            .unwrap();
         drop(storage_guard);
         drop(storage_reader);
 
-        let storage_reader = Sut::Builder::new(&storage_name).open();
+        let storage_reader = Sut::Builder::new(&storage_name).open(Duration::ZERO);
         assert_that!(storage_reader, is_err);
         assert_that!(
             storage_reader.err().unwrap(), eq
@@ -177,8 +184,12 @@ mod static_storage {
         let storage_guard =
             Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
 
-        let storage_reader_alt = Sut::Builder::new(&storage_name).open().unwrap();
-        let storage_reader = Sut::Builder::new(&storage_name).open().unwrap();
+        let storage_reader_alt = Sut::Builder::new(&storage_name)
+            .open(Duration::ZERO)
+            .unwrap();
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .open(Duration::ZERO)
+            .unwrap();
         drop(storage_guard);
 
         let content_len = content.len() as u64;
@@ -206,7 +217,9 @@ mod static_storage {
         let _storage_guard =
             Sut::Builder::new(&storage_name).create(unsafe { content.as_mut_vec() }.as_slice());
 
-        let storage_reader = Sut::Builder::new(&storage_name).open().unwrap();
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .open(Duration::ZERO)
+            .unwrap();
 
         let content_len = content.len() as u64;
         assert_that!(storage_reader, len content_len);
@@ -368,18 +381,20 @@ mod static_storage {
         assert_that!(Sut::does_exist(&storage_name), eq Err(NamedConceptDoesExistError::UnderlyingResourcesBeingSetUp));
         assert_that!(*storage_guard.as_ref().unwrap().name(), eq storage_name);
 
-        let storage_reader = Sut::Builder::new(&storage_name).open();
+        let storage_reader = Sut::Builder::new(&storage_name).open(Duration::ZERO);
         assert_that!(storage_reader, is_err);
         assert_that!(
             storage_reader.err().unwrap(), eq
-            StaticStorageOpenError::IsLocked
+            StaticStorageOpenError::InitializationNotYetFinalized
         );
 
         let storage_guard = storage_guard.unwrap().unlock(content.as_bytes());
         assert_that!(storage_guard, is_ok);
         assert_that!(Sut::does_exist(&storage_name), eq Ok(true));
 
-        let storage_reader = Sut::Builder::new(&storage_name).open().unwrap();
+        let storage_reader = Sut::Builder::new(&storage_name)
+            .open(Duration::ZERO)
+            .unwrap();
 
         assert_that!(*storage_reader.name(), eq storage_name);
         let content_len = content.len() as u64;
@@ -390,6 +405,25 @@ mod static_storage {
             .read(unsafe { read_content.as_mut_vec() }.as_mut_slice())
             .unwrap();
         assert_that!(read_content, eq content);
+    }
+
+    #[test]
+    fn open_locked_with_timeout_works<Sut: StaticStorage>() {
+        const TIMEOUT: Duration = Duration::from_millis(100);
+        let _test_guard = TEST_MUTEX.lock();
+        let storage_name = generate_name();
+
+        let _storage_guard = Sut::Builder::new(&storage_name).create_locked();
+
+        let start = std::time::SystemTime::now();
+        let storage_reader = Sut::Builder::new(&storage_name).open(TIMEOUT);
+
+        assert_that!(storage_reader, is_err);
+        assert_that!(
+            storage_reader.err().unwrap(), eq
+            StaticStorageOpenError::InitializationNotYetFinalized
+        );
+        assert_that!(start.elapsed().unwrap(), ge TIMEOUT);
     }
 
     #[test]

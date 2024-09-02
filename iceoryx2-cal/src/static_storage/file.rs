@@ -31,10 +31,11 @@
 //!                 .create(content.as_bytes()).unwrap();
 //!
 //! // usually a different process
+//! let initialization_timeout = std::time::Duration::from_millis(100);
 //! let reader = Builder::new(&storage_name)
 //!                 // if the config here differs the wrong static storage may be opened
 //!                 .config(&custom_config)
-//!                 .open().unwrap();
+//!                 .open(initialization_timeout).unwrap();
 //!
 //! let content_length = reader.len();
 //! let mut content = String::from_utf8(vec![b' '; content_length as usize]).unwrap();
@@ -47,6 +48,7 @@ pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
 use iceoryx2_bb_log::{fail, trace, warn};
+use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::{
     directory::*, file::*, file_descriptor::FileDescriptorManagement, file_type::FileType,
 };
@@ -414,7 +416,7 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
         })
     }
 
-    fn open(self) -> Result<Storage, StaticStorageOpenError> {
+    fn open(self, timeout: Duration) -> Result<Storage, StaticStorageOpenError> {
         let msg = "Unable to open static storage";
         let origin = "static_storage::File::Builder::open()";
 
@@ -423,21 +425,39 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
             with StaticStorageOpenError::DoesNotExist,
             "{} due to a failure while opening the file.", msg);
 
-        let metadata = fail!(from origin,
+        let mut wait_for_read_access = fail!(from self,
+            when AdaptiveWaitBuilder::new().create(),
+            with StaticStorageOpenError::InternalError,
+            "{} since the AdaptiveWait could not be initialized.", msg);
+
+        let mut elapsed_time = Duration::ZERO;
+
+        loop {
+            let metadata = fail!(from origin,
             when file.metadata(), with StaticStorageOpenError::Read,
             "{} due to a failure while reading the files metadata.", msg);
 
-        if metadata.permission() != FINAL_PERMISSIONS {
-            fail!(from origin, with StaticStorageOpenError::IsLocked,
-                "{} since the static storage is still being created (in locked state), try later.", msg);
-        }
+            if metadata.permission() != FINAL_PERMISSIONS {
+                if elapsed_time >= timeout {
+                    fail!(from origin,
+                        with StaticStorageOpenError::InitializationNotYetFinalized,
+                        "{} since the static storage is still being created (in locked  state), try later.",
+                        msg);
+                }
 
-        Ok(Storage {
-            name: self.storage_name,
-            config: self.config,
-            has_ownership: self.has_ownership,
-            file,
-            len: metadata.size(),
-        })
+                elapsed_time = fail!(from self,
+                    when wait_for_read_access.wait(),
+                    with StaticStorageOpenError::InternalError,
+                    "{} since the adaptive wait call failed.", msg);
+            } else {
+                return Ok(Storage {
+                    name: self.storage_name,
+                    config: self.config,
+                    has_ownership: self.has_ownership,
+                    file,
+                    len: metadata.size(),
+                });
+            }
+        }
     }
 }

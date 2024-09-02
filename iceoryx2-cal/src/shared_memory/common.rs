@@ -20,6 +20,7 @@ use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::{debug, fail};
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 
 use crate::static_storage::file::{
@@ -55,22 +56,9 @@ pub mod details {
         Storage: DynamicStorage<AllocatorDetails<Allocator>>,
     > {
         pub zero_memory: bool,
-        path: Path,
-        suffix: FileName,
-        prefix: FileName,
+        dynamic_storage_config: Storage::Configuration,
         _phantom: PhantomData<Allocator>,
         _phantom_storage: PhantomData<Storage>,
-    }
-
-    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
-        Configuration<Allocator, Storage>
-    {
-        fn convert(&self) -> Storage::Configuration {
-            Storage::Configuration::default()
-                .prefix(self.prefix)
-                .suffix(self.suffix)
-                .path_hint(self.path)
-        }
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
@@ -79,9 +67,10 @@ pub mod details {
         fn default() -> Self {
             Self {
                 zero_memory: true,
-                path: Memory::<Allocator, Storage>::default_path_hint(),
-                suffix: Memory::<Allocator, Storage>::default_suffix(),
-                prefix: Memory::<Allocator, Storage>::default_prefix(),
+                dynamic_storage_config: Storage::Configuration::default()
+                    .path_hint(Memory::<Allocator, Storage>::default_path_hint())
+                    .suffix(Memory::<Allocator, Storage>::default_suffix())
+                    .prefix(Memory::<Allocator, Storage>::default_prefix()),
                 _phantom: PhantomData,
                 _phantom_storage: PhantomData,
             }
@@ -94,9 +83,7 @@ pub mod details {
         fn clone(&self) -> Self {
             Self {
                 zero_memory: self.zero_memory,
-                path: self.path,
-                suffix: self.suffix,
-                prefix: self.prefix,
+                dynamic_storage_config: self.dynamic_storage_config.clone(),
                 _phantom: PhantomData,
                 _phantom_storage: PhantomData,
             }
@@ -107,30 +94,38 @@ pub mod details {
         NamedConceptConfiguration for Configuration<Allocator, Storage>
     {
         fn prefix(mut self, value: FileName) -> Self {
-            self.prefix = value;
+            self.dynamic_storage_config = self.dynamic_storage_config.prefix(value);
             self
         }
 
         fn get_prefix(&self) -> &FileName {
-            &self.prefix
+            self.dynamic_storage_config.get_prefix()
         }
 
         fn suffix(mut self, value: FileName) -> Self {
-            self.suffix = value;
+            self.dynamic_storage_config = self.dynamic_storage_config.suffix(value);
             self
         }
 
         fn path_hint(mut self, value: Path) -> Self {
-            self.path = value;
+            self.dynamic_storage_config = self.dynamic_storage_config.path_hint(value);
             self
         }
 
         fn get_suffix(&self) -> &FileName {
-            &self.suffix
+            self.dynamic_storage_config.get_suffix()
         }
 
         fn get_path_hint(&self) -> &Path {
-            &self.path
+            self.dynamic_storage_config.get_path_hint()
+        }
+
+        fn path_for(&self, value: &FileName) -> FilePath {
+            self.dynamic_storage_config.path_for(value)
+        }
+
+        fn extract_name_from_file(&self, value: &FileName) -> Option<FileName> {
+            self.dynamic_storage_config.extract_name_from_file(value)
         }
     }
 
@@ -234,7 +229,7 @@ pub mod details {
             let allocator_mgmt_size = Allocator::management_size(self.size, allocator_config);
 
             let storage = match Storage::Builder::new(&self.name)
-                .config(&self.config.convert())
+                .config(&self.config.dynamic_storage_config)
                 .supplementary_size(self.size + allocator_mgmt_size)
                 .has_ownership(self.has_ownership)
                 .initializer(|details, init_allocator| -> bool {
@@ -278,7 +273,7 @@ pub mod details {
             let msg = "Unable to open shared memory";
 
             let storage = match Storage::Builder::new(&self.name)
-                .config(&self.config.convert())
+                .config(&self.config.dynamic_storage_config)
                 .has_ownership(false)
                 .timeout(self.timeout)
                 .open()
@@ -360,7 +355,7 @@ pub mod details {
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
             Ok(fail!(from "shared_memory::posix::does_exist_cfg()",
-            when Storage::does_exist_cfg(name, &cfg.convert()),
+            when Storage::does_exist_cfg(name, &cfg.dynamic_storage_config),
             "Unable to remove shared memory concept \"{}\".", name))
         }
 
@@ -368,7 +363,7 @@ pub mod details {
             cfg: &Self::Configuration,
         ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
             Ok(fail!(from "shared_memory::posix::list_cfg()",
-            when Storage::list_cfg(&cfg.convert()),
+            when Storage::list_cfg(&cfg.dynamic_storage_config),
             "Unable to list shared memory concepts."))
         }
 
@@ -377,7 +372,7 @@ pub mod details {
             cfg: &Self::Configuration,
         ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
             Ok(fail!(from "shared_memory::posix::remove_cfg()",
-            when Storage::remove_cfg(name, &cfg.convert()),
+            when Storage::remove_cfg(name, &cfg.dynamic_storage_config),
             "Unable to remove shared memory concept \"{}\".", name))
         }
 

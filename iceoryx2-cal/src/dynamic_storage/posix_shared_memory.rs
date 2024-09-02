@@ -187,7 +187,7 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
                 Err(SharedMemoryCreationError::InsufficientPermissions) => {
                     if elapsed_time >= self.timeout {
                         fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
-                        "{} since it is not yet readable - most likely since it is not finalized after {:?}.",
+                        "{} since it is not readable - (it is not initialized after {:?}).",
                         msg, self.timeout);
                     }
                 }
@@ -220,13 +220,25 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
             .version
             .load(std::sync::atomic::Ordering::SeqCst);
 
-        let package_version = PackageVersion::from_u64(package_version);
-        if package_version.to_u64() == 0 {
-            return Err(DynamicStorageOpenError::InitializationNotYetFinalized);
-        } else if package_version != PackageVersion::get() {
-            fail!(from self, with DynamicStorageOpenError::VersionMismatch,
-                "{} since the dynamic storage was created with version {} but this process requires version {}.",
-                msg, package_version, PackageVersion::get());
+        loop {
+            let package_version = PackageVersion::from_u64(package_version);
+            if package_version.to_u64() == 0 {
+                if elapsed_time >= self.timeout {
+                    fail!(from self, with DynamicStorageOpenError::InitializationNotYetFinalized,
+                        "{} since the version number was not set - (it is not initialized after {:?}).",
+                        msg, self.timeout);
+                }
+            } else if package_version != PackageVersion::get() {
+                fail!(from self, with DynamicStorageOpenError::VersionMismatch,
+                       "{} since the dynamic storage was created with version {} but this process requires version {}.",
+                        msg, package_version, PackageVersion::get());
+            } else {
+                break;
+            }
+
+            elapsed_time = fail!(from self, when wait_for_read_write_access.wait(),
+                                    with DynamicStorageOpenError::InternalError,
+                                    "{} since the adaptive wait call failed.", msg);
         }
 
         Ok(Storage {

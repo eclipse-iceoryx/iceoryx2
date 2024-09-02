@@ -19,6 +19,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_cal::static_storage::file::*;
+use std::time::Duration;
 
 fn generate_name() -> FileName {
     let mut file = FileName::new(b"communication_channel_tests_").unwrap();
@@ -48,7 +49,10 @@ fn static_storage_file_custom_path_and_suffix_works() {
         .unwrap();
     assert_that!(*storage_guard.name(), eq storage_name);
 
-    let storage_reader = Builder::new(&storage_name).config(&config).open().unwrap();
+    let storage_reader = Builder::new(&storage_name)
+        .config(&config)
+        .open(Duration::ZERO)
+        .unwrap();
     assert_that!(*storage_reader.name(), eq storage_name);
 
     let content_len = content.len() as u64;
@@ -78,7 +82,10 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
         .create(content.as_bytes());
     assert_that!(storage_guard, is_ok);
 
-    let storage_reader = Builder::new(&storage_name).config(&config).open().unwrap();
+    let storage_reader = Builder::new(&storage_name)
+        .config(&config)
+        .open(Duration::ZERO)
+        .unwrap();
     assert_that!(*storage_reader.name(), eq storage_name);
 
     let content_len = content.len() as u64;

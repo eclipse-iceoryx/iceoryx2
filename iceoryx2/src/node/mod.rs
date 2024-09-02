@@ -957,7 +957,7 @@ impl<Service: service::Service> Node<Service> {
         )
         .config(&details_config)
         .has_ownership(false)
-        .open();
+        .open(Duration::ZERO);
 
         if let Ok(result) = result {
             return Ok(Some(result));
@@ -972,7 +972,7 @@ impl<Service: service::Service> Node<Service> {
                 fail!(from origin, with NodeReadStorageFailure::ReadError,
                     "{} since the node config storage could not be read.", msg);
             }
-            StaticStorageOpenError::IsLocked => {
+            StaticStorageOpenError::InitializationNotYetFinalized => {
                 fail!(from origin, with NodeReadStorageFailure::Corrupted,
                     "{} since the node config storage seems to be uninitialized but the state should always be present.", msg);
             }

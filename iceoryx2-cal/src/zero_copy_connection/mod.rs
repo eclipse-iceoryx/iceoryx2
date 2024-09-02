@@ -16,6 +16,7 @@ pub mod process_local;
 pub mod used_chunk_list;
 
 use std::fmt::Debug;
+use std::time::Duration;
 
 pub use crate::shared_memory::PointerOffset;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
@@ -30,6 +31,7 @@ pub enum ZeroCopyCreationError {
     VersionMismatch,
     ConnectionMaybeCorrupted,
     InvalidSampleSize,
+    InitializationNotYetFinalized,
     IncompatibleBufferSize,
     IncompatibleMaxBorrowedSampleSetting,
     IncompatibleOverflowSetting,
@@ -108,6 +110,12 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     fn enable_safe_overflow(self, value: bool) -> Self;
     fn receiver_max_borrowed_samples(self, value: usize) -> Self;
     fn number_of_samples(self, value: usize) -> Self;
+    /// The timeout defines how long the [`ZeroCopyConnectionBuilder`] should wait for
+    /// concurrent
+    /// [`ZeroCopyConnectionBuilder::create_sender()`] or
+    /// [`ZeroCopyConnectionBuilder::create_receiver()`] call to finalize its initialization.
+    /// By default it is set to [`Duration::ZERO`] for no timeout.
+    fn timeout(self, value: Duration) -> Self;
 
     fn create_sender(self, sample_size: usize) -> Result<C::Sender, ZeroCopyCreationError>;
     fn create_receiver(self, sample_size: usize) -> Result<C::Receiver, ZeroCopyCreationError>;
