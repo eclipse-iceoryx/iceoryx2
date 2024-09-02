@@ -170,7 +170,7 @@ pub fn list() -> Result<()> {
 
 pub fn execute_external_command(
     command_name: &str,
-    args: &[String],
+    args: Option<&[String]>,
     dev_flag_present: bool,
 ) -> Result<()> {
     let commands = list_commands().context("Failed to find command binaries")?;
@@ -185,7 +185,7 @@ pub fn execute_external_command(
         })
         .find(|command| command.name == command_name)
         .ok_or_else(|| anyhow!("Command not found: {}", command_name))?;
-    execute(&command_info, Some(args))
+    execute(&command_info, args)
 }
 
 fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<()> {

@@ -48,14 +48,17 @@ fn main() {
         }
     } else if !cli.external_command.is_empty() {
         let command_name = &cli.external_command[0];
-        let command_args = &cli.external_command[1..];
-
+        let command_args = if cli.external_command.len() > 1 {
+            Some(&cli.external_command[1..])
+        } else {
+            None
+        };
         if let Err(e) = commands::execute_external_command(command_name, command_args, cli.dev) {
-            eprintln!("Failed to list search paths: {}", e);
+            eprintln!("Failed to execute command: {}", e);
         }
     } else {
-        if let Err(e) = cli::Cli::command().print_help() {
-            eprintln!("Failed to print help message: {}", e);
-        }
+        cli::Cli::command()
+            .print_help()
+            .expect("Unrecognized CLI input. Exiting.");
     }
 }
