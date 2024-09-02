@@ -2607,6 +2607,36 @@ mod service_publish_subscribe {
         }
     }
 
+    #[test]
+    fn subscriber_acquires_samples_of_disconnected_publisher_first<Sut: Service>() {
+        set_log_level(LogLevel::Error);
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<usize>()
+            .subscriber_max_buffer_size(2)
+            .max_publishers(1)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        assert_that!(publisher.send_copy(123), is_ok);
+
+        drop(publisher);
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        assert_that!(publisher.send_copy(456), is_ok);
+
+        let sample = subscriber.receive().unwrap().unwrap();
+        assert_that!(*sample, eq 123);
+        let sample = subscriber.receive().unwrap().unwrap();
+        assert_that!(*sample, eq 456);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
