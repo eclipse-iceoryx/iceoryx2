@@ -11,8 +11,9 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-human-panic = { workspace = true }
+anyhow = { workspace = true }
 better-panic = { workspace = true }
-clap = { workspace = true }
 colored = { workspace = true }
+clap = { workspace = true }
+human-panic = { workspace = true }
 thiserror = { workspace = true }

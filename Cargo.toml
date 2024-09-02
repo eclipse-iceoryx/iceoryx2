@@ -72,6 +72,7 @@ iceoryx2-ffi-macros = { version = "0.3.0", path = "iceoryx2-ffi/ffi-macros" }
 
 iceoryx2 = { version = "0.3.0", path = "iceoryx2/" }
 
+anyhow = { version = "1.0.86" }
 bindgen = { version = "0.69.4" }
 bitflags = { version = "2.5.0" }
 cbindgen = { version = "0.26.0" }
