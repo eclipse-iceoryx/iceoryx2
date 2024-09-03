@@ -53,7 +53,7 @@ fn main() {
         } else {
             None
         };
-        if let Err(e) = commands::execute_external_command(command_name, command_args, cli.dev) {
+        if let Err(e) = commands::execute(command_name, command_args, cli.dev) {
             eprintln!("Failed to execute command: {}", e);
         }
     } else {

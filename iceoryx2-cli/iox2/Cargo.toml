@@ -16,4 +16,8 @@ better-panic = { workspace = true }
 colored = { workspace = true }
 clap = { workspace = true }
 human-panic = { workspace = true }
-thiserror = { workspace = true }
+cargo_metadata = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+tempfile = { workspace = true }
