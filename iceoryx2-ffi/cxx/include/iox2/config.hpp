@@ -147,7 +147,6 @@ class Defaults {
 
     Config* m_config;
 };
-
 } // namespace config
 
 /// Non-owning view of a [`Config`].
@@ -185,6 +184,7 @@ class Config {
     auto operator=(Config&& rhs) noexcept -> Config&;
 
     auto global() -> config::Global;
+    auto defaults() -> config::Defaults;
 
     /// Returns a [`ConfigView`] to the current global config.
     static auto global_config() -> ConfigView;
