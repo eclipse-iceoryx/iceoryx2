@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/config.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 ConfigView::ConfigView(iox2_config_ptr ptr)
@@ -19,11 +18,82 @@ ConfigView::ConfigView(iox2_config_ptr ptr)
 }
 
 auto ConfigView::to_owned() const -> Config {
-    // IOX_TODO();
-    return Config {};
+    iox2_config_h handle = nullptr;
+    iox2_config_from_ptr(m_ptr, nullptr, &handle);
+
+    return Config(handle);
+}
+
+Config::Config() {
+    iox2_config_default(nullptr, &m_handle);
+}
+
+void Config::drop() {
+    if (m_handle != nullptr) {
+        iox2_config_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+Config::Config(const Config& rhs) {
+    auto* ref_handle = iox2_cast_config_ref_h(rhs.m_handle);
+    iox2_config_clone(ref_handle, nullptr, &m_handle);
+}
+
+Config::Config(Config&& rhs) noexcept
+    : m_handle { std::move(rhs.m_handle) } {
+    rhs.m_handle = nullptr;
+}
+
+Config::~Config() {
+    drop();
+}
+
+auto Config::operator=(const Config& rhs) -> Config& {
+    if (this != &rhs) {
+        drop();
+        auto* ref_handle = iox2_cast_config_ref_h(rhs.m_handle);
+        iox2_config_clone(ref_handle, nullptr, &m_handle);
+    }
+    return *this;
+}
+
+
+auto Config::operator=(Config&& rhs) noexcept -> Config& {
+    if (this != &rhs) {
+        drop();
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+Config::Config(iox2_config_h handle)
+    : m_handle { handle } {
+}
+
+auto Config::global() -> config::Global {
+    return config::Global(this);
 }
 
 auto Config::global_config() -> ConfigView {
     return ConfigView { iox2_config_global_config() };
 }
+
+namespace config {
+Global::Global(Config* config)
+    : m_config { config } {
+}
+
+auto Global::prefix() && -> const char* {
+    auto* ref_handle = iox2_cast_config_ref_h(m_config->m_handle);
+    return iox2_config_global_prefix(ref_handle);
+}
+
+auto Global::set_prefix(const char* value) && {
+    auto* ref_handle = iox2_cast_config_ref_h(m_config->m_handle);
+    iox2_config_global_set_prefix(ref_handle, value);
+}
+} // namespace config
 } // namespace iox2

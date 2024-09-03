@@ -109,8 +109,37 @@ impl HandleToType for iox2_config_ref_h {
 
 // BEGIN C API
 #[no_mangle]
+pub unsafe extern "C" fn iox2_cast_config_ref_h(handle: iox2_config_h) -> iox2_config_ref_h {
+    debug_assert!(!handle.is_null());
+
+    (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_config() -> iox2_config_ptr {
     iceoryx2::config::Config::global_config()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_default(
+    struct_ptr: *mut iox2_config_t,
+    handle_ptr: *mut iox2_config_h,
+) -> c_int {
+    debug_assert!(!handle_ptr.is_null());
+
+    let mut struct_ptr = struct_ptr;
+    fn no_op(_: *mut iox2_config_t) {}
+    let mut deleter: fn(*mut iox2_config_t) = no_op;
+    if struct_ptr.is_null() {
+        struct_ptr = iox2_config_t::alloc();
+        deleter = iox2_config_t::dealloc;
+    }
+    debug_assert!(!struct_ptr.is_null());
+
+    (*struct_ptr).init(ManuallyDrop::new(Config::default()), deleter);
+    *handle_ptr = (*struct_ptr).as_handle();
+
+    IOX2_OK
 }
 
 #[no_mangle]
@@ -146,8 +175,31 @@ pub unsafe extern "C" fn iox2_config_from_file(
     };
 
     (*struct_ptr).init(ManuallyDrop::new(config_from_file), deleter);
+    *handle_ptr = (*struct_ptr).as_handle();
 
     IOX2_OK
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_from_ptr(
+    handle: iox2_config_ptr,
+    struct_ptr: *mut iox2_config_t,
+    handle_ptr: *mut iox2_config_h,
+) {
+    debug_assert!(!handle.is_null());
+    debug_assert!(!handle_ptr.is_null());
+
+    let mut struct_ptr = struct_ptr;
+    fn no_op(_: *mut iox2_config_t) {}
+    let mut deleter: fn(*mut iox2_config_t) = no_op;
+    if struct_ptr.is_null() {
+        struct_ptr = iox2_config_t::alloc();
+        deleter = iox2_config_t::dealloc;
+    }
+    debug_assert!(!struct_ptr.is_null());
+
+    (*struct_ptr).init(ManuallyDrop::new((*handle).clone()), deleter);
+    *handle_ptr = (*struct_ptr).as_handle();
 }
 
 #[no_mangle]
@@ -168,9 +220,9 @@ pub unsafe extern "C" fn iox2_config_clone(
     }
     debug_assert!(!struct_ptr.is_null());
 
-    let config = &*handle.as_type();
-
+    let config = &mut *handle.as_type();
     (*struct_ptr).init(config.value.as_ref().value.clone(), deleter);
+    *handle_ptr = (*struct_ptr).as_handle();
 }
 
 #[no_mangle]
