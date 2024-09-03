@@ -42,9 +42,9 @@ class Node {
 
   private:
     friend class Global;
-    explicit Node(Config* config);
+    explicit Node(iox2_config_h* config);
 
-    Config* m_config;
+    iox2_config_h* m_config;
 };
 
 class Service {
@@ -66,9 +66,9 @@ class Service {
 
   private:
     friend class Global;
-    explicit Service(Config* config);
+    explicit Service(iox2_config_h* config);
 
-    Config* m_config;
+    iox2_config_h* m_config;
 };
 
 class Global {
@@ -83,69 +83,69 @@ class Global {
 
   private:
     friend class ::iox2::Config;
-    explicit Global(Config* config);
+    explicit Global(iox2_config_h* config);
 
-    Config* m_config;
+    iox2_config_h* m_config;
 };
 
 class PublishSubscribe {
   public:
-    auto max_subscribers() -> size_t;
-    void set_max_subscribers(size_t value);
-    auto max_publishers() -> size_t;
-    void set_max_publishers(size_t value);
-    auto max_nodes() -> size_t;
-    void set_max_nodes(size_t value);
-    auto subscriber_max_buffer_size() -> size_t;
-    void set_subscriber_max_buffer_size(size_t value);
-    auto subscriber_max_borrowed_samples() -> size_t;
-    void set_subscriber_max_borrowed_samples(size_t value);
-    auto publisher_max_loaned_samples() -> size_t;
-    void set_publisher_max_loaned_samples(size_t value);
-    auto publisher_history_size() -> size_t;
-    void set_history_sizeed_samples(size_t value);
-    auto enable_safe_overflow() -> bool;
-    void set_enable_safe_overflow(bool value);
-    auto unable_to_deliver_strategy() -> UnableToDeliverStrategy;
-    void set_unable_to_deliver_strategy(UnableToDeliverStrategy value);
-    auto subscriber_expired_connection_buffer() -> size_t;
-    void set_subscriber_expired_connection_buffer(size_t value);
+    auto max_subscribers() && -> size_t;
+    void set_max_subscribers(size_t value) &&;
+    auto max_publishers() && -> size_t;
+    void set_max_publishers(size_t value) &&;
+    auto max_nodes() && -> size_t;
+    void set_max_nodes(size_t value) &&;
+    auto subscriber_max_buffer_size() && -> size_t;
+    void set_subscriber_max_buffer_size(size_t value) &&;
+    auto subscriber_max_borrowed_samples() && -> size_t;
+    void set_subscriber_max_borrowed_samples(size_t value) &&;
+    auto publisher_max_loaned_samples() && -> size_t;
+    void set_publisher_max_loaned_samples(size_t value) &&;
+    auto publisher_history_size() && -> size_t;
+    void set_publisher_history_size(size_t value) &&;
+    auto enable_safe_overflow() && -> bool;
+    void set_enable_safe_overflow(bool value) &&;
+    auto unable_to_deliver_strategy() && -> UnableToDeliverStrategy;
+    void set_unable_to_deliver_strategy(UnableToDeliverStrategy value) &&;
+    auto subscriber_expired_connection_buffer() && -> size_t;
+    void set_subscriber_expired_connection_buffer(size_t value) &&;
 
   private:
     friend class Defaults;
-    explicit PublishSubscribe(Config* config);
+    explicit PublishSubscribe(iox2_config_h* config);
 
-    Config* m_config;
+    iox2_config_h* m_config;
 };
 
 class Event {
   public:
-    auto max_listeners() -> size_t;
-    void set_max_listeners(size_t value);
-    auto max_notifiers() -> size_t;
-    void set_max_notifiers(size_t value);
-    auto max_nodes() -> size_t;
-    void set_max_nodes(size_t value);
-    auto event_id_max_value() -> size_t;
-    void set_event_id_max_value(size_t value);
+    auto max_listeners() && -> size_t;
+    void set_max_listeners(size_t value) &&;
+    auto max_notifiers() && -> size_t;
+    void set_max_notifiers(size_t value) &&;
+    auto max_nodes() && -> size_t;
+    void set_max_nodes(size_t value) &&;
+    auto event_id_max_value() && -> size_t;
+    void set_event_id_max_value(size_t value) &&;
 
   private:
     friend class Defaults;
-    explicit Event(Config* config);
+    explicit Event(iox2_config_h* config);
 
-    Config* m_config;
+    iox2_config_h* m_config;
 };
 
 class Defaults {
   public:
-    auto publish_subscribe() -> PublishSubscribe;
-    auto event() -> Event;
+    auto publish_subscribe() && -> PublishSubscribe;
+    auto event() && -> Event;
 
   private:
     friend class ::iox2::Config;
-    explicit Defaults(Config* config);
+    explicit Defaults(iox2_config_h* config);
 
-    Config* m_config;
+    iox2_config_h* m_config;
 };
 } // namespace config
 
