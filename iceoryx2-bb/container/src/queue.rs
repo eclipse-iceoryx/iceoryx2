@@ -149,17 +149,29 @@ pub mod details {
             unsafe { self.clear_impl() }
         }
 
-        /// Acquire an element from the queue. If the queue is empty it returns [`None`].
+        /// Returns a reference to the element from the beginning of the queue without removing it.
+        /// If the queue is empty it returns [`None`].
+        pub fn peek(&self) -> Option<&T> {
+            unsafe { self.peek_impl() }
+        }
+
+        /// Returns a mutable reference to the element from the beginning of the queue without removing it.
+        /// If the queue is empty it returns [`None`].
+        pub fn peek_mut(&mut self) -> Option<&mut T> {
+            unsafe { self.peek_mut_impl() }
+        }
+
+        /// Removes the element from the beginning of the queue. If the queue is empty it returns [`None`].
         pub fn pop(&mut self) -> Option<T> {
             unsafe { self.pop_impl() }
         }
 
-        /// Adds an element to the queue. If the queue is full it returns false, otherwise true.
+        /// Adds an element at the end of the queue. If the queue is full it returns false, otherwise true.
         pub fn push(&mut self, value: T) -> bool {
             unsafe { self.push_impl(value) }
         }
 
-        /// Adds an element to the queue. If the queue is full it returns the oldest element,
+        /// Adds an element at the end of the queue. If the queue is full it returns the oldest element,
         /// otherwise [`None`].
         pub fn push_with_overflow(&mut self, value: T) -> Option<T> {
             unsafe { self.push_with_overflow_impl(value) }
@@ -259,7 +271,29 @@ pub mod details {
             self.clear_impl()
         }
 
-        /// Acquire an element from the queue. If the queue is empty it returns [`None`].
+        /// Returns a reference to the element from the beginning of the queue without removing it.
+        /// If the queue is empty it returns [`None`].
+        ///
+        /// # Safety
+        ///
+        ///  * [`Queue::init()`] must have been called once before
+        ///
+        pub fn peek(&self) -> Option<&T> {
+            unsafe { self.peek_impl() }
+        }
+
+        /// Returns a mutable reference to the element from the beginning of the queue without removing it.
+        /// If the queue is empty it returns [`None`].
+        ///
+        /// # Safety
+        ///
+        ///  * [`Queue::init()`] must have been called once before
+        ///
+        pub fn peek_mut(&mut self) -> Option<&mut T> {
+            unsafe { self.peek_mut_impl() }
+        }
+
+        /// Removes the element from the beginning of the queue. If the queue is empty it returns [`None`].
         ///
         /// # Safety
         ///
@@ -269,7 +303,7 @@ pub mod details {
             self.pop_impl()
         }
 
-        /// Adds an element to the queue. If the queue is full it returns false, otherwise true.
+        /// Adds an element at the end of the queue. If the queue is full it returns false, otherwise true.
         ///
         /// # Safety
         ///
@@ -279,7 +313,7 @@ pub mod details {
             self.push_impl(value)
         }
 
-        /// Adds an element to the queue. If the queue is full it returns the oldest element,
+        /// Adds an element at the end of the queue. If the queue is full it returns the oldest element,
         /// otherwise [`None`].
         ///
         /// # Safety
@@ -331,12 +365,37 @@ pub mod details {
             while self.pop_impl().is_some() {}
         }
 
-        pub(crate) unsafe fn pop_impl(&mut self) -> Option<T> {
+        pub(crate) unsafe fn peek_mut_impl(&mut self) -> Option<&mut T> {
+            self.verify_init(&format!("Queue<{}>::pop()", std::any::type_name::<T>()));
+
             if self.is_empty() {
                 return None;
             }
 
+            let index = (self.start - self.len) % self.capacity;
+
+            Some((&mut *self.data_ptr.as_mut_ptr().add(index)).assume_init_mut())
+        }
+
+        pub(crate) unsafe fn peek_impl(&self) -> Option<&T> {
             self.verify_init(&format!("Queue<{}>::pop()", std::any::type_name::<T>()));
+
+            if self.is_empty() {
+                return None;
+            }
+
+            let index = (self.start - self.len) % self.capacity;
+
+            Some((&*self.data_ptr.as_ptr().add(index)).assume_init_ref())
+        }
+
+        pub(crate) unsafe fn pop_impl(&mut self) -> Option<T> {
+            self.verify_init(&format!("Queue<{}>::pop()", std::any::type_name::<T>()));
+
+            if self.is_empty() {
+                return None;
+            }
+
             let index = (self.start - self.len) % self.capacity;
             self.len -= 1;
             let value = std::mem::replace(
@@ -347,27 +406,28 @@ pub mod details {
         }
 
         pub(crate) unsafe fn push_impl(&mut self, value: T) -> bool {
+            self.verify_init(&format!("Queue<{}>::push()", std::any::type_name::<T>()));
+
             if self.len == self.capacity {
                 return false;
             }
-
-            self.verify_init(&format!("Queue<{}>::push()", std::any::type_name::<T>()));
 
             self.unchecked_push(value);
             true
         }
 
         pub(crate) unsafe fn push_with_overflow_impl(&mut self, value: T) -> Option<T> {
+            self.verify_init(&format!(
+                "Queue<{}>::push_with_overflow()",
+                std::any::type_name::<T>()
+            ));
+
             let overridden_value = if self.len() == self.capacity() {
                 self.pop_impl()
             } else {
                 None
             };
 
-            self.verify_init(&format!(
-                "Queue<{}>::push_with_overflow()",
-                std::any::type_name::<T>()
-            ));
             self.unchecked_push(value);
             overridden_value
         }
@@ -458,17 +518,29 @@ impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
         unsafe { self.state.clear_impl() }
     }
 
-    /// Acquire an element from the queue. If the queue is empty it returns [`None`].
+    /// Returns a reference to the element from the beginning of the queue without removing it.
+    /// If the queue is empty it returns [`None`].
+    pub fn peek(&self) -> Option<&T> {
+        unsafe { self.state.peek_impl() }
+    }
+
+    /// Returns a mutable reference to the element from the beginning of the queue without removing it.
+    /// If the queue is empty it returns [`None`].
+    pub fn peek_mut(&mut self) -> Option<&mut T> {
+        unsafe { self.state.peek_mut_impl() }
+    }
+
+    /// Removes the element from the beginning of the queue. If the queue is empty it returns [`None`].
     pub fn pop(&mut self) -> Option<T> {
         unsafe { self.state.pop_impl() }
     }
 
-    /// Adds an element to the queue. If the queue is full it returns false, otherwise true.
+    /// Adds an element at the end of the queue. If the queue is full it returns false, otherwise true.
     pub fn push(&mut self, value: T) -> bool {
         unsafe { self.state.push_impl(value) }
     }
 
-    /// Adds an element to the queue. If the queue is full it returns the oldest element,
+    /// Adds an element at the end of the queue. If the queue is full it returns the oldest element,
     /// otherwise [`None`].
     pub fn push_with_overflow(&mut self, value: T) -> Option<T> {
         unsafe { self.state.push_with_overflow_impl(value) }

@@ -307,4 +307,22 @@ mod queue {
         assert_that!(unsafe {sut.assume_init_mut()}.pop(), eq Some(123));
         assert_that!(unsafe {sut.assume_init_mut()}.pop(), eq Some(456));
     }
+
+    #[test]
+    fn peek_works() {
+        let mut sut = Sut::new();
+
+        assert_that!(sut.peek(), is_none);
+        assert_that!(sut.peek_mut(), is_none);
+
+        sut.push(8781);
+
+        assert_that!(*sut.peek().unwrap(), eq 8781);
+        assert_that!(*sut.peek_mut().unwrap(), eq 8781);
+
+        *sut.peek_mut().unwrap() = 99182;
+
+        assert_that!(*sut.peek().unwrap(), eq 99182);
+        assert_that!(*sut.peek_mut().unwrap(), eq 99182);
+    }
 }
