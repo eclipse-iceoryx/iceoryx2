@@ -13,6 +13,7 @@
 #ifndef IOX2_CONFIG_HPP
 #define IOX2_CONFIG_HPP
 
+#include "iox/expected.hpp"
 #include "iox/file_name.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
@@ -23,7 +24,7 @@ namespace config {
 class Global {
   public:
     auto prefix() && -> const char*;
-    auto set_prefix(const char* value) &&;
+    void set_prefix(const iox::FileName& value) &&;
 
   private:
     friend class ::iox2::Config;

@@ -91,9 +91,9 @@ auto Global::prefix() && -> const char* {
     return iox2_config_global_prefix(ref_handle);
 }
 
-auto Global::set_prefix(const char* value) && {
+void Global::set_prefix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(m_config->m_handle);
-    iox2_config_global_set_prefix(ref_handle, value);
+    iox2_config_global_set_prefix(ref_handle, value.as_string().c_str());
 }
 } // namespace config
 } // namespace iox2
