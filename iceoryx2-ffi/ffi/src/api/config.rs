@@ -18,6 +18,7 @@ use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 use std::mem::ManuallyDrop;
 
@@ -242,6 +243,7 @@ pub unsafe extern "C" fn iox2_config_global_prefix(handle: iox2_config_ref_h) ->
     config.value.as_ref().value.global.prefix.as_c_str()
 }
 
+/// Returns: iox2_semantic_string_error
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_set_prefix(
     handle: iox2_config_ref_h,
@@ -253,6 +255,32 @@ pub unsafe extern "C" fn iox2_config_global_set_prefix(
     match FileName::from_c_str(value) {
         Ok(n) => {
             config.value.as_mut().value.global.prefix = n;
+            IOX2_OK as _
+        }
+        Err(e) => e as c_int,
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_global_root_path(handle: iox2_config_ref_h) -> *const c_char {
+    debug_assert!(!handle.is_null());
+
+    let config = &*handle.as_type();
+    config.value.as_ref().value.global.root_path().as_c_str()
+}
+
+/// Returns: iox2_semantic_string_error
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_global_set_root_path(
+    handle: iox2_config_ref_h,
+    value: *const c_char,
+) -> c_int {
+    debug_assert!(!handle.is_null());
+
+    let config = &mut *handle.as_type();
+    match Path::from_c_str(value) {
+        Ok(n) => {
+            config.value.as_mut().value.global.set_root_path(&n);
             IOX2_OK as _
         }
         Err(e) => e as c_int,

@@ -95,5 +95,16 @@ void Global::set_prefix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(m_config->m_handle);
     iox2_config_global_set_prefix(ref_handle, value.as_string().c_str());
 }
+
+auto Global::root_path() && -> const char* {
+    auto* ref_handle = iox2_cast_config_ref_h(m_config->m_handle);
+    return iox2_config_global_root_path(ref_handle);
+}
+
+void Global::set_root_path(const iox::Path& value) && {
+    auto* ref_handle = iox2_cast_config_ref_h(m_config->m_handle);
+    iox2_config_global_set_root_path(ref_handle, value.as_string().c_str());
+}
+
 } // namespace config
 } // namespace iox2

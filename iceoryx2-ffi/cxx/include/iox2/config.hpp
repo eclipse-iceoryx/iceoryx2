@@ -15,6 +15,7 @@
 
 #include "iox/expected.hpp"
 #include "iox/file_name.hpp"
+#include "iox/path.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
@@ -25,6 +26,8 @@ class Global {
   public:
     auto prefix() && -> const char*;
     void set_prefix(const iox::FileName& value) &&;
+    auto root_path() && -> const char*;
+    void set_root_path(const iox::Path& value) &&;
 
   private:
     friend class ::iox2::Config;

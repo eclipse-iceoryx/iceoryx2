@@ -24,4 +24,12 @@ TEST(Config, global_prefix_works) {
     config.global().set_prefix(test_value);
     ASSERT_THAT(config.global().prefix(), StrEq(test_value.as_string().c_str()));
 }
+
+TEST(Config, global_root_path_works) {
+    const auto test_value = iox::Path::create("some/path").expect("");
+    auto config = Config();
+
+    config.global().set_root_path(test_value);
+    ASSERT_THAT(config.global().root_path(), StrEq(test_value.as_string().c_str()));
+}
 } // namespace

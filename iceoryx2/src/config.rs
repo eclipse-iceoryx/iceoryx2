@@ -195,6 +195,18 @@ impl Global {
                 "Unable to initialize config since the internal root_path_unix \"{}\" is not a valid directory.", self.root_path_unix)
         }
     }
+
+    /// Defines the path under which all other directories or files will be created
+    pub fn set_root_path(&mut self, value: &Path) {
+        #[cfg(target_os = "windows")]
+        {
+            self.root_path_windows = *value;
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            self.root_path_unix = *value;
+        }
+    }
 }
 
 /// Default settings. These values are used when the user in the code does not specify anything
