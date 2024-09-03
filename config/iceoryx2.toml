@@ -31,6 +31,7 @@ subscriber-max-borrowed-samples             = 2
 publisher-max-loaned-samples                = 2
 enable-safe-overflow                        = true
 unable-to-deliver-strategy                  = 'Block' # or 'DiscardSample'
+subscriber-expired-connection-buffer        = 128
 
 [defaults.event]
 max-listeners                               = 2

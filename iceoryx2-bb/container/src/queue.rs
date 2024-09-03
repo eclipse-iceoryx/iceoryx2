@@ -374,7 +374,7 @@ pub mod details {
 
             let index = (self.start - self.len) % self.capacity;
 
-            Some((&mut *self.data_ptr.as_mut_ptr().add(index)).assume_init_mut())
+            Some((*self.data_ptr.as_mut_ptr().add(index)).assume_init_mut())
         }
 
         pub(crate) unsafe fn peek_impl(&self) -> Option<&T> {
@@ -386,7 +386,7 @@ pub mod details {
 
             let index = (self.start - self.len) % self.capacity;
 
-            Some((&*self.data_ptr.as_ptr().add(index)).assume_init_ref())
+            Some((*self.data_ptr.as_ptr().add(index)).assume_init_ref())
         }
 
         pub(crate) unsafe fn pop_impl(&mut self) -> Option<T> {

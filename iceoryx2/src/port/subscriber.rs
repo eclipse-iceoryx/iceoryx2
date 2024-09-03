@@ -37,6 +37,7 @@ use std::marker::PhantomData;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -104,7 +105,7 @@ impl std::error::Error for SubscriberCreateError {}
 pub struct Subscriber<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: PublisherConnections<Service>,
-    to_be_removed_connections: UnsafeCell<Vec<Arc<Connection<Service>>>>,
+    to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
     static_config: crate::service::static_config::StaticConfig,
     degration_callback: Option<DegrationCallback<'static>>,
 
@@ -168,7 +169,15 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         );
 
         let mut new_self = Self {
-            to_be_removed_connections: UnsafeCell::new(vec![]),
+            to_be_removed_connections: UnsafeCell::new(Queue::new(
+                service
+                    .__internal_state()
+                    .shared_node
+                    .config()
+                    .defaults
+                    .publish_subscribe
+                    .subscriber_expired_connection_buffer,
+            )),
             degration_callback: config.degration_callback,
             publisher_connections,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
@@ -222,8 +231,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
         let prepare_connection_removal = |i| {
             if let Some(connection) = self.publisher_connections.get(i) {
-                if connection.receiver.has_data() {
-                    unsafe { &mut *self.to_be_removed_connections.get() }.push(connection.clone());
+                if connection.receiver.has_data()
+                    && !unsafe { &mut *self.to_be_removed_connections.get() }
+                        .push(connection.clone())
+                {
+                    warn!(from self, "Expired connection buffer exceeded. A publisher disconnected with undelivered samples that will be discarded. Increase the config entry `defaults.publish-subscribe.subscriber-expired-connection-buffer` to mitigate the problem.");
                 }
             }
         };
@@ -347,7 +359,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
         let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
 
-        if let Some(connection) = to_be_removed_connections.last_mut() {
+        if let Some(connection) = to_be_removed_connections.peek() {
             if let Some((details, absolute_address)) = self.receive_from_connection(connection)? {
                 return Ok(Some((details, absolute_address)));
             } else {

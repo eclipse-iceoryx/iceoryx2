@@ -96,7 +96,7 @@ impl SubscriberUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<SubscriberUnion>
 pub struct iox2_subscriber_storage_t {
-    internal: [u8; 784], // magic number obtained with size_of::<Option<SubscriberUnion>>()
+    internal: [u8; 816], // magic number obtained with size_of::<Option<SubscriberUnion>>()
 }
 
 #[repr(C)]
