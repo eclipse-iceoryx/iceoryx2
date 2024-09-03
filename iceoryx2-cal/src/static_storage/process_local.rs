@@ -325,7 +325,7 @@ impl StaticStorageBuilder<Storage> for Builder {
 
             let entry = entry.unwrap();
             if entry.content.is_locked {
-                if elapsed_time >= timeout {
+                if elapsed_time > timeout {
                     fail!(from self, with StaticStorageOpenError::InitializationNotYetFinalized,
                         "{} since the static storage is still being created (in locked state), try later.", msg);
                 }

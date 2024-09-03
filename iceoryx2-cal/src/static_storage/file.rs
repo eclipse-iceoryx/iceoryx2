@@ -438,7 +438,7 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
             "{} due to a failure while reading the files metadata.", msg);
 
             if metadata.permission() != FINAL_PERMISSIONS {
-                if elapsed_time >= timeout {
+                if elapsed_time > timeout {
                     fail!(from origin,
                         with StaticStorageOpenError::InitializationNotYetFinalized,
                         "{} since the static storage is still being created (in locked  state), try later.",

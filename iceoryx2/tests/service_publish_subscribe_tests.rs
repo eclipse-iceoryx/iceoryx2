@@ -30,6 +30,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_elementary::CallbackProgression;
+    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -2539,6 +2540,101 @@ mod service_publish_subscribe {
         let _ = subscriber.receive().unwrap();
 
         assert_that!(subscriber.has_samples().unwrap(), eq false);
+    }
+
+    #[test]
+    fn subscriber_can_still_receive_sample_when_publisher_was_disconnected<Sut: Service>() {
+        const NUMBER_OF_SAMPLES: usize = 4;
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<usize>()
+            .subscriber_max_buffer_size(NUMBER_OF_SAMPLES)
+            .max_publishers(1)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        for i in 0..NUMBER_OF_SAMPLES {
+            assert_that!(publisher.send_copy(i), is_ok);
+        }
+
+        drop(publisher);
+
+        for i in 0..NUMBER_OF_SAMPLES {
+            let result = subscriber.receive().unwrap();
+            assert_that!(result, is_some);
+            let sample = result.unwrap();
+            assert_that!(*sample, eq i);
+        }
+    }
+
+    #[test]
+    fn subscriber_disconnected_publisher_does_not_block_new_publishers<Sut: Service>() {
+        set_log_level(LogLevel::Error);
+        const NUMBER_OF_SAMPLES: usize = 4;
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<usize>()
+            .subscriber_max_buffer_size(NUMBER_OF_SAMPLES)
+            .max_publishers(1)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        for i in 0..NUMBER_OF_SAMPLES {
+            assert_that!(publisher.send_copy(i), is_ok);
+        }
+
+        drop(publisher);
+
+        let _publisher = sut.publisher_builder().create().unwrap();
+
+        for i in 0..NUMBER_OF_SAMPLES {
+            let result = subscriber.receive().unwrap();
+            assert_that!(result, is_some);
+            let sample = result.unwrap();
+            assert_that!(*sample, eq i);
+        }
+    }
+
+    #[test]
+    fn subscriber_acquires_samples_of_disconnected_publisher_first<Sut: Service>() {
+        set_log_level(LogLevel::Error);
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<usize>()
+            .subscriber_max_buffer_size(2)
+            .max_publishers(1)
+            .create()
+            .unwrap();
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        assert_that!(publisher.send_copy(123), is_ok);
+
+        drop(publisher);
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        assert_that!(publisher.send_copy(456), is_ok);
+
+        let sample = subscriber.receive().unwrap().unwrap();
+        assert_that!(*sample, eq 123);
+        let sample = subscriber.receive().unwrap().unwrap();
+        assert_that!(*sample, eq 456);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

@@ -59,3 +59,4 @@ Adjusting `global` settings ensures a non-interfering setup.
  * `defaults.publish-subscribe.publisher-max-loaned-samples` - [int]: Maximum samples a publisher can loan.
  * `defaults.publish-subscribe.enable-safe-overflow` - [`true`|`false`]: Default overflow behavior.
  * `defaults.publish-subscribe.unable-to-deliver-strategy` - [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups when delivery fails.
+ * `defaults.publish-subscribe.subscriber-expired-connection-buffer` - [int]: Expired connection buffer size of the subscriber. Connections to publishers are expired when the publisher disconnected from the service and the connection contains unconsumed samples.

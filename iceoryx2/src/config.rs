@@ -241,6 +241,12 @@ pub struct PublishSubscribe {
     /// [`crate::port::publisher::Publisher`] when the [`crate::port::subscriber::Subscriber`]s
     /// buffer is full.
     pub unable_to_deliver_strategy: UnableToDeliverStrategy,
+    /// Defines the size of the internal [`Subscriber`](crate::port::subscriber::Subscriber)
+    /// buffer that contains expired connections. An
+    /// connection is expired when the [`Publisher`](crate::port::publisher::Publisher)
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`Sample`](crate::sample::Sample)s.
+    pub subscriber_expired_connection_buffer: usize,
 }
 
 /// Default settings for the event messaging pattern. These settings are used unless
@@ -312,6 +318,7 @@ impl Default for Config {
                     publisher_max_loaned_samples: 2,
                     enable_safe_overflow: true,
                     unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+                    subscriber_expired_connection_buffer: 128,
                 },
                 event: Event {
                     max_listeners: 2,

@@ -37,6 +37,7 @@ use std::marker::PhantomData;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -103,7 +104,8 @@ impl std::error::Error for SubscriberCreateError {}
 #[derive(Debug)]
 pub struct Subscriber<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    publisher_connections: Arc<PublisherConnections<Service>>,
+    publisher_connections: PublisherConnections<Service>,
+    to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
     static_config: crate::service::static_config::StaticConfig,
     degration_callback: Option<DegrationCallback<'static>>,
 
@@ -158,15 +160,24 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             None => static_config.subscriber_max_buffer_size,
         };
 
-        let publisher_connections = Arc::new(PublisherConnections::new(
+        let publisher_connections = PublisherConnections::new(
             publisher_list.capacity(),
             subscriber_id,
             service.__internal_state().clone(),
             static_config,
             buffer_size,
-        ));
+        );
 
         let mut new_self = Self {
+            to_be_removed_connections: UnsafeCell::new(Queue::new(
+                service
+                    .__internal_state()
+                    .shared_node
+                    .config()
+                    .defaults
+                    .publish_subscribe
+                    .subscriber_expired_connection_buffer,
+            )),
             degration_callback: config.degration_callback,
             publisher_connections,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
@@ -218,6 +229,17 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             })
         };
 
+        let prepare_connection_removal = |i| {
+            if let Some(connection) = self.publisher_connections.get(i) {
+                if connection.receiver.has_data()
+                    && !unsafe { &mut *self.to_be_removed_connections.get() }
+                        .push(connection.clone())
+                {
+                    warn!(from self, "Expired connection buffer exceeded. A publisher disconnected with undelivered samples that will be discarded. Increase the config entry `defaults.publish-subscribe.subscriber-expired-connection-buffer` to mitigate the problem.");
+                }
+            }
+        };
+
         // update all connections
         for (i, index) in visited_indices.iter().enumerate() {
             match index {
@@ -228,6 +250,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     };
 
                     if create_connection {
+                        prepare_connection_removal(i);
+
                         match self.publisher_connections.create(i, details) {
                             Ok(()) => (),
                             Err(e) => match &self.degration_callback {
@@ -255,7 +279,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                         }
                     }
                 }
-                None => self.publisher_connections.remove(i),
+                None => {
+                    prepare_connection_removal(i);
+
+                    self.publisher_connections.remove(i)
+                }
             }
         }
 
@@ -264,8 +292,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
     fn receive_from_connection(
         &self,
-        channel_id: usize,
-        connection: &mut Connection<Service>,
+        connection: &Arc<Connection<Service>>,
     ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
         let msg = "Unable to receive another sample";
         match connection.receiver.receive() {
@@ -276,8 +303,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                         offset.value() + connection.data_segment.payload_start_address();
 
                     let details = SampleDetails {
-                        publisher_connections: Arc::clone(&self.publisher_connections),
-                        channel_id,
+                        publisher_connection: connection.clone(),
                         offset,
                         origin: connection.publisher_id,
                     };
@@ -331,11 +357,21 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 "Some samples are not being received since not all connections to publishers could be established.");
         }
 
+        let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
+
+        if let Some(connection) = to_be_removed_connections.peek() {
+            if let Some((details, absolute_address)) = self.receive_from_connection(connection)? {
+                return Ok(Some((details, absolute_address)));
+            } else {
+                to_be_removed_connections.pop();
+            }
+        }
+
         for id in 0..self.publisher_connections.len() {
             match &mut self.publisher_connections.get_mut(id) {
                 Some(ref mut connection) => {
                     if let Some((details, absolute_address)) =
-                        self.receive_from_connection(id, connection)?
+                        self.receive_from_connection(connection)?
                     {
                         return Ok(Some((details, absolute_address)));
                     }

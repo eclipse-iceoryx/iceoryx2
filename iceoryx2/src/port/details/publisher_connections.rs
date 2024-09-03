@@ -78,7 +78,7 @@ impl<Service: service::Service> Connection<Service> {
 }
 #[derive(Debug)]
 pub(crate) struct PublisherConnections<Service: service::Service> {
-    connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
+    connections: Vec<UnsafeCell<Option<Arc<Connection<Service>>>>>,
     subscriber_id: UniqueSubscriberId,
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) static_config: StaticConfig,
@@ -106,13 +106,13 @@ impl<Service: service::Service> PublisherConnections<Service> {
         self.subscriber_id
     }
 
-    pub(crate) fn get(&self, index: usize) -> &Option<Connection<Service>> {
+    pub(crate) fn get(&self, index: usize) -> &Option<Arc<Connection<Service>>> {
         unsafe { &*self.connections[index].get() }
     }
 
     // only used internally as convinience function
     #[allow(clippy::mut_from_ref)]
-    pub(crate) fn get_mut(&self, index: usize) -> &mut Option<Connection<Service>> {
+    pub(crate) fn get_mut(&self, index: usize) -> &mut Option<Arc<Connection<Service>>> {
         #[deny(clippy::mut_from_ref)]
         unsafe {
             &mut *self.connections[index].get()
@@ -124,7 +124,7 @@ impl<Service: service::Service> PublisherConnections<Service> {
         index: usize,
         details: &PublisherDetails,
     ) -> Result<(), ConnectionFailure> {
-        *self.get_mut(index) = Some(Connection::new(self, details)?);
+        *self.get_mut(index) = Some(Arc::new(Connection::new(self, details)?));
 
         Ok(())
     }
