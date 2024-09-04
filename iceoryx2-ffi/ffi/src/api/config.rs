@@ -29,12 +29,18 @@ use crate::IOX2_OK;
 use super::{HandleToType, IntoCInt};
 
 // BEGIN type definition
+
+/// Failures occurring while creating a new [`iox2_config_t`] object with [`iox2_config_from_file()`].
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub enum iox2_config_creation_error_e {
+    /// The config file could not be opened.
     FAILED_TO_OPEN_CONFIG_FILE = IOX2_OK as isize + 1,
+    /// The config file could not be read.
     FAILED_TO_READ_CONFIG_FILE_CONTENTS,
+    /// Parts of the config file could not be deserialized. Indicates some kind of syntax error.
     UNABLE_TO_DESERIALIZE_CONTENTS,
+    /// The provided string is not a valid file path
     INVALID_FILE_PATH,
 }
 
@@ -64,12 +70,14 @@ pub(super) struct ConfigOwner {
     value: ManuallyDrop<Config>,
 }
 
+/// A storage object that has the size to store a config
 #[repr(C)]
-#[repr(align(8))]
+#[repr(align(8))] // align_of<ConfigOwner>()
 pub struct iox2_config_storage_t {
-    internal: [u8; 3560],
+    internal: [u8; 3560], // size_of<ConfigOwner>()
 }
 
+/// Contains the iceoryx2 config
 #[repr(C)]
 #[iceoryx2_ffi(ConfigOwner)]
 pub struct iox2_config_t {
@@ -111,6 +119,17 @@ impl HandleToType for iox2_config_ref_h {
 // END type definition
 
 // BEGIN C API
+/// Cast an owning [`iox2_config_h`] into a non-owning [`iox2_config_ref_h`]
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_config_from_file()`], [`iox2_config_default()`],
+///     [`iox2_config_clone()`] or [`iox2_config_from_ptr()`]
+///
+/// # Safety
+///
+/// * The `handle` must be a valid handle.
+/// * The `handle` is still valid after the call to this function.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_cast_config_ref_h(handle: iox2_config_h) -> iox2_config_ref_h {
     debug_assert!(!handle.is_null());
@@ -118,11 +137,20 @@ pub unsafe extern "C" fn iox2_cast_config_ref_h(handle: iox2_config_h) -> iox2_c
     (*handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// Returns a pointer to the global config
 #[no_mangle]
-pub unsafe extern "C" fn iox2_config_global_config() -> iox2_config_ptr {
+pub extern "C" fn iox2_config_global_config() -> iox2_config_ptr {
     iceoryx2::config::Config::global_config()
 }
 
+/// Creates an iceoryx2 config populated with default values.
+///
+/// # Safety
+///
+/// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
+///                  If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
+///                  by this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_default(
     struct_ptr: *mut iox2_config_t,
@@ -145,6 +173,15 @@ pub unsafe extern "C" fn iox2_config_default(
     IOX2_OK
 }
 
+/// Creates an iceoryx2 config populated values from the provided file.
+///
+/// # Safety
+///
+/// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
+///                  If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
+///                  by this function call.
+/// * `config_file` - Must be a valid file path to an existing config file.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_from_file(
     struct_ptr: *mut iox2_config_t,
@@ -181,6 +218,15 @@ pub unsafe extern "C" fn iox2_config_from_file(
     IOX2_OK
 }
 
+/// Clones a config from the provided [`iox2_config_ptr`].
+///
+/// # Safety
+///
+/// * `handle` - Must be a valid pointer.
+/// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
+///                  If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
+///                  by this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_from_ptr(
     handle: iox2_config_ptr,
@@ -203,6 +249,15 @@ pub unsafe extern "C" fn iox2_config_from_ptr(
     *handle_ptr = (*struct_ptr).as_handle();
 }
 
+/// Clones a config from a given non-owning [`iox2_config_ref_h`].
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
+///                  If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
+///                  by this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_clone(
     handle: iox2_config_ref_h,
@@ -226,6 +281,12 @@ pub unsafe extern "C" fn iox2_config_clone(
     *handle_ptr = (*struct_ptr).as_handle();
 }
 
+/// Takes ownership of the handle and releases all underlying resources.
+///
+/// # Safety
+///
+/// * `handle` - An initialized [`iox2_config_h`] handle which will be uninitialized
+///                  after this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_drop(handle: iox2_config_h) {
     debug_assert!(!handle.is_null());
@@ -239,6 +300,11 @@ pub unsafe extern "C" fn iox2_config_drop(handle: iox2_config_h) {
 // BEGIN: global
 /////////////////
 
+/// Returns the prefix used for all files created during runtime
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_prefix(handle: iox2_config_ref_h) -> *const c_char {
     debug_assert!(!handle.is_null());
@@ -247,7 +313,15 @@ pub unsafe extern "C" fn iox2_config_global_prefix(handle: iox2_config_ref_h) ->
     config.value.as_ref().value.global.prefix.as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the prefix used for all files created during runtime
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the prefix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_set_prefix(
     handle: iox2_config_ref_h,
@@ -265,6 +339,11 @@ pub unsafe extern "C" fn iox2_config_global_set_prefix(
     }
 }
 
+/// Returns the path under which all other directories or files will be created
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_root_path(handle: iox2_config_ref_h) -> *const c_char {
     debug_assert!(!handle.is_null());
@@ -273,7 +352,15 @@ pub unsafe extern "C" fn iox2_config_global_root_path(handle: iox2_config_ref_h)
     config.value.as_ref().value.global.root_path().as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the path under which all other directories or files will be created
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid path was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid path
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_set_root_path(
     handle: iox2_config_ref_h,
@@ -290,7 +377,6 @@ pub unsafe extern "C" fn iox2_config_global_set_root_path(
         Err(e) => e as c_int,
     }
 }
-
 /////////////////
 // END: global
 /////////////////
@@ -298,6 +384,11 @@ pub unsafe extern "C" fn iox2_config_global_set_root_path(
 /////////////////
 // BEGIN: node
 /////////////////
+/// Returns the directory in which all node files are stored
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_directory(
     handle: iox2_config_ref_h,
@@ -308,7 +399,15 @@ pub unsafe extern "C" fn iox2_config_global_node_directory(
     config.value.as_ref().value.global.node.directory.as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the directory in which all node files are stored
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid path was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid path
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_directory(
     handle: iox2_config_ref_h,
@@ -326,6 +425,11 @@ pub unsafe extern "C" fn iox2_config_global_node_set_directory(
     }
 }
 
+/// Returns the suffix of the monitor token
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_monitor_suffix(
     handle: iox2_config_ref_h,
@@ -343,7 +447,15 @@ pub unsafe extern "C" fn iox2_config_global_node_monitor_suffix(
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the suffix of the monitor token
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_monitor_suffix(
     handle: iox2_config_ref_h,
@@ -361,6 +473,11 @@ pub unsafe extern "C" fn iox2_config_global_node_set_monitor_suffix(
     }
 }
 
+/// Returns the suffix of the files where the node configuration is stored.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_static_config_suffix(
     handle: iox2_config_ref_h,
@@ -378,7 +495,15 @@ pub unsafe extern "C" fn iox2_config_global_node_static_config_suffix(
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the suffix of the files where the node configuration is stored.
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_static_config_suffix(
     handle: iox2_config_ref_h,
@@ -396,6 +521,11 @@ pub unsafe extern "C" fn iox2_config_global_node_set_static_config_suffix(
     }
 }
 
+/// Returns the suffix of the service tags.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_service_tag_suffix(
     handle: iox2_config_ref_h,
@@ -413,7 +543,15 @@ pub unsafe extern "C" fn iox2_config_global_node_service_tag_suffix(
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the suffix of the service tags.
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_service_tag_suffix(
     handle: iox2_config_ref_h,
@@ -431,6 +569,13 @@ pub unsafe extern "C" fn iox2_config_global_node_set_service_tag_suffix(
     }
 }
 
+/// When true, [`iox2_node_builder_create()`](crate::api::iox2_node_builder_create) checks for dead
+/// nodes and cleans up all their stale resources whenever a new
+/// [`iox2_node_h`](crate::api::iox2_node_h) is created.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_creation(
     handle: iox2_config_ref_h,
@@ -447,6 +592,11 @@ pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_creation(
         .cleanup_dead_nodes_on_creation
 }
 
+/// Enable/disable the cleanup dead nodes on creation
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_creation(
     handle: iox2_config_ref_h,
@@ -464,6 +614,14 @@ pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_creat
         .cleanup_dead_nodes_on_creation = value;
 }
 
+/// When true, the [`iox2_node_builder_create()`](crate::api::iox2_node_builder_create) checks for
+/// dead nodes and cleans up all their stale resources whenever an existing
+/// [`iox2_node_h`](crate::api::iox2_node_h) is
+/// going out of scope.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_destruction(
     handle: iox2_config_ref_h,
@@ -480,6 +638,11 @@ pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_destructi
         .cleanup_dead_nodes_on_destruction
 }
 
+/// Enable/disable the cleanup dead nodes on destruction
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_destruction(
     handle: iox2_config_ref_h,
@@ -504,6 +667,12 @@ pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_destr
 /////////////////
 // BEGIN: service
 /////////////////
+
+/// Returns the directory in which all service files are stored
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_directory(
     handle: iox2_config_ref_h,
@@ -521,7 +690,15 @@ pub unsafe extern "C" fn iox2_config_global_service_directory(
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the directory in which all service files are stored
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid path was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid path
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_directory(
     handle: iox2_config_ref_h,
@@ -539,6 +716,11 @@ pub unsafe extern "C" fn iox2_config_global_service_set_directory(
     }
 }
 
+/// Returns the suffix of the publishers data segment
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_publisher_data_segment_suffix(
     handle: iox2_config_ref_h,
@@ -556,7 +738,15 @@ pub unsafe extern "C" fn iox2_config_global_service_publisher_data_segment_suffi
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the suffix of the publishers data segment
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_publisher_data_segment_suffix(
     handle: iox2_config_ref_h,
@@ -580,6 +770,11 @@ pub unsafe extern "C" fn iox2_config_global_service_set_publisher_data_segment_s
     }
 }
 
+/// Returns the suffix of the static config file
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_static_config_storage_suffix(
     handle: iox2_config_ref_h,
@@ -597,7 +792,15 @@ pub unsafe extern "C" fn iox2_config_global_service_static_config_storage_suffix
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the suffix of the static config file
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_static_config_storage_suffix(
     handle: iox2_config_ref_h,
@@ -621,6 +824,11 @@ pub unsafe extern "C" fn iox2_config_global_service_set_static_config_storage_su
     }
 }
 
+/// Returns the suffix of the dynamic config file
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_dynamic_config_storage_suffix(
     handle: iox2_config_ref_h,
@@ -638,7 +846,15 @@ pub unsafe extern "C" fn iox2_config_global_service_dynamic_config_storage_suffi
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the suffix of the dynamic config file
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_suffix(
     handle: iox2_config_ref_h,
@@ -662,6 +878,12 @@ pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_s
     }
 }
 
+/// Returns the second part of the time of how long another process will wait until the service
+/// creation is finalized
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_creation_timeout_sec(
     handle: iox2_config_ref_h,
@@ -679,6 +901,12 @@ pub unsafe extern "C" fn iox2_config_global_service_creation_timeout_sec(
         .as_secs()
 }
 
+/// Returns the nano second part of the time of how long another process will wait until the service
+/// creation is finalized
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_creation_timeout_nsec_frac(
     handle: iox2_config_ref_h,
@@ -696,6 +924,15 @@ pub unsafe extern "C" fn iox2_config_global_service_creation_timeout_nsec_frac(
         .subsec_nanos()
 }
 
+/// Sets the creation timeout
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_creation_timeout(
     handle: iox2_config_ref_h,
@@ -709,6 +946,11 @@ pub unsafe extern "C" fn iox2_config_global_service_set_creation_timeout(
         Duration::from_secs(sec) + Duration::from_nanos(nsec as u64);
 }
 
+/// The suffix of a one-to-one connection
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_connection_suffix(
     handle: iox2_config_ref_h,
@@ -726,7 +968,15 @@ pub unsafe extern "C" fn iox2_config_global_service_connection_suffix(
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Set the suffix of a one-to-one connection
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_connection_suffix(
     handle: iox2_config_ref_h,
@@ -744,6 +994,11 @@ pub unsafe extern "C" fn iox2_config_global_service_set_connection_suffix(
     }
 }
 
+/// Returns the suffix of a one-to-one connection
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_event_connection_suffix(
     handle: iox2_config_ref_h,
@@ -761,7 +1016,15 @@ pub unsafe extern "C" fn iox2_config_global_service_event_connection_suffix(
         .as_c_str()
 }
 
-/// Returns: iox2_semantic_string_error
+/// Sets the suffix of a one-to-one connection
+///
+/// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
+/// invalid file name was provided
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_event_connection_suffix(
     handle: iox2_config_ref_h,
@@ -791,6 +1054,11 @@ pub unsafe extern "C" fn iox2_config_global_service_set_event_connection_suffix(
 //////////////////////////
 // BEGIN: publish subscribe
 //////////////////////////
+/// Returns the maximum amount of supported [`iox2_subscriber_h`](crate::api::iox2_subscriber_h)s
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_subscribers(
     handle: iox2_config_ref_h,
@@ -807,6 +1075,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_subscribers(
         .max_subscribers
 }
 
+/// Sets the maximum amount of supported [`iox2_subscriber_h`](crate::api::iox2_subscriber_h)s
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_subscribers(
     handle: iox2_config_ref_h,
@@ -824,6 +1097,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_subscrib
         .max_subscribers = value;
 }
 
+/// Returns maximum amount of supported [`iox2_publisher_h`](crate::api::iox2_publisher_h)s
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_publishers(
     handle: iox2_config_ref_h,
@@ -840,6 +1118,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_publishers(
         .max_publishers
 }
 
+/// Sets the maximum amount of supported [`iox2_publisher_h`](crate::api::iox2_publisher_h)s
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_publishers(
     handle: iox2_config_ref_h,
@@ -857,6 +1140,12 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_publishe
         .max_publishers = value;
 }
 
+/// Returns the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s. Defines indirectly
+/// how many processes can open the service at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_nodes(
     handle: iox2_config_ref_h,
@@ -873,6 +1162,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_nodes(
         .max_nodes
 }
 
+/// Sets the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_nodes(
     handle: iox2_config_ref_h,
@@ -890,6 +1184,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_nodes(
         .max_nodes = value;
 }
 
+/// Returns the maximum buffer size a [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can have
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_buffer_size(
     handle: iox2_config_ref_h,
@@ -906,6 +1205,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_b
         .subscriber_max_buffer_size
 }
 
+/// Sets the maximum buffer size a [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can have
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_max_buffer_size(
     handle: iox2_config_ref_h,
@@ -923,6 +1227,12 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_m
         .subscriber_max_buffer_size = value;
 }
 
+/// Returns the maximum amount of [`iox2_sample_h`](crate::api::iox2_sample_h)s a
+/// [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can hold at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_borrowed_samples(
     handle: iox2_config_ref_h,
@@ -939,6 +1249,12 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_b
         .subscriber_max_borrowed_samples
 }
 
+/// Sets the maximum amount of [`iox2_sample_h`](crate::api::iox2_sample_h)s a
+/// [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can hold at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_max_borrowed_samples(
     handle: iox2_config_ref_h,
@@ -956,6 +1272,12 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_m
         .subscriber_max_borrowed_samples = value;
 }
 
+/// Returns the maximum amount of [`iox2_sample_mut_h`](crate::api::iox2_sample_mut_h)s a
+/// [`iox2_publisher_h`](crate::api::iox2_publisher_h) can loan at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_max_loaned_samples(
     handle: iox2_config_ref_h,
@@ -972,6 +1294,12 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_max_lo
         .publisher_max_loaned_samples
 }
 
+/// Sets the maximum amount of [`iox2_sample_mut_h`](crate::api::iox2_sample_mut_h)s a
+/// [`iox2_publisher_h`](crate::api::iox2_publisher_h) can loan at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_max_loaned_samples(
     handle: iox2_config_ref_h,
@@ -989,6 +1317,12 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_ma
         .publisher_max_loaned_samples = value;
 }
 
+/// Returns the maximum history size a [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can
+/// request from a [`iox2_publisher_h`](crate::api::iox2_publisher_h).
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_history_size(
     handle: iox2_config_ref_h,
@@ -1005,6 +1339,12 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_histor
         .publisher_history_size
 }
 
+/// Sets the maximum history size a [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) can
+/// request from a [`iox2_publisher_h`](crate::api::iox2_publisher_h).
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_history_size(
     handle: iox2_config_ref_h,
@@ -1022,6 +1362,13 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_hi
         .publisher_history_size = value;
 }
 
+/// Defines how the [`iox2_subscriber_h`](crate::api::iox2_subscriber_h) buffer behaves when it is
+/// full. When safe overflow is activated, the [`iox2_publisher_h`](crate::api::iox2_publisher_h) will
+/// replace the oldest [`iox2_sample_h`](crate::api::iox2_sample_h) with the newest one.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_enable_safe_overflow(
     handle: iox2_config_ref_h,
@@ -1038,6 +1385,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_enable_safe_over
         .enable_safe_overflow
 }
 
+/// Enables/disables safe overflow
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_enable_safe_overflow(
     handle: iox2_config_ref_h,
@@ -1055,6 +1407,15 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_enable_safe_
         .enable_safe_overflow = value;
 }
 
+/// If safe overflow is deactivated it defines the deliver strategy of the
+/// [`iox2_publisher_h`](crate::api::iox2_publisher_h) when the
+/// [`iox2_subscriber_h`](crate::api::iox2_subscriber_h)s buffer is full.
+///
+/// Returns [`iox2_unable_to_deliver_strategy_e`]
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_unable_to_deliver_strategy(
     handle: iox2_config_ref_h,
@@ -1072,6 +1433,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_unable_to_delive
         .into_c_int()
 }
 
+/// Define the unable to deliver strategy
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_unable_to_deliver_strategy(
     handle: iox2_config_ref_h,
@@ -1089,6 +1455,15 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_unable_to_de
         .unable_to_deliver_strategy = value.into();
 }
 
+/// Defines the size of the internal [`iox2_subscriber_h`](crate::api::iox2_subscriber_h)
+/// buffer that contains expired connections. An
+/// connection is expired when the [`iox2_publisher_h`](crate::api::iox2_publisher_h)
+/// disconnected from a service and the connection
+/// still contains unconsumed [`iox2_sample_h`](crate::api::iox2_sample_h)s.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_expired_connection_buffer(
     handle: iox2_config_ref_h,
@@ -1105,6 +1480,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_expir
         .subscriber_expired_connection_buffer
 }
 
+/// Set the expired connection buffer size
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_expired_connection_buffer(
     handle: iox2_config_ref_h,
@@ -1128,6 +1508,11 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_e
 //////////////////////////
 // BEGIN: event
 //////////////////////////
+/// Returns the maximum amount of supported [`iox2_listener_h`](crate::api::iox2_listener_h)
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_listeners(
     handle: iox2_config_ref_h,
@@ -1138,6 +1523,11 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_listeners(
     config.value.as_ref().value.defaults.event.max_listeners
 }
 
+/// Sets the maximum amount of supported [`iox2_listener_h`](crate::api::iox2_listener_h)
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_listeners(
     handle: iox2_config_ref_h,
@@ -1149,6 +1539,11 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_listeners(
     config.value.as_mut().value.defaults.event.max_listeners = value;
 }
 
+/// Returns the maximum amount of supported [`iox2_notifier_h`](crate::api::iox2_notifier_h)
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_notifiers(
     handle: iox2_config_ref_h,
@@ -1159,6 +1554,11 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_notifiers(
     config.value.as_ref().value.defaults.event.max_notifiers
 }
 
+/// Sets the maximum amount of supported [`iox2_notifier_h`](crate::api::iox2_notifier_h)
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_notifiers(
     handle: iox2_config_ref_h,
@@ -1170,6 +1570,12 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_notifiers(
     config.value.as_mut().value.defaults.event.max_notifiers = value;
 }
 
+/// Returns the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s. Defines
+/// indirectly how many processes can open the service at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_nodes(
     handle: iox2_config_ref_h,
@@ -1180,6 +1586,11 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_nodes(
     config.value.as_ref().value.defaults.event.max_nodes
 }
 
+/// Sets the maximum amount of supported [`iox2_node_h`](crate::api::iox2_node_h)s.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_nodes(
     handle: iox2_config_ref_h,
@@ -1191,6 +1602,11 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_nodes(
     config.value.as_mut().value.defaults.event.max_nodes = value;
 }
 
+/// Returns the largest event id supported by the event service
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_event_id_max_value(
     handle: iox2_config_ref_h,
@@ -1207,6 +1623,11 @@ pub unsafe extern "C" fn iox2_config_defaults_event_event_id_max_value(
         .event_id_max_value
 }
 
+/// Sets the largest event id supported by the event service
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_event_id_max_value(
     handle: iox2_config_ref_h,
