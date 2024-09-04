@@ -20,7 +20,7 @@ namespace iox2 {
 /// Contains details of a [`Node`].
 class NodeDetails {
   public:
-    NodeDetails(NodeName name, const Config& config);
+    NodeDetails(NodeName name, Config config);
 
     /// Returns a reference of the [`NodeName`].
     auto name() const -> const NodeName&;

@@ -13,9 +13,11 @@
 #ifndef IOX2_CONFIG_CREATION_ERROR_HPP
 #define IOX2_CONFIG_CREATION_ERROR_HPP
 
+#include <cstdint>
+
 namespace iox2 {
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`].
-enum class ConfigCreationError {
+enum class ConfigCreationError : uint8_t {
     /// The config file could not be opened.
     FailedToOpenConfigFile,
     /// The config file could not be read.
