@@ -147,12 +147,10 @@ pub unsafe extern "C" fn iox2_config_default(
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_from_file(
-    handle: iox2_config_ref_h,
     struct_ptr: *mut iox2_config_t,
     handle_ptr: *mut iox2_config_h,
     config_file: *const c_char,
 ) -> c_int {
-    debug_assert!(!handle.is_null());
     debug_assert!(!handle_ptr.is_null());
 
     let file = match FilePath::from_c_str(config_file) {

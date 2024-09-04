@@ -232,15 +232,15 @@ pub struct PublishSubscribe {
     /// The maximum amount of supported [`crate::port::publisher::Publisher`]
     pub max_publishers: usize,
     /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
-    /// processes can open the service in parallel.
+    /// processes can open the service at the same time.
     pub max_nodes: usize,
     /// The maximum buffer size a [`crate::port::subscriber::Subscriber`] can have
     pub subscriber_max_buffer_size: usize,
     /// The maximum amount of [`crate::sample::Sample`]s a [`crate::port::subscriber::Subscriber`] can
-    /// hold in parallel.
+    /// hold at the same time.
     pub subscriber_max_borrowed_samples: usize,
     /// The maximum amount of [`crate::sample_mut::SampleMut`]s a [`crate::port::publisher::Publisher`] can
-    /// loan in parallel.
+    /// loan at the same time.
     pub publisher_max_loaned_samples: usize,
     /// The maximum history size a [`crate::port::subscriber::Subscriber`] can request from a
     /// [`crate::port::publisher::Publisher`].
@@ -249,7 +249,7 @@ pub struct PublishSubscribe {
     /// full. When safe overflow is activated, the [`crate::port::publisher::Publisher`] will
     /// replace the oldest [`crate::sample::Sample`] with the newest one.
     pub enable_safe_overflow: bool,
-    /// If no safe overflow is activated it defines the deliver strategy of the
+    /// If safe overflow is deactivated it defines the deliver strategy of the
     /// [`crate::port::publisher::Publisher`] when the [`crate::port::subscriber::Subscriber`]s
     /// buffer is full.
     pub unable_to_deliver_strategy: UnableToDeliverStrategy,
@@ -272,7 +272,7 @@ pub struct Event {
     /// The maximum amount of supported [`crate::port::notifier::Notifier`]
     pub max_notifiers: usize,
     /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
-    /// processes can open the service in parallel.
+    /// processes can open the service at the same time.
     pub max_nodes: usize,
     /// The largest event id supported by the event service
     pub event_id_max_value: usize,

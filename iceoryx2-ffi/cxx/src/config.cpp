@@ -83,6 +83,16 @@ Config::Config(iox2_config_h handle)
     : m_handle { handle } {
 }
 
+auto Config::from_file(const iox::FilePath& file) -> iox::expected<Config, ConfigCreationError> {
+    iox2_config_h handle = nullptr;
+    auto result = iox2_config_from_file(nullptr, &handle, file.as_string().c_str());
+    if (result == IOX2_OK) {
+        return iox::ok(Config(handle));
+    }
+
+    return iox::err(iox::into<ConfigCreationError>(result));
+}
+
 auto Config::global() -> config::Global {
     return config::Global(&this->m_handle);
 }

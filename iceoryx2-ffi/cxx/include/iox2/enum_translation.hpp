@@ -16,6 +16,7 @@
 #include "iox/assertions.hpp"
 #include "iox/into.hpp"
 #include "iox2/callback_progression.hpp"
+#include "iox2/config_creation_error.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/listener_error.hpp"
@@ -619,6 +620,24 @@ constexpr auto from<int, iox2::ConnectionFailure>(const int value) noexcept -> i
         return iox2::ConnectionFailure::FailedToEstablishConnection;
     case iox2_connection_failure_e_UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT:
         return iox2::ConnectionFailure::UnableToMapPublishersDataSegment;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::ConfigCreationError>(const int value) noexcept -> iox2::ConfigCreationError {
+    const auto variant = static_cast<iox2_config_creation_error_e>(value);
+    switch (variant) {
+    case iox2_config_creation_error_e_FAILED_TO_OPEN_CONFIG_FILE:
+        return iox2::ConfigCreationError::FailedToOpenConfigFile;
+    case iox2_config_creation_error_e_FAILED_TO_READ_CONFIG_FILE_CONTENTS:
+        return iox2::ConfigCreationError::FailedToReadConfigFileContents;
+    case iox2_config_creation_error_e_UNABLE_TO_DESERIALIZE_CONTENTS:
+        return iox2::ConfigCreationError::UnableToDeserializeContents;
+    case iox2_config_creation_error_e_INVALID_FILE_PATH:
+        // unreachable since this error case is excluded by using the strong type iox::FilePath
+        IOX_UNREACHABLE();
     }
 
     IOX_UNREACHABLE();
