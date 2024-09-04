@@ -53,9 +53,9 @@ pub mod details {
         fn default() -> Self {
             Self {
                 dynamic_storage_config: Storage::Configuration::default()
-                    .path_hint(Connection::<Storage>::default_path_hint())
-                    .prefix(Connection::<Storage>::default_prefix())
-                    .suffix(Connection::<Storage>::default_suffix()),
+                    .path_hint(&Connection::<Storage>::default_path_hint())
+                    .prefix(&Connection::<Storage>::default_prefix())
+                    .suffix(&Connection::<Storage>::default_suffix()),
                 _data: PhantomData,
             }
         }
@@ -64,7 +64,7 @@ pub mod details {
     impl<Storage: DynamicStorage<SharedManagementData>> NamedConceptConfiguration
         for Configuration<Storage>
     {
-        fn prefix(mut self, value: FileName) -> Self {
+        fn prefix(mut self, value: &FileName) -> Self {
             self.dynamic_storage_config = self.dynamic_storage_config.prefix(value);
             self
         }
@@ -73,12 +73,12 @@ pub mod details {
             self.dynamic_storage_config.get_prefix()
         }
 
-        fn suffix(mut self, value: FileName) -> Self {
+        fn suffix(mut self, value: &FileName) -> Self {
             self.dynamic_storage_config = self.dynamic_storage_config.suffix(value);
             self
         }
 
-        fn path_hint(mut self, value: Path) -> Self {
+        fn path_hint(mut self, value: &Path) -> Self {
             self.dynamic_storage_config = self.dynamic_storage_config.path_hint(value);
             self
         }

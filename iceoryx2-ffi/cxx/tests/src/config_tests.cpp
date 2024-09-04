@@ -26,7 +26,7 @@ TEST(Config, global_prefix) {
 }
 
 TEST(Config, global_root_path) {
-    const auto test_value = iox::Path::create("some/path").expect("");
+    const auto test_value = iox::Path::create("some_path").expect("");
     auto config = Config();
 
     config.global().set_root_path(test_value);

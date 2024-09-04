@@ -487,9 +487,9 @@ mod static_storage {
         let _test_guard = TEST_MUTEX.lock();
 
         let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { FileName::new_unchecked(b".static_storage_1") });
+            .suffix(unsafe { &FileName::new_unchecked(b".static_storage_1") });
         let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { FileName::new_unchecked(b".static_storage_2") });
+            .suffix(unsafe { &FileName::new_unchecked(b".static_storage_2") });
 
         let storage_name = generate_name();
 

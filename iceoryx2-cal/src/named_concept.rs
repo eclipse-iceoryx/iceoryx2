@@ -51,18 +51,18 @@ pub enum NamedConceptPathHintRemoveError {
 /// underlying resource does not support it.
 pub trait NamedConceptConfiguration: Default + Clone + Debug {
     /// Defines the prefix that the concept will use.
-    fn prefix(self, value: FileName) -> Self;
+    fn prefix(self, value: &FileName) -> Self;
 
     /// Returns the configurations prefix.
     fn get_prefix(&self) -> &FileName;
 
     /// Defines the suffix that the concept will use.
-    fn suffix(self, value: FileName) -> Self;
+    fn suffix(self, value: &FileName) -> Self;
 
     /// Sets a path hint under which the underlying resources shall be stored. When the concept
     /// uses resources like [`iceoryx2_bb_posix::shared_memory::SharedMemory`] the path will be
     /// ignored.
-    fn path_hint(self, value: Path) -> Self;
+    fn path_hint(self, value: &Path) -> Self;
 
     /// Returns the configurations suffix.
     fn get_suffix(&self) -> &FileName;

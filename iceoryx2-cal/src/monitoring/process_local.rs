@@ -58,8 +58,8 @@ impl Default for Configuration {
 }
 
 impl NamedConceptConfiguration for Configuration {
-    fn prefix(mut self, value: FileName) -> Self {
-        self.prefix = value;
+    fn prefix(mut self, value: &FileName) -> Self {
+        self.prefix = *value;
         self
     }
 
@@ -67,8 +67,8 @@ impl NamedConceptConfiguration for Configuration {
         &self.prefix
     }
 
-    fn suffix(mut self, value: FileName) -> Self {
-        self.suffix = value;
+    fn suffix(mut self, value: &FileName) -> Self {
+        self.suffix = *value;
         self
     }
 
@@ -76,8 +76,8 @@ impl NamedConceptConfiguration for Configuration {
         &self.suffix
     }
 
-    fn path_hint(mut self, value: Path) -> Self {
-        self.path_hint = value;
+    fn path_hint(mut self, value: &Path) -> Self {
+        self.path_hint = *value;
         self
     }
 

@@ -211,7 +211,7 @@ mod node {
             assert_node_presence::<S>(&node_details_2, &config);
         }
 
-        let mut path = config.global.root_path();
+        let mut path = *config.global.root_path();
         path.add_path_entry(&config.global.node.directory).unwrap();
         let _ = Directory::remove(&path);
     }

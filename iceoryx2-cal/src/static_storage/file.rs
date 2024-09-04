@@ -74,8 +74,8 @@ impl Default for Configuration {
 }
 
 impl crate::named_concept::NamedConceptConfiguration for Configuration {
-    fn prefix(mut self, value: FileName) -> Self {
-        self.prefix = value;
+    fn prefix(mut self, value: &FileName) -> Self {
+        self.prefix = *value;
         self
     }
 
@@ -83,13 +83,13 @@ impl crate::named_concept::NamedConceptConfiguration for Configuration {
         &self.prefix
     }
 
-    fn suffix(mut self, value: FileName) -> Self {
-        self.suffix = value;
+    fn suffix(mut self, value: &FileName) -> Self {
+        self.suffix = *value;
         self
     }
 
-    fn path_hint(mut self, value: Path) -> Self {
-        self.path = value;
+    fn path_hint(mut self, value: &Path) -> Self {
+        self.path = *value;
         self
     }
 

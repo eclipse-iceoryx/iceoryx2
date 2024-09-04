@@ -78,7 +78,7 @@ use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use iceoryx2_bb_log::{fail, fatal_panic, trace, warn};
+use iceoryx2_bb_log::{fail, trace, warn};
 
 use crate::service::port_factory::publisher::UnableToDeliverStrategy;
 
@@ -168,31 +168,27 @@ pub struct Global {
 impl Global {
     /// The absolute path to the service directory where all static service infos are stored
     pub fn service_dir(&self) -> Path {
-        let mut path = self.root_path();
+        let mut path = *self.root_path();
         path.add_path_entry(&self.service.directory).unwrap();
         path
     }
 
     /// The absolute path to the node directory where all node details are stored
     pub fn node_dir(&self) -> Path {
-        let mut path = self.root_path();
+        let mut path = *self.root_path();
         path.add_path_entry(&self.node.directory).unwrap();
         path
     }
 
     /// The path under which all other directories or files will be created
-    pub fn root_path(&self) -> Path {
+    pub fn root_path(&self) -> &Path {
         #[cfg(target_os = "windows")]
         {
-            fatal_panic!(from "Global::root_path_windows",
-                when Path::new(self.root_path_windows.as_bytes()),
-                "Unable to initialize config since the internal root_path_windows \"{}\" is not a valid directory.", self.root_path_windows)
+            &self.root_path_windows
         }
         #[cfg(not(target_os = "windows"))]
         {
-            fatal_panic!(from "Global::root_path_unix",
-                when Path::new(self.root_path_unix.as_bytes()),
-                "Unable to initialize config since the internal root_path_unix \"{}\" is not a valid directory.", self.root_path_unix)
+            &self.root_path_unix
         }
     }
 

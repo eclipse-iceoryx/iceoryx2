@@ -268,9 +268,9 @@ mod shared_memory {
     #[test]
     fn custom_suffix_keeps_storages_separated<Sut: SharedMemory<DefaultAllocator>>() {
         let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { FileName::new_unchecked(b".s1") });
+            .suffix(unsafe { &FileName::new_unchecked(b".s1") });
         let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { FileName::new_unchecked(b".s2") });
+            .suffix(unsafe { &FileName::new_unchecked(b".s2") });
 
         let storage_name = generate_name();
 

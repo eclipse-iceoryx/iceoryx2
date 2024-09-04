@@ -418,9 +418,9 @@ mod dynamic_storage {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { FileName::new_unchecked(b".s1") });
+            .suffix(unsafe { &FileName::new_unchecked(b".s1") });
         let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { FileName::new_unchecked(b".s2") });
+            .suffix(unsafe { &FileName::new_unchecked(b".s2") });
 
         let sut_name = generate_name();
 

@@ -104,8 +104,8 @@ impl<T: Send + Sync + Debug> Default for Configuration<T> {
 impl<T: Send + Sync + Debug> DynamicStorageConfiguration<T> for Configuration<T> {}
 
 impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
-    fn prefix(mut self, value: FileName) -> Self {
-        self.prefix = value;
+    fn prefix(mut self, value: &FileName) -> Self {
+        self.prefix = *value;
         self
     }
 
@@ -113,13 +113,13 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
         &self.prefix
     }
 
-    fn suffix(mut self, value: FileName) -> Self {
-        self.suffix = value;
+    fn suffix(mut self, value: &FileName) -> Self {
+        self.suffix = *value;
         self
     }
 
-    fn path_hint(mut self, value: Path) -> Self {
-        self.path_hint = value;
+    fn path_hint(mut self, value: &Path) -> Self {
+        self.path_hint = *value;
         self
     }
 

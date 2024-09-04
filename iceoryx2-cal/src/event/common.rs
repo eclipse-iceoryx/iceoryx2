@@ -83,9 +83,9 @@ pub mod details {
     {
         fn convert(&self) -> <Storage as NamedConceptMgmt>::Configuration {
             <Storage as NamedConceptMgmt>::Configuration::default()
-                .prefix(self.prefix)
-                .suffix(self.suffix)
-                .path_hint(self.path)
+                .prefix(&self.prefix)
+                .suffix(&self.suffix)
+                .path_hint(&self.path)
         }
     }
 
@@ -133,8 +133,8 @@ pub mod details {
             Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
         > NamedConceptConfiguration for Configuration<Tracker, WaitMechanism, Storage>
     {
-        fn prefix(mut self, value: FileName) -> Self {
-            self.prefix = value;
+        fn prefix(mut self, value: &FileName) -> Self {
+            self.prefix = *value;
             self
         }
 
@@ -142,13 +142,13 @@ pub mod details {
             &self.prefix
         }
 
-        fn suffix(mut self, value: FileName) -> Self {
-            self.suffix = value;
+        fn suffix(mut self, value: &FileName) -> Self {
+            self.suffix = *value;
             self
         }
 
-        fn path_hint(mut self, value: Path) -> Self {
-            self.path = value;
+        fn path_hint(mut self, value: &Path) -> Self {
+            self.path = *value;
             self
         }
 
