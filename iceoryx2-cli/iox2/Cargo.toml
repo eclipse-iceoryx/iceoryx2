@@ -1,6 +1,6 @@
 [package]
 name = "iox2"
-description = "Iceoryx2: CLI entry-point"
+description = "CLI entry-point"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -11,6 +11,8 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
+iceoryx2-cli-utils = { workspace = true }
+
 anyhow = { workspace = true }
 better-panic = { workspace = true }
 colored = { workspace = true }

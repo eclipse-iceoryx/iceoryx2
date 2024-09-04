@@ -29,6 +29,7 @@ members = [
     "iceoryx2-cli/iox2-rpc",
     "iceoryx2-cli/iox2-services",
     "iceoryx2-cli/iox2-sub",
+    "iceoryx2-cli/utils",
 
     "examples",
 
@@ -64,6 +65,8 @@ iceoryx2-bb-testing = { version = "0.3.0", path = "iceoryx2-bb/testing/" }
 iceoryx2-pal-concurrency-sync = { version = "0.3.0", path = "iceoryx2-pal/concurrency-sync/" }
 iceoryx2-pal-posix = { version = "0.3.0", path = "iceoryx2-pal/posix/" }
 iceoryx2-pal-configuration = { version = "0.3.0", path = "iceoryx2-pal/configuration/" }
+
+iceoryx2-cli-utils = { version = "0.3.0", path = "iceoryx2-cli/utils/" }
 
 iceoryx2-cal = { version = "0.3.0", path = "iceoryx2-cal" }
 
