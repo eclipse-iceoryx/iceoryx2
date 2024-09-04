@@ -14,15 +14,12 @@ use colored::*;
 
 pub fn help_template(cli_name: &str, show_external_commands: bool) -> String {
     let mut template = format!(
-        "{{about}}\n\n{}\n\n{}\n{{options}}\n\n{}\n{{subcommands}}",
-        format!(
-            "{}{}{}",
-            "Usage: ".bright_green().bold(),
-            format!("{} ", cli_name).bold(),
-            "[OPTIONS] [COMMAND]"
-        ),
+        "{{about}}\n\n{}{}{}[OPTIONS] [COMMAND]\n\n{}\n{{options}}\n\n{}\n{{subcommands}}",
+        "Usage: ".bright_green().bold(),
+        cli_name.bold(),
+        " ".bold(),
         "Options:".bright_green().bold(),
-        "Commands:".bright_green().bold(),
+        "Commands:".bright_green().bold()
     );
 
     if show_external_commands {

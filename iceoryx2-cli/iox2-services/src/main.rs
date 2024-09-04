@@ -18,8 +18,10 @@ use human_panic::setup_panic;
 extern crate better_panic;
 
 mod cli;
+mod commands;
 
 use cli::Action;
+use iceoryx2_bb_log::{set_log_level, LogLevel};
 
 fn main() {
     #[cfg(not(debug_assertions))]
@@ -35,13 +37,17 @@ fn main() {
             .install();
     }
 
+    set_log_level(LogLevel::Warn);
+
     match cli::Cli::command().try_get_matches() {
         Ok(matches) => {
             let parsed = cli::Cli::from_arg_matches(&matches).expect("Failed to parse arguments");
             match parsed.action {
                 Some(action) => match action {
                     Action::List => {
-                        println!("Listing all services...");
+                        if let Err(e) = commands::list() {
+                            eprintln!("Failed to list services: {}", e);
+                        }
                     }
                     Action::Info { service } => {
                         println!("Getting information for service: {}", service);
@@ -52,11 +58,9 @@ fn main() {
                 }
             }
         }
-        Err(err) => match err.kind() {
-            _ => {
-                eprintln!("{}", err);
-                std::process::exit(1);
-            }
-        },
+        Err(err) => {
+            eprintln!("{}", err.kind());
+            std::process::exit(1);
+        }
     }
 }
