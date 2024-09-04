@@ -28,17 +28,17 @@ class Global;
 class Node {
   public:
     auto directory() && -> const char*;
-    auto set_directory(const iox::Path& value) &&;
+    void set_directory(const iox::Path& value) &&;
     auto monitor_suffix() && -> const char*;
-    auto set_monitor_suffix(const iox::FileName& value) &&;
+    void set_monitor_suffix(const iox::FileName& value) &&;
     auto static_config_suffix() && -> const char*;
-    auto set_static_config_suffix(const iox::FileName& value) &&;
+    void set_static_config_suffix(const iox::FileName& value) &&;
     auto service_tag_suffix() && -> const char*;
-    auto set_service_tag_suffix(const iox::FileName& value) &&;
+    void set_service_tag_suffix(const iox::FileName& value) &&;
     auto cleanup_dead_nodes_on_creation() && -> bool;
-    auto set_cleanup_dead_nodes_on_creation(bool value) &&;
+    void set_cleanup_dead_nodes_on_creation(bool value) &&;
     auto cleanup_dead_nodes_on_destruction() && -> bool;
-    auto set_cleanup_dead_nodes_on_destruction(bool value) &&;
+    void set_cleanup_dead_nodes_on_destruction(bool value) &&;
 
   private:
     friend class Global;
@@ -50,19 +50,19 @@ class Node {
 class Service {
   public:
     auto directory() && -> const char*;
-    auto set_directory(const iox::Path& value) &&;
+    void set_directory(const iox::Path& value) &&;
     auto publisher_data_segment_suffix() && -> const char*;
-    auto set_publisher_data_segment_suffix(const iox::FileName& value) &&;
+    void set_publisher_data_segment_suffix(const iox::FileName& value) &&;
     auto static_config_storage_suffix() && -> const char*;
-    auto set_static_config_storage_suffix(const iox::FileName& value) &&;
+    void set_static_config_storage_suffix(const iox::FileName& value) &&;
     auto dynamic_config_storage_suffix() && -> const char*;
-    auto set_dynamic_config_storage_suffix(const iox::FileName& value) &&;
+    void set_dynamic_config_storage_suffix(const iox::FileName& value) &&;
     auto creation_timeout() && -> iox::units::Duration;
-    auto set_creation_timeout(const iox::units::Duration& value) &&;
+    void set_creation_timeout(const iox::units::Duration& value) &&;
     auto connection_suffix() && -> const char*;
-    auto set_connection_suffix(const iox::FileName& value) &&;
+    void set_connection_suffix(const iox::FileName& value) &&;
     auto event_connection_suffix() && -> const char*;
-    auto set_event_connection_suffix(const iox::FileName& value) &&;
+    void set_event_connection_suffix(const iox::FileName& value) &&;
 
   private:
     friend class Global;

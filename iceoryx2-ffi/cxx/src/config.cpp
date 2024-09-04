@@ -125,6 +125,14 @@ void Global::set_root_path(const iox::Path& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_set_root_path(ref_handle, value.as_string().c_str());
 }
+
+auto Global::service() -> Service {
+    return Service(m_config);
+}
+
+auto Global::node() -> Node {
+    return Node(m_config);
+}
 /////////////////////////
 // END: Global
 /////////////////////////
@@ -321,7 +329,7 @@ auto Service::directory() && -> const char* {
     return iox2_config_global_service_directory(ref_handle);
 }
 
-auto Service::set_directory(const iox::Path& value) && {
+void Service::set_directory(const iox::Path& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_service_set_directory(ref_handle, value.as_string().c_str());
 }
@@ -331,7 +339,7 @@ auto Service::publisher_data_segment_suffix() && -> const char* {
     return iox2_config_global_service_publisher_data_segment_suffix(ref_handle);
 }
 
-auto Service::set_publisher_data_segment_suffix(const iox::FileName& value) && {
+void Service::set_publisher_data_segment_suffix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_service_set_publisher_data_segment_suffix(ref_handle, value.as_string().c_str());
 }
@@ -341,7 +349,7 @@ auto Service::static_config_storage_suffix() && -> const char* {
     return iox2_config_global_service_static_config_storage_suffix(ref_handle);
 }
 
-auto Service::set_static_config_storage_suffix(const iox::FileName& value) && {
+void Service::set_static_config_storage_suffix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_service_set_static_config_storage_suffix(ref_handle, value.as_string().c_str());
 }
@@ -351,7 +359,7 @@ auto Service::dynamic_config_storage_suffix() && -> const char* {
     return iox2_config_global_service_dynamic_config_storage_suffix(ref_handle);
 }
 
-auto Service::set_dynamic_config_storage_suffix(const iox::FileName& value) && {
+void Service::set_dynamic_config_storage_suffix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_service_set_dynamic_config_storage_suffix(ref_handle, value.as_string().c_str());
 }
@@ -364,7 +372,7 @@ auto Service::creation_timeout() && -> iox::units::Duration {
     return iox::units::Duration::fromSeconds(secs) + iox::units::Duration::fromNanoseconds(nsec);
 }
 
-auto Service::set_creation_timeout(const iox::units::Duration& value) && {
+void Service::set_creation_timeout(const iox::units::Duration& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     auto duration = value.timespec();
     iox2_config_global_service_set_creation_timeout(ref_handle, duration.tv_sec, duration.tv_nsec);
@@ -375,7 +383,7 @@ auto Service::connection_suffix() && -> const char* {
     return iox2_config_global_service_connection_suffix(ref_handle);
 }
 
-auto Service::set_connection_suffix(const iox::FileName& value) && {
+void Service::set_connection_suffix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_service_set_connection_suffix(ref_handle, value.as_string().c_str());
 }
@@ -385,7 +393,7 @@ auto Service::event_connection_suffix() && -> const char* {
     return iox2_config_global_service_event_connection_suffix(ref_handle);
 }
 
-auto Service::set_event_connection_suffix(const iox::FileName& value) && {
+void Service::set_event_connection_suffix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_service_set_event_connection_suffix(ref_handle, value.as_string().c_str());
 }
@@ -405,7 +413,7 @@ auto Node::directory() && -> const char* {
     return iox2_config_global_node_directory(ref_handle);
 }
 
-auto Node::set_directory(const iox::Path& value) && {
+void Node::set_directory(const iox::Path& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_node_set_directory(ref_handle, value.as_string().c_str());
 }
@@ -415,7 +423,7 @@ auto Node::monitor_suffix() && -> const char* {
     return iox2_config_global_node_monitor_suffix(ref_handle);
 }
 
-auto Node::set_monitor_suffix(const iox::FileName& value) && {
+void Node::set_monitor_suffix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_node_set_monitor_suffix(ref_handle, value.as_string().c_str());
 }
@@ -425,7 +433,7 @@ auto Node::static_config_suffix() && -> const char* {
     return iox2_config_global_node_static_config_suffix(ref_handle);
 }
 
-auto Node::set_static_config_suffix(const iox::FileName& value) && {
+void Node::set_static_config_suffix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_node_set_static_config_suffix(ref_handle, value.as_string().c_str());
 }
@@ -435,7 +443,7 @@ auto Node::service_tag_suffix() && -> const char* {
     return iox2_config_global_node_service_tag_suffix(ref_handle);
 }
 
-auto Node::set_service_tag_suffix(const iox::FileName& value) && {
+void Node::set_service_tag_suffix(const iox::FileName& value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_node_set_service_tag_suffix(ref_handle, value.as_string().c_str());
 }
@@ -445,7 +453,7 @@ auto Node::cleanup_dead_nodes_on_creation() && -> bool {
     return iox2_config_global_node_cleanup_dead_nodes_on_creation(ref_handle);
 }
 
-auto Node::set_cleanup_dead_nodes_on_creation(bool value) && {
+void Node::set_cleanup_dead_nodes_on_creation(bool value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_node_set_cleanup_dead_nodes_on_creation(ref_handle, value);
 }
@@ -455,7 +463,7 @@ auto Node::cleanup_dead_nodes_on_destruction() && -> bool {
     return iox2_config_global_node_cleanup_dead_nodes_on_destruction(ref_handle);
 }
 
-auto Node::set_cleanup_dead_nodes_on_destruction(bool value) && {
+void Node::set_cleanup_dead_nodes_on_destruction(bool value) && {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
     iox2_config_global_node_set_cleanup_dead_nodes_on_destruction(ref_handle, value);
 }
