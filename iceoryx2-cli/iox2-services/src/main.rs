@@ -21,6 +21,7 @@ mod cli;
 mod commands;
 
 use cli::Action;
+use cli::DetailsFilter;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
 
 fn main() {
@@ -49,8 +50,11 @@ fn main() {
                             eprintln!("Failed to list services: {}", e);
                         }
                     }
-                    Action::Info { service } => {
-                        println!("Getting information for service: {}", service);
+                    Action::Details(options) => {
+                        let filter = DetailsFilter::from(&options);
+                        if let Err(e) = commands::details(options.service.as_str(), filter) {
+                            eprintln!("Failed to get service details: {}", e);
+                        }
                     }
                 },
                 None => {

@@ -30,8 +30,33 @@ pub struct Cli {
     pub action: Option<Action>,
 }
 
+#[derive(Parser)]
+pub struct DetailsOptions {
+    #[clap(long = "static", short = 's')]
+    pub static_flag: bool,
+    #[clap(long, short = 'd')]
+    pub dynamic: bool,
+    pub service: String,
+}
+
+pub enum DetailsFilter {
+    None,
+    Static,
+    Dynamic,
+}
+
+impl From<&DetailsOptions> for DetailsFilter {
+    fn from(options: &DetailsOptions) -> Self {
+        match (options.static_flag, options.dynamic) {
+            (true, false) => DetailsFilter::Static,
+            (false, true) => DetailsFilter::Dynamic,
+            _ => DetailsFilter::None,
+        }
+    }
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     List,
-    Info { service: String },
+    Details(DetailsOptions),
 }
