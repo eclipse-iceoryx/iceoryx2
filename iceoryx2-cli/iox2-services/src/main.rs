@@ -10,6 +10,53 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use clap::{CommandFactory, FromArgMatches};
+
+#[cfg(not(debug_assertions))]
+use human_panic::setup_panic;
+#[cfg(debug_assertions)]
+extern crate better_panic;
+
+mod cli;
+
+use cli::Action;
+
 fn main() {
-    println!("Not implemented. Stay tuned!");
+    #[cfg(not(debug_assertions))]
+    {
+        setup_panic!();
+    }
+    #[cfg(debug_assertions)]
+    {
+        better_panic::Settings::debug()
+            .most_recent_first(false)
+            .lineno_suffix(true)
+            .verbosity(better_panic::Verbosity::Full)
+            .install();
+    }
+
+    match cli::Cli::command().try_get_matches() {
+        Ok(matches) => {
+            let parsed = cli::Cli::from_arg_matches(&matches).expect("Failed to parse arguments");
+            match parsed.action {
+                Some(action) => match action {
+                    Action::List => {
+                        println!("Listing all services...");
+                    }
+                    Action::Info { service } => {
+                        println!("Getting information for service: {}", service);
+                    }
+                },
+                None => {
+                    cli::Cli::command().print_help().unwrap();
+                }
+            }
+        }
+        Err(err) => match err.kind() {
+            _ => {
+                eprintln!("{}", err);
+                std::process::exit(1);
+            }
+        },
+    }
 }
