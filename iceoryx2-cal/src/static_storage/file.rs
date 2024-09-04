@@ -22,8 +22,8 @@
 //!
 //! let mut content = "some storage content".to_string();
 //! let custom_config = Configuration::default()
-//!                         .suffix(FileName::new(b".conifg").unwrap())
-//!                         .path_hint(Path::new(b"/tmp").unwrap());
+//!                         .suffix(&FileName::new(b".conifg").unwrap())
+//!                         .path_hint(&Path::new(b"/tmp").unwrap());
 //!
 //! let storage_name = FileName::new(b"myStaticStorage").unwrap();
 //! let owner = Builder::new(&storage_name)

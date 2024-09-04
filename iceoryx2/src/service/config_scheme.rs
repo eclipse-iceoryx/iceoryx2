@@ -20,7 +20,7 @@ pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
     <<Service::DynamicStorage as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.dynamic_config_storage_suffix)
-        .path_hint(&global_config.global.root_path())
+        .path_hint(global_config.global.root_path())
 }
 
 pub(crate) fn static_config_storage_config<Service: crate::service::Service>(
@@ -45,7 +45,7 @@ pub(crate) fn connection_config<Service: crate::service::Service>(
     <<Service::Connection as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.connection_suffix)
-        .path_hint(&global_config.global.root_path())
+        .path_hint(global_config.global.root_path())
 }
 
 pub(crate) fn event_config<Service: crate::service::Service>(
@@ -54,7 +54,7 @@ pub(crate) fn event_config<Service: crate::service::Service>(
     <<Service::Event as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.event_connection_suffix)
-        .path_hint(&global_config.global.root_path())
+        .path_hint(global_config.global.root_path())
 }
 
 pub(crate) fn data_segment_config<Service: crate::service::Service>(
@@ -63,7 +63,7 @@ pub(crate) fn data_segment_config<Service: crate::service::Service>(
     <<Service::SharedMemory as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.publisher_data_segment_suffix)
-        .path_hint(&global_config.global.root_path())
+        .path_hint(global_config.global.root_path())
 }
 
 pub(crate) fn node_monitoring_config<Service: crate::service::Service>(
