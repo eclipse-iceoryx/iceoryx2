@@ -153,7 +153,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///
     unsafe fn from_c_str(ptr: *const std::ffi::c_char) -> Result<Self, SemanticStringError> {
         Self::new(std::slice::from_raw_parts(
-            ptr as *const u8,
+            ptr.cast(),
             strnlen(ptr, CAPACITY + 1),
         ))
     }
