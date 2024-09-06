@@ -18,10 +18,16 @@ use iceoryx2_bb_system_types::file_name::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = parse_args();
 
+    // create a new config based on the global config
     let mut config = Config::global_config().clone();
+
+    // The domain name becomes the prefix for all resources.
+    // Therefore, different domain names never share the same resources.
     config.global.prefix = FileName::new(args.domain.as_bytes())?;
 
     println!("\nServices running in domain \"{}\":", args.domain);
+
+    // use the custom config when listing the services
     ipc::Service::list(&config, |service| {
         println!("  {}", &service.static_details.name());
         CallbackProgression::Continue
