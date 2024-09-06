@@ -18,7 +18,7 @@ unsafe fn swap_endianess_32(v: u32) -> u32 {
 }
 
 unsafe fn swap_endianess_16(v: u16) -> u16 {
-    v >> 8 | v << 8
+    v.rotate_left(8)
 }
 
 pub unsafe fn htonl(hostlong: u32) -> u32 {
