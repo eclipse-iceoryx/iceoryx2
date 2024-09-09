@@ -333,10 +333,7 @@ impl<Service: service::Service> Clone for NodeState<Service> {
 
 impl<Service: service::Service> NodeState<Service> {
     pub(crate) fn new(node_id: &NodeId, config: &Config) -> Result<Option<Self>, NodeListFailure> {
-        let details = match Node::<Service>::get_node_details(config, node_id) {
-            Ok(v) => v,
-            Err(_) => None,
-        };
+        let details = Node::<Service>::get_node_details(config, node_id).unwrap_or_default();
 
         let node_view = AliveNodeView::<Service> {
             id: *node_id,

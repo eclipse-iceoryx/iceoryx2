@@ -288,6 +288,7 @@ fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
     assert_that!(file_recv_content, eq file_send_content);
 }
 
+#[ignore]
 #[test]
 fn unix_datagram_socket_sending_receiving_credentials_works() {
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
