@@ -104,6 +104,10 @@ auto Config::defaults() -> config::Defaults {
 auto Config::global_config() -> ConfigView {
     return ConfigView { iox2_config_global_config() };
 }
+
+auto Config::view() -> ConfigView {
+    return ConfigView { iox2_cast_config_ptr(m_handle) };
+}
 /////////////////////////
 // END: Config
 /////////////////////////

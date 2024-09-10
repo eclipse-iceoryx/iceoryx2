@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox/cli_definition.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/service.hpp"
@@ -17,10 +18,25 @@
 
 #include <iostream>
 
-auto main() -> int {
-    using namespace iox2;
+struct Args {
+    IOX_CLI_DEFINITION(Args);
+    IOX_CLI_OPTIONAL(
+        iox::string<32>, domain, { "iox2_" }, 'd', "domain", "The name of the domain. Must be a valid file name.");
+    IOX_CLI_SWITCH(debug, 'e', "debug", "Enable full debug log output");
+};
 
-    Service<ServiceType::Ipc>::list(Config::global_config(), [](auto service) {
+auto main(int argc, char** argv) -> int {
+    using namespace iox2;
+    auto args = Args::parse(argc, argv, "Discovery of the domain example.");
+
+    // create a new config based on the global config
+    auto config = Config::global_config().to_owned();
+
+    // The domain name becomes the prefix for all resources.
+    // Therefore, different domain names never share the same resources.
+    config.global().set_prefix(iox::FileName::create(args.domain()).expect("valid domain name"));
+
+    Service<ServiceType::Ipc>::list(config.view(), [](auto service) {
         std::cout << service.static_details << std::endl;
         return CallbackProgression::Continue;
     }).expect("discover all available services");

@@ -31,7 +31,7 @@ constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1)
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
-    auto args = Args::parse(argc, argv, "Publisher of the domain example.");
+    auto args = Args::parse(argc, argv, "Subscriber of the domain example.");
 
     // create a new config based on the global config
     auto config = Config::global_config().to_owned();

@@ -137,6 +137,26 @@ pub unsafe extern "C" fn iox2_cast_config_ref_h(handle: iox2_config_h) -> iox2_c
     (*handle.as_type()).as_ref_handle() as *mut _ as _
 }
 
+/// This function casts a [`iox2_config_h`] into a [`iox2_config_ptr`]
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_config_from_file()`], [`iox2_config_default()`],
+///     [`iox2_config_clone()`] or [`iox2_config_from_ptr()`]
+///
+/// Returns a [`iox2_config_ptr`]
+///
+/// # Safety
+///
+/// * The `config_handle` must be a valid handle.
+/// * The `config_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_config_ptr(config_handle: iox2_config_h) -> iox2_config_ptr {
+    debug_assert!(!config_handle.is_null());
+
+    &*(*config_handle.as_type()).value.as_ref().value
+}
+
 /// Returns a pointer to the global config
 #[no_mangle]
 pub extern "C" fn iox2_config_global_config() -> iox2_config_ptr {

@@ -287,6 +287,9 @@ class Config {
     /// Returns a [`ConfigView`] to the current global config.
     static auto global_config() -> ConfigView;
 
+    /// Returns the [`ConfigView`] to this [`Config`]
+    auto view() -> ConfigView;
+
   private:
     friend class ConfigView;
     friend class config::Global;
