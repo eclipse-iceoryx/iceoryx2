@@ -16,6 +16,7 @@ use crate::api::{
     iox2_node_h, iox2_node_name_ptr, iox2_node_t, iox2_service_type_e, HandleToType, IntoCInt,
     NodeUnion, IOX2_OK,
 };
+use crate::iox2_config_ref_h;
 
 use iceoryx2::node::NodeCreationFailure;
 use iceoryx2::prelude::*;
@@ -169,14 +170,29 @@ pub unsafe extern "C" fn iox2_node_builder_set_name(
     IOX2_OK
 }
 
+/// Sets the node config for the builder
+///
+/// Returns IOX2_OK
+///
+/// # Safety
+///
+/// * `node_builder_handle` - Must be a valid [`iox2_node_builder_ref_h`] obtained by [`iox2_node_builder_new`] and casted by [`iox2_cast_node_builder_ref_h`].
+/// * `config_handle` - Must be a valid [`iox2_config_ref_h`]
+///
 #[no_mangle]
-pub extern "C" fn iox2_node_builder_set_config(
+pub unsafe extern "C" fn iox2_node_builder_set_config(
     node_builder_handle: iox2_node_builder_ref_h,
-) -> c_int {
+    config_handle: iox2_config_ref_h,
+) {
     debug_assert!(!node_builder_handle.is_null());
-    todo!() // TODO: [#210] implement
+    debug_assert!(!config_handle.is_null());
 
-    // IOX2_OK
+    let node_builder_struct = &mut *node_builder_handle.as_type();
+    let config = &*config_handle.as_type();
+
+    let node_builder = node_builder_struct.take().unwrap();
+    let node_builder = node_builder.config(&*config.value.as_ref().value);
+    node_builder_struct.set(node_builder);
 }
 
 // intentionally not public API

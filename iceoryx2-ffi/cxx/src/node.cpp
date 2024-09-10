@@ -137,7 +137,8 @@ auto NodeBuilder::create() const&& -> iox::expected<Node<T>, NodeCreationFailure
     }
 
     if (m_config.has_value()) {
-        IOX_TODO();
+        auto* config_handle_ref = iox2_cast_config_ref_h(m_config.value().m_handle);
+        iox2_node_builder_set_config(handle_ref, config_handle_ref);
     }
 
     iox2_node_h node_handle {};

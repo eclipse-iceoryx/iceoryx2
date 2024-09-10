@@ -67,7 +67,7 @@ pub type iox2_config_ptr = *const Config;
 pub type iox2_config_mut_ptr = *mut Config;
 
 pub(super) struct ConfigOwner {
-    value: ManuallyDrop<Config>,
+    pub(crate) value: ManuallyDrop<Config>,
 }
 
 /// A storage object that has the size to store a config
@@ -81,7 +81,7 @@ pub struct iox2_config_storage_t {
 #[repr(C)]
 #[iceoryx2_ffi(ConfigOwner)]
 pub struct iox2_config_t {
-    value: iox2_config_storage_t,
+    pub(crate) value: iox2_config_storage_t,
     deleter: fn(*mut iox2_config_t),
 }
 

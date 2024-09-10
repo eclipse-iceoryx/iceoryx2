@@ -22,6 +22,7 @@
 
 namespace iox2 {
 class Config;
+class NodeBuilder;
 
 namespace config {
 class Global;
@@ -289,6 +290,7 @@ class Config {
   private:
     friend class ConfigView;
     friend class config::Global;
+    friend class NodeBuilder;
     explicit Config(iox2_config_h handle);
     void drop();
 
