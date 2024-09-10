@@ -10,7 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox/cli_definition.hpp"
 #include "iox/duration.hpp"
+#include "iox/string.hpp"
+#include "iox2/config.hpp"
 #include "iox2/node.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_name.hpp"
@@ -20,13 +23,25 @@
 #include <iostream>
 #include <utility>
 
+struct Args {
+    IOX_CLI_DEFINITION(Args);
+    IOX_CLI_OPTIONAL(
+        iox::string<32>, domain, { "iox2_" }, 'd', "domain", "The name of the domain. Must be a valid file name.");
+    IOX_CLI_OPTIONAL(iox::string<256>, service, { "my_funky_service" }, 's', "service", "The name of the service.");
+    IOX_CLI_SWITCH(debug, 'e', "debug", "Enable full debug log output");
+};
+
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
-auto main() -> int {
+auto main(int argc, char** argv) -> int {
     using namespace iox2;
-    auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
+    auto args = Args::parse(argc, argv, "Publisher of the domain example.");
+    auto config = Config::global_config().to_owned();
+    config.global().set_prefix(iox::FileName::create(args.domain()).expect("valid domain name"));
 
-    auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
+    auto node = NodeBuilder().config(config).create<ServiceType::Ipc>().expect("successful node creation");
+
+    auto service = node.service_builder(ServiceName::create(args.service().c_str()).expect("valid service name"))
                        .publish_subscribe<TransmissionData>()
                        .open_or_create()
                        .expect("successful service creation/opening");
@@ -43,7 +58,8 @@ auto main() -> int {
 
         send_sample(std::move(sample)).expect("send successful");
 
-        std::cout << "Send sample " << counter << "..." << std::endl;
+        std::cout << "[domain: \"" << args.domain() << "\", service: \"" << args.service() << "] Send sample "
+                  << counter << "..." << std::endl;
     }
 
     std::cout << "exit" << std::endl;

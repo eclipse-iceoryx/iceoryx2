@@ -79,9 +79,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[derive(Parser, Debug)]
 struct Args {
     /// The name of the domain. Must be a valid file name.
-    #[clap(short, long, default_value = "iox2")]
+    #[clap(short, long, default_value = "iox2_")]
     domain: String,
-    /// The of the service.
+    /// The name of the service.
     #[clap(short, long, default_value = "my_funky_service")]
     service: String,
     /// Enable full debug log output
