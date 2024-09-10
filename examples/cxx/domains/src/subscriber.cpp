@@ -19,6 +19,7 @@
 #include "iox2/service_type.hpp"
 #include "transmission_data.hpp"
 
+// NOLINTBEGIN
 struct Args {
     IOX_CLI_DEFINITION(Args);
     IOX_CLI_OPTIONAL(
@@ -26,6 +27,7 @@ struct Args {
     IOX_CLI_OPTIONAL(iox::string<256>, service, { "my_funky_service" }, 's', "service", "The name of the service.");
     IOX_CLI_SWITCH(debug, 'e', "debug", "Enable full debug log output");
 };
+// NOLINTEND
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
