@@ -36,10 +36,20 @@ constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1)
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
     auto args = Args::parse(argc, argv, "Publisher of the domain example.");
+
+    // create a new config based on the global config
     auto config = Config::global_config().to_owned();
+
+    // The domain name becomes the prefix for all resources.
+    // Therefore, different domain names never share the same resources.
     config.global().set_prefix(iox::FileName::create(args.domain()).expect("valid domain name"));
 
-    auto node = NodeBuilder().config(config).create<ServiceType::Ipc>().expect("successful node creation");
+    auto node = NodeBuilder()
+                    // use the custom config when creating the custom node
+                    // every service constructed by the node will use this config
+                    .config(config)
+                    .create<ServiceType::Ipc>()
+                    .expect("successful node creation");
 
     auto service = node.service_builder(ServiceName::create(args.service().c_str()).expect("valid service name"))
                        .publish_subscribe<TransmissionData>()
