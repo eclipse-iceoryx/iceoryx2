@@ -191,7 +191,7 @@ pub unsafe extern "C" fn iox2_node_builder_set_config(
     let config = &*config_handle.as_type();
 
     let node_builder = node_builder_struct.take().unwrap();
-    let node_builder = node_builder.config(&*config.value.as_ref().value);
+    let node_builder = node_builder.config(&config.value.as_ref().value);
     node_builder_struct.set(node_builder);
 }
 

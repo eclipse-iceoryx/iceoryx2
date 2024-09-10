@@ -41,4 +41,27 @@ subscribers with different service names using `-s $SERVICE_NAME`. Only
 publisher-subscriber pairs within the same domain will be able to communicate,
 and the discovery tool will only detect services from within the same domain.
 
+First you have to build the C++ examples:
 
+```sh
+cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/build
+```
+
+**Terminal 1:** Subscriber in domain "fuu" subscribing to service "bar"
+
+```sh
+./target/ffi/build/examples/cxx/domains/example_cxx_domains_subscriber -d "fuu" -s "bar"
+```
+
+**Terminal 2** Publisher in domain "fuu" publishing on service "bar"
+
+```sh
+./target/ffi/build/examples/cxx/domains/example_cxx_domains_publisher -d "fuu" -s "bar"
+```
+
+**Terminal 3** List all services of domain "fuu"
+
+```sh
+./target/ffi/build/examples/cxx/domains/example_cxx_domains_discovery -d "fuu"
+```
