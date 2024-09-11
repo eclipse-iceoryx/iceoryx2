@@ -33,7 +33,6 @@ int main(int argc, char** argv) {
     iox2_config_h config = NULL;
     iox2_config_from_ptr(config_ptr, NULL, &config);
     iox2_config_ref_h config_ref = iox2_cast_config_ref_h(config);
-    config_ptr = iox2_cast_config_ptr(config);
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
