@@ -376,10 +376,11 @@ void Service::set_dynamic_config_storage_suffix(const iox::FileName& value) && {
 
 auto Service::creation_timeout() && -> iox::units::Duration {
     auto* ref_handle = iox2_cast_config_ref_h(*m_config);
-    auto secs = iox2_config_global_service_creation_timeout_sec(ref_handle);
-    auto nsec = iox2_config_global_service_creation_timeout_nsec_frac(ref_handle);
+    uint64_t secs = 0;
+    uint32_t nsecs = 0;
+    iox2_config_global_service_creation_timeout(ref_handle, &secs, &nsecs);
 
-    return iox::units::Duration::fromSeconds(secs) + iox::units::Duration::fromNanoseconds(nsec);
+    return iox::units::Duration::fromSeconds(secs) + iox::units::Duration::fromNanoseconds(nsecs);
 }
 
 void Service::set_creation_timeout(const iox::units::Duration& value) && {

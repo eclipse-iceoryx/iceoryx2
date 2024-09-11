@@ -189,6 +189,7 @@ pub unsafe extern "C" fn iox2_config_from_file(
     config_file: *const c_char,
 ) -> c_int {
     debug_assert!(!handle_ptr.is_null());
+    debug_assert!(!config_file.is_null());
 
     let file = match FilePath::from_c_str(config_file) {
         Ok(file) => file,
@@ -878,50 +879,28 @@ pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_s
     }
 }
 
-/// Returns the second part of the time of how long another process will wait until the service
+/// Returns the duration how long another process will wait until the service
 /// creation is finalized
 ///
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `secs` - A valid pointer pointing to a [`u64`].
+/// * `nsecs` - A valid pointer pointing to a [`u32`]
 #[no_mangle]
-pub unsafe extern "C" fn iox2_config_global_service_creation_timeout_sec(
+pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
     handle: iox2_config_ref_h,
-) -> u64 {
+    secs: *mut u64,
+    nsecs: *mut u32,
+) {
     debug_assert!(!handle.is_null());
+    debug_assert!(!secs.is_null());
+    debug_assert!(!nsecs.is_null());
 
     let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .creation_timeout
-        .as_secs()
-}
-
-/// Returns the nano second part of the time of how long another process will wait until the service
-/// creation is finalized
-///
-/// # Safety
-///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
-#[no_mangle]
-pub unsafe extern "C" fn iox2_config_global_service_creation_timeout_nsec_frac(
-    handle: iox2_config_ref_h,
-) -> u32 {
-    debug_assert!(!handle.is_null());
-
-    let config = &*handle.as_type();
-    config
-        .value
-        .as_ref()
-        .value
-        .global
-        .service
-        .creation_timeout
-        .subsec_nanos()
+    let timeout = config.value.as_ref().value.global.service.creation_timeout;
+    *secs = timeout.as_secs();
+    *nsecs = timeout.subsec_nanos();
 }
 
 /// Sets the creation timeout
