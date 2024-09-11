@@ -68,9 +68,9 @@ pub mod details {
             Self {
                 zero_memory: true,
                 dynamic_storage_config: Storage::Configuration::default()
-                    .path_hint(Memory::<Allocator, Storage>::default_path_hint())
-                    .suffix(Memory::<Allocator, Storage>::default_suffix())
-                    .prefix(Memory::<Allocator, Storage>::default_prefix()),
+                    .path_hint(&Memory::<Allocator, Storage>::default_path_hint())
+                    .suffix(&Memory::<Allocator, Storage>::default_suffix())
+                    .prefix(&Memory::<Allocator, Storage>::default_prefix()),
                 _phantom: PhantomData,
                 _phantom_storage: PhantomData,
             }
@@ -93,7 +93,7 @@ pub mod details {
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
         NamedConceptConfiguration for Configuration<Allocator, Storage>
     {
-        fn prefix(mut self, value: FileName) -> Self {
+        fn prefix(mut self, value: &FileName) -> Self {
             self.dynamic_storage_config = self.dynamic_storage_config.prefix(value);
             self
         }
@@ -102,12 +102,12 @@ pub mod details {
             self.dynamic_storage_config.get_prefix()
         }
 
-        fn suffix(mut self, value: FileName) -> Self {
+        fn suffix(mut self, value: &FileName) -> Self {
             self.dynamic_storage_config = self.dynamic_storage_config.suffix(value);
             self
         }
 
-        fn path_hint(mut self, value: Path) -> Self {
+        fn path_hint(mut self, value: &Path) -> Self {
             self.dynamic_storage_config = self.dynamic_storage_config.path_hint(value);
             self
         }

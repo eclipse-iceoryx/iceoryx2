@@ -374,9 +374,9 @@ mod event {
     #[test]
     fn custom_suffix_keeps_events_separated<Sut: Event>() {
         let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { FileName::new_unchecked(b".suffix_1") });
+            .suffix(unsafe { &FileName::new_unchecked(b".suffix_1") });
         let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { FileName::new_unchecked(b".suffix_2") });
+            .suffix(unsafe { &FileName::new_unchecked(b".suffix_2") });
 
         let sut_name = generate_name();
 

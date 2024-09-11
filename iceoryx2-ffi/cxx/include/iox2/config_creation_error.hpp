@@ -10,26 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_DETAILS_HPP
-#define IOX2_NODE_DETAILS_HPP
+#ifndef IOX2_CONFIG_CREATION_ERROR_HPP
+#define IOX2_CONFIG_CREATION_ERROR_HPP
 
-#include "iox2/config.hpp"
-#include "iox2/node_name.hpp"
+#include <cstdint>
 
 namespace iox2 {
-/// Contains details of a [`Node`].
-class NodeDetails {
-  public:
-    NodeDetails(NodeName name, Config config);
-
-    /// Returns a reference of the [`NodeName`].
-    auto name() const -> const NodeName&;
-    /// Returns a reference to the [`Config`] the [`Node`] uses.
-    auto config() const -> const Config&;
-
-  private:
-    NodeName m_node_name;
-    Config m_config;
+/// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`].
+enum class ConfigCreationError : uint8_t {
+    /// The config file could not be opened.
+    FailedToOpenConfigFile,
+    /// The config file could not be read.
+    FailedToReadConfigFileContents,
+    /// Parts of the config file could not be deserialized. Indicates some kind of syntax error.
+    UnableToDeserializeContents
 };
 } // namespace iox2
 

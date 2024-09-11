@@ -40,8 +40,8 @@ fn static_storage_file_custom_path_and_suffix_works() {
 
     let content = "some storage content".to_string();
     let config = Configuration::default()
-        .suffix(unsafe { FileName::new_unchecked(b".blubbme") })
-        .path_hint(test_directory());
+        .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })
+        .path_hint(&test_directory());
 
     let storage_guard = Builder::new(&storage_name)
         .config(&config)
@@ -74,8 +74,8 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
 
     Directory::remove(&non_existing_path.into()).ok();
     let config = Configuration::default()
-        .suffix(unsafe { FileName::new_unchecked(b".blubbme") })
-        .path_hint(non_existing_path.into());
+        .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })
+        .path_hint(&non_existing_path.into());
 
     let storage_guard = Builder::new(&storage_name)
         .config(&config)
@@ -102,9 +102,9 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
 fn static_storage_file_custom_path_and_suffix_list_storage_works() {
     const NUMBER_OF_STORAGES: u64 = 12;
     let config = Configuration::default()
-        .suffix(unsafe { FileName::new_unchecked(b".blubbme") })
+        .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })
         .path_hint(
-            FilePath::from_path_and_file(
+            &FilePath::from_path_and_file(
                 &test_directory(),
                 &FileName::new(b"non_existing").unwrap(),
             )

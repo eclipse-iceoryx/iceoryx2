@@ -99,6 +99,12 @@ impl From<UnableToDeliverStrategy> for iox2_unable_to_deliver_strategy_e {
     }
 }
 
+impl IntoCInt for UnableToDeliverStrategy {
+    fn into_c_int(self) -> c_int {
+        Into::<iox2_unable_to_deliver_strategy_e>::into(self) as c_int
+    }
+}
+
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<PortFactoryPublisherBuilderUnion>
 pub struct iox2_port_factory_publisher_builder_storage_t {

@@ -78,7 +78,7 @@ use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use iceoryx2_bb_log::{fail, fatal_panic, trace, warn};
+use iceoryx2_bb_log::{fail, trace, warn};
 
 use crate::service::port_factory::publisher::UnableToDeliverStrategy;
 
@@ -168,31 +168,39 @@ pub struct Global {
 impl Global {
     /// The absolute path to the service directory where all static service infos are stored
     pub fn service_dir(&self) -> Path {
-        let mut path = self.root_path();
+        let mut path = *self.root_path();
         path.add_path_entry(&self.service.directory).unwrap();
         path
     }
 
     /// The absolute path to the node directory where all node details are stored
     pub fn node_dir(&self) -> Path {
-        let mut path = self.root_path();
+        let mut path = *self.root_path();
         path.add_path_entry(&self.node.directory).unwrap();
         path
     }
 
     /// The path under which all other directories or files will be created
-    pub fn root_path(&self) -> Path {
+    pub fn root_path(&self) -> &Path {
         #[cfg(target_os = "windows")]
         {
-            fatal_panic!(from "Global::root_path_windows",
-                when Path::new(self.root_path_windows.as_bytes()),
-                "Unable to initialize config since the internal root_path_windows \"{}\" is not a valid directory.", self.root_path_windows)
+            &self.root_path_windows
         }
         #[cfg(not(target_os = "windows"))]
         {
-            fatal_panic!(from "Global::root_path_unix",
-                when Path::new(self.root_path_unix.as_bytes()),
-                "Unable to initialize config since the internal root_path_unix \"{}\" is not a valid directory.", self.root_path_unix)
+            &self.root_path_unix
+        }
+    }
+
+    /// Defines the path under which all other directories or files will be created
+    pub fn set_root_path(&mut self, value: &Path) {
+        #[cfg(target_os = "windows")]
+        {
+            self.root_path_windows = *value;
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            self.root_path_unix = *value;
         }
     }
 }
@@ -220,15 +228,15 @@ pub struct PublishSubscribe {
     /// The maximum amount of supported [`crate::port::publisher::Publisher`]
     pub max_publishers: usize,
     /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
-    /// processes can open the service in parallel.
+    /// processes can open the service at the same time.
     pub max_nodes: usize,
     /// The maximum buffer size a [`crate::port::subscriber::Subscriber`] can have
     pub subscriber_max_buffer_size: usize,
     /// The maximum amount of [`crate::sample::Sample`]s a [`crate::port::subscriber::Subscriber`] can
-    /// hold in parallel.
+    /// hold at the same time.
     pub subscriber_max_borrowed_samples: usize,
     /// The maximum amount of [`crate::sample_mut::SampleMut`]s a [`crate::port::publisher::Publisher`] can
-    /// loan in parallel.
+    /// loan at the same time.
     pub publisher_max_loaned_samples: usize,
     /// The maximum history size a [`crate::port::subscriber::Subscriber`] can request from a
     /// [`crate::port::publisher::Publisher`].
@@ -237,7 +245,7 @@ pub struct PublishSubscribe {
     /// full. When safe overflow is activated, the [`crate::port::publisher::Publisher`] will
     /// replace the oldest [`crate::sample::Sample`] with the newest one.
     pub enable_safe_overflow: bool,
-    /// If no safe overflow is activated it defines the deliver strategy of the
+    /// If safe overflow is deactivated it defines the deliver strategy of the
     /// [`crate::port::publisher::Publisher`] when the [`crate::port::subscriber::Subscriber`]s
     /// buffer is full.
     pub unable_to_deliver_strategy: UnableToDeliverStrategy,
@@ -260,7 +268,7 @@ pub struct Event {
     /// The maximum amount of supported [`crate::port::notifier::Notifier`]
     pub max_notifiers: usize,
     /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
-    /// processes can open the service in parallel.
+    /// processes can open the service at the same time.
     pub max_nodes: usize,
     /// The largest event id supported by the event service
     pub event_id_max_value: usize,

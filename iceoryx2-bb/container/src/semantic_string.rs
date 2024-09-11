@@ -151,9 +151,9 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///   * The contents must have a length that is less or equal CAPACITY
     ///   * The contents must not contain invalid UTF-8 characters
     ///
-    unsafe fn from_c_str(ptr: *mut std::ffi::c_char) -> Result<Self, SemanticStringError> {
+    unsafe fn from_c_str(ptr: *const std::ffi::c_char) -> Result<Self, SemanticStringError> {
         Self::new(std::slice::from_raw_parts(
-            ptr as *const u8,
+            ptr.cast(),
             strnlen(ptr, CAPACITY + 1),
         ))
     }

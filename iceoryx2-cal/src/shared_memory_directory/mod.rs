@@ -75,7 +75,7 @@ impl SharedMemoryDirectoryCreator {
         when MgmtShm::Builder::new(&self.name)
             .config(
                 &MgmtShm::Configuration::default()
-                    .suffix(unsafe {FileName::new_unchecked(MGMT_SHM_SUFFIX)}),
+                    .suffix(unsafe {&FileName::new_unchecked(MGMT_SHM_SUFFIX)}),
             )
             .size(core::mem::size_of::<FileReferenceSet>() + core::mem::align_of::<FileReferenceSet>() - 1)
             .create(&<BumpAllocator as ShmAllocator>::Configuration::default()),
@@ -92,7 +92,7 @@ impl SharedMemoryDirectoryCreator {
         let data_shm = fail!(from self,
             when DataShm::Builder::new(&self.name).config(
                 &DataShm::Configuration::default()
-                    .suffix(unsafe{FileName::new_unchecked(DATA_SHM_SUFFIX)}),
+                    .suffix(unsafe{&FileName::new_unchecked(DATA_SHM_SUFFIX)}),
                 ).size(self.size).create(allocator_config),
             "{} since the data segment could not be created.", msg);
 
@@ -120,7 +120,7 @@ impl SharedMemoryDirectoryCreator {
         let data_shm = fail!(from self, when DataShm::Builder::new(&self.name)
                                 .config(
                                     &DataShm::Configuration::default()
-                                        .suffix(unsafe{FileName::new_unchecked(DATA_SHM_SUFFIX)}),
+                                        .suffix(unsafe{&FileName::new_unchecked(DATA_SHM_SUFFIX)}),
                                     )
                                 .open(),
                                 "{} since the data segment could not be opened.", msg);
@@ -128,7 +128,7 @@ impl SharedMemoryDirectoryCreator {
         let mgmt_shm = fail!(from self, when MgmtShm::Builder::new(&self.name)
                                 .config(
                                     &MgmtShm::Configuration::default()
-                                        .suffix(unsafe{FileName::new_unchecked(MGMT_SHM_SUFFIX)}),
+                                        .suffix(unsafe{&FileName::new_unchecked(MGMT_SHM_SUFFIX)}),
                                 )
                                 .open(),
                                 "{} since the management segment could not be opened.", msg);
@@ -220,14 +220,14 @@ impl<
 
         if !fail!(from origin, when DataShm::does_exist_cfg(
             name,
-            &DataShm::Configuration::default().suffix(unsafe{FileName::new_unchecked(DATA_SHM_SUFFIX)})),
+            &DataShm::Configuration::default().suffix(unsafe{&FileName::new_unchecked(DATA_SHM_SUFFIX)})),
             "{} \"{}\" exists due to a failure while checking the data segment.", msg, name)
         {
             return Ok(false);
         }
 
         let mgmt_result = fail!(from origin,
-            when MgmtShm::does_exist_cfg(name, &MgmtShm::Configuration::default().suffix(unsafe{FileName::new_unchecked(MGMT_SHM_SUFFIX)})),
+            when MgmtShm::does_exist_cfg(name, &MgmtShm::Configuration::default().suffix(unsafe{&FileName::new_unchecked(MGMT_SHM_SUFFIX)})),
             "{} \"{}\" exists due to a failure while checking the management segment.", msg, name
         );
 
@@ -239,7 +239,7 @@ impl<
         let origin = "SharedMemoryDirectory::list()";
 
         Ok(fail!(from origin, when DataShm::list_cfg(
-            &DataShm::Configuration::default().suffix(unsafe{FileName::new_unchecked(DATA_SHM_SUFFIX)})
+            &DataShm::Configuration::default().suffix(unsafe{&FileName::new_unchecked(DATA_SHM_SUFFIX)})
                 ),
             "{} since the data segments could not be listed.", msg))
     }
@@ -253,14 +253,14 @@ impl<
 
         if !fail!(from origin, when DataShm::remove_cfg(
             name,
-            &DataShm::Configuration::default().suffix(unsafe{FileName::new_unchecked(DATA_SHM_SUFFIX)})),
+            &DataShm::Configuration::default().suffix(unsafe{&FileName::new_unchecked(DATA_SHM_SUFFIX)})),
             "{} \"{}\" since the data segment could not be removed.", msg, name)
         {
             return Ok(false);
         }
 
         let mgmt_result = fail!(from origin,
-            when MgmtShm::remove_cfg(name, &MgmtShm::Configuration::default().suffix(unsafe{FileName::new_unchecked(MGMT_SHM_SUFFIX)})),
+            when MgmtShm::remove_cfg(name, &MgmtShm::Configuration::default().suffix(unsafe{&FileName::new_unchecked(MGMT_SHM_SUFFIX)})),
             "{} \"{}\" since the management segment could not be removed.", msg, name
         );
 

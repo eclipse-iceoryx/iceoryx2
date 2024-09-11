@@ -13,9 +13,9 @@
 #include "iox2/node_details.hpp"
 
 namespace iox2 {
-NodeDetails::NodeDetails(NodeName name, const Config& config)
+NodeDetails::NodeDetails(NodeName name, Config config)
     : m_node_name { std::move(name) }
-    , m_config { config } {
+    , m_config { std::move(config) } {
 }
 
 auto NodeDetails::name() const -> const NodeName& {
