@@ -24,12 +24,15 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
+    // create a new config based on the global config
     iox2_config_ptr config_ptr = iox2_config_global_config();
     iox2_config_h config = NULL;
     iox2_config_from_ptr(config_ptr, NULL, &config);
     iox2_config_ref_h config_ref = iox2_cast_config_ref_h(config);
     config_ptr = iox2_cast_config_ptr(config);
 
+    // The domain name becomes the prefix for all resources.
+    // Therefore, different domain names never share the same resources.
     if (iox2_config_global_set_prefix(config_ref, argv[1]) != IOX2_OK) {
         iox2_config_drop(config);
         printf("invalid domain name\"%s\"\n", argv[1]);
@@ -37,6 +40,8 @@ int main(int argc, char** argv) {
     }
 
     printf("\nServices running in domain \"%s\":\n", argv[1]);
+
+    // use the custom config when listing the services
     if (iox2_service_list(iox2_service_type_e_IPC, config_ptr, list_callback, NULL) != IOX2_OK) {
         printf("Failed to list all services.");
     }

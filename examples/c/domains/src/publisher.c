@@ -22,17 +22,40 @@
 #include <stdio.h>
 #include <string.h>
 
-int main(void) {
+int main(int argc, char** argv) {
+    if (argc != 3) {
+        printf("usage: %s DOMAIN_NAME SERVICE_NAME\n", argv[0]);
+        exit(-1);
+    }
+
+    // create a new config based on the global config
+    iox2_config_ptr config_ptr = iox2_config_global_config();
+    iox2_config_h config = NULL;
+    iox2_config_from_ptr(config_ptr, NULL, &config);
+    iox2_config_ref_h config_ref = iox2_cast_config_ref_h(config);
+    config_ptr = iox2_cast_config_ptr(config);
+
+    // The domain name becomes the prefix for all resources.
+    // Therefore, different domain names never share the same resources.
+    if (iox2_config_global_set_prefix(config_ref, argv[1]) != IOX2_OK) {
+        printf("invalid domain name\"%s\"\n", argv[1]);
+        goto drop_config;
+    }
+
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
+    iox2_node_builder_ref_h node_builder_ref = iox2_cast_node_builder_ref_h(node_builder_handle);
+
+    // use the custom config when creating the custom node
+    // every service constructed by the node will use this config
+    iox2_node_builder_set_config(node_builder_ref, config_ref);
     if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
-        printf("Could not create node!\n");
-        goto end;
+        goto drop_config;
     }
 
     // create service name
-    const char* service_name_value = "My/Funk/ServiceName";
+    const char* service_name_value = argv[2];
     iox2_service_name_h service_name = NULL;
     if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name) != IOX2_OK) {
         printf("Unable to create service name!\n");
@@ -103,9 +126,8 @@ int main(void) {
             goto drop_publisher;
         }
 
-        printf("Send sample %d ...\n", counter);
+        printf("[domain: \"%s\", service: \"%s\"] Send sample %d ...\n", argv[1], argv[2], counter);
     }
-
 
 drop_publisher:
     iox2_publisher_drop(publisher);
@@ -115,6 +137,9 @@ drop_service:
 
 drop_node:
     iox2_node_drop(node_handle);
+
+drop_config:
+    iox2_config_drop(config);
 
 end:
     return 0;
