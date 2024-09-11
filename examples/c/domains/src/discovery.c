@@ -18,8 +18,28 @@ iox2_callback_progression_e list_callback(const iox2_static_config_t* static_det
     return iox2_callback_progression_e_CONTINUE;
 }
 
-int main(void) {
-    if (iox2_service_list(iox2_service_type_e_IPC, iox2_config_global_config(), list_callback, NULL) != IOX2_OK) {
+int main(int argc, char** argv) {
+    if (argc != 2) {
+        printf("usage: %s DOMAIN_NAME\n", argv[0]);
+        exit(-1);
+    }
+
+    iox2_config_ptr config_ptr = iox2_config_global_config();
+    iox2_config_h config = NULL;
+    iox2_config_from_ptr(config_ptr, NULL, &config);
+    iox2_config_ref_h config_ref = iox2_cast_config_ref_h(config);
+    config_ptr = iox2_cast_config_ptr(config);
+
+    if (iox2_config_global_set_prefix(config_ref, argv[1]) != IOX2_OK) {
+        iox2_config_drop(config);
+        printf("invalid domain name\"%s\"\n", argv[1]);
+        exit(-1);
+    }
+
+    printf("\nServices running in domain \"%s\":\n", argv[1]);
+    if (iox2_service_list(iox2_service_type_e_IPC, config_ptr, list_callback, NULL) != IOX2_OK) {
         printf("Failed to list all services.");
     }
+
+    iox2_config_drop(config);
 }
