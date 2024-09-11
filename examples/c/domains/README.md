@@ -51,17 +51,17 @@ cmake --build target/ffi/build
 **Terminal 1:** Subscriber in domain "fuu" subscribing to service "bar"
 
 ```sh
-./target/ffi/build/examples/cxx/domains/example_c_domains_subscriber
+./target/ffi/build/examples/c/domains/example_c_domains_subscriber "fuu" "bar"
 ```
 
 **Terminal 2** Publisher in domain "fuu" publishing on service "bar"
 
 ```sh
-./target/ffi/build/examples/cxx/domains/example_c_domains_publisher -d "fuu" -s "bar"
+./target/ffi/build/examples/c/domains/example_c_domains_publisher "fuu" "bar"
 ```
 
 **Terminal 3** List all services of domain "fuu"
 
 ```sh
-./target/ffi/build/examples/cxx/domains/example_c_domains_discovery -d "fuu"
+./target/ffi/build/examples/c/domains/example_c_domains_discovery "fuu"
 ```
