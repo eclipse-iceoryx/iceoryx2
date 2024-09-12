@@ -173,6 +173,34 @@ macro_rules! assert_that {
             }
         }
     };
+    ($lhs:expr, contains_match |$element:ident| $predicate:expr) => {
+        {
+            let mut does_contain = false;
+            for $element in &$lhs {
+                if $predicate {
+                    does_contain = true;
+                    break;
+                }
+            }
+            if !does_contain {
+                assert_that!(message_contains_match $lhs, core::stringify!($predicate));
+            }
+        }
+    };
+    ($lhs:expr, not_contains_match |$element:ident| $predicate:expr) => {
+        {
+            let mut does_contain = false;
+            for $element in &$lhs {
+                if $predicate {
+                    does_contain = true;
+                    break;
+                }
+            }
+            if does_contain {
+                assert_that!(message_contains_match $lhs, core::stringify!($predicate));
+            }
+        }
+    };
     ($lhs:expr, time_at_least $rhs:expr) => {
         {
             let lval = $lhs.as_secs_f32();
@@ -234,6 +262,15 @@ macro_rules! assert_that {
             core::stringify!($rhs),
             $rhs,
             $lhs,
+            assert_that![color_end]
+        );
+    };
+    [message_contains_match $lhs:expr, $predicate:expr] => {
+        core::panic!(
+            "assertion failed: {}expr: {} contains no element matching predicate: {}{}",
+            assert_that![color_start],
+            core::stringify!($lhs),
+            $predicate,
             assert_that![color_end]
         );
     };

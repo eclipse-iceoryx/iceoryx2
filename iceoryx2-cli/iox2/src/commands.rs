@@ -10,221 +10,270 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use anyhow::{anyhow, Context, Result};
+use cargo_metadata::MetadataCommand;
 use colored::*;
 use std::env;
-use std::ffi::OsStr;
 use std::fs;
-use std::io;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use thiserror::Error;
 
 #[derive(Clone, Debug, PartialEq)]
-enum CommandType {
+pub enum CommandType {
     Installed,
     Development,
 }
 
 #[derive(Clone, Debug)]
-struct CommandInfo {
-    path: PathBuf,
-    command_type: CommandType,
+pub struct CommandInfo {
+    pub name: String,
+    pub path: PathBuf,
 }
 
-#[derive(Error, Debug)]
-pub enum ExecutionError {
-    #[error("Command not found: {0}")]
-    NotFound(String),
-    #[error("Execution failed: {0}")]
-    Failed(String),
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PathsList {
+    build: Vec<PathBuf>,
+    install: Vec<PathBuf>,
 }
 
-pub fn list() {
-    println!("{}", "Installed Commands:".bright_green().bold());
+#[cfg(windows)]
+const PATH_ENV_VAR_SEPARATOR: char = ';';
+#[cfg(windows)]
+const COMMAND_EXT: &str = "exe";
 
-    if let Ok(mut commands) = find_command_binaries() {
-        commands.sort_by_cached_key(|command| {
-            command
-                .path
-                .file_name()
-                .expect("Could not extract file name from command binary path")
-                .to_os_string()
-        });
-        commands
-            .iter()
-            .map(|command| {
-                format!(
-                    "  {} {}",
-                    // TODO: Simplify logic for extracting name to remove this duplication
-                    command
-                        .path
-                        .file_name()
-                        .and_then(|os_str| os_str.to_str())
-                        .and_then(|command_name| command_name.strip_prefix("iox2-"))
-                        .expect("Unable to extract command name from command path")
-                        .bold(),
-                    if command.command_type == CommandType::Development {
-                        "(dev)".italic()
-                    } else {
-                        "".italic()
-                    },
-                )
-            })
-            .for_each(|formatted_command| println!("{}", formatted_command));
-    } else {
-        // TODO: handle error ...
+#[cfg(not(windows))]
+const PATH_ENV_VAR_SEPARATOR: char = ':';
+#[cfg(not(windows))]
+const COMMAND_EXT: &str = "";
+
+pub trait Environment {
+    fn install_paths() -> Result<Vec<PathBuf>>;
+    fn build_paths() -> Result<Vec<PathBuf>>;
+}
+
+pub struct HostEnvironment;
+
+impl HostEnvironment {
+    pub fn target_dir() -> Result<PathBuf> {
+        let target_dir = MetadataCommand::new()
+            .exec()
+            .context("Failed to execute cargo metadata")?
+            .target_directory
+            .into_std_path_buf();
+        Ok(target_dir)
     }
 }
 
-fn build_dirs() -> Result<Vec<PathBuf>, std::io::Error> {
-    let current_exe = env::current_exe()?;
-
-    let build_type = if cfg!(debug_assertions) {
-        "debug"
-    } else {
-        "release"
-    };
-
-    let paths = current_exe
-        .parent()
-        .and_then(|p| p.parent())
-        .map(|p| p.join(build_type))
-        .filter(|p| p.is_dir())
-        .ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::NotFound,
-                "Unable to determine build path from executable path",
-            )
-        })?;
-
-    Ok(vec![paths])
-}
-
-fn install_dirs() -> Result<Vec<PathBuf>, std::io::Error> {
-    env::var("PATH")
-        .map(|paths| {
-            paths
-                .split(':')
-                .map(PathBuf::from)
-                .filter(|p| p.is_dir())
-                .collect()
-        })
-        .map_err(|_| {
-            std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "Unable to determine install path from environment",
-            )
-        })
-}
-
-fn find_command_binaries_in_path(dirs: Vec<PathBuf>) -> Vec<PathBuf> {
-    dirs.into_iter()
-        .flat_map(|dir| fs::read_dir(dir).into_iter().flatten())
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.path())
-        .filter(|path| path.is_file()) // filter out dirs
-        .filter(|path| path.extension().is_none()) // valid binaries have no extension (e.g. '.d')
-        .filter(|path| {
-            path.file_name()
-                .and_then(OsStr::to_str)
-                .filter(|name| name.starts_with("iox2-")) // iox2 command start with 'iox2-'
-                .is_some()
-        })
-        .collect()
-}
-
-fn find_command_binaries() -> Result<Vec<CommandInfo>, io::Error> {
-    let mut command_binaries: Vec<CommandInfo> = Vec::new();
-
-    // Find binaries in both build dirs and the install path
-    command_binaries.extend(
-        find_command_binaries_in_path(build_dirs()?)
-            .into_iter()
-            .map(|path| CommandInfo {
-                path,
-                command_type: CommandType::Development,
-            }),
-    );
-    command_binaries.extend(
-        find_command_binaries_in_path(install_dirs()?)
-            .into_iter()
-            .map(|path| CommandInfo {
-                path,
-                command_type: CommandType::Installed,
-            }),
-    );
-
-    Ok(command_binaries)
-}
-
-pub fn paths() {
-    match build_dirs() {
-        Ok(dirs) => {
-            println!("{}", "Development Binary Paths:".bright_green().bold());
-            for dir in dirs {
-                println!("  {}", dir.display().to_string().bold());
-            }
-        }
-        Err(e) => {
-            println!("Error retrieving build dirs: {e}");
-        }
+impl Environment for HostEnvironment {
+    fn install_paths() -> Result<Vec<PathBuf>> {
+        env::var("PATH")
+            .context("Failed to read PATH environment variable")?
+            .split(PATH_ENV_VAR_SEPARATOR)
+            .map(PathBuf::from)
+            .filter(|p| p.is_dir())
+            .map(Ok)
+            .collect()
     }
-    match install_dirs() {
-        Ok(dirs) => {
-            println!("{}", "Installed Binary Paths:".bright_green().bold());
-            for dir in dirs {
-                println!("  {}", dir.display().to_string().bold());
-            }
-        }
-        Err(e) => {
-            println!("Error retrieving install dirs: {e}");
-        }
-    }
-}
 
-pub fn execute_external_command(
-    command_name: &str,
-    args: &[String],
-    dev_flag_present: bool,
-) -> Result<(), ExecutionError> {
-    if let Ok(commands) = find_command_binaries() {
-        let command_info = commands
-            .into_iter()
-            .filter(|command| {
-                if dev_flag_present {
-                    command.command_type == CommandType::Development
-                } else {
-                    command.command_type == CommandType::Installed
+    fn build_paths() -> Result<Vec<PathBuf>> {
+        let target_dir = Self::target_dir()?;
+        let paths: Vec<PathBuf> = fs::read_dir(target_dir)?
+            .filter_map(|entry| {
+                if let Ok(entry) = entry {
+                    if entry.path().is_dir() {
+                        return Some(entry.path());
+                    }
                 }
+                None
             })
-            .find(|command| {
-                command
-                    // TODO: Simplify logic for extracting name to remove this duplication
-                    .path
-                    .file_name()
-                    .and_then(|os_str| os_str.to_str())
-                    .and_then(|command_name| command_name.strip_prefix("iox2-"))
-                    .expect("Unable to extract command name from command path")
-                    == command_name
-            })
-            .ok_or_else(|| ExecutionError::NotFound(command_name.to_string()))?;
-        execute(&command_info, Some(args)) // TODO: Remove Some() - pass optional directly
-    } else {
-        Err(ExecutionError::NotFound(command_name.to_string()))
+            .collect();
+
+        Ok(paths)
     }
 }
 
-fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<(), ExecutionError> {
-    let mut command = Command::new(&command_info.path);
-    command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
-    if let Some(arguments) = args {
-        command.args(arguments);
+pub trait CommandFinder<E: Environment> {
+    fn paths() -> Result<PathsList>;
+    fn commands() -> Result<Vec<CommandInfo>>;
+}
+
+pub struct IceoryxCommandFinder<E: Environment> {
+    _phantom: std::marker::PhantomData<E>,
+}
+
+impl<E> IceoryxCommandFinder<E>
+where
+    E: Environment,
+{
+    fn parse_command_name(path: &Path) -> Result<String> {
+        let file_stem = path
+            .file_stem()
+            .and_then(|os_str| os_str.to_str())
+            .ok_or_else(|| anyhow!("Invalid file name"))?;
+
+        let command_name = file_stem
+            .strip_prefix("iox2-")
+            .ok_or_else(|| anyhow!("Not an iox2 command: {}", file_stem))?;
+
+        let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
+        if extension == COMMAND_EXT {
+            Ok(command_name.to_string())
+        } else {
+            Err(anyhow!("Invalid file extension: {}", extension))
+        }
     }
-    match command.status() {
-        Ok(_) => Ok(()),
-        Err(e) => Err(ExecutionError::Failed(format!(
-            "Failed to execute command: {}",
-            e
-        ))),
+
+    fn list_commands_in_path(path: &Path, command_type: CommandType) -> Result<Vec<CommandInfo>> {
+        let commands = fs::read_dir(path)
+            .with_context(|| format!("Failed to read directory at: {:?}", path.to_str()))?
+            .map(|entry| {
+                entry.map(|e| e.path()).with_context(|| {
+                    format!("Failed to read entry in directory: {:?}", path.to_str())
+                })
+            })
+            .filter_map(|entry_path| {
+                entry_path
+                    .as_ref()
+                    .map_err(|e| anyhow!("Failed to get PathBuf: {}", e))
+                    .and_then(|entry_path_buf| {
+                        Self::parse_command_name(entry_path_buf)
+                            .map(|parsed_name| {
+                                // Given that development builds can have different build types
+                                // (debug, release, something else), the name needs to be unique to
+                                // allow for selection.
+                                // Thus, the build type is appended as a suffix.
+                                // e.g. foo-debug or foo-release
+                                let mut command_name = parsed_name.to_string();
+                                if command_type == CommandType::Development {
+                                    if let Some(build_type) =
+                                        path.file_name().and_then(|os_str| os_str.to_str())
+                                    {
+                                        const NAME_SEPARATOR: &str = "-";
+                                        command_name.push_str(NAME_SEPARATOR);
+                                        command_name.push_str(build_type);
+                                    }
+                                };
+
+                                CommandInfo {
+                                    name: command_name,
+                                    path: entry_path_buf.to_owned(),
+                                }
+                            })
+                            .map_err(|e| anyhow!("Failed to parse command name: {}", e))
+                    })
+                    .ok()
+            })
+            .collect();
+
+        Ok(commands)
     }
+}
+
+impl<E> CommandFinder<E> for IceoryxCommandFinder<E>
+where
+    E: Environment,
+{
+    fn paths() -> Result<PathsList> {
+        let build = E::build_paths().context("Failed to retrieve build paths")?;
+        let install = E::install_paths().context("Failed to retrieve install paths")?;
+
+        Ok(PathsList { build, install })
+    }
+
+    fn commands() -> Result<Vec<CommandInfo>> {
+        let paths = Self::paths().context("Failed to list paths")?;
+        let mut commands = Vec::new();
+
+        for path in &paths.build {
+            commands.extend(Self::list_commands_in_path(path, CommandType::Development)?);
+        }
+        for path in &paths.install {
+            commands.extend(Self::list_commands_in_path(path, CommandType::Installed)?);
+        }
+        commands.sort_by_cached_key(|command| {
+            command.path.file_name().unwrap_or_default().to_os_string()
+        });
+
+        Ok(commands)
+    }
+}
+
+pub trait CommandExecutor {
+    fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<()>;
+}
+
+pub struct IceoryxCommandExecutor;
+
+impl CommandExecutor for IceoryxCommandExecutor {
+    fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<()> {
+        let mut command = Command::new(&command_info.path);
+        command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+        if let Some(arguments) = args {
+            command.args(arguments);
+        }
+        command
+            .status()
+            .with_context(|| format!("Failed to execute command: {:?}", command_info.path))?;
+        Ok(())
+    }
+}
+
+fn paths_impl<E>() -> Result<()>
+where
+    E: Environment,
+{
+    let paths = IceoryxCommandFinder::<E>::paths().context("Failed to list search paths")?;
+
+    println!("{}", "Build Paths:".bright_green().bold());
+    for dir in paths.build {
+        println!("  {}", dir.display().to_string().bold());
+    }
+    println!("\n{}", "Install Paths:".bright_green().bold());
+    for dir in paths.install {
+        println!("  {}", dir.display().to_string().bold());
+    }
+
+    Ok(())
+}
+
+pub fn paths() -> Result<()> {
+    paths_impl::<HostEnvironment>()
+}
+
+fn list_impl<E>() -> Result<()>
+where
+    E: Environment,
+{
+    let commands = IceoryxCommandFinder::<E>::commands()?;
+
+    println!("{}", "Discovered Commands:".bright_green().bold());
+    for command in commands {
+        println!("  {}", command.name.bold());
+    }
+
+    Ok(())
+}
+
+pub fn list() -> Result<()> {
+    list_impl::<HostEnvironment>()
+}
+
+fn execute_impl<E>(command_name: &str, args: Option<&[String]>) -> Result<()>
+where
+    E: Environment,
+{
+    let all_commands =
+        IceoryxCommandFinder::<E>::commands().context("Failed to find command binaries")?;
+
+    let command = all_commands
+        .into_iter()
+        .find(|command| command.name == command_name)
+        .ok_or_else(|| anyhow!("Command not found: {}", command_name))?;
+
+    IceoryxCommandExecutor::execute(&command, args)
+}
+
+pub fn execute(command_name: &str, args: Option<&[String]>) -> Result<()> {
+    execute_impl::<HostEnvironment>(command_name, args)
 }

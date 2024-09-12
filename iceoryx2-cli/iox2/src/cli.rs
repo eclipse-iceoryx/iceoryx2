@@ -41,7 +41,12 @@ pub struct Cli {
     )]
     pub dev: bool,
 
-    #[arg(hide = true, required = false)]
+    #[arg(
+        hide = true,
+        required = false,
+        trailing_var_arg = true,
+        allow_hyphen_values = true
+    )]
     pub external_command: Vec<String>,
 }
 

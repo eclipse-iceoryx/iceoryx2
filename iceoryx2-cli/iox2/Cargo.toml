@@ -11,8 +11,13 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-human-panic = { workspace = true }
+anyhow = { workspace = true }
 better-panic = { workspace = true }
-clap = { workspace = true }
 colored = { workspace = true }
-thiserror = { workspace = true }
+clap = { workspace = true }
+human-panic = { workspace = true }
+cargo_metadata = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+tempfile = { workspace = true }

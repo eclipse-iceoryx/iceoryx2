@@ -19,6 +19,7 @@ extern crate better_panic;
 mod cli;
 mod commands;
 
+use clap::CommandFactory;
 use clap::Parser;
 
 fn main() {
@@ -38,25 +39,26 @@ fn main() {
     let cli = cli::Cli::parse();
 
     if cli.list {
-        commands::list();
+        if let Err(e) = commands::list() {
+            eprintln!("Failed to list commands: {}", e);
+        }
     } else if cli.paths {
-        commands::paths();
+        if let Err(e) = commands::paths() {
+            eprintln!("Failed to list search paths: {}", e);
+        }
     } else if !cli.external_command.is_empty() {
         let command_name = &cli.external_command[0];
-        let command_args = &cli.external_command[1..];
-        match commands::execute_external_command(command_name, command_args, cli.dev) {
-            Ok(()) => {
-                // Command executed successfully, nothing to do
-            }
-            Err(commands::ExecutionError::NotFound(_)) => {
-                // Command not found, print help
-                println!("Command not found. See all installed commands with --list.");
-            }
-            Err(commands::ExecutionError::Failed(_)) => {
-                println!("Command found but execution failed ...");
-            }
+        let command_args = if cli.external_command.len() > 1 {
+            Some(&cli.external_command[1..])
+        } else {
+            None
+        };
+        if let Err(e) = commands::execute(command_name, command_args) {
+            eprintln!("Failed to execute command: {}", e);
         }
     } else {
-        println!("No CLI command detected. Exiting.");
+        cli::Cli::command()
+            .print_help()
+            .expect("Unrecognized CLI input. Exiting.");
     }
 }
