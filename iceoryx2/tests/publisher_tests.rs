@@ -391,7 +391,7 @@ mod publisher {
         let service = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
-                .__internal_set_payload_type_details(type_detail)
+                .__internal_set_payload_type_details(&type_detail)
                 .create()?
         };
 

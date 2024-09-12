@@ -716,8 +716,8 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
 
 impl<UserHeader: Debug, ServiceType: service::Service> Builder<[u8], UserHeader, ServiceType> {
     #[doc(hidden)]
-    pub unsafe fn __internal_set_payload_type_details(mut self, value: TypeDetail) -> Self {
-        self.override_payload_type = Some(value);
+    pub unsafe fn __internal_set_payload_type_details(mut self, value: &TypeDetail) -> Self {
+        self.override_payload_type = Some(value.clone());
         self
     }
 }
@@ -726,8 +726,8 @@ impl<Payload: Debug + ?Sized, ServiceType: service::Service>
     Builder<Payload, CustomHeaderMarker, ServiceType>
 {
     #[doc(hidden)]
-    pub unsafe fn __internal_set_user_header_type_details(mut self, value: TypeDetail) -> Self {
-        self.override_user_header_type = Some(value);
+    pub unsafe fn __internal_set_user_header_type_details(mut self, value: &TypeDetail) -> Self {
+        self.override_user_header_type = Some(value.clone());
         self
     }
 }

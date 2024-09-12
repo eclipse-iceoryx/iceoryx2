@@ -2353,7 +2353,7 @@ mod service_publish_subscribe {
         let _sut = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
-                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u64>(
+                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
                     TypeVariant::FixedSize,
                 ))
                 .create()
@@ -2386,7 +2386,7 @@ mod service_publish_subscribe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
                 .user_header::<CustomHeaderMarker>()
-                .__internal_set_user_header_type_details(TypeDetail::__internal_new::<
+                .__internal_set_user_header_type_details(&TypeDetail::__internal_new::<
                     [u64; HEADER_SIZE],
                 >(TypeVariant::FixedSize))
                 .create()
@@ -2397,7 +2397,7 @@ mod service_publish_subscribe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
                 .user_header::<CustomHeaderMarker>()
-                .__internal_set_user_header_type_details(TypeDetail::__internal_new::<
+                .__internal_set_user_header_type_details(&TypeDetail::__internal_new::<
                     [u64; HEADER_SIZE],
                 >(TypeVariant::FixedSize))
                 .open()
@@ -2444,7 +2444,7 @@ mod service_publish_subscribe {
         let sut2 = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
-                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u128>(
+                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u128>(
                     TypeVariant::FixedSize,
                 ))
                 .open()
@@ -2455,7 +2455,7 @@ mod service_publish_subscribe {
         let sut3 = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
-                .__internal_set_payload_type_details(TypeDetail::__internal_new::<u64>(
+                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
                     TypeVariant::FixedSize,
                 ))
                 .open()
