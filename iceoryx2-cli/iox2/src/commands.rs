@@ -29,7 +29,6 @@ pub enum CommandType {
 pub struct CommandInfo {
     pub name: String,
     pub path: PathBuf,
-    pub command_type: CommandType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,29 +63,6 @@ impl HostEnvironment {
             .into_std_path_buf();
         Ok(target_dir)
     }
-
-    pub fn build_profile() -> Result<PathBuf> {
-        let metadata = MetadataCommand::new()
-            .exec()
-            .context("Failed to execute cargo metadata")?;
-
-        let profile = metadata
-            .resolve
-            .as_ref()
-            .and_then(|resolve| resolve.root.as_ref())
-            .and_then(|root| metadata.packages.iter().find(|p| p.id == *root))
-            .and_then(|package| package.name.split('-').next())
-            .context("Failed to extract profile information")?;
-
-        // Profile could also be "dev", "test", or something else depending on context.
-        // If not release, default to "debug" since this is where the binaries are placed
-        // in these other profiles.
-        Ok(PathBuf::from(if profile == "release" {
-            "release"
-        } else {
-            "debug"
-        }))
-    }
 }
 
 impl Environment for HostEnvironment {
@@ -102,9 +78,18 @@ impl Environment for HostEnvironment {
 
     fn build_paths() -> Result<Vec<PathBuf>> {
         let target_dir = Self::target_dir()?;
-        let profile = Self::build_profile()?;
+        let paths: Vec<PathBuf> = fs::read_dir(target_dir)?
+            .filter_map(|entry| {
+                if let Ok(entry) = entry {
+                    if entry.path().is_dir() {
+                        return Some(entry.path());
+                    }
+                }
+                None
+            })
+            .collect();
 
-        Ok(vec![target_dir.join(profile)])
+        Ok(paths)
     }
 }
 
@@ -132,7 +117,6 @@ where
             .ok_or_else(|| anyhow!("Not an iox2 command: {}", file_stem))?;
 
         let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
-
         if extension == COMMAND_EXT {
             Ok(command_name.to_string())
         } else {
@@ -148,15 +132,33 @@ where
                     format!("Failed to read entry in directory: {:?}", path.to_str())
                 })
             })
-            .filter_map(|path| {
-                path.as_ref()
+            .filter_map(|entry_path| {
+                entry_path
+                    .as_ref()
                     .map_err(|e| anyhow!("Failed to get PathBuf: {}", e))
-                    .and_then(|path_buf| {
-                        Self::parse_command_name(path_buf)
-                            .map(|parsed_name| CommandInfo {
-                                name: parsed_name,
-                                path: path_buf.to_owned(),
-                                command_type: command_type.clone(),
+                    .and_then(|entry_path_buf| {
+                        Self::parse_command_name(entry_path_buf)
+                            .map(|parsed_name| {
+                                // Given that development builds can have different build types
+                                // (debug, release, something else), the name needs to be unique to
+                                // allow for selection.
+                                // Thus, the build type is appended as a suffix.
+                                // e.g. foo-debug or foo-release
+                                let mut command_name = parsed_name.to_string();
+                                if command_type == CommandType::Development {
+                                    if let Some(build_type) =
+                                        path.file_name().and_then(|os_str| os_str.to_str())
+                                    {
+                                        const NAME_SEPARATOR: &str = "-";
+                                        command_name.push_str(NAME_SEPARATOR);
+                                        command_name.push_str(build_type);
+                                    }
+                                };
+
+                                CommandInfo {
+                                    name: command_name,
+                                    path: entry_path_buf.to_owned(),
+                                }
                             })
                             .map_err(|e| anyhow!("Failed to parse command name: {}", e))
                     })
@@ -227,7 +229,6 @@ where
     for dir in paths.build {
         println!("  {}", dir.display().to_string().bold());
     }
-
     println!("\n{}", "Install Paths:".bright_green().bold());
     for dir in paths.install {
         println!("  {}", dir.display().to_string().bold());
@@ -248,12 +249,7 @@ where
 
     println!("{}", "Discovered Commands:".bright_green().bold());
     for command in commands {
-        let dev_indicator = if command.command_type == CommandType::Development {
-            " (dev)".italic()
-        } else {
-            "".into()
-        };
-        println!("  {}{}", command.name.bold(), dev_indicator);
+        println!("  {}", command.name.bold());
     }
 
     Ok(())
@@ -263,7 +259,7 @@ pub fn list() -> Result<()> {
     list_impl::<HostEnvironment>()
 }
 
-fn execute_impl<E>(command_name: &str, args: Option<&[String]>, dev_flag: bool) -> Result<()>
+fn execute_impl<E>(command_name: &str, args: Option<&[String]>) -> Result<()>
 where
     E: Environment,
 {
@@ -272,19 +268,12 @@ where
 
     let command = all_commands
         .into_iter()
-        .filter(|command| {
-            if dev_flag {
-                command.command_type == CommandType::Development
-            } else {
-                command.command_type == CommandType::Installed
-            }
-        })
         .find(|command| command.name == command_name)
         .ok_or_else(|| anyhow!("Command not found: {}", command_name))?;
 
     IceoryxCommandExecutor::execute(&command, args)
 }
 
-pub fn execute(command_name: &str, args: Option<&[String]>, dev_flag: bool) -> Result<()> {
-    execute_impl::<HostEnvironment>(command_name, args, dev_flag)
+pub fn execute(command_name: &str, args: Option<&[String]>) -> Result<()> {
+    execute_impl::<HostEnvironment>(command_name, args)
 }
