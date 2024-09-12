@@ -261,7 +261,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_detai
 
             let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
             service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.__internal_set_user_header_type_details(value),
+                service_builder.__internal_set_user_header_type_details(&value),
             ));
         }
         iox2_service_type_e::LOCAL => {
@@ -270,7 +270,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_detai
 
             let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
             service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.__internal_set_user_header_type_details(value),
+                service_builder.__internal_set_user_header_type_details(&value),
             ));
         }
     }
@@ -339,7 +339,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
             service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
-                service_builder.__internal_set_payload_type_details(value),
+                service_builder.__internal_set_payload_type_details(&value),
             ));
         }
         iox2_service_type_e::LOCAL => {
@@ -348,7 +348,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
             service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
-                service_builder.__internal_set_payload_type_details(value),
+                service_builder.__internal_set_payload_type_details(&value),
             ));
         }
     }
