@@ -13,6 +13,9 @@ version = { workspace = true }
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+clap = { workspace = true }
 
 [lib]
 name = "examples_common"
@@ -83,3 +86,17 @@ path = "rust/service_attributes/opener.rs"
 [[example]]
 name = "service_attributes_incompatible"
 path = "rust/service_attributes/incompatible.rs"
+
+# domains
+
+[[example]]
+name = "domains_publisher"
+path = "rust/domains/publisher.rs"
+
+[[example]]
+name = "domains_subscriber"
+path = "rust/domains/subscriber.rs"
+
+[[example]]
+name = "domains_discovery"
+path = "rust/domains/discovery.rs"
