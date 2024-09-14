@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use clap::{CommandFactory, FromArgMatches};
-
 #[cfg(not(debug_assertions))]
 use human_panic::setup_panic;
 #[cfg(debug_assertions)]
@@ -19,9 +17,14 @@ extern crate better_panic;
 
 mod cli;
 mod commands;
+mod format;
+mod output;
 
+use clap::Parser;
 use cli::Action;
+use cli::Cli;
 use cli::DetailsFilter;
+use format::Format;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
 
 fn main() {
@@ -40,31 +43,31 @@ fn main() {
 
     set_log_level(LogLevel::Warn);
 
-    match cli::Cli::command().try_get_matches() {
-        Ok(matches) => {
-            let parsed = cli::Cli::from_arg_matches(&matches).expect("Failed to parse arguments");
-            match parsed.action {
-                Some(action) => match action {
+    match Cli::try_parse() {
+        Ok(cli) => {
+            if let Some(action) = cli.action {
+                match action {
                     Action::List => {
-                        if let Err(e) = commands::list() {
+                        if let Err(e) = commands::list(cli.format.unwrap_or(Format::Ron)) {
                             eprintln!("Failed to list services: {}", e);
                         }
                     }
                     Action::Details(options) => {
                         let filter = DetailsFilter::from(&options);
-                        if let Err(e) = commands::details(options.service.as_str(), filter) {
-                            eprintln!("Failed to get service details: {}", e);
+                        if let Err(e) = commands::details(
+                            &options.service,
+                            filter,
+                            cli.format.unwrap_or(Format::Ron),
+                        ) {
+                            eprintln!("Failed to retrieve service details: {}", e);
                         }
                     }
-                },
-                None => {
-                    cli::Cli::command().print_help().unwrap();
                 }
             }
         }
-        Err(err) => {
-            eprintln!("{}", err.kind());
-            std::process::exit(1);
+        Err(e) => {
+            eprintln!("Failed to parse arguments. See help:\n");
+            eprintln!("{}", e);
         }
     }
 }

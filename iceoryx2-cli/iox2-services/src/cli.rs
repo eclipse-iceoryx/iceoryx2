@@ -15,6 +15,8 @@ use clap::Subcommand;
 
 use iceoryx2_cli_utils::help_template;
 
+use crate::Format;
+
 #[derive(Parser)]
 #[command(
     name = "iox2-services",
@@ -28,6 +30,9 @@ use iceoryx2_cli_utils::help_template;
 pub struct Cli {
     #[clap(subcommand)]
     pub action: Option<Action>,
+
+    #[clap(long, short = 'f', value_enum, global = true)]
+    pub format: Option<Format>,
 }
 
 #[derive(Parser)]
@@ -57,6 +62,8 @@ impl From<&DetailsOptions> for DetailsFilter {
 
 #[derive(Subcommand)]
 pub enum Action {
+    #[clap(about = "List all services")]
     List,
+    #[clap(about = "Show details of a specific service")]
     Details(DetailsOptions),
 }

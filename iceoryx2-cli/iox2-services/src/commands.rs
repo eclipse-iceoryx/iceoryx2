@@ -10,49 +10,53 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use anyhow::{anyhow, Error, Result};
+use crate::cli::DetailsFilter;
+use crate::format::Format;
+use crate::output::*;
+use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
 
-use crate::cli::DetailsFilter;
+pub fn list(format: Format) -> Result<()> {
+    let mut services = ServiceList::new();
 
-pub fn list() -> Result<()> {
     ipc::Service::list(Config::global_config(), |service| {
-        println!("- {}", &service.static_details.name().as_str());
+        services.push(ServiceDescriptor::from(service));
         CallbackProgression::Continue
     })
-    .map_err(Error::new)
+    .context("failed to retrieve services")?;
+
+    services.sort_by_key(|pattern| match pattern {
+        ServiceDescriptor::PublishSubscribe(name) => (name.clone(), 0),
+        ServiceDescriptor::Event(name) => (name.clone(), 1),
+        ServiceDescriptor::Undefined(name) => (name.to_string(), 2),
+    });
+
+    print!("{}", format.as_string(&services)?);
+
+    Ok(())
 }
 
-pub fn details(name: &str, filter: DetailsFilter) -> Result<()> {
+pub fn details(name: &str, filter: DetailsFilter, format: Format) -> Result<()> {
     let service_name: ServiceName = name.try_into()?;
     let mut error: Option<Error> = None;
 
     ipc::Service::list(Config::global_config(), |service| {
         if service_name == *service.static_details.name() {
-            match filter {
-                DetailsFilter::None => match serde_yaml::to_string(&service.to_serializable()) {
-                    Ok(details_string) => print!("{}", details_string),
-                    Err(e) => error = Some(anyhow!(e)),
-                },
-                DetailsFilter::Static => match serde_yaml::to_string(&service.static_details) {
-                    Ok(details_string) => print!("{}", details_string),
-                    Err(e) => error = Some(anyhow!(e)),
-                },
-                DetailsFilter::Dynamic => {
-                    if let Some(dynamic_details) = &service.dynamic_details {
-                        match serde_yaml::to_string(&dynamic_details.to_serializable()) {
-                            Ok(details_string) => print!("{}", details_string),
-                            Err(e) => error = Some(anyhow!(e)),
-                        }
-                    }
+            let description = ServiceDescription::from(&service);
+            match format.as_string(&description) {
+                Ok(output) => {
+                    print!("{}", output);
+                    return CallbackProgression::Continue;
+                }
+                Err(e) => {
+                    error = Some(e);
+                    return CallbackProgression::Stop;
                 }
             }
-            CallbackProgression::Stop
         } else {
             CallbackProgression::Continue
         }
-    })
-    .map_err(Error::new)?;
+    })?;
 
     if let Some(err) = error {
         return Err(err);
