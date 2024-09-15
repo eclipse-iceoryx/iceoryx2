@@ -16,6 +16,7 @@ mod filter;
 
 use clap::CommandFactory;
 use clap::Parser;
+use cli::Action;
 use cli::Cli;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
 
@@ -44,12 +45,12 @@ fn main() {
         Ok(cli) => {
             if let Some(action) = cli.action {
                 match action {
-                    cli::Action::List(options) => {
+                    Action::List(options) => {
                         if let Err(e) = commands::list(options.filter, cli.format) {
                             eprintln!("Failed to list nodes: {}", e);
                         }
                     }
-                    cli::Action::Details(options) => {
+                    Action::Details(options) => {
                         if let Err(e) = commands::details(options.node, options.filter, cli.format)
                         {
                             eprintln!("Failed to retrieve node details: {}", e);

@@ -10,16 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::cli::DetailsFilter;
 use crate::cli::MessagingPatternFilter;
+use crate::cli::OutputFilter;
+use iceoryx2::service::ipc::Service;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2_cli_utils::output::ServiceDescription;
+use iceoryx2::service::ServiceDetails;
 use iceoryx2_cli_utils::Filter;
 
-impl Filter<ServiceDescription> for MessagingPatternFilter {
-    fn matches(&self, description: &ServiceDescription) -> bool {
+impl Filter<ServiceDetails<Service>> for MessagingPatternFilter {
+    fn matches(&self, service: &ServiceDetails<Service>) -> bool {
         matches!(
-            (self, &description.pattern),
+            (self, &service.static_details.messaging_pattern()),
             (
                 MessagingPatternFilter::PublishSubscribe,
                 MessagingPattern::PublishSubscribe(_)
@@ -29,8 +30,8 @@ impl Filter<ServiceDescription> for MessagingPatternFilter {
     }
 }
 
-impl Filter<ServiceDescription> for DetailsFilter {
-    fn matches(&self, description: &ServiceDescription) -> bool {
-        self.pattern.matches(description)
+impl Filter<ServiceDetails<Service>> for OutputFilter {
+    fn matches(&self, service: &ServiceDetails<Service>) -> bool {
+        self.pattern.matches(service)
     }
 }

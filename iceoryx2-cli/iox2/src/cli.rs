@@ -36,13 +36,6 @@ pub struct Cli {
     pub paths: bool,
 
     #[arg(
-        short,
-        long,
-        help = "Specify to execute development versions of commands if they exist"
-    )]
-    pub dev: bool,
-
-    #[arg(
         hide = true,
         required = false,
         trailing_var_arg = true,

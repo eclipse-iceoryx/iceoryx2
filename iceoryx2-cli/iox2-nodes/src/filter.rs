@@ -10,9 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::cli::DetailsFilter;
-use crate::cli::ListFilter;
 use crate::cli::NodeIdentifier;
+use crate::cli::OutputFilter;
 use crate::cli::StateFilter;
 use iceoryx2::node::NodeState;
 use iceoryx2::node::NodeView;
@@ -65,13 +64,7 @@ impl Filter<NodeState<Service>> for StateFilter {
     }
 }
 
-impl Filter<NodeState<Service>> for ListFilter {
-    fn matches(&self, node: &NodeState<Service>) -> bool {
-        self.state.matches(node)
-    }
-}
-
-impl Filter<NodeState<Service>> for DetailsFilter {
+impl Filter<NodeState<Service>> for OutputFilter {
     fn matches(&self, node: &NodeState<Service>) -> bool {
         self.state.matches(node)
     }

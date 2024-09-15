@@ -32,8 +32,8 @@ pub struct Cli {
     #[clap(subcommand)]
     pub action: Option<Action>,
 
-    #[clap(long, short = 'f', value_enum, global = true)]
-    pub format: Option<Format>,
+    #[clap(long, short = 'f', value_enum, global = true, value_enum, default_value_t = Format::Ron)]
+    pub format: Format,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -47,9 +47,15 @@ pub enum MessagingPatternFilter {
 }
 
 #[derive(Debug, Clone, Args)]
-pub struct DetailsFilter {
+pub struct OutputFilter {
     #[clap(short, long, value_enum, default_value_t = MessagingPatternFilter::All)]
     pub pattern: MessagingPatternFilter,
+}
+
+#[derive(Args)]
+pub struct ListOptions {
+    #[command(flatten)]
+    pub filter: OutputFilter,
 }
 
 #[derive(Parser)]
@@ -58,13 +64,13 @@ pub struct DetailsOptions {
     pub service: String,
 
     #[command(flatten)]
-    pub filter: DetailsFilter,
+    pub filter: OutputFilter,
 }
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "List all existing services")]
-    List,
-    #[clap(about = "Show details of an existing service")]
+    #[clap(about = "List all services")]
+    List(ListOptions),
+    #[clap(about = "Show service details")]
     Details(DetailsOptions),
 }

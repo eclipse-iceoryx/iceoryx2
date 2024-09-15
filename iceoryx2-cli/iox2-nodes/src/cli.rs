@@ -77,7 +77,7 @@ pub enum StateFilter {
 }
 
 #[derive(Debug, Clone, Args)]
-pub struct ListFilter {
+pub struct OutputFilter {
     #[clap(short, long, value_enum, default_value_t = StateFilter::All)]
     pub state: StateFilter,
 }
@@ -85,28 +85,22 @@ pub struct ListFilter {
 #[derive(Args)]
 pub struct ListOptions {
     #[command(flatten)]
-    pub filter: ListFilter,
-}
-
-#[derive(Debug, Clone, Args)]
-pub struct DetailsFilter {
-    #[clap(short, long, value_enum, default_value_t = StateFilter::All)]
-    pub state: StateFilter,
+    pub filter: OutputFilter,
 }
 
 #[derive(Args)]
 pub struct DetailsOptions {
-    #[clap(help = "Name, ID or PID")]
+    #[clap(help = "Name, ID or PID of the node")]
     pub node: NodeIdentifier,
 
     #[command(flatten)]
-    pub filter: DetailsFilter,
+    pub filter: OutputFilter,
 }
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "List all existing nodes")]
+    #[clap(about = "List all nodes")]
     List(ListOptions),
-    #[clap(about = "Show details of an existing node")]
+    #[clap(about = "Show details of a node")]
     Details(DetailsOptions),
 }

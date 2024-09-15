@@ -24,7 +24,6 @@ use clap::Parser;
 use cli::Action;
 use cli::Cli;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
-use iceoryx2_cli_utils::Format;
 
 fn main() {
     #[cfg(not(debug_assertions))]
@@ -46,17 +45,15 @@ fn main() {
         Ok(cli) => {
             if let Some(action) = cli.action {
                 match action {
-                    Action::List => {
-                        if let Err(e) = commands::list(cli.format.unwrap_or(Format::Ron)) {
+                    Action::List(options) => {
+                        if let Err(e) = commands::list(options.filter, cli.format) {
                             eprintln!("Failed to list services: {}", e);
                         }
                     }
                     Action::Details(options) => {
-                        if let Err(e) = commands::details(
-                            options.service,
-                            options.filter,
-                            cli.format.unwrap_or(Format::Ron),
-                        ) {
+                        if let Err(e) =
+                            commands::details(options.service, options.filter, cli.format)
+                        {
                             eprintln!("Failed to retrieve service details: {}", e);
                         }
                     }

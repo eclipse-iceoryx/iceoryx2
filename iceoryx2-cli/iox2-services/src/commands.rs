@@ -18,13 +18,15 @@ use iceoryx2_cli_utils::output::ServiceList;
 use iceoryx2_cli_utils::Filter;
 use iceoryx2_cli_utils::Format;
 
-use crate::cli::DetailsFilter;
+use crate::cli::OutputFilter;
 
-pub fn list(format: Format) -> Result<()> {
+pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
     let mut services = ServiceList::new();
 
     ipc::Service::list(Config::global_config(), |service| {
-        services.push(ServiceDescriptor::from(service));
+        if filter.matches(&service) {
+            services.push(ServiceDescriptor::from(service));
+        }
         CallbackProgression::Continue
     })
     .context("failed to retrieve services")?;
@@ -40,30 +42,22 @@ pub fn list(format: Format) -> Result<()> {
     Ok(())
 }
 
-pub fn details(service_name: String, filter: DetailsFilter, format: Format) -> Result<()> {
+pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Result<()> {
     let mut error: Option<Error> = None;
 
     ipc::Service::list(Config::global_config(), |service| {
-        if service_name == service.static_details.name().to_string() {
-            let description = ServiceDescription::from(&service);
-
-            if filter.matches(&description) {
-                match format.as_string(&description) {
-                    Ok(output) => {
-                        print!("{}", output);
-                        CallbackProgression::Continue
-                    }
-                    Err(e) => {
-                        error = Some(e);
-                        CallbackProgression::Stop
-                    }
+        if service_name == service.static_details.name().to_string() && filter.matches(&service) {
+            match format.as_string(&ServiceDescription::from(&service)) {
+                Ok(output) => {
+                    print!("{}", output);
+                    CallbackProgression::Continue
                 }
-            } else {
-                // Filter did not match
-                CallbackProgression::Continue
+                Err(e) => {
+                    error = Some(e);
+                    CallbackProgression::Stop
+                }
             }
         } else {
-            // Service name did not match
             CallbackProgression::Continue
         }
     })?;

@@ -18,11 +18,10 @@ use iceoryx2_cli_utils::output::NodeList;
 use iceoryx2_cli_utils::Filter;
 use iceoryx2_cli_utils::Format;
 
-use crate::cli::DetailsFilter;
-use crate::cli::ListFilter;
 use crate::cli::NodeIdentifier;
+use crate::cli::OutputFilter;
 
-pub fn list(filter: ListFilter, format: Format) -> Result<()> {
+pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
     let mut nodes = Vec::<NodeDescriptor>::new();
     Node::<ipc::Service>::list(Config::global_config(), |node| {
         if filter.matches(&node) {
@@ -43,7 +42,7 @@ pub fn list(filter: ListFilter, format: Format) -> Result<()> {
     Ok(())
 }
 
-pub fn details(identifier: NodeIdentifier, filter: DetailsFilter, format: Format) -> Result<()> {
+pub fn details(identifier: NodeIdentifier, filter: OutputFilter, format: Format) -> Result<()> {
     let mut error: Option<Error> = None;
 
     Node::<ipc::Service>::list(Config::global_config(), |node| {
