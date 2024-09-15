@@ -20,7 +20,7 @@ use crate::Format;
 #[derive(Parser)]
 #[command(
     name = "iox2-services",
-    about = "Query information about iceoryx2 services.",
+    about = "Query information about iceoryx2 services",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
@@ -41,6 +41,7 @@ pub struct DetailsOptions {
     pub static_flag: bool,
     #[clap(long, short = 'd')]
     pub dynamic: bool,
+    #[clap(help = "Name of the service e.g. \"My Service\"")]
     pub service: String,
 }
 
@@ -62,8 +63,8 @@ impl From<&DetailsOptions> for DetailsFilter {
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "List all services")]
+    #[clap(about = "List all existing services")]
     List,
-    #[clap(about = "Show details of a specific service")]
+    #[clap(about = "Show details of an existing service")]
     Details(DetailsOptions),
 }
