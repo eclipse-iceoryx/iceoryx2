@@ -11,11 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::cli::DetailsFilter;
-use crate::format::Format;
 use crate::output::*;
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
 use iceoryx2_cli_utils::Filter;
+use iceoryx2_cli_utils::Format;
 
 pub fn list(format: Format) -> Result<()> {
     let mut services = ServiceList::new();

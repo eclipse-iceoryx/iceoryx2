@@ -12,6 +12,8 @@
 
 mod cli;
 mod filter;
+mod format;
 
 pub use cli::help_template;
 pub use filter::Filter;
+pub use format::Format;

@@ -21,9 +21,5 @@ anyhow = { workspace = true }
 better-panic = { workspace = true }
 clap = { workspace = true }
 human-panic = { workspace = true }
-toml = { workspace = true }
 serde = { workspace = true }
-serde_yaml = { workspace = true }
-serde_json = { workspace = true }
-ron = { workspace = true }
 

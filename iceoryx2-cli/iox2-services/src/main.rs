@@ -18,15 +18,14 @@ extern crate better_panic;
 mod cli;
 mod commands;
 mod filter;
-mod format;
 mod output;
 
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use format::Format;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_cli_utils::Format;
 
 fn main() {
     #[cfg(not(debug_assertions))]
