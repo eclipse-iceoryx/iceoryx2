@@ -11,7 +11,9 @@
  * Subscriber buffer size can be reduced [#19](https://github.com/eclipse-iceoryx/iceoryx2/issues/19)
  * Nodes cleanup all resources of dead nodes on creation and destruction [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
  * CLI for iox2 [#98](https://github.com/eclipse-iceoryx/iceoryx2/issues/98)
-    * Add entrypoint CLI `iox2` in preparation for adding additional CLI commands
+    * Add `iox2` CLI
+    * Add `iox2-service` CLI
+    * Add `iox2-node` CLI
  * Introduce Nodes [#102](https://github.com/eclipse-iceoryx/iceoryx2/issues/102)
     * Implement Serialize,Deserialize for
         * `SemanticString`
