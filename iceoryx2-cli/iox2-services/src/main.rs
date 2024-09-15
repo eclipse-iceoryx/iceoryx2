@@ -17,13 +17,14 @@ extern crate better_panic;
 
 mod cli;
 mod commands;
+mod filter;
 mod format;
 mod output;
 
+use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use cli::DetailsFilter;
 use format::Format;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
 
@@ -53,20 +54,20 @@ fn main() {
                         }
                     }
                     Action::Details(options) => {
-                        let filter = DetailsFilter::from(&options);
                         if let Err(e) = commands::details(
-                            &options.service,
-                            filter,
+                            options.service,
+                            options.filter,
                             cli.format.unwrap_or(Format::Ron),
                         ) {
                             eprintln!("Failed to retrieve service details: {}", e);
                         }
                     }
                 }
+            } else {
+                Cli::command().print_help().expect("Failed to print help");
             }
         }
         Err(e) => {
-            eprintln!("Failed to parse arguments. See help:\n");
             eprintln!("{}", e);
         }
     }

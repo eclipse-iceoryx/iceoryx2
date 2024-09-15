@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
+use clap::ValueEnum;
 
 use iceoryx2_cli_utils::help_template;
 
@@ -35,30 +37,29 @@ pub struct Cli {
     pub format: Option<Format>,
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+#[clap(rename_all = "PascalCase")]
+#[derive(Default)]
+pub enum MessagingPatternFilter {
+    PublishSubscribe,
+    Event,
+    #[default]
+    All,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct DetailsFilter {
+    #[clap(short, long, value_enum, default_value_t = MessagingPatternFilter::All)]
+    pub pattern: MessagingPatternFilter,
+}
+
 #[derive(Parser)]
 pub struct DetailsOptions {
-    #[clap(long = "static", short = 's')]
-    pub static_flag: bool,
-    #[clap(long, short = 'd')]
-    pub dynamic: bool,
     #[clap(help = "Name of the service e.g. \"My Service\"")]
     pub service: String,
-}
 
-pub enum DetailsFilter {
-    None,
-    Static,
-    Dynamic,
-}
-
-impl From<&DetailsOptions> for DetailsFilter {
-    fn from(options: &DetailsOptions) -> Self {
-        match (options.static_flag, options.dynamic) {
-            (true, false) => DetailsFilter::Static,
-            (false, true) => DetailsFilter::Dynamic,
-            _ => DetailsFilter::None,
-        }
-    }
+    #[command(flatten)]
+    pub filter: DetailsFilter,
 }
 
 #[derive(Subcommand)]

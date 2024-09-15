@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod cli;
-mod filter;
+use std::fmt::Debug;
 
-pub use cli::help_template;
-pub use filter::Filter;
+pub trait Filter<T>: Debug {
+    fn matches(&self, item: &T) -> bool;
+}

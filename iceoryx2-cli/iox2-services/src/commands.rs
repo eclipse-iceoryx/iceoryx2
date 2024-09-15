@@ -15,6 +15,7 @@ use crate::format::Format;
 use crate::output::*;
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2_cli_utils::Filter;
 
 pub fn list(format: Format) -> Result<()> {
     let mut services = ServiceList::new();
@@ -36,24 +37,30 @@ pub fn list(format: Format) -> Result<()> {
     Ok(())
 }
 
-pub fn details(name: &str, filter: DetailsFilter, format: Format) -> Result<()> {
-    let service_name: ServiceName = name.try_into()?;
+pub fn details(service_name: String, filter: DetailsFilter, format: Format) -> Result<()> {
     let mut error: Option<Error> = None;
 
     ipc::Service::list(Config::global_config(), |service| {
-        if service_name == *service.static_details.name() {
+        if service_name == service.static_details.name().to_string() {
             let description = ServiceDescription::from(&service);
-            match format.as_string(&description) {
-                Ok(output) => {
-                    print!("{}", output);
-                    return CallbackProgression::Continue;
+
+            if filter.matches(&description) {
+                match format.as_string(&description) {
+                    Ok(output) => {
+                        print!("{}", output);
+                        CallbackProgression::Continue
+                    }
+                    Err(e) => {
+                        error = Some(e);
+                        CallbackProgression::Stop
+                    }
                 }
-                Err(e) => {
-                    error = Some(e);
-                    return CallbackProgression::Stop;
-                }
+            } else {
+                // Filter did not match
+                CallbackProgression::Continue
             }
         } else {
+            // Service name did not match
             CallbackProgression::Continue
         }
     })?;

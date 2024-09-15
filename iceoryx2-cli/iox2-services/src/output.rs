@@ -127,11 +127,11 @@ where
 
 #[derive(serde::Serialize)]
 pub struct ServiceDescription {
-    service_id: String,
-    service_name: String,
-    attributes: AttributeSet,
-    pattern: MessagingPattern,
-    nodes: Option<ServiceNodeList>,
+    pub service_id: String,
+    pub service_name: String,
+    pub attributes: AttributeSet,
+    pub pattern: MessagingPattern,
+    pub nodes: Option<ServiceNodeList>,
 }
 
 impl<T> From<&ServiceDetails<T>> for ServiceDescription
