@@ -364,28 +364,6 @@ impl<Service: service::Service> NodeState<Service> {
     }
 }
 
-#[allow(missing_docs)]
-impl<Service: service::Service> NodeState<Service> {
-    pub fn to_serializable(&self) -> SerializableNodeState {
-        match self {
-            NodeState::Alive(view) => SerializableNodeState::Alive(view.to_serializable()),
-            NodeState::Dead(view) => SerializableNodeState::Dead(view.to_serializable()),
-            NodeState::Inaccessible(id) => SerializableNodeState::Inaccessible(*id),
-            NodeState::Undefined(id) => SerializableNodeState::Undefined(*id),
-        }
-    }
-}
-
-#[allow(missing_docs)]
-#[derive(serde::Serialize)]
-#[serde(tag = "state")]
-pub enum SerializableNodeState {
-    Alive(SerializableAliveNodeView),
-    Dead(SerializableDeadNodeView),
-    Inaccessible(NodeId),
-    Undefined(NodeId),
-}
-
 /// Returned by [`Node::cleanup_dead_nodes()`]. Contains the cleanup report of the call
 /// and contains the number of dead nodes that were successfully cleaned up and how many
 /// could not be cleaned up.
@@ -415,14 +393,6 @@ pub struct AliveNodeView<Service: service::Service> {
     _service: PhantomData<Service>,
 }
 
-#[allow(missing_docs)]
-#[derive(serde::Serialize)]
-pub struct SerializableAliveNodeView {
-    id: NodeId,
-    #[serde(rename = "node_details")]
-    details: Option<NodeDetails>,
-}
-
 impl<Service: service::Service> Clone for AliveNodeView<Service> {
     fn clone(&self) -> Self {
         Self {
@@ -443,26 +413,9 @@ impl<Service: service::Service> NodeView for AliveNodeView<Service> {
     }
 }
 
-#[allow(missing_docs)]
-impl<Service: service::Service> AliveNodeView<Service> {
-    pub fn to_serializable(&self) -> SerializableAliveNodeView {
-        SerializableAliveNodeView {
-            id: *self.id(),
-            details: self.details().clone(),
-        }
-    }
-}
-
 /// All the informations and management operations belonging to a dead [`Node`].
 #[derive(Debug)]
 pub struct DeadNodeView<Service: service::Service>(AliveNodeView<Service>);
-
-#[allow(missing_docs)]
-#[derive(serde::Serialize)]
-pub struct SerializableDeadNodeView {
-    id: NodeId,
-    details: Option<NodeDetails>,
-}
 
 impl<Service: service::Service> Clone for DeadNodeView<Service> {
     fn clone(&self) -> Self {
@@ -574,14 +527,6 @@ impl<Service: service::Service> DeadNodeView<Service> {
                 fatal_panic!(from self,
                         "This should never happen! {} since the Node is still alive.", msg);
             }
-        }
-    }
-
-    #[allow(missing_docs)]
-    pub fn to_serializable(&self) -> SerializableDeadNodeView {
-        SerializableDeadNodeView {
-            id: *self.id(),
-            details: self.details().clone(),
         }
     }
 }

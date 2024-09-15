@@ -169,7 +169,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::config;
-use crate::node::{NodeId, NodeListFailure, NodeState, SerializableNodeState, SharedNode};
+use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};
 use crate::service::config_scheme::dynamic_config_storage_config;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::static_config::*;
@@ -262,27 +262,6 @@ pub struct ServiceDynamicDetails<S: Service> {
     pub nodes: Vec<NodeState<S>>,
 }
 
-#[allow(missing_docs)]
-#[derive(serde::Serialize)]
-pub struct SerializableServiceDynamicDetails {
-    num_nodes: usize,
-    nodes: Vec<SerializableNodeState>,
-}
-
-#[allow(missing_docs)]
-impl<S: Service> ServiceDynamicDetails<S> {
-    pub fn to_serializable(&self) -> SerializableServiceDynamicDetails {
-        SerializableServiceDynamicDetails {
-            num_nodes: self.nodes.len(),
-            nodes: self
-                .nodes
-                .iter()
-                .map(|node| node.to_serializable())
-                .collect(),
-        }
-    }
-}
-
 /// Represents all the [`Service`] information that one can acquire with [`Service::list()`].
 #[derive(Debug)]
 pub struct ServiceDetails<S: Service> {
@@ -291,23 +270,6 @@ pub struct ServiceDetails<S: Service> {
     pub static_details: StaticConfig,
     /// The dynamic configuration of the [`Service`] that can conaints runtime informations.
     pub dynamic_details: Option<ServiceDynamicDetails<S>>,
-}
-
-#[allow(missing_docs)]
-#[derive(serde::Serialize)]
-pub struct SerializableServiceDetails {
-    pub static_details: StaticConfig,
-    pub dynamic_details: Option<SerializableServiceDynamicDetails>,
-}
-
-#[allow(missing_docs)]
-impl<S: Service> ServiceDetails<S> {
-    pub fn to_serializable(&self) -> SerializableServiceDetails {
-        SerializableServiceDetails {
-            static_details: self.static_details.clone(),
-            dynamic_details: self.dynamic_details.as_ref().map(|dd| dd.to_serializable()),
-        }
-    }
 }
 
 /// Represents the [`Service`]s state.
