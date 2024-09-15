@@ -1,0 +1,22 @@
+[package]
+name = "iox2-nodes"
+description = "CLI for managing iceoryx2 nodes"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-cli-utils = { workspace = true }
+
+anyhow = { workspace = true }
+better-panic = { workspace = true }
+clap = { workspace = true }
+human-panic = { workspace = true }
+serde = { workspace = true }
