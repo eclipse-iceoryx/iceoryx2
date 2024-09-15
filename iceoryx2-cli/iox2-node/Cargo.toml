@@ -1,5 +1,5 @@
 [package]
-name = "iox2-nodes"
+name = "iox2-node"
 description = "CLI for managing iceoryx2 nodes"
 categories = { workspace = true }
 edition = { workspace = true }

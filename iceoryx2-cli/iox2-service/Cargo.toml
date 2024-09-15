@@ -1,5 +1,5 @@
 [package]
-name = "iox2-services"
+name = "iox2-service"
 description = "CLI for managing iceoryx2 services"
 categories = { workspace = true }
 edition = { workspace = true }
