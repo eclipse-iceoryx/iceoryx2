@@ -10,16 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2_cli_utils::output::NodeDescription;
 use iceoryx2_cli_utils::output::NodeDescriptor;
 use iceoryx2_cli_utils::output::NodeList;
+use iceoryx2_cli_utils::Filter;
 use iceoryx2_cli_utils::Format;
 
-pub fn list(format: Format) -> Result<()> {
+use crate::cli::DetailsFilter;
+use crate::cli::ListFilter;
+use crate::cli::NodeIdentifier;
+
+pub fn list(filter: ListFilter, format: Format) -> Result<()> {
     let mut nodes = Vec::<NodeDescriptor>::new();
-    Node::<ipc::Service>::list(Config::global_config(), |node_state| {
-        nodes.push(NodeDescriptor::from(&node_state));
+    Node::<ipc::Service>::list(Config::global_config(), |node| {
+        if filter.matches(&node) {
+            nodes.push(NodeDescriptor::from(&node));
+        }
         CallbackProgression::Continue
     })
     .context("failed to retrieve nodes")?;
@@ -31,6 +39,27 @@ pub fn list(format: Format) -> Result<()> {
             details: nodes
         })?
     );
+
+    Ok(())
+}
+
+pub fn details(identifier: NodeIdentifier, filter: DetailsFilter, format: Format) -> Result<()> {
+    let mut error: Option<Error> = None;
+
+    Node::<ipc::Service>::list(Config::global_config(), |node| {
+        if identifier.matches(&node) && filter.matches(&node) {
+            match format.as_string(&NodeDescription::from(&node)) {
+                Ok(output) => {
+                    print!("{}", output);
+                }
+                Err(e) => {
+                    error = Some(e);
+                }
+            }
+        }
+        CallbackProgression::Continue
+    })
+    .context("failed to retrieve nodes")?;
 
     Ok(())
 }

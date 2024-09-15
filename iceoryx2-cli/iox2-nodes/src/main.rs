@@ -12,12 +12,12 @@
 
 mod cli;
 mod commands;
+mod filter;
 
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Cli;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
-use iceoryx2_cli_utils::Format;
 
 #[cfg(not(debug_assertions))]
 use human_panic::setup_panic;
@@ -44,12 +44,17 @@ fn main() {
         Ok(cli) => {
             if let Some(action) = cli.action {
                 match action {
-                    cli::Action::List => {
-                        if let Err(e) = commands::list(cli.format.unwrap_or(Format::Ron)) {
+                    cli::Action::List(options) => {
+                        if let Err(e) = commands::list(options.filter, cli.format) {
                             eprintln!("Failed to list nodes: {}", e);
                         }
                     }
-                    cli::Action::Details(_) => todo!(),
+                    cli::Action::Details(options) => {
+                        if let Err(e) = commands::details(options.node, options.filter, cli.format)
+                        {
+                            eprintln!("Failed to retrieve node details: {}", e);
+                        }
+                    }
                 }
             } else {
                 Cli::command().print_help().expect("Failed to print help");
