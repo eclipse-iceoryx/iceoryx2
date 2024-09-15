@@ -23,13 +23,8 @@ members = [
     "iceoryx2-pal/configuration/",
 
     "iceoryx2-cli/iox2",
-    "iceoryx2-cli/iox2-introspect",
     "iceoryx2-cli/iox2-node",
-    "iceoryx2-cli/iox2-processes",
-    "iceoryx2-cli/iox2-pub",
-    "iceoryx2-cli/iox2-rpc",
     "iceoryx2-cli/iox2-service",
-    "iceoryx2-cli/iox2-sub",
     "iceoryx2-cli/utils",
 
     "examples",
