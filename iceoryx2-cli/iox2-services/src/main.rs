@@ -18,7 +18,6 @@ extern crate better_panic;
 mod cli;
 mod commands;
 mod filter;
-mod output;
 
 use clap::CommandFactory;
 use clap::Parser;

@@ -11,9 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::cli::DetailsFilter;
-use crate::output::*;
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2_cli_utils::output::ServiceDescription;
+use iceoryx2_cli_utils::output::ServiceDescriptor;
+use iceoryx2_cli_utils::output::ServiceList;
 use iceoryx2_cli_utils::Filter;
 use iceoryx2_cli_utils::Format;
 

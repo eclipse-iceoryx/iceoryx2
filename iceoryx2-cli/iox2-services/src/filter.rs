@@ -12,8 +12,8 @@
 
 use crate::cli::DetailsFilter;
 use crate::cli::MessagingPatternFilter;
-use crate::output::ServiceDescription;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
+use iceoryx2_cli_utils::output::ServiceDescription;
 use iceoryx2_cli_utils::Filter;
 
 impl Filter<ServiceDescription> for MessagingPatternFilter {

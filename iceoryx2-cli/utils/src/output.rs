@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::node::NodeId;
-use iceoryx2::node::NodeState;
-use iceoryx2::node::NodeView;
-use iceoryx2::service::attribute::AttributeSet;
-use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2::service::Service;
-use iceoryx2::service::ServiceDetails;
-use iceoryx2::service::ServiceDynamicDetails;
+use iceoryx2::node::NodeId as IceoryxNodeId;
+use iceoryx2::node::NodeState as IceoryxNodeState;
+use iceoryx2::node::NodeView as IceoryxNodeView;
+use iceoryx2::service::attribute::AttributeSet as IceoryxAttributeSet;
+use iceoryx2::service::static_config::messaging_pattern::MessagingPattern as IceoryxMessagingPattern;
+use iceoryx2::service::Service as IceoryxService;
+use iceoryx2::service::ServiceDetails as IceoryxServiceDetails;
+use iceoryx2::service::ServiceDynamicDetails as IceoryxServiceDynamicDetails;
 
 #[derive(serde::Serialize, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ServiceDescriptor {
@@ -26,16 +26,16 @@ pub enum ServiceDescriptor {
     Undefined(String),
 }
 
-impl<T> From<ServiceDetails<T>> for ServiceDescriptor
+impl<T> From<IceoryxServiceDetails<T>> for ServiceDescriptor
 where
-    T: iceoryx2::service::Service,
+    T: IceoryxService,
 {
-    fn from(service: ServiceDetails<T>) -> Self {
+    fn from(service: IceoryxServiceDetails<T>) -> Self {
         match service.static_details.messaging_pattern() {
-            MessagingPattern::PublishSubscribe(_) => {
+            IceoryxMessagingPattern::PublishSubscribe(_) => {
                 ServiceDescriptor::PublishSubscribe(service.static_details.name().to_string())
             }
-            MessagingPattern::Event(_) => {
+            IceoryxMessagingPattern::Event(_) => {
                 ServiceDescriptor::Event(service.static_details.name().to_string())
             }
             _ => ServiceDescriptor::Undefined("Undefined".to_string()),
@@ -46,7 +46,7 @@ where
 pub type ServiceList = Vec<ServiceDescriptor>;
 
 #[derive(serde::Serialize)]
-pub enum ServiceNodeState {
+pub enum NodeState {
     Alive,
     Dead,
     Inaccessible,
@@ -54,21 +54,21 @@ pub enum ServiceNodeState {
 }
 
 #[derive(serde::Serialize)]
-pub struct ServiceNodeDetails {
-    state: ServiceNodeState,
-    id: NodeId,
+pub struct NodeDescriptor {
+    state: NodeState,
+    id: IceoryxNodeId,
     name: Option<String>,
     executable: Option<String>,
 }
 
-impl<T> From<&NodeState<T>> for ServiceNodeDetails
+impl<T> From<&IceoryxNodeState<T>> for NodeDescriptor
 where
-    T: Service,
+    T: IceoryxService,
 {
-    fn from(node_state: &NodeState<T>) -> Self {
+    fn from(node_state: &IceoryxNodeState<T>) -> Self {
         match node_state {
-            NodeState::Alive(view) => ServiceNodeDetails {
-                state: ServiceNodeState::Alive,
+            IceoryxNodeState::Alive(view) => NodeDescriptor {
+                state: NodeState::Alive,
                 id: *view.id(),
                 name: view
                     .details()
@@ -79,8 +79,8 @@ where
                     .as_ref()
                     .map(|details| details.executable().to_string()),
             },
-            NodeState::Dead(view) => ServiceNodeDetails {
-                state: ServiceNodeState::Dead,
+            IceoryxNodeState::Dead(view) => NodeDescriptor {
+                state: NodeState::Dead,
                 id: *view.id(),
                 name: view
                     .details()
@@ -91,14 +91,14 @@ where
                     .as_ref()
                     .map(|details| details.executable().to_string()),
             },
-            NodeState::Inaccessible(node_id) => ServiceNodeDetails {
-                state: ServiceNodeState::Inaccessible,
+            IceoryxNodeState::Inaccessible(node_id) => NodeDescriptor {
+                state: NodeState::Inaccessible,
                 id: *node_id,
                 name: None,
                 executable: None,
             },
-            NodeState::Undefined(node_id) => ServiceNodeDetails {
-                state: ServiceNodeState::Undefined,
+            IceoryxNodeState::Undefined(node_id) => NodeDescriptor {
+                state: NodeState::Undefined,
                 id: *node_id,
                 name: None,
                 executable: None,
@@ -108,19 +108,19 @@ where
 }
 
 #[derive(serde::Serialize)]
-pub struct ServiceNodeList {
-    num: usize,
-    details: Vec<ServiceNodeDetails>,
+pub struct NodeList {
+    pub num: usize,
+    pub details: Vec<NodeDescriptor>,
 }
 
-impl<T> From<&ServiceDynamicDetails<T>> for ServiceNodeList
+impl<T> From<&IceoryxServiceDynamicDetails<T>> for NodeList
 where
-    T: Service,
+    T: IceoryxService,
 {
-    fn from(details: &ServiceDynamicDetails<T>) -> Self {
-        ServiceNodeList {
+    fn from(details: &IceoryxServiceDynamicDetails<T>) -> Self {
+        NodeList {
             num: details.nodes.len(),
-            details: details.nodes.iter().map(ServiceNodeDetails::from).collect(),
+            details: details.nodes.iter().map(NodeDescriptor::from).collect(),
         }
     }
 }
@@ -129,16 +129,16 @@ where
 pub struct ServiceDescription {
     pub service_id: String,
     pub service_name: String,
-    pub attributes: AttributeSet,
-    pub pattern: MessagingPattern,
-    pub nodes: Option<ServiceNodeList>,
+    pub attributes: IceoryxAttributeSet,
+    pub pattern: IceoryxMessagingPattern,
+    pub nodes: Option<NodeList>,
 }
 
-impl<T> From<&ServiceDetails<T>> for ServiceDescription
+impl<T> From<&IceoryxServiceDetails<T>> for ServiceDescription
 where
-    T: Service,
+    T: IceoryxService,
 {
-    fn from(service: &ServiceDetails<T>) -> Self {
+    fn from(service: &IceoryxServiceDetails<T>) -> Self {
         let config = &service.static_details;
 
         ServiceDescription {
@@ -146,7 +146,7 @@ where
             service_name: config.name().as_str().to_string(),
             attributes: config.attributes().clone(),
             pattern: config.messaging_pattern().clone(),
-            nodes: service.dynamic_details.as_ref().map(ServiceNodeList::from),
+            nodes: service.dynamic_details.as_ref().map(NodeList::from),
         }
     }
 }
