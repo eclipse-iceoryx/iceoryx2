@@ -18,6 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(complex_data_types)
 add_subdirectory(discovery)
+add_subdirectory(domains)
 add_subdirectory(event)
 add_subdirectory(publish_subscribe)
 add_subdirectory(publish_subscribe_dynamic_data)

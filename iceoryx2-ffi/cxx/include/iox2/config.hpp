@@ -22,6 +22,7 @@
 
 namespace iox2 {
 class Config;
+class NodeBuilder;
 
 namespace config {
 class Global;
@@ -286,9 +287,13 @@ class Config {
     /// Returns a [`ConfigView`] to the current global config.
     static auto global_config() -> ConfigView;
 
+    /// Returns the [`ConfigView`] to this [`Config`]
+    auto view() -> ConfigView;
+
   private:
     friend class ConfigView;
     friend class config::Global;
+    friend class NodeBuilder;
     explicit Config(iox2_config_h handle);
     void drop();
 

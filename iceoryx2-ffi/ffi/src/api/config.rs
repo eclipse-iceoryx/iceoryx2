@@ -67,7 +67,7 @@ pub type iox2_config_ptr = *const Config;
 pub type iox2_config_mut_ptr = *mut Config;
 
 pub(super) struct ConfigOwner {
-    value: ManuallyDrop<Config>,
+    pub(crate) value: ManuallyDrop<Config>,
 }
 
 /// A storage object that has the size to store a config
@@ -81,7 +81,7 @@ pub struct iox2_config_storage_t {
 #[repr(C)]
 #[iceoryx2_ffi(ConfigOwner)]
 pub struct iox2_config_t {
-    value: iox2_config_storage_t,
+    pub(crate) value: iox2_config_storage_t,
     deleter: fn(*mut iox2_config_t),
 }
 
@@ -135,6 +135,26 @@ pub unsafe extern "C" fn iox2_cast_config_ref_h(handle: iox2_config_h) -> iox2_c
     debug_assert!(!handle.is_null());
 
     (*handle.as_type()).as_ref_handle() as *mut _ as _
+}
+
+/// This function casts a [`iox2_config_h`] into a [`iox2_config_ptr`]
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_config_from_file()`], [`iox2_config_default()`],
+///     [`iox2_config_clone()`] or [`iox2_config_from_ptr()`]
+///
+/// Returns a [`iox2_config_ptr`]
+///
+/// # Safety
+///
+/// * The `config_handle` must be a valid handle.
+/// * The `config_handle` is still valid after the call to this function.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_cast_config_ptr(config_handle: iox2_config_h) -> iox2_config_ptr {
+    debug_assert!(!config_handle.is_null());
+
+    &*(*config_handle.as_type()).value.as_ref().value
 }
 
 /// Returns a pointer to the global config
