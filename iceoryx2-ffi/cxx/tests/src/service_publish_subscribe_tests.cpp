@@ -232,8 +232,12 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
 
 TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_NODES = 10;
     constexpr uint64_t NUMBER_OF_PUBLISHERS = 11;
     constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
+    constexpr uint64_t HISTORY_SIZE = 13;
+    constexpr uint64_t SUBSCRIBER_MAX_BUFFER_SIZE = 14;
+    constexpr uint64_t SUBSCRIBER_MAX_BORROWED_SAMPLES = 15;
 
     const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
     const auto service_name = ServiceName::create(name_value).expect("");
@@ -241,15 +245,23 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name)
                        .template publish_subscribe<uint64_t>()
+                       .max_nodes(NUMBER_OF_NODES)
                        .max_publishers(NUMBER_OF_PUBLISHERS)
                        .max_subscribers(NUMBER_OF_SUBSCRIBERS)
+                       .history_size(HISTORY_SIZE)
+                       .subscriber_max_buffer_size(SUBSCRIBER_MAX_BUFFER_SIZE)
+                       .subscriber_max_borrowed_samples(SUBSCRIBER_MAX_BORROWED_SAMPLES)
                        .create()
                        .expect("");
 
     auto static_config = service.static_config();
 
+    ASSERT_THAT(static_config.max_nodes(), Eq(NUMBER_OF_NODES));
     ASSERT_THAT(static_config.max_publishers(), Eq(NUMBER_OF_PUBLISHERS));
     ASSERT_THAT(static_config.max_subscribers(), Eq(NUMBER_OF_SUBSCRIBERS));
+    ASSERT_THAT(static_config.history_size(), Eq(HISTORY_SIZE));
+    ASSERT_THAT(static_config.subscriber_max_buffer_size(), Eq(SUBSCRIBER_MAX_BUFFER_SIZE));
+    ASSERT_THAT(static_config.subscriber_max_borrowed_samples(), Eq(SUBSCRIBER_MAX_BORROWED_SAMPLES));
     ASSERT_THAT(static_config.message_type_details().payload().size(), Eq(sizeof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq(typeid(uint64_t).name()));

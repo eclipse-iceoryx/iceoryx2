@@ -130,13 +130,15 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     m_payload_alignment.and_then([](auto) { IOX_TODO(); });
     m_enable_safe_overflow.and_then(
         [&](auto value) { iox2_service_builder_pub_sub_set_enable_safe_overflow(ref_handle, value); });
-    m_subscriber_max_borrowed_samples.and_then([](auto) { IOX_TODO(); });
-    m_history_size.and_then([](auto) { IOX_TODO(); });
-    m_subscriber_max_buffer_size.and_then([](auto) { IOX_TODO(); });
+    m_subscriber_max_borrowed_samples.and_then(
+        [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(ref_handle, value); });
+    m_history_size.and_then([&](auto value) { iox2_service_builder_pub_sub_set_history_size(ref_handle, value); });
+    m_subscriber_max_buffer_size.and_then(
+        [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(ref_handle, value); });
     m_max_subscribers.and_then(
         [&](auto value) { iox2_service_builder_pub_sub_set_max_subscribers(ref_handle, value); });
     m_max_publishers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_publishers(ref_handle, value); });
-    m_max_nodes.and_then([](auto) { IOX_TODO(); });
+    m_max_nodes.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_nodes(ref_handle, value); });
 
     // payload type details
     const auto* payload_type_name = typeid(Payload).name();
