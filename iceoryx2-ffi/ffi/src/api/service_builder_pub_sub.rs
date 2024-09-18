@@ -356,6 +356,49 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
     IOX2_OK
 }
 
+/// Sets the max nodes for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `value` - The value to set the max nodes to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_nodes(
+    service_builder_handle: iox2_service_builder_pub_sub_ref_h,
+    value: c_size_t,
+) {
+    debug_assert!(!service_builder_handle.is_null());
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.max_nodes(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.max_nodes(value),
+            ));
+        }
+    }
+}
+
 /// Sets the max publishers for the builder
 ///
 /// # Arguments
@@ -437,6 +480,135 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
             let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
             service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
                 service_builder.max_subscribers(value),
+            ));
+        }
+    }
+}
+
+/// Sets the history size
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `value` - The value to set the history size to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_history_size(
+    service_builder_handle: iox2_service_builder_pub_sub_ref_h,
+    value: c_size_t,
+) {
+    debug_assert!(!service_builder_handle.is_null());
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.history_size(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.history_size(value),
+            ));
+        }
+    }
+}
+
+/// Sets the subscriber max buffer size
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `value` - The value to set the subscriber max buffer size to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(
+    service_builder_handle: iox2_service_builder_pub_sub_ref_h,
+    value: c_size_t,
+) {
+    debug_assert!(!service_builder_handle.is_null());
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.subscriber_max_buffer_size(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.subscriber_max_buffer_size(value),
+            ));
+        }
+    }
+}
+
+/// Sets the subscriber max borrowed samples
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_ref_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
+///   casted by [`iox2_cast_service_builder_pub_sub_ref_h`](crate::iox2_cast_service_builder_pub_sub_ref_h).
+/// * `value` - The value to set the subscriber max borrowed samples to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(
+    service_builder_handle: iox2_service_builder_pub_sub_ref_h,
+    value: c_size_t,
+) {
+    debug_assert!(!service_builder_handle.is_null());
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.subscriber_max_borrowed_samples(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.subscriber_max_borrowed_samples(value),
             ));
         }
     }
