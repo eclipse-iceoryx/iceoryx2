@@ -62,6 +62,7 @@
  * Build the C and C++ language bindings with bazel [#329](https://github.com/eclipse-iceoryx/iceoryx2/issues/329)
  * Add `Subscriber::has_samples` [#335](https://github.com/eclipse-iceoryx/iceoryx2/issues/335)
  * Example that demonstrates iceoryx2 domains [#370](https://github.com/eclipse-iceoryx/iceoryx2/issues/370)
+ * Add colcon package for iceoryx2 with c/c++ bindings [#381](https://github.com/eclipse-iceoryx/iceoryx2/issues/381)
 
 ### Bugfixes
 
