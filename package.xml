@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+    <name>iceoryx2_cxx</name>
+    <version>0.3.0</version>
+    <description>iceoryx2 with c/c++ bindings</description>
+    <maintainer email="iceoryx-oss-support@ekxide.io">ekxide developers</maintainer>
+    <license>Apache 2.0</license>
+    <url type="bugtracker">https://github.com/eclipse-iceoryx/iceoryx2/issues</url>
+    <url type="repository">https://github.com/eclipse-iceoryx/iceoryx2</url>
+
+    <buildtool_depend>cmake</buildtool_depend>
+    <depend version_gte="2.95.2">iceoryx_hoofs</depend>
+
+    <export>
+        <build_type>cmake</build_type>
+    </export>
+</package>
