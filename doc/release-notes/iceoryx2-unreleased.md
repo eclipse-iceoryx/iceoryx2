@@ -61,6 +61,7 @@
  * Add custom user header [#253](https://github.com/eclipse-iceoryx/iceoryx2/issues/253)
  * Build the C and C++ language bindings with bazel [#329](https://github.com/eclipse-iceoryx/iceoryx2/issues/329)
  * Add `Subscriber::has_samples` [#335](https://github.com/eclipse-iceoryx/iceoryx2/issues/335)
+ * Example that demonstrates iceoryx2 domains [#370](https://github.com/eclipse-iceoryx/iceoryx2/issues/370)
 
 ### Bugfixes
 
