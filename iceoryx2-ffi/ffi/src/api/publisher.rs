@@ -425,13 +425,13 @@ pub unsafe extern "C" fn iox2_publisher_loan(
 ///
 /// # Arguments
 ///
-/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_ref_h`]
-///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create) and
-///   casted by [`iox2_cast_subscriber_ref_h`].
+/// * `publisher_handle` - Must be a valid [`iox2_publisher_ref_h`]
+///   obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create) and
+///   casted by [`iox2_cast_publisher_ref_h`].
 ///
 /// # Safety
 ///
-/// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
+/// * The `publisher_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_update_connections(
     publisher_handle: iox2_publisher_ref_h,

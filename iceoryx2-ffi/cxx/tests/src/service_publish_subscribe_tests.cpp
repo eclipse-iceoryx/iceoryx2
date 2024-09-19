@@ -230,6 +230,31 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
     ASSERT_THAT(**recv_sample, Eq(payload));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto* name_value = "Whoop here it is - the publishers historyyyy!";
+    const auto service_name = ServiceName::create(name_value).expect("");
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    auto sut_publisher = service.publisher_builder().create().expect("");
+    const uint64_t payload = 123;
+    sut_publisher.send_copy(payload).expect("");
+
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+    auto sample = sut_subscriber.receive().expect("");
+
+    ASSERT_FALSE(sample.has_value());
+
+    ASSERT_TRUE(sut_publisher.update_connections().has_value());
+    sample = sut_subscriber.receive().expect("");
+
+    ASSERT_TRUE(sample.has_value());
+    ASSERT_THAT(**sample, Eq(payload));
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_NODES = 10;
