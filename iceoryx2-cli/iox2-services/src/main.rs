@@ -10,6 +10,64 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[cfg(not(debug_assertions))]
+use human_panic::setup_panic;
+#[cfg(debug_assertions)]
+extern crate better_panic;
+
+mod cli;
+mod commands;
+mod filter;
+mod output;
+
+use clap::CommandFactory;
+use clap::Parser;
+use cli::Action;
+use cli::Cli;
+use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_cli_utils::Format;
+
 fn main() {
-    println!("Not implemented. Stay tuned!");
+    #[cfg(not(debug_assertions))]
+    {
+        setup_panic!();
+    }
+    #[cfg(debug_assertions)]
+    {
+        better_panic::Settings::debug()
+            .most_recent_first(false)
+            .lineno_suffix(true)
+            .verbosity(better_panic::Verbosity::Full)
+            .install();
+    }
+
+    set_log_level(LogLevel::Warn);
+
+    match Cli::try_parse() {
+        Ok(cli) => {
+            if let Some(action) = cli.action {
+                match action {
+                    Action::List => {
+                        if let Err(e) = commands::list(cli.format.unwrap_or(Format::Ron)) {
+                            eprintln!("Failed to list services: {}", e);
+                        }
+                    }
+                    Action::Details(options) => {
+                        if let Err(e) = commands::details(
+                            options.service,
+                            options.filter,
+                            cli.format.unwrap_or(Format::Ron),
+                        ) {
+                            eprintln!("Failed to retrieve service details: {}", e);
+                        }
+                    }
+                }
+            } else {
+                Cli::command().print_help().expect("Failed to print help");
+            }
+        }
+        Err(e) => {
+            eprintln!("{}", e);
+        }
+    }
 }

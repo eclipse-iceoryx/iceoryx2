@@ -17,7 +17,7 @@ pub use crate::service::messaging_pattern::MessagingPattern;
 pub use crate::service::{
     attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier, ipc,
     local, port_factory::publisher::UnableToDeliverStrategy, port_factory::PortFactory,
-    service_name::ServiceName, Service,
+    service_name::ServiceName, Service, ServiceDetails,
 };
 pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_elementary::alignment::Alignment;

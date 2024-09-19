@@ -29,6 +29,7 @@ members = [
     "iceoryx2-cli/iox2-rpc",
     "iceoryx2-cli/iox2-services",
     "iceoryx2-cli/iox2-sub",
+    "iceoryx2-cli/utils",
 
     "examples",
 
@@ -65,6 +66,8 @@ iceoryx2-pal-concurrency-sync = { version = "0.3.0", path = "iceoryx2-pal/concur
 iceoryx2-pal-posix = { version = "0.3.0", path = "iceoryx2-pal/posix/" }
 iceoryx2-pal-configuration = { version = "0.3.0", path = "iceoryx2-pal/configuration/" }
 
+iceoryx2-cli-utils = { version = "0.3.0", path = "iceoryx2-cli/utils/" }
+
 iceoryx2-cal = { version = "0.3.0", path = "iceoryx2-cal" }
 
 iceoryx2-ffi = { version = "0.3.0", path = "iceoryx2-ffi/ffi" }
@@ -91,7 +94,10 @@ once_cell = { version = "1.19.0" }
 ouroboros = { version = "0.18.4" }
 proc-macro2 = { version = "1.0.84" }
 quote = { version = "1.0.36" }
+ron = { version = "0.8" }
 serde = { version = "1.0.203", features = ["derive"] }
+serde_yaml = { version = "0.9.34" }
+serde_json = { version = "1.0" }
 serde_test = { version = "1.0.176" }
 sha1_smol = { version = "1.0.0" }
 syn = { version = "2.0.66", features = ["full"] }
