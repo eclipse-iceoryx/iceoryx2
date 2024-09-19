@@ -19,7 +19,7 @@ use crate::api::{
 use crate::{iox2_unique_subscriber_id_h, iox2_unique_subscriber_id_t};
 
 use iceoryx2::port::subscriber::{Subscriber, SubscriberReceiveError};
-use iceoryx2::port::update_connections::ConnectionFailure;
+use iceoryx2::port::update_connections::{ConnectionFailure, UpdateConnections};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -353,6 +353,37 @@ pub unsafe extern "C" fn iox2_subscriber_has_samples(
                 *result_ptr = v;
                 IOX2_OK
             }
+            Err(error) => error.into_c_int(),
+        },
+    }
+}
+
+/// Updates all connections to new and obsolete publisher ports
+///
+/// # Arguments
+///
+/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_ref_h`]
+///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create) and
+///   casted by [`iox2_cast_subscriber_ref_h`].
+///
+/// # Safety
+///
+/// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_subscriber_update_connections(
+    subscriber_handle: iox2_subscriber_ref_h,
+) -> c_int {
+    debug_assert!(!subscriber_handle.is_null());
+
+    let subscriber = &mut *subscriber_handle.as_type();
+
+    match subscriber.service_type {
+        iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.update_connections() {
+            Ok(()) => IOX2_OK,
+            Err(error) => error.into_c_int(),
+        },
+        iox2_service_type_e::LOCAL => match subscriber.value.as_ref().local.update_connections() {
+            Ok(()) => IOX2_OK,
             Err(error) => error.into_c_int(),
         },
     }
