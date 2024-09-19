@@ -202,7 +202,13 @@ inline auto Publisher<S, Payload, UserHeader>::loan_slice_uninit(const uint64_t 
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::update_connections() -> iox::expected<void, ConnectionFailure> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    auto result = iox2_publisher_update_connections(ref_handle);
+    if (result != IOX2_OK) {
+        return iox::err(iox::into<ConnectionFailure>(result));
+    }
+
+    return iox::ok();
 }
 } // namespace iox2
 

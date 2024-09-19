@@ -19,6 +19,7 @@ use crate::{
 };
 
 use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
+use iceoryx2::port::update_connections::UpdateConnections;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -414,6 +415,38 @@ pub unsafe extern "C" fn iox2_publisher_loan(
                 *sample_handle_ptr = (*sample_struct_ptr).as_handle();
                 IOX2_OK
             }
+            Err(error) => error.into_c_int(),
+        },
+    }
+}
+
+/// Updates all connections to new and obsolete subscriber ports and automatically delivery the history if
+/// requested.
+///
+/// # Arguments
+///
+/// * `publisher_handle` - Must be a valid [`iox2_publisher_ref_h`]
+///   obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create) and
+///   casted by [`iox2_cast_publisher_ref_h`].
+///
+/// # Safety
+///
+/// * The `publisher_handle` is still valid after the return of this function and can be use in another function call.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publisher_update_connections(
+    publisher_handle: iox2_publisher_ref_h,
+) -> c_int {
+    debug_assert!(!publisher_handle.is_null());
+
+    let publisher = &mut *publisher_handle.as_type();
+
+    match publisher.service_type {
+        iox2_service_type_e::IPC => match publisher.value.as_ref().ipc.update_connections() {
+            Ok(()) => IOX2_OK,
+            Err(error) => error.into_c_int(),
+        },
+        iox2_service_type_e::LOCAL => match publisher.value.as_ref().local.update_connections() {
+            Ok(()) => IOX2_OK,
             Err(error) => error.into_c_int(),
         },
     }

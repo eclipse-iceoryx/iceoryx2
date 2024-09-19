@@ -23,6 +23,7 @@
 #include "iox2/service_type.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/unique_port_id.hpp"
+#include <cinttypes>
 
 namespace iox2 {
 /// The receiving endpoint of a publish-subscribe communication.
@@ -149,7 +150,13 @@ inline auto Subscriber<S, Payload, UserHeader>::receive() const
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::update_connections() const -> iox::expected<void, ConnectionFailure> {
-    IOX_TODO();
+    auto* ref_handle = iox2_cast_subscriber_ref_h(m_handle);
+    auto result = iox2_subscriber_update_connections(ref_handle);
+    if (result != IOX2_OK) {
+        return iox::err(iox::into<ConnectionFailure>(result));
+    }
+
+    return iox::ok();
 }
 
 } // namespace iox2

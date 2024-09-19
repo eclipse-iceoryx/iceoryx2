@@ -1025,7 +1025,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
 // END: sliced API
 ////////////////////////
 
-impl<Service: service::Service, Payload: Debug, UserHeader: Debug> UpdateConnections
+impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> UpdateConnections
     for Publisher<Service, Payload, UserHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
