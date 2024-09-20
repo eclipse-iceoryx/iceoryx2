@@ -10,18 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[cfg(not(debug_assertions))]
-use human_panic::setup_panic;
-
-#[cfg(debug_assertions)]
-extern crate better_panic;
-
 mod cli;
 mod commands;
+mod filter;
 
 use clap::CommandFactory;
 use clap::Parser;
+use cli::Action;
 use cli::Cli;
+use iceoryx2_bb_log::{set_log_level, LogLevel};
+
+#[cfg(not(debug_assertions))]
+use human_panic::setup_panic;
+#[cfg(debug_assertions)]
+extern crate better_panic;
 
 fn main() {
     #[cfg(not(debug_assertions))]
@@ -37,25 +39,23 @@ fn main() {
             .install();
     }
 
+    set_log_level(LogLevel::Warn);
+
     match Cli::try_parse() {
         Ok(cli) => {
-            if cli.list {
-                if let Err(e) = commands::list() {
-                    eprintln!("Failed to list commands: {}", e);
-                }
-            } else if cli.paths {
-                if let Err(e) = commands::paths() {
-                    eprintln!("Failed to list search paths: {}", e);
-                }
-            } else if !cli.external_command.is_empty() {
-                let command_name = &cli.external_command[0];
-                let command_args = if cli.external_command.len() > 1 {
-                    Some(&cli.external_command[1..])
-                } else {
-                    None
-                };
-                if let Err(e) = commands::execute(command_name, command_args) {
-                    eprintln!("Failed to execute command: {}", e);
+            if let Some(action) = cli.action {
+                match action {
+                    Action::List(options) => {
+                        if let Err(e) = commands::list(options.filter, cli.format) {
+                            eprintln!("Failed to list nodes: {}", e);
+                        }
+                    }
+                    Action::Details(options) => {
+                        if let Err(e) = commands::details(options.node, options.filter, cli.format)
+                        {
+                            eprintln!("Failed to retrieve node details: {}", e);
+                        }
+                    }
                 }
             } else {
                 Cli::command().print_help().expect("Failed to print help");

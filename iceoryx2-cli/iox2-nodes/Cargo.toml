@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-cli-utils"
-description = "Common helpers for iceoryx2 CLI tools."
+name = "iox2-nodes"
+description = "CLI for managing iceoryx2 nodes"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -10,17 +10,14 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 iceoryx2 = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-cli-utils = { workspace = true }
 iceoryx2-pal-posix = {workspace = true}
 
 anyhow = { workspace = true }
+better-panic = { workspace = true }
 clap = { workspace = true }
-colored = { workspace = true }
-toml = { workspace = true }
+human-panic = { workspace = true }
 serde = { workspace = true }
-serde_yaml = { workspace = true }
-serde_json = { workspace = true }
-ron = { workspace = true }
