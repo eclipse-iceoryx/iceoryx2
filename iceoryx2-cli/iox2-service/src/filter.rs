@@ -15,7 +15,7 @@ use crate::cli::OutputFilter;
 use iceoryx2::service::ipc::Service;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::ServiceDetails;
-use iceoryx2_cli_utils::Filter;
+use iceoryx2_cli::Filter;
 
 impl Filter<ServiceDetails<Service>> for MessagingPatternFilter {
     fn matches(&self, service: &ServiceDetails<Service>) -> bool {

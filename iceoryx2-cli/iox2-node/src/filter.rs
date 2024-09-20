@@ -16,8 +16,8 @@ use crate::cli::StateFilter;
 use iceoryx2::node::NodeState;
 use iceoryx2::node::NodeView;
 use iceoryx2::service::ipc::Service;
-use iceoryx2_cli_utils::output::NodeIdString;
-use iceoryx2_cli_utils::Filter;
+use iceoryx2_cli::output::NodeIdString;
+use iceoryx2_cli::Filter;
 
 impl Filter<NodeState<Service>> for NodeIdentifier {
     fn matches(&self, node: &NodeState<Service>) -> bool {

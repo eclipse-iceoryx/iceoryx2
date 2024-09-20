@@ -12,11 +12,11 @@
 
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
-use iceoryx2_cli_utils::output::NodeDescription;
-use iceoryx2_cli_utils::output::NodeDescriptor;
-use iceoryx2_cli_utils::output::NodeList;
-use iceoryx2_cli_utils::Filter;
-use iceoryx2_cli_utils::Format;
+use iceoryx2_cli::output::NodeDescription;
+use iceoryx2_cli::output::NodeDescriptor;
+use iceoryx2_cli::output::NodeList;
+use iceoryx2_cli::Filter;
+use iceoryx2_cli::Format;
 
 use crate::cli::NodeIdentifier;
 use crate::cli::OutputFilter;

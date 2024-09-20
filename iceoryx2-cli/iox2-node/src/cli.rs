@@ -17,19 +17,19 @@ use clap::Parser;
 use clap::Subcommand;
 use clap::ValueEnum;
 
-use iceoryx2_cli_utils::help_template;
-use iceoryx2_cli_utils::Format;
+use iceoryx2_cli::help_template;
+use iceoryx2_cli::Format;
 use iceoryx2_pal_posix::posix::pid_t;
 
 #[derive(Parser)]
 #[command(
-    name = "iox2-nodes",
+    name = "iox2-node",
     about = "Query information about iceoryx2 nodes",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2-nodes", false),
+    help_template = help_template("iox2 node", false),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -101,6 +101,6 @@ pub struct DetailsOptions {
 pub enum Action {
     #[clap(about = "List all nodes")]
     List(ListOptions),
-    #[clap(about = "Show details of a node")]
+    #[clap(about = "Show node details")]
     Details(DetailsOptions),
 }
