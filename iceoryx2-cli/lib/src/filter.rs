@@ -10,14 +10,59 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::cli::NodeIdentifier;
-use crate::cli::OutputFilter;
-use crate::cli::StateFilter;
+use crate::output::NodeIdString;
+use clap::ValueEnum;
 use iceoryx2::node::NodeState;
 use iceoryx2::node::NodeView;
 use iceoryx2::service::ipc::Service;
-use iceoryx2_cli_utils::output::NodeIdString;
-use iceoryx2_cli_utils::Filter;
+use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
+use iceoryx2::service::ServiceDetails;
+use iceoryx2_pal_posix::posix::pid_t;
+use std::fmt::Debug;
+use std::str::FromStr;
+
+pub trait Filter<T>: Debug {
+    fn matches(&self, item: &T) -> bool;
+}
+
+#[derive(Clone, Debug)]
+pub enum NodeIdentifier {
+    Name(String),
+    Id(String),
+    Pid(pid_t),
+}
+
+impl NodeIdentifier {
+    fn is_valid_id(s: &str) -> bool {
+        s.len() == 32 && s.chars().all(|c| c.is_ascii_hexdigit())
+    }
+}
+
+impl FromStr for NodeIdentifier {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(pid) = s.parse::<pid_t>() {
+            Ok(NodeIdentifier::Pid(pid))
+        } else if Self::is_valid_id(s) {
+            Ok(NodeIdentifier::Id(s.to_string()))
+        } else {
+            Ok(NodeIdentifier::Name(s.to_string()))
+        }
+    }
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+#[clap(rename_all = "PascalCase")]
+#[derive(Default)]
+pub enum StateFilter {
+    Alive,
+    Dead,
+    Inaccessible,
+    Undefined,
+    #[default]
+    All,
+}
 
 impl Filter<NodeState<Service>> for NodeIdentifier {
     fn matches(&self, node: &NodeState<Service>) -> bool {
@@ -64,8 +109,25 @@ impl Filter<NodeState<Service>> for StateFilter {
     }
 }
 
-impl Filter<NodeState<Service>> for OutputFilter {
-    fn matches(&self, node: &NodeState<Service>) -> bool {
-        self.state.matches(node)
+#[derive(Debug, Clone, ValueEnum)]
+#[clap(rename_all = "PascalCase")]
+#[derive(Default)]
+pub enum MessagingPatternFilter {
+    PublishSubscribe,
+    Event,
+    #[default]
+    All,
+}
+
+impl Filter<ServiceDetails<Service>> for MessagingPatternFilter {
+    fn matches(&self, service: &ServiceDetails<Service>) -> bool {
+        matches!(
+            (self, &service.static_details.messaging_pattern()),
+            (
+                MessagingPatternFilter::PublishSubscribe,
+                MessagingPattern::PublishSubscribe(_)
+            ) | (MessagingPatternFilter::Event, MessagingPattern::Event(_))
+                | (MessagingPatternFilter::All, _)
+        )
     }
 }

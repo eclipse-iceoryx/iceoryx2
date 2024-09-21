@@ -22,15 +22,7 @@ members = [
     "iceoryx2-pal/posix/",
     "iceoryx2-pal/configuration/",
 
-    "iceoryx2-cli/iox2",
-    "iceoryx2-cli/iox2-introspect",
-    "iceoryx2-cli/iox2-nodes",
-    "iceoryx2-cli/iox2-processes",
-    "iceoryx2-cli/iox2-pub",
-    "iceoryx2-cli/iox2-rpc",
-    "iceoryx2-cli/iox2-services",
-    "iceoryx2-cli/iox2-sub",
-    "iceoryx2-cli/utils",
+    "iceoryx2-cli",
 
     "examples",
 
@@ -67,14 +59,14 @@ iceoryx2-pal-concurrency-sync = { version = "0.3.0", path = "iceoryx2-pal/concur
 iceoryx2-pal-posix = { version = "0.3.0", path = "iceoryx2-pal/posix/" }
 iceoryx2-pal-configuration = { version = "0.3.0", path = "iceoryx2-pal/configuration/" }
 
-iceoryx2-cli-utils = { version = "0.3.0", path = "iceoryx2-cli/utils/" }
-
 iceoryx2-cal = { version = "0.3.0", path = "iceoryx2-cal" }
 
 iceoryx2-ffi = { version = "0.3.0", path = "iceoryx2-ffi/ffi" }
 iceoryx2-ffi-macros = { version = "0.3.0", path = "iceoryx2-ffi/ffi-macros" }
 
 iceoryx2 = { version = "0.3.0", path = "iceoryx2/" }
+
+iceoryx2-cli = { version = "0.3.0", path = "iceoryx2_cli/"}
 
 anyhow = { version = "1.0.86" }
 bindgen = { version = "0.69.4" }

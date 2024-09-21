@@ -10,6 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-fn main() {
-    println!("Not implemented. Stay tuned!");
+use crate::cli::OutputFilter;
+use iceoryx2::node::NodeState;
+use iceoryx2::service::ipc::Service;
+use iceoryx2_cli::filter::Filter;
+
+impl Filter<NodeState<Service>> for OutputFilter {
+    fn matches(&self, node: &NodeState<Service>) -> bool {
+        self.state.matches(node)
+    }
 }

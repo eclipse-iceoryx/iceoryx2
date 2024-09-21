@@ -10,12 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod cli;
-mod filter;
-mod format;
+use crate::cli::OutputFilter;
+use iceoryx2::service::ipc::Service;
+use iceoryx2::service::ServiceDetails;
+use iceoryx2_cli::filter::Filter;
 
-pub mod output;
-
-pub use cli::help_template;
-pub use filter::Filter;
-pub use format::Format;
+impl Filter<ServiceDetails<Service>> for OutputFilter {
+    fn matches(&self, service: &ServiceDetails<Service>) -> bool {
+        self.pattern.matches(service)
+    }
+}

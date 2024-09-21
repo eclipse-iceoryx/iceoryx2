@@ -13,20 +13,20 @@
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
-use clap::ValueEnum;
 
-use iceoryx2_cli_utils::help_template;
-use iceoryx2_cli_utils::Format;
+use iceoryx2_cli::filter::MessagingPatternFilter;
+use iceoryx2_cli::help_template;
+use iceoryx2_cli::Format;
 
 #[derive(Parser)]
 #[command(
-    name = "iox2-services",
+    name = "iox2-service",
     about = "Query information about iceoryx2 services",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2-services", false),
+    help_template = help_template("iox2 service", false),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -34,16 +34,6 @@ pub struct Cli {
 
     #[clap(long, short = 'f', value_enum, global = true, value_enum, default_value_t = Format::Ron)]
     pub format: Format,
-}
-
-#[derive(Debug, Clone, ValueEnum)]
-#[clap(rename_all = "PascalCase")]
-#[derive(Default)]
-pub enum MessagingPatternFilter {
-    PublishSubscribe,
-    Event,
-    #[default]
-    All,
 }
 
 #[derive(Debug, Clone, Args)]
