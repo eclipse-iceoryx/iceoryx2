@@ -12,13 +12,13 @@
 
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2_cli::filter::Filter;
+use iceoryx2_cli::filter::NodeIdentifier;
 use iceoryx2_cli::output::NodeDescription;
 use iceoryx2_cli::output::NodeDescriptor;
 use iceoryx2_cli::output::NodeList;
-use iceoryx2_cli::Filter;
 use iceoryx2_cli::Format;
 
-use crate::cli::NodeIdentifier;
 use crate::cli::OutputFilter;
 
 pub fn list(filter: OutputFilter, format: Format) -> Result<()> {

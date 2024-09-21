@@ -73,8 +73,6 @@ where
     }
 }
 
-pub type ServiceList = Vec<ServiceDescriptor>;
-
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize)]
 pub struct NodeIdString(String);
 
@@ -226,7 +224,6 @@ pub struct NodeList {
     pub details: Vec<NodeDescriptor>,
 }
 
-// @todo Remove
 impl<T> From<&IceoryxServiceDynamicDetails<T>> for NodeList
 where
     T: IceoryxService,

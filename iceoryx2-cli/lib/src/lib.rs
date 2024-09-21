@@ -11,11 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod cli;
-mod filter;
 mod format;
 
+pub mod filter;
 pub mod output;
 
 pub use cli::help_template;
-pub use filter::Filter;
 pub use format::Format;

@@ -10,16 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::str::FromStr;
-
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
-use clap::ValueEnum;
 
+use iceoryx2_cli::filter::NodeIdentifier;
+use iceoryx2_cli::filter::StateFilter;
 use iceoryx2_cli::help_template;
 use iceoryx2_cli::Format;
-use iceoryx2_pal_posix::posix::pid_t;
 
 #[derive(Parser)]
 #[command(
@@ -37,43 +35,6 @@ pub struct Cli {
 
     #[clap(long, short = 'f', value_enum, global = true, value_enum, default_value_t = Format::Ron)]
     pub format: Format,
-}
-
-#[derive(Clone, Debug)]
-pub enum NodeIdentifier {
-    Name(String),
-    Id(String),
-    Pid(pid_t),
-}
-
-fn is_valid_hex(s: &str) -> bool {
-    s.len() == 32 && s.chars().all(|c| c.is_ascii_hexdigit())
-}
-
-impl FromStr for NodeIdentifier {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(pid) = s.parse::<pid_t>() {
-            Ok(NodeIdentifier::Pid(pid))
-        } else if is_valid_hex(s) {
-            Ok(NodeIdentifier::Id(s.to_string()))
-        } else {
-            Ok(NodeIdentifier::Name(s.to_string()))
-        }
-    }
-}
-
-#[derive(Debug, Clone, ValueEnum)]
-#[clap(rename_all = "PascalCase")]
-#[derive(Default)]
-pub enum StateFilter {
-    Alive,
-    Dead,
-    Inaccessible,
-    Undefined,
-    #[default]
-    All,
 }
 
 #[derive(Debug, Clone, Args)]

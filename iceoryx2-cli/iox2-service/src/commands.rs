@@ -12,16 +12,15 @@
 
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
-use iceoryx2_cli::output::ServiceList;
-use iceoryx2_cli::Filter;
 use iceoryx2_cli::Format;
 
 use crate::cli::OutputFilter;
 
 pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
-    let mut services = ServiceList::new();
+    let mut services = Vec::<ServiceDescriptor>::new();
 
     ipc::Service::list(Config::global_config(), |service| {
         if filter.matches(&service) {
