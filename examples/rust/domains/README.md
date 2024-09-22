@@ -17,9 +17,9 @@ can be modified.
 
 In this example, we use the prefix to separate the iceoryx2 groups. For all
 examples, the user can set the iceoryx2 domain using `-d $DOMAIN_NAME$`. The
-domain name must be a valid file name. The example will only operate within
-this domain and cannot interact with any services in other domains with
-different names.
+domain name must be a valid file name. The example will only operate within this
+domain and cannot interact with any services in other domains with different
+names.
 
 The `domains_discovery` binary illustrates this by listing all services
 available in a given domain. Similarly, the `domains_publisher` will send data
@@ -39,19 +39,19 @@ subscribers with different service names using `-s $SERVICE_NAME`. Only
 publisher-subscriber pairs within the same domain will be able to communicate,
 and the discovery tool will only detect services from within the same domain.
 
-**Terminal 1:** Subscriber in domain "fuu" subscribing to service "bar"
+### Terminal 1: Subscriber in domain "fuu" subscribing to service "bar"
 
 ```sh
 cargo run --example domains_subscriber -- -d "fuu" -s "bar"
 ```
 
-**Terminal 2** Publisher in domain "fuu" publishing on service "bar"
+### Terminal 2 Publisher in domain "fuu" publishing on service "bar"
 
 ```sh
 cargo run --example domains_publisher -- -d "fuu" -s "bar"
 ```
 
-**Terminal 3** List all services of domain "fuu"
+### Terminal 3 List all services of domain "fuu"
 
 ```sh
 cargo run --example domains_discovery -- -d "fuu"

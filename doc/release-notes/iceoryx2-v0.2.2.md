@@ -6,15 +6,17 @@
 
 ### Bugfixes
 
- * Fix `clock_nanosleep` on macOS [#80](https://github.com/eclipse-iceoryx/iceoryx2/issues/80)
- * Fix broken `sighandler_t` translation [#81](https://github.com/eclipse-iceoryx/iceoryx2/issues/81)
+* Fix `clock_nanosleep` on macOS
+  [#80](https://github.com/eclipse-iceoryx/iceoryx2/issues/80)
+* Fix broken `sighandler_t` translation
+  [#81](https://github.com/eclipse-iceoryx/iceoryx2/issues/81)
 
 ### Refactoring
 
- * Use only one config file for every platform [#15](https://github.com/eclipse-iceoryx/iceoryx2/issues/15)
+* Use only one config file for every platform
+  [#15](https://github.com/eclipse-iceoryx/iceoryx2/issues/15)
 
 ## Thanks To All Contributors Of This Version
 
- * [Christian »elfenpiff« Eltzschig](https://github.com/elfenpiff)
- * [Mathias »elBoberido« Kraus](https://github.com/elboberido)
-
+* [Christian »elfenpiff« Eltzschig](https://github.com/elfenpiff)
+* [Mathias »elBoberido« Kraus](https://github.com/elboberido)

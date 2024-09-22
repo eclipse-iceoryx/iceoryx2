@@ -1,15 +1,15 @@
-1. install dependencies (archlinux):
-```sh
-yay -S python-exhale python-breathe python-sphinx python-sphinx_rtd_theme \
-       python-sphinx-sitemap doxygen
-```
+# cpp_doc_generator
 
-2. generate documentation:
-```sh
-make html
-```
-
-3. open generated documentation in browser:
-```
-target/html/index.html
-```
+1. Install dependencies (archlinux):
+   ```sh
+   yay -S python-exhale python-breathe python-sphinx python-sphinx_rtd_theme \
+          python-sphinx-sitemap doxygen
+   ```
+2. Generate documentation:
+   ```sh
+   make html
+   ```
+3. Open generated documentation in browser:
+   ```text
+   target/html/index.html
+   ```

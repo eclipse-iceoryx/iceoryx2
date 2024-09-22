@@ -2,8 +2,9 @@
 
 ## Running the Example
 
-This example illustrates the definition and usage of custom service attributes. Service attributes
-are key-value pairs that can be defined via the service builder like so:
+This example illustrates the definition and usage of custom service attributes.
+Service attributes are key-value pairs that can be defined via the service
+builder like so:
 
 ```rust
 node.service_builder(&service_name)
@@ -16,10 +17,11 @@ node.service_builder(&service_name)
         )?;
 ```
 
-When the service is created, the attributes are set. When the service is opened, these attributes
-are interpreted as requirements. If a required attribute is not set, or if its value differs, the
-service will not be opened. For example, the following service can be opened because it matches a
-attribute defined in the previous example:
+When the service is created, the attributes are set. When the service is opened,
+these attributes are interpreted as requirements. If a required attribute is not
+set, or if its value differs, the service will not be opened. For example, the
+following service can be opened because it matches a attribute defined in the
+previous example:
 
 ```rust
 node.service_builder(&service_name)
@@ -32,8 +34,9 @@ node.service_builder(&service_name)
     )?;
 ```
 
-In contrast, the following example cannot open the service because it requires an attribute that
-is not set and another attribute where the value does not match:
+In contrast, the following example cannot open the service because it requires
+an attribute that is not set and another attribute where the value does not
+match:
 
 ```rust
 node.service_builder(&service_name)
@@ -57,24 +60,26 @@ for attribute in service.attributes().iter() {
 }
 ```
 
-To observe the service attributes in action, open three separate terminals and execute the following commands:
+To observe the service attributes in action, open three separate terminals and
+execute the following commands:
 
-**Terminal 1**
+### Terminal 1
 
 ```sh
 cargo run --example service_attributes_creator
 ```
 
-**Terminal 2**
+### Terminal 2
 
 ```sh
 cargo run --example service_attributes_opener
 ```
 
-**Terminal 3**
+### Terminal 3
 
 ```sh
 cargo run --example service_attributes_incompatible
 ```
 
-The application in Terminal 3 will fail since it requires incompatible service attributes.
+The application in Terminal 3 will fail since it requires incompatible service
+attributes.

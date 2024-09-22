@@ -7,7 +7,7 @@ CLI tooling for interacting with `iceoryx2` systems.
 Install via `cargo`:
 
 ```console
-$ cargo install iceoryx2-cli
+cargo install iceoryx2-cli
 ```
 
 ## Usage
@@ -30,7 +30,8 @@ Commands:
   ...            See external installed commands with --list
 ```
 
-Sub-commands are separate binaries (prefixed with `iox2-`) which can be discovered by the entrypoint:
+Sub-commands are separate binaries (prefixed with `iox2-`) which can be
+discovered by the entrypoint:
 
 ```console
 $ iox2 --list
@@ -75,9 +76,12 @@ Commands:
 
 ## Extending
 
-1. The CLI can be augmented with your own custom tool by developing binaries with a name prefixed
-   by `iox2-` and placing it on the `PATH` to be discovered by `iox2`
-2. Depend on `iceoryx2_cli` for some helpers to help with implementation:
-    1. An `output` module defining the various output structures used by this crate
-    2. A `Filter` trait for filtering data retrieved from `iceoryx2`
-    3. A `Format` enum providing functionality for outputting in different formats
+1. The CLI can be augmented with your own custom tool by developing binaries
+   with a name prefixed by `iox2-` and placing it on the `PATH` to be discovered
+   by `iox2`
+2. Depend on `iceoryx2-cli` for some helpers to help with implementation:
+   1. An `output` module defining the various output structures used by this
+      crate
+   2. A `Filter` trait for filtering data retrieved from `iceoryx2`
+   3. A `Format` enum providing functionality for outputting in different
+      formats

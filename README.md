@@ -1,3 +1,5 @@
+<!-- markdownlint-disable -->
+
 [![CI](https://github.com/eclipse-iceoryx/iceoryx2/workflows/CI/badge.svg)](https://github.com/eclipse-iceoryx/iceoryx2/actions/workflows/build-test.yml?query=branch%3Amain++)
 [![Cirrus CI](https://img.shields.io/cirrus/github/eclipse-iceoryx/iceoryx2/main?label=Cirrus%20CI)](https://cirrus-ci.com/github/eclipse-iceoryx/iceoryx2/main)
 [![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx2/branch/main/graph/badge.svg?branch=main)](https://codecov.io/gh/eclipse-iceoryx/iceoryx2?branch=main)
@@ -14,46 +16,48 @@
 <img src="https://github.com/eclipse-iceoryx/iceoryx2/assets/56729169/3230a125-19e5-4e98-a752-da026a086782" width="50%">
 </p>
 
+<!-- markdownlint-enable -->
+
 # iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust
 
- 1. [Introduction](#introduction)
- 2. [Documentation](#documentation)
- 3. [Performance](#performance)
- 4. [Getting Started](#getting-started)
-    1. [Publish Subscribe](#publish-subscribe)
-    2. [Events](#events)
-    3. [Custom Configuration](#custom-configuration)
- 5. [Supported Platforms](#supported-platforms)
- 6. [Language Bindings](#language-bindings)
- 7. [Commercial Support](#commercial-support)
- 8. [Thanks To All Contributors](#thanks-to-all-contributors)
+1. [Introduction](#introduction)
+2. [Documentation](#documentation)
+3. [Performance](#performance)
+4. [Getting Started](#getting-started)
+   1. [Publish Subscribe](#publish-subscribe)
+   2. [Events](#events)
+   3. [Custom Configuration](#custom-configuration)
+5. [Supported Platforms](#supported-platforms)
+6. [Language Bindings](#language-bindings)
+7. [Commercial Support](#commercial-support)
+8. [Thanks To All Contributors](#thanks-to-all-contributors)
 
 ## Introduction
 
-Welcome to iceoryx2, the efficient, and ultra-low latency inter-process communication
-middleware. This library is designed to provide you with fast and reliable
-zero-copy and lock-free inter-process communication mechanisms.
+Welcome to iceoryx2, the efficient, and ultra-low latency inter-process
+communication middleware. This library is designed to provide you with fast and
+reliable zero-copy and lock-free inter-process communication mechanisms.
 
-So if you want to communicate efficiently between multiple processes or applications
-iceoryx2 is for you. With iceoryx2, you can:
+So if you want to communicate efficiently between multiple processes or
+applications iceoryx2 is for you. With iceoryx2, you can:
 
-* Send huge amounts of data using a publish/subscribe, request/response (planned),
-  pipeline (planned) or blackboard pattern (planned),
-  making it ideal for scenarios where large datasets need to be shared.
-* Exchange signals through events, enabling quick and reliable signaling
-  between processes.
+* Send huge amounts of data using a publish/subscribe, request/response
+  (planned), pipeline (planned) or blackboard pattern (planned), making it ideal
+  for scenarios where large datasets need to be shared.
+* Exchange signals through events, enabling quick and reliable signaling between
+  processes.
 
 iceoryx2 is based on a service-oriented architecture (SOA) and facilitates
 seamless inter-process communication (IPC).
 
-It is all about providing a seamless experience for inter-process
-communication, featuring versatile messaging patterns. Whether you're diving
-into publish-subscribe, events, or the promise of upcoming features like
+It is all about providing a seamless experience for inter-process communication,
+featuring versatile messaging patterns. Whether you're diving into
+publish-subscribe, events, or the promise of upcoming features like
 request-response, pipelines, and blackboard, iceoryx2 has you covered.
 
 One of the features of iceoryx2 is its consistently low transmission latency
-regardless of payload size, ensuring a predictable and reliable
-communication experience.
+regardless of payload size, ensuring a predictable and reliable communication
+experience.
 
 iceoryx2's origins can be traced back to
 [iceoryx](https://github.com/eclipse-iceoryx/iceoryx). By overcoming past
@@ -61,21 +65,21 @@ technical debts and refining the architecture, iceoryx2 enables the modularity
 we've always desired.
 
 In the near future, iceoryx2 is poised to support at least the same feature set
-and platforms as [iceoryx](https://github.com/eclipse-iceoryx/iceoryx),
-ensuring a seamless transition and offering enhanced
-capabilities for your inter-process communication needs. So, if you're looking
-for lightning-fast, cross-platform communication that doesn't compromise on
-performance or modularity, iceoryx2 is your answer.
+and platforms as [iceoryx](https://github.com/eclipse-iceoryx/iceoryx), ensuring
+a seamless transition and offering enhanced capabilities for your inter-process
+communication needs. So, if you're looking for lightning-fast, cross-platform
+communication that doesn't compromise on performance or modularity, iceoryx2 is
+your answer.
 
 ## Documentation
 
 The documentation can be found at:
 
-| language | documentation link                          |
-|:--------:|--------------------------------------------:|
-| C        | https://iceoryx2.readthedocs.io             |
-| C++      | https://iceoryx2.readthedocs.io             |
-| Rust     | https://docs.rs/iceoryx2/latest/iceoryx2/   |
+| language |                          documentation link |
+| :------: | ------------------------------------------: |
+|    C     |           <https://iceoryx2.readthedocs.io> |
+|   C++    |           <https://iceoryx2.readthedocs.io> |
+|   Rust   | <https://docs.rs/iceoryx2/latest/iceoryx2/> |
 
 ## Performance
 
@@ -83,13 +87,13 @@ The documentation can be found at:
 
 ![benchmark of different mechanism](internal/plots/benchmark_mechanism.svg)
 
-**Benchmark-System**
+#### Benchmark-System
 
-- **CPU:** AMD Ryzen 7 7840S with Radeon 780M Graphics
-- **OS:** Linux 6.8.5-arch1-1 #1 SMP PREEMPT_DYNAMIC GNU/Linux
-- **Compiler:**
-  - rustc 1.77.1
-  - gcc 13.2.1 20230801
+* **CPU:** AMD Ryzen 7 7840S with Radeon 780M Graphics
+* **OS:** Linux 6.8.5-arch1-1 #1 SMP PREEMPT_DYNAMIC GNU/Linux
+* **Compiler:**
+    * rustc 1.77.1
+    * gcc 13.2.1 20230801
 
 ### Comparision Of Architectures
 
@@ -102,7 +106,7 @@ The documentation can be found at:
 This minimal example showcases a publisher sending the number 1234 every second,
 while a subscriber efficiently receives and prints the data.
 
-**publisher.rs**
+#### publisher.rs
 
 ```rust
 use core::time::Duration;
@@ -129,7 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-**subscriber.rs**
+#### subscriber.rs
 
 ```rust
 use core::time::Duration;
@@ -157,8 +161,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 This example is a simplified version of the
-[publish-subscribe example](examples/rust/publish_subscribe/). You can
-execute it by opening two terminals and calling:
+[publish-subscribe example](examples/rust/publish_subscribe/). You can execute
+it by opening two terminals and calling:
 
 **Terminal 1:**
 
@@ -174,10 +178,11 @@ cargo run --example publish_subscribe_subscriber
 
 ### Events
 
-This minimal example showcases how push-notifications can be realized by using services
-with event messaging pattern between two processes. The `listener.rs` hereby waits for a notification from the `notifier.rs`.
+This minimal example showcases how push-notifications can be realized by using
+services with event messaging pattern between two processes. The `listener.rs`
+hereby waits for a notification from the `notifier.rs`.
 
-**notifier.rs**
+#### notifier.rs
 
 ```rust
 use core::time::Duration;
@@ -205,7 +210,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-**listener.rs**
+#### listener.rs
 
 ```rust
 use core::time::Duration;
@@ -232,7 +237,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-**listener.rs** grabbing all events at once
+#### listener.rs (grabbing all events at once)
 
 ```rust
 use core::time::Duration;
@@ -263,8 +268,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 This example is a simplified version of the
-[event example](examples/rust/event/). You can
-execute it by opening two terminals and calling:
+[event example](examples/rust/event/). You can execute it by opening two
+terminals and calling:
 
 **Terminal 1:**
 
@@ -280,45 +285,46 @@ cargo run --example event_listener
 
 ### Custom Configuration
 
-It is possible to configure default quality of service settings, paths and file suffixes in a
-custom configuration file. For more details visit the [configuration directory](config/).
+It is possible to configure default quality of service settings, paths and file
+suffixes in a custom configuration file. For more details visit the
+[configuration directory](config/).
 
 ## Supported Platforms
 
 The support levels can be adjusted when required.
 
-| Operating System | State        | Current Support Level | Target Support Level |
-|------------------|:-------------|:---------------------:|---------------------:|
-| Android          | planned      | -                     | tier 1               |
-| FreeBSD          | done         | tier 2                | tier 1               |
-| FreeRTOS         | planned      | -                     | tier 2               |
-| iOS              | planned      | -                     | tier 2               |
-| Linux (x86_64)   | done         | tier 2                | tier 1               |
-| Linux (aarch64)  | done         | tier 2                | tier 1               |
-| Linux (32-bit)   | done         | tier 2                | tier 1               |
-| Mac OS           | done         | tier 2                | tier 2               |
-| QNX              | planned      | -                     | tier 1               |
-| VxWorks          | planned      | -                     | tier 1               |
-| WatchOS          | planned      | -                     | tier 2               |
-| Windows          | done         | tier 2                | tier 2               |
+| Operating System | State   | Current Support Level | Target Support Level |
+| ---------------- | :------ | :-------------------: | -------------------: |
+| Android          | planned |           -           |               tier 1 |
+| FreeBSD          | done    |        tier 2         |               tier 1 |
+| FreeRTOS         | planned |           -           |               tier 2 |
+| iOS              | planned |           -           |               tier 2 |
+| Linux (x86_64)   | done    |        tier 2         |               tier 1 |
+| Linux (aarch64)  | done    |        tier 2         |               tier 1 |
+| Linux (32-bit)   | done    |        tier 2         |               tier 1 |
+| Mac OS           | done    |        tier 2         |               tier 2 |
+| QNX              | planned |           -           |               tier 1 |
+| VxWorks          | planned |           -           |               tier 1 |
+| WatchOS          | planned |           -           |               tier 2 |
+| Windows          | done    |        tier 2         |               tier 2 |
 
-- **tier 1** - All safety and security features are working.
-- **tier 2** - Works with a restricted security and safety feature set.
-- **tier 3** - Work in progress. Might compile and run or not.
+* **tier 1** - All safety and security features are working.
+* **tier 2** - Works with a restricted security and safety feature set.
+* **tier 3** - Work in progress. Might compile and run or not.
 
 ## Language Bindings
 
-| Language | State    |
-|----------|---------:|
-| C / C++  | beta     |
-| C#       | planned  |
-| Go       | planned  |
-| Java     | planned  |
-| Kotlin   | planned  |
-| Lua      | planned  |
-| Python   | planned  |
-| Swift    | planned  |
-| Zig      | planned  |
+| Language |   State |
+| -------- | ------: |
+| C / C++  |    beta |
+| C#       | planned |
+| Go       | planned |
+| Java     | planned |
+| Kotlin   | planned |
+| Lua      | planned |
+| Python   | planned |
+| Swift    | planned |
+| Zig      | planned |
 
 ## Commercial Support
 
