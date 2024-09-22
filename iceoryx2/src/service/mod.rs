@@ -531,16 +531,8 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
         config: &config::Config,
         messaging_pattern: MessagingPattern,
     ) -> Result<Option<ServiceDetails<Self>>, ServiceDetailsError> {
-        let uuid = unsafe {
-            FileName::new_unchecked(
-                <HashValue as Into<String>>::into(
-                    create_uuid::<Self::ServiceNameHasher>(service_name, messaging_pattern).value(),
-                )
-                .as_bytes(),
-            )
-        };
-
-        details::<Self>(config, &uuid)
+        let service_id = ServiceId::new::<Self::ServiceNameHasher>(service_name, messaging_pattern);
+        details::<Self>(config, &service_id.0.into())
     }
 
     /// Returns a list of all services created under a given [`config::Config`].

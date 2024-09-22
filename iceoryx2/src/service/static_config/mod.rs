@@ -45,14 +45,6 @@ pub struct StaticConfig {
     pub(crate) messaging_pattern: MessagingPattern,
 }
 
-pub(crate) fn create_uuid<Hasher: Hash>(
-    service_name: &ServiceName,
-    messaging_pattern: crate::service::messaging_pattern::MessagingPattern,
-) -> Hasher {
-    let pattern_and_service = (messaging_pattern as u32).to_string() + service_name.as_str();
-    Hasher::new(pattern_and_service.as_bytes())
-}
-
 impl StaticConfig {
     pub(crate) fn new_event<Hasher: Hash>(
         service_name: &ServiceName,

@@ -33,6 +33,7 @@ impl ServiceId {
         let value = *Hasher::new(pattern_and_service.as_bytes())
             .value()
             .as_base64url();
+
         Self(fatal_panic!(from "ServiceId::new()",
                    when RestrictedFileName::new(&value),
                    "This should never happen! The Hasher used to create the ServiceId created an illegal value ({value}, len = {}).", value.len()))
