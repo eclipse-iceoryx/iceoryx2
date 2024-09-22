@@ -42,6 +42,31 @@ jobs:
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
 
+      - name: Setup GitHub CLI
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+
+      - name: Setup node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install markdown linters
+        run: npm install -g markdownlint-cli prettier
+
+      - name: Check markdown linting
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_BEFORE: ${{ github.event.before }}
+          GITHUB_AFTER: ${{ github.event.after }}
+        run: ./internal/scripts/check_markdown_linting.sh
+
   static-code-analysis-rust:
     needs: preflight-check
     if: ${{ needs.changes.outputs.source-code == 'true' }}
