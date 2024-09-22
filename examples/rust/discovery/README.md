@@ -11,13 +11,13 @@ action.
 To begin, let's start some interesting services. Open two terminals and execute
 the following commands:
 
-**Terminal 1**
+### Terminal 1
 
 ```sh
 cargo run --example event_listener
 ```
 
-**Terminal 2**
+### Terminal 2
 
 ```sh
 cargo run --example publish_subscribe_subscriber

@@ -10,12 +10,12 @@ MD001: true
 # MD003/heading-style : Heading style : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md003.md
 MD003:
   # Heading style
-  style: "consistent"
+  style: "atx"
 
 # MD004/ul-style : Unordered list style : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md004.md
 MD004:
   # List style
-  style: "consistent"
+  style: "asterisk"
 
 # MD005/list-indent : Inconsistent indentation for list items at the same level : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md005.md
 MD005: true
@@ -23,7 +23,7 @@ MD005: true
 # MD007/ul-indent : Unordered list indentation : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md007.md
 MD007:
   # Spaces for indent
-  indent: 2
+  indent: 4
   # Whether to indent the first level of the list
   start_indented: false
   # Spaces for first level indent (when start_indented is set)
@@ -58,17 +58,17 @@ MD012:
 # MD013/line-length : Line length : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md013.md
 MD013:
   # Number of characters
-  line_length: 100
+  line_length: 80
   # Number of characters for headings
   heading_line_length: 80
   # Number of characters for code blocks
-  code_block_line_length: 100
+  code_block_line_length: 80
   # Include code blocks
-  code_blocks: true
+  code_blocks: false
   # Include tables
-  tables: true
+  tables: false
   # Include headings
-  headings: true
+  headings: false
   # Strict length checking
   strict: false
   # Stern length checking
@@ -102,9 +102,9 @@ MD023: true
 # MD024/no-duplicate-heading : Multiple headings with the same content : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md024.md
 MD024:
   # Only check sibling headings
-  allow_different_nesting: false
+  allow_different_nesting: true
   # Only check sibling headings
-  siblings_only: false
+  siblings_only: true
 
 # MD025/single-title/single-h1 : Multiple top-level headings in the same document : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md025.md
 MD025:
@@ -143,7 +143,7 @@ MD030:
 # MD031/blanks-around-fences : Fenced code blocks should be surrounded by blank lines : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md031.md
 MD031:
   # Include list items
-  list_items: true
+  list_items: false
 
 # MD032/blanks-around-lists : Lists should be surrounded by blank lines : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md032.md
 MD032: true
@@ -151,7 +151,9 @@ MD032: true
 # MD033/no-inline-html : Inline HTML : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md033.md
 MD033:
   # Allowed elements
-  allowed_elements: []
+  allowed_elements:
+    - "!--"
+    - "--"
 
 # MD034/no-bare-urls : Bare URL used : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md034.md
 MD034: true
@@ -198,9 +200,20 @@ MD043: false
 # MD044/proper-names : Proper names should have the correct capitalization : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md044.md
 MD044:
   # List of proper names
-  names: []
+  names: [
+    "iceoryx2",
+    "Rust",
+    "C",
+    "C++",
+    "macOS",
+    "iOS",
+    "FreeBSD",
+    "POSIX",
+    "IPC",
+    "GNU"
+  ]
   # Include code blocks
-  code_blocks: true
+  code_blocks: false
   # Include HTML elements
   html_elements: true
 
@@ -218,20 +231,20 @@ MD047: true
 # MD048/code-fence-style : Code fence style : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md048.md
 MD048:
   # Code fence style
-  style: "consistent"
+  style: "backtick"
 
 # MD049/emphasis-style : Emphasis style : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md049.md
 MD049:
   # Emphasis style
-  style: "consistent"
+  style: "underscore"
 
 # MD050/strong-style : Strong style : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md050.md
 MD050:
   # Strong style
-  style: "consistent"
+  style: "asterisk"
 
 # MD051/link-fragments : Link fragments should be valid : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md051.md
-MD051: true
+MD051: false
 
 # MD052/reference-links-images : Reference links and images should use a label that is defined : https://github.com/DavidAnson/markdownlint/blob/v0.32.1/doc/md052.md
 MD052:
@@ -258,3 +271,4 @@ MD054:
   shortcut: true
   # Allow URLs as inline links
   url_inline: true
+

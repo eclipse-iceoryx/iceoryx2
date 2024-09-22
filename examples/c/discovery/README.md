@@ -1,6 +1,7 @@
 # Discovery
 
-Please install all dependencies first, as described in the [C Examples Readme](../README.md).
+Please install all dependencies first, as described in the
+[C Examples Readme](../README.md).
 
 ## Running The Example
 
@@ -20,13 +21,13 @@ cmake --build target/ffi/build
 To begin, let's start some interesting services. Open two terminals and execute
 the following commands:
 
-**Terminal 1**
+### Terminal 1
 
 ```sh
 ./target/ffi/build/examples/cxx/event/example_c_event_listener
 ```
 
-**Terminal 2**
+### Terminal 2
 
 ```sh
 ./target/ffi/build/examples/cxx/publish_subscribe/example_c_publish_subscribe_subscriber
