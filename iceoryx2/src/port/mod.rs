@@ -32,6 +32,8 @@ pub mod subscriber;
 /// participants or to perform other management tasks.
 pub mod update_connections;
 
+pub mod waitset;
+
 use crate::port::port_identifiers::*;
 use crate::service;
 
