@@ -2,7 +2,8 @@
 
 color_graph_caption='#595959'
 color_graph_grid='#d6d7d9'
-color_graph_box='#528c19'
+color_graph_box='#44444444'
+color_graph_box_multicore='#528c19'
 output_height=650
 output_width=1400
 
@@ -35,4 +36,7 @@ set output 'benchmark_architecture.svg'
 myBoxWidth = 0.7
 set offsets 0,0,0.5-myBoxWidth/2.,0.5
 
-plot 'benchmark_architecture_os_comparision.dat' using (0.5*$3):0:(0.5*$3):(myBoxWidth/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2))) with boxxy lc rgb color_graph_box
+plot 'benchmark_architecture_os_comparision.dat' using (0.5*$3):0:(0.5*$3):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2))) with boxxy lc rgb color_graph_box_multicore
+
+# plot 'benchmark_architecture_os_comparision.dat' using (0.5*$4):0:(0.5*$4):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2))) with boxxy lc rgb color_graph_box, \
+#      '' using (0.5*$3):0.5:(0.5*$3):((myBoxWidth)/2.):ytic(sprintf("%s\n{/*0.8 %s}", stringcolumn(1), stringcolumn(2))) with boxxy lc rgb color_graph_box_multicore

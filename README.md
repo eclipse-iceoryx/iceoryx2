@@ -89,11 +89,11 @@ The documentation can be found at:
 
 #### Benchmark-System
 
-* **CPU:** AMD Ryzen 7 7840S with Radeon 780M Graphics
-* **OS:** Linux 6.8.5-arch1-1 #1 SMP PREEMPT_DYNAMIC GNU/Linux
-* **Compiler:**
-    * rustc 1.77.1
-    * gcc 13.2.1 20230801
+- **CPU:** Intel i7 13700h
+- **OS:** Linux 6.10.10-arch1-1 #1 SMP PREEMPT_DYNAMIC
+- **Compiler:**
+  - rustc 1.81.0
+  - gcc 14.2.1 20240910
 
 ### Comparision Of Architectures
 
