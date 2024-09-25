@@ -21,6 +21,7 @@ mod config;
 mod event_id;
 mod iceoryx2_settings;
 mod listener;
+mod log;
 mod message_type_details;
 mod node;
 mod node_builder;
