@@ -21,12 +21,6 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
-template <ServiceType, typename, typename>
-class SampleMutUninit;
-
-template <ServiceType S, typename Payload, typename UserHeader>
-auto assume_init_sample(SampleMutUninit<S, Payload, UserHeader>&& self) -> SampleMut<S, Payload, UserHeader>;
-
 template <ServiceType S, typename Payload, typename UserHeader>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_sample' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class SampleMutUninit {
@@ -84,8 +78,7 @@ class SampleMutUninit {
     friend class Publisher;
 
     template <ServiceType ST, typename PayloadT, typename UserHeaderT>
-    friend auto
-    assume_init_sample(SampleMutUninit<ST, PayloadT, UserHeaderT>&& self) -> SampleMut<ST, PayloadT, UserHeaderT>;
+    friend auto assume_init(SampleMutUninit<ST, PayloadT, UserHeaderT>&& self) -> SampleMut<ST, PayloadT, UserHeaderT>;
 
     // The sample is defaulted since both members are initialized in Publisher::loan_uninit() or
     // Publisher::loan_slice_uninit()
@@ -97,7 +90,7 @@ class SampleMutUninit {
 /// Acquires the ownership and converts the uninitialized [`SampleMutUninit`] into the
 /// initialized version [`SampleMut`].
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto assume_init_sample(SampleMutUninit<S, Payload, UserHeader>&& self) -> SampleMut<S, Payload, UserHeader> {
+inline auto assume_init(SampleMutUninit<S, Payload, UserHeader>&& self) -> SampleMut<S, Payload, UserHeader> {
     return std::move(self.m_sample);
 }
 

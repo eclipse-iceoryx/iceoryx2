@@ -46,7 +46,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
         auto sample = publisher.loan().expect("acquire sample");
         sample.payload_mut() = 0;
-        send_sample(std::move(sample)).expect("send successful");
+        send(std::move(sample)).expect("send successful");
     }
 
     std::cout << "exit" << std::endl;

@@ -193,7 +193,7 @@ Publisher<S, Payload, UserHeader>::loan() -> iox::expected<SampleMut<S, Payload,
 
     new (&sample->payload_mut()) Payload();
 
-    return iox::ok(assume_init_sample(std::move(*sample)));
+    return iox::ok(assume_init(std::move(*sample)));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
