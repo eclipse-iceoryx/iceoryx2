@@ -105,22 +105,22 @@ int main(int argc, char** argv) {
         counter += 1;
 
         // loan sample
-        iox2_sample_mut_h sample = NULL;
+        iox2_sample_mut_uninit_h sample = NULL;
         if (iox2_publisher_loan(publisher_ref, NULL, &sample) != IOX2_OK) {
             printf("Failed to loan sample\n");
             goto drop_publisher;
         }
-        iox2_sample_mut_ref_h sample_ref = iox2_cast_sample_mut_ref_h(sample);
+        iox2_sample_mut_uninit_ref_h sample_ref = iox2_cast_sample_mut_ref_h(sample);
 
         // write payload
         struct TransmissionData* payload = NULL;
-        iox2_sample_mut_payload_mut(sample_ref, (void**) &payload, NULL);
+        iox2_sample_mut_uninit_payload_mut(sample_ref, (void**) &payload, NULL);
         payload->x = counter;
         payload->y = counter * 3;
         payload->funky = counter * 812.12; // NOLINT
 
         // send sample
-        if (iox2_sample_mut_send(sample, NULL) != IOX2_OK) {
+        if (iox2_sample_mut_uninit_send(sample, NULL) != IOX2_OK) {
             printf("Failed to send sample\n");
             goto drop_publisher;
         }

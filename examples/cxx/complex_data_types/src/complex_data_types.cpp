@@ -63,7 +63,8 @@ auto main() -> int {
         payload.vec_of_complex_data.push_back(
             ComplexData { iox::string<4>("bla"), iox::vector<uint64_t, 4>(2, counter) });
 
-        send_sample(std::move(sample)).expect("send successful");
+        auto initialized_sample = assume_init_sample(std::move(sample));
+        send_sample(std::move(initialized_sample)).expect("send successful");
 
         std::cout << counter << " :: send" << std::endl;
 

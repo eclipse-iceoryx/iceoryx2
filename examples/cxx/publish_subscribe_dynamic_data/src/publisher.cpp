@@ -47,7 +47,8 @@ auto main() -> int {
         auto sample = publisher.loan_slice_uninit(required_memory_size).expect("acquire sample");
         sample.write_from_fn([&](auto byte_idx) { return (byte_idx + counter) % 255; }); // NOLINT
 
-        send_sample(std::move(sample)).expect("send successful");
+        auto initialized_sample = assume_init_sample(std::move(sample));
+        send_sample(std::move(initialized_sample)).expect("send successful");
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

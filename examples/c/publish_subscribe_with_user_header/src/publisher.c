@@ -96,25 +96,25 @@ int main(void) {
         counter += 1;
 
         // loan sample
-        iox2_sample_mut_h sample = NULL;
+        iox2_sample_mut_uninit_h sample = NULL;
         if (iox2_publisher_loan(publisher_ref, NULL, &sample) != IOX2_OK) {
             printf("Failed to loan sample\n");
             goto drop_publisher;
         }
-        iox2_sample_mut_ref_h sample_ref = iox2_cast_sample_mut_ref_h(sample);
+        iox2_sample_mut_uninit_ref_h sample_ref = iox2_cast_sample_mut_ref_h(sample);
 
         // write payload
         uint64_t* payload = NULL;
-        iox2_sample_mut_payload_mut(sample_ref, (void**) &payload, NULL);
+        iox2_sample_mut_uninit_payload_mut(sample_ref, (void**) &payload, NULL);
         *payload = counter;
 
         struct CustomHeader* header = NULL;
-        iox2_sample_mut_user_header_mut(sample_ref, (void**) &header);
+        iox2_sample_mut_uninit_user_header_mut(sample_ref, (void**) &header);
         header->version = 123;               // NOLINT
         header->timestamp = 80337 + counter; // NOLINT
 
         // send sample
-        if (iox2_sample_mut_send(sample, NULL) != IOX2_OK) {
+        if (iox2_sample_mut_uninit_send(sample, NULL) != IOX2_OK) {
             printf("Failed to send sample\n");
             goto drop_publisher;
         }

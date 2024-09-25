@@ -462,8 +462,9 @@ impl<Service: crate::service::Service, Payload: Debug + Copy, UserHeader>
         mut self,
         value: &[Payload],
     ) -> SampleMut<Service, [Payload], UserHeader> {
-        self.payload_mut()
-            .copy_from_slice(unsafe { core::mem::transmute(value) });
+        self.payload_mut().copy_from_slice(unsafe {
+            core::mem::transmute::<&[Payload], &[MaybeUninit<Payload>]>(value)
+        });
         unsafe { self.assume_init() }
     }
 }
