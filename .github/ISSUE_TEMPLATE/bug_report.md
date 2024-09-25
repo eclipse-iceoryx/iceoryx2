@@ -14,9 +14,10 @@ for a possible solution.
 ## Required information
 
 **Operating system:**
- * OS name, version
- * Additionally, on Linux, Mac Os, Unix, output of: `uname -a`
- * Additionally, on Windows, output of: `ver`
+
+* OS name, version
+* Additionally, on Linux, Mac Os, Unix, output of: `uname -a`
+* Additionally, on Windows, output of: `ver`
 
 **Rust version:**
 Output of: `rustc --version`

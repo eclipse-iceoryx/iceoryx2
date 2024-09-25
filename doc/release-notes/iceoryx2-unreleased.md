@@ -146,6 +146,8 @@
 
 * Extended CLI parameters for benchmarks
   [#360](https://github.com/eclipse-iceoryx/iceoryx2/issues/360)
+* Default log-level is set from `LogLevel::Trace` to `LogLevel::Warn`
+  [#392](https://github.com/eclipse-iceoryx/iceoryx2/issues/392)
 
 ### New API features
 
