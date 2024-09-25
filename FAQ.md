@@ -75,6 +75,16 @@ But you can also use a crate like [ctrlc](https://docs.rs/ctrlc/latest/ctrlc/).
      iceoryx2 = { version = "0.1.0", features = ["logger_tracing"]}
     ```
 
+## How to set the log level
+
+```rust
+use iceoryx2::prelude::*
+
+// ...
+
+set_log_level(LogLevel::Trace);
+```
+
 ## A crash leads to the failure `PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`
 
 **Note:** A command line tool and internal service is already planned to cleanup
