@@ -303,6 +303,8 @@ pub mod sample;
 /// The payload that is sent by a [`Publisher`](crate::port::publisher::Publisher).
 pub mod sample_mut;
 
+pub mod sample_mut_uninit;
+
 /// The foundation of communication the service with its
 /// [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern)
 pub mod service;
