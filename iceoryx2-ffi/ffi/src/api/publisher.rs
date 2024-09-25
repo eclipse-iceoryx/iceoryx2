@@ -12,7 +12,9 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, SampleMutUnion, UserHeaderFfi};
+use crate::api::{
+    iox2_service_type_e, HandleToType, PayloadFfi, SampleMutUninitUnion, UserHeaderFfi,
+};
 use crate::{
     iox2_unable_to_deliver_strategy_e, iox2_unique_publisher_id_h, iox2_unique_publisher_id_t,
     IOX2_OK,
@@ -24,7 +26,7 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use super::{iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
+use super::{iox2_sample_mut_uninit_h, iox2_sample_mut_uninit_t, IntoCInt};
 
 use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
@@ -354,34 +356,34 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 /// # Arguments
 ///
 /// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
-/// * `sample_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_sample_mut_t`].
+/// * `sample_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_sample_mut_uninit_t`].
 ///    If it is a NULL pointer, the storage will be allocated on the heap.
-/// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+/// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_mut_uninit_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
 ///
 /// Return [`IOX2_OK`] on success, otherwise [`iox2_publisher_loan_error_e`].
 ///
 /// # Safety
 ///
 /// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
-/// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_mut_h`].
+/// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_mut_uninit_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_loan(
     publisher_handle: iox2_publisher_ref_h,
-    sample_struct_ptr: *mut iox2_sample_mut_t,
-    sample_handle_ptr: *mut iox2_sample_mut_h,
+    sample_struct_ptr: *mut iox2_sample_mut_uninit_t,
+    sample_handle_ptr: *mut iox2_sample_mut_uninit_h,
 ) -> c_int {
     debug_assert!(!publisher_handle.is_null());
     debug_assert!(!sample_handle_ptr.is_null());
 
     *sample_handle_ptr = std::ptr::null_mut();
 
-    let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_mut_t| {
+    let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_mut_uninit_t| {
         let mut sample_struct_ptr = sample_struct_ptr;
-        fn no_op(_: *mut iox2_sample_mut_t) {}
-        let mut deleter: fn(*mut iox2_sample_mut_t) = no_op;
+        fn no_op(_: *mut iox2_sample_mut_uninit_t) {}
+        let mut deleter: fn(*mut iox2_sample_mut_uninit_t) = no_op;
         if sample_struct_ptr.is_null() {
-            sample_struct_ptr = iox2_sample_mut_t::alloc();
-            deleter = iox2_sample_mut_t::dealloc;
+            sample_struct_ptr = iox2_sample_mut_uninit_t::alloc();
+            deleter = iox2_sample_mut_uninit_t::dealloc;
         }
         debug_assert!(!sample_struct_ptr.is_null());
 
@@ -396,7 +398,7 @@ pub unsafe extern "C" fn iox2_publisher_loan(
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
                     publisher.service_type,
-                    SampleMutUnion::new_ipc(sample),
+                    SampleMutUninitUnion::new_ipc(sample),
                     deleter,
                 );
                 *sample_handle_ptr = (*sample_struct_ptr).as_handle();
@@ -409,7 +411,7 @@ pub unsafe extern "C" fn iox2_publisher_loan(
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
                     publisher.service_type,
-                    SampleMutUnion::new_local(sample),
+                    SampleMutUninitUnion::new_local(sample),
                     deleter,
                 );
                 *sample_handle_ptr = (*sample_struct_ptr).as_handle();
