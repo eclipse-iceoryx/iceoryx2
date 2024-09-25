@@ -10,10 +10,109 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{fmt::Debug, mem::MaybeUninit};
+//! # Example
+//!
+//! ## Typed API
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! #
+//! # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//! #     .publish_subscribe::<u64>()
+//! #     .open_or_create()?;
+//! #
+//! # let publisher = service.publisher_builder().create()?;
+//!
+//! let sample = publisher.loan_uninit()?;
+//! // write 1234 into sample
+//! let mut sample = sample.write_payload(1234);
+//! // override contents with 456 because its fun
+//! *sample.payload_mut() = 456;
+//!
+//! println!("publisher port id: {:?}", sample.header().publisher_id());
+//! sample.send()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Slice API with callback initialization
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! #
+//! # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//! #     .publish_subscribe::<[usize]>()
+//! #     .create()?;
+//! #
+//! # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+//!
+//! let slice_length = 12;
+//! let sample = publisher.loan_slice_uninit(slice_length)?;
+//! // initialize the n-th element of the slice with n * 1234
+//! let mut sample = sample.write_from_fn(|n| n * 1234);
+//! // override the content of the first element with 42
+//! sample.payload_mut()[0] = 42;
+//!
+//! println!("publisher port id: {:?}", sample.header().publisher_id());
+//! sample.send()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Slice API with copy initialization
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! #
+//! # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//! #     .publish_subscribe::<[usize]>()
+//! #     .create()?;
+//! #
+//! # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+//!
+//! let slice_length = 4;
+//! let sample = publisher.loan_slice_uninit(slice_length)?;
+//! // initialize the slice with the numbers 1, 2, 3, 4
+//! let mut sample = sample.write_from_slice(vec![1, 2, 3, 4]);
+//!
+//! println!("publisher port id: {:?}", sample.header().publisher_id());
+//! sample.send()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
-use crate::{sample_mut::SampleMut, service::header::publish_subscribe::Header};
+use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
 
+use iceoryx2_cal::shm_allocator::PointerOffset;
+
+use crate::{
+    port::publisher::DataSegment, raw_sample::RawSampleMut, sample_mut::SampleMut,
+    service::header::publish_subscribe::Header,
+};
+
+/// Acquired by a [`crate::port::publisher::Publisher`] via
+///  * [`crate::port::publisher::Publisher::loan_uninit()`]
+///  * [`crate::port::publisher::Publisher::loan_slice_uninit()`]
+///
+/// It stores the payload that will be sent
+/// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
+/// it will release the loaned memory when going out of scope.
+///
+/// # Notes
+///
+/// Does not implement [`Send`] since it releases unsent samples in the [`crate::port::publisher::Publisher`] and the
+/// [`crate::port::publisher::Publisher`] is not thread-safe!
+///
+/// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
 pub struct SampleMutUninit<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> {
     sample: SampleMut<Service, Payload, UserHeader>,
 }
@@ -21,22 +120,137 @@ pub struct SampleMutUninit<Service: crate::service::Service, Payload: Debug + ?S
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader>
     SampleMutUninit<Service, Payload, UserHeader>
 {
+    /// Returns a reference to the header of the sample.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<u64>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let sample = publisher.loan_uninit()?;
+    /// println!("Sample Publisher Origin {:?}", sample.header().publisher_id());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn header(&self) -> &Header {
         self.sample.header()
     }
 
+    /// Returns a reference to the user_header of the sample.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<u64>()
+    /// #     .user_header::<u64>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let sample = publisher.loan_uninit()?;
+    /// println!("Sample Publisher Origin {:?}", sample.user_header());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn user_header(&self) -> &UserHeader {
         self.sample.user_header()
     }
 
+    /// Returns a mutable reference to the user_header of the sample.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<u64>()
+    /// #     .user_header::<u64>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let mut sample = publisher.loan_uninit()?;
+    /// *sample.user_header_mut() = 123;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn user_header_mut(&mut self) -> &mut UserHeader {
         self.sample.user_header_mut()
     }
 
+    /// Returns a reference to the payload of the sample.
+    ///
+    /// # Notes
+    ///
+    /// The generic parameter `Payload` is packed into a [`core::mem::MaybeUninit<Payload>`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<u64>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let sample = publisher.loan_uninit()?;
+    /// println!("Sample current payload {}", sample.payload());
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn payload(&self) -> &Payload {
         self.sample.payload()
     }
 
+    /// Returns a mutable reference to the payload of the sample.
+    ///
+    /// # Notes
+    ///
+    /// The generic parameter `Payload` is packed into a [`core::mem::MaybeUninit<Payload>`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<u64>()
+    /// #     .open_or_create()?;
+    /// # let publisher = service.publisher_builder().create()?;
+    ///
+    /// let mut sample = publisher.loan()?;
+    /// *sample.payload_mut() = 4567;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn payload_mut(&mut self) -> &mut Payload {
         self.sample.payload_mut()
     }
@@ -45,6 +259,20 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader>
 impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
 {
+    pub(crate) fn new(
+        data_segment: &Arc<DataSegment<Service>>,
+        ptr: RawSampleMut<Header, UserHeader, MaybeUninit<Payload>>,
+        offset_to_chunk: PointerOffset,
+    ) -> Self {
+        Self {
+            sample: SampleMut {
+                data_segment: Arc::clone(data_segment),
+                ptr,
+                offset_to_chunk,
+            },
+        }
+    }
+
     /// Writes the payload to the sample and labels the sample as initialized
     ///
     /// # Example
@@ -111,6 +339,20 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
 impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
+    pub(crate) fn new(
+        data_segment: &Arc<DataSegment<Service>>,
+        ptr: RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]>,
+        offset_to_chunk: PointerOffset,
+    ) -> Self {
+        Self {
+            sample: SampleMut {
+                data_segment: Arc::clone(data_segment),
+                ptr,
+                offset_to_chunk,
+            },
+        }
+    }
+
     /// Extracts the value of the slice of [`core::mem::MaybeUninit<Payload>`] and labels the sample as initialized
     ///
     /// # Safety
@@ -192,6 +434,30 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
 impl<Service: crate::service::Service, Payload: Debug + Copy, UserHeader>
     SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
+    /// Writes the payload by mem copying the provided slice into the [`SampleMutUninit`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .publish_subscribe::<[usize]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+    ///
+    /// let slice_length = 3;
+    /// let sample = publisher.loan_slice_uninit(slice_length)?;
+    /// let sample = sample.write_from_slice(&vec![1, 2, 3]);
+    ///
+    /// sample.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn write_from_slice(
         mut self,
         value: &[Payload],
