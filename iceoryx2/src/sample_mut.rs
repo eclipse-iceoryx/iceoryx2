@@ -26,7 +26,7 @@
 //! # let publisher = service.publisher_builder().create()?;
 //!
 //! // initializes the payload with `Default::default()`
-//! let sample = publisher.loan()?;
+//! let mut sample = publisher.loan()?;
 //! // override contents with 456 because its fun
 //! *sample.payload_mut() = 456;
 //!
@@ -52,7 +52,7 @@
 //!
 //! let slice_length = 12;
 //! // initializes every element of the slice with `Default::default()`
-//! let sample = publisher.loan_slice(slice_length)?;
+//! let mut sample = publisher.loan_slice(slice_length)?;
 //! // override the content of the first element with 42
 //! sample.payload_mut()[0] = 42;
 //!
@@ -262,10 +262,6 @@ impl<
     /// Send a previously loaned [`crate::port::publisher::Publisher::loan_uninit()`] or
     /// [`crate::port::publisher::Publisher::loan()`] [`SampleMut`] to all connected
     /// [`crate::port::subscriber::Subscriber`]s of the service.
-    ///
-    /// The payload of the [`SampleMut`] must be initialized before it can be sent. Have a look
-    /// at [`SampleMut::write_payload()`] and [`SampleMut::assume_init()`]
-    /// for more details.
     ///
     /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
     /// the data is returned, otherwise a [`PublisherSendError`] describing the failure.

@@ -81,7 +81,7 @@
 //! let slice_length = 4;
 //! let sample = publisher.loan_slice_uninit(slice_length)?;
 //! // initialize the slice with the numbers 1, 2, 3, 4
-//! let mut sample = sample.write_from_slice(vec![1, 2, 3, 4]);
+//! let mut sample = sample.write_from_slice(&vec![1, 2, 3, 4]);
 //!
 //! println!("publisher port id: {:?}", sample.header().publisher_id());
 //! sample.send()?;
@@ -216,8 +216,9 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader>
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher_builder().create()?;
     ///
-    /// let sample = publisher.loan_uninit()?;
-    /// println!("Sample current payload {}", sample.payload());
+    /// let mut sample = publisher.loan_uninit()?;
+    /// sample.payload_mut().write(123);
+    /// println!("Sample current payload {}", unsafe { sample.payload().assume_init_ref() });
     ///
     /// # Ok(())
     /// # }
@@ -245,8 +246,8 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader>
     /// #     .open_or_create()?;
     /// # let publisher = service.publisher_builder().create()?;
     ///
-    /// let mut sample = publisher.loan()?;
-    /// *sample.payload_mut() = 4567;
+    /// let mut sample = publisher.loan_uninit()?;
+    /// sample.payload_mut().write(4567);
     ///
     /// # Ok(())
     /// # }
