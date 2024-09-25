@@ -1,5 +1,8 @@
 #!/usr/bin/gnuplot -p
 
+data_file="benchmark_mechanism_comparision_i7_13700h.dat"
+system_type="Arch Linux on Intel i7 13700h"
+
 color_graph_caption='#595959'
 color_graph_grid='#d6d7d9'
 color_graph_box='#738f4d'
@@ -25,14 +28,13 @@ set rmargin 5
 set bmargin 6
 
 set title "Benchmark" font ",36" offset 0,-0.75
-set x2label "Arch Linux on AMD Ryzen 7 7840S" font ",24"
+set x2label system_type font ",24"
 set xlabel "payload size [KB]" font ",24" offset 0,-1.5
 set ylabel "latency [µs]" font ",24" offset -1.5,0
 set logscale x 2
 set logscale y 10
-set logscale y2 10
 set xrange [0:4096]
-set yrange [0:5000]
+set yrange [0.08:2000]
 set key left enhanced font ",16" width -3
 set object rectangle from screen -0.1,-0.1 to screen 1.1,1.1 fs noborder solid 0.7 fc rgb "#FFFFFF" behind
 set term svg enhanced font "sans" size output_width,output_height
@@ -55,7 +57,7 @@ set style line 4 \
     linetype 1 linewidth 4 \
     pointtype 9 pointsize 1.2
 
-plot 'benchmark_mechanism_comparision.dat' index 0 with linespoints linestyle 1 title "iceoryx2", \
+plot data_file index 0 with linespoints linestyle 1 title "iceoryx2", \
      ''                      index 1 with linespoints linestyle 2 title "iceoryx", \
      ''                      index 2 with linespoints linestyle 3 title "message queue", \
      ''                      index 3 with linespoints linestyle 4 title "unix domain socket" \
