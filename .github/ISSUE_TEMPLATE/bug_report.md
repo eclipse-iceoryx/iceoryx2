@@ -7,6 +7,10 @@ assignees: ''
 
 ---
 
+Before posting the bug, take a look at the
+[FAQ](https://github.com/eclipse-iceoryx/iceoryx2/blob/main/FAQ.md)
+for a possible solution.
+
 ## Required information
 
 **Operating system:**
@@ -22,6 +26,10 @@ Output of: `cargo --version`
 
 **iceoryx2 version:**
 E.g. `v1.2.3` or `main` branch
+
+**Detailed log output:**
+Add the call `set_log_level(LogLevel::Trace)` at the beginning of your application
+and attach the detailed log-output to the bug ticket.
 
 **Observed result or behaviour:**
 A minimalistic running code example that reproduces the bug or

@@ -23,3 +23,5 @@ pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_elementary::alignment::Alignment;
 pub use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary::CallbackProgression;
+pub use iceoryx2_bb_log::set_log_level;
+pub use iceoryx2_bb_log::LogLevel;

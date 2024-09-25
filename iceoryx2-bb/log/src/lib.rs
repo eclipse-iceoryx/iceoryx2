@@ -161,7 +161,7 @@ static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 #[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
 static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
 
-const DEFAULT_LOG_LEVEL: u8 = LogLevel::Trace as u8;
+const DEFAULT_LOG_LEVEL: u8 = LogLevel::Warn as u8;
 
 static mut LOGGER: Option<&'static dyn logger::Logger> = None;
 static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL);
