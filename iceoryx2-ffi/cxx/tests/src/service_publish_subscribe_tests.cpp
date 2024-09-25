@@ -201,7 +201,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     auto sample = sut_publisher.loan_uninit().expect("");
     const uint64_t payload = 78123791;
     sample.write_payload(payload);
-    send_sample(std::move(sample)).expect("");
+    send_sample(assume_init_sample(std::move(sample))).expect("");
     auto recv_sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(recv_sample.has_value());

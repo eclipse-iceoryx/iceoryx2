@@ -15,11 +15,13 @@
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
+#include "iox/slice.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/sample_mut.hpp"
+#include "iox2/sample_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
@@ -50,11 +52,11 @@ class Publisher {
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
     auto send_copy(const Payload& payload) const -> iox::expected<size_t, PublisherSendError>;
 
-    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
-    auto loan_uninit() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
+    auto loan_uninit() -> iox::expected<SampleMutUninit<S, Payload, UserHeader>, PublisherLoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
@@ -77,8 +79,8 @@ class Publisher {
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto
-    loan_slice_uninit(uint64_t number_of_elements) -> iox::expected<SampleMut<S, T, UserHeader>, PublisherLoanError>;
+    auto loan_slice_uninit(uint64_t number_of_elements)
+        -> iox::expected<SampleMutUninit<S, T, UserHeader>, PublisherLoanError>;
 
     /// Explicitly updates all connections to the [`Subscriber`]s. This is
     /// required to be called whenever a new [`Subscriber`] is connected to
@@ -167,11 +169,11 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
-    -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
+    -> iox::expected<SampleMutUninit<S, Payload, UserHeader>, PublisherLoanError> {
     auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
-    SampleMut<S, Payload, UserHeader> sample;
+    SampleMutUninit<S, Payload, UserHeader> sample;
 
-    auto result = iox2_publisher_loan(ref_handle, &sample.m_sample, &sample.m_handle);
+    auto result = iox2_publisher_loan(ref_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle);
 
     if (result == IOX2_OK) {
         return iox::ok(std::move(sample));
@@ -183,7 +185,15 @@ inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
 Publisher<S, Payload, UserHeader>::loan() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
-    return loan_uninit().and_then([](auto& sample) { new (&sample.payload_mut()) Payload(); });
+    auto sample = loan_uninit();
+
+    if (sample.has_error()) {
+        return iox::err(sample.error());
+    }
+
+    new (&sample->payload_mut()) Payload();
+
+    return iox::ok(assume_init_sample(std::move(*sample)));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -196,7 +206,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_slice(const uint64_t number_
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_slice_uninit(const uint64_t number_of_elements)
-    -> iox::expected<SampleMut<S, T, UserHeader>, PublisherLoanError> {
+    -> iox::expected<SampleMutUninit<S, T, UserHeader>, PublisherLoanError> {
     IOX_TODO();
 }
 

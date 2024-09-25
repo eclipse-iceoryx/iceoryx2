@@ -805,7 +805,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
         sample.write_payload(value).send()
     }
 
-    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
@@ -947,7 +947,7 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
 impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     Publisher<Service, [Payload], UserHeader>
 {
-    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
