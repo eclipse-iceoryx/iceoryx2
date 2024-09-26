@@ -36,7 +36,7 @@ impl From<u8> for iox2_log_level_e {
             3 => iox2_log_level_e::WARN,
             4 => iox2_log_level_e::ERROR,
             5 => iox2_log_level_e::FATAL,
-            _ => iox2_log_level_e::INFO, // default to INFO ?
+            _ => iox2_log_level_e::TRACE,
         }
     }
 }
