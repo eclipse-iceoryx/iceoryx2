@@ -20,6 +20,7 @@
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/listener_error.hpp"
+#include "iox2/log_level.hpp"
 #include "iox2/messaging_pattern.hpp"
 #include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
@@ -642,6 +643,26 @@ constexpr auto from<int, iox2::ConfigCreationError>(const int value) noexcept ->
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<iox2::LogLevel, iox2_log_level_e>(iox2::LogLevel value) noexcept -> iox2_log_level_e {
+    switch (value) {
+    case iox2::LogLevel::TRACE:
+        return iox2_log_level_e_TRACE;
+    case iox2::LogLevel::DEBUG:
+        return iox2_log_level_e_DEBUG;
+    case iox2::LogLevel::INFO:
+        return iox2_log_level_e_INFO;
+    case iox2::LogLevel::WARN:
+        return iox2_log_level_e_WARN;
+    case iox2::LogLevel::ERROR:
+        return iox2_log_level_e_ERROR;
+    case iox2::LogLevel::FATAL:
+        return iox2_log_level_e_FATAL;
+    }
+    IOX_UNREACHABLE();
+}
+
 } // namespace iox
 
 #endif
