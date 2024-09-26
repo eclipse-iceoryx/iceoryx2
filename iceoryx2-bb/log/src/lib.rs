@@ -167,6 +167,7 @@ static mut LOGGER: Option<&'static dyn logger::Logger> = None;
 static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL);
 static INIT: Once = Once::new();
 
+/// Describes the log level.
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 pub enum LogLevel {
