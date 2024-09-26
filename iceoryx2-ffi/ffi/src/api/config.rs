@@ -1271,7 +1271,7 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_m
         .subscriber_max_borrowed_samples = value;
 }
 
-/// Returns the maximum amount of [`iox2_sample_mut_uninit_h`](crate::api::iox2_sample_mut_uninit_h)s a
+/// Returns the maximum amount of [`iox2_sample_mut_h`](crate::api::iox2_sample_mut_h)s a
 /// [`iox2_publisher_h`](crate::api::iox2_publisher_h) can loan at the same time.
 ///
 /// # Safety
@@ -1293,7 +1293,7 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_max_lo
         .publisher_max_loaned_samples
 }
 
-/// Sets the maximum amount of [`iox2_sample_mut_uninit_h`](crate::api::iox2_sample_mut_uninit_h)s a
+/// Sets the maximum amount of [`iox2_sample_mut_h`](crate::api::iox2_sample_mut_h)s a
 /// [`iox2_publisher_h`](crate::api::iox2_publisher_h) can loan at the same time.
 ///
 /// # Safety

@@ -480,3 +480,9 @@
     // uninitialized samples cannot be sent
     let sample.send()?;
     ```
+
+## Thanks To All Contributors Of This Version
+
+* [Christian »elfenpiff« Eltzschig](https://github.com/elfenpiff)
+* [Mathias »elBoberido« Kraus](https://github.com/elboberido)
+* [»orecham«](https://github.com/orecham)
