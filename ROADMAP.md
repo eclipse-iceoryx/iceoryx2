@@ -1,13 +1,21 @@
 # Roadmap
 
-## Q2.2024
+## v0.5
 
-* [ ] Untyped API
-* [x] C binding
+### Main Focus
+
+* [ ] (Waitset), event multiplexing and advanced push notifications
+* [ ] Finalize C and C++ API
+* [ ] Fully dynamic payload for pub/sub
+* [ ] ROS 2 rmw binding
+* [ ] Health monitoring
+* [ ] Reliability features for pub/sub
+
+### Bonus
+
 * [ ] Derive macro for SHM transferable types
-* [ ] Node as basis for monitoring and resource cleanup
 * [ ] `serde`-based shm serialization to transmit arbitrary types
-* [ ] Pipeline (optional Request/Response)
+* [ ] Request/Response
 
 ## Moonshots
 
@@ -32,8 +40,8 @@
 
 ## Language Bindings
 
-* [ ] C
-* [ ] C++
+* [x] C
+* [x] C++
 * [ ] Lua
 * [ ] Python
 * [ ] Zig
@@ -94,6 +102,7 @@
 * [ ] Support dynamic sized types in a memory efficient manner
     * Buddy allocator for sender data-segment
     * Introduce runtime fixed-size types
+* [x] Untyped API
 
 ## Expert/Advanced Features
 
@@ -103,6 +112,7 @@
 
 ## Robustness
 
+* [X] Node as basis for monitoring and resource cleanup
 * [ ] Add ability to recover samples when subscriber died
     * add sample tracker into ZeroCopyConnection
     * add detection when subscriber returns non-received samples
