@@ -64,7 +64,7 @@ impl IntoCInt for ConfigCreationError {
 /// The immutable pointer to the underlying `Config`
 pub type iox2_config_ptr = *const Config;
 /// The mutable pointer to the underlying `Config`
-pub type iox2_config_mut_ptr = *mut Config;
+pub type iox2_config_ptr_mut = *mut Config;
 
 pub(super) struct ConfigOwner {
     pub(crate) value: ManuallyDrop<Config>,

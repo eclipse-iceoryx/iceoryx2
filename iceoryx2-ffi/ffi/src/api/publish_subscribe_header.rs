@@ -59,7 +59,7 @@ pub type iox2_publish_subscribe_header_ref_h = *mut iox2_publish_subscribe_heade
 /// The immutable pointer to the underlying `publish_subscribe::Header`
 pub type iox2_publish_subscribe_header_ptr = *const Header;
 /// The mutable pointer to the underlying `publish_subscribe::Header`
-pub type iox2_publish_subscribe_header_mut_ptr = *mut Header;
+pub type iox2_publish_subscribe_header_ptr_mut = *mut Header;
 
 impl HandleToType for iox2_publish_subscribe_header_h {
     type Target = *mut iox2_publish_subscribe_header_t;

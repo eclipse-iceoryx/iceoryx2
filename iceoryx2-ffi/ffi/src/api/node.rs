@@ -150,7 +150,7 @@ pub enum iox2_node_state_e {
 /// The immutable pointer to the underlying `NodeId`
 pub type iox2_node_id_ptr = *const NodeId;
 /// The mutable pointer to the underlying `NodeId`
-pub type iox2_node_id_mut_ptr = *mut NodeId;
+pub type iox2_node_id_ptr_mut = *mut NodeId;
 
 /// The callback for [`iox2_node_list`]
 ///

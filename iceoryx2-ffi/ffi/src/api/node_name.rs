@@ -49,7 +49,7 @@ pub type iox2_node_name_ref_h = *mut iox2_node_name_ref_h_t;
 /// The immutable pointer to the underlying `NodeName`
 pub type iox2_node_name_ptr = *const NodeName;
 /// The mutable pointer to the underlying `NodeName`
-pub type iox2_node_name_mut_ptr = *mut NodeName;
+pub type iox2_node_name_ptr_mut = *mut NodeName;
 
 impl HandleToType for iox2_node_name_h {
     type Target = *mut iox2_node_name_t;

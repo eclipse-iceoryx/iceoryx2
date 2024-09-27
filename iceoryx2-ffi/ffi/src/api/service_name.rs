@@ -49,7 +49,7 @@ pub type iox2_service_name_ref_h = *mut iox2_service_name_ref_h_t;
 /// The immutable pointer to the underlying `ServiceName`
 pub type iox2_service_name_ptr = *const ServiceName;
 /// The mutable pointer to the underlying `ServiceName`
-pub type iox2_service_name_mut_ptr = *mut ServiceName;
+pub type iox2_service_name_ptr_mut = *mut ServiceName;
 
 impl HandleToType for iox2_service_name_h {
     type Target = *mut iox2_service_name_t;
