@@ -23,9 +23,11 @@ insufficient, a new publisher with a larger `max_slice_len` can be created.
 
 ## How To Make 32-bit and 64-bit iceoryx2 Applications Interoperatable
 
-Use the feature flag `enforce_32bit_rwlock_atomic` which enforces 32-bit atomics
-for all targets at the cost of the lock-free guarantee. Meaning, when an
-application crashes at the wrong point in time it can lead to a system deadlock.
+This is currently not possible since we cannot guarantee to have the same
+layout of the data structures in the shared memory. On 32-bit architectures
+64-bit POD are aligned to a 4 byte boundary but to a 8 byte boundary on
+64-bit architectures. Some additional work is required to make 32-bit and
+64-bit applications interoperabel.
 
 ## My Transmission Type Is Too Large, Encounter Stack Overflow On Initialization
 
