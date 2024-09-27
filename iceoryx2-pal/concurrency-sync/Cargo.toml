@@ -10,11 +10,6 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[features]
-# Enables 64-bit applications to communicate with 32-bit applications at the cost of being no
-# longer lock-free. Meaning, a crash at the wrong time can lead to a system deadlock.
-enforce_32bit_rwlock_atomic = []
-
 [dependencies]
 
 [dev-dependencies]
