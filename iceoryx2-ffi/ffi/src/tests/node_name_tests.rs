@@ -29,12 +29,12 @@ fn basic_node_name_test() -> Result<(), Box<dyn std::error::Error>> {
         assert_that!(ret_val, eq(IOX2_OK));
 
         let mut node_name_len = 0;
-        let node_name_c_str = iox2_node_name_as_c_str(
+        let node_name_c_ptr = iox2_node_name_as_str(
             iox2_cast_node_name_ptr(node_name_handle),
             &mut node_name_len,
         );
 
-        let slice = slice::from_raw_parts(node_name_c_str as *const _, node_name_len as _);
+        let slice = slice::from_raw_parts(node_name_c_ptr as *const _, node_name_len as _);
         let node_name = str::from_utf8(slice)?;
 
         assert_that!(node_name, eq(expected_node_name.as_str()));

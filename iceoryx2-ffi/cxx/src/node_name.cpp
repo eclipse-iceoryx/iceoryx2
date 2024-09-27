@@ -20,13 +20,13 @@
 namespace iox2 {
 auto NodeNameView::to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH> {
     size_t len = 0;
-    const auto* c_ptr = iox2_node_name_as_c_str(m_ptr, &len);
+    const auto* c_ptr = iox2_node_name_as_str(m_ptr, &len);
     return { iox::TruncateToCapacity, c_ptr, len };
 }
 
 auto NodeNameView::to_owned() const -> NodeName {
     size_t len = 0;
-    const auto* c_ptr = iox2_node_name_as_c_str(m_ptr, &len);
+    const auto* c_ptr = iox2_node_name_as_str(m_ptr, &len);
     return NodeName::create_impl(c_ptr, len).expect("NodeNameView contains always valid NodeName");
 }
 
@@ -68,7 +68,7 @@ auto NodeName::operator=(const NodeName& rhs) -> NodeName& {
 
         const auto* ptr = iox2_cast_node_name_ptr(rhs.m_handle);
         size_t len = 0;
-        const auto* c_ptr = iox2_node_name_as_c_str(ptr, &len);
+        const auto* c_ptr = iox2_node_name_as_str(ptr, &len);
         IOX_ASSERT(iox2_node_name_new(nullptr, c_ptr, len, &m_handle) == IOX2_OK,
                    "NodeName shall always contain a valid value.");
     }

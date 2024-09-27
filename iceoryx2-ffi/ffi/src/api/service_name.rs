@@ -158,24 +158,26 @@ pub unsafe extern "C" fn iox2_cast_service_name_ptr(
     (*service_name_handle.as_type()).value.as_ref()
 }
 
-/// This function gives access to the node name as a C-style string
+/// This function gives access to the node name as a non-zero-terminated char string
 ///
 /// # Arguments
 ///
 /// * `service_name_ptr` obtained by e.g. [`iox2_cast_service_name_ptr`] or a function returning a [`iox2_service_name_ptr`]
-/// * `service_name_len` can be used to get the length of the C-style string if not `NULL`
+/// * `service_name_len` must be used to get the length of the char string
 ///
-/// Returns zero terminated C-style string
+/// Returns non-zero-terminated char string
 ///
 /// # Safety
 ///
 /// * The `service_name_ptr` must be a valid pointer to a node name.
+/// * The `service_name_len` must be a valid pointer to a size_t.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_service_name_as_c_str(
+pub unsafe extern "C" fn iox2_service_name_as_str(
     service_name_ptr: iox2_service_name_ptr,
     service_name_len: *mut c_size_t,
 ) -> *const c_char {
     debug_assert!(!service_name_ptr.is_null());
+    debug_assert!(!service_name_len.is_null());
 
     let service_name = &*service_name_ptr;
 

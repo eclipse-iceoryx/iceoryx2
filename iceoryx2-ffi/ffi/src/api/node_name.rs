@@ -158,24 +158,26 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
     (*node_name_handle.as_type()).value.as_ref()
 }
 
-/// This function gives access to the node name as a C-style string
+/// This function gives access to the node name as a non-zero-terminated char string
 ///
 /// # Arguments
 ///
 /// * `node_name_ptr` obtained by e.g. [`iox2_cast_node_name_ptr`] or a function returning a [`iox2_node_name_ptr`]
-/// * `node_name_len` can be used to get the length of the C-style string if not `NULL`
+/// * `node_name_len` must be used to get the length of the char string
 ///
-/// Returns zero terminated C-style string
+/// Returns a non-zero-terminated char string
 ///
 /// # Safety
 ///
 /// * The `node_name_ptr` must be a valid pointer to a node name.
+/// * The `node_name_len` must be a valid pointer to a size_t.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_name_as_c_str(
+pub unsafe extern "C" fn iox2_node_name_as_str(
     node_name_ptr: iox2_node_name_ptr,
     node_name_len: *mut c_size_t,
 ) -> *const c_char {
     debug_assert!(!node_name_ptr.is_null());
+    debug_assert!(!node_name_len.is_null());
 
     let node_name = &*node_name_ptr;
 
