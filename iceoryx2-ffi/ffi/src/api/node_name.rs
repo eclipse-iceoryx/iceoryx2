@@ -158,21 +158,21 @@ pub unsafe extern "C" fn iox2_cast_node_name_ptr(
     (*node_name_handle.as_type()).value.as_ref()
 }
 
-/// This function gives access to the node name as a non-zero-terminated char string
+/// This function gives access to the node name as a non-zero-terminated char array
 ///
 /// # Arguments
 ///
 /// * `node_name_ptr` obtained by e.g. [`iox2_cast_node_name_ptr`] or a function returning a [`iox2_node_name_ptr`]
-/// * `node_name_len` must be used to get the length of the char string
+/// * `node_name_len` must be used to get the length of the char array
 ///
-/// Returns a non-zero-terminated char string
+/// Returns a non-zero-terminated char array
 ///
 /// # Safety
 ///
 /// * The `node_name_ptr` must be a valid pointer to a node name.
 /// * The `node_name_len` must be a valid pointer to a size_t.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_name_as_str(
+pub unsafe extern "C" fn iox2_node_name_as_chars(
     node_name_ptr: iox2_node_name_ptr,
     node_name_len: *mut c_size_t,
 ) -> *const c_char {
