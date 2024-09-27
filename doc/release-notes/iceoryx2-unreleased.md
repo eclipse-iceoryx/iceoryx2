@@ -87,6 +87,8 @@
   [#370](https://github.com/eclipse-iceoryx/iceoryx2/issues/370)
 * Add colcon package for iceoryx2 with C/C++ bindings
   [#381](https://github.com/eclipse-iceoryx/iceoryx2/issues/381)
+* Lock-free atomics on 32-bit architectures
+  [#401](https://github.com/eclipse-iceoryx/iceoryx2/issues/401)
 
 ### Bugfixes
 
