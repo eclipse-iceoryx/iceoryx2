@@ -16,7 +16,7 @@ use crate::api::{iox2_service_type_e, HandleToType, IntoCInt, UserHeaderFfi};
 use crate::{c_size_t, iox2_publish_subscribe_header_h, iox2_publish_subscribe_header_t, IOX2_OK};
 
 use iceoryx2::prelude::*;
-use iceoryx2::sample_mut::SampleMut;
+use iceoryx2::sample_mut_uninit::SampleMutUninit;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -27,21 +27,21 @@ use super::UninitPayloadFfi;
 
 // BEGIN types definition
 
-pub(super) union SampleMutUnion {
-    ipc: ManuallyDrop<SampleMut<ipc::Service, UninitPayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<SampleMut<local::Service, UninitPayloadFfi, UserHeaderFfi>>,
+pub(super) union SampleMutUninitUnion {
+    ipc: ManuallyDrop<SampleMutUninit<ipc::Service, UninitPayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<SampleMutUninit<local::Service, UninitPayloadFfi, UserHeaderFfi>>,
 }
 
-impl SampleMutUnion {
+impl SampleMutUninitUnion {
     pub(super) fn new_ipc(
-        sample: SampleMut<ipc::Service, UninitPayloadFfi, UserHeaderFfi>,
+        sample: SampleMutUninit<ipc::Service, UninitPayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
     pub(super) fn new_local(
-        sample: SampleMut<local::Service, UninitPayloadFfi, UserHeaderFfi>,
+        sample: SampleMutUninit<local::Service, UninitPayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(sample),
@@ -50,13 +50,13 @@ impl SampleMutUnion {
 }
 
 #[repr(C)]
-#[repr(align(8))] // alignment of Option<SampleMutUnion>
+#[repr(align(8))] // alignment of Option<SampleMutUninitUnion>
 pub struct iox2_sample_mut_storage_t {
-    internal: [u8; 56], // magic number obtained with size_of::<Option<SampleMutUnion>>()
+    internal: [u8; 56], // magic number obtained with size_of::<Option<SampleMutUninitUnion>>()
 }
 
 #[repr(C)]
-#[iceoryx2_ffi(SampleMutUnion)]
+#[iceoryx2_ffi(SampleMutUninitUnion)]
 pub struct iox2_sample_mut_t {
     service_type: iox2_service_type_e,
     value: iox2_sample_mut_storage_t,
@@ -67,7 +67,7 @@ impl iox2_sample_mut_t {
     pub(super) fn init(
         &mut self,
         service_type: iox2_service_type_e,
-        value: SampleMutUnion,
+        value: SampleMutUninitUnion,
         deleter: fn(*mut iox2_sample_mut_t),
     ) {
         self.service_type = service_type;

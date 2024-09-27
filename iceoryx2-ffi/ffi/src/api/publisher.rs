@@ -12,7 +12,9 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, SampleMutUnion, UserHeaderFfi};
+use crate::api::{
+    iox2_service_type_e, HandleToType, PayloadFfi, SampleMutUninitUnion, UserHeaderFfi,
+};
 use crate::{
     iox2_unable_to_deliver_strategy_e, iox2_unique_publisher_id_h, iox2_unique_publisher_id_t,
     IOX2_OK,
@@ -396,7 +398,7 @@ pub unsafe extern "C" fn iox2_publisher_loan(
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
                     publisher.service_type,
-                    SampleMutUnion::new_ipc(sample),
+                    SampleMutUninitUnion::new_ipc(sample),
                     deleter,
                 );
                 *sample_handle_ptr = (*sample_struct_ptr).as_handle();
@@ -409,7 +411,7 @@ pub unsafe extern "C" fn iox2_publisher_loan(
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
                     publisher.service_type,
-                    SampleMutUnion::new_local(sample),
+                    SampleMutUninitUnion::new_local(sample),
                     deleter,
                 );
                 *sample_handle_ptr = (*sample_struct_ptr).as_handle();

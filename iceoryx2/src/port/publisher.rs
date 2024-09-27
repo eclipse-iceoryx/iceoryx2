@@ -107,6 +107,7 @@ use crate::port::details::subscriber_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
+use crate::sample_mut_uninit::SampleMutUninit;
 use crate::service::config_scheme::{connection_config, data_segment_config};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -798,17 +799,13 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     /// ```
     pub fn send_copy(&self, value: Payload) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send copy of payload";
-        let mut sample = fail!(from self, when self.loan_uninit(),
+        let sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
 
-        sample.payload_mut().write(value);
-        Ok(
-            fail!(from self, when self.data_segment.send_sample(sample.offset_to_chunk.value()),
-            "{} since the underlying send operation failed.", msg),
-        )
+        sample.write_payload(value).send()
     }
 
-    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
@@ -837,7 +834,8 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     /// ```
     pub fn loan_uninit(
         &self,
-    ) -> Result<SampleMut<Service, MaybeUninit<Payload>, UserHeader>, PublisherLoanError> {
+    ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, PublisherLoanError>
+    {
         let chunk = self.allocate(self.sample_layout(1))?;
         let header_ptr = chunk.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
@@ -852,11 +850,13 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
 
         let sample =
             unsafe { RawSampleMut::new_unchecked(header_ptr, user_header_ptr, payload_ptr) };
-        Ok(SampleMut::<Service, MaybeUninit<Payload>, UserHeader>::new(
-            &self.data_segment,
-            sample,
-            chunk.offset,
-        ))
+        Ok(
+            SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
+                &self.data_segment,
+                sample,
+                chunk.offset,
+            ),
+        )
     }
 }
 
@@ -947,7 +947,7 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
 impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     Publisher<Service, [Payload], UserHeader>
 {
-    /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
@@ -977,7 +977,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     pub fn loan_slice_uninit(
         &self,
         slice_len: usize,
-    ) -> Result<SampleMut<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError> {
+    ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError>
+    {
         let max_slice_len = self.data_segment.config.max_slice_len;
         if max_slice_len < slice_len {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
@@ -1013,7 +1014,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         };
 
         Ok(
-            SampleMut::<Service, [MaybeUninit<Payload>], UserHeader>::new(
+            SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
                 &self.data_segment,
                 sample,
                 chunk.offset,

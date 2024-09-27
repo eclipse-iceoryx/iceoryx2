@@ -14,17 +14,12 @@
 #define IOX2_SAMPLE_MUT_HPP
 
 #include "iox/assertions.hpp"
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
-#include "iox/function.hpp"
-#include "iox/slice.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/service_type.hpp"
-
-#include <cstdint>
 
 namespace iox2 {
 
@@ -86,22 +81,17 @@ class SampleMut {
     /// Returns a reference to the payload of the sample.
     auto payload_mut() -> Payload&;
 
-    /// Writes the payload to the sample
-    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
-    void write_payload(T&& value);
-
-    /// Writes the payload to the sample
-    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    void write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer);
-
   private:
     template <ServiceType, typename, typename>
     friend class Publisher;
+    template <ServiceType, typename, typename>
+    friend class SampleMutUninit;
 
     template <ServiceType ST, typename PayloadT, typename UserHeaderT>
-    friend auto send_sample(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<size_t, PublisherSendError>;
+    friend auto send(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<size_t, PublisherSendError>;
 
-    // The sample is defaulted since both members are initialized in Subscriber::receive
+    // The sample is defaulted since both members are initialized in Publisher::loan() or
+    // Publisher::loan_slice()
     explicit SampleMut() = default;
     void drop();
 
@@ -223,20 +213,7 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> Payload& {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-template <typename T, typename>
-inline void SampleMut<S, Payload, UserHeader>::write_payload(T&& value) {
-    new (&payload_mut()) Payload(std::forward<T>(value));
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-template <typename T, typename>
-inline void
-SampleMut<S, Payload, UserHeader>::write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer) {
-    IOX_TODO();
-}
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto send_sample(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<size_t, PublisherSendError> {
+inline auto send(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<size_t, PublisherSendError> {
     size_t number_of_recipients = 0;
     auto result = iox2_sample_mut_send(sample.m_handle, &number_of_recipients);
     sample.m_handle = nullptr;

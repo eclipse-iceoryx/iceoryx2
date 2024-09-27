@@ -136,6 +136,9 @@
 * Renamed `zero_copy::Service` and `process_local::Service` into `ipc::Service`
   and `local::Service`
   [#323](https://github.com/eclipse-iceoryx/iceoryx2/issues/323)
+* Introduce `SampleMutUninit<Payload>` without `send` functionality
+  as replacement for `SampleMut<MaybeUninit<Payload>>`
+  [#394](https://github.com/eclipse-iceoryx/iceoryx2/issues/394)
 
 ### Workflow
 
@@ -457,6 +460,25 @@
     // new
     let node = NodeBuilder::new().create::<ipc::Service>()?;
     let node = NodeBuilder::new().create::<local::Service>()?;
+    ```
+
+20. `SampleMutUninit` without `send` as replacement for `SampleMut<MaybeUninit<Payload>>`
+
+    ```rust
+    // old
+    let sample: SampleMut<zero_copy::Service, MaybeUninit<u64>> = publisher.loan_uninit()?;
+    let sample = sample.write_payload(123);
+    let sample.send()?;
+
+    // new
+    let sample: SampleMutUninit<zero_copy::Service, MaybeUninit<u64>> = publisher.loan_uninit()?;
+    let sample = sample.write_payload(123);
+    let sample.send()?;
+
+    // no longer compiles
+    let sample = publisher.loan_uninit()?;
+    // uninitialized samples cannot be sent
+    let sample.send()?;
     ```
 
 ## Thanks To All Contributors Of This Version

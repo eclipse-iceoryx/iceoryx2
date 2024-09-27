@@ -46,8 +46,9 @@ auto main() -> int {
         sample.user_header_mut().timestamp = 80337 + counter; // NOLINT
 
         sample.write_payload(counter);
+        auto initialized_sample = assume_init(std::move(sample));
 
-        send_sample(std::move(sample)).expect("send successful");
+        send(std::move(initialized_sample)).expect("send successful");
 
         std::cout << "Send sample " << counter << "..." << std::endl;
     }

@@ -201,7 +201,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     auto sample = sut_publisher.loan_uninit().expect("");
     const uint64_t payload = 78123791;
     sample.write_payload(payload);
-    send_sample(std::move(sample)).expect("");
+    send(assume_init(std::move(sample))).expect("");
     auto recv_sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(recv_sample.has_value());
@@ -223,7 +223,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
     auto sample = sut_publisher.loan().expect("");
     const uint64_t payload = 781891729871;
     *sample = payload;
-    send_sample(std::move(sample)).expect("");
+    send(std::move(sample)).expect("");
     auto recv_sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(recv_sample.has_value());
@@ -406,7 +406,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
         sample.user_header_mut().value.at(idx) = 4 * idx + 3;
     }
-    send_sample(std::move(sample)).expect("");
+    send(std::move(sample)).expect("");
     auto recv_sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(recv_sample.has_value());
