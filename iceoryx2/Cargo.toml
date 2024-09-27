@@ -16,9 +16,6 @@ version = { workspace = true }
 logger_log = ["iceoryx2-bb-log/logger_log"]
 # Enables https://crates.io/crates/tracing as default logger
 logger_tracing = ["iceoryx2-bb-log/logger_tracing"]
-# Enables 64-bit applications to communicate with 32-bit applications at the cost of being no
-# longer lock-free. Meaning, a crash at the wrong time can lead to a system deadlock.
-enforce_32bit_rwlock_atomic = ["iceoryx2-pal-concurrency-sync/enforce_32bit_rwlock_atomic"]
 
 [dependencies]
 iceoryx2-bb-container = { workspace = true }
