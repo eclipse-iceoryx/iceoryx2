@@ -19,14 +19,14 @@
 namespace iox2 {
 auto ServiceNameView::to_string() const -> iox::string<IOX2_NODE_NAME_LENGTH> {
     size_t len = 0;
-    const auto* c_ptr = iox2_service_name_as_c_str(m_ptr, &len);
-    return { iox::TruncateToCapacity, c_ptr, len };
+    const auto* chars = iox2_service_name_as_chars(m_ptr, &len);
+    return { iox::TruncateToCapacity, chars, len };
 }
 
 auto ServiceNameView::to_owned() const -> ServiceName {
     size_t len = 0;
-    const auto* c_ptr = iox2_service_name_as_c_str(m_ptr, &len);
-    return ServiceName::create_impl(c_ptr, len).expect("ServiceNameView always contains valid ServiceName");
+    const auto* chars = iox2_service_name_as_chars(m_ptr, &len);
+    return ServiceName::create_impl(chars, len).expect("ServiceNameView always contains valid ServiceName");
 }
 
 ServiceNameView::ServiceNameView(iox2_service_name_ptr ptr)
@@ -67,8 +67,8 @@ auto ServiceName::operator=(const ServiceName& rhs) -> ServiceName& {
 
         const auto* ptr = iox2_cast_service_name_ptr(rhs.m_handle);
         size_t len = 0;
-        const auto* c_ptr = iox2_service_name_as_c_str(ptr, &len);
-        IOX_ASSERT(iox2_service_name_new(nullptr, c_ptr, len, &m_handle) == IOX2_OK,
+        const auto* chars = iox2_service_name_as_chars(ptr, &len);
+        IOX_ASSERT(iox2_service_name_new(nullptr, chars, len, &m_handle) == IOX2_OK,
                    "ServiceName shall always contain a valid value.");
     }
 

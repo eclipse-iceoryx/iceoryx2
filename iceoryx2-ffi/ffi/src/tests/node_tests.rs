@@ -51,9 +51,9 @@ mod node {
             let node_name = iox2_node_name(iox2_cast_node_ref_h(node_handle));
 
             let mut node_name_len = 0;
-            let node_name_c_str = iox2_node_name_as_c_str(node_name, &mut node_name_len);
+            let node_name_chars = iox2_node_name_as_chars(node_name, &mut node_name_len);
 
-            let slice = slice::from_raw_parts(node_name_c_str as *const _, node_name_len as _);
+            let slice = slice::from_raw_parts(node_name_chars as *const _, node_name_len as _);
             let node_name_str = str::from_utf8(slice)?;
 
             assert_that!(node_name_str, eq("hypnotoad"));
