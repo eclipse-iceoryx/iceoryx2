@@ -16,22 +16,22 @@
 * Nodes cleanup all resources of dead nodes on creation and destruction
   [#96](https://github.com/eclipse-iceoryx/iceoryx2/issues/96)
 * CLI for iox2 [#98](https://github.com/eclipse-iceoryx/iceoryx2/issues/98)
-  * Add `iox2` CLI
-  * Add `iox2-service` CLI
-  * Add `iox2-node` CLI
+    * Add `iox2` CLI
+    * Add `iox2-service` CLI
+    * Add `iox2-node` CLI
 * Introduce Nodes [#102](https://github.com/eclipse-iceoryx/iceoryx2/issues/102)
-  * Implement Serialize,Deserialize for
-    * `SemanticString`
-    * `UniqueSystemId`
+    * Implement Serialize,Deserialize for
+        * `SemanticString`
+        * `UniqueSystemId`
 * Nodes register in service to enable monitoring
   [#103](https://github.com/eclipse-iceoryx/iceoryx2/issues/103)
 * Multiple features from
   [#195](https://github.com/eclipse-iceoryx/iceoryx2/issues/195)
 
-  * Introduce `payload_alignment` in `publish_subscribe` builder to increase
+    * Introduce `payload_alignment` in `publish_subscribe` builder to increase
     alignment of payload for all service samples
-  * Introduce support for slice-types with dynamic sizes.
-  * Introduce `max_slice_len` in the publisher builder to set support dynamic
+    * Introduce support for slice-types with dynamic sizes.
+    * Introduce `max_slice_len` in the publisher builder to set support dynamic
     sized types (slices).
 
   ```rust
@@ -62,9 +62,9 @@
   ```
 
 * 32-bit support [#200](https://github.com/eclipse-iceoryx/iceoryx2/issues/200)
-  * Introduce `IoxAtomic` that supports up to 128bit atomics on 32-bit
+    * Introduce `IoxAtomic` that supports up to 128bit atomics on 32-bit
     architecture with a ReadWriteLock
-  * add CI targets to officially support 32-bit
+    * add CI targets to officially support 32-bit
 * Example that demonstrates publish-subscribe communication with dynamic data
   [#205](https://github.com/eclipse-iceoryx/iceoryx2/issues/205)
 * Introduce `PlacementNew` trait and derive proc-macro
@@ -72,9 +72,9 @@
 * Custom service properties support, see
   [example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/service_properties)
   [#231](https://github.com/eclipse-iceoryx/iceoryx2/issues/231)
-  * Implement Serialize,Deserialize for
-    * `FixedSizeByteString`
-    * `FixedSizeVec`
+    * Implement Serialize,Deserialize for
+        * `FixedSizeByteString`
+        * `FixedSizeVec`
 * TryInto implemented for `{Node|Service}Name`
   [#243](https://github.com/eclipse-iceoryx/iceoryx2/issues/243)
 * Add custom user header
