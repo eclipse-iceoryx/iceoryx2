@@ -175,8 +175,8 @@ where
     E: Environment,
 {
     fn paths() -> Result<PathsList> {
-        let build = E::build_paths().context("Failed to retrieve build paths")?;
-        let install = E::install_paths().context("Failed to retrieve install paths")?;
+        let build = E::build_paths().unwrap_or_default();
+        let install = E::install_paths().unwrap_or_default();
 
         Ok(PathsList { build, install })
     }
@@ -225,13 +225,18 @@ where
 {
     let paths = IceoryxCommandFinder::<E>::paths().context("Failed to list search paths")?;
 
-    println!("{}", "Build Paths:".bright_green().bold());
-    for dir in paths.build {
-        println!("  {}", dir.display().to_string().bold());
+    if !paths.build.is_empty() {
+        println!("{}", "Build Paths:".bright_green().bold());
+        for dir in &paths.build {
+            println!("  {}", dir.display().to_string().bold());
+        }
+        println!();
     }
-    println!("\n{}", "Install Paths:".bright_green().bold());
-    for dir in paths.install {
-        println!("  {}", dir.display().to_string().bold());
+    if !paths.install.is_empty() {
+        println!("{}", "Install Paths:".bright_green().bold());
+        for dir in &paths.install {
+            println!("  {}", dir.display().to_string().bold());
+        }
     }
 
     Ok(())
