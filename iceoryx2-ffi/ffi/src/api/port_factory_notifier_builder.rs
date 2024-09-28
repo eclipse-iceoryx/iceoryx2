@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_event_id_t, iox2_notifier_h, iox2_notifier_t, iox2_service_type_e, HandleToType, IntoCInt,
-    NotifierUnion, IOX2_OK,
+    iox2_event_id_t, iox2_notifier_h, iox2_notifier_t, iox2_service_type_e, AssertNonNullHandle,
+    HandleToType, IntoCInt, NotifierUnion, IOX2_OK,
 };
 
 use iceoryx2::port::notifier::NotifierCreateError;
@@ -92,10 +92,23 @@ impl iox2_port_factory_notifier_builder_t {
 pub struct iox2_port_factory_notifier_builder_h_t;
 /// The owning handle for `iox2_port_factory_notifier_builder_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_port_factory_notifier_builder_h = *mut iox2_port_factory_notifier_builder_h_t;
-
-pub struct iox2_port_factory_notifier_builder_ref_h_t;
 /// The non-owning handle for `iox2_port_factory_notifier_builder_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_port_factory_notifier_builder_ref_h = *mut iox2_port_factory_notifier_builder_ref_h_t;
+pub type iox2_port_factory_notifier_builder_h_ref = *const iox2_port_factory_notifier_builder_h;
+
+impl AssertNonNullHandle for iox2_port_factory_notifier_builder_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_port_factory_notifier_builder_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_port_factory_notifier_builder_h {
     type Target = *mut iox2_port_factory_notifier_builder_t;
@@ -105,11 +118,11 @@ impl HandleToType for iox2_port_factory_notifier_builder_h {
     }
 }
 
-impl HandleToType for iox2_port_factory_notifier_builder_ref_h {
+impl HandleToType for iox2_port_factory_notifier_builder_h_ref {
     type Target = *mut iox2_port_factory_notifier_builder_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -117,34 +130,12 @@ impl HandleToType for iox2_port_factory_notifier_builder_ref_h {
 
 // BEGIN C API
 
-/// This function casts an owning [`iox2_port_factory_notifier_builder_h`] into a non-owning [`iox2_port_factory_notifier_builder_ref_h`]
-///
-/// # Arguments
-///
-/// * `port_factory_handle` obtained by [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder)
-///
-/// Returns a [`iox2_port_factory_notifier_builder_ref_h`]
-///
-/// # Safety
-///
-/// * The `port_factory_handle` must be a valid handle.
-/// * The `port_factory_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_port_factory_notifier_builder_ref_h(
-    port_factory_handle: iox2_port_factory_notifier_builder_h,
-) -> iox2_port_factory_notifier_builder_ref_h {
-    debug_assert!(!port_factory_handle.is_null());
-
-    (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
-}
-
 /// Sets the default event id for the builder
 ///
 /// # Arguments
 ///
-/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_notifier_builder_ref_h`]
-///   obtained by [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder) and
-///   casted by [`iox2_cast_port_factory_notifier_builder_ref_h`].
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_notifier_builder_h_ref`]
+///   obtained by [`iox2_port_factory_event_notifier_builder`](crate::iox2_port_factory_event_notifier_builder).
 /// * `value` - The value to set the default event id to
 ///
 /// # Safety
@@ -153,10 +144,10 @@ pub unsafe extern "C" fn iox2_cast_port_factory_notifier_builder_ref_h(
 /// * `value` must not be a NULL pointer but a pointer to an initialized `iox2_event_id_t`
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_notifier_builder_set_default_event_id(
-    port_factory_handle: iox2_port_factory_notifier_builder_ref_h,
+    port_factory_handle: iox2_port_factory_notifier_builder_h_ref,
     value: *const iox2_event_id_t,
 ) {
-    debug_assert!(!port_factory_handle.is_null());
+    port_factory_handle.assert_non_null();
 
     let value = (*value).into();
 

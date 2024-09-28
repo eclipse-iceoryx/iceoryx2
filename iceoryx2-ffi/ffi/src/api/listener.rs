@@ -12,10 +12,9 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, IntoCInt};
-use crate::{
-    iox2_callback_context, iox2_event_id_t, iox2_unique_listener_id_h, iox2_unique_listener_id_t,
-    IOX2_OK,
+use crate::api::{
+    iox2_callback_context, iox2_event_id_t, iox2_service_type_e, iox2_unique_listener_id_h,
+    iox2_unique_listener_id_t, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
 };
 
 use iceoryx2::port::listener::Listener;
@@ -96,10 +95,23 @@ impl iox2_listener_t {
 pub struct iox2_listener_h_t;
 /// The owning handle for `iox2_listener_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_listener_h = *mut iox2_listener_h_t;
-
-pub struct iox2_listener_ref_h_t;
 /// The non-owning handle for `iox2_listener_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_listener_ref_h = *mut iox2_listener_ref_h_t;
+pub type iox2_listener_h_ref = *const iox2_listener_h;
+
+impl AssertNonNullHandle for iox2_listener_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_listener_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_listener_h {
     type Target = *mut iox2_listener_t;
@@ -109,11 +121,11 @@ impl HandleToType for iox2_listener_h {
     }
 }
 
-impl HandleToType for iox2_listener_ref_h {
+impl HandleToType for iox2_listener_h_ref {
     type Target = *mut iox2_listener_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -123,27 +135,6 @@ pub type iox2_listener_wait_all_callback =
 // END type definition
 
 // BEGIN C API
-
-/// This function casts an owning [`iox2_listener_h`] into a non-owning [`iox2_listener_ref_h`]
-///
-/// # Arguments
-///
-/// * `listener_handle` obtained by [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
-///
-/// Returns a [`iox2_listener_ref_h`]
-///
-/// # Safety
-///
-/// * The `listener_handle` must be a valid handle.
-/// * The `listener_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_listener_ref_h(
-    listener_handle: iox2_listener_h,
-) -> iox2_listener_ref_h {
-    debug_assert!(!listener_handle.is_null());
-
-    (*listener_handle.as_type()).as_ref_handle() as *mut _ as _
-}
 
 /// This function needs to be called to destroy the listener!
 ///
@@ -158,7 +149,7 @@ pub unsafe extern "C" fn iox2_cast_listener_ref_h(
 ///   [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
-    debug_assert!(!listener_handle.is_null());
+    listener_handle.assert_non_null();
 
     let listener = &mut *listener_handle.as_type();
 
@@ -179,7 +170,7 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
 ///
 /// # Arguments
 ///
-/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
 /// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 ///
@@ -189,11 +180,11 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
 /// * The `callback` must be a valid function pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_try_wait_all(
-    listener_handle: iox2_listener_ref_h,
+    listener_handle: iox2_listener_h_ref,
     callback: iox2_listener_wait_all_callback,
     callback_ctx: iox2_callback_context,
 ) -> c_int {
-    debug_assert!(!listener_handle.is_null());
+    listener_handle.assert_non_null();
 
     let listener = &mut *listener_handle.as_type();
 
@@ -219,7 +210,7 @@ pub unsafe extern "C" fn iox2_listener_try_wait_all(
 ///
 /// # Arguments
 ///
-/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
 /// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 ///
@@ -229,13 +220,13 @@ pub unsafe extern "C" fn iox2_listener_try_wait_all(
 /// * The `callback` must be a valid function pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_timed_wait_all(
-    listener_handle: iox2_listener_ref_h,
+    listener_handle: iox2_listener_h_ref,
     callback: iox2_listener_wait_all_callback,
     callback_ctx: iox2_callback_context,
     seconds: u64,
     nanoseconds: u32,
 ) -> c_int {
-    debug_assert!(!listener_handle.is_null());
+    listener_handle.assert_non_null();
 
     let listener = &mut *listener_handle.as_type();
     let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
@@ -272,15 +263,15 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_all(
 ///
 /// # Safety
 ///
-/// * `listener_handle` is valid, non-null and was obtained via [`iox2_cast_listener_ref_h`]
+/// * `listener_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
 /// * `id` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_id(
-    listener_handle: iox2_listener_ref_h,
+    listener_handle: iox2_listener_h_ref,
     id_struct_ptr: *mut iox2_unique_listener_id_t,
     id_handle_ptr: *mut iox2_unique_listener_id_h,
 ) {
-    debug_assert!(!listener_handle.is_null());
+    listener_handle.assert_non_null();
     debug_assert!(!id_handle_ptr.is_null());
 
     fn no_op(_: *mut iox2_unique_listener_id_t) {}
@@ -309,7 +300,7 @@ pub unsafe extern "C" fn iox2_listener_id(
 ///
 /// # Arguments
 ///
-/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
 /// * `callback` - A valid callback with [`iox2_listener_wait_all_callback`} signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 ///
@@ -319,11 +310,11 @@ pub unsafe extern "C" fn iox2_listener_id(
 /// * The `callback` must be a valid function pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_blocking_wait_all(
-    listener_handle: iox2_listener_ref_h,
+    listener_handle: iox2_listener_h_ref,
     callback: iox2_listener_wait_all_callback,
     callback_ctx: iox2_callback_context,
 ) -> c_int {
-    debug_assert!(!listener_handle.is_null());
+    listener_handle.assert_non_null();
 
     let listener = &mut *listener_handle.as_type();
 
@@ -349,7 +340,7 @@ pub unsafe extern "C" fn iox2_listener_blocking_wait_all(
 ///
 /// # Arguments
 ///
-/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
 /// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
 /// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
 ///
@@ -358,11 +349,11 @@ pub unsafe extern "C" fn iox2_listener_blocking_wait_all(
 /// * All input arguments must be non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_try_wait_one(
-    listener_handle: iox2_listener_ref_h,
+    listener_handle: iox2_listener_h_ref,
     event_id: *mut iox2_event_id_t,
     has_received_one: *mut bool,
 ) -> c_int {
-    debug_assert!(!listener_handle.is_null());
+    listener_handle.assert_non_null();
     debug_assert!(!event_id.is_null());
     debug_assert!(!has_received_one.is_null());
 
@@ -397,7 +388,7 @@ pub unsafe extern "C" fn iox2_listener_try_wait_one(
 ///
 /// # Arguments
 ///
-/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
 /// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
 /// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
 /// * `seconds` - The timeout seconds part
@@ -408,13 +399,13 @@ pub unsafe extern "C" fn iox2_listener_try_wait_one(
 /// * All input arguments must be non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_timed_wait_one(
-    listener_handle: iox2_listener_ref_h,
+    listener_handle: iox2_listener_h_ref,
     event_id: *mut iox2_event_id_t,
     has_received_one: *mut bool,
     seconds: u64,
     nanoseconds: u32,
 ) -> c_int {
-    debug_assert!(!listener_handle.is_null());
+    listener_handle.assert_non_null();
     debug_assert!(!event_id.is_null());
     debug_assert!(!has_received_one.is_null());
 
@@ -449,7 +440,7 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_one(
 ///
 /// # Arguments
 ///
-/// * `listener_handle` - A valid [`iox2_listener_ref_h`],
+/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
 /// * `event_id` - A pointer to an [`iox2_event_id_t`] to store the received id.
 /// * `has_received_one` - A pointer to a [`bool`] that signals if an event id was received or not
 ///
@@ -458,11 +449,11 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_one(
 /// * All input arguments must be non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_blocking_wait_one(
-    listener_handle: iox2_listener_ref_h,
+    listener_handle: iox2_listener_h_ref,
     event_id: *mut iox2_event_id_t,
     has_received_one: *mut bool,
 ) -> c_int {
-    debug_assert!(!listener_handle.is_null());
+    listener_handle.assert_non_null();
     debug_assert!(!event_id.is_null());
     debug_assert!(!has_received_one.is_null());
 

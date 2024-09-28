@@ -45,17 +45,15 @@ HeaderPublishSubscribe::~HeaderPublishSubscribe() {
 }
 
 auto HeaderPublishSubscribe::publisher_id() const -> UniquePublisherId {
-    auto* handle_ref = iox2_cast_publish_subscribe_header_ref_h(m_handle);
     iox2_unique_publisher_id_h id_handle = nullptr;
 
-    iox2_publish_subscribe_header_publisher_id(handle_ref, nullptr, &id_handle);
+    iox2_publish_subscribe_header_publisher_id(&m_handle, nullptr, &id_handle);
     return UniquePublisherId { id_handle };
 }
 
 auto HeaderPublishSubscribe::payload_type_layout() const -> iox::Layout {
-    auto* handle_ref = iox2_cast_publish_subscribe_header_ref_h(m_handle);
-    auto size = iox2_publish_subscribe_header_payload_type_size(handle_ref);
-    auto alignment = iox2_publish_subscribe_header_payload_type_alignment(handle_ref);
+    auto size = iox2_publish_subscribe_header_payload_type_size(&m_handle);
+    auto alignment = iox2_publish_subscribe_header_payload_type_alignment(&m_handle);
 
     return iox::Layout::create(size, alignment).expect("Payload layout is always valid.");
 }

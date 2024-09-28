@@ -172,3 +172,7 @@ trait HandleToType {
     #[allow(clippy::wrong_self_convention)]
     fn as_type(self) -> Self::Target;
 }
+
+trait AssertNonNullHandle {
+    fn assert_non_null(self);
+}

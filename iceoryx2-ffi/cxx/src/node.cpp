@@ -44,7 +44,7 @@ Node<T>::~Node() {
 
 template <ServiceType T>
 auto Node<T>::name() const -> NodeNameView {
-    const auto* node_name_ptr = iox2_node_name(iox2_cast_node_ref_h(m_handle));
+    const auto* node_name_ptr = iox2_node_name(&m_handle);
     return NodeNameView { node_name_ptr };
 }
 
@@ -56,13 +56,12 @@ auto Node<T>::id() const -> NodeId {
 template <ServiceType T>
 auto Node<T>::wait(iox::units::Duration cycle_time) const -> NodeEvent {
     auto time = cycle_time.timespec();
-    return iox::into<NodeEvent>(iox2_node_wait(iox2_cast_node_ref_h(m_handle), time.tv_sec, time.tv_nsec));
+    return iox::into<NodeEvent>(iox2_node_wait(&m_handle, time.tv_sec, time.tv_nsec));
 }
 
 template <ServiceType T>
 auto Node<T>::service_builder(const ServiceName& name) const -> ServiceBuilder<T> {
-    auto* ref_handle = iox2_cast_node_ref_h(m_handle);
-    return ServiceBuilder<T> { ref_handle, name.as_view().m_ptr };
+    return ServiceBuilder<T> { &m_handle, name.as_view().m_ptr };
 }
 
 template <ServiceType T>
@@ -129,16 +128,13 @@ NodeBuilder::NodeBuilder()
 
 template <ServiceType T>
 auto NodeBuilder::create() const&& -> iox::expected<Node<T>, NodeCreationFailure> {
-    auto* handle_ref = iox2_cast_node_builder_ref_h(m_handle);
-
     if (m_name.has_value()) {
         const auto* name_ptr = iox2_cast_node_name_ptr(m_name->m_handle);
-        iox2_node_builder_set_name(handle_ref, name_ptr);
+        iox2_node_builder_set_name(&m_handle, name_ptr);
     }
 
     if (m_config.has_value()) {
-        auto* config_handle_ref = iox2_cast_config_ref_h(m_config.value().m_handle);
-        iox2_node_builder_set_config(handle_ref, config_handle_ref);
+        iox2_node_builder_set_config(&m_handle, &m_config.value().m_handle);
     }
 
     iox2_node_h node_handle {};

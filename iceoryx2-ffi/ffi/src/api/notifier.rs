@@ -12,8 +12,10 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, IntoCInt, IOX2_OK};
-use crate::{c_size_t, iox2_event_id_t, iox2_unique_notifier_id_h, iox2_unique_notifier_id_t};
+use crate::api::{
+    c_size_t, iox2_event_id_t, iox2_service_type_e, iox2_unique_notifier_id_h,
+    iox2_unique_notifier_id_t, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
+};
 
 use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::prelude::*;
@@ -89,10 +91,23 @@ impl iox2_notifier_t {
 pub struct iox2_notifier_h_t;
 /// The owning handle for `iox2_notifier_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_notifier_h = *mut iox2_notifier_h_t;
-
-pub struct iox2_notifier_ref_h_t;
 /// The non-owning handle for `iox2_notifier_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_notifier_ref_h = *mut iox2_notifier_ref_h_t;
+pub type iox2_notifier_h_ref = *const iox2_notifier_h;
+
+impl AssertNonNullHandle for iox2_notifier_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_notifier_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_notifier_h {
     type Target = *mut iox2_notifier_t;
@@ -102,11 +117,11 @@ impl HandleToType for iox2_notifier_h {
     }
 }
 
-impl HandleToType for iox2_notifier_ref_h {
+impl HandleToType for iox2_notifier_h_ref {
     type Target = *mut iox2_notifier_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -114,42 +129,21 @@ impl HandleToType for iox2_notifier_ref_h {
 
 // BEGIN C API
 
-/// This function casts an owning [`iox2_notifier_h`] into a non-owning [`iox2_notifier_ref_h`]
-///
-/// # Arguments
-///
-/// * `notifier_handle` obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)
-///
-/// Returns a [`iox2_notifier_ref_h`]
-///
-/// # Safety
-///
-/// * The `notifier_handle` must be a valid handle.
-/// * The `notifier_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_notifier_ref_h(
-    notifier_handle: iox2_notifier_h,
-) -> iox2_notifier_ref_h {
-    debug_assert!(!notifier_handle.is_null());
-
-    (*notifier_handle.as_type()).as_ref_handle() as *mut _ as _
-}
-
 /// Returns the unique port id of the notifier.
 ///
 /// # Safety
 ///
-/// * `notifier_handle` is valid, non-null and was obtained via [`iox2_cast_notifier_ref_h`]
+/// * `notifier_handle` is valid, non-null and was obtained via [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create).
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_notifier_id_t`].
 ///                         If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_notifier_id_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_notifier_id(
-    notifier_handle: iox2_notifier_ref_h,
+    notifier_handle: iox2_notifier_h_ref,
     id_struct_ptr: *mut iox2_unique_notifier_id_t,
     id_handle_ptr: *mut iox2_unique_notifier_id_h,
 ) {
-    debug_assert!(!notifier_handle.is_null());
+    notifier_handle.assert_non_null();
     debug_assert!(!id_handle_ptr.is_null());
 
     fn no_op(_: *mut iox2_unique_notifier_id_t) {}
@@ -177,9 +171,8 @@ pub unsafe extern "C" fn iox2_notifier_id(
 ///
 /// # Arguments
 ///
-/// * notifier_handle -  Must be a valid [`iox2_notifier_ref_h`]
-///   obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create) and
-///   casted by [`iox2_cast_notifier_ref_h`]
+/// * notifier_handle -  Must be a valid [`iox2_notifier_h_ref`]
+///   obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)
 /// * number_of_notified_listener_ptr - Must be either a NULL pointer or a pointer to a `size_t` to store the number of notified listener
 ///
 /// Returns IOX2_OK on success, an [`iox2_notifier_notify_error_e`] otherwise.
@@ -189,10 +182,10 @@ pub unsafe extern "C" fn iox2_notifier_id(
 /// `notifier_handle` must be a valid handle and is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_notifier_notify(
-    notifier_handle: iox2_notifier_ref_h,
+    notifier_handle: iox2_notifier_h_ref,
     number_of_notified_listener_ptr: *mut c_size_t,
 ) -> c_int {
-    debug_assert!(!notifier_handle.is_null());
+    notifier_handle.assert_non_null();
 
     let notifier = &mut *notifier_handle.as_type();
 
@@ -220,9 +213,8 @@ pub unsafe extern "C" fn iox2_notifier_notify(
 ///
 /// # Arguments
 ///
-/// * notifier_handle -  Must be a valid [`iox2_notifier_ref_h`]
-///   obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create) and
-///   casted by [`iox2_cast_notifier_ref_h`]
+/// * notifier_handle -  Must be a valid [`iox2_notifier_h_ref`]
+///   obtained by [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create)
 /// * custom_event_id_ptr - Must be a pointer to an initialized [`iox2_event_id_t`](crate::iox2_event_id_t)
 /// * number_of_notified_listener_ptr - Must be either a NULL pointer or a pointer to a `size_t` to store the number of notified listener
 ///
@@ -234,11 +226,11 @@ pub unsafe extern "C" fn iox2_notifier_notify(
 /// `custom_event_id_ptr` must not be a NULL pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_notifier_notify_with_custom_event_id(
-    notifier_handle: iox2_notifier_ref_h,
+    notifier_handle: iox2_notifier_h_ref,
     custom_event_id_ptr: *const iox2_event_id_t,
     number_of_notified_listener_ptr: *mut c_size_t,
 ) -> c_int {
-    debug_assert!(!notifier_handle.is_null());
+    notifier_handle.assert_non_null();
     debug_assert!(!custom_event_id_ptr.is_null());
 
     let event_id = (*custom_event_id_ptr).into();

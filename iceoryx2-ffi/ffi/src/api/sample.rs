@@ -12,8 +12,10 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType, PayloadFfi, UserHeaderFfi};
-use crate::{c_size_t, iox2_publish_subscribe_header_h, iox2_publish_subscribe_header_t};
+use crate::api::{
+    c_size_t, iox2_publish_subscribe_header_h, iox2_publish_subscribe_header_t,
+    iox2_service_type_e, AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi,
+};
 
 use iceoryx2::prelude::*;
 use iceoryx2::sample::Sample;
@@ -73,10 +75,23 @@ impl iox2_sample_t {
 pub struct iox2_sample_h_t;
 /// The owning handle for `iox2_sample_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_sample_h = *mut iox2_sample_h_t;
-
-pub struct iox2_sample_ref_h_t;
 /// The non-owning handle for `iox2_sample_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_sample_ref_h = *mut iox2_sample_ref_h_t;
+pub type iox2_sample_h_ref = *const iox2_sample_h;
+
+impl AssertNonNullHandle for iox2_sample_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_sample_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_sample_h {
     type Target = *mut iox2_sample_t;
@@ -86,35 +101,17 @@ impl HandleToType for iox2_sample_h {
     }
 }
 
-impl HandleToType for iox2_sample_ref_h {
+impl HandleToType for iox2_sample_h_ref {
     type Target = *mut iox2_sample_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
 // END type definition
 
 // BEGIN C API
-
-/// This function casts an owning [`iox2_sample_h`] into a non-owning [`iox2_sample_ref_h`]
-///
-/// # Arguments
-///
-/// * `handle` obtained by [`iox2_subscriber_receive()`](crate::iox2_subscriber_receive())
-///
-/// Returns a [`iox2_sample_ref_h`]
-///
-/// # Safety
-///
-/// * The `handle` must be a valid handle.
-/// * The `handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_sample_ref_h(handle: iox2_sample_h) -> iox2_sample_ref_h {
-    debug_assert!(!handle.is_null());
-    (*handle.as_type()).as_ref_handle() as *mut _ as _
-}
 
 /// cbindgen:ignore
 /// Internal API - do not use
@@ -160,11 +157,11 @@ pub unsafe extern "C" fn iox2_sample_move(
 /// * `header_handle_ptr` valid pointer to a [`iox2_publish_subscribe_header_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_header(
-    handle: iox2_sample_ref_h,
+    handle: iox2_sample_h_ref,
     header_struct_ptr: *mut iox2_publish_subscribe_header_t,
     header_handle_ptr: *mut iox2_publish_subscribe_header_h,
 ) {
-    debug_assert!(!handle.is_null());
+    handle.assert_non_null();
     debug_assert!(!header_handle_ptr.is_null());
 
     fn no_op(_: *mut iox2_publish_subscribe_header_t) {}
@@ -195,13 +192,13 @@ pub unsafe extern "C" fn iox2_sample_header(
 /// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_user_header(
-    sample_handle: iox2_sample_ref_h,
+    handle: iox2_sample_h_ref,
     header_ptr: *mut *const c_void,
 ) {
-    debug_assert!(!sample_handle.is_null());
+    handle.assert_non_null();
     debug_assert!(!header_ptr.is_null());
 
-    let sample = &mut *sample_handle.as_type();
+    let sample = &mut *handle.as_type();
 
     let header = match sample.service_type {
         iox2_service_type_e::IPC => sample.value.as_mut().ipc.user_header(),
@@ -220,14 +217,14 @@ pub unsafe extern "C" fn iox2_sample_user_header(
 /// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_payload(
-    sample_handle: iox2_sample_ref_h,
+    handle: iox2_sample_h_ref,
     payload_ptr: *mut *const c_void,
     payload_len: *mut c_size_t,
 ) {
-    debug_assert!(!sample_handle.is_null());
+    handle.assert_non_null();
     debug_assert!(!payload_ptr.is_null());
 
-    let sample = &mut *sample_handle.as_type();
+    let sample = &mut *handle.as_type();
 
     let payload = match sample.service_type {
         iox2_service_type_e::IPC => sample.value.as_mut().ipc.payload(),

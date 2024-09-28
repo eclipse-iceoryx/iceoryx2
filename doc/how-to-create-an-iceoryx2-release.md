@@ -49,7 +49,8 @@ blog-article.
 
 ## Technical Side
 
-Assume that the new version number is `X.Y.Z`.
+Assume that the new version number is `X.Y.Z` and the previous version
+number is `Xold.Yold.Zold`.
 
 1. Use generic release issue ([#77]) and create a new branch
    `iox2-77-X.Y.Z-release`
@@ -72,10 +73,13 @@ Assume that the new version number is `X.Y.Z`.
    version number `X.Y.Z`.
    * **IMPORTANT** change version to `X.Y.Z` for all `iceoryx2-**` packages
      under `[workspace.dependencies]`
-9. **Merge all changes to `main`.**
-10. Set tag on GitHub and add the release document as notes to the tag
+9. Adjust the `<version>` to `X.Y.Z` in `$GIT_ROOT$/package.xml`.
+10. Call `rg "Xold\.Yold\.Zold"` and adjust all findings.
+    * C and C++ examples, `BUILD.bazel` & `CMakeLists.txt`
+11. **Merge all changes to `main`.**
+12. Set tag on GitHub and add the release document as notes to the tag
     description. Add also a link to the file.
-11. Check the order of all dependencies in
+13. Check the order of all dependencies in
     `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh`.
     When calling `cargo publish -p $PACKAGE$` all dependencies, also dev-dependencies,
     must be already published to `crates.io` via `cargo publish -p`. Verify the
@@ -85,7 +89,7 @@ Assume that the new version number is `X.Y.Z`.
     * If the publish script was started and a crate requires a dependency which
       is not available on `crates.io` the release has to be redone and the patch
       version has to increase by one for the whole workspace.
-12. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
+14. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
     all crates on `crates.io` and `docs.rs`.
-13. Verify that the release looks fine on `docs.rs` (click through the
+15. Verify that the release looks fine on `docs.rs` (click through the
     documentation to check if everything was generated correctly)

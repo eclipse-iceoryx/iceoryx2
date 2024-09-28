@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod node {
-    use crate::{iox2_cast_node_ref_h, tests::*};
+    use crate::tests::*;
 
     use core::{slice, str};
 
@@ -34,7 +34,7 @@ mod node {
 
             let expected_config = Config::global_config();
 
-            let config = iox2_node_config(iox2_cast_node_ref_h(node_handle));
+            let config = iox2_node_config(&node_handle);
 
             assert_that!(*(config as *const Config), eq(*expected_config));
 
@@ -48,7 +48,7 @@ mod node {
         unsafe {
             let node_handle = create_node::<S>("hypnotoad");
 
-            let node_name = iox2_node_name(iox2_cast_node_ref_h(node_handle));
+            let node_name = iox2_node_name(&node_handle);
 
             let mut node_name_len = 0;
             let node_name_chars = iox2_node_name_as_chars(node_name, &mut node_name_len);
@@ -104,7 +104,7 @@ mod node {
         unsafe {
             let mut ctx = NodeListCtx::default();
             let node_handle = create_node::<S>("");
-            let config = iox2_node_config(iox2_cast_node_ref_h(node_handle));
+            let config = iox2_node_config(&node_handle);
 
             let ret_val = iox2_node_list(
                 S::service_type(),

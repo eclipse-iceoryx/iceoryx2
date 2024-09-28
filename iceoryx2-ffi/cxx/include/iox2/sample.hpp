@@ -122,11 +122,10 @@ inline auto Sample<S, Payload, UserHeader>::operator->() const -> const Payload*
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
-    auto* ref_handle = iox2_cast_sample_ref_h(m_handle);
     const void* payload_ptr = nullptr;
     size_t payload_len = 0;
 
-    iox2_sample_payload(ref_handle, &payload_ptr, &payload_len);
+    iox2_sample_payload(&m_handle, &payload_ptr, &payload_len);
     IOX_ASSERT(sizeof(Payload) <= payload_len, "");
 
     return *static_cast<const Payload*>(payload_ptr);
@@ -135,19 +134,17 @@ inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Sample<S, Payload, UserHeader>::user_header() const -> const T& {
-    auto* ref_handle = iox2_cast_sample_ref_h(m_handle);
     const void* header_ptr = nullptr;
 
-    iox2_sample_user_header(ref_handle, &header_ptr);
+    iox2_sample_user_header(&m_handle, &header_ptr);
 
     return *static_cast<const T*>(header_ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Sample<S, Payload, UserHeader>::header() const -> HeaderPublishSubscribe {
-    auto* ref_handle = iox2_cast_sample_ref_h(m_handle);
     iox2_publish_subscribe_header_h header_handle = nullptr;
-    iox2_sample_header(ref_handle, nullptr, &header_handle);
+    iox2_sample_header(&m_handle, nullptr, &header_handle);
 
     return HeaderPublishSubscribe { header_handle };
 }

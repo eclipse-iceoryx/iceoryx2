@@ -41,15 +41,12 @@ int main(void) {
 
     // create service builder
     iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(service_name);
-    iox2_node_ref_h node_ref_handle = iox2_cast_node_ref_h(node_handle);
-    iox2_service_builder_h service_builder = iox2_node_service_builder(node_ref_handle, NULL, service_name_ptr);
+    iox2_service_builder_h service_builder = iox2_node_service_builder(&node_handle, NULL, service_name_ptr);
     iox2_service_builder_pub_sub_h service_builder_pub_sub = iox2_service_builder_pub_sub(service_builder);
-    iox2_service_builder_pub_sub_ref_h service_builder_pub_sub_ref =
-        iox2_cast_service_builder_pub_sub_ref_h(service_builder_pub_sub);
 
     // set pub sub payload type
     const char* payload_type_name = "m";
-    if (iox2_service_builder_pub_sub_set_payload_type_details(service_builder_pub_sub_ref,
+    if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
                                                               iox2_type_variant_e_FIXED_SIZE,
                                                               payload_type_name,
                                                               strlen(payload_type_name),
@@ -62,7 +59,7 @@ int main(void) {
 
     // set pub sub user header type
     const char* user_header_type_name = "12CustomHeader";
-    if (iox2_service_builder_pub_sub_set_user_header_type_details(service_builder_pub_sub_ref,
+    if (iox2_service_builder_pub_sub_set_user_header_type_details(&service_builder_pub_sub,
                                                                   iox2_type_variant_e_FIXED_SIZE,
                                                                   user_header_type_name,
                                                                   strlen(user_header_type_name),
@@ -81,34 +78,31 @@ int main(void) {
     }
 
     // create subscriber
-    iox2_port_factory_pub_sub_ref_h ref_service = iox2_cast_port_factory_pub_sub_ref_h(service);
     iox2_port_factory_subscriber_builder_h subscriber_builder =
-        iox2_port_factory_pub_sub_subscriber_builder(ref_service, NULL);
+        iox2_port_factory_pub_sub_subscriber_builder(&service, NULL);
     iox2_subscriber_h subscriber = NULL;
     if (iox2_port_factory_subscriber_builder_create(subscriber_builder, NULL, &subscriber) != IOX2_OK) {
         printf("Unable to create subscriber!\n");
         goto drop_service;
     }
-    iox2_subscriber_ref_h subscriber_ref = iox2_cast_subscriber_ref_h(subscriber);
 
     uint64_t counter = 0;
-    while (iox2_node_wait(node_ref_handle, 1, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(&node_handle, 1, 0) == iox2_node_event_e_TICK) {
         counter += 1;
 
         // receive sample
         iox2_sample_h sample = NULL;
-        if (iox2_subscriber_receive(subscriber_ref, NULL, &sample) != IOX2_OK) {
+        if (iox2_subscriber_receive(&subscriber, NULL, &sample) != IOX2_OK) {
             printf("Failed to receive sample\n");
             goto drop_subscriber;
         }
 
         if (sample != NULL) {
-            iox2_sample_ref_h sample_ref = iox2_cast_sample_ref_h(sample);
             uint64_t* payload = NULL;
-            iox2_sample_payload(sample_ref, (const void**) &payload, NULL);
+            iox2_sample_payload(&sample, (const void**) &payload, NULL);
 
             const struct CustomHeader* user_header = NULL;
-            iox2_sample_user_header(sample_ref, (const void**) &user_header);
+            iox2_sample_user_header(&sample, (const void**) &user_header);
 
             printf("received: %lu, user_header: version = %d, timestamp = %lu\n",
                    (long unsigned) *payload,

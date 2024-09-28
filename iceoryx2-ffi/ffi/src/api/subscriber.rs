@@ -13,10 +13,10 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_sample_h, iox2_sample_t, iox2_service_type_e, HandleToType, IntoCInt,
-    PayloadFfi, SampleUnion, UserHeaderFfi, IOX2_OK,
+    c_size_t, iox2_sample_h, iox2_sample_t, iox2_service_type_e, iox2_unique_subscriber_id_h,
+    iox2_unique_subscriber_id_t, AssertNonNullHandle, HandleToType, IntoCInt, PayloadFfi,
+    SampleUnion, UserHeaderFfi, IOX2_OK,
 };
-use crate::{iox2_unique_subscriber_id_h, iox2_unique_subscriber_id_t};
 
 use iceoryx2::port::subscriber::{Subscriber, SubscriberReceiveError};
 use iceoryx2::port::update_connections::{ConnectionFailure, UpdateConnections};
@@ -123,10 +123,23 @@ impl iox2_subscriber_t {
 pub struct iox2_subscriber_h_t;
 /// The owning handle for `iox2_subscriber_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_subscriber_h = *mut iox2_subscriber_h_t;
-
-pub struct iox2_subscriber_ref_h_t;
 /// The non-owning handle for `iox2_subscriber_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_subscriber_ref_h = *mut iox2_subscriber_ref_h_t;
+pub type iox2_subscriber_h_ref = *const iox2_subscriber_h;
+
+impl AssertNonNullHandle for iox2_subscriber_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_subscriber_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_subscriber_h {
     type Target = *mut iox2_subscriber_t;
@@ -136,11 +149,11 @@ impl HandleToType for iox2_subscriber_h {
     }
 }
 
-impl HandleToType for iox2_subscriber_ref_h {
+impl HandleToType for iox2_subscriber_h_ref {
     type Target = *mut iox2_subscriber_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -148,43 +161,21 @@ impl HandleToType for iox2_subscriber_ref_h {
 
 // BEGIN C API
 
-/// This function casts an owning [`iox2_subscriber_h`] into a non-owning [`iox2_subscriber_ref_h`]
-///
-/// # Arguments
-///
-/// * `subscriber_handle` obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)
-///
-/// Returns a [`iox2_subscriber_ref_h`]
-///
-/// # Safety
-///
-/// * The `subscriber_handle` must be a valid handle.
-/// * The `subscriber_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_subscriber_ref_h(
-    subscriber_handle: iox2_subscriber_h,
-) -> iox2_subscriber_ref_h {
-    debug_assert!(!subscriber_handle.is_null());
-
-    (*subscriber_handle.as_type()).as_ref_handle() as *mut _ as _
-}
-
 /// Returns the buffer size of the subscriber
 ///
 /// # Arguments
 ///
-/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_ref_h`]
-///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create) and
-///   casted by [`iox2_cast_subscriber_ref_h`].
+/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_h_ref`]
+///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create).
 ///
 /// # Safety
 ///
 /// * `subscriber_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_subscriber_buffer_size(
-    subscriber_handle: iox2_subscriber_ref_h,
+    subscriber_handle: iox2_subscriber_h_ref,
 ) -> c_size_t {
-    debug_assert!(!subscriber_handle.is_null());
+    subscriber_handle.assert_non_null();
 
     let subscriber = &mut *subscriber_handle.as_type();
 
@@ -198,22 +189,22 @@ pub unsafe extern "C" fn iox2_subscriber_buffer_size(
 ///
 /// # Arguments
 ///
-/// * `handle` obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)
+/// * `subscriber_handle` obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_subscriber_id_t`].
 ///                         If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_subscriber_id_h`].
 ///
 /// # Safety
 ///
-/// * `subscriber_handle` is valid, non-null and was obtained via [`iox2_cast_subscriber_ref_h`]
+/// * `subscriber_handle` is valid, non-null and was obtained via [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)
 /// * `id` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_subscriber_id(
-    subscriber_handle: iox2_subscriber_ref_h,
+    subscriber_handle: iox2_subscriber_h_ref,
     id_struct_ptr: *mut iox2_unique_subscriber_id_t,
     id_handle_ptr: *mut iox2_unique_subscriber_id_h,
 ) {
-    debug_assert!(!subscriber_handle.is_null());
+    subscriber_handle.assert_non_null();
     debug_assert!(!id_handle_ptr.is_null());
 
     fn no_op(_: *mut iox2_unique_subscriber_id_t) {}
@@ -242,9 +233,8 @@ pub unsafe extern "C" fn iox2_subscriber_id(
 ///
 /// # Arguments
 ///
-/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_ref_h`]
-///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create) and
-///   casted by [`iox2_cast_subscriber_ref_h`].
+/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_h_ref`]
+///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create).
 /// * `sample_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_sample_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
@@ -258,11 +248,11 @@ pub unsafe extern "C" fn iox2_subscriber_id(
 /// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_subscriber_receive(
-    subscriber_handle: iox2_subscriber_ref_h,
+    subscriber_handle: iox2_subscriber_h_ref,
     sample_struct_ptr: *mut iox2_sample_t,
     sample_handle_ptr: *mut iox2_sample_h,
 ) -> c_int {
-    debug_assert!(!subscriber_handle.is_null());
+    subscriber_handle.assert_non_null();
     debug_assert!(!sample_handle_ptr.is_null());
 
     *sample_handle_ptr = std::ptr::null_mut();
@@ -318,9 +308,8 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
 ///
 /// # Arguments
 ///
-/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_ref_h`]
-///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create) and
-///   casted by [`iox2_cast_subscriber_ref_h`].
+/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_h_ref`]
+///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create).
 /// * `result_ptr` - A non-null pointer to a bool that will contain the result.
 ///
 /// Returns IOX2_OK on success, an [`iox2_connection_failure_e`] otherwise.
@@ -332,10 +321,10 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
 /// * The `result_ptr` is pointing to a valid bool.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_subscriber_has_samples(
-    subscriber_handle: iox2_subscriber_ref_h,
+    subscriber_handle: iox2_subscriber_h_ref,
     result_ptr: *mut bool,
 ) -> c_int {
-    debug_assert!(!subscriber_handle.is_null());
+    subscriber_handle.assert_non_null();
     debug_assert!(!result_ptr.is_null());
 
     let subscriber = &mut *subscriber_handle.as_type();
@@ -362,18 +351,17 @@ pub unsafe extern "C" fn iox2_subscriber_has_samples(
 ///
 /// # Arguments
 ///
-/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_ref_h`]
-///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create) and
-///   casted by [`iox2_cast_subscriber_ref_h`].
+/// * `subscriber_handle` - Must be a valid [`iox2_subscriber_h_ref`]
+///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create).
 ///
 /// # Safety
 ///
 /// * The `subscriber_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_subscriber_update_connections(
-    subscriber_handle: iox2_subscriber_ref_h,
+    subscriber_handle: iox2_subscriber_h_ref,
 ) -> c_int {
-    debug_assert!(!subscriber_handle.is_null());
+    subscriber_handle.assert_non_null();
 
     let subscriber = &mut *subscriber_handle.as_type();
 
@@ -402,7 +390,7 @@ pub unsafe extern "C" fn iox2_subscriber_update_connections(
 ///   [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_subscriber_drop(subscriber_handle: iox2_subscriber_h) {
-    debug_assert!(!subscriber_handle.is_null());
+    subscriber_handle.assert_non_null();
 
     let subscriber = &mut *subscriber_handle.as_type();
 

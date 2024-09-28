@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_service_type_e, HandleToType};
+use crate::api::{iox2_service_type_e, AssertNonNullHandle, HandleToType};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::publish_subscribe::CustomHeaderMarker;
@@ -127,26 +127,50 @@ impl iox2_service_builder_t {
 pub struct iox2_service_builder_h_t;
 /// The owning handle for `iox2_service_builder_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_service_builder_h = *mut iox2_service_builder_h_t;
-
-pub struct iox2_service_builder_ref_h_t;
 /// The non-owning handle for `iox2_service_builder_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_service_builder_ref_h = *mut iox2_service_builder_ref_h_t;
+pub type iox2_service_builder_h_ref = *const iox2_service_builder_h;
 
 pub struct iox2_service_builder_event_h_t;
 /// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function transfers the ownership.
 pub type iox2_service_builder_event_h = *mut iox2_service_builder_event_h_t;
-
-pub struct iox2_service_builder_event_ref_h_t;
 /// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
-pub type iox2_service_builder_event_ref_h = *mut iox2_service_builder_event_ref_h_t;
+pub type iox2_service_builder_event_h_ref = *const iox2_service_builder_event_h;
 
 pub struct iox2_service_builder_pub_sub_h_t;
 /// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function transfers the ownership.
 pub type iox2_service_builder_pub_sub_h = *mut iox2_service_builder_pub_sub_h_t;
-
-pub struct iox2_service_builder_pub_sub_ref_h_t;
 /// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
-pub type iox2_service_builder_pub_sub_ref_h = *mut iox2_service_builder_pub_sub_ref_h_t;
+pub type iox2_service_builder_pub_sub_h_ref = *const iox2_service_builder_pub_sub_h;
+
+impl AssertNonNullHandle for iox2_service_builder_event_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_service_builder_event_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
+
+impl AssertNonNullHandle for iox2_service_builder_pub_sub_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_service_builder_pub_sub_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_service_builder_h {
     type Target = *mut iox2_service_builder_t;
@@ -156,11 +180,11 @@ impl HandleToType for iox2_service_builder_h {
     }
 }
 
-impl HandleToType for iox2_service_builder_ref_h {
+impl HandleToType for iox2_service_builder_h_ref {
     type Target = *mut iox2_service_builder_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -172,11 +196,11 @@ impl HandleToType for iox2_service_builder_event_h {
     }
 }
 
-impl HandleToType for iox2_service_builder_event_ref_h {
+impl HandleToType for iox2_service_builder_event_h_ref {
     type Target = *mut iox2_service_builder_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -188,59 +212,17 @@ impl HandleToType for iox2_service_builder_pub_sub_h {
     }
 }
 
-impl HandleToType for iox2_service_builder_pub_sub_ref_h {
+impl HandleToType for iox2_service_builder_pub_sub_h_ref {
     type Target = *mut iox2_service_builder_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
 // END type definition
 
 // BEGIN C API
-
-/// This function casts an owning [`iox2_service_builder_event_h`] into a non-owning [`iox2_service_builder_event_ref_h`]
-///
-/// # Arguments
-///
-/// * `service_builder_handle` obtained by `iox2_service_builder_event`
-///
-/// Returns a [`iox2_service_builder_event_ref_h`]
-///
-/// # Safety
-///
-/// * The `service_builder_handle` must be a valid handle.
-/// * The `service_builder_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_service_builder_event_ref_h(
-    service_builder_handle: iox2_service_builder_event_h,
-) -> iox2_service_builder_event_ref_h {
-    debug_assert!(!service_builder_handle.is_null());
-
-    (*service_builder_handle.as_type()).as_ref_handle() as *mut _ as _
-}
-
-/// This function casts an owning [`iox2_service_builder_pub_sub_h`] into a non-owning [`iox2_service_builder_pub_sub_ref_h`]
-///
-/// # Arguments
-///
-/// * `service_builder_handle` obtained by `iox2_service_builder_pub_sub`
-///
-/// Returns a [`iox2_service_builder_pub_sub_ref_h`]
-///
-/// # Safety
-///
-/// * The `service_builder_handle` must be a valid handle.
-/// * The `service_builder_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_service_builder_pub_sub_ref_h(
-    service_builder_handle: iox2_service_builder_pub_sub_h,
-) -> iox2_service_builder_pub_sub_ref_h {
-    debug_assert!(!service_builder_handle.is_null());
-
-    (*service_builder_handle.as_type()).as_ref_handle() as *mut _ as _
-}
 
 /// This function transform the [`iox2_service_builder_h`] to an event service builder.
 ///

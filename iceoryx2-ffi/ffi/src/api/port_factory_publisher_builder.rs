@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_publisher_h, iox2_publisher_t, iox2_service_type_e, HandleToType, IntoCInt,
-    PayloadFfi, PublisherUnion, UserHeaderFfi, IOX2_OK,
+    c_size_t, iox2_publisher_h, iox2_publisher_t, iox2_service_type_e, AssertNonNullHandle,
+    HandleToType, IntoCInt, PayloadFfi, PublisherUnion, UserHeaderFfi, IOX2_OK,
 };
 
 use iceoryx2::port::publisher::PublisherCreateError;
@@ -135,11 +135,23 @@ impl iox2_port_factory_publisher_builder_t {
 pub struct iox2_port_factory_publisher_builder_h_t;
 /// The owning handle for `iox2_port_factory_publisher_builder_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_port_factory_publisher_builder_h = *mut iox2_port_factory_publisher_builder_h_t;
-
-pub struct iox2_port_factory_publisher_builder_ref_h_t;
 /// The non-owning handle for `iox2_port_factory_publisher_builder_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_port_factory_publisher_builder_ref_h =
-    *mut iox2_port_factory_publisher_builder_ref_h_t;
+pub type iox2_port_factory_publisher_builder_h_ref = *const iox2_port_factory_publisher_builder_h;
+
+impl AssertNonNullHandle for iox2_port_factory_publisher_builder_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_port_factory_publisher_builder_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_port_factory_publisher_builder_h {
     type Target = *mut iox2_port_factory_publisher_builder_t;
@@ -149,11 +161,11 @@ impl HandleToType for iox2_port_factory_publisher_builder_h {
     }
 }
 
-impl HandleToType for iox2_port_factory_publisher_builder_ref_h {
+impl HandleToType for iox2_port_factory_publisher_builder_h_ref {
     type Target = *mut iox2_port_factory_publisher_builder_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -161,34 +173,12 @@ impl HandleToType for iox2_port_factory_publisher_builder_ref_h {
 
 // BEGIN C API
 
-/// This function casts an owning [`iox2_port_factory_publisher_builder_h`] into a non-owning [`iox2_port_factory_publisher_builder_ref_h`]
-///
-/// # Arguments
-///
-/// * `port_factory_handle` obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder)
-///
-/// Returns a [`iox2_port_factory_publisher_builder_ref_h`]
-///
-/// # Safety
-///
-/// * The `port_factory_handle` must be a valid handle.
-/// * The `port_factory_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_port_factory_publisher_builder_ref_h(
-    port_factory_handle: iox2_port_factory_publisher_builder_h,
-) -> iox2_port_factory_publisher_builder_ref_h {
-    debug_assert!(!port_factory_handle.is_null());
-
-    (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
-}
-
 /// Sets the max loaned samples for the publisher
 ///
 /// # Arguments
 ///
-/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_ref_h`]
-///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder) and
-///   casted by [`iox2_cast_port_factory_publisher_builder_ref_h`].
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_h_ref`]
+///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder).
 /// * `value` - The value to set max loaned samples to
 ///
 /// # Safety
@@ -196,10 +186,10 @@ pub unsafe extern "C" fn iox2_cast_port_factory_publisher_builder_ref_h(
 /// * `port_factory_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_loaned_samples(
-    port_factory_handle: iox2_port_factory_publisher_builder_ref_h,
+    port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!port_factory_handle.is_null());
+    port_factory_handle.assert_non_null();
 
     let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
     match port_factory_struct.service_type {
@@ -226,9 +216,8 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_loaned_samp
 ///
 /// # Arguments
 ///
-/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_ref_h`]
-///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder) and
-///   casted by [`iox2_cast_port_factory_publisher_builder_ref_h`](crate::iox2_cast_port_factory_publisher_builder_ref_h).
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_h_ref`]
+///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder).
 /// * `value` - The value to set the strategy to
 ///
 /// # Safety
@@ -236,10 +225,10 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_loaned_samp
 /// * `port_factory_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
-    port_factory_handle: iox2_port_factory_publisher_builder_ref_h,
+    port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
     value: iox2_unable_to_deliver_strategy_e,
 ) {
-    debug_assert!(!port_factory_handle.is_null());
+    port_factory_handle.assert_non_null();
 
     let handle = unsafe { &mut *port_factory_handle.as_type() };
     match handle.service_type {

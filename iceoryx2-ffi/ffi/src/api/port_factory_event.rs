@@ -15,8 +15,8 @@
 use crate::api::{
     iox2_port_factory_listener_builder_h, iox2_port_factory_listener_builder_t,
     iox2_port_factory_notifier_builder_h, iox2_port_factory_notifier_builder_t,
-    iox2_service_name_ptr, iox2_service_type_e, HandleToType, PortFactoryListenerBuilderUnion,
-    PortFactoryNotifierBuilderUnion,
+    iox2_service_name_ptr, iox2_service_type_e, AssertNonNullHandle, HandleToType,
+    PortFactoryListenerBuilderUnion, PortFactoryNotifierBuilderUnion,
 };
 
 use iceoryx2::prelude::*;
@@ -78,10 +78,23 @@ impl iox2_port_factory_event_t {
 pub struct iox2_port_factory_event_h_t;
 /// The owning handle for `iox2_port_factory_event_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_port_factory_event_h = *mut iox2_port_factory_event_h_t;
-
-pub struct iox2_port_factory_event_ref_h_t;
 /// The non-owning handle for `iox2_port_factory_event_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_port_factory_event_ref_h = *mut iox2_port_factory_event_ref_h_t;
+pub type iox2_port_factory_event_h_ref = *const iox2_port_factory_event_h;
+
+impl AssertNonNullHandle for iox2_port_factory_event_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_port_factory_event_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_port_factory_event_h {
     type Target = *mut iox2_port_factory_event_t;
@@ -91,39 +104,17 @@ impl HandleToType for iox2_port_factory_event_h {
     }
 }
 
-impl HandleToType for iox2_port_factory_event_ref_h {
+impl HandleToType for iox2_port_factory_event_h_ref {
     type Target = *mut iox2_port_factory_event_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
 // END type definition
 
 // BEGIN C API
-
-/// This function casts an owning [`iox2_port_factory_event_h`] into a non-owning [`iox2_port_factory_event_ref_h`]
-///
-/// # Arguments
-///
-/// * `port_factory_handle` obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
-///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
-///
-/// Returns a [`iox2_port_factory_event_ref_h`]
-///
-/// # Safety
-///
-/// * The `port_factory_handle` must be a valid handle.
-/// * The `port_factory_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_port_factory_event_ref_h(
-    port_factory_handle: iox2_port_factory_event_h,
-) -> iox2_port_factory_event_ref_h {
-    debug_assert!(!port_factory_handle.is_null());
-
-    (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
-}
 
 /// Returns the [`iox2_service_name_ptr`], an immutable pointer to the service name.
 ///
@@ -133,9 +124,9 @@ pub unsafe extern "C" fn iox2_cast_port_factory_event_ref_h(
 ///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_service_name(
-    port_factory_handle: iox2_port_factory_event_ref_h,
+    port_factory_handle: iox2_port_factory_event_h_ref,
 ) -> iox2_service_name_ptr {
-    debug_assert!(!port_factory_handle.is_null());
+    port_factory_handle.assert_non_null();
 
     let port_factory = &mut *port_factory_handle.as_type();
 
@@ -154,10 +145,10 @@ pub unsafe extern "C" fn iox2_port_factory_event_service_name(
 /// * The `static_config` must be a valid pointer and non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_static_config(
-    port_factory_handle: iox2_port_factory_event_ref_h,
+    port_factory_handle: iox2_port_factory_event_h_ref,
     static_config: *mut iox2_static_config_event_t,
 ) {
-    debug_assert!(!port_factory_handle.is_null());
+    port_factory_handle.assert_non_null();
     debug_assert!(!static_config.is_null());
 
     let port_factory = &mut *port_factory_handle.as_type();
@@ -176,9 +167,8 @@ pub unsafe extern "C" fn iox2_port_factory_event_static_config(
 ///
 /// # Arguments
 ///
-/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_event_ref_h`] obtained
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_event_h_ref`] obtained
 ///   by e.g. [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
-///   and casted by [`iox2_cast_port_factory_event_ref_h`]
 /// * `notifier_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_notifier_builder_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 ///
@@ -189,10 +179,10 @@ pub unsafe extern "C" fn iox2_port_factory_event_static_config(
 /// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_notifier_builder(
-    port_factory_handle: iox2_port_factory_event_ref_h,
+    port_factory_handle: iox2_port_factory_event_h_ref,
     notifier_builder_struct_ptr: *mut iox2_port_factory_notifier_builder_t,
 ) -> iox2_port_factory_notifier_builder_h {
-    debug_assert!(!port_factory_handle.is_null());
+    port_factory_handle.assert_non_null();
 
     let mut notifier_builder_struct_ptr = notifier_builder_struct_ptr;
     fn no_op(_: *mut iox2_port_factory_notifier_builder_t) {}
@@ -230,9 +220,8 @@ pub unsafe extern "C" fn iox2_port_factory_event_notifier_builder(
 ///
 /// # Arguments
 ///
-/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_event_ref_h`] obtained
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_event_h_ref`] obtained
 ///   by e.g. [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)
-///   and casted by [`iox2_cast_port_factory_event_ref_h`]
 /// * `listener_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_listener_builder_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 ///
@@ -243,10 +232,10 @@ pub unsafe extern "C" fn iox2_port_factory_event_notifier_builder(
 /// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_listener_builder(
-    port_factory_handle: iox2_port_factory_event_ref_h,
+    port_factory_handle: iox2_port_factory_event_h_ref,
     listener_builder_struct_ptr: *mut iox2_port_factory_listener_builder_t,
 ) -> iox2_port_factory_listener_builder_h {
-    debug_assert!(!port_factory_handle.is_null());
+    port_factory_handle.assert_non_null();
 
     let mut listener_builder_struct_ptr = listener_builder_struct_ptr;
     fn no_op(_: *mut iox2_port_factory_listener_builder_t) {}
@@ -296,7 +285,7 @@ pub unsafe extern "C" fn iox2_port_factory_event_listener_builder(
 pub unsafe extern "C" fn iox2_port_factory_event_drop(
     port_factory_handle: iox2_port_factory_event_h,
 ) {
-    debug_assert!(!port_factory_handle.is_null());
+    port_factory_handle.assert_non_null();
 
     let port_factory = &mut *port_factory_handle.as_type();
 

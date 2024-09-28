@@ -14,8 +14,8 @@
 
 use crate::api::{
     c_size_t, iox2_port_factory_event_h, iox2_port_factory_event_t, iox2_service_builder_event_h,
-    iox2_service_builder_event_ref_h, iox2_service_type_e, HandleToType, IntoCInt,
-    PortFactoryEventUnion, ServiceBuilderUnion, IOX2_OK,
+    iox2_service_builder_event_h_ref, iox2_service_type_e, AssertNonNullHandle, HandleToType,
+    IntoCInt, PortFactoryEventUnion, ServiceBuilderUnion, IOX2_OK,
 };
 
 use iceoryx2::prelude::*;
@@ -139,9 +139,8 @@ impl IntoCInt for EventOpenOrCreateError {
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`]
-///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event) and
-///   casted by [`iox2_cast_service_builder_event_ref_h`](crate::iox2_cast_service_builder_event_ref_h).
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
 /// * `value` - The value to set the max notifiers to
 ///
 /// # Safety
@@ -149,10 +148,10 @@ impl IntoCInt for EventOpenOrCreateError {
 /// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
-    service_builder_handle: iox2_service_builder_event_ref_h,
+    service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -182,9 +181,8 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`]
-///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event) and
-///   casted by [`iox2_cast_service_builder_event_ref_h`](crate::iox2_cast_service_builder_event_ref_h).
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
 /// * `value` - The value to set the max listeners to
 ///
 /// # Safety
@@ -192,10 +190,10 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
 /// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
-    service_builder_handle: iox2_service_builder_event_ref_h,
+    service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 

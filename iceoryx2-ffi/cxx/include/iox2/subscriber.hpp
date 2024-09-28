@@ -104,9 +104,8 @@ inline void Subscriber<S, Payload, UserHeader>::drop() {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> iox::expected<bool, ConnectionFailure> {
-    auto* ref_handle = iox2_cast_subscriber_ref_h(m_handle);
     bool has_samples_result = false;
-    auto result = iox2_subscriber_has_samples(ref_handle, &has_samples_result);
+    auto result = iox2_subscriber_has_samples(&m_handle, &has_samples_result);
 
     if (result == IOX2_OK) {
         return iox::ok(has_samples_result);
@@ -117,10 +116,9 @@ inline auto Subscriber<S, Payload, UserHeader>::has_samples() const -> iox::expe
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::id() const -> UniqueSubscriberId {
-    auto* ref_handle = iox2_cast_subscriber_ref_h(m_handle);
     iox2_unique_subscriber_id_h id_handle = nullptr;
 
-    iox2_subscriber_id(ref_handle, nullptr, &id_handle);
+    iox2_subscriber_id(&m_handle, nullptr, &id_handle);
     return UniqueSubscriberId { id_handle };
 }
 
@@ -132,11 +130,9 @@ inline auto Subscriber<S, Payload, UserHeader>::buffer_size() const -> uint64_t 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::receive() const
     -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> {
-    auto* ref_handle = iox2_cast_subscriber_ref_h(m_handle);
-
     Sample<S, Payload, UserHeader> sample;
     iox2_sample_h sample_handle {};
-    auto result = iox2_subscriber_receive(ref_handle, &sample.m_sample, &sample.m_handle);
+    auto result = iox2_subscriber_receive(&m_handle, &sample.m_sample, &sample.m_handle);
 
     if (result == IOX2_OK) {
         if (sample.m_handle != nullptr) {
@@ -150,8 +146,7 @@ inline auto Subscriber<S, Payload, UserHeader>::receive() const
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::update_connections() const -> iox::expected<void, ConnectionFailure> {
-    auto* ref_handle = iox2_cast_subscriber_ref_h(m_handle);
-    auto result = iox2_subscriber_update_connections(ref_handle);
+    auto result = iox2_subscriber_update_connections(&m_handle);
     if (result != IOX2_OK) {
         return iox::err(iox::into<ConnectionFailure>(result));
     }

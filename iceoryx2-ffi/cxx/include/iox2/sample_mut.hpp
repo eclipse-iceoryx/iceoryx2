@@ -159,9 +159,8 @@ inline auto SampleMut<S, Payload, UserHeader>::operator->() -> Payload* {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto SampleMut<S, Payload, UserHeader>::header() const -> HeaderPublishSubscribe {
-    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
     iox2_publish_subscribe_header_h header_handle = nullptr;
-    iox2_sample_mut_header(ref_handle, nullptr, &header_handle);
+    iox2_sample_mut_header(&m_handle, nullptr, &header_handle);
 
     return HeaderPublishSubscribe { header_handle };
 }
@@ -169,10 +168,9 @@ inline auto SampleMut<S, Payload, UserHeader>::header() const -> HeaderPublishSu
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMut<S, Payload, UserHeader>::user_header() const -> const T& {
-    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
     const void* ptr = nullptr;
 
-    iox2_sample_mut_user_header(ref_handle, &ptr);
+    iox2_sample_mut_user_header(&m_handle, &ptr);
 
     return *static_cast<const T*>(ptr);
 }
@@ -180,21 +178,19 @@ inline auto SampleMut<S, Payload, UserHeader>::user_header() const -> const T& {
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto SampleMut<S, Payload, UserHeader>::user_header_mut() -> T& {
-    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
     void* ptr = nullptr;
 
-    iox2_sample_mut_user_header_mut(ref_handle, &ptr);
+    iox2_sample_mut_user_header_mut(&m_handle, &ptr);
 
     return *static_cast<T*>(ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto SampleMut<S, Payload, UserHeader>::payload() const -> const Payload& {
-    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
     const void* ptr = nullptr;
     size_t payload_len = 0;
 
-    iox2_sample_mut_payload(ref_handle, &ptr, &payload_len);
+    iox2_sample_mut_payload(&m_handle, &ptr, &payload_len);
     IOX_ASSERT(sizeof(Payload) <= payload_len, "");
 
     return *static_cast<const Payload*>(ptr);
@@ -202,11 +198,10 @@ inline auto SampleMut<S, Payload, UserHeader>::payload() const -> const Payload&
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> Payload& {
-    auto* ref_handle = iox2_cast_sample_mut_ref_h(m_handle);
     void* ptr = nullptr;
     size_t payload_len = 0;
 
-    iox2_sample_mut_payload_mut(ref_handle, &ptr, &payload_len);
+    iox2_sample_mut_payload_mut(&m_handle, &ptr, &payload_len);
     IOX_ASSERT(sizeof(Payload) <= payload_len, "");
 
     return *static_cast<Payload*>(ptr);

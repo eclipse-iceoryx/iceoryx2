@@ -22,7 +22,7 @@ filegroup(
 cmake(
     name = "iceoryx2-c",
     cache_entries = {
-        "IOX2_VERSION_STRING": "0.3.0",
+        "IOX2_VERSION_STRING": "0.4.0",
     },
     build_data = [
         ":cmake_srcs",
@@ -49,7 +49,7 @@ cmake(
         "//:win-msvc": "lib",
         "//conditions:default": "",
     }),
-    out_include_dir = "include/iceoryx2/v0.3.0/",
+    out_include_dir = "include/iceoryx2/v0.4.0/",
     exec_properties = {
         "requires-network": "true",
     },

@@ -6,13 +6,13 @@
 * `structs` end with a `_t`
 * owning handles end with a `_h` and are a type definition to a
   `struct iox2_foo_h_t;` as `pub type iox2_foo_h = *mut iox2_foo_h_t`
-* non-owning handles end with a `_ref_h` and are a type definition to a
-  `struct iox2_foo_ref_h_t;` as
-  `pub type iox2_foo_ref_h = *mut iox2_foo_ref_h_t`
+* non-owning handles end with a `_h_ref` and are a type definition to a
+  `iox2_foo_h` as
+  `pub type iox2_foo_h_ref = *const iox2_foo_h`
 * immutable pointer to the Rust type end with a `_ptr` and are a type definition
   like `pub type iox2_foo_ptr = *const Foo`
-* mutable pointer to the Rust type end with a `_mut_ptr` and are a type
-  definition like `pub type iox2_foo_mut_ptr = *mut Foo`
+* mutable pointer to the Rust type end with a `_ptr_mut` and are a type
+  definition like `pub type iox2_foo_ptr_mut = *mut Foo`
 * `enums` ends with a `_e`
 
 ## Pattern for Type Erasure
@@ -59,21 +59,19 @@ When the owning handle is passed to a function, the ownership of the underlying
 data is moved to that specific function and the `*_h` handles as well as all the
 `*_ptr` related to that handle are invalid. Accessing the handles or pointer
 afterwards lead to undefined behavior. The only exception are the `iox2_cast_*`
-functions which can be used to get `_ptr` and `_mut_ptr` pointer the the Rust
-type or a non-owning `_ref_h` handle to the C struct.
+functions which can be used to get `_ptr` and `_ptr_mut` pointer the the Rust
+type or a non-owning `_h_ref` handle to the C struct.
 
 The corresponding handle and pointer are defined like this
 
 ```rs
 pub struct iox2_foo_h_t;
 pub type iox2_foo_h = *mut iox2_foo_h_t;
-
-pub struct iox2_foo_ref_h_t;
-pub type iox2_foo_ref_h = *mut iox2_foo_ref_h_t;
+pub type iox2_foo_h_ref = *const iox2_foo_h;
 
 pub type iox2_foo_ptr = *const Foo;
 
-pub type iox2_foo_mut_ptr = *mut Foo;
+pub type iox2_foo_ptr_mut = *mut Foo;
 ```
 
 The `_h` handle is in general created by a builder and the `_ptr` pointer are in
@@ -103,9 +101,9 @@ the following warning and eventually to build failures.
 <!-- markdownlint-disable -->
 
 > warning: output filename collision.
-> The lib target `iceoryx2_ffi` in package `iceoryx2-ffi v0.3.0 (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`
+> The lib target `iceoryx2_ffi` in package `iceoryx2-ffi vX.Y.Z (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`
 > has the same output filename as the lib target `iceoryx2_ffi` in package
-> `iceoryx2-ffi v0.3.0 (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`.
+> `iceoryx2-ffi vX.Y.Z (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`.
 > Colliding filename is: C:\Users\ekxide\iceoryx2\target\release\deps\iceoryx2_ffi.lib
 > The targets should have unique names.
 > Consider changing their names to be unique or compiling them separately.

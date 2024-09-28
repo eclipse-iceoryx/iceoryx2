@@ -16,9 +16,10 @@ use iceoryx2::service::header::publish_subscribe::Header;
 use iceoryx2_bb_elementary::static_assert::static_assert_ge;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use crate::{iox2_unique_publisher_id_h, iox2_unique_publisher_id_t};
-
-use super::HandleToType;
+use crate::{
+    api::AssertNonNullHandle, api::HandleToType, iox2_unique_publisher_id_h,
+    iox2_unique_publisher_id_t,
+};
 
 // BEGIN types definition
 
@@ -50,16 +51,29 @@ impl iox2_publish_subscribe_header_t {
 pub struct iox2_publish_subscribe_header_h_t;
 /// The owning handle for [`iox2_publish_subscribe_header_t`]. Passing the handle to an function transfers the ownership.
 pub type iox2_publish_subscribe_header_h = *mut iox2_publish_subscribe_header_h_t;
-
-pub struct iox2_publish_subscribe_header_ref_h_t;
 /// The non-owning handle for [`iox2_publish_subscribe_header_t`]. Passing the handle to an function does not transfers the ownership.
-pub type iox2_publish_subscribe_header_ref_h = *mut iox2_publish_subscribe_header_ref_h_t;
+pub type iox2_publish_subscribe_header_h_ref = *const iox2_publish_subscribe_header_h;
 
 // NOTE check the README.md for using opaque types with renaming
 /// The immutable pointer to the underlying `publish_subscribe::Header`
 pub type iox2_publish_subscribe_header_ptr = *const Header;
 /// The mutable pointer to the underlying `publish_subscribe::Header`
-pub type iox2_publish_subscribe_header_mut_ptr = *mut Header;
+pub type iox2_publish_subscribe_header_ptr_mut = *mut Header;
+
+impl AssertNonNullHandle for iox2_publish_subscribe_header_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_publish_subscribe_header_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_publish_subscribe_header_h {
     type Target = *mut iox2_publish_subscribe_header_t;
@@ -69,34 +83,17 @@ impl HandleToType for iox2_publish_subscribe_header_h {
     }
 }
 
-impl HandleToType for iox2_publish_subscribe_header_ref_h {
+impl HandleToType for iox2_publish_subscribe_header_h_ref {
     type Target = *mut iox2_publish_subscribe_header_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
 // END types definition
 
 // BEGIN C API
-
-/// This function casts an owning [`iox2_publish_subscribe_header_h`] into a non-owning [`iox2_publish_subscribe_header_ref_h`]
-///
-/// Returns a [`iox2_publish_subscribe_header_ref_h`]
-///
-/// # Safety
-///
-/// * The `handle` must be a valid handle.
-/// * The `handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_publish_subscribe_header_ref_h(
-    handle: iox2_publish_subscribe_header_h,
-) -> iox2_publish_subscribe_header_ref_h {
-    debug_assert!(!handle.is_null());
-
-    (*handle.as_type()).as_ref_handle() as *mut _ as _
-}
 
 /// This function needs to be called to destroy the publish_subscribe_header!
 ///
@@ -128,16 +125,16 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_drop(
 ///
 /// # Safety
 ///
-/// * `header_handle` is valid, non-null and was obtained via [`iox2_cast_publish_subscribe_header_ref_h`]
+/// * `header_handle` is valid and non-null
 /// * `id_struct_ptr` is either null or valid and non-null
 /// * `id_handle_ptr` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
-    header_handle: iox2_publish_subscribe_header_ref_h,
+    header_handle: iox2_publish_subscribe_header_h_ref,
     id_struct_ptr: *mut iox2_unique_publisher_id_t,
     id_handle_ptr: *mut iox2_unique_publisher_id_h,
 ) {
-    debug_assert!(!header_handle.is_null());
+    header_handle.assert_non_null();
     debug_assert!(!id_handle_ptr.is_null());
 
     fn no_op(_: *mut iox2_unique_publisher_id_t) {}
@@ -166,12 +163,12 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
 ///
 /// # Safety
 ///
-/// * `header_handle` is valid, non-null and was obtained via [`iox2_cast_publish_subscribe_header_ref_h`]
+/// * `header_handle` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_size(
-    header_handle: iox2_publish_subscribe_header_ref_h,
+    header_handle: iox2_publish_subscribe_header_h_ref,
 ) -> usize {
-    debug_assert!(!header_handle.is_null());
+    header_handle.assert_non_null();
 
     let header = &mut *header_handle.as_type();
 
@@ -187,12 +184,12 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_size(
 ///
 /// # Safety
 ///
-/// * `header_handle` is valid, non-null and was obtained via [`iox2_cast_publish_subscribe_header_ref_h`]
+/// * `header_handle` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_alignment(
-    header_handle: iox2_publish_subscribe_header_ref_h,
+    header_handle: iox2_publish_subscribe_header_h_ref,
 ) -> usize {
-    debug_assert!(!header_handle.is_null());
+    header_handle.assert_non_null();
 
     let header = &mut *header_handle.as_type();
 
