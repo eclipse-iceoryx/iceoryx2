@@ -10,18 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
-use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 
-static CREATION_COUNTER: IoxAtomicUsize = IoxAtomicUsize::new(0);
-static DROP_COUNTER: IoxAtomicUsize = IoxAtomicUsize::new(0);
+static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
+static DROP_COUNTER: Mutex<usize> = Mutex::new(0);
 
 #[derive(Debug)]
 pub struct LifetimeTracker {}
 
 impl Default for LifetimeTracker {
     fn default() -> Self {
-        CREATION_COUNTER.fetch_add(1, Ordering::Relaxed);
+        *CREATION_COUNTER.lock().unwrap() += 1;
 
         Self {}
     }
@@ -33,12 +32,12 @@ impl LifetimeTracker {
     }
 
     pub fn start_tracking() {
-        CREATION_COUNTER.store(0, Ordering::Relaxed);
-        DROP_COUNTER.store(0, Ordering::Relaxed);
+        *CREATION_COUNTER.lock().unwrap() = 0;
+        *DROP_COUNTER.lock().unwrap() = 0;
     }
 
     pub fn number_of_living_instances() -> usize {
-        CREATION_COUNTER.load(Ordering::Relaxed) - DROP_COUNTER.load(Ordering::Relaxed)
+        *CREATION_COUNTER.lock().unwrap() - *DROP_COUNTER.lock().unwrap()
     }
 }
 
@@ -50,6 +49,6 @@ impl Clone for LifetimeTracker {
 
 impl Drop for LifetimeTracker {
     fn drop(&mut self) {
-        DROP_COUNTER.fetch_add(1, Ordering::Relaxed);
+        *DROP_COUNTER.lock().unwrap() += 1;
     }
 }
