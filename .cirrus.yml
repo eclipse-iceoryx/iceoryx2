@@ -242,6 +242,8 @@ ubuntu_22_04_aarch64_stable_debug_task:
   <<: *IOX2_FFI_COMMON_DEBUG
 
 ubuntu_22_04_aarch64_beta_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
   depends_on: ubuntu_22_04_aarch64_stable_debug
   skip: "changesIncludeOnly('.github/**', '**.md')"
   allow_failures: true
@@ -275,6 +277,8 @@ arch_linux_x64_stable_debug_task:
   <<: *IOX2_FFI_COMMON_DEBUG
 
 arch_linux_x64_beta_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
   depends_on: arch_linux_x64_stable_debug
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_ARCH_LINUX_X64
