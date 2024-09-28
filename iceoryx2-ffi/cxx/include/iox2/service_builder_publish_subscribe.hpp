@@ -133,8 +133,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     m_history_size.and_then([&](auto value) { iox2_service_builder_pub_sub_set_history_size(&m_handle, value); });
     m_subscriber_max_buffer_size.and_then(
         [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(&m_handle, value); });
-    m_max_subscribers.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_max_subscribers(&m_handle, value); });
+    m_max_subscribers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_subscribers(&m_handle, value); });
     m_max_publishers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_publishers(&m_handle, value); });
     m_max_nodes.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_nodes(&m_handle, value); });
 

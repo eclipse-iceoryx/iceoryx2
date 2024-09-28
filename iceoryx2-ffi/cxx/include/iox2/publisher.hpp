@@ -153,8 +153,8 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
     static_assert(std::is_trivially_copyable<Payload>::value);
 
     size_t number_of_recipients = 0;
-    auto result = iox2_publisher_send_copy(
-        &m_handle, static_cast<const void*>(&payload), sizeof(Payload), &number_of_recipients);
+    auto result =
+        iox2_publisher_send_copy(&m_handle, static_cast<const void*>(&payload), sizeof(Payload), &number_of_recipients);
 
     if (result == IOX2_OK) {
         return iox::ok(number_of_recipients);
