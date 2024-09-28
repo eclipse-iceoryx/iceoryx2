@@ -21,7 +21,7 @@ ServiceBuilderEvent<S>::ServiceBuilderEvent(iox2_service_builder_h handle)
 
 template <ServiceType S>
 void ServiceBuilderEvent<S>::set_parameters() {
-    auto* ref_handle = iox2_cast_service_builder_event_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_service_builder_event_h_ref(m_handle);
 
     m_max_notifiers.and_then([&](auto value) { iox2_service_builder_event_set_max_notifiers(ref_handle, value); });
     m_max_listeners.and_then([&](auto value) { iox2_service_builder_event_set_max_listeners(ref_handle, value); });

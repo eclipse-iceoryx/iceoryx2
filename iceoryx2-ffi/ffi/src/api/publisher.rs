@@ -150,9 +150,9 @@ pub struct iox2_publisher_h_t;
 /// The owning handle for `iox2_publisher_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_publisher_h = *mut iox2_publisher_h_t;
 
-pub struct iox2_publisher_ref_h_t;
+pub struct iox2_publisher_h_ref_t;
 /// The non-owning handle for `iox2_publisher_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_publisher_ref_h = *mut iox2_publisher_ref_h_t;
+pub type iox2_publisher_h_ref = *mut iox2_publisher_h_ref_t;
 
 impl HandleToType for iox2_publisher_h {
     type Target = *mut iox2_publisher_t;
@@ -162,7 +162,7 @@ impl HandleToType for iox2_publisher_h {
     }
 }
 
-impl HandleToType for iox2_publisher_ref_h {
+impl HandleToType for iox2_publisher_h_ref {
     type Target = *mut iox2_publisher_t;
 
     fn as_type(self) -> Self::Target {
@@ -206,25 +206,25 @@ unsafe fn send_copy<S: Service>(
 
 // BEGIN C API
 
-/// This function casts an owning [`iox2_publisher_h`] into a non-owning [`iox2_publisher_ref_h`]
+/// This function casts an owning [`iox2_publisher_h`] into a non-owning [`iox2_publisher_h_ref`]
 ///
 /// # Arguments
 ///
 /// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
 ///
-/// Returns a [`iox2_publisher_ref_h`]
+/// Returns a [`iox2_publisher_h_ref`]
 ///
 /// # Safety
 ///
 /// * The `handle` must be a valid handle.
 /// * The `handle` is still valid after the call to this function.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_cast_publisher_ref_h(
+pub unsafe extern "C" fn iox2_cast_publisher_h_ref(
     handle: iox2_publisher_h,
-) -> iox2_publisher_ref_h {
+) -> iox2_publisher_h_ref {
     debug_assert!(!handle.is_null());
 
-    (*handle.as_type()).as_ref_handle() as *mut _ as _
+    (*handle.as_type()).as_h_refandle() as *mut _ as _
 }
 
 /// Returns the strategy the publisher follows when a sample cannot be delivered
@@ -238,10 +238,10 @@ pub unsafe extern "C" fn iox2_cast_publisher_ref_h(
 ///
 /// # Safety
 ///
-/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_h_ref`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
-    publisher_handle: iox2_publisher_ref_h,
+    publisher_handle: iox2_publisher_h_ref,
 ) -> iox2_unable_to_deliver_strategy_e {
     debug_assert!(!publisher_handle.is_null());
 
@@ -274,11 +274,11 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
 ///
 /// # Safety
 ///
-/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_h_ref`]
 /// * `id` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_id(
-    publisher_handle: iox2_publisher_ref_h,
+    publisher_handle: iox2_publisher_h_ref,
     id_struct_ptr: *mut iox2_unique_publisher_id_t,
     id_handle_ptr: *mut iox2_unique_publisher_id_h,
 ) {
@@ -318,13 +318,13 @@ pub unsafe extern "C" fn iox2_publisher_id(
 ///
 /// # Safety
 ///
-/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_h_ref`]
 /// * `data_ptr` non-null pointer to a valid position in memory
 /// * `data_len` the size of the payload memory
 /// * `number_of_recipients` can be null, otherwise a valid pointer to an [`usize`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_send_copy(
-    publisher_handle: iox2_publisher_ref_h,
+    publisher_handle: iox2_publisher_h_ref,
     data_ptr: *const c_void,
     data_len: usize,
     number_of_recipients: *mut usize,
@@ -364,11 +364,11 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 ///
 /// # Safety
 ///
-/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_ref_h`]
+/// * `publisher_handle` is valid, non-null and was obtained via [`iox2_cast_publisher_h_ref`]
 /// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_mut_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_loan(
-    publisher_handle: iox2_publisher_ref_h,
+    publisher_handle: iox2_publisher_h_ref,
     sample_struct_ptr: *mut iox2_sample_mut_t,
     sample_handle_ptr: *mut iox2_sample_mut_h,
 ) -> c_int {
@@ -427,16 +427,16 @@ pub unsafe extern "C" fn iox2_publisher_loan(
 ///
 /// # Arguments
 ///
-/// * `publisher_handle` - Must be a valid [`iox2_publisher_ref_h`]
+/// * `publisher_handle` - Must be a valid [`iox2_publisher_h_ref`]
 ///   obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create) and
-///   casted by [`iox2_cast_publisher_ref_h`].
+///   casted by [`iox2_cast_publisher_h_ref`].
 ///
 /// # Safety
 ///
 /// * The `publisher_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_update_connections(
-    publisher_handle: iox2_publisher_ref_h,
+    publisher_handle: iox2_publisher_h_ref,
 ) -> c_int {
     debug_assert!(!publisher_handle.is_null());
 

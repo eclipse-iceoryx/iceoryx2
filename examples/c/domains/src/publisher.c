@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     iox2_config_ptr config_ptr = iox2_config_global_config();
     iox2_config_h config = NULL;
     iox2_config_from_ptr(config_ptr, NULL, &config);
-    iox2_config_ref_h config_ref = iox2_cast_config_ref_h(config);
+    iox2_config_h_ref config_ref = iox2_cast_config_h_ref(config);
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
-    iox2_node_builder_ref_h node_builder_ref = iox2_cast_node_builder_ref_h(node_builder_handle);
+    iox2_node_builder_h_ref node_builder_ref = iox2_cast_node_builder_h_ref(node_builder_handle);
 
     // use the custom config when creating the custom node
     // every service constructed by the node will use this config
@@ -63,11 +63,11 @@ int main(int argc, char** argv) {
 
     // create service builder
     iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(service_name);
-    iox2_node_ref_h node_ref_handle = iox2_cast_node_ref_h(node_handle);
-    iox2_service_builder_h service_builder = iox2_node_service_builder(node_ref_handle, NULL, service_name_ptr);
+    iox2_node_h_ref node_h_refandle = iox2_cast_node_h_ref(node_handle);
+    iox2_service_builder_h service_builder = iox2_node_service_builder(node_h_refandle, NULL, service_name_ptr);
     iox2_service_builder_pub_sub_h service_builder_pub_sub = iox2_service_builder_pub_sub(service_builder);
-    iox2_service_builder_pub_sub_ref_h service_builder_pub_sub_ref =
-        iox2_cast_service_builder_pub_sub_ref_h(service_builder_pub_sub);
+    iox2_service_builder_pub_sub_h_ref service_builder_pub_sub_ref =
+        iox2_cast_service_builder_pub_sub_h_ref(service_builder_pub_sub);
 
     // set pub sub payload type
     const char* payload_type_name = "16TransmissionData";
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
     }
 
     // create publisher
-    iox2_port_factory_pub_sub_ref_h ref_service = iox2_cast_port_factory_pub_sub_ref_h(service);
+    iox2_port_factory_pub_sub_h_ref ref_service = iox2_cast_port_factory_pub_sub_h_ref(service);
     iox2_port_factory_publisher_builder_h publisher_builder =
         iox2_port_factory_pub_sub_publisher_builder(ref_service, NULL);
     iox2_publisher_h publisher = NULL;
@@ -98,10 +98,10 @@ int main(int argc, char** argv) {
         printf("Unable to create publisher!\n");
         goto drop_service;
     }
-    iox2_publisher_ref_h publisher_ref = iox2_cast_publisher_ref_h(publisher);
+    iox2_publisher_h_ref publisher_ref = iox2_cast_publisher_h_ref(publisher);
 
     int32_t counter = 0;
-    while (iox2_node_wait(node_ref_handle, 1, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(node_h_refandle, 1, 0) == iox2_node_event_e_TICK) {
         counter += 1;
 
         // loan sample
@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
             printf("Failed to loan sample\n");
             goto drop_publisher;
         }
-        iox2_sample_mut_ref_h sample_ref = iox2_cast_sample_mut_ref_h(sample);
+        iox2_sample_mut_h_ref sample_ref = iox2_cast_sample_mut_h_ref(sample);
 
         // write payload
         struct TransmissionData* payload = NULL;

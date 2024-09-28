@@ -35,8 +35,8 @@ int main(void) {
 
     // create service
     iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(service_name);
-    iox2_node_ref_h node_ref_handle = iox2_cast_node_ref_h(node_handle);
-    iox2_service_builder_h service_builder = iox2_node_service_builder(node_ref_handle, NULL, service_name_ptr);
+    iox2_node_h_ref node_h_refandle = iox2_cast_node_h_ref(node_handle);
+    iox2_service_builder_h service_builder = iox2_node_service_builder(node_h_refandle, NULL, service_name_ptr);
     iox2_service_builder_event_h service_builder_event = iox2_service_builder_event(service_builder);
     iox2_port_factory_event_h service = NULL;
     if (iox2_service_builder_event_open_or_create(service_builder_event, NULL, &service) != IOX2_OK) {
@@ -45,17 +45,17 @@ int main(void) {
     }
 
     // create listener
-    iox2_port_factory_event_ref_h ref_service = iox2_cast_port_factory_event_ref_h(service);
+    iox2_port_factory_event_h_ref ref_service = iox2_cast_port_factory_event_h_ref(service);
     iox2_port_factory_listener_builder_h listener_builder = iox2_port_factory_event_listener_builder(ref_service, NULL);
     iox2_listener_h listener = NULL;
     if (iox2_port_factory_listener_builder_create(listener_builder, NULL, &listener) != IOX2_OK) {
         printf("Unable to create listener!\n");
         goto drop_service;
     }
-    iox2_listener_ref_h listener_ref = iox2_cast_listener_ref_h(listener);
+    iox2_listener_h_ref listener_ref = iox2_cast_listener_h_ref(listener);
     iox2_event_id_t event_id;
 
-    while (iox2_node_wait(node_ref_handle, 0, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(node_h_refandle, 0, 0) == iox2_node_event_e_TICK) {
         bool has_received_one = false;
         if (iox2_listener_timed_wait_one(listener_ref, &event_id, &has_received_one, 1, 0) != IOX2_OK) {
             printf("Unable to wait for notification!\n");

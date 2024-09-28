@@ -125,7 +125,7 @@ inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPub
 
 template <typename Payload, typename UserHeader, ServiceType S>
 inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_parameters() {
-    auto* ref_handle = iox2_cast_service_builder_pub_sub_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_service_builder_pub_sub_h_ref(m_handle);
 
     m_payload_alignment.and_then([](auto) { IOX_TODO(); });
     m_enable_safe_overflow.and_then(

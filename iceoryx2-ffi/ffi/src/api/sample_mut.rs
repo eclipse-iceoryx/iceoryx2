@@ -80,9 +80,9 @@ pub struct iox2_sample_mut_h_t;
 /// The owning handle for `iox2_sample_mut_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_sample_mut_h = *mut iox2_sample_mut_h_t;
 
-pub struct iox2_sample_mut_ref_h_t;
+pub struct iox2_sample_mut_h_ref_t;
 /// The non-owning handle for `iox2_sample_mut_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_sample_mut_ref_h = *mut iox2_sample_mut_ref_h_t;
+pub type iox2_sample_mut_h_ref = *mut iox2_sample_mut_h_ref_t;
 
 impl HandleToType for iox2_sample_mut_h {
     type Target = *mut iox2_sample_mut_t;
@@ -92,7 +92,7 @@ impl HandleToType for iox2_sample_mut_h {
     }
 }
 
-impl HandleToType for iox2_sample_mut_ref_h {
+impl HandleToType for iox2_sample_mut_h_ref {
     type Target = *mut iox2_sample_mut_t;
 
     fn as_type(self) -> Self::Target {
@@ -104,24 +104,24 @@ impl HandleToType for iox2_sample_mut_ref_h {
 
 // BEGIN C API
 
-/// This function casts an owning [`iox2_sample_mut_h`] into a non-owning [`iox2_sample_mut_ref_h`]
+/// This function casts an owning [`iox2_sample_mut_h`] into a non-owning [`iox2_sample_mut_h_ref`]
 ///
 /// # Arguments
 ///
 /// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
 ///
-/// Returns a [`iox2_sample_mut_ref_h`]
+/// Returns a [`iox2_sample_mut_h_ref`]
 ///
 /// # Safety
 ///
 /// * The `handle` must be a valid handle.
 /// * The `handle` is still valid after the call to this function.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_cast_sample_mut_ref_h(
+pub unsafe extern "C" fn iox2_cast_sample_mut_h_ref(
     handle: iox2_sample_mut_h,
-) -> iox2_sample_mut_ref_h {
+) -> iox2_sample_mut_h_ref {
     debug_assert!(!handle.is_null());
-    (*handle.as_type()).as_ref_handle() as *mut _ as _
+    (*handle.as_type()).as_h_refandle() as *mut _ as _
 }
 
 /// cbindgen:ignore
@@ -166,7 +166,7 @@ pub unsafe extern "C" fn iox2_sample_mut_move(
 /// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_user_header(
-    sample_handle: iox2_sample_mut_ref_h,
+    sample_handle: iox2_sample_mut_h_ref,
     header_ptr: *mut *const c_void,
 ) {
     debug_assert!(!sample_handle.is_null());
@@ -192,7 +192,7 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header(
 /// * `header_handle_ptr` valid pointer to a [`iox2_publish_subscribe_header_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_header(
-    handle: iox2_sample_mut_ref_h,
+    handle: iox2_sample_mut_h_ref,
     header_struct_ptr: *mut iox2_publish_subscribe_header_t,
     header_handle_ptr: *mut iox2_publish_subscribe_header_h,
 ) {
@@ -227,7 +227,7 @@ pub unsafe extern "C" fn iox2_sample_mut_header(
 /// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_user_header_mut(
-    sample_handle: iox2_sample_mut_ref_h,
+    sample_handle: iox2_sample_mut_h_ref,
     header_ptr: *mut *mut c_void,
 ) {
     debug_assert!(!sample_handle.is_null());
@@ -252,7 +252,7 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header_mut(
 /// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
-    sample_handle: iox2_sample_mut_ref_h,
+    sample_handle: iox2_sample_mut_h_ref,
     payload_ptr: *mut *mut c_void,
     payload_len: *mut c_size_t,
 ) {
@@ -281,7 +281,7 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
 /// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_payload(
-    sample_handle: iox2_sample_mut_ref_h,
+    sample_handle: iox2_sample_mut_h_ref,
     payload_ptr: *mut *const c_void,
     payload_len: *mut c_size_t,
 ) {

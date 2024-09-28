@@ -6,9 +6,9 @@
 * `structs` end with a `_t`
 * owning handles end with a `_h` and are a type definition to a
   `struct iox2_foo_h_t;` as `pub type iox2_foo_h = *mut iox2_foo_h_t`
-* non-owning handles end with a `_ref_h` and are a type definition to a
-  `struct iox2_foo_ref_h_t;` as
-  `pub type iox2_foo_ref_h = *mut iox2_foo_ref_h_t`
+* non-owning handles end with a `_h_ref` and are a type definition to a
+  `struct iox2_foo_h_ref_t;` as
+  `pub type iox2_foo_h_ref = *mut iox2_foo_h_ref_t`
 * immutable pointer to the Rust type end with a `_ptr` and are a type definition
   like `pub type iox2_foo_ptr = *const Foo`
 * mutable pointer to the Rust type end with a `_ptr_mut` and are a type
@@ -60,7 +60,7 @@ data is moved to that specific function and the `*_h` handles as well as all the
 `*_ptr` related to that handle are invalid. Accessing the handles or pointer
 afterwards lead to undefined behavior. The only exception are the `iox2_cast_*`
 functions which can be used to get `_ptr` and `_ptr_mut` pointer the the Rust
-type or a non-owning `_ref_h` handle to the C struct.
+type or a non-owning `_h_ref` handle to the C struct.
 
 The corresponding handle and pointer are defined like this
 
@@ -68,8 +68,8 @@ The corresponding handle and pointer are defined like this
 pub struct iox2_foo_h_t;
 pub type iox2_foo_h = *mut iox2_foo_h_t;
 
-pub struct iox2_foo_ref_h_t;
-pub type iox2_foo_ref_h = *mut iox2_foo_ref_h_t;
+pub struct iox2_foo_h_ref_t;
+pub type iox2_foo_h_ref = *mut iox2_foo_h_ref_t;
 
 pub type iox2_foo_ptr = *const Foo;
 

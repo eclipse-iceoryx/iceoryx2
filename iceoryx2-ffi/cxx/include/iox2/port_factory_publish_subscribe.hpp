@@ -138,7 +138,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::attributes() co
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::static_config() const -> StaticConfigPublishSubscribe {
-    auto* ref_handle = iox2_cast_port_factory_pub_sub_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_port_factory_pub_sub_h_ref(m_handle);
     iox2_static_config_publish_subscribe_t static_config {};
     iox2_port_factory_pub_sub_static_config(ref_handle, &static_config);
 
@@ -160,7 +160,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::nodes(
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::subscriber_builder() const
     -> PortFactorySubscriber<S, Payload, UserHeader> {
-    auto* ref_handle = iox2_cast_port_factory_pub_sub_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_port_factory_pub_sub_h_ref(m_handle);
     return PortFactorySubscriber<S, Payload, UserHeader>(
         iox2_port_factory_pub_sub_subscriber_builder(ref_handle, nullptr));
 }
@@ -168,7 +168,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::subscriber_buil
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::publisher_builder() const
     -> PortFactoryPublisher<S, Payload, UserHeader> {
-    auto* ref_handle = iox2_cast_port_factory_pub_sub_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_port_factory_pub_sub_h_ref(m_handle);
     return PortFactoryPublisher<S, Payload, UserHeader>(
         iox2_port_factory_pub_sub_publisher_builder(ref_handle, nullptr));
 }

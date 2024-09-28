@@ -136,13 +136,13 @@ inline Publisher<S, Payload, UserHeader>::~Publisher() {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::unable_to_deliver_strategy() const -> UnableToDeliverStrategy {
-    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_publisher_h_ref(m_handle);
     return iox::into<UnableToDeliverStrategy>(static_cast<int>(iox2_publisher_unable_to_deliver_strategy(ref_handle)));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
-    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_publisher_h_ref(m_handle);
     iox2_unique_publisher_id_h id_handle = nullptr;
 
     iox2_publisher_id(ref_handle, nullptr, &id_handle);
@@ -154,7 +154,7 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
     -> iox::expected<size_t, PublisherSendError> {
     static_assert(std::is_trivially_copyable<Payload>::value);
 
-    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_publisher_h_ref(m_handle);
 
     size_t number_of_recipients = 0;
     auto result = iox2_publisher_send_copy(
@@ -170,7 +170,7 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
     -> iox::expected<SampleMutUninit<S, Payload, UserHeader>, PublisherLoanError> {
-    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_publisher_h_ref(m_handle);
     SampleMutUninit<S, Payload, UserHeader> sample;
 
     auto result = iox2_publisher_loan(ref_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle);
@@ -212,7 +212,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_slice_uninit(const uint64_t 
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::update_connections() -> iox::expected<void, ConnectionFailure> {
-    auto* ref_handle = iox2_cast_publisher_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_publisher_h_ref(m_handle);
     auto result = iox2_publisher_update_connections(ref_handle);
     if (result != IOX2_OK) {
         return iox::err(iox::into<ConnectionFailure>(result));

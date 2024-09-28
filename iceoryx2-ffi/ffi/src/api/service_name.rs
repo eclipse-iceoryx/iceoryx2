@@ -41,9 +41,9 @@ pub struct iox2_service_name_h_t;
 /// The owning handle for `iox2_service_name_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_service_name_h = *mut iox2_service_name_h_t;
 
-pub struct iox2_service_name_ref_h_t;
+pub struct iox2_service_name_h_ref_t;
 /// The non-owning handle for `iox2_service_name_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_service_name_ref_h = *mut iox2_service_name_ref_h_t;
+pub type iox2_service_name_h_ref = *mut iox2_service_name_h_ref_t;
 
 // NOTE check the README.md for using opaque types with renaming
 /// The immutable pointer to the underlying `ServiceName`
@@ -59,7 +59,7 @@ impl HandleToType for iox2_service_name_h {
     }
 }
 
-impl HandleToType for iox2_service_name_ref_h {
+impl HandleToType for iox2_service_name_h_ref {
     type Target = *mut iox2_service_name_t;
 
     fn as_type(self) -> Self::Target {

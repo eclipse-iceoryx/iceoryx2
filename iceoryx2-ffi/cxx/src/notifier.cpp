@@ -42,7 +42,7 @@ Notifier<S>::~Notifier() {
 
 template <ServiceType S>
 auto Notifier<S>::id() const -> UniqueNotifierId {
-    auto* ref_handle = iox2_cast_notifier_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_notifier_h_ref(m_handle);
     iox2_unique_notifier_id_h id_handle = nullptr;
 
     iox2_notifier_id(ref_handle, nullptr, &id_handle);
@@ -51,7 +51,7 @@ auto Notifier<S>::id() const -> UniqueNotifierId {
 
 template <ServiceType S>
 auto Notifier<S>::notify() const -> iox::expected<size_t, NotifierNotifyError> {
-    auto* ref_handle = iox2_cast_notifier_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_notifier_h_ref(m_handle);
     size_t number_of_notified_listeners = 0;
     auto result = iox2_notifier_notify(ref_handle, &number_of_notified_listeners);
 
@@ -64,7 +64,7 @@ auto Notifier<S>::notify() const -> iox::expected<size_t, NotifierNotifyError> {
 
 template <ServiceType S>
 auto Notifier<S>::notify_with_custom_event_id(EventId event_id) const -> iox::expected<size_t, NotifierNotifyError> {
-    auto* ref_handle = iox2_cast_notifier_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_notifier_h_ref(m_handle);
     size_t number_of_notified_listeners = 0;
     auto result =
         iox2_notifier_notify_with_custom_event_id(ref_handle, &event_id.m_value, &number_of_notified_listeners);

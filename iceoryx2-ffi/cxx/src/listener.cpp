@@ -51,7 +51,7 @@ void Listener<S>::drop() {
 
 template <ServiceType S>
 auto Listener<S>::id() const -> UniqueListenerId {
-    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_listener_h_ref(m_handle);
     iox2_unique_listener_id_h id_handle = nullptr;
 
     iox2_listener_id(ref_handle, nullptr, &id_handle);
@@ -65,7 +65,7 @@ void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context contex
 
 template <ServiceType S>
 auto Listener<S>::try_wait_all(const iox::function<void(EventId)>& callback) -> iox::expected<void, ListenerWaitError> {
-    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_listener_h_ref(m_handle);
     auto ctx = internal::ctx(callback);
 
     auto result = iox2_listener_try_wait_all(ref_handle, wait_callback, static_cast<void*>(&ctx));
@@ -79,7 +79,7 @@ auto Listener<S>::try_wait_all(const iox::function<void(EventId)>& callback) -> 
 template <ServiceType S>
 auto Listener<S>::timed_wait_all(const iox::function<void(EventId)>& callback,
                                  const iox::units::Duration& timeout) -> iox::expected<void, ListenerWaitError> {
-    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_listener_h_ref(m_handle);
     auto ctx = internal::ctx(callback);
     auto timeout_timespec = timeout.timespec();
 
@@ -95,7 +95,7 @@ auto Listener<S>::timed_wait_all(const iox::function<void(EventId)>& callback,
 template <ServiceType S>
 auto Listener<S>::blocking_wait_all(const iox::function<void(EventId)>& callback)
     -> iox::expected<void, ListenerWaitError> {
-    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_listener_h_ref(m_handle);
     auto ctx = internal::ctx(callback);
 
     auto result = iox2_listener_blocking_wait_all(ref_handle, wait_callback, static_cast<void*>(&ctx));
@@ -108,7 +108,7 @@ auto Listener<S>::blocking_wait_all(const iox::function<void(EventId)>& callback
 
 template <ServiceType S>
 auto Listener<S>::try_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
-    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_listener_h_ref(m_handle);
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -128,7 +128,7 @@ auto Listener<S>::try_wait_one() -> iox::expected<iox::optional<EventId>, Listen
 template <ServiceType S>
 auto Listener<S>::timed_wait_one(const iox::units::Duration& timeout)
     -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
-    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_listener_h_ref(m_handle);
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 
@@ -149,7 +149,7 @@ auto Listener<S>::timed_wait_one(const iox::units::Duration& timeout)
 
 template <ServiceType S>
 auto Listener<S>::blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError> {
-    auto* ref_handle = iox2_cast_listener_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_listener_h_ref(m_handle);
     iox2_event_id_t event_id {};
     bool has_received_one { false };
 

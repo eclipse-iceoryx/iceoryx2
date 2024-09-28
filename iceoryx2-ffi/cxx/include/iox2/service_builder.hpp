@@ -42,13 +42,13 @@ class ServiceBuilder {
   private:
     template <ServiceType>
     friend class Node;
-    ServiceBuilder(iox2_node_ref_h node_handle, iox2_service_name_ptr service_name_ptr);
+    ServiceBuilder(iox2_node_h_ref node_handle, iox2_service_name_ptr service_name_ptr);
 
     iox2_service_builder_h m_handle;
 };
 
 template <ServiceType S>
-inline ServiceBuilder<S>::ServiceBuilder(iox2_node_ref_h node_handle, iox2_service_name_ptr service_name_ptr)
+inline ServiceBuilder<S>::ServiceBuilder(iox2_node_h_ref node_handle, iox2_service_name_ptr service_name_ptr)
     : m_handle { iox2_node_service_builder(node_handle, nullptr, service_name_ptr) } {
 }
 

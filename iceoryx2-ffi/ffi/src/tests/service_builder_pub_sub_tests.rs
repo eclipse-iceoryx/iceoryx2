@@ -31,7 +31,7 @@ mod service_builder {
             assert_that!(ret_val, eq(IOX2_OK));
 
             let service_builder_handle = iox2_node_service_builder(
-                iox2_cast_node_ref_h(node_handle),
+                iox2_cast_node_h_ref(node_handle),
                 std::ptr::null_mut(),
                 iox2_cast_service_name_ptr(service_name_handle),
             );
@@ -39,11 +39,11 @@ mod service_builder {
 
             let service_builder_handle = iox2_service_builder_pub_sub(service_builder_handle);
             iox2_service_builder_pub_sub_set_max_publishers(
-                iox2_cast_service_builder_pub_sub_ref_h(service_builder_handle),
+                iox2_cast_service_builder_pub_sub_h_ref(service_builder_handle),
                 10,
             );
             iox2_service_builder_pub_sub_set_max_subscribers(
-                iox2_cast_service_builder_pub_sub_ref_h(service_builder_handle),
+                iox2_cast_service_builder_pub_sub_h_ref(service_builder_handle),
                 10,
             );
 

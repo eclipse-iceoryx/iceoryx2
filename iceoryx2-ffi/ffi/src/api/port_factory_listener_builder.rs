@@ -97,9 +97,9 @@ pub struct iox2_port_factory_listener_builder_h_t;
 /// The owning handle for `iox2_port_factory_listener_builder_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_port_factory_listener_builder_h = *mut iox2_port_factory_listener_builder_h_t;
 
-pub struct iox2_port_factory_listener_builder_ref_h_t;
+pub struct iox2_port_factory_listener_builder_h_ref_t;
 /// The non-owning handle for `iox2_port_factory_listener_builder_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_port_factory_listener_builder_ref_h = *mut iox2_port_factory_listener_builder_ref_h_t;
+pub type iox2_port_factory_listener_builder_h_ref = *mut iox2_port_factory_listener_builder_h_ref_t;
 
 impl HandleToType for iox2_port_factory_listener_builder_h {
     type Target = *mut iox2_port_factory_listener_builder_t;
@@ -109,7 +109,7 @@ impl HandleToType for iox2_port_factory_listener_builder_h {
     }
 }
 
-impl HandleToType for iox2_port_factory_listener_builder_ref_h {
+impl HandleToType for iox2_port_factory_listener_builder_h_ref {
     type Target = *mut iox2_port_factory_listener_builder_t;
 
     fn as_type(self) -> Self::Target {

@@ -45,7 +45,7 @@ HeaderPublishSubscribe::~HeaderPublishSubscribe() {
 }
 
 auto HeaderPublishSubscribe::publisher_id() const -> UniquePublisherId {
-    auto* handle_ref = iox2_cast_publish_subscribe_header_ref_h(m_handle);
+    auto* handle_ref = iox2_cast_publish_subscribe_header_h_ref(m_handle);
     iox2_unique_publisher_id_h id_handle = nullptr;
 
     iox2_publish_subscribe_header_publisher_id(handle_ref, nullptr, &id_handle);
@@ -53,7 +53,7 @@ auto HeaderPublishSubscribe::publisher_id() const -> UniquePublisherId {
 }
 
 auto HeaderPublishSubscribe::payload_type_layout() const -> iox::Layout {
-    auto* handle_ref = iox2_cast_publish_subscribe_header_ref_h(m_handle);
+    auto* handle_ref = iox2_cast_publish_subscribe_header_h_ref(m_handle);
     auto size = iox2_publish_subscribe_header_payload_type_size(handle_ref);
     auto alignment = iox2_publish_subscribe_header_payload_type_alignment(handle_ref);
 

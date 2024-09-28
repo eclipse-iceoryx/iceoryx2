@@ -67,7 +67,7 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
 PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publisher<S, Payload, UserHeader>,
                                                                            PublisherCreateError> {
-    auto* ref_handle = iox2_cast_port_factory_publisher_builder_ref_h(m_handle);
+    auto* ref_handle = iox2_cast_port_factory_publisher_builder_h_ref(m_handle);
 
     m_unable_to_deliver_strategy.and_then([&](auto value) {
         iox2_port_factory_publisher_builder_unable_to_deliver_strategy(

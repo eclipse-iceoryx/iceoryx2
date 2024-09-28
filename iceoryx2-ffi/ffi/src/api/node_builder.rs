@@ -16,7 +16,7 @@ use crate::api::{
     iox2_node_h, iox2_node_name_ptr, iox2_node_t, iox2_service_type_e, HandleToType, IntoCInt,
     NodeUnion, IOX2_OK,
 };
-use crate::iox2_config_ref_h;
+use crate::iox2_config_h_ref;
 
 use iceoryx2::node::NodeCreationFailure;
 use iceoryx2::prelude::*;
@@ -63,9 +63,9 @@ pub struct iox2_node_builder_h_t;
 /// The owning handle for `iox2_node_builder_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_node_builder_h = *mut iox2_node_builder_h_t;
 
-pub struct iox2_node_builder_ref_h_t;
+pub struct iox2_node_builder_h_ref_t;
 /// The non-owning handle for `iox2_node_builder_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_node_builder_ref_h = *mut iox2_node_builder_ref_h_t;
+pub type iox2_node_builder_h_ref = *mut iox2_node_builder_h_ref_t;
 
 impl HandleToType for iox2_node_builder_h {
     type Target = *mut iox2_node_builder_t;
@@ -75,7 +75,7 @@ impl HandleToType for iox2_node_builder_h {
     }
 }
 
-impl HandleToType for iox2_node_builder_ref_h {
+impl HandleToType for iox2_node_builder_h_ref {
     type Target = *mut iox2_node_builder_t;
 
     fn as_type(self) -> Self::Target {
@@ -119,32 +119,32 @@ pub unsafe extern "C" fn iox2_node_builder_new(
     (*node_builder_struct_ptr).as_handle()
 }
 
-/// This function casts an owning [`iox2_node_builder_h`] into a non-owning [`iox2_node_builder_ref_h`]
+/// This function casts an owning [`iox2_node_builder_h`] into a non-owning [`iox2_node_builder_h_ref`]
 ///
 /// # Arguments
 ///
 /// * `node_builder_handle` obtained by [`iox2_node_builder_new`]
 ///
-/// Returns a [`iox2_node_builder_ref_h`]
+/// Returns a [`iox2_node_builder_h_ref`]
 ///
 /// # Safety
 ///
 /// * The `node_builder_handle` must be a valid handle.
 /// * The `node_builder_handle` is still valid after the call to this function.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_cast_node_builder_ref_h(
+pub unsafe extern "C" fn iox2_cast_node_builder_h_ref(
     node_builder_handle: iox2_node_builder_h,
-) -> iox2_node_builder_ref_h {
+) -> iox2_node_builder_h_ref {
     debug_assert!(!node_builder_handle.is_null());
 
-    (*node_builder_handle.as_type()).as_ref_handle()
+    (*node_builder_handle.as_type()).as_h_refandle()
 }
 
 /// Sets the node name for the builder
 ///
 /// # Arguments
 ///
-/// * `node_builder_handle` - Must be a valid [`iox2_node_builder_ref_h`] obtained by [`iox2_node_builder_new`] and casted by [`iox2_cast_node_builder_ref_h`].
+/// * `node_builder_handle` - Must be a valid [`iox2_node_builder_h_ref`] obtained by [`iox2_node_builder_new`] and casted by [`iox2_cast_node_builder_h_ref`].
 /// * `node_name_ptr` - Must be a valid [`iox2_node_name_ptr`], e.g. obtained by [`iox2_node_name_new`](crate::iox2_node_name_new) and converted
 ///    by [`iox2_cast_node_name_ptr`](crate::iox2_cast_node_name_ptr)
 ///
@@ -155,7 +155,7 @@ pub unsafe extern "C" fn iox2_cast_node_builder_ref_h(
 /// * `node_builder_handle` as well as `node_name_ptr` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_set_name(
-    node_builder_handle: iox2_node_builder_ref_h,
+    node_builder_handle: iox2_node_builder_h_ref,
     node_name_ptr: iox2_node_name_ptr,
 ) -> c_int {
     debug_assert!(!node_builder_handle.is_null());
@@ -176,13 +176,13 @@ pub unsafe extern "C" fn iox2_node_builder_set_name(
 ///
 /// # Safety
 ///
-/// * `node_builder_handle` - Must be a valid [`iox2_node_builder_ref_h`] obtained by [`iox2_node_builder_new`] and casted by [`iox2_cast_node_builder_ref_h`].
-/// * `config_handle` - Must be a valid [`iox2_config_ref_h`]
+/// * `node_builder_handle` - Must be a valid [`iox2_node_builder_h_ref`] obtained by [`iox2_node_builder_new`] and casted by [`iox2_cast_node_builder_h_ref`].
+/// * `config_handle` - Must be a valid [`iox2_config_h_ref`]
 ///
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_builder_set_config(
-    node_builder_handle: iox2_node_builder_ref_h,
-    config_handle: iox2_config_ref_h,
+    node_builder_handle: iox2_node_builder_h_ref,
+    config_handle: iox2_config_h_ref,
 ) {
     debug_assert!(!node_builder_handle.is_null());
     debug_assert!(!config_handle.is_null());

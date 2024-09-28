@@ -49,9 +49,9 @@ pub struct iox2_unique_publisher_id_h_t;
 /// The owning handle for [`iox2_unique_publisher_id_t`]. Passing the handle to an function transfers the ownership.
 pub type iox2_unique_publisher_id_h = *mut iox2_unique_publisher_id_h_t;
 
-pub struct iox2_unique_publisher_id_ref_h_t;
+pub struct iox2_unique_publisher_id_h_ref_t;
 /// The non-owning handle for [`iox2_unique_publisher_id_t`]. Passing the handle to an function does not transfers the ownership.
-pub type iox2_unique_publisher_id_ref_h = *mut iox2_unique_publisher_id_ref_h_t;
+pub type iox2_unique_publisher_id_h_ref = *mut iox2_unique_publisher_id_h_ref_t;
 
 impl HandleToType for iox2_unique_publisher_id_h {
     type Target = *mut iox2_unique_publisher_id_t;
@@ -61,7 +61,7 @@ impl HandleToType for iox2_unique_publisher_id_h {
     }
 }
 
-impl HandleToType for iox2_unique_publisher_id_ref_h {
+impl HandleToType for iox2_unique_publisher_id_h_ref {
     type Target = *mut iox2_unique_publisher_id_t;
 
     fn as_type(self) -> Self::Target {
@@ -92,33 +92,33 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_drop(handle: iox2_unique_publi
 }
 
 /// This function casts an owning [`iox2_unique_publisher_id_h`] into a non-owning
-/// [`iox2_unique_publisher_id_ref_h`]
+/// [`iox2_unique_publisher_id_h_ref`]
 ///
-/// Returns a [`iox2_unique_publisher_id_ref_h`]
+/// Returns a [`iox2_unique_publisher_id_h_ref`]
 ///
 /// # Safety
 ///
 /// * The `publisher_handle` must be a valid handle.
 /// * The `publisher_handle` is still valid after the call to this function.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_cast_unique_publisher_id_ref_h(
+pub unsafe extern "C" fn iox2_cast_unique_publisher_id_h_ref(
     handle: iox2_unique_publisher_id_h,
-) -> iox2_unique_publisher_id_ref_h {
+) -> iox2_unique_publisher_id_h_ref {
     debug_assert!(!handle.is_null());
 
-    (*handle.as_type()).as_ref_handle() as *mut _ as _
+    (*handle.as_type()).as_h_refandle() as *mut _ as _
 }
 
 /// Checks two [`iox2_unique_publisher_id_t`] for equality.
 ///
 /// # Safety
 ///
-/// * `lhs` - Must be a valid [`iox2_unique_publisher_id_ref_h`]
-/// * `rhs` - Must be a valid [`iox2_unique_publisher_id_ref_h`]
+/// * `lhs` - Must be a valid [`iox2_unique_publisher_id_h_ref`]
+/// * `rhs` - Must be a valid [`iox2_unique_publisher_id_h_ref`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_unique_publisher_id_eq(
-    lhs: iox2_unique_publisher_id_ref_h,
-    rhs: iox2_unique_publisher_id_ref_h,
+    lhs: iox2_unique_publisher_id_h_ref,
+    rhs: iox2_unique_publisher_id_h_ref,
 ) -> bool {
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());
@@ -133,12 +133,12 @@ pub unsafe extern "C" fn iox2_unique_publisher_id_eq(
 ///
 /// # Safety
 ///
-/// * `lhs` - Must be a valid [`iox2_unique_publisher_id_ref_h`]
-/// * `rhs` - Must be a valid [`iox2_unique_publisher_id_ref_h`]
+/// * `lhs` - Must be a valid [`iox2_unique_publisher_id_h_ref`]
+/// * `rhs` - Must be a valid [`iox2_unique_publisher_id_h_ref`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_unique_publisher_id_less(
-    lhs: iox2_unique_publisher_id_ref_h,
-    rhs: iox2_unique_publisher_id_ref_h,
+    lhs: iox2_unique_publisher_id_h_ref,
+    rhs: iox2_unique_publisher_id_h_ref,
 ) -> bool {
     debug_assert!(!lhs.is_null());
     debug_assert!(!rhs.is_null());

@@ -41,11 +41,11 @@ int main(void) {
 
     // create service builder
     iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(service_name);
-    iox2_node_ref_h node_ref_handle = iox2_cast_node_ref_h(node_handle);
-    iox2_service_builder_h service_builder = iox2_node_service_builder(node_ref_handle, NULL, service_name_ptr);
+    iox2_node_h_ref node_h_refandle = iox2_cast_node_h_ref(node_handle);
+    iox2_service_builder_h service_builder = iox2_node_service_builder(node_h_refandle, NULL, service_name_ptr);
     iox2_service_builder_pub_sub_h service_builder_pub_sub = iox2_service_builder_pub_sub(service_builder);
-    iox2_service_builder_pub_sub_ref_h service_builder_pub_sub_ref =
-        iox2_cast_service_builder_pub_sub_ref_h(service_builder_pub_sub);
+    iox2_service_builder_pub_sub_h_ref service_builder_pub_sub_ref =
+        iox2_cast_service_builder_pub_sub_h_ref(service_builder_pub_sub);
 
     // set pub sub payload type
     const char* payload_type_name = "16TransmissionData";
@@ -68,7 +68,7 @@ int main(void) {
     }
 
     // create subscriber
-    iox2_port_factory_pub_sub_ref_h ref_service = iox2_cast_port_factory_pub_sub_ref_h(service);
+    iox2_port_factory_pub_sub_h_ref ref_service = iox2_cast_port_factory_pub_sub_h_ref(service);
     iox2_port_factory_subscriber_builder_h subscriber_builder =
         iox2_port_factory_pub_sub_subscriber_builder(ref_service, NULL);
     iox2_subscriber_h subscriber = NULL;
@@ -76,10 +76,10 @@ int main(void) {
         printf("Unable to create subscriber!\n");
         goto drop_service;
     }
-    iox2_subscriber_ref_h subscriber_ref = iox2_cast_subscriber_ref_h(subscriber);
+    iox2_subscriber_h_ref subscriber_ref = iox2_cast_subscriber_h_ref(subscriber);
 
     uint64_t counter = 0;
-    while (iox2_node_wait(node_ref_handle, 1, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(node_h_refandle, 1, 0) == iox2_node_event_e_TICK) {
         counter += 1;
 
         // receive sample
@@ -90,7 +90,7 @@ int main(void) {
         }
 
         if (sample != NULL) {
-            iox2_sample_ref_h sample_ref = iox2_cast_sample_ref_h(sample);
+            iox2_sample_h_ref sample_ref = iox2_cast_sample_h_ref(sample);
             struct TransmissionData* payload = NULL;
             iox2_sample_payload(sample_ref, (const void**) &payload, NULL);
 

@@ -96,9 +96,9 @@ pub struct iox2_config_h_t;
 /// The owning handle for `iox2_config_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_config_h = *mut iox2_config_h_t;
 
-pub struct iox2_config_ref_h_t;
+pub struct iox2_config_h_ref_t;
 /// The non-owning handle for `iox2_config_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_config_ref_h = *mut iox2_config_ref_h_t;
+pub type iox2_config_h_ref = *mut iox2_config_h_ref_t;
 
 impl HandleToType for iox2_config_h {
     type Target = *mut iox2_config_t;
@@ -108,7 +108,7 @@ impl HandleToType for iox2_config_h {
     }
 }
 
-impl HandleToType for iox2_config_ref_h {
+impl HandleToType for iox2_config_h_ref {
     type Target = *mut iox2_config_t;
 
     fn as_type(self) -> Self::Target {
@@ -119,7 +119,7 @@ impl HandleToType for iox2_config_ref_h {
 // END type definition
 
 // BEGIN C API
-/// Cast an owning [`iox2_config_h`] into a non-owning [`iox2_config_ref_h`]
+/// Cast an owning [`iox2_config_h`] into a non-owning [`iox2_config_h_ref`]
 ///
 /// # Arguments
 ///
@@ -131,10 +131,10 @@ impl HandleToType for iox2_config_ref_h {
 /// * The `handle` must be a valid handle.
 /// * The `handle` is still valid after the call to this function.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_cast_config_ref_h(handle: iox2_config_h) -> iox2_config_ref_h {
+pub unsafe extern "C" fn iox2_cast_config_h_ref(handle: iox2_config_h) -> iox2_config_h_ref {
     debug_assert!(!handle.is_null());
 
-    (*handle.as_type()).as_ref_handle() as *mut _ as _
+    (*handle.as_type()).as_h_refandle() as *mut _ as _
 }
 
 /// This function casts a [`iox2_config_h`] into a [`iox2_config_ptr`]
@@ -270,18 +270,18 @@ pub unsafe extern "C" fn iox2_config_from_ptr(
     *handle_ptr = (*struct_ptr).as_handle();
 }
 
-/// Clones a config from a given non-owning [`iox2_config_ref_h`].
+/// Clones a config from a given non-owning [`iox2_config_h_ref`].
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
 ///                  If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
 ///                  by this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_clone(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     struct_ptr: *mut iox2_config_t,
     handle_ptr: *mut iox2_config_h,
 ) {
@@ -325,9 +325,9 @@ pub unsafe extern "C" fn iox2_config_drop(handle: iox2_config_h) {
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
-pub unsafe extern "C" fn iox2_config_global_prefix(handle: iox2_config_ref_h) -> *const c_char {
+pub unsafe extern "C" fn iox2_config_global_prefix(handle: iox2_config_h_ref) -> *const c_char {
     debug_assert!(!handle.is_null());
 
     let config = &*handle.as_type();
@@ -341,11 +341,11 @@ pub unsafe extern "C" fn iox2_config_global_prefix(handle: iox2_config_ref_h) ->
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the prefix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_set_prefix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -364,9 +364,9 @@ pub unsafe extern "C" fn iox2_config_global_set_prefix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
-pub unsafe extern "C" fn iox2_config_global_root_path(handle: iox2_config_ref_h) -> *const c_char {
+pub unsafe extern "C" fn iox2_config_global_root_path(handle: iox2_config_h_ref) -> *const c_char {
     debug_assert!(!handle.is_null());
 
     let config = &*handle.as_type();
@@ -380,11 +380,11 @@ pub unsafe extern "C" fn iox2_config_global_root_path(handle: iox2_config_ref_h)
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid path
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_set_root_path(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -409,10 +409,10 @@ pub unsafe extern "C" fn iox2_config_global_set_root_path(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_directory(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -427,11 +427,11 @@ pub unsafe extern "C" fn iox2_config_global_node_directory(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid path
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_directory(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -450,10 +450,10 @@ pub unsafe extern "C" fn iox2_config_global_node_set_directory(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_monitor_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -475,11 +475,11 @@ pub unsafe extern "C" fn iox2_config_global_node_monitor_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_monitor_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -498,10 +498,10 @@ pub unsafe extern "C" fn iox2_config_global_node_set_monitor_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_static_config_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -523,11 +523,11 @@ pub unsafe extern "C" fn iox2_config_global_node_static_config_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_static_config_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -546,10 +546,10 @@ pub unsafe extern "C" fn iox2_config_global_node_set_static_config_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_service_tag_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -571,11 +571,11 @@ pub unsafe extern "C" fn iox2_config_global_node_service_tag_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_service_tag_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -596,10 +596,10 @@ pub unsafe extern "C" fn iox2_config_global_node_set_service_tag_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_creation(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> bool {
     debug_assert!(!handle.is_null());
 
@@ -617,10 +617,10 @@ pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_creation(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_creation(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: bool,
 ) {
     debug_assert!(!handle.is_null());
@@ -642,10 +642,10 @@ pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_creat
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_destruction(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> bool {
     debug_assert!(!handle.is_null());
 
@@ -663,10 +663,10 @@ pub unsafe extern "C" fn iox2_config_global_node_cleanup_dead_nodes_on_destructi
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_destruction(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: bool,
 ) {
     debug_assert!(!handle.is_null());
@@ -693,10 +693,10 @@ pub unsafe extern "C" fn iox2_config_global_node_set_cleanup_dead_nodes_on_destr
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_directory(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -718,11 +718,11 @@ pub unsafe extern "C" fn iox2_config_global_service_directory(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid path
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_directory(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -741,10 +741,10 @@ pub unsafe extern "C" fn iox2_config_global_service_set_directory(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_publisher_data_segment_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -766,11 +766,11 @@ pub unsafe extern "C" fn iox2_config_global_service_publisher_data_segment_suffi
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_publisher_data_segment_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -795,10 +795,10 @@ pub unsafe extern "C" fn iox2_config_global_service_set_publisher_data_segment_s
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_static_config_storage_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -820,11 +820,11 @@ pub unsafe extern "C" fn iox2_config_global_service_static_config_storage_suffix
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_static_config_storage_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -849,10 +849,10 @@ pub unsafe extern "C" fn iox2_config_global_service_set_static_config_storage_su
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_dynamic_config_storage_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -874,11 +874,11 @@ pub unsafe extern "C" fn iox2_config_global_service_dynamic_config_storage_suffi
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -904,12 +904,12 @@ pub unsafe extern "C" fn iox2_config_global_service_set_dynamic_config_storage_s
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `secs` - A valid pointer pointing to a [`u64`].
 /// * `nsecs` - A valid pointer pointing to a [`u32`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     secs: *mut u64,
     nsecs: *mut u32,
 ) {
@@ -930,11 +930,11 @@ pub unsafe extern "C" fn iox2_config_global_service_creation_timeout(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_creation_timeout(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     sec: u64,
     nsec: u32,
 ) {
@@ -949,10 +949,10 @@ pub unsafe extern "C" fn iox2_config_global_service_set_creation_timeout(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_connection_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -974,11 +974,11 @@ pub unsafe extern "C" fn iox2_config_global_service_connection_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_connection_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -997,10 +997,10 @@ pub unsafe extern "C" fn iox2_config_global_service_set_connection_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_event_connection_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> *const c_char {
     debug_assert!(!handle.is_null());
 
@@ -1022,11 +1022,11 @@ pub unsafe extern "C" fn iox2_config_global_service_event_connection_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_global_service_set_event_connection_suffix(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
     debug_assert!(!handle.is_null());
@@ -1057,10 +1057,10 @@ pub unsafe extern "C" fn iox2_config_global_service_set_event_connection_suffix(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_subscribers(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1078,10 +1078,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_subscribers(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_subscribers(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1100,10 +1100,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_subscrib
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_publishers(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1121,10 +1121,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_publishers(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_publishers(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1144,10 +1144,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_publishe
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_nodes(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1165,10 +1165,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_max_nodes(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_nodes(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1187,10 +1187,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_max_nodes(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_buffer_size(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1208,10 +1208,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_b
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_max_buffer_size(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1231,10 +1231,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_m
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_borrowed_samples(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1253,10 +1253,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_max_b
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_max_borrowed_samples(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1276,10 +1276,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_m
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_max_loaned_samples(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1298,10 +1298,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_max_lo
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_max_loaned_samples(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1321,10 +1321,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_ma
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_history_size(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1343,10 +1343,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_publisher_histor
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_history_size(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1367,10 +1367,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_publisher_hi
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_enable_safe_overflow(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> bool {
     debug_assert!(!handle.is_null());
 
@@ -1388,10 +1388,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_enable_safe_over
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_enable_safe_overflow(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: bool,
 ) {
     debug_assert!(!handle.is_null());
@@ -1414,10 +1414,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_enable_safe_
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_unable_to_deliver_strategy(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_int {
     debug_assert!(!handle.is_null());
 
@@ -1436,10 +1436,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_unable_to_delive
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_unable_to_deliver_strategy(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: iox2_unable_to_deliver_strategy_e,
 ) {
     debug_assert!(!handle.is_null());
@@ -1462,10 +1462,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_unable_to_de
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_expired_connection_buffer(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1483,10 +1483,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_subscriber_expir
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_expired_connection_buffer(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1511,10 +1511,10 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_e
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_listeners(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1526,10 +1526,10 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_listeners(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_listeners(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1542,10 +1542,10 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_listeners(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_notifiers(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1557,10 +1557,10 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_notifiers(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_notifiers(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1574,10 +1574,10 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_notifiers(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_max_nodes(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1589,10 +1589,10 @@ pub unsafe extern "C" fn iox2_config_defaults_event_max_nodes(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_max_nodes(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());
@@ -1605,10 +1605,10 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_nodes(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_event_id_max_value(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
 ) -> c_size_t {
     debug_assert!(!handle.is_null());
 
@@ -1626,10 +1626,10 @@ pub unsafe extern "C" fn iox2_config_defaults_event_event_id_max_value(
 ///
 /// # Safety
 ///
-/// * `handle` - A valid non-owning [`iox2_config_ref_h`] obtained by [`iox2_cast_config_ref_h`].
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`] obtained by [`iox2_cast_config_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_event_id_max_value(
-    handle: iox2_config_ref_h,
+    handle: iox2_config_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!handle.is_null());

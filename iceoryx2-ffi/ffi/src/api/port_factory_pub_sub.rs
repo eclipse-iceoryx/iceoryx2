@@ -82,9 +82,9 @@ pub struct iox2_port_factory_pub_sub_h_t;
 /// The owning handle for `iox2_port_factory_pub_sub_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_port_factory_pub_sub_h = *mut iox2_port_factory_pub_sub_h_t;
 
-pub struct iox2_port_factory_pub_sub_ref_h_t;
+pub struct iox2_port_factory_pub_sub_h_ref_t;
 /// The non-owning handle for `iox2_port_factory_pub_sub_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_port_factory_pub_sub_ref_h = *mut iox2_port_factory_pub_sub_ref_h_t;
+pub type iox2_port_factory_pub_sub_h_ref = *mut iox2_port_factory_pub_sub_h_ref_t;
 
 impl HandleToType for iox2_port_factory_pub_sub_h {
     type Target = *mut iox2_port_factory_pub_sub_t;
@@ -94,7 +94,7 @@ impl HandleToType for iox2_port_factory_pub_sub_h {
     }
 }
 
-impl HandleToType for iox2_port_factory_pub_sub_ref_h {
+impl HandleToType for iox2_port_factory_pub_sub_h_ref {
     type Target = *mut iox2_port_factory_pub_sub_t;
 
     fn as_type(self) -> Self::Target {
@@ -106,35 +106,35 @@ impl HandleToType for iox2_port_factory_pub_sub_ref_h {
 
 // BEGIN C API
 
-/// This function casts an owning [`iox2_port_factory_pub_sub_h`] into a non-owning [`iox2_port_factory_pub_sub_ref_h`]
+/// This function casts an owning [`iox2_port_factory_pub_sub_h`] into a non-owning [`iox2_port_factory_pub_sub_h_ref`]
 ///
 /// # Arguments
 ///
 /// * `port_factory_handle` obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)
 ///
-/// Returns a [`iox2_port_factory_pub_sub_ref_h`]
+/// Returns a [`iox2_port_factory_pub_sub_h_ref`]
 ///
 /// # Safety
 ///
 /// * The `port_factory_handle` must be a valid handle.
 /// * The `port_factory_handle` is still valid after the call to this function.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_cast_port_factory_pub_sub_ref_h(
+pub unsafe extern "C" fn iox2_cast_port_factory_pub_sub_h_ref(
     port_factory_handle: iox2_port_factory_pub_sub_h,
-) -> iox2_port_factory_pub_sub_ref_h {
+) -> iox2_port_factory_pub_sub_h_ref {
     debug_assert!(!port_factory_handle.is_null());
 
-    (*port_factory_handle.as_type()).as_ref_handle() as *mut _ as _
+    (*port_factory_handle.as_type()).as_h_refandle() as *mut _ as _
 }
 
 /// Instantiates a [`iox2_port_factory_publisher_builder_h`] to build a publisher.
 ///
 /// # Arguments
 ///
-/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_pub_sub_ref_h`] obtained
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_pub_sub_h_ref`] obtained
 ///   by e.g. [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)
-///   and casted by [`iox2_cast_port_factory_pub_sub_ref_h`]
+///   and casted by [`iox2_cast_port_factory_pub_sub_h_ref`]
 /// * `publisher_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_publisher_builder_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 ///
@@ -145,7 +145,7 @@ pub unsafe extern "C" fn iox2_cast_port_factory_pub_sub_ref_h(
 /// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_publisher_builder(
-    port_factory_handle: iox2_port_factory_pub_sub_ref_h,
+    port_factory_handle: iox2_port_factory_pub_sub_h_ref,
     publisher_builder_struct_ptr: *mut iox2_port_factory_publisher_builder_t,
 ) -> iox2_port_factory_publisher_builder_h {
     debug_assert!(!port_factory_handle.is_null());
@@ -186,9 +186,9 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_publisher_builder(
 ///
 /// # Arguments
 ///
-/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_pub_sub_ref_h`] obtained
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_pub_sub_h_ref`] obtained
 ///   by e.g. [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)
-///   and casted by [`iox2_cast_port_factory_pub_sub_ref_h`]
+///   and casted by [`iox2_cast_port_factory_pub_sub_h_ref`]
 /// * `subscriber_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_subscriber_builder_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 ///
@@ -199,7 +199,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_publisher_builder(
 /// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
-    port_factory_handle: iox2_port_factory_pub_sub_ref_h,
+    port_factory_handle: iox2_port_factory_pub_sub_h_ref,
     subscriber_builder_struct_ptr: *mut iox2_port_factory_subscriber_builder_t,
 ) -> iox2_port_factory_subscriber_builder_h {
     debug_assert!(!port_factory_handle.is_null());
@@ -245,7 +245,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
 /// * The `static_config` must be a valid pointer and non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_static_config(
-    port_factory_handle: iox2_port_factory_pub_sub_ref_h,
+    port_factory_handle: iox2_port_factory_pub_sub_h_ref,
     static_config: *mut iox2_static_config_publish_subscribe_t,
 ) {
     debug_assert!(!port_factory_handle.is_null());

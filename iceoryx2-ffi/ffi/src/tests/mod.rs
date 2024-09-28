@@ -53,7 +53,7 @@ fn create_node<S: Service + ServiceTypeMapping>(node_name: &str) -> iox2_node_h 
         );
         assert_that!(ret_val, eq(IOX2_OK));
         iox2_node_builder_set_name(
-            iox2_cast_node_builder_ref_h(node_builder_handle),
+            iox2_cast_node_builder_h_ref(node_builder_handle),
             iox2_cast_node_name_ptr(node_name_handle),
         );
         iox2_node_name_drop(node_name_handle);
@@ -73,7 +73,7 @@ fn create_node<S: Service + ServiceTypeMapping>(node_name: &str) -> iox2_node_h 
 }
 
 fn create_event_service(
-    node_handle: iox2_node_ref_h,
+    node_handle: iox2_node_h_ref,
     service_name: &str,
 ) -> iox2_port_factory_event_h {
     unsafe {
@@ -95,11 +95,11 @@ fn create_event_service(
 
         let service_builder_handle = iox2_service_builder_event(service_builder_handle);
         iox2_service_builder_event_set_max_notifiers(
-            iox2_cast_service_builder_event_ref_h(service_builder_handle),
+            iox2_cast_service_builder_event_h_ref(service_builder_handle),
             10,
         );
         iox2_service_builder_event_set_max_listeners(
-            iox2_cast_service_builder_event_ref_h(service_builder_handle),
+            iox2_cast_service_builder_event_h_ref(service_builder_handle),
             10,
         );
 

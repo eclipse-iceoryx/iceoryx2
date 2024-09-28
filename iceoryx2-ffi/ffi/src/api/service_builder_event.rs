@@ -14,7 +14,7 @@
 
 use crate::api::{
     c_size_t, iox2_port_factory_event_h, iox2_port_factory_event_t, iox2_service_builder_event_h,
-    iox2_service_builder_event_ref_h, iox2_service_type_e, HandleToType, IntoCInt,
+    iox2_service_builder_event_h_ref, iox2_service_type_e, HandleToType, IntoCInt,
     PortFactoryEventUnion, ServiceBuilderUnion, IOX2_OK,
 };
 
@@ -139,9 +139,9 @@ impl IntoCInt for EventOpenOrCreateError {
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`]
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
 ///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event) and
-///   casted by [`iox2_cast_service_builder_event_ref_h`](crate::iox2_cast_service_builder_event_ref_h).
+///   casted by [`iox2_cast_service_builder_event_h_ref`](crate::iox2_cast_service_builder_event_h_ref).
 /// * `value` - The value to set the max notifiers to
 ///
 /// # Safety
@@ -149,7 +149,7 @@ impl IntoCInt for EventOpenOrCreateError {
 /// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
-    service_builder_handle: iox2_service_builder_event_ref_h,
+    service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!service_builder_handle.is_null());
@@ -182,9 +182,9 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_ref_h`]
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
 ///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event) and
-///   casted by [`iox2_cast_service_builder_event_ref_h`](crate::iox2_cast_service_builder_event_ref_h).
+///   casted by [`iox2_cast_service_builder_event_h_ref`](crate::iox2_cast_service_builder_event_h_ref).
 /// * `value` - The value to set the max listeners to
 ///
 /// # Safety
@@ -192,7 +192,7 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
 /// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
-    service_builder_handle: iox2_service_builder_event_ref_h,
+    service_builder_handle: iox2_service_builder_event_h_ref,
     value: c_size_t,
 ) {
     debug_assert!(!service_builder_handle.is_null());
