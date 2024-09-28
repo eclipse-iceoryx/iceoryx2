@@ -101,9 +101,9 @@ the following warning and eventually to build failures.
 <!-- markdownlint-disable -->
 
 > warning: output filename collision.
-> The lib target `iceoryx2_ffi` in package `iceoryx2-ffi v0.3.0 (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`
+> The lib target `iceoryx2_ffi` in package `iceoryx2-ffi vX.Y.Z (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`
 > has the same output filename as the lib target `iceoryx2_ffi` in package
-> `iceoryx2-ffi v0.3.0 (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`.
+> `iceoryx2-ffi vX.Y.Z (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`.
 > Colliding filename is: C:\Users\ekxide\iceoryx2\target\release\deps\iceoryx2_ffi.lib
 > The targets should have unique names.
 > Consider changing their names to be unique or compiling them separately.
