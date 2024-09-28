@@ -31,21 +31,15 @@ mod service_builder {
             assert_that!(ret_val, eq(IOX2_OK));
 
             let service_builder_handle = iox2_node_service_builder(
-                iox2_cast_node_h_ref(node_handle),
+                &node_handle,
                 std::ptr::null_mut(),
                 iox2_cast_service_name_ptr(service_name_handle),
             );
             iox2_service_name_drop(service_name_handle);
 
             let service_builder_handle = iox2_service_builder_pub_sub(service_builder_handle);
-            iox2_service_builder_pub_sub_set_max_publishers(
-                iox2_cast_service_builder_pub_sub_h_ref(service_builder_handle),
-                10,
-            );
-            iox2_service_builder_pub_sub_set_max_subscribers(
-                iox2_cast_service_builder_pub_sub_h_ref(service_builder_handle),
-                10,
-            );
+            iox2_service_builder_pub_sub_set_max_publishers(&service_builder_handle, 10);
+            iox2_service_builder_pub_sub_set_max_subscribers(&service_builder_handle, 10);
 
             let mut pub_sub_factory: iox2_port_factory_pub_sub_h = std::ptr::null_mut();
             iox2_service_builder_pub_sub_open_or_create(

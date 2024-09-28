@@ -7,8 +7,8 @@
 * owning handles end with a `_h` and are a type definition to a
   `struct iox2_foo_h_t;` as `pub type iox2_foo_h = *mut iox2_foo_h_t`
 * non-owning handles end with a `_h_ref` and are a type definition to a
-  `struct iox2_foo_h_ref_t;` as
-  `pub type iox2_foo_h_ref = *mut iox2_foo_h_ref_t`
+  `iox2_foo_h` as
+  `pub type iox2_foo_h_ref = *const iox2_foo_h`
 * immutable pointer to the Rust type end with a `_ptr` and are a type definition
   like `pub type iox2_foo_ptr = *const Foo`
 * mutable pointer to the Rust type end with a `_ptr_mut` and are a type
@@ -67,9 +67,7 @@ The corresponding handle and pointer are defined like this
 ```rs
 pub struct iox2_foo_h_t;
 pub type iox2_foo_h = *mut iox2_foo_h_t;
-
-pub struct iox2_foo_h_ref_t;
-pub type iox2_foo_h_ref = *mut iox2_foo_h_ref_t;
+pub type iox2_foo_h_ref = *const iox2_foo_h;
 
 pub type iox2_foo_ptr = *const Foo;
 

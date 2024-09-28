@@ -15,8 +15,8 @@
 use crate::api::{
     c_size_t, iox2_port_factory_pub_sub_h, iox2_port_factory_pub_sub_t,
     iox2_service_builder_pub_sub_h, iox2_service_builder_pub_sub_h_ref, iox2_service_type_e,
-    HandleToType, IntoCInt, PayloadFfi, PortFactoryPubSubUnion, ServiceBuilderUnion, UserHeaderFfi,
-    IOX2_OK,
+    AssertNonNullHandle, HandleToType, IntoCInt, PayloadFfi, PortFactoryPubSubUnion,
+    ServiceBuilderUnion, UserHeaderFfi, IOX2_OK,
 };
 
 use iceoryx2::prelude::*;
@@ -205,8 +205,7 @@ pub enum iox2_type_detail_error_e {
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `type_variant` - The [`iox2_type_variant_e`] for the payload
 /// * `type_name_str` - Must string for the type name.
 /// * `type_name_len` - The length of the type name string, not including a null
@@ -229,7 +228,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_detai
     size: c_size_t,
     alignment: c_size_t,
 ) -> c_int {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
     debug_assert!(!type_name_str.is_null());
 
     let type_name = slice::from_raw_parts(type_name_str as _, type_name_len as _);
@@ -283,8 +282,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_detai
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `type_variant` - The [`iox2_type_variant_e`] for the payload
 /// * `type_name_str` - Must string for the type name.
 /// * `type_name_len` - The length of the type name string, not including a null
@@ -307,7 +305,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
     size: c_size_t,
     alignment: c_size_t,
 ) -> c_int {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
     debug_assert!(!type_name_str.is_null());
 
     let type_name = slice::from_raw_parts(type_name_str as _, type_name_len as _);
@@ -361,8 +359,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `value` - The value to set the max nodes to
 ///
 /// # Safety
@@ -373,7 +370,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_nodes(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -404,8 +401,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_nodes(
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `value` - The value to set the max publishers to
 ///
 /// # Safety
@@ -416,7 +412,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_publishers(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -447,8 +443,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_publishers(
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `value` - The value to set the max subscribers to
 ///
 /// # Safety
@@ -459,7 +454,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -490,8 +485,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `value` - The value to set the history size to
 ///
 /// # Safety
@@ -502,7 +496,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_history_size(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -533,8 +527,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_history_size(
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `value` - The value to set the subscriber max buffer size to
 ///
 /// # Safety
@@ -545,7 +538,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_buffer_
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -576,8 +569,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_buffer_
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `value` - The value to set the subscriber max borrowed samples to
 ///
 /// # Safety
@@ -588,7 +580,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_borrowe
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: c_size_t,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -619,8 +611,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_subscriber_max_borrowe
 /// # Arguments
 ///
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
-///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub) and
-///   casted by [`iox2_cast_service_builder_pub_sub_h_ref`](crate::iox2_cast_service_builder_pub_sub_h_ref).
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
 /// * `value` - defines if safe overflow shall be enabled (true) or not (false)
 ///
 /// # Safety
@@ -631,7 +622,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_enable_safe_overflow(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,
     value: bool,
 ) {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -766,7 +757,7 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
         Builder<PayloadFfi, UserHeaderFfi, local::Service>,
     ) -> Result<PortFactory<local::Service, PayloadFfi, UserHeaderFfi>, E>,
 ) -> c_int {
-    debug_assert!(!service_builder_handle.is_null());
+    service_builder_handle.assert_non_null();
     debug_assert!(!port_factory_handle_ptr.is_null());
 
     let init_port_factory_struct_ptr =

@@ -125,20 +125,18 @@ inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPub
 
 template <typename Payload, typename UserHeader, ServiceType S>
 inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_parameters() {
-    auto* ref_handle = iox2_cast_service_builder_pub_sub_h_ref(m_handle);
-
     m_payload_alignment.and_then([](auto) { IOX_TODO(); });
     m_enable_safe_overflow.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_enable_safe_overflow(ref_handle, value); });
+        [&](auto value) { iox2_service_builder_pub_sub_set_enable_safe_overflow(&m_handle, value); });
     m_subscriber_max_borrowed_samples.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(ref_handle, value); });
-    m_history_size.and_then([&](auto value) { iox2_service_builder_pub_sub_set_history_size(ref_handle, value); });
+        [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_borrowed_samples(&m_handle, value); });
+    m_history_size.and_then([&](auto value) { iox2_service_builder_pub_sub_set_history_size(&m_handle, value); });
     m_subscriber_max_buffer_size.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(ref_handle, value); });
+        [&](auto value) { iox2_service_builder_pub_sub_set_subscriber_max_buffer_size(&m_handle, value); });
     m_max_subscribers.and_then(
-        [&](auto value) { iox2_service_builder_pub_sub_set_max_subscribers(ref_handle, value); });
-    m_max_publishers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_publishers(ref_handle, value); });
-    m_max_nodes.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_nodes(ref_handle, value); });
+        [&](auto value) { iox2_service_builder_pub_sub_set_max_subscribers(&m_handle, value); });
+    m_max_publishers.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_publishers(&m_handle, value); });
+    m_max_nodes.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_nodes(&m_handle, value); });
 
     // payload type details
     const auto* payload_type_name = typeid(Payload).name();
@@ -146,7 +144,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     const auto payload_type_size = sizeof(Payload);
     const auto payload_type_align = alignof(Payload);
 
-    const auto payload_result = iox2_service_builder_pub_sub_set_payload_type_details(ref_handle,
+    const auto payload_result = iox2_service_builder_pub_sub_set_payload_type_details(&m_handle,
                                                                                       iox2_type_variant_e_FIXED_SIZE,
                                                                                       payload_type_name,
                                                                                       payload_type_name_len,
@@ -165,7 +163,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     const auto user_header_type_align = header_layout.alignment();
 
     const auto user_header_result =
-        iox2_service_builder_pub_sub_set_user_header_type_details(ref_handle,
+        iox2_service_builder_pub_sub_set_user_header_type_details(&m_handle,
                                                                   iox2_type_variant_e_FIXED_SIZE,
                                                                   user_header_type_name,
                                                                   user_header_type_name_len,

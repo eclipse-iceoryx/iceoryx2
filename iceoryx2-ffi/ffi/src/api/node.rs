@@ -13,11 +13,10 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr, iox2_service_builder_h,
-    iox2_service_builder_t, iox2_service_name_ptr, iox2_service_type_e, HandleToType, IntoCInt,
-    ServiceBuilderUnion, IOX2_OK,
+    iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_node_name_ptr,
+    iox2_service_builder_h, iox2_service_builder_t, iox2_service_name_ptr, iox2_service_type_e,
+    AssertNonNullHandle, HandleToType, IntoCInt, ServiceBuilderUnion, IOX2_OK,
 };
-use crate::iox2_callback_context;
 
 use iceoryx2::node::{NodeId, NodeListFailure, NodeView};
 use iceoryx2::prelude::*;
@@ -116,10 +115,23 @@ impl iox2_node_t {
 pub struct iox2_name_h_t;
 /// The owning handle for `iox2_node_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_node_h = *mut iox2_name_h_t;
-
-pub struct iox2_node_h_ref_t;
 /// The non-owning handle for `iox2_node_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_node_h_ref = *mut iox2_node_h_ref_t;
+pub type iox2_node_h_ref = *const iox2_node_h;
+
+impl AssertNonNullHandle for iox2_node_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_node_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_node_h {
     type Target = *mut iox2_node_t;
@@ -133,7 +145,7 @@ impl HandleToType for iox2_node_h_ref {
     type Target = *mut iox2_node_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -175,25 +187,6 @@ pub type iox2_node_list_callback = extern "C" fn(
 
 // BEGIN C API
 
-/// This function casts an owning [`iox2_node_h`] into a non-owning [`iox2_node_h_ref`]
-///
-/// # Arguments
-///
-/// * `node_handle` obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)
-///
-/// Returns a [`iox2_node_h_ref`]
-///
-/// # Safety
-///
-/// * The `node_handle` must be a valid handle.
-/// * The `node_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_node_h_ref(node_handle: iox2_node_h) -> iox2_node_h_ref {
-    debug_assert!(!node_handle.is_null());
-
-    (*node_handle.as_type()).as_h_refandle()
-}
-
 /// Returns the [`iox2_node_name_ptr`](crate::iox2_node_name_ptr), an immutable pointer to the node name.
 ///
 /// # Safety
@@ -201,7 +194,7 @@ pub unsafe extern "C" fn iox2_cast_node_h_ref(node_handle: iox2_node_h) -> iox2_
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h_ref) -> iox2_node_name_ptr {
-    debug_assert!(!node_handle.is_null());
+    node_handle.assert_non_null();
 
     let node = &mut *node_handle.as_type();
 
@@ -223,7 +216,7 @@ pub unsafe extern "C" fn iox2_node_wait(
     cycle_time_sec: u64,
     cycle_time_nsec: u32,
 ) -> c_int {
-    debug_assert!(!node_handle.is_null());
+    node_handle.assert_non_null();
 
     let node = &mut *node_handle.as_type();
     let cycle_time =
@@ -242,7 +235,7 @@ pub unsafe extern "C" fn iox2_node_wait(
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h_ref) -> iox2_config_ptr {
-    debug_assert!(!node_handle.is_null());
+    node_handle.assert_non_null();
 
     let node = &mut *node_handle.as_type();
 
@@ -259,7 +252,7 @@ pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h_ref) -> iox2_
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h_ref) -> iox2_node_id_ptr {
-    debug_assert!(!node_handle.is_null());
+    node_handle.assert_non_null();
     todo!() // TODO: [#210] implement
 }
 
@@ -364,7 +357,6 @@ pub unsafe extern "C" fn iox2_node_list(
 /// # Arguments
 ///
 /// * `node_handle` - Must be a valid [`iox2_node_h_ref`] obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)
-///   and casted by [`iox2_cast_node_h_ref`]
 /// * `service_builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_service_builder_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `service_name_ptr` - Must be a valid [`iox2_service_name_ptr`] obtained by [`iox2_service_name_new`](crate::iox2_service_name_new)
@@ -381,7 +373,7 @@ pub unsafe extern "C" fn iox2_node_service_builder(
     service_builder_struct_ptr: *mut iox2_service_builder_t,
     service_name_ptr: iox2_service_name_ptr,
 ) -> iox2_service_builder_h {
-    debug_assert!(!node_handle.is_null());
+    node_handle.assert_non_null();
     debug_assert!(!service_name_ptr.is_null());
 
     let mut service_builder_struct_ptr = service_builder_struct_ptr;
@@ -432,7 +424,7 @@ pub unsafe extern "C" fn iox2_node_service_builder(
 /// * The corresponding [`iox2_node_t`] can be re-used with a call to [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_drop(node_handle: iox2_node_h) {
-    debug_assert!(!node_handle.is_null());
+    node_handle.assert_non_null();
 
     let node = &mut *node_handle.as_type();
 

@@ -19,11 +19,10 @@ mod service_builder {
         unsafe {
             let node_handle = create_node::<S>("bar");
 
-            let event_service_handle =
-                create_event_service(iox2_cast_node_h_ref(node_handle), "all/glory/to/hypnotaod");
+            let event_service_handle = create_event_service(&node_handle, "all/glory/to/hypnotaod");
 
             let notifier_builder_handle = iox2_port_factory_event_notifier_builder(
-                iox2_cast_port_factory_event_h_ref(event_service_handle),
+                &event_service_handle,
                 std::ptr::null_mut(),
             );
 

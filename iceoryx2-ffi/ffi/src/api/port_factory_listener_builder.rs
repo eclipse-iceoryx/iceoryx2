@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    iox2_listener_h, iox2_listener_t, iox2_service_type_e, HandleToType, IntoCInt, ListenerUnion,
-    IOX2_OK,
+    iox2_listener_h, iox2_listener_t, iox2_service_type_e, AssertNonNullHandle, HandleToType,
+    IntoCInt, ListenerUnion, IOX2_OK,
 };
 
 use iceoryx2::port::listener::ListenerCreateError;
@@ -96,10 +96,23 @@ impl iox2_port_factory_listener_builder_t {
 pub struct iox2_port_factory_listener_builder_h_t;
 /// The owning handle for `iox2_port_factory_listener_builder_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_port_factory_listener_builder_h = *mut iox2_port_factory_listener_builder_h_t;
-
-pub struct iox2_port_factory_listener_builder_h_ref_t;
 /// The non-owning handle for `iox2_port_factory_listener_builder_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_port_factory_listener_builder_h_ref = *mut iox2_port_factory_listener_builder_h_ref_t;
+pub type iox2_port_factory_listener_builder_h_ref = *const iox2_port_factory_listener_builder_h;
+
+impl AssertNonNullHandle for iox2_port_factory_listener_builder_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_port_factory_listener_builder_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_port_factory_listener_builder_h {
     type Target = *mut iox2_port_factory_listener_builder_t;
@@ -113,7 +126,7 @@ impl HandleToType for iox2_port_factory_listener_builder_h_ref {
     type Target = *mut iox2_port_factory_listener_builder_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 

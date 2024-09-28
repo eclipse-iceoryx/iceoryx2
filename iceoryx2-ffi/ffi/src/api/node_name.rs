@@ -12,8 +12,9 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{iox2_semantic_string_error_e, HandleToType, IntoCInt, IOX2_OK};
-use crate::c_size_t;
+use crate::api::{
+    c_size_t, iox2_semantic_string_error_e, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
+};
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
@@ -41,15 +42,29 @@ pub struct iox2_node_name_h_t;
 /// The owning handle for `iox2_node_name_t`. Passing the handle to an function transfers the ownership.
 pub type iox2_node_name_h = *mut iox2_node_name_h_t;
 
-pub struct iox2_node_name_h_ref_t;
 /// The non-owning handle for `iox2_node_name_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_node_name_h_ref = *mut iox2_node_name_h_ref_t;
+pub type iox2_node_name_h_ref = *const iox2_node_name_h;
 
 // NOTE check the README.md for using opaque types with renaming
 /// The immutable pointer to the underlying `NodeName`
 pub type iox2_node_name_ptr = *const NodeName;
 /// The mutable pointer to the underlying `NodeName`
 pub type iox2_node_name_ptr_mut = *mut NodeName;
+
+impl AssertNonNullHandle for iox2_node_name_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_node_name_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_node_name_h {
     type Target = *mut iox2_node_name_t;
@@ -63,7 +78,7 @@ impl HandleToType for iox2_node_name_h_ref {
     type Target = *mut iox2_node_name_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 

@@ -16,7 +16,7 @@ use iceoryx2::port::port_identifiers::UniqueListenerId;
 use iceoryx2_bb_elementary::static_assert::static_assert_ge;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use super::HandleToType;
+use crate::api::{AssertNonNullHandle, HandleToType};
 
 // BEGIN types definition
 
@@ -48,10 +48,23 @@ impl iox2_unique_listener_id_t {
 pub struct iox2_unique_listener_id_h_t;
 /// The owning handle for [`iox2_unique_listener_id_t`]. Passing the handle to an function transfers the ownership.
 pub type iox2_unique_listener_id_h = *mut iox2_unique_listener_id_h_t;
-
-pub struct iox2_unique_listener_id_h_ref_t;
 /// The non-owning handle for [`iox2_unique_listener_id_t`]. Passing the handle to an function does not transfers the ownership.
-pub type iox2_unique_listener_id_h_ref = *mut iox2_unique_listener_id_h_ref_t;
+pub type iox2_unique_listener_id_h_ref = *const iox2_unique_listener_id_h;
+
+impl AssertNonNullHandle for iox2_unique_listener_id_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_unique_listener_id_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
 
 impl HandleToType for iox2_unique_listener_id_h {
     type Target = *mut iox2_unique_listener_id_t;
@@ -65,7 +78,7 @@ impl HandleToType for iox2_unique_listener_id_h_ref {
     type Target = *mut iox2_unique_listener_id_t;
 
     fn as_type(self) -> Self::Target {
-        self as *mut _ as _
+        unsafe { *self as *mut _ as _ }
     }
 }
 
@@ -84,29 +97,11 @@ impl HandleToType for iox2_unique_listener_id_h_ref {
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_unique_listener_id_drop(handle: iox2_unique_listener_id_h) {
-    debug_assert!(!handle.is_null());
+    handle.assert_non_null();
 
     let h = &mut *handle.as_type();
     core::ptr::drop_in_place(h.value.as_option_mut());
     (h.deleter)(h);
-}
-
-/// This function casts an owning [`iox2_unique_listener_id_h`] into a non-owning
-/// [`iox2_unique_listener_id_h_ref`]
-///
-/// Returns a [`iox2_unique_listener_id_h_ref`]
-///
-/// # Safety
-///
-/// * The `listener_handle` must be a valid handle.
-/// * The `listener_handle` is still valid after the call to this function.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_cast_unique_listener_id_h_ref(
-    handle: iox2_unique_listener_id_h,
-) -> iox2_unique_listener_id_h_ref {
-    debug_assert!(!handle.is_null());
-
-    (*handle.as_type()).as_h_refandle() as *mut _ as _
 }
 
 /// Checks two [`iox2_unique_listener_id_t`] for equality.
@@ -120,8 +115,8 @@ pub unsafe extern "C" fn iox2_unique_listener_id_eq(
     lhs: iox2_unique_listener_id_h_ref,
     rhs: iox2_unique_listener_id_h_ref,
 ) -> bool {
-    debug_assert!(!lhs.is_null());
-    debug_assert!(!rhs.is_null());
+    lhs.assert_non_null();
+    rhs.assert_non_null();
 
     let lhs = &mut *lhs.as_type();
     let rhs = &mut *rhs.as_type();
@@ -140,8 +135,8 @@ pub unsafe extern "C" fn iox2_unique_listener_id_less(
     lhs: iox2_unique_listener_id_h_ref,
     rhs: iox2_unique_listener_id_h_ref,
 ) -> bool {
-    debug_assert!(!lhs.is_null());
-    debug_assert!(!rhs.is_null());
+    lhs.assert_non_null();
+    rhs.assert_non_null();
 
     let lhs = &mut *lhs.as_type();
     let rhs = &mut *rhs.as_type();

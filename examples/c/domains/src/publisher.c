@@ -32,11 +32,10 @@ int main(int argc, char** argv) {
     iox2_config_ptr config_ptr = iox2_config_global_config();
     iox2_config_h config = NULL;
     iox2_config_from_ptr(config_ptr, NULL, &config);
-    iox2_config_h_ref config_ref = iox2_cast_config_h_ref(config);
 
     // The domain name becomes the prefix for all resources.
     // Therefore, different domain names never share the same resources.
-    if (iox2_config_global_set_prefix(config_ref, argv[1]) != IOX2_OK) {
+    if (iox2_config_global_set_prefix(&config, argv[1]) != IOX2_OK) {
         printf("invalid domain name\"%s\"\n", argv[1]);
         goto drop_config;
     }
@@ -44,11 +43,10 @@ int main(int argc, char** argv) {
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
-    iox2_node_builder_h_ref node_builder_ref = iox2_cast_node_builder_h_ref(node_builder_handle);
 
     // use the custom config when creating the custom node
     // every service constructed by the node will use this config
-    iox2_node_builder_set_config(node_builder_ref, config_ref);
+    iox2_node_builder_set_config(&node_builder_handle, &config);
     if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
         goto drop_config;
     }
@@ -63,15 +61,12 @@ int main(int argc, char** argv) {
 
     // create service builder
     iox2_service_name_ptr service_name_ptr = iox2_cast_service_name_ptr(service_name);
-    iox2_node_h_ref node_h_refandle = iox2_cast_node_h_ref(node_handle);
-    iox2_service_builder_h service_builder = iox2_node_service_builder(node_h_refandle, NULL, service_name_ptr);
+    iox2_service_builder_h service_builder = iox2_node_service_builder(&node_handle, NULL, service_name_ptr);
     iox2_service_builder_pub_sub_h service_builder_pub_sub = iox2_service_builder_pub_sub(service_builder);
-    iox2_service_builder_pub_sub_h_ref service_builder_pub_sub_ref =
-        iox2_cast_service_builder_pub_sub_h_ref(service_builder_pub_sub);
 
     // set pub sub payload type
     const char* payload_type_name = "16TransmissionData";
-    if (iox2_service_builder_pub_sub_set_payload_type_details(service_builder_pub_sub_ref,
+    if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
                                                               iox2_type_variant_e_FIXED_SIZE,
                                                               payload_type_name,
                                                               strlen(payload_type_name),
@@ -90,31 +85,28 @@ int main(int argc, char** argv) {
     }
 
     // create publisher
-    iox2_port_factory_pub_sub_h_ref ref_service = iox2_cast_port_factory_pub_sub_h_ref(service);
     iox2_port_factory_publisher_builder_h publisher_builder =
-        iox2_port_factory_pub_sub_publisher_builder(ref_service, NULL);
+        iox2_port_factory_pub_sub_publisher_builder(&service, NULL);
     iox2_publisher_h publisher = NULL;
     if (iox2_port_factory_publisher_builder_create(publisher_builder, NULL, &publisher) != IOX2_OK) {
         printf("Unable to create publisher!\n");
         goto drop_service;
     }
-    iox2_publisher_h_ref publisher_ref = iox2_cast_publisher_h_ref(publisher);
 
     int32_t counter = 0;
-    while (iox2_node_wait(node_h_refandle, 1, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(&node_handle, 1, 0) == iox2_node_event_e_TICK) {
         counter += 1;
 
         // loan sample
         iox2_sample_mut_h sample = NULL;
-        if (iox2_publisher_loan(publisher_ref, NULL, &sample) != IOX2_OK) {
+        if (iox2_publisher_loan(&publisher, NULL, &sample) != IOX2_OK) {
             printf("Failed to loan sample\n");
             goto drop_publisher;
         }
-        iox2_sample_mut_h_ref sample_ref = iox2_cast_sample_mut_h_ref(sample);
 
         // write payload
         struct TransmissionData* payload = NULL;
-        iox2_sample_mut_payload_mut(sample_ref, (void**) &payload, NULL);
+        iox2_sample_mut_payload_mut(&sample, (void**) &payload, NULL);
         payload->x = counter;
         payload->y = counter * 3;
         payload->funky = counter * 812.12; // NOLINT

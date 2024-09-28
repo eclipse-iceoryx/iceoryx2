@@ -31,21 +31,15 @@ mod service_builder {
             assert_that!(ret_val, eq(IOX2_OK));
 
             let service_builder_handle = iox2_node_service_builder(
-                iox2_cast_node_h_ref(node_handle),
+                &node_handle,
                 std::ptr::null_mut(),
                 iox2_cast_service_name_ptr(service_name_handle),
             );
             iox2_service_name_drop(service_name_handle);
 
             let service_builder_handle = iox2_service_builder_event(service_builder_handle);
-            iox2_service_builder_event_set_max_notifiers(
-                iox2_cast_service_builder_event_h_ref(service_builder_handle),
-                10,
-            );
-            iox2_service_builder_event_set_max_listeners(
-                iox2_cast_service_builder_event_h_ref(service_builder_handle),
-                10,
-            );
+            iox2_service_builder_event_set_max_notifiers(&service_builder_handle, 10);
+            iox2_service_builder_event_set_max_listeners(&service_builder_handle, 10);
 
             let mut event_factory: iox2_port_factory_event_h = std::ptr::null_mut();
             let ret_val = iox2_service_builder_event_open_or_create(
