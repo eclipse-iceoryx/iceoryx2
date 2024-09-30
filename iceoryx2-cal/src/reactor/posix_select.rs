@@ -67,7 +67,7 @@ impl crate::reactor::Reactor for Reactor {
     type Guard<'reactor, 'attachment> = FileDescriptorSetGuard<'reactor, 'attachment>;
     type Builder = ReactorBuilder;
 
-    fn capacity() -> usize {
+    fn capacity(&self) -> usize {
         FileDescriptorSet::capacity()
     }
 

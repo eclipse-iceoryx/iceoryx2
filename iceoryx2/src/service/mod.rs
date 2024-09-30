@@ -185,6 +185,7 @@ use iceoryx2_cal::hash::*;
 use iceoryx2_cal::monitoring::Monitoring;
 use iceoryx2_cal::named_concept::NamedConceptListError;
 use iceoryx2_cal::named_concept::*;
+use iceoryx2_cal::reactor::Reactor;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::shared_memory::SharedMemory;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
@@ -477,6 +478,9 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
 
     /// Monitoring mechanism to detect dead processes.
     type Monitoring: Monitoring;
+
+    /// Event multiplexing mechanisms to wait on multiple events.
+    type Reactor: Reactor;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

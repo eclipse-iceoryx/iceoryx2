@@ -10,97 +10,175 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{marker::PhantomData, rc::Rc};
+use std::{fmt::Debug, time::Duration};
 
-use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_posix::{
-    file_descriptor::FileDescriptor, file_descriptor_set::SynchronousMultiplexing,
-};
+use iceoryx2_bb_log::fail;
+use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
+use iceoryx2_cal::reactor::{Reactor, ReactorAttachError, ReactorWaitError};
 
-use crate::service;
-
-use super::{event_id::EventId, listener::Listener};
-
-pub struct AttachmentId(FileDescriptor);
-
-pub struct Attachment<'a, T> {
-    id: AttachmentId,
-    waitset: &'a WaitSet,
-    this: Rc<T>,
+/// Defines the failures that can occur when attaching something with [`WaitSet::attach()`].
+pub enum WaitSetAttachmentError {
+    /// The [`WaitSet`]s capacity is exceeded.
+    InsufficientCapacity,
+    /// The attachment is already attached.
+    AlreadyAttached,
+    /// An internal error has occurred.
+    InternalError,
 }
 
-impl<'a, T> Attachment<'a, T> {
-    fn release(self) -> T {
-        todo!()
+/// Defines the failures that can occur when calling
+///  * [`WaitSet::try_wait()`]
+///  * [`WaitSet::timed_wait()`]
+///  * [`WaitSet::blocking_wait()`]
+pub enum WaitSetWaitError {
+    /// The process received an interrupt signal.
+    Interrupt,
+    /// The process has not sufficient permissions to wait on the attachments.
+    InsufficientPermissions,
+    /// An internal error has occurred.
+    InternalError,
+}
+
+/// Represents an attachment to the [`WaitSet`]
+pub struct AttachmentId(i32);
+
+impl AttachmentId {
+    /// Creates a new [`AttachmentId`] from a [`WaitSet`] attachable object
+    pub fn new<T: SynchronousMultiplexing>(other: &T) -> Self {
+        Self(unsafe { other.file_descriptor().native_handle() })
     }
 
-    fn originates_from(&self, this: &T) -> bool {
-        todo!()
-    }
-
-    fn get(&self) -> &T {
-        todo!()
-    }
-
-    fn get_mut(&mut self) -> &mut T {
-        todo!()
-    }
-
-    fn call(&self) {
-        todo!()
+    /// Returns true if the attachment originated from [`other`]
+    pub fn originates_from<T: SynchronousMultiplexing>(&self, other: &T) -> bool {
+        self.0 == Self::new(other).0
     }
 }
 
-pub trait Listen {}
+/// Is returned when something is attached to the [`WaitSet`]. As soon as it goes out
+/// of scope, the attachment is detached.
+pub struct Guard<'waitset, 'attachment, Service: crate::service::Service>(
+    <Service::Reactor as Reactor>::Guard<'waitset, 'attachment>,
+)
+where
+    Service::Reactor: 'waitset;
 
-pub struct WaitSet {
-    attachments: Vec<Rc<dyn SynchronousMultiplexing>>,
+/// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
+/// single call [`WaitSet::try_wait()`], [`WaitSet::timed_wait()`] or [`WaitSet::blocking_wait()`].
+///
+/// An struct must implement [`SynchronousMultiplexing`] to be attachable. The
+/// [`Listener`](crate::port::listener::Listener) can be attached as well as sockets or anything else that
+/// is [`FileDescriptorBased`](iceoryx2_bb_posix::file_descriptor::FileDescriptorBased)
+#[derive(Debug)]
+pub struct WaitSet<Service: crate::service::Service> {
+    reactor: Service::Reactor,
 }
 
-// can only be created through node to have memory available and to be able to use Rc
-
-impl WaitSet {
-    pub fn attach<L: Listen + SynchronousMultiplexing>(&mut self, listener: L) -> Attachment<L> {
-        todo!()
+impl<Service: crate::service::Service> WaitSet<Service> {
+    /// Attaches an object to the [`WaitSet`]. The object cannot be attached twice and the
+    /// [`WaitSet::capacity()`] is limited by the underlying implementation.
+    pub fn attach<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
+        &'waitset self,
+        attachment: &'attachment T,
+    ) -> Result<Guard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
+        let msg = "Unable to attach the attachment";
+        match self.reactor.attach(attachment) {
+            Ok(guard) => Ok(Guard(guard)),
+            Err(ReactorAttachError::AlreadyAttached) => {
+                fail!(from self, with WaitSetAttachmentError::AlreadyAttached,
+                    "{msg} {:?} since it is already attached.", attachment);
+            }
+            Err(ReactorAttachError::CapacityExceeded) => {
+                fail!(from self, with WaitSetAttachmentError::AlreadyAttached,
+                    "{msg} {:?} since it would exceed the capacity of {} of the waitset.",
+                    attachment, self.capacity());
+            }
+            Err(ReactorAttachError::UnknownError(e)) => {
+                fail!(from self, with WaitSetAttachmentError::InternalError,
+                    "{msg} {:?} due to an internal error (error code = {})", attachment, e);
+            }
+        }
     }
 
-    pub fn attach_custom<T: SynchronousMultiplexing>(&mut self, custom: T) -> Attachment<T> {
-        todo!()
+    fn wait_result(
+        &self,
+        msg: &str,
+        result: Result<(), ReactorWaitError>,
+    ) -> Result<(), WaitSetWaitError> {
+        match result {
+            Ok(()) => Ok(()),
+            Err(ReactorWaitError::Interrupt) => {
+                fail!(from self, with WaitSetWaitError::Interrupt,
+                    "{msg} since an interrupt signal was received.");
+            }
+            Err(ReactorWaitError::InsufficientPermissions) => {
+                fail!(from self, with WaitSetWaitError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions.");
+            }
+            Err(ReactorWaitError::UnknownError) => {
+                fail!(from self, with WaitSetWaitError::InternalError,
+                    "{msg} due to an internal error.");
+            }
+        }
     }
 
-    pub fn attach_fn<L: Listen, F: FnMut(&L)>(&mut self, listener: L, fn_call: F) -> Attachment<L> {
-        todo!()
+    /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
+    /// was triggered and the [`AttachmentId`] is provided as an input argument to acquire the
+    /// source.
+    /// If nothing was triggered the [`WaitSet`] returns immediately.
+    pub fn try_wait<F: FnMut(AttachmentId)>(&self, mut fn_call: F) -> Result<(), WaitSetWaitError> {
+        self.wait_result(
+            "Unable to try_wait",
+            self.reactor
+                .try_wait(|fd| fn_call(AttachmentId(unsafe { fd.native_handle() }))),
+        )
     }
 
-    pub fn attach_custom_fn<T: SynchronousMultiplexing, F: FnMut(&T)>(
-        &mut self,
-        custom: T,
-        fn_call: F,
-    ) -> Attachment<T> {
-        todo!()
+    /// Waits with a timeout on the [`WaitSet`]. The provided callback is called for every
+    /// attachment that was triggered and the [`AttachmentId`] is provided as an input argument to
+    /// acquire the source.
+    /// If nothing was triggered the [`WaitSet`] returns after the timeout has passed.
+    pub fn timed_wait<F: FnMut(AttachmentId)>(
+        &self,
+        mut fn_call: F,
+        timeout: Duration,
+    ) -> Result<(), WaitSetWaitError> {
+        self.wait_result(
+            "Unable to timed_wait",
+            self.reactor.timed_wait(
+                |fd| fn_call(AttachmentId(unsafe { fd.native_handle() })),
+                timeout,
+            ),
+        )
     }
 
-    fn try_wait<F: FnMut(AttachmentId) -> CallbackProgression>(&self, fn_call: F) {
-        todo!()
+    /// Blocks on the [`WaitSet`] until at least one event was triggered. The provided callback is
+    /// called for every attachment that was triggered and the [`AttachmentId`] is provided as an
+    /// input argument to acquire the source.
+    /// If nothing was triggered the [`WaitSet`] returns only when the process receives an
+    /// interrupt signal.
+    pub fn blocking_wait<F: FnMut(AttachmentId)>(
+        &self,
+        mut fn_call: F,
+    ) -> Result<(), WaitSetWaitError> {
+        self.wait_result(
+            "Unable to blocking_wait",
+            self.reactor
+                .blocking_wait(|fd| fn_call(AttachmentId(unsafe { fd.native_handle() }))),
+        )
     }
 
-    fn try_wait_one(&self) -> (AttachmentId) {
-        todo!()
+    /// Returns the capacity of the [`WaitSet`]
+    pub fn capacity(&self) -> usize {
+        self.reactor.capacity()
     }
 
-    fn try_wait_fn(&self) {
-        todo!()
-    }
-
-    pub fn capacity() -> usize {
-        todo!()
-    }
-
+    /// Returns the number of attachments.
     pub fn len(&self) -> usize {
-        todo!()
+        self.reactor.len()
     }
 
+    /// Returns true if the [`WaitSet`] has no attachments, otherwise false.
     pub fn is_empty(&self) -> bool {
-        todo!()
+        self.reactor.is_empty()
     }
 }

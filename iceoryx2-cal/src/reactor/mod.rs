@@ -25,6 +25,7 @@ pub enum ReactorCreateError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorAttachError {
+    AlreadyAttached,
     CapacityExceeded,
     UnknownError(i32),
 }
@@ -38,13 +39,13 @@ pub enum ReactorWaitError {
 
 pub trait ReactorGuard<'reactor, 'attachment> {}
 
-pub trait Reactor: Sized {
+pub trait Reactor: Sized + Debug {
     type Guard<'reactor, 'attachment>: ReactorGuard<'reactor, 'attachment>
     where
         Self: 'reactor;
     type Builder: ReactorBuilder<Self>;
 
-    fn capacity() -> usize;
+    fn capacity(&self) -> usize;
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool;
 
