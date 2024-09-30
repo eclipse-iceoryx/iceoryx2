@@ -14,9 +14,10 @@ use std::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
-use iceoryx2_cal::reactor::{Reactor, ReactorAttachError, ReactorWaitError};
+use iceoryx2_cal::reactor::*;
 
 /// Defines the failures that can occur when attaching something with [`WaitSet::attach()`].
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetAttachmentError {
     /// The [`WaitSet`]s capacity is exceeded.
     InsufficientCapacity,
@@ -26,10 +27,19 @@ pub enum WaitSetAttachmentError {
     InternalError,
 }
 
+impl std::fmt::Display for WaitSetAttachmentError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "WaitSetAttachmentError::{:?}", self)
+    }
+}
+
+impl std::error::Error for WaitSetAttachmentError {}
+
 /// Defines the failures that can occur when calling
 ///  * [`WaitSet::try_wait()`]
 ///  * [`WaitSet::timed_wait()`]
 ///  * [`WaitSet::blocking_wait()`]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetWaitError {
     /// The process received an interrupt signal.
     Interrupt,
@@ -39,7 +49,31 @@ pub enum WaitSetWaitError {
     InternalError,
 }
 
+impl std::fmt::Display for WaitSetWaitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "WaitSetWaitError::{:?}", self)
+    }
+}
+
+impl std::error::Error for WaitSetWaitError {}
+
+/// Defines the failures that can occur when calling [`WaitSetBuilder::create()`].
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum WaitSetCreateError {
+    /// An internal error has occurred.
+    InternalError,
+}
+
+impl std::fmt::Display for WaitSetCreateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "WaitSetCreateError::{:?}", self)
+    }
+}
+
+impl std::error::Error for WaitSetCreateError {}
+
 /// Represents an attachment to the [`WaitSet`]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub struct AttachmentId(i32);
 
 impl AttachmentId {
@@ -62,12 +96,40 @@ pub struct Guard<'waitset, 'attachment, Service: crate::service::Service>(
 where
     Service::Reactor: 'waitset;
 
+/// The builder for the [`WaitSet`].
+#[derive(Debug)]
+pub struct WaitSetBuilder {}
+
+impl WaitSetBuilder {
+    /// Creates a new [`WaitSetBuilder`].
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    /// Creates the [`WaitSet`].
+    pub fn create<Service: crate::service::Service>(
+        self,
+    ) -> Result<WaitSet<Service>, WaitSetCreateError> {
+        let msg = "Unable to create WaitSet";
+
+        match <Service::Reactor as Reactor>::Builder::new().create() {
+            Ok(reactor) => Ok(WaitSet { reactor }),
+            Err(ReactorCreateError::UnknownError(e)) => {
+                fail!(from self, with WaitSetCreateError::InternalError,
+                    "{msg} due to an internal error (error code = {})", e);
+            }
+        }
+    }
+}
+
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
 /// single call [`WaitSet::try_wait()`], [`WaitSet::timed_wait()`] or [`WaitSet::blocking_wait()`].
 ///
 /// An struct must implement [`SynchronousMultiplexing`] to be attachable. The
 /// [`Listener`](crate::port::listener::Listener) can be attached as well as sockets or anything else that
-/// is [`FileDescriptorBased`](iceoryx2_bb_posix::file_descriptor::FileDescriptorBased)
+/// is [`FileDescriptorBased`](iceoryx2_bb_posix::file_descriptor::FileDescriptorBased).
+///
+/// Can be created via the [`WaitSetBuilder`].
 #[derive(Debug)]
 pub struct WaitSet<Service: crate::service::Service> {
     reactor: Service::Reactor,
