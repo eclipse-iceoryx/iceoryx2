@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let notifier = event.notifier_builder().create()?;
 
     while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
-        notifier.notify()?;
+        notifier.notify_with_custom_event_id(EventId::new(args.event_id))?;
 
         println!("[service: \"{}\"] Trigger event ...", args.service);
     }
@@ -44,4 +44,8 @@ struct Args {
     /// Defines the service to which events are emitted.
     #[clap(short, long)]
     service: String,
+
+    /// The event id used for triggering
+    #[clap(short, long, default_value_t = 0)]
+    event_id: usize,
 }

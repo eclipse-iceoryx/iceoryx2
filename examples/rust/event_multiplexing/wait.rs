@@ -40,29 +40,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let listener = create_listener(service)?;
         listeners.insert(AttachmentId::new(&listener), (service.clone(), listener));
     }
+
     for listener in listeners.values() {
         guards.push(waitset.attach(&listener.1)?);
     }
 
     println!("Waiting on the following services: {:?}", args.services);
 
-    while waitset
-        .timed_wait(
-            |attachment| {
-                if let Some((service_name, listener)) = listeners.get(&attachment) {
-                    print!("Received trigger from \"{}\" ::", service_name);
+    let trigger_call = |attachment| {
+        if let Some((service_name, listener)) = listeners.get(&attachment) {
+            print!("Received trigger from \"{}\" ::", service_name);
 
-                    while let Ok(Some(event_id)) = listener.try_wait_one() {
-                        print!(" {:?}", event_id);
-                    }
+            while let Ok(Some(event_id)) = listener.try_wait_one() {
+                print!(" {:?}", event_id);
+            }
 
-                    println!("");
-                }
-            },
-            CYCLE_TIME,
-        )
-        .is_ok()
-    {}
+            println!("");
+        }
+    };
+
+    while waitset.timed_wait(trigger_call, CYCLE_TIME).is_ok() {}
 
     Ok(())
 }
