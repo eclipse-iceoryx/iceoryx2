@@ -51,18 +51,20 @@ impl IntoCInt for NodeListFailure {
 
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub enum iox2_node_event_e {
+pub enum iox2_wait_event_e {
     TICK = 0,
     TERMINATION_REQUEST,
-    INTERRUPT_SIGNAL,
+    INTERRUPT,
+    NOTIFICATION,
 }
 
-impl IntoCInt for NodeEvent {
+impl IntoCInt for WaitEvent {
     fn into_c_int(self) -> c_int {
         (match self {
-            NodeEvent::Tick => iox2_node_event_e::TICK,
-            NodeEvent::TerminationRequest => iox2_node_event_e::TERMINATION_REQUEST,
-            NodeEvent::InterruptSignal => iox2_node_event_e::INTERRUPT_SIGNAL,
+            WaitEvent::Tick => iox2_wait_event_e::TICK,
+            WaitEvent::TerminationRequest => iox2_wait_event_e::TERMINATION_REQUEST,
+            WaitEvent::Interrupt => iox2_wait_event_e::INTERRUPT,
+            WaitEvent::Notification => iox2_wait_event_e::NOTIFICATION,
         }) as c_int
     }
 }

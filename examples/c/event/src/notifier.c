@@ -59,7 +59,7 @@ int main(void) {
     }
 
     uint64_t counter = 0;
-    while (iox2_node_wait(&node_handle, 0, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(&node_handle, 0, 0) != iox2_wait_event_e_TERMINATION_REQUEST) {
         counter += 1;
         iox2_event_id_t event_id = { .value = counter % 12 }; // NOLINT
         if (iox2_notifier_notify_with_custom_event_id(&notifier, &event_id, NULL) != IOX2_OK) {

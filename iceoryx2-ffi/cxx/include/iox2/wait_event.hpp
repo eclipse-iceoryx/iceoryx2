@@ -10,20 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_EVENT_HPP
-#define IOX2_NODE_EVENT_HPP
+#ifndef IOX2_WAIT_EVENT_HPP
+#define IOX2_WAIT_EVENT_HPP
 
 #include <cstdint>
 
 namespace iox2 {
 /// Defines all possible events that can occur during [`Node::wait()`].
-enum class NodeEvent : uint8_t {
+enum class WaitEvent : uint8_t {
     /// The timeout passed.
     Tick,
     /// SIGTERM signal was received
     TerminationRequest,
     /// SIGINT signal was received
-    InterruptSignal,
+    Interrupt,
+    /// An event notification was received
+    Notification
 };
 } // namespace iox2
 

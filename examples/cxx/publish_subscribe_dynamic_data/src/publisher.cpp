@@ -40,7 +40,7 @@ auto main() -> int {
 
     auto counter = 1;
 
-    while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
+    while (node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest) {
         counter += 1;
 
         auto required_memory_size = (8 + counter) % 16; // NOLINT

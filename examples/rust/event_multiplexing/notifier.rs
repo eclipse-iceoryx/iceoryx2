@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let notifier = event.notifier_builder().create()?;
 
-    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
         notifier.notify_with_custom_event_id(EventId::new(args.event_id))?;
 
         println!("[service: \"{}\"] Trigger event ...", args.service);

@@ -87,7 +87,7 @@ int main(void) {
     }
 
     int32_t counter = 0;
-    while (iox2_node_wait(&node_handle, 1, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(&node_handle, 1, 0) != iox2_wait_event_e_TERMINATION_REQUEST) {
         counter += 1;
 
         // loan sample

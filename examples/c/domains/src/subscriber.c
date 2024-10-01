@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
 
     uint64_t counter = 0;
     printf("subscribed to: [domain: \"%s\", service: \"%s\"]\n", argv[1], argv[2]);
-    while (iox2_node_wait(&node_handle, 1, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(&node_handle, 1, 0) != iox2_wait_event_e_TERMINATION_REQUEST) {
         counter += 1;
 
         // receive sample

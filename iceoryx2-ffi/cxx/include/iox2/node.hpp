@@ -21,13 +21,13 @@
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/node_event.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/service_builder.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/wait_event.hpp"
 
 namespace iox2 {
 /// The central entry point of iceoryx2. Represents a node of the iceoryx2
@@ -55,7 +55,7 @@ class Node {
 
     /// Waits a given time for a [`NodeEvent`]. If the [`cycle_time`] has passed
     /// [`NodeEvent::Tick`] is returned.
-    auto wait(iox::units::Duration cycle_time) const -> NodeEvent;
+    auto wait(iox::units::Duration cycle_time) const -> WaitEvent;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.

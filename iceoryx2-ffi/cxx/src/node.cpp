@@ -54,9 +54,9 @@ auto Node<T>::id() const -> NodeId {
 }
 
 template <ServiceType T>
-auto Node<T>::wait(iox::units::Duration cycle_time) const -> NodeEvent {
+auto Node<T>::wait(iox::units::Duration cycle_time) const -> WaitEvent {
     auto time = cycle_time.timespec();
-    return iox::into<NodeEvent>(iox2_node_wait(&m_handle, time.tv_sec, time.tv_nsec));
+    return iox::into<WaitEvent>(iox2_node_wait(&m_handle, time.tv_sec, time.tv_nsec));
 }
 
 template <ServiceType T>

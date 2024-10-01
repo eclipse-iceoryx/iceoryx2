@@ -85,7 +85,7 @@ TYPED_TEST(NodeTest, node_wait_returns_tick_on_timeout) {
     auto sut = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto event = sut.wait(iox::units::Duration::fromMilliseconds(TIMEOUT));
 
-    ASSERT_THAT(event, Eq(NodeEvent::Tick));
+    ASSERT_THAT(event, Eq(WaitEvent::Tick));
 }
 
 } // namespace

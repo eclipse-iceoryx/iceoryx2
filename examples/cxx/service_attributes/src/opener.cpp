@@ -36,7 +36,7 @@ auto main() -> int {
 
     std::cout << "defined service attributes: " << service.attributes() << std::endl;
 
-    while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
+    while (node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest) {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {
             std::cout << "received: " << sample->payload() << std::endl;

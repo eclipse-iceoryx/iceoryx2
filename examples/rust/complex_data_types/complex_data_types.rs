@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subscriber = service.subscriber_builder().create()?;
     let mut counter = 0;
 
-    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
         // ComplexDataType as a size of over 30MB, we need to perform a placement new
         // otherwise we will encounter a stack overflow in debug builds.
         // Therefore, we acquire an uninitialized sample, use the PlacementDefault

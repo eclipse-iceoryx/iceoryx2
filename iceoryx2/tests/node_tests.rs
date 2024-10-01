@@ -342,7 +342,7 @@ mod node {
         let start = Instant::now();
         let event = node.wait(TIMEOUT);
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
-        assert_that!(event, eq NodeEvent::Tick);
+        assert_that!(event, eq WaitEvent::Tick);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

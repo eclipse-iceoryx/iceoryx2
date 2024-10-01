@@ -118,6 +118,7 @@ pub mod node_name;
 pub mod testing;
 
 use crate::node::node_name::NodeName;
+use crate::prelude::WaitEvent;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
@@ -146,17 +147,6 @@ use std::marker::PhantomData;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-
-/// A complete list of all events that can occur in the main event loop, [`Node::wait()`].
-#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
-pub enum NodeEvent {
-    /// The timeout passed.
-    Tick,
-    /// SIGTERM signal was received
-    TerminationRequest,
-    /// SIGINT signal was received
-    InterruptSignal,
-}
 
 /// The system-wide unique id of a [`Node`]
 #[derive(
@@ -797,21 +787,21 @@ impl<Service: service::Service> Node<Service> {
     }
 
     /// Waits until an event was received. It returns
-    /// [`NodeEvent::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
-    pub fn wait(&self, cycle_time: Duration) -> NodeEvent {
+    /// [`WaitEvent::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
+    pub fn wait(&self, cycle_time: Duration) -> WaitEvent {
         if SignalHandler::termination_requested() {
-            return NodeEvent::TerminationRequest;
+            return WaitEvent::TerminationRequest;
         }
 
         match nanosleep(cycle_time) {
             Ok(()) => {
                 if SignalHandler::termination_requested() {
-                    NodeEvent::TerminationRequest
+                    WaitEvent::TerminationRequest
                 } else {
-                    NodeEvent::Tick
+                    WaitEvent::Tick
                 }
             }
-            Err(NanosleepError::InterruptedBySignal(_)) => NodeEvent::InterruptSignal,
+            Err(NanosleepError::InterruptedBySignal(_)) => WaitEvent::Interrupt,
             Err(v) => {
                 fatal_panic!(from self,
                     "Failed to wait with cycle time {:?} in main event look, caused by ({:?}).",

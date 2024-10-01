@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub use crate::config::Config;
-pub use crate::node::{node_name::NodeName, Node, NodeBuilder, NodeEvent, NodeState};
+pub use crate::node::{node_name::NodeName, Node, NodeBuilder, NodeState};
 pub use crate::port::event_id::EventId;
 pub use crate::port::waitset::{AttachmentId, WaitEvent, WaitSet, WaitSetBuilder};
 pub use crate::service::messaging_pattern::MessagingPattern;
