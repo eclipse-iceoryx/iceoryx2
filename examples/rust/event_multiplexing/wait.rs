@@ -22,6 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
+    // factory lambda to create a listener with a given service name
     let create_listener =
         |service: &String| -> Result<Listener<ipc::Service>, Box<dyn std::error::Error>> {
             let event = node
@@ -36,17 +37,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut listeners: HashMap<AttachmentId, (String, Listener<ipc::Service>)> = HashMap::new();
     let mut guards = vec![];
 
+    // create a listener for every service
     for service in &args.services {
         let listener = create_listener(service)?;
         listeners.insert(AttachmentId::new(&listener), (service.clone(), listener));
     }
 
+    // attach all listeners to the waitset and store the guard
     for listener in listeners.values() {
         guards.push(waitset.attach(&listener.1)?);
     }
 
     println!("Waiting on the following services: {:?}", args.services);
 
+    // the callback that is called when a listener has received an event
     let trigger_call = |attachment| {
         if let Some((service_name, listener)) = listeners.get(&attachment) {
             print!("Received trigger from \"{}\" ::", service_name);
@@ -59,6 +63,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    // wait until at least one listener has received an event or the user has pressed CTRL+c
+    // or send SIGTERM/SIGINT
     while waitset.timed_wait(trigger_call, CYCLE_TIME) != Ok(WaitEvent::TerminationRequest) {}
 
     println!("Exit");
