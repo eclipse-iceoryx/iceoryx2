@@ -16,7 +16,8 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptor,
     file_descriptor_set::{
-        FileDescriptorSet, FileDescriptorSetGuard, FileDescriptorSetWaitError, FileEvent,
+        FileDescriptorSet, FileDescriptorSetAddError, FileDescriptorSetGuard,
+        FileDescriptorSetWaitError, FileEvent,
     },
 };
 
@@ -87,10 +88,18 @@ impl crate::reactor::Reactor for Reactor {
         &'reactor self,
         value: &'attachment F,
     ) -> Result<Self::Guard<'reactor, 'attachment>, super::ReactorAttachError> {
-        Ok(fail!(from self, when self.set.add(value),
-                with ReactorAttachError::CapacityExceeded,
-                "Unable to attach {:?} to reactor since the capacity of the underlying file descriptor set was exceeded.",
-                value))
+        let msg = format!("Unable to attach {:?} to the reactor", value);
+        match self.set.add(value) {
+            Ok(guard) => Ok(guard),
+            Err(FileDescriptorSetAddError::CapacityExceeded) => {
+                fail!(from self, with ReactorAttachError::CapacityExceeded,
+                        "{msg} since the capacity of the underlying file descriptor set was exceeded.");
+            }
+            Err(FileDescriptorSetAddError::AlreadyAttached) => {
+                fail!(from self, with ReactorAttachError::AlreadyAttached,
+                        "{msg} since it is already attached.");
+            }
+        }
     }
 
     fn try_wait<F: FnMut(&FileDescriptor)>(

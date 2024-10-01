@@ -92,6 +92,21 @@ mod reactor {
     }
 
     #[test]
+    fn attach_the_same_attachment_twice_fails<Sut: Reactor>() {
+        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+
+        let name = generate_name();
+        let listener = unix_datagram_socket::ListenerBuilder::new(&name)
+            .create()
+            .unwrap();
+
+        let _guard = sut.attach(&listener).unwrap();
+        let result = sut.attach(&listener);
+
+        assert_that!(result.err(), eq Some(ReactorAttachError::AlreadyAttached));
+    }
+
+    #[test]
     fn try_wait_does_not_block_when_triggered_single<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
