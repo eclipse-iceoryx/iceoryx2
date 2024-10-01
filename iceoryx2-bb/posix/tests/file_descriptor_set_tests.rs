@@ -19,9 +19,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
-use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -43,8 +41,6 @@ fn generate_socket_name() -> FilePath {
 
 #[test]
 fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
-
     let socket_name = generate_socket_name();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -77,8 +73,6 @@ fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
 
 #[test]
 fn file_descriptor_set_add_and_remove_works() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
-
     let fd_set = FileDescriptorSet::new();
     let mut sockets = vec![];
     let number_of_fds: usize = core::cmp::min(128, posix::FD_SETSIZE);
@@ -116,9 +110,23 @@ fn file_descriptor_set_add_and_remove_works() {
 }
 
 #[test]
-fn file_descriptor_set_timed_wait_works() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
+fn file_descriptor_set_add_same_fd_twice_fails() {
+    let fd_set = FileDescriptorSet::new();
 
+    let socket_name = generate_socket_name();
+    let socket = UnixDatagramReceiverBuilder::new(&socket_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let _guard = fd_set.add(&socket).unwrap();
+
+    let result = fd_set.add(&socket);
+    assert_that!(result.err(), eq Some(FileDescriptorSetAddError::AlreadyAttached));
+}
+
+#[test]
+fn file_descriptor_set_timed_wait_works() {
     let socket_name = generate_socket_name();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -148,8 +156,6 @@ fn file_descriptor_set_timed_wait_works() {
 
 #[test]
 fn file_descriptor_guard_has_access_to_underlying_fd() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
-
     let socket_name = generate_socket_name();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)

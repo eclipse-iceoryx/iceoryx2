@@ -69,6 +69,7 @@ pub enum FileDescriptorSetWaitError {
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileDescriptorSetAddError {
+    AlreadyAttached,
     CapacityExceeded,
 }
 
@@ -168,10 +169,16 @@ impl FileDescriptorSet {
         &'set self,
         fd: &'fd FileDescriptor,
     ) -> Result<FileDescriptorSetGuard<'set, 'fd>, FileDescriptorSetAddError> {
+        let msg = "Unable to add file descriptor";
         if self.internals().file_descriptors.len() >= Self::capacity() {
             fail!(from self, with FileDescriptorSetAddError::CapacityExceeded,
-                "Unable to add file descriptor {:?} since the amount of file descriptors {} exceeds the maximum supported amount of file descriptors for a set {}.",
+                "{msg} {:?} since the amount of file descriptors {} exceeds the maximum supported amount of file descriptors for a set {}.",
                 fd.file_descriptor(), self.internals().file_descriptors.len(), Self::capacity());
+        }
+
+        if self.contains_impl(fd) {
+            fail!(from self, with FileDescriptorSetAddError::AlreadyAttached,
+                "{msg} {:?} since it is already attached.", fd);
         }
 
         unsafe {
@@ -223,12 +230,11 @@ impl FileDescriptorSet {
 
     /// Returns true if the object is attached to the [`FileDescriptorSet`], otherwise false.
     pub fn contains<T: SynchronousMultiplexing>(&self, fd: &T) -> bool {
-        unsafe {
-            posix::FD_ISSET(
-                fd.file_descriptor().native_handle(),
-                &self.internals().fd_set,
-            )
-        }
+        self.contains_impl(fd.file_descriptor())
+    }
+
+    fn contains_impl(&self, fd: &FileDescriptor) -> bool {
+        unsafe { posix::FD_ISSET(fd.native_handle(), &self.internals().fd_set) }
     }
 
     /// Waits until either the timeout has passed or the specified event has occurred. It
