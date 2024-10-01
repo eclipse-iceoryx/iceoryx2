@@ -10,6 +10,87 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ## Use [`AttachmentId::originates_from()`]
+//!
+//! ```no_run
+//! use iceoryx2::prelude::*;
+//! # use core::time::Duration;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! # let event_1 = node.service_builder(&"MyEventName_1".try_into()?)
+//! #     .event()
+//! #     .open_or_create()?;
+//! # let event_2 = node.service_builder(&"MyEventName_2".try_into()?)
+//! #     .event()
+//! #     .open_or_create()?;
+//!
+//! let mut listener_1 = event_1.listener_builder().create()?;
+//! let mut listener_2 = event_2.listener_builder().create()?;
+//!
+//! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+//! let _guard_1 = waitset.attach(&listener_1)?;
+//! let _guard_2 = waitset.attach(&listener_2)?;
+//!
+//! while waitset.timed_wait(|attachment_id| {
+//!     let listener = if attachment_id.originates_from(&listener_1) {
+//!         &listener_1
+//!     } else {
+//!         &listener_2
+//!     };
+//!
+//!     while let Ok(Some(event_id)) = listener.try_wait_one() {
+//!         println!("received notification {:?}", event_id);
+//!     }
+//! }, Duration::from_secs(1)) != Ok(WaitEvent::TerminationRequest) {}
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## [`HashMap`](std::collections::HashMap) approach
+//!
+//! ```no_run
+//! use iceoryx2::prelude::*;
+//! use std::collections::HashMap;
+//! use iceoryx2::port::listener::Listener;
+//! # use core::time::Duration;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! # let event_1 = node.service_builder(&"MyEventName_1".try_into()?)
+//! #     .event()
+//! #     .open_or_create()?;
+//! # let event_2 = node.service_builder(&"MyEventName_2".try_into()?)
+//! #     .event()
+//! #     .open_or_create()?;
+//!
+//! let mut listeners: HashMap<AttachmentId, Listener<ipc::Service>> = HashMap::new();
+//! let listener = event_1.listener_builder().create()?;
+//! listeners.insert(AttachmentId::new(&listener), listener);
+//!
+//! let listener = event_2.listener_builder().create()?;
+//! listeners.insert(AttachmentId::new(&listener), listener);
+//!
+//! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+//! let mut guards = vec![];
+//! for listener in listeners.values() {
+//!     guards.push(waitset.attach(listener)?);
+//! }
+//!
+//! while waitset.timed_wait(|attachment_id| {
+//!     if let Some(listener) = listeners.get(&attachment_id) {
+//!         while let Ok(Some(event_id)) = listener.try_wait_one() {
+//!             println!("received notification {:?}", event_id);
+//!         }
+//!     }
+//! }, Duration::from_secs(1)) != Ok(WaitEvent::TerminationRequest) {}
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+
 use std::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_log::fail;

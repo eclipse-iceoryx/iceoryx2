@@ -74,7 +74,7 @@
 //!                 .name(&"my_little_node".try_into()?)
 //!                 .create::<ipc::Service>()?;
 //!
-//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+//! while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
 //!     // your algorithm in here
 //! }
 //! # Ok(())
@@ -95,15 +95,18 @@
 //!
 //! loop {
 //!     match node.wait(CYCLE_TIME) {
-//!         NodeEvent::Tick => {
+//!         WaitEvent::Tick => {
 //!             println!("entered next cycle");
 //!         }
-//!         NodeEvent::TerminationRequest => {
+//!         WaitEvent::TerminationRequest => {
 //!             println!("User pressed CTRL+c, terminating");
 //!             break;
 //!         }
-//!         NodeEvent::InterruptSignal => {
+//!         WaitEvent::Interrupt => {
 //!             println!("Someone send an interrupt signal ...");
+//!         }
+//!         WaitEvent::Notification => {
+//!             println!("Received a notification ...");
 //!         }
 //!     }
 //! }

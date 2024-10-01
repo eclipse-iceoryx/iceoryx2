@@ -75,7 +75,7 @@
 //!
 //! let subscriber = service.subscriber_builder().create()?;
 //!
-//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+//! while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
 //!     while let Some(sample) = subscriber.receive()? {
 //!         println!("received: {:?}", *sample);
 //!     }
@@ -102,7 +102,7 @@
 //!
 //! let publisher = service.publisher_builder().create()?;
 //!
-//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+//! while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
 //!     let sample = publisher.loan_uninit()?;
 //!     let sample = sample.write_payload(1234);
 //!     sample.send()?;
@@ -135,7 +135,7 @@
 //!
 //! let mut listener = event.listener_builder().create()?;
 //!
-//! while let NodeEvent::Tick = node.wait(Duration::ZERO) {
+//! while node.wait(Duration::ZERO) != WaitEvent::TerminationRequest {
 //!     if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
 //!         println!("event was triggered with id: {:?}", event_id);
 //!     }
@@ -163,7 +163,7 @@
 //! let notifier = event.notifier_builder().create()?;
 //!
 //! let mut counter: usize = 0;
-//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+//! while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
 //!     counter += 1;
 //!     notifier.notify_with_custom_event_id(EventId::new(counter))?;
 //!
