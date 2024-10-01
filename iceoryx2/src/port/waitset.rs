@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -33,7 +33,7 @@
 //! let _guard_1 = waitset.attach(&listener_1)?;
 //! let _guard_2 = waitset.attach(&listener_2)?;
 //!
-//! while waitset.timed_wait(|attachment_id| {
+//! let event_handler = |attachment_id| {
 //!     let listener = if attachment_id.originates_from(&listener_1) {
 //!         &listener_1
 //!     } else {
@@ -43,7 +43,10 @@
 //!     while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!         println!("received notification {:?}", event_id);
 //!     }
-//! }, Duration::from_secs(1)) != Ok(WaitEvent::TerminationRequest) {}
+//! };
+//!
+//! while waitset.timed_wait(event_handler, Duration::from_secs(1))
+//!     != Ok(WaitEvent::TerminationRequest) {}
 //!
 //! # Ok(())
 //! # }

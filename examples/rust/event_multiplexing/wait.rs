@@ -51,8 +51,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Waiting on the following services: {:?}", args.services);
 
     // the callback that is called when a listener has received an event
-    let trigger_call = |attachment| {
-        if let Some((service_name, listener)) = listeners.get(&attachment) {
+    let trigger_call = |attachment_id| {
+        if let Some((service_name, listener)) = listeners.get(&attachment_id) {
             print!("Received trigger from \"{}\" ::", service_name);
 
             while let Ok(Some(event_id)) = listener.try_wait_one() {

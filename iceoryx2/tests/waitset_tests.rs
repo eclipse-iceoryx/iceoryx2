@@ -374,10 +374,10 @@ mod waitset {
         barrier.wait();
         let wait_event = sut.blocking_wait(|_| {}).unwrap();
 
-        t1.join().unwrap();
-
         assert_that!(wait_event, eq WaitEvent::Notification);
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
+
+        t1.join().unwrap();
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
