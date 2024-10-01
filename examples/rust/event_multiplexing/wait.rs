@@ -32,14 +32,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(event.listener_builder().create()?)
         };
 
+    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let mut listeners: HashMap<AttachmentId, (String, Listener<ipc::Service>)> = HashMap::new();
+    let mut guards = vec![];
 
     for service in &args.services {
         let listener = create_listener(service)?;
         listeners.insert(AttachmentId::new(&listener), (service.clone(), listener));
     }
-
-    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    for listener in listeners.values() {
+        guards.push(waitset.attach(&listener.1)?);
+    }
 
     println!("Waiting on the following services: {:?}", args.services);
 
@@ -47,10 +50,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .timed_wait(
             |attachment| {
                 if let Some((service_name, listener)) = listeners.get(&attachment) {
-                    print!("Received trigger from \"{}\"", service_name);
+                    print!("Received trigger from \"{}\" ::", service_name);
 
                     while let Ok(Some(event_id)) = listener.try_wait_one() {
-                        print!("{:?} ", event_id);
+                        print!(" {:?}", event_id);
                     }
 
                     println!("");
