@@ -12,7 +12,7 @@
 
 //! # Example
 //!
-//! ## Use [`AttachmentId::originates_from()`]
+//! ## Use [`AttachmentId::originates_from()`](crate::port::waitset::AttachmentId)
 //!
 //! ```no_run
 //! use iceoryx2::prelude::*;
@@ -175,7 +175,7 @@ impl AttachmentId {
         Self(unsafe { other.file_descriptor().native_handle() })
     }
 
-    /// Returns true if the attachment originated from [`other`]
+    /// Returns true if the attachment originated from `other`
     pub fn originates_from<T: SynchronousMultiplexing>(&self, other: &T) -> bool {
         self.0 == Self::new(other).0
     }
