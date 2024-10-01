@@ -193,6 +193,12 @@ where
 #[derive(Debug)]
 pub struct WaitSetBuilder {}
 
+impl Default for WaitSetBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WaitSetBuilder {
     /// Creates a new [`WaitSetBuilder`].
     pub fn new() -> Self {
