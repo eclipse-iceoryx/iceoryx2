@@ -244,7 +244,7 @@ impl FileDescriptorSet {
         timeout: Duration,
         event: FileEvent,
         mut fd_callback: F,
-    ) -> Result<(), FileDescriptorSetWaitError> {
+    ) -> Result<usize, FileDescriptorSetWaitError> {
         let mut fd_set: posix::fd_set = self.internals().fd_set;
 
         let read_fd: *mut posix::fd_set = match event {
@@ -271,8 +271,7 @@ impl FileDescriptorSet {
 
         let mut raw_timeout = timeout.as_timeval();
         let msg = "Failure while waiting for file descriptor events";
-
-        if unsafe {
+        let number_of_notifications = unsafe {
             posix::select(
                 self.internals().max_fd,
                 read_fd,
@@ -280,8 +279,9 @@ impl FileDescriptorSet {
                 exceptional_fd,
                 &mut raw_timeout,
             )
-        } == -1
-        {
+        };
+
+        if number_of_notifications == -1 {
             handle_errno!(FileDescriptorSetWaitError, from self,
                 fatal Errno::EBADF => ("This should never happen! {} since at least one of the attached file descriptors is invalid.", msg),
                 Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
@@ -300,6 +300,6 @@ impl FileDescriptorSet {
             }
         }
 
-        Ok(())
+        Ok(number_of_notifications as _)
     }
 }

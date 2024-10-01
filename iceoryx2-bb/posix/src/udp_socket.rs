@@ -302,7 +302,7 @@ impl UdpClient {
                 fail!(from self, with UdpReceiveError::UnknownError(-1),
                     "{} since an unknown failure occurred.", msg);
             }
-            Ok(()) => received_bytes,
+            Ok(_) => received_bytes,
         }
     }
 
@@ -501,7 +501,7 @@ impl UdpServer {
                 fail!(from self, with UdpReceiveError::UnknownError(-1),
                     "{} since an unknown failure occurred.", msg);
             }
-            Ok(()) => received_bytes,
+            Ok(_) => received_bytes,
         }
     }
 

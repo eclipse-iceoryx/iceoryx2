@@ -59,7 +59,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    while waitset.timed_wait(trigger_call, CYCLE_TIME).is_ok() {}
+    while waitset.timed_wait(trigger_call, CYCLE_TIME) != Ok(WaitEvent::TerminationRequest) {}
+
+    println!("Exit");
 
     Ok(())
 }

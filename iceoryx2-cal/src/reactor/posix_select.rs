@@ -41,10 +41,10 @@ impl Reactor {
         &self,
         fn_call: F,
         timeout: std::time::Duration,
-    ) -> Result<(), super::ReactorWaitError> {
+    ) -> Result<usize, super::ReactorWaitError> {
         let msg = "Unable to wait on Reactor";
         match self.set.timed_wait(timeout, FileEvent::Read, fn_call) {
-            Ok(()) => Ok(()),
+            Ok(number_of_notifications) => Ok(number_of_notifications),
             Err(FileDescriptorSetWaitError::Interrupt) => {
                 fail!(from self, with ReactorWaitError::Interrupt,
                         "{} since an interrupt signal was received while waiting.",
@@ -105,7 +105,7 @@ impl crate::reactor::Reactor for Reactor {
     fn try_wait<F: FnMut(&FileDescriptor)>(
         &self,
         fn_call: F,
-    ) -> Result<(), super::ReactorWaitError> {
+    ) -> Result<usize, super::ReactorWaitError> {
         self.wait(fn_call, Duration::ZERO)
     }
 
@@ -113,14 +113,14 @@ impl crate::reactor::Reactor for Reactor {
         &self,
         fn_call: F,
         timeout: std::time::Duration,
-    ) -> Result<(), super::ReactorWaitError> {
+    ) -> Result<usize, super::ReactorWaitError> {
         self.wait(fn_call, timeout)
     }
 
     fn blocking_wait<F: FnMut(&FileDescriptor)>(
         &self,
         fn_call: F,
-    ) -> Result<(), super::ReactorWaitError> {
+    ) -> Result<usize, super::ReactorWaitError> {
         const INFINITE_TIMEOUT: Duration = Duration::from_secs(3600 * 24 * 365);
         self.wait(fn_call, INFINITE_TIMEOUT)
     }

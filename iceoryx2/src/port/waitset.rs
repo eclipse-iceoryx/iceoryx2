@@ -13,8 +13,22 @@
 use std::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_log::fail;
-use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
+use iceoryx2_bb_posix::{file_descriptor_set::SynchronousMultiplexing, signal::SignalHandler};
 use iceoryx2_cal::reactor::*;
+
+/// Defines the type of that triggered [`WaitSet::try_wait()`], [`WaitSet::timed_wait()`] or
+/// [`WaitSet::blocking_wait()`].
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum WaitEvent {
+    /// A termination signal `SIGTERM` was received.
+    TerminationRequest,
+    /// An interrupt signal `SIGINT` was received.
+    Interrupt,
+    /// No event was triggered.
+    Tick,
+    /// One or more event notifications were received.
+    Notification,
+}
 
 /// Defines the failures that can occur when attaching something with [`WaitSet::attach()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -41,8 +55,6 @@ impl std::error::Error for WaitSetAttachmentError {}
 ///  * [`WaitSet::blocking_wait()`]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetWaitError {
-    /// The process received an interrupt signal.
-    Interrupt,
     /// The process has not sufficient permissions to wait on the attachments.
     InsufficientPermissions,
     /// An internal error has occurred.
@@ -161,17 +173,21 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         }
     }
 
-    fn wait_result(
+    fn wait<F: FnMut() -> Result<usize, ReactorWaitError>>(
         &self,
         msg: &str,
-        result: Result<(), ReactorWaitError>,
-    ) -> Result<(), WaitSetWaitError> {
+        mut wait_call: F,
+    ) -> Result<WaitEvent, WaitSetWaitError> {
+        if SignalHandler::termination_requested() {
+            return Ok(WaitEvent::TerminationRequest);
+        }
+
+        let result = wait_call();
+
         match result {
-            Ok(()) => Ok(()),
-            Err(ReactorWaitError::Interrupt) => {
-                fail!(from self, with WaitSetWaitError::Interrupt,
-                    "{msg} since an interrupt signal was received.");
-            }
+            Ok(0) => Ok(WaitEvent::Tick),
+            Ok(_) => Ok(WaitEvent::Notification),
+            Err(ReactorWaitError::Interrupt) => Ok(WaitEvent::Interrupt),
             Err(ReactorWaitError::InsufficientPermissions) => {
                 fail!(from self, with WaitSetWaitError::InsufficientPermissions,
                     "{msg} due to insufficient permissions.");
@@ -187,12 +203,14 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// was triggered and the [`AttachmentId`] is provided as an input argument to acquire the
     /// source.
     /// If nothing was triggered the [`WaitSet`] returns immediately.
-    pub fn try_wait<F: FnMut(AttachmentId)>(&self, mut fn_call: F) -> Result<(), WaitSetWaitError> {
-        self.wait_result(
-            "Unable to try_wait",
+    pub fn try_wait<F: FnMut(AttachmentId)>(
+        &self,
+        mut fn_call: F,
+    ) -> Result<WaitEvent, WaitSetWaitError> {
+        self.wait("Unable to try_wait", || {
             self.reactor
-                .try_wait(|fd| fn_call(AttachmentId(unsafe { fd.native_handle() }))),
-        )
+                .try_wait(|fd| fn_call(AttachmentId(unsafe { fd.native_handle() })))
+        })
     }
 
     /// Waits with a timeout on the [`WaitSet`]. The provided callback is called for every
@@ -203,14 +221,13 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         &self,
         mut fn_call: F,
         timeout: Duration,
-    ) -> Result<(), WaitSetWaitError> {
-        self.wait_result(
-            "Unable to timed_wait",
+    ) -> Result<WaitEvent, WaitSetWaitError> {
+        self.wait("Unable to timed_wait", || {
             self.reactor.timed_wait(
                 |fd| fn_call(AttachmentId(unsafe { fd.native_handle() })),
                 timeout,
-            ),
-        )
+            )
+        })
     }
 
     /// Blocks on the [`WaitSet`] until at least one event was triggered. The provided callback is
@@ -221,12 +238,11 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     pub fn blocking_wait<F: FnMut(AttachmentId)>(
         &self,
         mut fn_call: F,
-    ) -> Result<(), WaitSetWaitError> {
-        self.wait_result(
-            "Unable to blocking_wait",
+    ) -> Result<WaitEvent, WaitSetWaitError> {
+        self.wait("Unable to blocking_wait", || {
             self.reactor
-                .blocking_wait(|fd| fn_call(AttachmentId(unsafe { fd.native_handle() }))),
-        )
+                .blocking_wait(|fd| fn_call(AttachmentId(unsafe { fd.native_handle() })))
+        })
     }
 
     /// Returns the capacity of the [`WaitSet`]

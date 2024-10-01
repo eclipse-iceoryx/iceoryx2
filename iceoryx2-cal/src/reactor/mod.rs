@@ -54,13 +54,16 @@ pub trait Reactor: Sized + Debug {
         value: &'attachment F,
     ) -> Result<Self::Guard<'reactor, 'attachment>, ReactorAttachError>;
 
-    fn try_wait<F: FnMut(&FileDescriptor)>(&self, fn_call: F) -> Result<(), ReactorWaitError>;
+    fn try_wait<F: FnMut(&FileDescriptor)>(&self, fn_call: F) -> Result<usize, ReactorWaitError>;
     fn timed_wait<F: FnMut(&FileDescriptor)>(
         &self,
         fn_call: F,
         timeout: Duration,
-    ) -> Result<(), ReactorWaitError>;
-    fn blocking_wait<F: FnMut(&FileDescriptor)>(&self, fn_call: F) -> Result<(), ReactorWaitError>;
+    ) -> Result<usize, ReactorWaitError>;
+    fn blocking_wait<F: FnMut(&FileDescriptor)>(
+        &self,
+        fn_call: F,
+    ) -> Result<usize, ReactorWaitError>;
 }
 
 pub trait ReactorBuilder<T: Reactor> {

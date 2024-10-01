@@ -144,12 +144,13 @@ fn file_descriptor_set_timed_wait_works() {
     sut_sender.blocking_send(send_data.as_slice()).unwrap();
 
     let mut result = vec![];
-    fd_set
+    let number_of_notifications = fd_set
         .timed_wait(TIMEOUT, FileEvent::Read, |fd| {
             result.push(unsafe { fd.native_handle() })
         })
         .unwrap();
 
+    assert_that!(number_of_notifications, eq 1);
     assert_that!(result, len 1);
     assert_that!(result[0], eq unsafe{sut_receiver.file_descriptor().native_handle()});
 }
@@ -175,4 +176,47 @@ fn file_descriptor_guard_has_access_to_underlying_fd() {
 fn file_descriptor_debug_works() {
     let sut = FileDescriptorSet::new();
     assert_that!(format!("{:?}", sut).starts_with("FileDescriptorSet"), eq true);
+}
+
+#[test]
+fn file_descriptor_triggering_many_returns_correct_number_of_notifications() {
+    let fd_set = FileDescriptorSet::new();
+    let mut sockets = vec![];
+    let mut senders = vec![];
+    let number_of_fds: usize = core::cmp::min(128, posix::FD_SETSIZE);
+
+    for _ in 0..number_of_fds {
+        let socket_name = generate_socket_name();
+        sockets.push(
+            UnixDatagramReceiverBuilder::new(&socket_name)
+                .creation_mode(CreationMode::PurgeAndCreate)
+                .create()
+                .unwrap(),
+        );
+
+        senders.push(
+            UnixDatagramSenderBuilder::new(&socket_name)
+                .create()
+                .unwrap(),
+        );
+    }
+
+    let mut guards = vec![];
+    for fd in &sockets {
+        guards.push(fd_set.add(fd));
+    }
+
+    for sender in senders {
+        assert_that!(sender.try_send(b"abc"), eq Ok(true));
+    }
+
+    let mut counter = 0;
+    let number_of_notifications = fd_set
+        .timed_wait(TIMEOUT, FileEvent::Read, |_| {
+            counter += 1;
+        })
+        .unwrap();
+
+    assert_that!(counter, eq number_of_fds);
+    assert_that!(number_of_notifications, eq number_of_fds);
 }
