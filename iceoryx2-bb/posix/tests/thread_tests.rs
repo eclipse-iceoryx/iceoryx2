@@ -196,7 +196,7 @@ fn thread_destructor_does_block_on_busy_thread() {
     barrier.wait();
     let start = Instant::now();
     drop(thread);
-    assert_that!(start.elapsed(), gt(SLEEP_DURATION));
+    assert_that!(start.elapsed(), time_at_least SLEEP_DURATION);
 }
 
 #[test]
