@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, release* ]
+
+jobs:
+  miri:
+    name: "Miri"
+    runs-on: ubuntu-latest
+    # todo: disable it after all files could pass the miri check
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Miri
+        run: |
+          rustup toolchain install nightly --component miri
+          rustup override set nightly
+          cargo miri setup
+      - name: Test with Miri
+        run: cargo miri test
+  
