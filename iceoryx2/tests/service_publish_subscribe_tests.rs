@@ -49,6 +49,44 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn open_or_create_with_attributes_succeeds_when_service_does_exist<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<i64>()
+            .open_or_create_with_attributes(&AttributeVerifier::default());
+        assert_that!(sut, is_ok);
+
+        let sut2 = node
+            .service_builder(&service_name)
+            .publish_subscribe::<i64>()
+            .open_or_create_with_attributes(&AttributeVerifier::default());
+
+        assert_that!(sut2, is_ok);
+    }
+
+    #[test]
+    fn open_or_create_with_attributes_failed_when_service_payload_types_differ<Sut: Service>() {
+        let service_name = generate_name();
+        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let attr = AttributeVerifier::default();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .open_or_create_with_attributes(&attr);
+        assert_that!(sut, is_ok);
+
+        let sut2
+         = node
+            .service_builder(&service_name)
+            .publish_subscribe::<i64>()
+            .open_or_create_with_attributes(&attr);
+
+        assert_that!(sut2, is_err);
+    }
+
+    #[test]
     fn creating_non_existing_service_works<Sut: Service>() {
         let service_name = generate_name();
         let node = NodeBuilder::new().create::<Sut>().unwrap();
