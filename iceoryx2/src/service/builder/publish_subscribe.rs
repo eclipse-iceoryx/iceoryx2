@@ -762,9 +762,11 @@ impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
-    /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
-    /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
-    /// does not exist the required attributes will be defined in the [`Service`].
+    /// created. It defines a set of attributes.
+    ///
+    /// If the [`Service`] already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
