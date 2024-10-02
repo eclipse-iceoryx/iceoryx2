@@ -72,6 +72,12 @@ pub struct PeriodicTimerBuilder {
     clock_type: ClockType,
 }
 
+impl Default for PeriodicTimerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PeriodicTimerBuilder {
     /// Creates a new builder.
     pub fn new() -> Self {
