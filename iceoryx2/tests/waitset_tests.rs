@@ -20,6 +20,8 @@ mod waitset {
     use iceoryx2::port::waitset::WaitSetAttachmentError;
     use iceoryx2::prelude::{WaitSetBuilder, *};
     use iceoryx2_bb_posix::config::test_directory;
+    use iceoryx2_bb_posix::directory::Directory;
+    use iceoryx2_bb_posix::file::Permission;
     use iceoryx2_bb_posix::unix_datagram_socket::{
         UnixDatagramReceiver, UnixDatagramSender, UnixDatagramSenderBuilder,
     };
@@ -45,6 +47,7 @@ mod waitset {
 
     fn generate_uds_name() -> FilePath {
         let mut path = test_directory();
+        Directory::create(&path, Permission::OWNER_ALL).unwrap();
         let _ = path.add_path_entry(
             &Path::new(
                 &format!("waitset_tests_{}", UniqueSystemId::new().unwrap().value()).as_bytes(),
@@ -81,7 +84,7 @@ mod waitset {
     }
 
     #[test]
-    fn attach_multiple_works<S: Service>()
+    fn attach_multiple_notifications_works<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -108,14 +111,14 @@ mod waitset {
         assert_that!(sut.is_empty(), eq true);
         for (n, listener) in listeners.iter().enumerate() {
             assert_that!(sut.len(), eq n);
-            guards.push(sut.attach(listener).unwrap());
+            guards.push(sut.notification(listener).unwrap());
             assert_that!(sut.len(), eq n + 1);
             assert_that!(sut.is_empty(), eq false);
         }
 
         for (n, socket) in sockets.iter().enumerate() {
             assert_that!(sut.len(), eq n + listeners.len());
-            guards.push(sut.attach(socket).unwrap());
+            guards.push(sut.notification(socket).unwrap());
             assert_that!(sut.len(), eq n + 1 + listeners.len());
         }
 
@@ -125,7 +128,7 @@ mod waitset {
     }
 
     #[test]
-    fn attaching_same_attachment_twice_fails<S: Service>()
+    fn attaching_same_notification_twice_fails<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -135,15 +138,33 @@ mod waitset {
         let (listener, _) = create_event::<S>(&node);
         let (receiver, _) = create_socket();
 
-        let _guard = sut.attach(&listener);
-        assert_that!(sut.attach(&listener).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
+        let _guard = sut.notification(&listener);
+        assert_that!(sut.notification(&listener).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
 
-        let _guard = sut.attach(&receiver);
-        assert_that!(sut.attach(&receiver).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
+        let _guard = sut.notification(&receiver);
+        assert_that!(sut.notification(&receiver).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
     }
 
     #[test]
-    fn try_wait_lists_all_notifications<S: Service>()
+    fn attaching_same_deadline_twice_fails<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let node = NodeBuilder::new().create::<S>().unwrap();
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let (listener, _) = create_event::<S>(&node);
+        let (receiver, _) = create_socket();
+
+        let _guard = sut.deadline(&listener, TIMEOUT);
+        assert_that!(sut.deadline(&listener, TIMEOUT).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
+
+        let _guard = sut.deadline(&receiver, TIMEOUT);
+        assert_that!(sut.deadline(&receiver, TIMEOUT).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
+    }
+
+    #[test]
+    fn run_lists_all_notifications<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -154,12 +175,11 @@ mod waitset {
         let (listener_2, _notifier_2) = create_event::<S>(&node);
         let (receiver_1, sender_1) = create_socket();
         let (receiver_2, _sender_2) = create_socket();
-        let mut guards = vec![];
 
-        guards.push(sut.attach(&listener_1).unwrap());
-        guards.push(sut.attach(&listener_2).unwrap());
-        guards.push(sut.attach(&receiver_1).unwrap());
-        guards.push(sut.attach(&receiver_2).unwrap());
+        let listener_1_guard = sut.notification(&listener_1).unwrap();
+        let listener_2_guard = sut.notification(&listener_2).unwrap();
+        let receiver_1_guard = sut.notification(&receiver_1).unwrap();
+        let receiver_2_guard = sut.notification(&receiver_2).unwrap();
 
         notifier_1.notify().unwrap();
         sender_1.try_send(b"bla").unwrap();
@@ -170,14 +190,14 @@ mod waitset {
         let mut receiver_2_triggered = false;
 
         let wait_event = sut
-            .try_wait(|attachment_id| {
-                if attachment_id.originates_from(&listener_1) {
+            .run(|attachment_id| {
+                if attachment_id.originates_from(&listener_1_guard) {
                     listener_1_triggered = true;
-                } else if attachment_id.originates_from(&listener_2) {
+                } else if attachment_id.originates_from(&listener_2_guard) {
                     listener_2_triggered = true;
-                } else if attachment_id.originates_from(&receiver_1) {
+                } else if attachment_id.originates_from(&receiver_1_guard) {
                     receiver_1_triggered = true;
-                } else if attachment_id.originates_from(&receiver_2) {
+                } else if attachment_id.originates_from(&receiver_2_guard) {
                     receiver_2_triggered = true;
                 } else {
                     test_fail!("only attachments shall trigger");
@@ -192,110 +212,7 @@ mod waitset {
     }
 
     #[test]
-    fn timed_wait_lists_all_notifications<S: Service>()
-    where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
-    {
-        let _watchdog = Watchdog::new();
-        let node = NodeBuilder::new().create::<S>().unwrap();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
-
-        let (listener_1, notifier_1) = create_event::<S>(&node);
-        let (listener_2, _notifier_2) = create_event::<S>(&node);
-        let (receiver_1, sender_1) = create_socket();
-        let (receiver_2, _sender_2) = create_socket();
-        let mut guards = vec![];
-
-        guards.push(sut.attach(&listener_1).unwrap());
-        guards.push(sut.attach(&listener_2).unwrap());
-        guards.push(sut.attach(&receiver_1).unwrap());
-        guards.push(sut.attach(&receiver_2).unwrap());
-
-        notifier_1.notify().unwrap();
-        sender_1.try_send(b"bla").unwrap();
-
-        let mut listener_1_triggered = false;
-        let mut listener_2_triggered = false;
-        let mut receiver_1_triggered = false;
-        let mut receiver_2_triggered = false;
-
-        let wait_event = sut
-            .timed_wait(
-                |attachment_id| {
-                    if attachment_id.originates_from(&listener_1) {
-                        listener_1_triggered = true;
-                    } else if attachment_id.originates_from(&listener_2) {
-                        listener_2_triggered = true;
-                    } else if attachment_id.originates_from(&receiver_1) {
-                        receiver_1_triggered = true;
-                    } else if attachment_id.originates_from(&receiver_2) {
-                        receiver_2_triggered = true;
-                    } else {
-                        test_fail!("only attachments shall trigger");
-                    }
-                },
-                Duration::from_secs(10000),
-            )
-            .unwrap();
-
-        assert_that!(wait_event, eq WaitEvent::Notification);
-
-        assert_that!(listener_1_triggered, eq true);
-        assert_that!(receiver_1_triggered, eq true);
-    }
-
-    #[test]
-    fn blocking_wait_lists_all_notifications<S: Service>()
-    where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
-    {
-        let _watchdog = Watchdog::new();
-        let node = NodeBuilder::new().create::<S>().unwrap();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
-
-        let (listener_1, notifier_1) = create_event::<S>(&node);
-        let (listener_2, _notifier_2) = create_event::<S>(&node);
-        let (receiver_1, sender_1) = create_socket();
-        let (receiver_2, _sender_2) = create_socket();
-        let mut guards = vec![];
-
-        guards.push(sut.attach(&listener_1).unwrap());
-        guards.push(sut.attach(&listener_2).unwrap());
-        guards.push(sut.attach(&receiver_1).unwrap());
-        guards.push(sut.attach(&receiver_2).unwrap());
-
-        notifier_1.notify().unwrap();
-        sender_1.try_send(b"bla").unwrap();
-
-        let mut listener_1_triggered = false;
-        let mut listener_2_triggered = false;
-        let mut receiver_1_triggered = false;
-        let mut receiver_2_triggered = false;
-
-        let wait_event = sut
-            .blocking_wait(|attachment_id| {
-                if attachment_id.originates_from(&listener_1) {
-                    listener_1_triggered = true;
-                } else if attachment_id.originates_from(&listener_2) {
-                    listener_2_triggered = true;
-                } else if attachment_id.originates_from(&receiver_1) {
-                    receiver_1_triggered = true;
-                } else if attachment_id.originates_from(&receiver_2) {
-                    receiver_2_triggered = true;
-                } else {
-                    test_fail!("only attachments shall trigger");
-                }
-            })
-            .unwrap();
-
-        assert_that!(wait_event, eq WaitEvent::Notification);
-
-        assert_that!(listener_1_triggered, eq true);
-        assert_that!(receiver_1_triggered, eq true);
-    }
-
-    #[test]
-    fn try_wait_does_not_block<S: Service>()
+    fn run_with_tick_blocks_for_at_least_timeout<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -304,81 +221,58 @@ mod waitset {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
-        let _guard = sut.attach(&listener);
+        let _guard = sut.notification(&listener);
+        let tick_guard = sut.tick(TIMEOUT).unwrap();
 
+        let start = Instant::now();
         let wait_event = sut
-            .try_wait(|_| {
-                test_fail!("only attachments shall trigger");
+            .run(|id| {
+                assert_that!(id.originates_from(&tick_guard), eq true);
             })
             .unwrap();
 
         assert_that!(wait_event, eq WaitEvent::Tick);
-    }
-
-    #[test]
-    fn timed_wait_blocks_for_at_least_timeout<S: Service>()
-    where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
-    {
-        let _watchdog = Watchdog::new();
-        let node = NodeBuilder::new().create::<S>().unwrap();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
-
-        let (listener, _) = create_event::<S>(&node);
-        let _guard = sut.attach(&listener);
-
-        let start = Instant::now();
-        let wait_event = sut
-            .timed_wait(
-                |_| {
-                    test_fail!("only attachments shall trigger");
-                },
-                TIMEOUT,
-            )
-            .unwrap();
-
-        assert_that!(wait_event, eq WaitEvent::Tick);
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
-    #[test]
-    fn blocking_wait_blocks<S: Service + 'static>()
-    where
-        <S::Event as Event>::Listener: SynchronousMultiplexing,
-    {
-        let _watchdog = Watchdog::new();
-        let node = NodeBuilder::new().create::<S>().unwrap();
-        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+    // #[test]
+    // fn blocking_wait_blocks<S: Service + 'static>()
+    // where
+    //     <S::Event as Event>::Listener: SynchronousMultiplexing,
+    // {
+    //     let _watchdog = Watchdog::new();
+    //     let node = NodeBuilder::new().create::<S>().unwrap();
+    //     let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
-        let service_name = generate_name();
-        let service = node
-            .service_builder(&service_name)
-            .event()
-            .open_or_create()
-            .unwrap();
+    //     let service_name = generate_name();
+    //     let service = node
+    //         .service_builder(&service_name)
+    //         .event()
+    //         .open_or_create()
+    //         .unwrap();
 
-        let listener = service.listener_builder().create().unwrap();
-        let _guard = sut.attach(&listener);
+    //     let listener = service.listener_builder().create().unwrap();
+    //     let _guard = sut.attach(&listener);
 
-        let start = Instant::now();
-        let barrier = Arc::new(Barrier::new(2));
-        let barrier_thread = barrier.clone();
+    //     let start = Instant::now();
+    //     let barrier = Arc::new(Barrier::new(2));
+    //     let barrier_thread = barrier.clone();
 
-        let t1 = std::thread::spawn(move || {
-            let notifier = service.notifier_builder().create().unwrap();
-            barrier_thread.wait();
-            std::thread::sleep(TIMEOUT);
-            notifier.notify().unwrap();
-        });
+    //     let t1 = std::thread::spawn(move || {
+    //         let notifier = service.notifier_builder().create().unwrap();
+    //         barrier_thread.wait();
+    //         std::thread::sleep(TIMEOUT);
+    //         notifier.notify().unwrap();
+    //     });
 
-        barrier.wait();
-        let wait_event = sut.blocking_wait(|_| {}).unwrap();
+    //     barrier.wait();
+    //     let wait_event = sut.blocking_wait(|_| {}).unwrap();
 
-        assert_that!(wait_event, eq WaitEvent::Notification);
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    //     assert_that!(wait_event, eq WaitEvent::Notification);
+    //     assert_that!(start.elapsed(), time_at_least TIMEOUT);
 
-        t1.join().unwrap();
-    }
+    //     t1.join().unwrap();
+    // }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}

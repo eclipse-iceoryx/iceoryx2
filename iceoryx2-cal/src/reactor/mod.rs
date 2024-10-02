@@ -37,7 +37,9 @@ pub enum ReactorWaitError {
     UnknownError,
 }
 
-pub trait ReactorGuard<'reactor, 'attachment> {}
+pub trait ReactorGuard<'reactor, 'attachment> {
+    fn file_descriptor(&self) -> &FileDescriptor;
+}
 
 pub trait Reactor: Sized + Debug {
     type Guard<'reactor, 'attachment>: ReactorGuard<'reactor, 'attachment>

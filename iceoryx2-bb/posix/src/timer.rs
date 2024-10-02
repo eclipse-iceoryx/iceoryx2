@@ -33,7 +33,7 @@
 //!     .missed_timeouts(|timer_index| missed_timeouts.push(timer_index));
 //! ```
 
-use std::{cell::RefCell, sync::atomic::Ordering, time::Duration};
+use std::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
@@ -44,20 +44,25 @@ use crate::{
 };
 
 /// Represents an index to identify an added timer with [`Timer::cyclic()`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TimerIndex(u64);
+
+pub trait TimerGuardable: Debug {}
 
 /// Represents the RAII guard of [`Timer`] and is returned by [`Timer::cyclic()`].
 /// As soon as it goes out of scope it removes the attached cyclic timeout from [`Timer`].
+#[derive(Debug)]
 pub struct TimerGuard<'timer> {
     timer: &'timer Timer,
-    index: u64,
+    index: TimerIndex,
 }
+
+impl<'timer> TimerGuardable for TimerGuard<'timer> {}
 
 impl<'timer> TimerGuard<'timer> {
     /// Returns the underlying [`TimerIndex`] of the attachment.
     pub fn index(&self) -> TimerIndex {
-        TimerIndex(self.index)
+        self.index
     }
 
     /// Resets the attached timer and wait again the full time.
@@ -68,7 +73,7 @@ impl<'timer> TimerGuard<'timer> {
 
 impl<'timer> Drop for TimerGuard<'timer> {
     fn drop(&mut self) {
-        self.timer.remove(self.index);
+        self.timer.remove(self.index.0);
     }
 }
 
@@ -170,7 +175,7 @@ impl Timer {
 
         Ok(TimerGuard {
             timer: self,
-            index: current_idx,
+            index: TimerIndex(current_idx),
         })
     }
 
@@ -188,9 +193,10 @@ impl Timer {
         }
     }
 
-    fn reset(&self, index: u64) -> Result<(), TimeError> {
+    /// Resets the attached timer and wait again the full time.
+    pub fn reset(&self, index: TimerIndex) -> Result<(), TimeError> {
         for attachment in &mut *self.attachments.borrow_mut() {
-            if attachment.index == index {
+            if attachment.index == index.0 {
                 attachment.reset(self.clock_type)?;
                 break;
             }

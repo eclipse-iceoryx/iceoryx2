@@ -23,7 +23,11 @@ use iceoryx2_bb_posix::{
 
 use crate::reactor::{ReactorAttachError, ReactorWaitError};
 
-impl crate::reactor::ReactorGuard<'_, '_> for FileDescriptorSetGuard<'_, '_> {}
+impl crate::reactor::ReactorGuard<'_, '_> for FileDescriptorSetGuard<'_, '_> {
+    fn file_descriptor(&self) -> &FileDescriptor {
+        self.file_descriptor()
+    }
+}
 
 #[derive(Debug)]
 pub struct Reactor {

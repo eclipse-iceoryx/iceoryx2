@@ -11,11 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use clap::Parser;
-use core::time::Duration;
 use iceoryx2::{port::listener::Listener, prelude::*};
 use std::collections::HashMap;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
@@ -45,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // attach all listeners to the waitset and store the guard
     for listener in listeners.values() {
-        guards.push(waitset.attach(&listener.1)?);
+        guards.push(waitset.notification(&listener.1)?);
     }
 
     println!("Waiting on the following services: {:?}", args.services);
@@ -65,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // wait until at least one listener has received an event or the user has pressed CTRL+c
     // or send SIGTERM/SIGINT
-    while waitset.timed_wait(trigger_call, CYCLE_TIME) != Ok(WaitEvent::TerminationRequest) {}
+    while waitset.run(trigger_call) != Ok(WaitEvent::TerminationRequest) {}
 
     println!("Exit");
 
