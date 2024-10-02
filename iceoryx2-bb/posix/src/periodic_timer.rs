@@ -42,12 +42,15 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PeriodicTimerIndex(u64);
 
+/// Represents the RAII guard of [`PeriodicTimer`] and is returned by [`PeriodicTimer::add()`].
+/// As soon as it goes out of scope it removes the attached cyclic timeout from [`PeriodicTimer`].
 pub struct PeriodicTimerGuard<'periodic_timer> {
     periodic_timer: &'periodic_timer PeriodicTimer,
     index: u64,
 }
 
 impl<'periodic_timer> PeriodicTimerGuard<'periodic_timer> {
+    /// Returns the underlying [`PeriodicTimerIndex`] of the attachment.
     pub fn index(&self) -> PeriodicTimerIndex {
         PeriodicTimerIndex(self.index)
     }
@@ -88,13 +91,13 @@ impl PeriodicTimerBuilder {
     pub fn create(self) -> Result<PeriodicTimer, TimeError> {
         let start_time = fail!(from "PeriodicTimer::new()", when Time::now_with_clock(self.clock_type),
                                 "Failed to create PeriodicTimer since the current time could not be acquired.");
+        let start_time = start_time.as_duration().as_nanos();
 
         Ok(PeriodicTimer {
             timeouts: RefCell::new(vec![]),
             id_count: IoxAtomicU64::new(0),
             clock_type: self.clock_type,
-            last_iteration: RefCell::new(0),
-            start_time,
+            last_iteration: RefCell::new(start_time),
         })
     }
 }
@@ -135,15 +138,17 @@ impl Attachment {
 pub struct PeriodicTimer {
     timeouts: RefCell<Vec<Attachment>>,
     id_count: IoxAtomicU64,
-    clock_type: ClockType,
-    start_time: Time,
     last_iteration: RefCell<u128>,
+
+    clock_type: ClockType,
 }
 
 impl PeriodicTimer {
-    /// Adds a new timeout to the [`PeriodicTimer`] and returns an [`PeriodicTimerGuard`] to
+    /// Adds a cyclic timeout to the [`PeriodicTimer`] and returns an [`PeriodicTimerGuard`] to
     /// identify the attachment uniquely.
-    pub fn add(&self, timeout: Duration) -> Result<PeriodicTimerGuard, TimeError> {
+    /// [`PeriodicTimer::next_iteration()`] will schedule the timings in a way that the attached
+    /// timeout is considered cyclicly.
+    pub fn cyclic(&self, timeout: Duration) -> Result<PeriodicTimerGuard, TimeError> {
         let current_idx = self.id_count.load(Ordering::Relaxed);
         self.timeouts.borrow_mut().push(Attachment::new(
             current_idx,
@@ -163,9 +168,12 @@ impl PeriodicTimer {
         for (n, attachment) in self.timeouts.borrow().iter().enumerate() {
             if attachment.index == index {
                 index_to_remove = Some(n);
-                self.timeouts.borrow_mut().remove(n);
                 break;
             }
+        }
+
+        if let Some(n) = index_to_remove {
+            self.timeouts.borrow_mut().remove(n);
         }
     }
 
@@ -202,15 +210,15 @@ impl PeriodicTimer {
         &self,
         mut call: F,
     ) -> Result<(), TimeError> {
-        let elapsed = fail!(from self, when self.start_time.elapsed(),
-                        "Unable to return next duration since the elapsed time could not be acquired.");
+        let now = fail!(from self, when Time::now_with_clock(self.clock_type),
+                        "Unable to return next duration since the current time could not be acquired.");
 
+        let now = now.as_duration().as_nanos();
         let last = *self.last_iteration.borrow();
-        let elapsed = elapsed.as_nanos();
 
         for attachment in &*self.timeouts.borrow() {
-            if ((last - attachment.start_time) / attachment.period)
-                < ((elapsed - attachment.start_time) / attachment.period)
+            if ((last.max(attachment.start_time) - attachment.start_time) / attachment.period)
+                < ((now - attachment.start_time) / attachment.period)
             {
                 call(PeriodicTimerIndex(attachment.index));
             }
