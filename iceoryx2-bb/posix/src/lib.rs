@@ -58,6 +58,7 @@ pub mod message_queue;
 pub mod metadata;
 pub mod mutex;
 pub mod ownership;
+pub mod periodic_timer;
 pub mod permission;
 pub mod process;
 pub mod process_state;
