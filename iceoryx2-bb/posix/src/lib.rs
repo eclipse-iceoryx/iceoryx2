@@ -71,6 +71,7 @@ pub mod system_configuration;
 #[doc(hidden)]
 pub mod testing;
 pub mod thread;
+pub mod timer;
 pub mod unique_system_id;
 pub mod unix_datagram_socket;
 pub mod user;
