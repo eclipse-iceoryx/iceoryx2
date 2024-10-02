@@ -28,9 +28,10 @@
 //!
 //! ```
 
-use std::time::Duration;
+use std::{cell::RefCell, sync::atomic::Ordering, time::Duration};
 
 use iceoryx2_bb_log::fail;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::{
     clock::ClockType,
@@ -39,7 +40,29 @@ use crate::{
 
 /// Represents an index to identify an added timer with [`PeriodicTimer::add()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PeriodicTimerIndex(usize);
+pub struct PeriodicTimerIndex(u64);
+
+pub struct PeriodicTimerGuard<'periodic_timer> {
+    periodic_timer: &'periodic_timer PeriodicTimer,
+    index: u64,
+}
+
+impl<'periodic_timer> PeriodicTimerGuard<'periodic_timer> {
+    pub fn index(&self) -> PeriodicTimerIndex {
+        PeriodicTimerIndex(self.index)
+    }
+
+    /// Resets the attached timer and wait again the full time.
+    pub fn reset(&self) -> Result<(), TimeError> {
+        self.periodic_timer.reset(self.index)
+    }
+}
+
+impl<'periodic_timer> Drop for PeriodicTimerGuard<'periodic_timer> {
+    fn drop(&mut self) {
+        self.periodic_timer.remove(self.index);
+    }
+}
 
 /// Builder to create a [`PeriodicTimer`].
 pub struct PeriodicTimerBuilder {
@@ -67,10 +90,10 @@ impl PeriodicTimerBuilder {
                                 "Failed to create PeriodicTimer since the current time could not be acquired.");
 
         Ok(PeriodicTimer {
-            timeouts: vec![],
-            id_count: PeriodicTimerIndex(0),
+            timeouts: RefCell::new(vec![]),
+            id_count: IoxAtomicU64::new(0),
             clock_type: self.clock_type,
-            last_iteration: 0,
+            last_iteration: RefCell::new(0),
             start_time,
         })
     }
@@ -78,17 +101,13 @@ impl PeriodicTimerBuilder {
 
 #[derive(Debug)]
 struct Attachment {
-    index: PeriodicTimerIndex,
+    index: u64,
     period: u128,
     start_time: u128,
 }
 
 impl Attachment {
-    fn new(
-        index: PeriodicTimerIndex,
-        period: u128,
-        clock_type: ClockType,
-    ) -> Result<Self, TimeError> {
+    fn new(index: u64, period: u128, clock_type: ClockType) -> Result<Self, TimeError> {
         let start_time = fail!(from "Attachment::new()", when Time::now_with_clock(clock_type),
                                 "Failed to create PeriodicTimer attachment since the current time could not be acquired.");
         let start_time = start_time.as_duration().as_nanos();
@@ -114,41 +133,44 @@ impl Attachment {
 /// [`PeriodicTimer::missed_timers()`].
 #[derive(Debug)]
 pub struct PeriodicTimer {
-    timeouts: Vec<Attachment>,
-    id_count: PeriodicTimerIndex,
+    timeouts: RefCell<Vec<Attachment>>,
+    id_count: IoxAtomicU64,
     clock_type: ClockType,
     start_time: Time,
-    last_iteration: u128,
+    last_iteration: RefCell<u128>,
 }
 
 impl PeriodicTimer {
-    /// Adds a new timeout to the [`PeriodicTimer`] and returns an [`PeriodicTimerIndex`] to
+    /// Adds a new timeout to the [`PeriodicTimer`] and returns an [`PeriodicTimerGuard`] to
     /// identify the attachment uniquely.
-    pub fn add(&mut self, timeout: Duration) -> Result<PeriodicTimerIndex, TimeError> {
-        let current_idx = self.id_count;
-        self.timeouts.push(Attachment::new(
+    pub fn add(&self, timeout: Duration) -> Result<PeriodicTimerGuard, TimeError> {
+        let current_idx = self.id_count.load(Ordering::Relaxed);
+        self.timeouts.borrow_mut().push(Attachment::new(
             current_idx,
             timeout.as_nanos(),
             self.clock_type,
         )?);
-        self.id_count.0 += 1;
+        self.id_count.fetch_add(1, Ordering::Relaxed);
 
-        Ok(current_idx)
+        Ok(PeriodicTimerGuard {
+            periodic_timer: self,
+            index: current_idx,
+        })
     }
 
-    /// Removes the given [`PeriodicTimerIndex`] from the [`PeriodicTimer`].
-    pub fn remove(&mut self, index: PeriodicTimerIndex) {
-        for (n, attachment) in self.timeouts.iter().enumerate() {
+    fn remove(&self, index: u64) {
+        let mut index_to_remove = None;
+        for (n, attachment) in self.timeouts.borrow().iter().enumerate() {
             if attachment.index == index {
-                self.timeouts.remove(n);
+                index_to_remove = Some(n);
+                self.timeouts.borrow_mut().remove(n);
                 break;
             }
         }
     }
 
-    /// Resets the attached timer and wait again the full time.
-    pub fn reset(&mut self, index: PeriodicTimerIndex) -> Result<(), TimeError> {
-        for attachment in &mut self.timeouts {
+    fn reset(&self, index: u64) -> Result<(), TimeError> {
+        for attachment in &mut *self.timeouts.borrow_mut() {
             if attachment.index == index {
                 attachment.reset(self.clock_type)?;
                 break;
@@ -159,14 +181,14 @@ impl PeriodicTimer {
     }
 
     /// Returns the waiting duration until the next added timeout is reached.
-    pub fn next_iteration(&mut self) -> Result<Duration, TimeError> {
+    pub fn next_iteration(&self) -> Result<Duration, TimeError> {
         let now = fail!(from self, when Time::now_with_clock(self.clock_type),
                         "Unable to return next duration since the current time could not be acquired.");
         let now = now.as_duration().as_nanos();
-        self.last_iteration = now;
+        *self.last_iteration.borrow_mut() = now;
 
         let mut min_time = u128::MAX;
-        for attachment in &self.timeouts {
+        for attachment in &*self.timeouts.borrow() {
             min_time =
                 min_time.min(attachment.period - (now - attachment.start_time) % attachment.period);
         }
@@ -183,14 +205,14 @@ impl PeriodicTimer {
         let elapsed = fail!(from self, when self.start_time.elapsed(),
                         "Unable to return next duration since the elapsed time could not be acquired.");
 
-        let last = self.last_iteration;
+        let last = *self.last_iteration.borrow();
         let elapsed = elapsed.as_nanos();
 
-        for attachment in &self.timeouts {
+        for attachment in &*self.timeouts.borrow() {
             if ((last - attachment.start_time) / attachment.period)
                 < ((elapsed - attachment.start_time) / attachment.period)
             {
-                call(attachment.index);
+                call(PeriodicTimerIndex(attachment.index));
             }
         }
 
