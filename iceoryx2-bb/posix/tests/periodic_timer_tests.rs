@@ -23,8 +23,8 @@ mod periodic_timer {
         let _guard_2 = sut.cyclic(Duration::from_secs(10)).unwrap();
         let _guard_2 = sut.cyclic(Duration::from_secs(100)).unwrap();
 
-        assert_that!(sut.next_iteration().unwrap(), le Duration::from_secs(5));
-        assert_that!(sut.next_iteration().unwrap(), ge Duration::from_secs(1));
+        assert_that!(sut.duration_until_next_timeout().unwrap(), le Duration::from_secs(5));
+        assert_that!(sut.duration_until_next_timeout().unwrap(), ge Duration::from_secs(1));
     }
 
     #[test]
@@ -35,8 +35,8 @@ mod periodic_timer {
         let _guard_2 = sut.cyclic(Duration::from_secs(10)).unwrap();
         let _guard_3 = sut.cyclic(Duration::from_secs(5)).unwrap();
 
-        assert_that!(sut.next_iteration().unwrap(), le Duration::from_secs(5));
-        assert_that!(sut.next_iteration().unwrap(), ge Duration::from_secs(1));
+        assert_that!(sut.duration_until_next_timeout().unwrap(), le Duration::from_secs(5));
+        assert_that!(sut.duration_until_next_timeout().unwrap(), ge Duration::from_secs(1));
     }
 
     #[test]
@@ -49,12 +49,12 @@ mod periodic_timer {
 
         drop(_guard_3);
 
-        assert_that!(sut.next_iteration().unwrap(), ge Duration::from_secs(10));
-        assert_that!(sut.next_iteration().unwrap(), le Duration::from_secs(100));
+        assert_that!(sut.duration_until_next_timeout().unwrap(), ge Duration::from_secs(10));
+        assert_that!(sut.duration_until_next_timeout().unwrap(), le Duration::from_secs(100));
     }
 
     #[test]
-    fn no_missed_timers_works() {
+    fn no_missed_timeout_works() {
         let sut = PeriodicTimerBuilder::new().create().unwrap();
 
         let _guard_1 = sut.cyclic(Duration::from_secs(10)).unwrap();
@@ -62,13 +62,13 @@ mod periodic_timer {
         let _guard_3 = sut.cyclic(Duration::from_secs(1000)).unwrap();
 
         let mut missed_timers = vec![];
-        sut.missed_timers(|idx| missed_timers.push(idx)).unwrap();
+        sut.missed_timeouts(|idx| missed_timers.push(idx)).unwrap();
 
         assert_that!(missed_timers, len 0);
     }
 
     #[test]
-    fn one_missed_timers_works() {
+    fn one_missed_timeouts_works() {
         let sut = PeriodicTimerBuilder::new().create().unwrap();
 
         let _guard_1 = sut.cyclic(Duration::from_nanos(1)).unwrap();
@@ -77,15 +77,16 @@ mod periodic_timer {
 
         std::thread::sleep(Duration::from_millis(10));
 
-        let mut missed_timers = vec![];
-        sut.missed_timers(|idx| missed_timers.push(idx)).unwrap();
+        let mut missed_timeouts = vec![];
+        sut.missed_timeouts(|idx| missed_timeouts.push(idx))
+            .unwrap();
 
-        assert_that!(missed_timers, len 1);
-        assert_that!(missed_timers, contains _guard_1.index());
+        assert_that!(missed_timeouts, len 1);
+        assert_that!(missed_timeouts, contains _guard_1.index());
     }
 
     #[test]
-    fn many_missed_timers_works() {
+    fn many_missed_timeouts_works() {
         let sut = PeriodicTimerBuilder::new().create().unwrap();
 
         let guard_1 = sut.cyclic(Duration::from_nanos(1)).unwrap();
@@ -94,12 +95,13 @@ mod periodic_timer {
 
         std::thread::sleep(Duration::from_millis(10));
 
-        let mut missed_timers = vec![];
-        sut.missed_timers(|idx| missed_timers.push(idx)).unwrap();
+        let mut missed_timeouts = vec![];
+        sut.missed_timeouts(|idx| missed_timeouts.push(idx))
+            .unwrap();
 
-        assert_that!(missed_timers, len 3);
-        assert_that!(missed_timers, contains guard_1.index());
-        assert_that!(missed_timers, contains guard_2.index());
-        assert_that!(missed_timers, contains guard_3.index());
+        assert_that!(missed_timeouts, len 3);
+        assert_that!(missed_timeouts, contains guard_1.index());
+        assert_that!(missed_timeouts, contains guard_2.index());
+        assert_that!(missed_timeouts, contains guard_3.index());
     }
 }
