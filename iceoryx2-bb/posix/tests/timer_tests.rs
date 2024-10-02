@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod periodic_timer {
-    use iceoryx2_bb_posix::periodic_timer::*;
+mod timer {
+    use iceoryx2_bb_posix::timer::*;
     use iceoryx2_bb_testing::assert_that;
     use std::time::Duration;
 
     #[test]
     fn next_iteration_works_smallest_timeout_added_first() {
-        let sut = PeriodicTimerBuilder::new().create().unwrap();
+        let sut = TimerBuilder::new().create().unwrap();
 
         let _guard_1 = sut.cyclic(Duration::from_secs(5)).unwrap();
         let _guard_2 = sut.cyclic(Duration::from_secs(10)).unwrap();
@@ -29,7 +29,7 @@ mod periodic_timer {
 
     #[test]
     fn next_iteration_works_smallest_timeout_added_last() {
-        let sut = PeriodicTimerBuilder::new().create().unwrap();
+        let sut = TimerBuilder::new().create().unwrap();
 
         let _guard_1 = sut.cyclic(Duration::from_secs(100)).unwrap();
         let _guard_2 = sut.cyclic(Duration::from_secs(10)).unwrap();
@@ -41,7 +41,7 @@ mod periodic_timer {
 
     #[test]
     fn removing_timeout_works() {
-        let sut = PeriodicTimerBuilder::new().create().unwrap();
+        let sut = TimerBuilder::new().create().unwrap();
 
         let _guard_1 = sut.cyclic(Duration::from_secs(1000)).unwrap();
         let _guard_2 = sut.cyclic(Duration::from_secs(100)).unwrap();
@@ -55,7 +55,7 @@ mod periodic_timer {
 
     #[test]
     fn no_missed_timeout_works() {
-        let sut = PeriodicTimerBuilder::new().create().unwrap();
+        let sut = TimerBuilder::new().create().unwrap();
 
         let _guard_1 = sut.cyclic(Duration::from_secs(10)).unwrap();
         let _guard_2 = sut.cyclic(Duration::from_secs(100)).unwrap();
@@ -69,7 +69,7 @@ mod periodic_timer {
 
     #[test]
     fn one_missed_timeouts_works() {
-        let sut = PeriodicTimerBuilder::new().create().unwrap();
+        let sut = TimerBuilder::new().create().unwrap();
 
         let _guard_1 = sut.cyclic(Duration::from_nanos(1)).unwrap();
         let _guard_2 = sut.cyclic(Duration::from_secs(100)).unwrap();
@@ -87,7 +87,7 @@ mod periodic_timer {
 
     #[test]
     fn many_missed_timeouts_works() {
-        let sut = PeriodicTimerBuilder::new().create().unwrap();
+        let sut = TimerBuilder::new().create().unwrap();
 
         let guard_1 = sut.cyclic(Duration::from_nanos(1)).unwrap();
         let guard_2 = sut.cyclic(Duration::from_nanos(10)).unwrap();

@@ -58,7 +58,6 @@ pub mod message_queue;
 pub mod metadata;
 pub mod mutex;
 pub mod ownership;
-pub mod periodic_timer;
 pub mod permission;
 pub mod process;
 pub mod process_state;
@@ -72,6 +71,7 @@ pub mod system_configuration;
 #[doc(hidden)]
 pub mod testing;
 pub mod thread;
+pub mod timer;
 pub mod unique_system_id;
 pub mod unix_datagram_socket;
 pub mod user;
