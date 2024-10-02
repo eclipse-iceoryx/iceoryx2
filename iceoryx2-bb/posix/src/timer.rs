@@ -21,9 +21,9 @@
 //! // the timer waits on the following time points
 //! // 4 5 8 9 10 12 15 16 18
 //!
-//! timer.cyclic(Duration::from_secs(4));
-//! timer.cyclic(Duration::from_secs(5));
-//! timer.cyclic(Duration::from_secs(9));
+//! let guard_1 = timer.cyclic(Duration::from_secs(4));
+//! let guard_2 = timer.cyclic(Duration::from_secs(5));
+//! let guard_3 = timer.cyclic(Duration::from_secs(9));
 //!
 //! std::thread::sleep(timer.duration_until_next_timeout().unwrap());
 //!
