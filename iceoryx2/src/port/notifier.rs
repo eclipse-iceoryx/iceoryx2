@@ -340,20 +340,19 @@ impl<Service: service::Service> Notifier<Service> {
         }
 
         for i in 0..self.listener_connections.len() {
-            match self.listener_connections.get(i) {
-                Some(ref connection) => match connection.notifier.notify(value) {
+            if let Some(ref connection) = self.listener_connections.get(i) {
+                match connection.notifier.notify(value) {
                     Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
                         self.listener_connections.remove(i);
                     }
                     Err(e) => {
                         warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
-                            connection, e)
+                        connection, e)
                     }
                     Ok(_) => {
                         number_of_triggered_listeners += 1;
                     }
-                },
-                None => (),
+                }
             }
         }
 

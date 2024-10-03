@@ -292,8 +292,8 @@ impl<Service: service::Service> DataSegment<Service> {
 
     fn retrieve_returned_samples(&self) {
         for i in 0..self.subscriber_connections.len() {
-            match self.subscriber_connections.get(i) {
-                Some(ref connection) => loop {
+            if let Some(ref connection) = self.subscriber_connections.get(i) {
+                loop {
                     match connection.sender.reclaim() {
                         Ok(Some(ptr_dist)) => {
                             self.release_sample(ptr_dist);
@@ -303,8 +303,7 @@ impl<Service: service::Service> DataSegment<Service> {
                             warn!(from self, "Unable to reclaim samples from connection {:?} due to {:?}. This may lead to a situation where no more samples will be delivered to this connection.", connection, e)
                         }
                     }
-                },
-                None => (),
+                }
             }
         }
     }
@@ -356,53 +355,50 @@ impl<Service: service::Service> DataSegment<Service> {
 
         let mut number_of_recipients = 0;
         for i in 0..self.subscriber_connections.len() {
-            match self.subscriber_connections.get(i) {
-                Some(ref connection) => {
-                    match deliver_call(&connection.sender, PointerOffset::new(address_to_chunk)) {
-                        Err(ZeroCopySendError::ReceiveBufferFull)
-                        | Err(ZeroCopySendError::UsedChunkListFull) => {
-                            /* causes no problem
-                             *   blocking_send => can never happen
-                             *   try_send => we tried and expect that the buffer is full
-                             * */
-                        }
-                        Err(ZeroCopySendError::ConnectionCorrupted) => {
-                            match &self.config.degration_callback {
-                                Some(c) => match c.call(
-                                    self.static_config.clone(),
-                                    self.port_id,
-                                    connection.subscriber_id,
-                                ) {
-                                    DegrationAction::Ignore => (),
-                                    DegrationAction::Warn => {
-                                        error!(from self,
-                                            "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                            address_to_chunk, connection.subscriber_id);
-                                    }
-                                    DegrationAction::Fail => {
-                                        fail!(from self, with PublisherSendError::ConnectionCorrupted,
-                                            "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                            address_to_chunk, connection.subscriber_id);
-                                    }
-                                },
-                                None => {
+            if let Some(ref connection) = self.subscriber_connections.get(i) {
+                match deliver_call(&connection.sender, PointerOffset::new(address_to_chunk)) {
+                    Err(ZeroCopySendError::ReceiveBufferFull)
+                    | Err(ZeroCopySendError::UsedChunkListFull) => {
+                        /* causes no problem
+                         *   blocking_send => can never happen
+                         *   try_send => we tried and expect that the buffer is full
+                         * */
+                    }
+                    Err(ZeroCopySendError::ConnectionCorrupted) => {
+                        match &self.config.degration_callback {
+                            Some(c) => match c.call(
+                                self.static_config.clone(),
+                                self.port_id,
+                                connection.subscriber_id,
+                            ) {
+                                DegrationAction::Ignore => (),
+                                DegrationAction::Warn => {
                                     error!(from self,
                                         "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
                                         address_to_chunk, connection.subscriber_id);
                                 }
-                            }
-                        }
-                        Ok(overflow) => {
-                            self.borrow_sample(address_to_chunk);
-                            number_of_recipients += 1;
-
-                            if let Some(old) = overflow {
-                                self.release_sample(old)
+                                DegrationAction::Fail => {
+                                    fail!(from self, with PublisherSendError::ConnectionCorrupted,
+                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        address_to_chunk, connection.subscriber_id);
+                                }
+                            },
+                            None => {
+                                error!(from self,
+                                    "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                    address_to_chunk, connection.subscriber_id);
                             }
                         }
                     }
+                    Ok(overflow) => {
+                        self.borrow_sample(address_to_chunk);
+                        number_of_recipients += 1;
+
+                        if let Some(old) = overflow {
+                            self.release_sample(old)
+                        }
+                    }
                 }
-                None => (),
             }
         }
         Ok(number_of_recipients)
