@@ -35,6 +35,7 @@
 
 use std::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
 
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
@@ -205,12 +206,22 @@ impl DeadlineQueue {
         Ok(())
     }
 
-    /// Returns the waiting duration until the next added deadline is reached.
+    /// Returns the waiting duration until the next deadline is reached. If there have been
+    /// already deadlines missed it returns a duration of zero.
     pub fn duration_until_next_deadline(&self) -> Result<Duration, TimeError> {
         let now = fail!(from self, when Time::now_with_clock(self.clock_type),
                         "Unable to return next duration since the current time could not be acquired.");
         let now = now.as_duration().as_nanos();
+        let mut has_missed_deadline = false;
+        self.handle_missed_deadlines(now, |_| {
+            has_missed_deadline = true;
+            CallbackProgression::Stop
+        });
         *self.previous_iteration.borrow_mut() = now;
+
+        if has_missed_deadline {
+            return Ok(Duration::ZERO);
+        }
 
         let mut min_time = u128::MAX;
         for attachment in &*self.attachments.borrow() {
@@ -219,6 +230,25 @@ impl DeadlineQueue {
         }
 
         Ok(Duration::from_nanos(min_time as _))
+    }
+
+    fn handle_missed_deadlines<F: FnMut(DeadlineQueueIndex) -> CallbackProgression>(
+        &self,
+        now: u128,
+        mut call: F,
+    ) {
+        let last = *self.previous_iteration.borrow();
+
+        for attachment in &*self.attachments.borrow() {
+            let duration_until_last = last.max(attachment.start_time) - attachment.start_time;
+            let duration_until_now = now - attachment.start_time;
+            if (duration_until_last / attachment.period) < (duration_until_now / attachment.period)
+            {
+                if call(DeadlineQueueIndex(attachment.index)) == CallbackProgression::Stop {
+                    return;
+                }
+            }
+        }
     }
 
     /// Iterates over all missed deadlines and calls the provided callback for each of them
@@ -231,16 +261,10 @@ impl DeadlineQueue {
                         "Unable to return next duration since the current time could not be acquired.");
 
         let now = now.as_duration().as_nanos();
-        let last = *self.previous_iteration.borrow();
-
-        for attachment in &*self.attachments.borrow() {
-            let duration_until_last = last.max(attachment.start_time) - attachment.start_time;
-            let duration_until_now = now - attachment.start_time;
-            if (duration_until_last / attachment.period) < (duration_until_now / attachment.period)
-            {
-                call(DeadlineQueueIndex(attachment.index));
-            }
-        }
+        self.handle_missed_deadlines(now, |idx| {
+            call(idx);
+            CallbackProgression::Continue
+        });
 
         Ok(())
     }
