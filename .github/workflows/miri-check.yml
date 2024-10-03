@@ -1,0 +1,26 @@
+name: Miri
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, release* ]
+
+jobs:
+  miri:
+    name: "Miri"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Miri
+        run: |
+          rustup toolchain install nightly --component miri
+          rustup override set nightly
+          cargo miri setup
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+      - name: List all changed files
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: ./internal/scripts/ci_run_miri.sh  
