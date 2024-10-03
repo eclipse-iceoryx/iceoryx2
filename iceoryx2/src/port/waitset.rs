@@ -236,6 +236,8 @@ pub enum WaitSetWaitError {
     InsufficientPermissions,
     /// An internal error has occurred.
     InternalError,
+    /// Waiting on an empty [`WaitSet`] would lead to a deadlock therefore it causes an error.
+    NoAttachments,
 }
 
 impl std::fmt::Display for WaitSetWaitError {
@@ -624,11 +626,17 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         &self,
         mut fn_call: F,
     ) -> Result<WaitEvent, WaitSetWaitError> {
+        let msg = "Unable to call WaitSet::run()";
+
         if SignalHandler::termination_requested() {
             return Ok(WaitEvent::TerminationRequest);
         }
 
-        let msg = "Unable to call WaitSet::run()";
+        if self.is_empty() {
+            fail!(from self, with WaitSetWaitError::NoAttachments,
+                "{msg} since the WaitSet has no attachments, therefore the call would end up in a deadlock.");
+        }
+
         let next_timeout = fail!(from self,
                                  when self.deadline_queue.duration_until_next_deadline(),
                                  with WaitSetWaitError::InternalError,

@@ -12,12 +12,11 @@
 
 #[generic_tests::define]
 mod waitset {
-    use std::sync::{Arc, Barrier};
     use std::time::{Duration, Instant};
 
     use iceoryx2::port::listener::Listener;
     use iceoryx2::port::notifier::Notifier;
-    use iceoryx2::port::waitset::WaitSetAttachmentError;
+    use iceoryx2::port::waitset::{WaitSetAttachmentError, WaitSetWaitError};
     use iceoryx2::prelude::{WaitSetBuilder, *};
     use iceoryx2_bb_posix::config::test_directory;
     use iceoryx2_bb_posix::directory::Directory;
@@ -81,6 +80,14 @@ mod waitset {
         let sender = UnixDatagramSenderBuilder::new(&uds_name).create().unwrap();
 
         (receiver, sender)
+    }
+
+    #[test]
+    fn calling_run_on_empty_waitset_fails<S: Service>() {
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+        let result = sut.run(|_| {});
+
+        assert_that!(result.err(), eq Some(WaitSetWaitError::NoAttachments));
     }
 
     #[test]
@@ -235,44 +242,15 @@ mod waitset {
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
-    // #[test]
-    // fn blocking_wait_blocks<S: Service + 'static>()
-    // where
-    //     <S::Event as Event>::Listener: SynchronousMultiplexing,
-    // {
-    //     let _watchdog = Watchdog::new();
-    //     let node = NodeBuilder::new().create::<S>().unwrap();
-    //     let sut = WaitSetBuilder::new().create::<S>().unwrap();
-
-    //     let service_name = generate_name();
-    //     let service = node
-    //         .service_builder(&service_name)
-    //         .event()
-    //         .open_or_create()
-    //         .unwrap();
-
-    //     let listener = service.listener_builder().create().unwrap();
-    //     let _guard = sut.attach(&listener);
-
-    //     let start = Instant::now();
-    //     let barrier = Arc::new(Barrier::new(2));
-    //     let barrier_thread = barrier.clone();
-
-    //     let t1 = std::thread::spawn(move || {
-    //         let notifier = service.notifier_builder().create().unwrap();
-    //         barrier_thread.wait();
-    //         std::thread::sleep(TIMEOUT);
-    //         notifier.notify().unwrap();
-    //     });
-
-    //     barrier.wait();
-    //     let wait_event = sut.blocking_wait(|_| {}).unwrap();
-
-    //     assert_that!(wait_event, eq WaitEvent::Notification);
-    //     assert_that!(start.elapsed(), time_at_least TIMEOUT);
-
-    //     t1.join().unwrap();
-    // }
+    // * deadline is hit
+    // * some deadline hit, some receive event
+    // * deadline receives event
+    // * deadline is reset after event
+    // * mix tick & deadline and hit all of them
+    // * sleep and let multiple deadlines hit
+    // * sleep and let multiple ticks hit
+    // * deadline & notifications receive event
+    // * deadline is hit & notification receive event
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
