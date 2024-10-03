@@ -31,25 +31,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-    let mut listeners: HashMap<AttachmentId, (String, Listener<ipc::Service>)> = HashMap::new();
+    let mut listeners = vec![];
+    let mut listener_attachments: HashMap<
+        AttachmentId<ipc::Service>,
+        (&String, &Listener<ipc::Service>),
+    > = HashMap::new();
     let mut guards = vec![];
 
     // create a listener for every service
     for service in &args.services {
-        let listener = create_listener(service)?;
-        listeners.insert(AttachmentId::new(&listener), (service.clone(), listener));
+        listeners.push((service, create_listener(service)?));
     }
 
     // attach all listeners to the waitset and store the guard
-    for listener in listeners.values() {
-        guards.push(waitset.notification(&listener.1)?);
+    for (service, listener) in &listeners {
+        let guard = waitset.notification(listener)?;
+        listener_attachments.insert(guard.to_attachment_id(), (service, listener));
+        guards.push(guard);
     }
 
     println!("Waiting on the following services: {:?}", args.services);
 
     // the callback that is called when a listener has received an event
     let trigger_call = |attachment_id| {
-        if let Some((service_name, listener)) = listeners.get(&attachment_id) {
+        if let Some((service_name, listener)) = listener_attachments.get(&attachment_id) {
             print!("Received trigger from \"{}\" ::", service_name);
 
             while let Ok(Some(event_id)) = listener.try_wait_one() {

@@ -94,7 +94,10 @@
 //! ```
 //!
 
-use std::{cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, rc::Rc, time::Duration};
+use std::{
+    cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, marker::PhantomData,
+    time::Duration,
+};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
@@ -103,7 +106,6 @@ use iceoryx2_bb_posix::{
     timer::{Timer, TimerBuilder, TimerGuard, TimerIndex},
 };
 use iceoryx2_cal::reactor::*;
-use internal::EventOrigin;
 
 /// Defines the type of that triggered [`WaitSet::try_wait()`], [`WaitSet::timed_wait()`] or
 /// [`WaitSet::blocking_wait()`].
@@ -173,34 +175,83 @@ impl std::fmt::Display for WaitSetCreateError {
 
 impl std::error::Error for WaitSetCreateError {}
 
-/// Represents an attachment to the [`WaitSet`]
-#[derive(Debug, PartialEq, Eq)]
-pub enum AttachmentId {
-    Deadline(TimerIndex),
-    Notification(i32),
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+enum AttachmentIdType {
+    Tick(u64, TimerIndex),
+    Deadline(u64, i32, TimerIndex),
+    Notification(u64, i32),
 }
 
-impl AttachmentId {
-    /// Returns true if the attachment originated from `other`
-    pub fn originates_from<T: Guardable>(&self, other: &T) -> bool {
-        match self {
-            Self::Deadline(v) => Some(*v) == other.timer_index(),
-            Self::Notification(v) => Some(*v) == other.reactor_index(),
+/// Represents an attachment to the [`WaitSet`]
+#[derive(Debug, Clone, Copy)]
+pub struct AttachmentId<Service: crate::service::Service> {
+    attachment_type: AttachmentIdType,
+    _data: PhantomData<Service>,
+}
+
+impl<Service: crate::service::Service> PartialEq for AttachmentId<Service> {
+    fn eq(&self, other: &Self) -> bool {
+        self.attachment_type == other.attachment_type
+    }
+}
+
+impl<Service: crate::service::Service> Eq for AttachmentId<Service> {}
+
+impl<Service: crate::service::Service> Hash for AttachmentId<Service> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.attachment_type.hash(state)
+    }
+}
+
+impl<Service: crate::service::Service> AttachmentId<Service> {
+    fn tick(waitset: &WaitSet<Service>, timer_idx: TimerIndex) -> Self {
+        Self {
+            attachment_type: AttachmentIdType::Tick(
+                waitset as *const WaitSet<Service> as u64,
+                timer_idx,
+            ),
+            _data: PhantomData,
         }
     }
-}
 
-mod internal {
-    use super::*;
+    fn deadline(waitset: &WaitSet<Service>, reactor_idx: i32, timer_idx: TimerIndex) -> Self {
+        Self {
+            attachment_type: AttachmentIdType::Deadline(
+                waitset as *const WaitSet<Service> as u64,
+                reactor_idx,
+                timer_idx,
+            ),
+            _data: PhantomData,
+        }
+    }
 
-    pub trait EventOrigin {
-        fn reactor_index(&self) -> Option<i32>;
-        fn timer_index(&self) -> Option<TimerIndex>;
+    fn notification(waitset: &WaitSet<Service>, reactor_idx: i32) -> Self {
+        Self {
+            attachment_type: AttachmentIdType::Notification(
+                waitset as *const WaitSet<Service> as u64,
+                reactor_idx,
+            ),
+            _data: PhantomData,
+        }
+    }
+
+    /// Returns true if the attachment originated from `other`
+    pub fn originates_from(&self, other: &Guard<Service>) -> bool {
+        self.attachment_type == other.to_attachment_id().attachment_type
     }
 }
 
-/// Defines something from which an event can originate.
-pub trait Guardable: internal::EventOrigin {}
+enum GuardType<'waitset, 'attachment, Service: crate::service::Service>
+where
+    Service::Reactor: 'waitset,
+{
+    Tick(TimerGuard<'waitset>),
+    Deadline(
+        <Service::Reactor as Reactor>::Guard<'waitset, 'attachment>,
+        TimerGuard<'waitset>,
+    ),
+    Notification(<Service::Reactor as Reactor>::Guard<'waitset, 'attachment>),
+}
 
 /// Is returned when something is attached to the [`WaitSet`]. As soon as it goes out
 /// of scope, the attachment is detached.
@@ -209,53 +260,37 @@ where
     Service::Reactor: 'waitset,
 {
     waitset: &'waitset WaitSet<Service>,
-    reactor_guard: Option<<Service::Reactor as Reactor>::Guard<'waitset, 'attachment>>,
-    timer_guard: Option<Rc<TimerGuard<'waitset>>>,
+    guard_type: GuardType<'waitset, 'attachment, Service>,
+}
+
+impl<'waitset, 'attachment, Service: crate::service::Service>
+    Guard<'waitset, 'attachment, Service>
+{
+    /// Extracts the [`AttachmentId`] from the guard.
+    pub fn to_attachment_id(&self) -> AttachmentId<Service> {
+        match &self.guard_type {
+            GuardType::Tick(t) => AttachmentId::tick(self.waitset, t.index()),
+            GuardType::Deadline(r, t) => AttachmentId::deadline(
+                self.waitset,
+                unsafe { r.file_descriptor().native_handle() },
+                t.index(),
+            ),
+            GuardType::Notification(r) => AttachmentId::notification(self.waitset, unsafe {
+                r.file_descriptor().native_handle()
+            }),
+        }
+    }
 }
 
 impl<'waitset, 'attachment, Service: crate::service::Service> Drop
     for Guard<'waitset, 'attachment, Service>
 {
     fn drop(&mut self) {
-        if let Some(r) = &self.reactor_guard {
+        if let GuardType::Deadline(r, t) = &self.guard_type {
             self.waitset
-                .remove_deadline(unsafe { r.file_descriptor().native_handle() })
+                .remove_deadline(unsafe { r.file_descriptor().native_handle() }, t.index())
         }
     }
-}
-
-impl<'waitset, 'attachment, Service: crate::service::Service> Hash
-    for Guard<'waitset, 'attachment, Service>
-{
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.reactor_index().hash(state);
-        self.timer_index().hash(state);
-    }
-}
-
-impl<'waitset, 'attachment, Service: crate::service::Service> internal::EventOrigin
-    for Guard<'waitset, 'attachment, Service>
-{
-    fn timer_index(&self) -> Option<TimerIndex> {
-        if let Some(t) = &self.timer_guard {
-            Some(t.index())
-        } else {
-            None
-        }
-    }
-
-    fn reactor_index(&self) -> Option<i32> {
-        if let Some(r) = &self.reactor_guard {
-            Some(unsafe { r.file_descriptor().native_handle() })
-        } else {
-            None
-        }
-    }
-}
-
-impl<'waitset, 'attachment, Service: crate::service::Service> Guardable
-    for Guard<'waitset, 'attachment, Service>
-{
 }
 
 /// The builder for the [`WaitSet`].
@@ -287,7 +322,8 @@ impl WaitSetBuilder {
             Ok(reactor) => Ok(WaitSet {
                 reactor,
                 timer,
-                deadlines: RefCell::new(HashMap::new()),
+                deadline_to_timer: RefCell::new(HashMap::new()),
+                timer_to_deadline: RefCell::new(HashMap::new()),
             }),
             Err(ReactorCreateError::UnknownError(e)) => {
                 fail!(from self, with WaitSetCreateError::InternalError,
@@ -309,12 +345,31 @@ impl WaitSetBuilder {
 pub struct WaitSet<Service: crate::service::Service> {
     reactor: Service::Reactor,
     timer: Timer,
-    deadlines: RefCell<HashMap<i32, TimerIndex>>,
+    deadline_to_timer: RefCell<HashMap<i32, TimerIndex>>,
+    timer_to_deadline: RefCell<HashMap<TimerIndex, i32>>,
 }
 
 impl<Service: crate::service::Service> WaitSet<Service> {
-    fn remove_deadline<'waitset>(&'waitset self, value: i32) {
-        self.deadlines.borrow_mut().remove(&value);
+    fn remove_deadline<'waitset>(&'waitset self, reactor_idx: i32, timer_idx: TimerIndex) {
+        self.deadline_to_timer.borrow_mut().remove(&reactor_idx);
+        self.timer_to_deadline.borrow_mut().remove(&timer_idx);
+    }
+
+    fn contains_deadlines(&self) -> bool {
+        !self.deadline_to_timer.borrow().is_empty()
+    }
+
+    fn reset_deadline(&self, reactor_idx: i32) -> Result<Option<TimerIndex>, WaitSetWaitError> {
+        let msg = "Unable to reset deadline";
+        if let Some(timer_idx) = self.deadline_to_timer.borrow().get(&reactor_idx) {
+            fail!(from self,
+                  when self.timer.reset(*timer_idx),
+                  with WaitSetWaitError::InternalError,
+                  "{msg} since the timer guard could not be reset for the attachment {reactor_idx}. Continuing operations will lead to invalid deadline failures.");
+            Ok(Some(*timer_idx))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Attaches an object as notification to the [`WaitSet`]. Whenever an event is received on the
@@ -327,8 +382,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ) -> Result<Guard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
         Ok(Guard {
             waitset: self,
-            reactor_guard: Some(self.attach_to_reactor(attachment)?),
-            timer_guard: None,
+            guard_type: GuardType::Notification(self.attach_to_reactor(attachment)?),
         })
     }
 
@@ -343,17 +397,16 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         deadline: Duration,
     ) -> Result<Guard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
         let reactor_guard = self.attach_to_reactor(attachment)?;
-        let timer_guard = Rc::new(self.attach_to_timer(deadline)?);
+        let timer_guard = self.attach_to_timer(deadline)?;
 
-        self.deadlines.borrow_mut().insert(
+        self.deadline_to_timer.borrow_mut().insert(
             unsafe { reactor_guard.file_descriptor().native_handle() },
             timer_guard.index(),
         );
 
         Ok(Guard {
             waitset: self,
-            reactor_guard: Some(reactor_guard),
-            timer_guard: Some(timer_guard),
+            guard_type: GuardType::Deadline(reactor_guard, timer_guard),
         })
     }
 
@@ -365,8 +418,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ) -> Result<Guard<'waitset, '_, Service>, WaitSetAttachmentError> {
         Ok(Guard {
             waitset: self,
-            reactor_guard: None,
-            timer_guard: Some(Rc::new(self.attach_to_timer(timeout)?)),
+            guard_type: GuardType::Tick(self.attach_to_timer(timeout)?),
         })
     }
 
@@ -374,7 +426,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// was triggered and the [`AttachmentId`] is provided as an input argument to acquire the
     /// source.
     /// If nothing was triggered the [`WaitSet`] returns immediately.
-    pub fn run<F: FnMut(AttachmentId)>(
+    pub fn run<F: FnMut(AttachmentId<Service>)>(
         &self,
         mut fn_call: F,
     ) -> Result<WaitEvent, WaitSetWaitError> {
@@ -390,6 +442,9 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
         let mut fds = vec![];
         match self.reactor.timed_wait(
+            // Collect all triggered file descriptors. We need to collect them first, then reset
+            // the deadline and then call the callback, otherwise a long callback may destroy the
+            // deadline contract.
             |fd| {
                 let fd = unsafe { fd.native_handle() };
                 fds.push(fd);
@@ -397,27 +452,37 @@ impl<Service: crate::service::Service> WaitSet<Service> {
             next_timeout,
         ) {
             Ok(0) => {
+                if self.contains_deadlines() {}
                 self.timer
-                    .missed_timeouts(|timer_idx| fn_call(AttachmentId::Deadline(timer_idx)))
+                    .missed_timeouts(|timer_idx| fn_call(AttachmentId::tick(self, timer_idx)))
                     .unwrap();
 
                 Ok(WaitEvent::Tick)
             }
-            Ok(_) => {
+            Ok(n) => {
                 // we need to reset the deadlines first, otherwise a long fn_call may extend the
                 // deadline unintentionally
-                for fd in &fds {
-                    if let Some(timer_idx) = self.deadlines.borrow().get(&fd) {
-                        fail!(from self,
-                            when self.timer.reset(*timer_idx),
-                            with WaitSetWaitError::InternalError,
-                            "{msg} since the timer guard could not be reset for the attachment {fd}. Continuing operations will lead to invalid deadline failures.");
+                if self.contains_deadlines() {
+                    let mut fd_and_timer_idx = Vec::new();
+                    fd_and_timer_idx.reserve(n);
+
+                    for fd in &fds {
+                        fd_and_timer_idx.push((fd, self.reset_deadline(*fd)?));
+                    }
+
+                    for (fd, timer_idx) in fd_and_timer_idx {
+                        if let Some(timer_idx) = timer_idx {
+                            fn_call(AttachmentId::deadline(self, *fd, timer_idx));
+                        } else {
+                            fn_call(AttachmentId::notification(self, *fd));
+                        }
+                    }
+                } else {
+                    for fd in fds {
+                        fn_call(AttachmentId::notification(self, fd));
                     }
                 }
 
-                for fd in fds {
-                    fn_call(AttachmentId::Notification(fd));
-                }
                 Ok(WaitEvent::Notification)
             }
             Err(ReactorWaitError::Interrupt) => Ok(WaitEvent::Interrupt),
