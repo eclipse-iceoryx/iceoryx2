@@ -111,14 +111,14 @@ mod waitset {
         assert_that!(sut.is_empty(), eq true);
         for (n, listener) in listeners.iter().enumerate() {
             assert_that!(sut.len(), eq n);
-            guards.push(sut.notification(listener).unwrap());
+            guards.push(sut.attach_notification(listener).unwrap());
             assert_that!(sut.len(), eq n + 1);
             assert_that!(sut.is_empty(), eq false);
         }
 
         for (n, socket) in sockets.iter().enumerate() {
             assert_that!(sut.len(), eq n + listeners.len());
-            guards.push(sut.notification(socket).unwrap());
+            guards.push(sut.attach_notification(socket).unwrap());
             assert_that!(sut.len(), eq n + 1 + listeners.len());
         }
 
@@ -138,11 +138,11 @@ mod waitset {
         let (listener, _) = create_event::<S>(&node);
         let (receiver, _) = create_socket();
 
-        let _guard = sut.notification(&listener);
-        assert_that!(sut.notification(&listener).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
+        let _guard = sut.attach_notification(&listener);
+        assert_that!(sut.attach_notification(&listener).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
 
-        let _guard = sut.notification(&receiver);
-        assert_that!(sut.notification(&receiver).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
+        let _guard = sut.attach_notification(&receiver);
+        assert_that!(sut.attach_notification(&receiver).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
     }
 
     #[test]
@@ -156,11 +156,11 @@ mod waitset {
         let (listener, _) = create_event::<S>(&node);
         let (receiver, _) = create_socket();
 
-        let _guard = sut.deadline(&listener, TIMEOUT);
-        assert_that!(sut.deadline(&listener, TIMEOUT).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
+        let _guard = sut.attach_deadline(&listener, TIMEOUT);
+        assert_that!(sut.attach_deadline(&listener, TIMEOUT).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
 
-        let _guard = sut.deadline(&receiver, TIMEOUT);
-        assert_that!(sut.deadline(&receiver, TIMEOUT).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
+        let _guard = sut.attach_deadline(&receiver, TIMEOUT);
+        assert_that!(sut.attach_deadline(&receiver, TIMEOUT).err(), eq Some(WaitSetAttachmentError::AlreadyAttached));
     }
 
     #[test]
@@ -176,10 +176,10 @@ mod waitset {
         let (receiver_1, sender_1) = create_socket();
         let (receiver_2, _sender_2) = create_socket();
 
-        let listener_1_guard = sut.notification(&listener_1).unwrap();
-        let listener_2_guard = sut.notification(&listener_2).unwrap();
-        let receiver_1_guard = sut.notification(&receiver_1).unwrap();
-        let receiver_2_guard = sut.notification(&receiver_2).unwrap();
+        let listener_1_guard = sut.attach_notification(&listener_1).unwrap();
+        let listener_2_guard = sut.attach_notification(&listener_2).unwrap();
+        let receiver_1_guard = sut.attach_notification(&receiver_1).unwrap();
+        let receiver_2_guard = sut.attach_notification(&receiver_2).unwrap();
 
         notifier_1.notify().unwrap();
         sender_1.try_send(b"bla").unwrap();
@@ -191,13 +191,13 @@ mod waitset {
 
         let wait_event = sut
             .run(|attachment_id| {
-                if attachment_id.originates_from(&listener_1_guard) {
+                if attachment_id.event_from(&listener_1_guard) {
                     listener_1_triggered = true;
-                } else if attachment_id.originates_from(&listener_2_guard) {
+                } else if attachment_id.event_from(&listener_2_guard) {
                     listener_2_triggered = true;
-                } else if attachment_id.originates_from(&receiver_1_guard) {
+                } else if attachment_id.event_from(&receiver_1_guard) {
                     receiver_1_triggered = true;
-                } else if attachment_id.originates_from(&receiver_2_guard) {
+                } else if attachment_id.event_from(&receiver_2_guard) {
                     receiver_2_triggered = true;
                 } else {
                     test_fail!("only attachments shall trigger");
@@ -221,13 +221,13 @@ mod waitset {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
-        let _guard = sut.notification(&listener);
-        let tick_guard = sut.tick(TIMEOUT).unwrap();
+        let _guard = sut.attach_notification(&listener);
+        let tick_guard = sut.attach_tick(TIMEOUT).unwrap();
 
         let start = Instant::now();
         let wait_event = sut
             .run(|id| {
-                assert_that!(id.originates_from(&tick_guard), eq true);
+                assert_that!(id.event_from(&tick_guard), eq true);
             })
             .unwrap();
 

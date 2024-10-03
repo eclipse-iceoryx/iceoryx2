@@ -44,6 +44,7 @@ pub mod creation_mode;
 pub mod udp_socket;
 #[macro_use]
 pub mod handle_errno;
+pub mod deadline_queue;
 pub mod directory;
 pub mod file;
 pub mod file_descriptor;
@@ -71,7 +72,6 @@ pub mod system_configuration;
 #[doc(hidden)]
 pub mod testing;
 pub mod thread;
-pub mod timer;
 pub mod unique_system_id;
 pub mod unix_datagram_socket;
 pub mod user;

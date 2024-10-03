@@ -186,9 +186,9 @@ use std::{
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
+    deadline_queue::{DeadlineQueue, DeadlineQueueBuilder, DeadlineQueueGuard, DeadlineQueueIndex},
     file_descriptor_set::SynchronousMultiplexing,
     signal::SignalHandler,
-    timer::{Timer, TimerBuilder, TimerGuard, TimerIndex},
 };
 use iceoryx2_cal::reactor::*;
 
@@ -262,8 +262,8 @@ impl std::error::Error for WaitSetCreateError {}
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 enum AttachmentIdType {
-    Tick(u64, TimerIndex),
-    Deadline(u64, i32, TimerIndex),
+    Tick(u64, DeadlineQueueIndex),
+    Deadline(u64, i32, DeadlineQueueIndex),
     Notification(u64, i32),
 }
 
@@ -289,22 +289,26 @@ impl<Service: crate::service::Service> Hash for AttachmentId<Service> {
 }
 
 impl<Service: crate::service::Service> AttachmentId<Service> {
-    fn tick(waitset: &WaitSet<Service>, timer_idx: TimerIndex) -> Self {
+    fn tick(waitset: &WaitSet<Service>, deadline_queue_idx: DeadlineQueueIndex) -> Self {
         Self {
             attachment_type: AttachmentIdType::Tick(
                 waitset as *const WaitSet<Service> as u64,
-                timer_idx,
+                deadline_queue_idx,
             ),
             _data: PhantomData,
         }
     }
 
-    fn deadline(waitset: &WaitSet<Service>, reactor_idx: i32, timer_idx: TimerIndex) -> Self {
+    fn deadline(
+        waitset: &WaitSet<Service>,
+        reactor_idx: i32,
+        deadline_queue_idx: DeadlineQueueIndex,
+    ) -> Self {
         Self {
             attachment_type: AttachmentIdType::Deadline(
                 waitset as *const WaitSet<Service> as u64,
                 reactor_idx,
-                timer_idx,
+                deadline_queue_idx,
             ),
             _data: PhantomData,
         }
@@ -343,10 +347,10 @@ enum GuardType<'waitset, 'attachment, Service: crate::service::Service>
 where
     Service::Reactor: 'waitset,
 {
-    Tick(TimerGuard<'waitset>),
+    Tick(DeadlineQueueGuard<'waitset>),
     Deadline(
         <Service::Reactor as Reactor>::Guard<'waitset, 'attachment>,
-        TimerGuard<'waitset>,
+        DeadlineQueueGuard<'waitset>,
     ),
     Notification(<Service::Reactor as Reactor>::Guard<'waitset, 'attachment>),
 }
@@ -412,16 +416,16 @@ impl WaitSetBuilder {
         self,
     ) -> Result<WaitSet<Service>, WaitSetCreateError> {
         let msg = "Unable to create WaitSet";
-        let timer = fail!(from self, when TimerBuilder::new().create(),
+        let deadline_queue = fail!(from self, when DeadlineQueueBuilder::new().create(),
                 with WaitSetCreateError::InternalError,
                 "{msg} since the underlying Timer could not be created.");
 
         match <Service::Reactor as Reactor>::Builder::new().create() {
             Ok(reactor) => Ok(WaitSet {
                 reactor,
-                timer,
-                deadline_to_timer: RefCell::new(HashMap::new()),
-                timer_to_deadline: RefCell::new(HashMap::new()),
+                deadline_queue,
+                deadline_to_deadline_queue: RefCell::new(HashMap::new()),
+                deadline_queue_to_deadline: RefCell::new(HashMap::new()),
             }),
             Err(ReactorCreateError::UnknownError(e)) => {
                 fail!(from self, with WaitSetCreateError::InternalError,
@@ -442,29 +446,41 @@ impl WaitSetBuilder {
 #[derive(Debug)]
 pub struct WaitSet<Service: crate::service::Service> {
     reactor: Service::Reactor,
-    timer: Timer,
-    deadline_to_timer: RefCell<HashMap<i32, TimerIndex>>,
-    timer_to_deadline: RefCell<HashMap<TimerIndex, i32>>,
+    deadline_queue: DeadlineQueue,
+    deadline_to_deadline_queue: RefCell<HashMap<i32, DeadlineQueueIndex>>,
+    deadline_queue_to_deadline: RefCell<HashMap<DeadlineQueueIndex, i32>>,
 }
 
 impl<Service: crate::service::Service> WaitSet<Service> {
-    fn remove_deadline<'waitset>(&'waitset self, reactor_idx: i32, timer_idx: TimerIndex) {
-        self.deadline_to_timer.borrow_mut().remove(&reactor_idx);
-        self.timer_to_deadline.borrow_mut().remove(&timer_idx);
+    fn remove_deadline<'waitset>(
+        &'waitset self,
+        reactor_idx: i32,
+        deadline_queue_idx: DeadlineQueueIndex,
+    ) {
+        self.deadline_to_deadline_queue
+            .borrow_mut()
+            .remove(&reactor_idx);
+        self.deadline_queue_to_deadline
+            .borrow_mut()
+            .remove(&deadline_queue_idx);
     }
 
     fn contains_deadlines(&self) -> bool {
-        !self.deadline_to_timer.borrow().is_empty()
+        !self.deadline_to_deadline_queue.borrow().is_empty()
     }
 
-    fn reset_deadline(&self, reactor_idx: i32) -> Result<Option<TimerIndex>, WaitSetWaitError> {
+    fn reset_deadline(
+        &self,
+        reactor_idx: i32,
+    ) -> Result<Option<DeadlineQueueIndex>, WaitSetWaitError> {
         let msg = "Unable to reset deadline";
-        if let Some(timer_idx) = self.deadline_to_timer.borrow().get(&reactor_idx) {
+        if let Some(deadline_queue_idx) = self.deadline_to_deadline_queue.borrow().get(&reactor_idx)
+        {
             fail!(from self,
-                  when self.timer.reset(*timer_idx),
+                  when self.deadline_queue.reset(*deadline_queue_idx),
                   with WaitSetWaitError::InternalError,
-                  "{msg} since the timer guard could not be reset for the attachment {reactor_idx}. Continuing operations will lead to invalid deadline failures.");
-            Ok(Some(*timer_idx))
+                  "{msg} since the deadline_queue guard could not be reset for the attachment {reactor_idx}. Continuing operations will lead to invalid deadline failures.");
+            Ok(Some(*deadline_queue_idx))
         } else {
             Ok(None)
         }
@@ -495,16 +511,16 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         deadline: Duration,
     ) -> Result<Guard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
         let reactor_guard = self.attach_to_reactor(attachment)?;
-        let timer_guard = self.attach_to_timer(deadline)?;
+        let deadline_queue_guard = self.attach_to_deadline_queue(deadline)?;
 
-        self.deadline_to_timer.borrow_mut().insert(
+        self.deadline_to_deadline_queue.borrow_mut().insert(
             unsafe { reactor_guard.file_descriptor().native_handle() },
-            timer_guard.index(),
+            deadline_queue_guard.index(),
         );
 
         Ok(Guard {
             waitset: self,
-            guard_type: GuardType::Deadline(reactor_guard, timer_guard),
+            guard_type: GuardType::Deadline(reactor_guard, deadline_queue_guard),
         })
     }
 
@@ -516,7 +532,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ) -> Result<Guard<'waitset, '_, Service>, WaitSetAttachmentError> {
         Ok(Guard {
             waitset: self,
-            guard_type: GuardType::Tick(self.attach_to_timer(timeout)?),
+            guard_type: GuardType::Tick(self.attach_to_deadline_queue(timeout)?),
         })
     }
 
@@ -534,7 +550,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
         let msg = "Unable to call WaitSet::run()";
         let next_timeout = fail!(from self,
-                                 when self.timer.duration_until_next_timeout(),
+                                 when self.deadline_queue.duration_until_next_deadline(),
                                  with WaitSetWaitError::InternalError,
                                  "{msg} since the next timeout could not be acquired.");
 
@@ -551,8 +567,10 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         ) {
             Ok(0) => {
                 if self.contains_deadlines() {}
-                self.timer
-                    .missed_timeouts(|timer_idx| fn_call(AttachmentId::tick(self, timer_idx)))
+                self.deadline_queue
+                    .missed_deadlines(|deadline_queue_idx| {
+                        fn_call(AttachmentId::tick(self, deadline_queue_idx))
+                    })
                     .unwrap();
 
                 Ok(WaitEvent::Tick)
@@ -561,16 +579,16 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                 // we need to reset the deadlines first, otherwise a long fn_call may extend the
                 // deadline unintentionally
                 if self.contains_deadlines() {
-                    let mut fd_and_timer_idx = Vec::new();
-                    fd_and_timer_idx.reserve(n);
+                    let mut fd_and_deadline_queue_idx = Vec::new();
+                    fd_and_deadline_queue_idx.reserve(n);
 
                     for fd in &fds {
-                        fd_and_timer_idx.push((fd, self.reset_deadline(*fd)?));
+                        fd_and_deadline_queue_idx.push((fd, self.reset_deadline(*fd)?));
                     }
 
-                    for (fd, timer_idx) in fd_and_timer_idx {
-                        if let Some(timer_idx) = timer_idx {
-                            fn_call(AttachmentId::deadline(self, *fd, timer_idx));
+                    for (fd, deadline_queue_idx) in fd_and_deadline_queue_idx {
+                        if let Some(deadline_queue_idx) = deadline_queue_idx {
+                            fn_call(AttachmentId::deadline(self, *fd, deadline_queue_idx));
                         } else {
                             fn_call(AttachmentId::notification(self, *fd));
                         }
@@ -635,17 +653,17 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         }
     }
 
-    fn attach_to_timer<'waitset>(
+    fn attach_to_deadline_queue<'waitset>(
         &'waitset self,
         timeout: Duration,
-    ) -> Result<TimerGuard<'waitset>, WaitSetAttachmentError> {
+    ) -> Result<DeadlineQueueGuard<'waitset>, WaitSetAttachmentError> {
         let msg = "Unable to attach timeout to underlying Timer";
 
-        match self.timer.cyclic(timeout) {
+        match self.deadline_queue.add_cyclic_deadline(timeout) {
             Ok(guard) => Ok(guard),
             Err(e) => {
                 fail!(from self, with WaitSetAttachmentError::InternalError,
-                    "{msg} since the timeout could not be attached to the underlying timer due to ({:?}).", e);
+                    "{msg} since the timeout could not be attached to the underlying deadline_queue due to ({:?}).", e);
             }
         }
     }
