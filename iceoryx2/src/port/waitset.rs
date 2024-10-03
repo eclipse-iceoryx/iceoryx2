@@ -426,8 +426,8 @@ impl WaitSetBuilder {
             Ok(reactor) => Ok(WaitSet {
                 reactor,
                 deadline_queue,
-                deadline_to_deadline_queue: RefCell::new(HashMap::new()),
-                deadline_queue_to_deadline: RefCell::new(HashMap::new()),
+                attachment_to_deadline: RefCell::new(HashMap::new()),
+                deadline_to_attachment: RefCell::new(HashMap::new()),
                 attachment_counter: IoxAtomicUsize::new(0),
             }),
             Err(ReactorCreateError::UnknownError(e)) => {
@@ -450,8 +450,8 @@ impl WaitSetBuilder {
 pub struct WaitSet<Service: crate::service::Service> {
     reactor: Service::Reactor,
     deadline_queue: DeadlineQueue,
-    deadline_to_deadline_queue: RefCell<HashMap<i32, DeadlineQueueIndex>>,
-    deadline_queue_to_deadline: RefCell<HashMap<DeadlineQueueIndex, i32>>,
+    attachment_to_deadline: RefCell<HashMap<i32, DeadlineQueueIndex>>,
+    deadline_to_attachment: RefCell<HashMap<DeadlineQueueIndex, i32>>,
     attachment_counter: IoxAtomicUsize,
 }
 
@@ -471,16 +471,16 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     }
 
     fn remove_deadline(&self, reactor_idx: i32, deadline_queue_idx: DeadlineQueueIndex) {
-        self.deadline_to_deadline_queue
+        self.attachment_to_deadline
             .borrow_mut()
             .remove(&reactor_idx);
-        self.deadline_queue_to_deadline
+        self.deadline_to_attachment
             .borrow_mut()
             .remove(&deadline_queue_idx);
     }
 
     fn contains_deadlines(&self) -> bool {
-        !self.deadline_to_deadline_queue.borrow().is_empty()
+        !self.attachment_to_deadline.borrow().is_empty()
     }
 
     fn reset_deadline(
@@ -488,8 +488,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         reactor_idx: i32,
     ) -> Result<Option<DeadlineQueueIndex>, WaitSetWaitError> {
         let msg = "Unable to reset deadline";
-        if let Some(deadline_queue_idx) = self.deadline_to_deadline_queue.borrow().get(&reactor_idx)
-        {
+        if let Some(deadline_queue_idx) = self.attachment_to_deadline.borrow().get(&reactor_idx) {
             fail!(from self,
                   when self.deadline_queue.reset(*deadline_queue_idx),
                   with WaitSetWaitError::InternalError,
@@ -498,6 +497,66 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         } else {
             Ok(None)
         }
+    }
+
+    fn handle_deadlines<F: FnMut(AttachmentId<Service>)>(
+        &self,
+        fn_call: &mut F,
+        error_msg: &str,
+    ) -> Result<(), WaitSetWaitError> {
+        let deadline_to_attachment = self.deadline_to_attachment.borrow();
+        let call = |idx: DeadlineQueueIndex| {
+            if let Some(reactor_idx) = deadline_to_attachment.get(&idx) {
+                fn_call(AttachmentId::deadline(self, *reactor_idx, idx));
+            } else {
+                fn_call(AttachmentId::tick(self, idx));
+            }
+        };
+
+        if self.contains_deadlines() {
+            fail!(from self,
+                  when self.deadline_queue.missed_deadlines(call),
+                  with WaitSetWaitError::InternalError,
+                  "{error_msg} since the missed deadlines could not be acquired.");
+        }
+
+        Ok(())
+    }
+
+    fn handle_all_attachments<F: FnMut(AttachmentId<Service>)>(
+        &self,
+        triggered_file_descriptors: &Vec<i32>,
+        fn_call: &mut F,
+        error_msg: &str,
+    ) -> Result<(), WaitSetWaitError> {
+        // we need to reset the deadlines first, otherwise a long fn_call may extend the
+        // deadline unintentionally
+        if self.contains_deadlines() {
+            let mut fd_and_deadline_queue_idx = Vec::new();
+            fd_and_deadline_queue_idx.reserve(triggered_file_descriptors.len());
+
+            for fd in triggered_file_descriptors {
+                fd_and_deadline_queue_idx.push((fd, self.reset_deadline(*fd)?));
+            }
+
+            // must be called after the deadlines have been reset, in the case that the
+            // event has been received shortly before the deadline ended.
+            self.handle_deadlines(fn_call, error_msg)?;
+
+            for (fd, deadline_queue_idx) in fd_and_deadline_queue_idx {
+                if let Some(deadline_queue_idx) = deadline_queue_idx {
+                    fn_call(AttachmentId::deadline(self, *fd, deadline_queue_idx));
+                } else {
+                    fn_call(AttachmentId::notification(self, *fd));
+                }
+            }
+        } else {
+            for fd in triggered_file_descriptors {
+                fn_call(AttachmentId::notification(self, *fd));
+            }
+        }
+
+        Ok(())
     }
 
     /// Attaches an object as notification to the [`WaitSet`]. Whenever an event is received on the
@@ -530,7 +589,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         let reactor_guard = self.attach_to_reactor(attachment)?;
         let deadline_queue_guard = self.attach_to_deadline_queue(deadline)?;
 
-        self.deadline_to_deadline_queue.borrow_mut().insert(
+        self.attachment_to_deadline.borrow_mut().insert(
             unsafe { reactor_guard.file_descriptor().native_handle() },
             deadline_queue_guard.index(),
         );
@@ -575,51 +634,23 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                                  with WaitSetWaitError::InternalError,
                                  "{msg} since the next timeout could not be acquired.");
 
-        let mut fds = vec![];
+        let mut triggered_file_descriptors = vec![];
         match self.reactor.timed_wait(
             // Collect all triggered file descriptors. We need to collect them first, then reset
             // the deadline and then call the callback, otherwise a long callback may destroy the
             // deadline contract.
             |fd| {
                 let fd = unsafe { fd.native_handle() };
-                fds.push(fd);
+                triggered_file_descriptors.push(fd);
             },
             next_timeout,
         ) {
             Ok(0) => {
-                if self.contains_deadlines() {}
-                self.deadline_queue
-                    .missed_deadlines(|deadline_queue_idx| {
-                        fn_call(AttachmentId::tick(self, deadline_queue_idx))
-                    })
-                    .unwrap();
-
+                self.handle_deadlines(&mut fn_call, msg)?;
                 Ok(WaitEvent::Tick)
             }
-            Ok(n) => {
-                // we need to reset the deadlines first, otherwise a long fn_call may extend the
-                // deadline unintentionally
-                if self.contains_deadlines() {
-                    let mut fd_and_deadline_queue_idx = Vec::new();
-                    fd_and_deadline_queue_idx.reserve(n);
-
-                    for fd in &fds {
-                        fd_and_deadline_queue_idx.push((fd, self.reset_deadline(*fd)?));
-                    }
-
-                    for (fd, deadline_queue_idx) in fd_and_deadline_queue_idx {
-                        if let Some(deadline_queue_idx) = deadline_queue_idx {
-                            fn_call(AttachmentId::deadline(self, *fd, deadline_queue_idx));
-                        } else {
-                            fn_call(AttachmentId::notification(self, *fd));
-                        }
-                    }
-                } else {
-                    for fd in fds {
-                        fn_call(AttachmentId::notification(self, fd));
-                    }
-                }
-
+            Ok(_) => {
+                self.handle_all_attachments(&triggered_file_descriptors, &mut fn_call, msg)?;
                 Ok(WaitEvent::Notification)
             }
             Err(ReactorWaitError::Interrupt) => Ok(WaitEvent::Interrupt),
