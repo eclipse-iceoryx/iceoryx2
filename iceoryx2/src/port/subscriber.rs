@@ -335,13 +335,10 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 "Some samples are not being received since not all connections to publishers could be established.");
 
         for id in 0..self.publisher_connections.len() {
-            match &self.publisher_connections.get(id) {
-                Some(ref connection) => {
-                    if connection.receiver.has_data() {
-                        return Ok(true);
-                    }
+            if let Some(ref connection) = &self.publisher_connections.get(id) {
+                if connection.receiver.has_data() {
+                    return Ok(true);
                 }
-                None => (),
             }
         }
 
@@ -368,15 +365,12 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         }
 
         for id in 0..self.publisher_connections.len() {
-            match &mut self.publisher_connections.get_mut(id) {
-                Some(ref mut connection) => {
-                    if let Some((details, absolute_address)) =
-                        self.receive_from_connection(connection)?
-                    {
-                        return Ok(Some((details, absolute_address)));
-                    }
+            if let Some(ref mut connection) = &mut self.publisher_connections.get_mut(id) {
+                if let Some((details, absolute_address)) =
+                    self.receive_from_connection(connection)?
+                {
+                    return Ok(Some((details, absolute_address)));
                 }
-                None => (),
             }
         }
 

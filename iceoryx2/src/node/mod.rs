@@ -710,6 +710,7 @@ impl<Service: service::Service> Drop for SharedNode<Service> {
 }
 
 /// The [`Node`] is the entry point to the whole iceoryx2 infrastructure and owns all entities.
+///
 /// As soon as a process crashes other processes can detect dead [`Node`]s via [`Node::list()`]
 /// and clean up the stale resources - the entities that
 /// were created via the [`Node`].
