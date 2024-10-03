@@ -181,7 +181,7 @@
 
 use std::{
     cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, marker::PhantomData,
-    time::Duration,
+    sync::atomic::Ordering, time::Duration,
 };
 
 use iceoryx2_bb_log::fail;
@@ -191,6 +191,7 @@ use iceoryx2_bb_posix::{
     signal::SignalHandler,
 };
 use iceoryx2_cal::reactor::*;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 /// Defines the type of that triggered [`WaitSet::try_wait()`], [`WaitSet::timed_wait()`] or
 /// [`WaitSet::blocking_wait()`].
@@ -392,6 +393,7 @@ impl<'waitset, 'attachment, Service: crate::service::Service> Drop
             self.waitset
                 .remove_deadline(unsafe { r.file_descriptor().native_handle() }, t.index())
         }
+        self.waitset.detach();
     }
 }
 
@@ -426,6 +428,7 @@ impl WaitSetBuilder {
                 deadline_queue,
                 deadline_to_deadline_queue: RefCell::new(HashMap::new()),
                 deadline_queue_to_deadline: RefCell::new(HashMap::new()),
+                attachment_counter: IoxAtomicUsize::new(0),
             }),
             Err(ReactorCreateError::UnknownError(e)) => {
                 fail!(from self, with WaitSetCreateError::InternalError,
@@ -449,14 +452,25 @@ pub struct WaitSet<Service: crate::service::Service> {
     deadline_queue: DeadlineQueue,
     deadline_to_deadline_queue: RefCell<HashMap<i32, DeadlineQueueIndex>>,
     deadline_queue_to_deadline: RefCell<HashMap<DeadlineQueueIndex, i32>>,
+    attachment_counter: IoxAtomicUsize,
 }
 
 impl<Service: crate::service::Service> WaitSet<Service> {
-    fn remove_deadline<'waitset>(
-        &'waitset self,
-        reactor_idx: i32,
-        deadline_queue_idx: DeadlineQueueIndex,
-    ) {
+    fn detach(&self) {
+        self.attachment_counter.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    fn attach(&self) -> Result<(), WaitSetAttachmentError> {
+        if self.len() == self.capacity() {
+            fail!(from self, with WaitSetAttachmentError::InsufficientCapacity,
+                    "Unable to add attachment since it would exceed the capacity of {}.", self.capacity());
+        }
+
+        self.attachment_counter.fetch_add(1, Ordering::Relaxed);
+        Ok(())
+    }
+
+    fn remove_deadline(&self, reactor_idx: i32, deadline_queue_idx: DeadlineQueueIndex) {
         self.deadline_to_deadline_queue
             .borrow_mut()
             .remove(&reactor_idx);
@@ -494,9 +508,12 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         &'waitset self,
         attachment: &'attachment T,
     ) -> Result<Guard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
+        let reactor_guard = self.attach_to_reactor(attachment)?;
+        self.attach()?;
+
         Ok(Guard {
             waitset: self,
-            guard_type: GuardType::Notification(self.attach_to_reactor(attachment)?),
+            guard_type: GuardType::Notification(reactor_guard),
         })
     }
 
@@ -517,6 +534,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
             unsafe { reactor_guard.file_descriptor().native_handle() },
             deadline_queue_guard.index(),
         );
+        self.attach()?;
 
         Ok(Guard {
             waitset: self,
@@ -530,9 +548,12 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         &'waitset self,
         timeout: Duration,
     ) -> Result<Guard<'waitset, '_, Service>, WaitSetAttachmentError> {
+        let deadline_queue_guard = self.attach_to_deadline_queue(timeout)?;
+        self.attach()?;
+
         Ok(Guard {
             waitset: self,
-            guard_type: GuardType::Tick(self.attach_to_deadline_queue(timeout)?),
+            guard_type: GuardType::Tick(deadline_queue_guard),
         })
     }
 
@@ -620,12 +641,12 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
     /// Returns the number of attachments.
     pub fn len(&self) -> usize {
-        self.reactor.len()
+        self.attachment_counter.load(Ordering::Relaxed)
     }
 
     /// Returns true if the [`WaitSet`] has no attachments, otherwise false.
     pub fn is_empty(&self) -> bool {
-        self.reactor.is_empty()
+        self.len() == 0
     }
 
     fn attach_to_reactor<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
