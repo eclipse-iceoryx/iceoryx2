@@ -10,43 +10,129 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! A [`WaitSet`](crate::port::waitset::WaitSet) is an implementation of an event multiplexer
+//! (Reactor of the reactor design pattern). It allows the user to attach notifications,
+//! deadlines or ticks.
+//!
+//! * **Notification** - An object that emits an event. Whenever the event is detected the
+//!     [`WaitSet`](crate::port::waitset::WaitSet) wakes up and informs the user.
+//!     Typical use case are gateways, which receives and forwards data whenever new data
+//!     is available.
+//! * **Deadline** - Like a *Notification* with the exception that the *Deadline* expects an
+//!     event after a certain predefined timeout. If the event does not arrive before the
+//!     timeout has passed, the [`WaitSet`](crate::port::waitset::WaitSet) wakes up and informs
+//!     the user that th *Deadline* has missed its timeout.
+//!     Whenever a *Deadline* receives an event, the timeout is reset.
+//!     One example is a sensor that shall send an update every 100ms. If after 100ms an update
+//!     is not available the application must wake up and take counter measures. If the update
+//!     arrives already after 78ms, the timeout is reset back to 100ms.
+//! * **Tick** - A cyclic timeout after which the [`WaitSet`](crate::port::waitset::WaitSet)
+//!     wakes up and informs the user that the timeout has passed by providing a tick.
+//!     This is useful when a [`Publisher`](crate::port::publisher::Publisher) shall send an
+//!     heartbeat every 100ms.
+//!
+//! The [`WaitSet`](crate::port::waitset::WaitSet) allows the user to attach multiple
+//! [`Listener`](crate::port::listener::Listener) from multiple [`Node`](crate::node::Node)s,
+//! anything that implements
+//! [`SynchronousMultiplexing`](iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing)
+//! with timeouts (Deadline) or without them (Notification). Additional, an arbitrary amount of
+//! cyclic wakeup timeouts (Ticks) can be attached.
+//!
 //! # Example
 //!
-//! ## Use [`AttachmentId::originates_from()`](crate::port::waitset::AttachmentId)
+//! ## Notification
 //!
 //! ```no_run
 //! use iceoryx2::prelude::*;
 //! # use core::time::Duration;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
-//! # let event_1 = node.service_builder(&"MyEventName_1".try_into()?)
-//! #     .event()
-//! #     .open_or_create()?;
-//! # let event_2 = node.service_builder(&"MyEventName_2".try_into()?)
+//! # let event = node.service_builder(&"MyEventName_1".try_into()?)
 //! #     .event()
 //! #     .open_or_create()?;
 //!
-//! let mut listener_1 = event_1.listener_builder().create()?;
-//! let mut listener_2 = event_2.listener_builder().create()?;
+//! let mut listener = event.listener_builder().create()?;
 //!
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-//! let _guard_1 = waitset.attach(&listener_1)?;
-//! let _guard_2 = waitset.attach(&listener_2)?;
+//! let guard = waitset.attach_notification(&listener)?;
 //!
-//! let event_handler = |attachment_id| {
-//!     let listener = if attachment_id.originates_from(&listener_1) {
-//!         &listener_1
-//!     } else {
-//!         &listener_2
-//!     };
-//!
-//!     while let Ok(Some(event_id)) = listener.try_wait_one() {
-//!         println!("received notification {:?}", event_id);
+//! let event_handler = |attachment_id: AttachmentId<ipc::Service>| {
+//!     if attachment_id.event_from(&guard) {
+//!         while let Ok(Some(event_id)) = listener.try_wait_one() {
+//!             println!("received notification {:?}", event_id);
+//!         }
 //!     }
 //! };
 //!
-//! while waitset.timed_wait(event_handler, Duration::from_secs(1))
-//!     != Ok(WaitEvent::TerminationRequest) {}
+//! while waitset.run(event_handler) != Ok(WaitEvent::TerminationRequest) {}
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Deadline
+//!
+//! ```no_run
+//! use iceoryx2::prelude::*;
+//! # use core::time::Duration;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! # let event = node.service_builder(&"MyEventName_1".try_into()?)
+//! #     .event()
+//! #     .open_or_create()?;
+//!
+//! let mut listener = event.listener_builder().create()?;
+//!
+//! let listener_deadline = Duration::from_secs(1);
+//! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+//! let guard = waitset.attach_deadline(&listener, listener_deadline)?;
+//!
+//! let event_handler = |attachment_id: AttachmentId<ipc::Service>| {
+//!     if attachment_id.event_from(&guard) {
+//!         while let Ok(Some(event_id)) = listener.try_wait_one() {
+//!             println!("received notification {:?}", event_id);
+//!         }
+//!     } else if attachment_id.deadline_from(&guard) {
+//!         println!("Oh no, we hit the deadline without receiving any kind of event");
+//!     }
+//! };
+//!
+//! while waitset.run(event_handler) != Ok(WaitEvent::TerminationRequest) {}
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Tick
+//!
+//! ```no_run
+//! use iceoryx2::prelude::*;
+//! # use core::time::Duration;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! # let pubsub = node.service_builder(&"MyServiceName".try_into()?)
+//! #     .publish_subscribe::<u64>()
+//! #     .open_or_create()?;
+//!
+//! let publisher_1 = pubsub.publisher_builder().create()?;
+//! let publisher_2 = pubsub.publisher_builder().create()?;
+//!
+//! let pub_1_period = Duration::from_millis(250);
+//! let pub_2_period = Duration::from_millis(718);
+//!
+//! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+//! let guard_1 = waitset.attach_tick(pub_1_period)?;
+//! let guard_2 = waitset.attach_tick(pub_2_period)?;
+//!
+//! let event_handler = |attachment_id: AttachmentId<ipc::Service>| {
+//!     if attachment_id.event_from(&guard_1) {
+//!         publisher_1.send_copy(123);
+//!     } else if attachment_id.event_from(&guard_2) {
+//!         publisher_2.send_copy(456);
+//!     }
+//! };
+//!
+//! while waitset.run(event_handler) != Ok(WaitEvent::TerminationRequest) {}
 //!
 //! # Ok(())
 //! # }
@@ -68,26 +154,25 @@
 //! #     .event()
 //! #     .open_or_create()?;
 //!
-//! let mut listeners: HashMap<AttachmentId, Listener<ipc::Service>> = HashMap::new();
-//! let listener = event_1.listener_builder().create()?;
-//! listeners.insert(AttachmentId::new(&listener), listener);
+//! let listener_1 = event_1.listener_builder().create()?;
+//! let listener_2 = event_2.listener_builder().create()?;
 //!
-//! let listener = event_2.listener_builder().create()?;
-//! listeners.insert(AttachmentId::new(&listener), listener);
-//!
+//! let mut listeners: HashMap<AttachmentId<ipc::Service>, &Listener<ipc::Service>> = HashMap::new();
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-//! let mut guards = vec![];
-//! for listener in listeners.values() {
-//!     guards.push(waitset.attach(listener)?);
-//! }
 //!
-//! while waitset.timed_wait(|attachment_id| {
+//! // attach all listeners to the waitset
+//! let guard_1 = waitset.attach_notification(&listener_1)?;
+//! let guard_2 = waitset.attach_notification(&listener_2)?;
+//! listeners.insert(guard_1.to_attachment_id(), &listener_1);
+//! listeners.insert(guard_2.to_attachment_id(), &listener_2);
+//!
+//! while waitset.run(|attachment_id| {
 //!     if let Some(listener) = listeners.get(&attachment_id) {
 //!         while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!             println!("received notification {:?}", event_id);
 //!         }
 //!     }
-//! }, Duration::from_secs(1)) != Ok(WaitEvent::TerminationRequest) {}
+//! }) != Ok(WaitEvent::TerminationRequest) {}
 //!
 //! # Ok(())
 //! # }
@@ -235,9 +320,22 @@ impl<Service: crate::service::Service> AttachmentId<Service> {
         }
     }
 
-    /// Returns true if the attachment originated from `other`
-    pub fn originates_from(&self, other: &Guard<Service>) -> bool {
-        self.attachment_type == other.to_attachment_id().attachment_type
+    /// Returns true if an event was emitted from the attachment corresponding to [`Guard`].
+    pub fn event_from(&self, other: &Guard<Service>) -> bool {
+        if let AttachmentIdType::Deadline(..) = self.attachment_type {
+            false
+        } else {
+            self.attachment_type == other.to_attachment_id().attachment_type
+        }
+    }
+
+    /// Returns true if the deadline for the attachment corresponding to [`Guard`] was missed.
+    pub fn deadline_from(&self, other: &Guard<Service>) -> bool {
+        if let AttachmentIdType::Deadline(..) = self.attachment_type {
+            self.attachment_type == other.to_attachment_id().attachment_type
+        } else {
+            false
+        }
     }
 }
 
@@ -376,7 +474,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// object the [`WaitSet`] informs the user in [`WaitSet::run()`] to handle the event.
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
-    pub fn notification<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
+    pub fn attach_notification<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
         &'waitset self,
         attachment: &'attachment T,
     ) -> Result<Guard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
@@ -391,7 +489,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     /// Whenever the object emits an event the deadline is reset by the [`WaitSet`].
-    pub fn deadline<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
+    pub fn attach_deadline<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
         &'waitset self,
         attachment: &'attachment T,
         deadline: Duration,
@@ -412,7 +510,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
     /// informs the user in [`WaitSet::run()`].
-    pub fn tick<'waitset>(
+    pub fn attach_tick<'waitset>(
         &'waitset self,
         timeout: Duration,
     ) -> Result<Guard<'waitset, '_, Service>, WaitSetAttachmentError> {

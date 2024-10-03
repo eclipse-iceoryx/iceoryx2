@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // attach all listeners to the waitset and store the guard
     for (service, listener) in &listeners {
-        let guard = waitset.notification(listener)?;
+        let guard = waitset.attach_notification(listener)?;
         listener_attachments.insert(guard.to_attachment_id(), (service, listener));
         guards.push(guard);
     }
@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Waiting on the following services: {:?}", args.services);
 
     // the callback that is called when a listener has received an event
-    let trigger_call = |attachment_id| {
+    let trigger_call = |attachment_id: AttachmentId<ipc::Service>| {
         if let Some((service_name, listener)) = listener_attachments.get(&attachment_id) {
             print!("Received trigger from \"{}\" ::", service_name);
 
