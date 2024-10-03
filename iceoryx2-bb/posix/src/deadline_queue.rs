@@ -217,11 +217,14 @@ impl DeadlineQueue {
             has_missed_deadline = true;
             CallbackProgression::Stop
         });
-        *self.previous_iteration.borrow_mut() = now;
 
         if has_missed_deadline {
             return Ok(Duration::ZERO);
         }
+
+        // must be set after the return caused by a missed deadline, otherwise the user is unable
+        // to acquire the missed deadline
+        *self.previous_iteration.borrow_mut() = now;
 
         let mut min_time = u128::MAX;
         for attachment in &*self.attachments.borrow() {

@@ -110,12 +110,23 @@ mod deadline_queue {
     fn duration_until_next_deadline_is_zero_if_deadline_is_already_missed() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
-        let _guard_1 = sut.add_cyclic_deadline(Duration::from_millis(100)).unwrap();
+        let guard_1 = sut.add_cyclic_deadline(Duration::from_millis(100)).unwrap();
         let _guard_2 = sut.add_cyclic_deadline(Duration::from_secs(1)).unwrap();
 
-        std::thread::sleep(Duration::from_millis(200));
+        std::thread::sleep(Duration::from_millis(110));
 
         let next_deadline = sut.duration_until_next_deadline().unwrap();
         assert_that!(next_deadline, eq Duration::ZERO);
+
+        let mut missed_deadline_counter = 0;
+        let mut deadline_idx = None;
+        sut.missed_deadlines(|idx| {
+            missed_deadline_counter += 1;
+            deadline_idx = Some(idx)
+        })
+        .unwrap();
+
+        assert_that!(missed_deadline_counter, eq 1);
+        assert_that!(deadline_idx, eq Some(guard_1.index()));
     }
 }
