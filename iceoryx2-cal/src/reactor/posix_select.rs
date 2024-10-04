@@ -14,6 +14,7 @@ use std::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
+    clock::{nanosleep, NanosleepError},
     file_descriptor::FileDescriptor,
     file_descriptor_set::{
         FileDescriptorSet, FileDescriptorSetAddError, FileDescriptorSetGuard,
@@ -47,22 +48,38 @@ impl Reactor {
         timeout: std::time::Duration,
     ) -> Result<usize, super::ReactorWaitError> {
         let msg = "Unable to wait on Reactor";
-        match self.set.timed_wait(timeout, FileEvent::Read, fn_call) {
-            Ok(number_of_notifications) => Ok(number_of_notifications),
-            Err(FileDescriptorSetWaitError::Interrupt) => {
-                fail!(from self, with ReactorWaitError::Interrupt,
+        if self.set.is_empty() {
+            match nanosleep(timeout) {
+                Ok(()) => Ok(0),
+                Err(NanosleepError::InterruptedBySignal(_)) => {
+                    fail!(from self, with ReactorWaitError::Interrupt,
                         "{} since an interrupt signal was received while waiting.",
                         msg);
+                }
+                Err(v) => {
+                    fail!(from self, with ReactorWaitError::UnknownError,
+                        "{} since an unknown failure occurred while waiting ({:?}).",
+                        msg, v);
+                }
             }
-            Err(FileDescriptorSetWaitError::InsufficientPermissions) => {
-                fail!(from self, with ReactorWaitError::Interrupt,
+        } else {
+            match self.set.timed_wait(timeout, FileEvent::Read, fn_call) {
+                Ok(number_of_notifications) => Ok(number_of_notifications),
+                Err(FileDescriptorSetWaitError::Interrupt) => {
+                    fail!(from self, with ReactorWaitError::Interrupt,
+                        "{} since an interrupt signal was received while waiting.",
+                        msg);
+                }
+                Err(FileDescriptorSetWaitError::InsufficientPermissions) => {
+                    fail!(from self, with ReactorWaitError::Interrupt,
                         "{} due to insufficient permissions.",
                         msg);
-            }
-            Err(v) => {
-                fail!(from self, with ReactorWaitError::UnknownError,
+                }
+                Err(v) => {
+                    fail!(from self, with ReactorWaitError::UnknownError,
                         "{} since an unknown failure occurred in the underlying FileDescriptorSet ({:?}).",
                         msg, v);
+                }
             }
         }
     }
