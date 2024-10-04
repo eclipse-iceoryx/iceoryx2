@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("defined service attributes: {:?}", service.attributes());
 
-    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+    while node.wait(CYCLE_TIME).is_ok() {
         let sample = publisher.loan_uninit()?;
         let sample = sample.write_payload(0);
         sample.send()?;

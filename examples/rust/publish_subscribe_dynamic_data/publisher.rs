@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut counter = 1;
 
-    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+    while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
 
         let required_memory_size = (8 + counter) % 16;

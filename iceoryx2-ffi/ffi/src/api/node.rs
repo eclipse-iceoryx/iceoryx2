@@ -18,7 +18,7 @@ use crate::api::{
     AssertNonNullHandle, HandleToType, IntoCInt, ServiceBuilderUnion, IOX2_OK,
 };
 
-use iceoryx2::node::{NodeId, NodeListFailure, NodeView};
+use iceoryx2::node::{NodeId, NodeListFailure, NodeView, NodeWaitFailure};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -51,20 +51,16 @@ impl IntoCInt for NodeListFailure {
 
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub enum iox2_wait_event_e {
-    TICK = 0,
+pub enum iox2_node_wait_failure_e {
+    INTERRUPT = IOX2_OK as isize + 1,
     TERMINATION_REQUEST,
-    INTERRUPT,
-    NOTIFICATION,
 }
 
-impl IntoCInt for WaitEvent {
+impl IntoCInt for NodeWaitFailure {
     fn into_c_int(self) -> c_int {
         (match self {
-            WaitEvent::Tick => iox2_wait_event_e::TICK,
-            WaitEvent::TerminationRequest => iox2_wait_event_e::TERMINATION_REQUEST,
-            WaitEvent::Interrupt => iox2_wait_event_e::INTERRUPT,
-            WaitEvent::Notification => iox2_wait_event_e::NOTIFICATION,
+            NodeWaitFailure::TerminationRequest => iox2_node_wait_failure_e::TERMINATION_REQUEST,
+            NodeWaitFailure::Interrupt => iox2_node_wait_failure_e::INTERRUPT,
         }) as c_int
     }
 }
@@ -223,11 +219,16 @@ pub unsafe extern "C" fn iox2_node_wait(
     let node = &mut *node_handle.as_type();
     let cycle_time =
         Duration::from_secs(cycle_time_sec) + Duration::from_nanos(cycle_time_nsec as u64);
-    match node.service_type {
+
+    let result = match node.service_type {
         iox2_service_type_e::IPC => node.value.as_ref().ipc.wait(cycle_time),
         iox2_service_type_e::LOCAL => node.value.as_ref().local.wait(cycle_time),
+    };
+
+    match result {
+        Ok(()) => IOX2_OK,
+        Err(e) => e.into_c_int(),
     }
-    .into_c_int()
 }
 
 /// Returns the [`iox2_config_ptr`](crate::iox2_config_ptr), an immutable pointer to the config.

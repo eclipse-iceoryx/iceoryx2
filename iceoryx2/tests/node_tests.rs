@@ -14,7 +14,7 @@
 mod node {
     use std::collections::{HashSet, VecDeque};
     use std::sync::Barrier;
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{
@@ -27,8 +27,6 @@ mod node {
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
-
-    const TIMEOUT: Duration = Duration::from_millis(25);
 
     #[derive(Debug, Eq, PartialEq)]
     struct Details {
@@ -333,16 +331,6 @@ mod node {
         } else {
             test_fail!("Process internal nodes shall be always detected as alive.");
         }
-    }
-
-    #[test]
-    fn node_wait_returns_tick_on_timeout<S: Service>() {
-        let node = NodeBuilder::new().create::<S>().unwrap();
-
-        let start = Instant::now();
-        let event = node.wait(TIMEOUT);
-        assert_that!(start.elapsed(), time_at_least TIMEOUT);
-        assert_that!(event, eq WaitEvent::Tick);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

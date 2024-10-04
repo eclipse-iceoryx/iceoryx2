@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+    while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
             print!("received {} bytes: ", sample.payload().len());
             for byte in sample.payload() {

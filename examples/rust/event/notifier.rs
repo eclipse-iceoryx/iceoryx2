@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let notifier = event.notifier_builder().create()?;
 
     let mut counter: usize = 0;
-    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+    while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
         notifier.notify_with_custom_event_id(EventId::new(counter % max_event_id))?;
 

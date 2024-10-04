@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("defined service attributes: {:?}", service.attributes());
 
-    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+    while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
             println!("received: {:?}", *sample);
         }

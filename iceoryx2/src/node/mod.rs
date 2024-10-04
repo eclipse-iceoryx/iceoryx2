@@ -74,7 +74,7 @@
 //!                 .name(&"my_little_node".try_into()?)
 //!                 .create::<ipc::Service>()?;
 //!
-//! while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+//! while node.wait(CYCLE_TIME).is_ok() {
 //!     // your algorithm in here
 //! }
 //! # Ok(())
@@ -85,6 +85,7 @@
 //!
 //! ```no_run
 //! use core::time::Duration;
+//! use iceoryx2::node::NodeWaitFailure;
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -95,18 +96,15 @@
 //!
 //! loop {
 //!     match node.wait(CYCLE_TIME) {
-//!         WaitEvent::Tick => {
+//!         Ok(()) => {
 //!             println!("entered next cycle");
 //!         }
-//!         WaitEvent::TerminationRequest => {
+//!         Err(NodeWaitFailure::TerminationRequest) => {
 //!             println!("User pressed CTRL+c, terminating");
 //!             break;
 //!         }
-//!         WaitEvent::Interrupt => {
+//!         Err(NodeWaitFailure::Interrupt) => {
 //!             println!("Someone send an interrupt signal ...");
-//!         }
-//!         WaitEvent::Notification => {
-//!             println!("Received a notification ...");
 //!         }
 //!     }
 //! }

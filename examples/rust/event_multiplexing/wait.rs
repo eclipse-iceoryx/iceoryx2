@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // wait until at least one listener has received an event or the user has pressed CTRL+c
     // or send SIGTERM/SIGINT
-    while waitset.run(trigger_call) != Ok(WaitEvent::TerminationRequest) {}
+    while waitset.run(trigger_call).is_ok() {}
 
     println!("Exit");
 
