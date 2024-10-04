@@ -233,6 +233,7 @@ mod waitset {
         sut.run(|id| {
             callback_called = true;
             assert_that!(id.event_from(&tick_guard), eq true);
+            assert_that!(id.deadline_from(&tick_guard), eq false);
         })
         .unwrap();
 
@@ -354,13 +355,108 @@ mod waitset {
         assert_that!(tick_4_triggered, eq false);
     }
 
-    // * deadline receives event
-    // * deadline is reset after event
-    // * mix tick & deadline and hit all of them
-    // * sleep and let multiple deadlines hit
-    // * sleep and let multiple ticks hit
-    // * deadline & notifications receive event
-    // * deadline is hit & notification receive event
+    #[test]
+    fn run_lists_mixed<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let node = NodeBuilder::new().create::<S>().unwrap();
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let (listener_1, notifier_1) = create_event::<S>(&node);
+        let (listener_2, _notifier_2) = create_event::<S>(&node);
+        let (listener_3, notifier_3) = create_event::<S>(&node);
+        let (listener_4, _notifier_4) = create_event::<S>(&node);
+
+        let tick_1_guard = sut.attach_tick(Duration::from_nanos(1)).unwrap();
+        let tick_2_guard = sut.attach_tick(TIMEOUT * 1000).unwrap();
+        let notification_1_guard = sut.attach_notification(&listener_1).unwrap();
+        let notification_2_guard = sut.attach_notification(&listener_2).unwrap();
+        let deadline_1_guard = sut.attach_deadline(&listener_3, TIMEOUT * 1000).unwrap();
+        let deadline_2_guard = sut
+            .attach_deadline(&listener_4, Duration::from_nanos(1))
+            .unwrap();
+
+        std::thread::sleep(TIMEOUT);
+
+        notifier_1.notify().unwrap();
+        notifier_3.notify().unwrap();
+
+        let mut tick_1_triggered = false;
+        let mut tick_2_triggered = false;
+        let mut notification_1_triggered = false;
+        let mut notification_2_triggered = false;
+        let mut deadline_1_triggered = false;
+        let mut deadline_2_triggered = false;
+        let mut deadline_1_missed = false;
+        let mut deadline_2_missed = false;
+
+        sut.run(|attachment_id| {
+            if attachment_id.event_from(&tick_1_guard) {
+                tick_1_triggered = true;
+            } else if attachment_id.event_from(&tick_2_guard) {
+                tick_2_triggered = true;
+            } else if attachment_id.event_from(&notification_1_guard) {
+                notification_1_triggered = true;
+            } else if attachment_id.event_from(&notification_2_guard) {
+                notification_2_triggered = true;
+            } else if attachment_id.event_from(&deadline_1_guard) {
+                deadline_1_triggered = true;
+            } else if attachment_id.event_from(&deadline_2_guard) {
+                deadline_2_triggered = true;
+            } else if attachment_id.deadline_from(&deadline_1_guard) {
+                deadline_1_missed = true;
+            } else if attachment_id.deadline_from(&deadline_2_guard) {
+                deadline_2_missed = true;
+            } else {
+                test_fail!("only attachments shall trigger");
+            }
+        })
+        .unwrap();
+
+        assert_that!(tick_1_triggered, eq true);
+        assert_that!(tick_2_triggered, eq false);
+        assert_that!(notification_1_triggered, eq true);
+        assert_that!(notification_2_triggered, eq false);
+        assert_that!(deadline_1_triggered, eq true);
+        assert_that!(deadline_2_triggered, eq false);
+        assert_that!(deadline_1_missed, eq false);
+        assert_that!(deadline_2_missed, eq true);
+    }
+
+    #[test]
+    fn missed_deadline_and_then_notify_is_not_reported<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let node = NodeBuilder::new().create::<S>().unwrap();
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let (listener_1, notifier_1) = create_event::<S>(&node);
+
+        let deadline_1_guard = sut.attach_deadline(&listener_1, TIMEOUT).unwrap();
+
+        std::thread::sleep(TIMEOUT + TIMEOUT / 10);
+        notifier_1.notify().unwrap();
+
+        // first we get informed by the waitset that we missed a deadline
+        let mut missed_deadline = false;
+        let mut received_event = false;
+
+        sut.run(|attachment_id| {
+            if attachment_id.event_from(&deadline_1_guard) {
+                received_event = true;
+            } else if attachment_id.deadline_from(&deadline_1_guard) {
+                missed_deadline = true;
+            } else {
+                test_fail!("only attachments shall trigger");
+            }
+        })
+        .unwrap();
+
+        assert_that!(missed_deadline, eq false);
+        assert_that!(received_event, eq true);
+    }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
