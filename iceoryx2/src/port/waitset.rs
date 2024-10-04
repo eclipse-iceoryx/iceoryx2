@@ -187,6 +187,7 @@ use std::{
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     deadline_queue::{DeadlineQueue, DeadlineQueueBuilder, DeadlineQueueGuard, DeadlineQueueIndex},
+    file_descriptor::FileDescriptor,
     file_descriptor_set::SynchronousMultiplexing,
     signal::SignalHandler,
 };
@@ -625,14 +626,16 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                                  "{msg} since the next timeout could not be acquired.");
 
         let mut triggered_file_descriptors = vec![];
+        let collect_triggered_fds = |fd: &FileDescriptor| {
+            let fd = unsafe { fd.native_handle() };
+            triggered_file_descriptors.push(fd);
+        };
+
         match self.reactor.timed_wait(
             // Collect all triggered file descriptors. We need to collect them first, then reset
             // the deadline and then call the callback, otherwise a long callback may destroy the
             // deadline contract.
-            |fd| {
-                let fd = unsafe { fd.native_handle() };
-                triggered_file_descriptors.push(fd);
-            },
+            collect_triggered_fds,
             next_timeout,
         ) {
             Ok(0) => {
