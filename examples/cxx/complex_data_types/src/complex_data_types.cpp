@@ -51,7 +51,7 @@ auto main() -> int {
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
 
     auto counter = 0;
-    while (node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest) {
+    while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
         auto sample = publisher.loan_uninit().expect("acquire sample");
         new (&sample.payload_mut()) ComplexDataType {};

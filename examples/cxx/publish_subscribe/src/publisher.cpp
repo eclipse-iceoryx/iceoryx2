@@ -34,7 +34,7 @@ auto main() -> int {
     auto publisher = service.publisher_builder().create().expect("successful publisher creation");
 
     auto counter = 0;
-    while (node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest) {
+    while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
 
         auto sample = publisher.loan_uninit().expect("acquire sample");

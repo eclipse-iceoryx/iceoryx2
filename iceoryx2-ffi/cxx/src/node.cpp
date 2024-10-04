@@ -54,9 +54,14 @@ auto Node<T>::id() const -> NodeId {
 }
 
 template <ServiceType T>
-auto Node<T>::wait(iox::units::Duration cycle_time) const -> WaitEvent {
+auto Node<T>::wait(iox::units::Duration cycle_time) const -> iox::expected<void, NodeWaitFailure> {
     auto time = cycle_time.timespec();
-    return iox::into<WaitEvent>(iox2_node_wait(&m_handle, time.tv_sec, time.tv_nsec));
+
+    auto result = iox2_node_wait(&m_handle, time.tv_sec, time.tv_nsec);
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+    return iox::err(iox::into<NodeWaitFailure>(result));
 }
 
 template <ServiceType T>

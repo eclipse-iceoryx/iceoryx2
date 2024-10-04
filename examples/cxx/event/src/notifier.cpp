@@ -33,7 +33,7 @@ auto main() -> int {
     auto notifier = service.notifier_builder().create().expect("successful notifier creation");
 
     auto counter = 0;
-    while (node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest) {
+    while (node.wait(CYCLE_TIME).has_value()) {
         counter += 1;
         const auto event_id = EventId(counter % max_event_id);
         notifier.notify_with_custom_event_id(event_id).expect("notification");
