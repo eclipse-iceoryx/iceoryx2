@@ -121,7 +121,6 @@ pub mod node_name;
 pub mod testing;
 
 use crate::node::node_name::NodeName;
-use crate::prelude::WaitEvent;
 use crate::service::builder::{Builder, OpenDynamicStorageFailure};
 use crate::service::config_scheme::{
     node_details_path, node_monitoring_config, service_tag_config,
@@ -195,6 +194,23 @@ impl std::fmt::Display for NodeCreationFailure {
 }
 
 impl std::error::Error for NodeCreationFailure {}
+
+/// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`].
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum NodeWaitFailure {
+    /// The process received an interrupt signal while acquiring the list of all [`Node`]s.
+    Interrupt,
+    /// A termination signal `SIGTERM` was received.
+    TerminationRequest,
+}
+
+impl std::fmt::Display for NodeWaitFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "NodeWaitFailure::{:?}", self)
+    }
+}
+
+impl std::error::Error for NodeWaitFailure {}
 
 /// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -791,20 +807,26 @@ impl<Service: service::Service> Node<Service> {
 
     /// Waits until an event was received. It returns
     /// [`WaitEvent::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
-    pub fn wait(&self, cycle_time: Duration) -> WaitEvent {
+    pub fn wait(&self, cycle_time: Duration) -> Result<(), NodeWaitFailure> {
+        let msg = "Unable to wait on node";
         if SignalHandler::termination_requested() {
-            return WaitEvent::TerminationRequest;
+            fail!(from self, with NodeWaitFailure::TerminationRequest,
+                "{msg} since a termination request was received.");
         }
 
         match nanosleep(cycle_time) {
             Ok(()) => {
                 if SignalHandler::termination_requested() {
-                    WaitEvent::TerminationRequest
+                    fail!(from self, with NodeWaitFailure::TerminationRequest,
+                        "{msg} since a termination request was received.");
                 } else {
-                    WaitEvent::Tick
+                    Ok(())
                 }
             }
-            Err(NanosleepError::InterruptedBySignal(_)) => WaitEvent::Interrupt,
+            Err(NanosleepError::InterruptedBySignal(_)) => {
+                fail!(from self, with NodeWaitFailure::Interrupt,
+                        "{msg} since a interrupt signal was received.");
+            }
             Err(v) => {
                 fatal_panic!(from self,
                     "Failed to wait with cycle time {:?} in main event look, caused by ({:?}).",

@@ -64,7 +64,7 @@
 //!     }
 //! };
 //!
-//! while waitset.run(event_handler) != Ok(WaitEvent::TerminationRequest) {}
+//! while waitset.run(event_handler).is_ok() {}
 //!
 //! # Ok(())
 //! # }
@@ -97,7 +97,7 @@
 //!     }
 //! };
 //!
-//! while waitset.run(event_handler) != Ok(WaitEvent::TerminationRequest) {}
+//! while waitset.run(event_handler).is_ok() {}
 //!
 //! # Ok(())
 //! # }
@@ -132,7 +132,7 @@
 //!     }
 //! };
 //!
-//! while waitset.run(event_handler) != Ok(WaitEvent::TerminationRequest) {}
+//! while waitset.run(event_handler).is_ok() {}
 //!
 //! # Ok(())
 //! # }
@@ -172,7 +172,7 @@
 //!             println!("received notification {:?}", event_id);
 //!         }
 //!     }
-//! }) != Ok(WaitEvent::TerminationRequest) {}
+//! }).is_ok() {}
 //!
 //! # Ok(())
 //! # }
@@ -193,20 +193,6 @@ use iceoryx2_bb_posix::{
 use iceoryx2_cal::reactor::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
-/// Defines the type of that triggered [`WaitSet::try_wait()`], [`WaitSet::timed_wait()`] or
-/// [`WaitSet::blocking_wait()`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum WaitEvent {
-    /// A termination signal `SIGTERM` was received.
-    TerminationRequest,
-    /// An interrupt signal `SIGINT` was received.
-    Interrupt,
-    /// No event was triggered.
-    Tick,
-    /// One or more event notifications were received.
-    Notification,
-}
-
 /// Defines the failures that can occur when attaching something with [`WaitSet::attach()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetAttachmentError {
@@ -226,27 +212,28 @@ impl std::fmt::Display for WaitSetAttachmentError {
 
 impl std::error::Error for WaitSetAttachmentError {}
 
-/// Defines the failures that can occur when calling
-///  * [`WaitSet::try_wait()`]
-///  * [`WaitSet::timed_wait()`]
-///  * [`WaitSet::blocking_wait()`]
+/// Defines the failures that can occur when calling [`WaitSet::run()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum WaitSetWaitError {
+pub enum WaitSetRunError {
     /// The process has not sufficient permissions to wait on the attachments.
     InsufficientPermissions,
     /// An internal error has occurred.
     InternalError,
     /// Waiting on an empty [`WaitSet`] would lead to a deadlock therefore it causes an error.
     NoAttachments,
+    /// A termination signal `SIGTERM` was received.
+    TerminationRequest,
+    /// An interrupt signal `SIGINT` was received.
+    Interrupt,
 }
 
-impl std::fmt::Display for WaitSetWaitError {
+impl std::fmt::Display for WaitSetRunError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::write!(f, "WaitSetWaitError::{:?}", self)
+        std::write!(f, "WaitSetRunError::{:?}", self)
     }
 }
 
-impl std::error::Error for WaitSetWaitError {}
+impl std::error::Error for WaitSetRunError {}
 
 /// Defines the failures that can occur when calling [`WaitSetBuilder::create()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -327,12 +314,20 @@ impl<Service: crate::service::Service> AttachmentId<Service> {
         }
     }
 
-    /// Returns true if an event was emitted from the attachment corresponding to [`Guard`].
+    /// Returns true if an event was emitted from a notification or deadline attachment
+    /// corresponding to [`Guard`].
     pub fn event_from(&self, other: &Guard<Service>) -> bool {
-        if let AttachmentIdType::Deadline(..) = self.attachment_type {
-            false
+        let other_attachment = other.to_attachment_id();
+        if let AttachmentIdType::Deadline(other_waitset, other_reactor_idx, _) =
+            other_attachment.attachment_type
+        {
+            if let AttachmentIdType::Notification(waitset, reactor_idx) = self.attachment_type {
+                waitset == other_waitset && reactor_idx == other_reactor_idx
+            } else {
+                false
+            }
         } else {
-            self.attachment_type == other.to_attachment_id().attachment_type
+            self.attachment_type == other_attachment.attachment_type
         }
     }
 
@@ -481,19 +476,15 @@ impl<Service: crate::service::Service> WaitSet<Service> {
             .remove(&deadline_queue_idx);
     }
 
-    fn contains_deadlines(&self) -> bool {
-        !self.attachment_to_deadline.borrow().is_empty()
-    }
-
     fn reset_deadline(
         &self,
         reactor_idx: i32,
-    ) -> Result<Option<DeadlineQueueIndex>, WaitSetWaitError> {
+    ) -> Result<Option<DeadlineQueueIndex>, WaitSetRunError> {
         let msg = "Unable to reset deadline";
         if let Some(deadline_queue_idx) = self.attachment_to_deadline.borrow().get(&reactor_idx) {
             fail!(from self,
                   when self.deadline_queue.reset(*deadline_queue_idx),
-                  with WaitSetWaitError::InternalError,
+                  with WaitSetRunError::InternalError,
                   "{msg} since the deadline_queue guard could not be reset for the attachment {reactor_idx}. Continuing operations will lead to invalid deadline failures.");
             Ok(Some(*deadline_queue_idx))
         } else {
@@ -505,7 +496,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         &self,
         fn_call: &mut F,
         error_msg: &str,
-    ) -> Result<(), WaitSetWaitError> {
+    ) -> Result<(), WaitSetRunError> {
         let deadline_to_attachment = self.deadline_to_attachment.borrow();
         let call = |idx: DeadlineQueueIndex| {
             if let Some(reactor_idx) = deadline_to_attachment.get(&idx) {
@@ -515,12 +506,10 @@ impl<Service: crate::service::Service> WaitSet<Service> {
             }
         };
 
-        if self.contains_deadlines() {
-            fail!(from self,
+        fail!(from self,
                   when self.deadline_queue.missed_deadlines(call),
-                  with WaitSetWaitError::InternalError,
+                  with WaitSetRunError::InternalError,
                   "{error_msg} since the missed deadlines could not be acquired.");
-        }
 
         Ok(())
     }
@@ -530,32 +519,22 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         triggered_file_descriptors: &Vec<i32>,
         fn_call: &mut F,
         error_msg: &str,
-    ) -> Result<(), WaitSetWaitError> {
+    ) -> Result<(), WaitSetRunError> {
         // we need to reset the deadlines first, otherwise a long fn_call may extend the
         // deadline unintentionally
-        if self.contains_deadlines() {
-            let mut fd_and_deadline_queue_idx = Vec::new();
-            fd_and_deadline_queue_idx.reserve(triggered_file_descriptors.len());
+        let mut fd_and_deadline_queue_idx = Vec::new();
+        fd_and_deadline_queue_idx.reserve(triggered_file_descriptors.len());
 
-            for fd in triggered_file_descriptors {
-                fd_and_deadline_queue_idx.push((fd, self.reset_deadline(*fd)?));
-            }
+        for fd in triggered_file_descriptors {
+            fd_and_deadline_queue_idx.push((fd, self.reset_deadline(*fd)?));
+        }
 
-            // must be called after the deadlines have been reset, in the case that the
-            // event has been received shortly before the deadline ended.
-            self.handle_deadlines(fn_call, error_msg)?;
+        // must be called after the deadlines have been reset, in the case that the
+        // event has been received shortly before the deadline ended.
+        self.handle_deadlines(fn_call, error_msg)?;
 
-            for (fd, deadline_queue_idx) in fd_and_deadline_queue_idx {
-                if let Some(deadline_queue_idx) = deadline_queue_idx {
-                    fn_call(AttachmentId::deadline(self, *fd, deadline_queue_idx));
-                } else {
-                    fn_call(AttachmentId::notification(self, *fd));
-                }
-            }
-        } else {
-            for fd in triggered_file_descriptors {
-                fn_call(AttachmentId::notification(self, *fd));
-            }
+        for fd in triggered_file_descriptors {
+            fn_call(AttachmentId::notification(self, *fd));
         }
 
         Ok(())
@@ -591,10 +570,15 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         let reactor_guard = self.attach_to_reactor(attachment)?;
         let deadline_queue_guard = self.attach_to_deadline_queue(deadline)?;
 
-        self.attachment_to_deadline.borrow_mut().insert(
-            unsafe { reactor_guard.file_descriptor().native_handle() },
-            deadline_queue_guard.index(),
-        );
+        let reactor_idx = unsafe { reactor_guard.file_descriptor().native_handle() };
+        let deadline_idx = deadline_queue_guard.index();
+
+        self.attachment_to_deadline
+            .borrow_mut()
+            .insert(reactor_idx, deadline_idx);
+        self.deadline_to_attachment
+            .borrow_mut()
+            .insert(deadline_idx, reactor_idx);
         self.attach()?;
 
         Ok(Guard {
@@ -625,21 +609,22 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     pub fn run<F: FnMut(AttachmentId<Service>)>(
         &self,
         mut fn_call: F,
-    ) -> Result<WaitEvent, WaitSetWaitError> {
+    ) -> Result<(), WaitSetRunError> {
         let msg = "Unable to call WaitSet::run()";
 
         if SignalHandler::termination_requested() {
-            return Ok(WaitEvent::TerminationRequest);
+            fail!(from self, with WaitSetRunError::TerminationRequest,
+                "{msg} since a termination request was received.");
         }
 
         if self.is_empty() {
-            fail!(from self, with WaitSetWaitError::NoAttachments,
+            fail!(from self, with WaitSetRunError::NoAttachments,
                 "{msg} since the WaitSet has no attachments, therefore the call would end up in a deadlock.");
         }
 
         let next_timeout = fail!(from self,
                                  when self.deadline_queue.duration_until_next_deadline(),
-                                 with WaitSetWaitError::InternalError,
+                                 with WaitSetRunError::InternalError,
                                  "{msg} since the next timeout could not be acquired.");
 
         let mut triggered_file_descriptors = vec![];
@@ -655,19 +640,22 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         ) {
             Ok(0) => {
                 self.handle_deadlines(&mut fn_call, msg)?;
-                Ok(WaitEvent::Tick)
+                Ok(())
             }
             Ok(_) => {
                 self.handle_all_attachments(&triggered_file_descriptors, &mut fn_call, msg)?;
-                Ok(WaitEvent::Notification)
+                Ok(())
             }
-            Err(ReactorWaitError::Interrupt) => Ok(WaitEvent::Interrupt),
+            Err(ReactorWaitError::Interrupt) => {
+                fail!(from self, with WaitSetRunError::Interrupt,
+                    "{msg} since an interrupt signal was received.");
+            }
             Err(ReactorWaitError::InsufficientPermissions) => {
-                fail!(from self, with WaitSetWaitError::InsufficientPermissions,
+                fail!(from self, with WaitSetRunError::InsufficientPermissions,
                     "{msg} due to insufficient permissions.");
             }
             Err(ReactorWaitError::UnknownError) => {
-                fail!(from self, with WaitSetWaitError::InternalError,
+                fail!(from self, with WaitSetRunError::InternalError,
                     "{msg} due to an internal error.");
             }
         }

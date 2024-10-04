@@ -16,7 +16,7 @@ mod waitset {
 
     use iceoryx2::port::listener::Listener;
     use iceoryx2::port::notifier::Notifier;
-    use iceoryx2::port::waitset::{WaitSetAttachmentError, WaitSetWaitError};
+    use iceoryx2::port::waitset::{WaitSetAttachmentError, WaitSetRunError};
     use iceoryx2::prelude::{WaitSetBuilder, *};
     use iceoryx2_bb_posix::config::test_directory;
     use iceoryx2_bb_posix::directory::Directory;
@@ -87,7 +87,7 @@ mod waitset {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
         let result = sut.run(|_| {});
 
-        assert_that!(result.err(), eq Some(WaitSetWaitError::NoAttachments));
+        assert_that!(result.err(), eq Some(WaitSetRunError::NoAttachments));
     }
 
     #[test]
@@ -196,23 +196,20 @@ mod waitset {
         let mut receiver_1_triggered = false;
         let mut receiver_2_triggered = false;
 
-        let wait_event = sut
-            .run(|attachment_id| {
-                if attachment_id.event_from(&listener_1_guard) {
-                    listener_1_triggered = true;
-                } else if attachment_id.event_from(&listener_2_guard) {
-                    listener_2_triggered = true;
-                } else if attachment_id.event_from(&receiver_1_guard) {
-                    receiver_1_triggered = true;
-                } else if attachment_id.event_from(&receiver_2_guard) {
-                    receiver_2_triggered = true;
-                } else {
-                    test_fail!("only attachments shall trigger");
-                }
-            })
-            .unwrap();
-
-        assert_that!(wait_event, eq WaitEvent::Notification);
+        sut.run(|attachment_id| {
+            if attachment_id.event_from(&listener_1_guard) {
+                listener_1_triggered = true;
+            } else if attachment_id.event_from(&listener_2_guard) {
+                listener_2_triggered = true;
+            } else if attachment_id.event_from(&receiver_1_guard) {
+                receiver_1_triggered = true;
+            } else if attachment_id.event_from(&receiver_2_guard) {
+                receiver_2_triggered = true;
+            } else {
+                test_fail!("only attachments shall trigger");
+            }
+        })
+        .unwrap();
 
         assert_that!(listener_1_triggered, eq true);
         assert_that!(receiver_1_triggered, eq true);
@@ -231,19 +228,132 @@ mod waitset {
         let _guard = sut.attach_notification(&listener);
         let tick_guard = sut.attach_tick(TIMEOUT).unwrap();
 
+        let mut callback_called = false;
         let start = Instant::now();
-        let wait_event = sut
-            .run(|id| {
-                assert_that!(id.event_from(&tick_guard), eq true);
-            })
-            .unwrap();
+        sut.run(|id| {
+            callback_called = true;
+            assert_that!(id.event_from(&tick_guard), eq true);
+        })
+        .unwrap();
 
-        assert_that!(wait_event, eq WaitEvent::Tick);
+        assert_that!(callback_called, eq true);
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     }
 
-    // * deadline is hit
-    // * some deadline hit, some receive event
+    #[test]
+    fn run_with_deadline_blocks_for_at_least_timeout<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let _watchdog = Watchdog::new();
+        let node = NodeBuilder::new().create::<S>().unwrap();
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let (listener, _) = create_event::<S>(&node);
+        let guard = sut.attach_deadline(&listener, TIMEOUT).unwrap();
+
+        let start = Instant::now();
+        sut.run(|id| {
+            assert_that!(id.deadline_from(&guard), eq true);
+        })
+        .unwrap();
+
+        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    }
+
+    #[test]
+    fn run_lists_all_deadlines<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let node = NodeBuilder::new().create::<S>().unwrap();
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let (listener_1, notifier_1) = create_event::<S>(&node);
+        let (listener_2, _notifier_2) = create_event::<S>(&node);
+        let (receiver_1, sender_1) = create_socket();
+        let (receiver_2, _sender_2) = create_socket();
+
+        let listener_1_guard = sut.attach_deadline(&listener_1, TIMEOUT * 1000).unwrap();
+        let listener_2_guard = sut
+            .attach_deadline(&listener_2, Duration::from_nanos(1))
+            .unwrap();
+        let receiver_1_guard = sut.attach_deadline(&receiver_1, TIMEOUT * 1000).unwrap();
+        let receiver_2_guard = sut
+            .attach_deadline(&receiver_2, Duration::from_nanos(1))
+            .unwrap();
+
+        std::thread::sleep(TIMEOUT);
+
+        notifier_1.notify().unwrap();
+        sender_1.try_send(b"bla").unwrap();
+
+        let mut listener_1_triggered = false;
+        let mut listener_2_triggered = false;
+        let mut receiver_1_triggered = false;
+        let mut receiver_2_triggered = false;
+
+        sut.run(|attachment_id| {
+            if attachment_id.event_from(&listener_1_guard) {
+                listener_1_triggered = true;
+            } else if attachment_id.deadline_from(&listener_2_guard) {
+                listener_2_triggered = true;
+            } else if attachment_id.event_from(&receiver_1_guard) {
+                receiver_1_triggered = true;
+            } else if attachment_id.deadline_from(&receiver_2_guard) {
+                receiver_2_triggered = true;
+            } else {
+                test_fail!("only attachments shall trigger");
+            }
+        })
+        .unwrap();
+
+        assert_that!(listener_1_triggered, eq true);
+        assert_that!(listener_2_triggered, eq true);
+        assert_that!(receiver_1_triggered, eq true);
+        assert_that!(receiver_2_triggered, eq true);
+    }
+
+    #[test]
+    fn run_lists_all_ticks<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let tick_1_guard = sut.attach_tick(Duration::from_nanos(1)).unwrap();
+        let tick_2_guard = sut.attach_tick(Duration::from_nanos(1)).unwrap();
+        let tick_3_guard = sut.attach_tick(TIMEOUT * 1000).unwrap();
+        let tick_4_guard = sut.attach_tick(TIMEOUT * 1000).unwrap();
+
+        std::thread::sleep(TIMEOUT);
+
+        let mut tick_1_triggered = false;
+        let mut tick_2_triggered = false;
+        let mut tick_3_triggered = false;
+        let mut tick_4_triggered = false;
+
+        sut.run(|attachment_id| {
+            if attachment_id.event_from(&tick_1_guard) {
+                tick_1_triggered = true;
+            } else if attachment_id.event_from(&tick_2_guard) {
+                tick_2_triggered = true;
+            } else if attachment_id.event_from(&tick_3_guard) {
+                tick_3_triggered = true;
+            } else if attachment_id.event_from(&tick_4_guard) {
+                tick_4_triggered = true;
+            } else {
+                test_fail!("only attachments shall trigger");
+            }
+        })
+        .unwrap();
+
+        assert_that!(tick_1_triggered, eq true);
+        assert_that!(tick_2_triggered, eq true);
+        assert_that!(tick_3_triggered, eq false);
+        assert_that!(tick_4_triggered, eq false);
+    }
+
     // * deadline receives event
     // * deadline is reset after event
     // * mix tick & deadline and hit all of them
@@ -255,6 +365,6 @@ mod waitset {
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
-    // #[instantiate_tests(<iceoryx2::service::local::Service>)]
-    // mod local {}
+    #[instantiate_tests(<iceoryx2::service::local::Service>)]
+    mod local {}
 }
