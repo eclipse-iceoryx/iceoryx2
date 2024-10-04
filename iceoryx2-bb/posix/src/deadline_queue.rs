@@ -246,10 +246,9 @@ impl DeadlineQueue {
             let duration_until_last = last.max(attachment.start_time) - attachment.start_time;
             let duration_until_now = now - attachment.start_time;
             if (duration_until_last / attachment.period) < (duration_until_now / attachment.period)
+                && call(DeadlineQueueIndex(attachment.index)) == CallbackProgression::Stop
             {
-                if call(DeadlineQueueIndex(attachment.index)) == CallbackProgression::Stop {
-                    return;
-                }
+                return;
             }
         }
     }

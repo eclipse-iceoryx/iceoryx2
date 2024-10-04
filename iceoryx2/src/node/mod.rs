@@ -803,8 +803,9 @@ impl<Service: service::Service> Node<Service> {
         (*self.shared.monitoring_token.get()).take().unwrap()
     }
 
-    /// Waits until an event was received. It returns
-    /// [`WaitEvent::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
+    /// Waits until the cycle time has passed. It returns [`NodeWaitFailure::TerminationRequest`]
+    /// when a `SIGTERM` signal was received or [`NodeWaitFailure::Interrupt`] when a `SIGINT`
+    /// signal was received.
     pub fn wait(&self, cycle_time: Duration) -> Result<(), NodeWaitFailure> {
         let msg = "Unable to wait on node";
         if SignalHandler::termination_requested() {

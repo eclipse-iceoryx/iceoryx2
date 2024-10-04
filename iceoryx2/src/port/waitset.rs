@@ -193,7 +193,8 @@ use iceoryx2_bb_posix::{
 use iceoryx2_cal::reactor::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
-/// Defines the failures that can occur when attaching something with [`WaitSet::attach()`].
+/// Defines the failures that can occur when attaching something with
+/// [`WaitSet::attach_notification()`], [`WaitSet::attach_tick()`] or [`WaitSet::attach_deadline()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetAttachmentError {
     /// The [`WaitSet`]s capacity is exceeded.
@@ -411,7 +412,7 @@ impl WaitSetBuilder {
     }
 
     /// Creates the [`WaitSet`].
-    pub fn create<'waitset, Service: crate::service::Service>(
+    pub fn create<Service: crate::service::Service>(
         self,
     ) -> Result<WaitSet<Service>, WaitSetCreateError> {
         let msg = "Unable to create WaitSet";
@@ -436,7 +437,7 @@ impl WaitSetBuilder {
 }
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::try_wait()`], [`WaitSet::timed_wait()`] or [`WaitSet::blocking_wait()`].
+/// single call [`WaitSet::run()`].
 ///
 /// An struct must implement [`SynchronousMultiplexing`] to be attachable. The
 /// [`Listener`](crate::port::listener::Listener) can be attached as well as sockets or anything else that
@@ -522,8 +523,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ) -> Result<(), WaitSetRunError> {
         // we need to reset the deadlines first, otherwise a long fn_call may extend the
         // deadline unintentionally
-        let mut fd_and_deadline_queue_idx = Vec::new();
-        fd_and_deadline_queue_idx.reserve(triggered_file_descriptors.len());
+        let mut fd_and_deadline_queue_idx = Vec::with_capacity(triggered_file_descriptors.len());
 
         for fd in triggered_file_descriptors {
             fd_and_deadline_queue_idx.push((fd, self.reset_deadline(*fd)?));
@@ -589,10 +589,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
     /// informs the user in [`WaitSet::run()`].
-    pub fn attach_tick<'waitset>(
-        &'waitset self,
-        timeout: Duration,
-    ) -> Result<Guard<'waitset, '_, Service>, WaitSetAttachmentError> {
+    pub fn attach_tick(&self, timeout: Duration) -> Result<Guard<Service>, WaitSetAttachmentError> {
         let deadline_queue_guard = self.attach_to_deadline_queue(timeout)?;
         self.attach()?;
 
@@ -701,10 +698,10 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         }
     }
 
-    fn attach_to_deadline_queue<'waitset>(
-        &'waitset self,
+    fn attach_to_deadline_queue(
+        &self,
         timeout: Duration,
-    ) -> Result<DeadlineQueueGuard<'waitset>, WaitSetAttachmentError> {
+    ) -> Result<DeadlineQueueGuard, WaitSetAttachmentError> {
         let msg = "Unable to attach timeout to underlying Timer";
 
         match self.deadline_queue.add_cyclic_deadline(timeout) {

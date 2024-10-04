@@ -202,7 +202,7 @@ pub unsafe extern "C" fn iox2_node_name(node_handle: iox2_node_h_ref) -> iox2_no
     }
 }
 
-/// Wait until the provided cycle time has passed and returns a [`iox2_wait_event_e`] enum containing the event that
+/// Wait until the provided cycle time has passed and returns a [`iox2_node_wait_failure_e`] enum containing the event that
 /// has occurred.
 ///
 /// # Safety
