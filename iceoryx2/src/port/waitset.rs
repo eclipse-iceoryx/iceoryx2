@@ -760,7 +760,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ) -> Result<DeadlineQueueGuard, WaitSetAttachmentError> {
         let msg = "Unable to attach timeout to underlying Timer";
 
-        match self.deadline_queue.add_cyclic_deadline(timeout) {
+        match self.deadline_queue.add_deadline_interval(timeout) {
             Ok(guard) => Ok(guard),
             Err(e) => {
                 fail!(from self, with WaitSetAttachmentError::InternalError,
