@@ -42,10 +42,14 @@ impl Reactor {
         }
     }
 
-    fn wait<F: FnMut(&FileDescriptor)>(
+    fn wait<
+        F: FnMut(&FileDescriptor),
+        W: FnMut(F, FileEvent) -> Result<usize, FileDescriptorSetWaitError>,
+    >(
         &self,
         fn_call: F,
-        timeout: std::time::Duration,
+        mut wait_call: W,
+        timeout: Duration,
     ) -> Result<usize, super::ReactorWaitError> {
         let msg = "Unable to wait on Reactor";
         if self.set.is_empty() {
@@ -63,7 +67,7 @@ impl Reactor {
                 }
             }
         } else {
-            match self.set.timed_wait(timeout, FileEvent::Read, fn_call) {
+            match wait_call(fn_call, FileEvent::Read) {
                 Ok(number_of_notifications) => Ok(number_of_notifications),
                 Err(FileDescriptorSetWaitError::Interrupt) => {
                     fail!(from self, with ReactorWaitError::Interrupt,
@@ -127,7 +131,11 @@ impl crate::reactor::Reactor for Reactor {
         &self,
         fn_call: F,
     ) -> Result<usize, super::ReactorWaitError> {
-        self.wait(fn_call, Duration::ZERO)
+        self.wait(
+            fn_call,
+            |f: F, event: FileEvent| self.set.timed_wait(Duration::ZERO, event, f),
+            Duration::ZERO,
+        )
     }
 
     fn timed_wait<F: FnMut(&FileDescriptor)>(
@@ -135,14 +143,22 @@ impl crate::reactor::Reactor for Reactor {
         fn_call: F,
         timeout: std::time::Duration,
     ) -> Result<usize, super::ReactorWaitError> {
-        self.wait(fn_call, timeout)
+        self.wait(
+            fn_call,
+            |f: F, event: FileEvent| self.set.timed_wait(timeout, event, f),
+            timeout,
+        )
     }
 
     fn blocking_wait<F: FnMut(&FileDescriptor)>(
         &self,
         fn_call: F,
     ) -> Result<usize, super::ReactorWaitError> {
-        self.wait(fn_call, Duration::MAX)
+        self.wait(
+            fn_call,
+            |f: F, event: FileEvent| self.set.blocking_wait(event, f),
+            Duration::MAX,
+        )
     }
 }
 

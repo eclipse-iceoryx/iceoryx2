@@ -236,11 +236,31 @@ impl FileDescriptorSet {
         unsafe { posix::FD_ISSET(fd.native_handle(), &self.internals().fd_set) }
     }
 
+    /// Blocks until the specified event has occurred. It
+    /// returns a list with all [`FileDescriptor`]s which were triggered.
+    pub fn blocking_wait<F: FnMut(&FileDescriptor)>(
+        &self,
+        event: FileEvent,
+        fd_callback: F,
+    ) -> Result<usize, FileDescriptorSetWaitError> {
+        self.wait(core::ptr::null_mut(), event, fd_callback)
+    }
+
     /// Waits until either the timeout has passed or the specified event has occurred. It
     /// returns a list with all [`FileDescriptor`]s which were triggered.
     pub fn timed_wait<F: FnMut(&FileDescriptor)>(
         &self,
         timeout: Duration,
+        event: FileEvent,
+        fd_callback: F,
+    ) -> Result<usize, FileDescriptorSetWaitError> {
+        let mut raw_timeout = timeout.as_timeval();
+        self.wait(&mut raw_timeout, event, fd_callback)
+    }
+
+    fn wait<F: FnMut(&FileDescriptor)>(
+        &self,
+        timeout: *mut posix::timeval,
         event: FileEvent,
         mut fd_callback: F,
     ) -> Result<usize, FileDescriptorSetWaitError> {
@@ -268,7 +288,6 @@ impl FileDescriptorSet {
             _ => std::ptr::null_mut::<posix::fd_set>(),
         };
 
-        let mut raw_timeout = timeout.as_timeval();
         let msg = "Failure while waiting for file descriptor events";
         let number_of_notifications = unsafe {
             posix::select(
@@ -276,7 +295,7 @@ impl FileDescriptorSet {
                 read_fd,
                 write_fd,
                 exceptional_fd,
-                &mut raw_timeout,
+                timeout,
             )
         };
 
@@ -285,8 +304,8 @@ impl FileDescriptorSet {
                 fatal Errno::EBADF => ("This should never happen! {} since at least one of the attached file descriptors is invalid.", msg),
                 Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
                 Errno::EINVAL => (TooManyAttachedFileDescriptors,
-                    "{} since the number of attached file descriptors exceed the system limit of ({}) or the timeout of {:?} exceeds the maximum supported timeout length.",
-                    msg, Self::capacity(), timeout),
+                    "{} since the number of attached file descriptors exceed the system limit of ({}).",
+                    msg, Self::capacity()),
                 Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             );

@@ -301,6 +301,10 @@ pub fn nanosleep_with_clock(
     duration: Duration,
     clock_type: ClockType,
 ) -> Result<(), NanosleepError> {
+    if duration.is_zero() {
+        return Ok(());
+    }
+
     let wait_time = Time::now_with_clock(clock_type)?.as_duration() + duration;
 
     let timeout = posix::timespec {

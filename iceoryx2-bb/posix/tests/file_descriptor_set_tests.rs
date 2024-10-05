@@ -156,6 +156,36 @@ fn file_descriptor_set_timed_wait_works() {
 }
 
 #[test]
+fn file_descriptor_set_blocking_wait_works() {
+    let socket_name = generate_socket_name();
+
+    let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+
+    let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
+        .create()
+        .unwrap();
+
+    let fd_set = FileDescriptorSet::new();
+    let _guard = fd_set.add(&sut_receiver).unwrap();
+    let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
+    sut_sender.blocking_send(send_data.as_slice()).unwrap();
+
+    let mut result = vec![];
+    let number_of_notifications = fd_set
+        .blocking_wait(FileEvent::Read, |fd| {
+            result.push(unsafe { fd.native_handle() })
+        })
+        .unwrap();
+
+    assert_that!(number_of_notifications, eq 1);
+    assert_that!(result, len 1);
+    assert_that!(result[0], eq unsafe{sut_receiver.file_descriptor().native_handle()});
+}
+
+#[test]
 fn file_descriptor_guard_has_access_to_underlying_fd() {
     let socket_name = generate_socket_name();
 
