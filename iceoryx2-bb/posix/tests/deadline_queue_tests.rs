@@ -19,9 +19,9 @@ mod deadline_queue {
     fn next_iteration_works_smallest_deadline_added_first() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
-        let _guard_1 = sut.add_cyclic_deadline(Duration::from_secs(5)).unwrap();
-        let _guard_2 = sut.add_cyclic_deadline(Duration::from_secs(10)).unwrap();
-        let _guard_2 = sut.add_cyclic_deadline(Duration::from_secs(100)).unwrap();
+        let _guard_1 = sut.add_deadline_interval(Duration::from_secs(5)).unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_secs(10)).unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_secs(100)).unwrap();
 
         assert_that!(sut.duration_until_next_deadline().unwrap(), le Duration::from_secs(5));
         assert_that!(sut.duration_until_next_deadline().unwrap(), ge Duration::from_secs(1));
@@ -31,9 +31,9 @@ mod deadline_queue {
     fn next_iteration_works_smallest_deadline_added_last() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
-        let _guard_1 = sut.add_cyclic_deadline(Duration::from_secs(100)).unwrap();
-        let _guard_2 = sut.add_cyclic_deadline(Duration::from_secs(10)).unwrap();
-        let _guard_3 = sut.add_cyclic_deadline(Duration::from_secs(5)).unwrap();
+        let _guard_1 = sut.add_deadline_interval(Duration::from_secs(100)).unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_secs(10)).unwrap();
+        let _guard_3 = sut.add_deadline_interval(Duration::from_secs(5)).unwrap();
 
         assert_that!(sut.duration_until_next_deadline().unwrap(), le Duration::from_secs(5));
         assert_that!(sut.duration_until_next_deadline().unwrap(), ge Duration::from_secs(1));
@@ -43,9 +43,11 @@ mod deadline_queue {
     fn removing_deadline_works() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
-        let _guard_1 = sut.add_cyclic_deadline(Duration::from_secs(1000)).unwrap();
-        let _guard_2 = sut.add_cyclic_deadline(Duration::from_secs(100)).unwrap();
-        let _guard_3 = sut.add_cyclic_deadline(Duration::from_secs(1)).unwrap();
+        let _guard_1 = sut
+            .add_deadline_interval(Duration::from_secs(1000))
+            .unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_secs(100)).unwrap();
+        let _guard_3 = sut.add_deadline_interval(Duration::from_secs(1)).unwrap();
 
         drop(_guard_3);
 
@@ -57,9 +59,11 @@ mod deadline_queue {
     fn no_missed_deadline_works() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
-        let _guard_1 = sut.add_cyclic_deadline(Duration::from_secs(10)).unwrap();
-        let _guard_2 = sut.add_cyclic_deadline(Duration::from_secs(100)).unwrap();
-        let _guard_3 = sut.add_cyclic_deadline(Duration::from_secs(1000)).unwrap();
+        let _guard_1 = sut.add_deadline_interval(Duration::from_secs(10)).unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_secs(100)).unwrap();
+        let _guard_3 = sut
+            .add_deadline_interval(Duration::from_secs(1000))
+            .unwrap();
 
         let mut missed_deadline_queues = vec![];
         sut.missed_deadlines(|idx| missed_deadline_queues.push(idx))
@@ -72,9 +76,11 @@ mod deadline_queue {
     fn one_missed_deadlines_works() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
-        let _guard_1 = sut.add_cyclic_deadline(Duration::from_nanos(1)).unwrap();
-        let _guard_2 = sut.add_cyclic_deadline(Duration::from_secs(100)).unwrap();
-        let _guard_3 = sut.add_cyclic_deadline(Duration::from_secs(1000)).unwrap();
+        let _guard_1 = sut.add_deadline_interval(Duration::from_nanos(1)).unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_secs(100)).unwrap();
+        let _guard_3 = sut
+            .add_deadline_interval(Duration::from_secs(1000))
+            .unwrap();
 
         std::thread::sleep(Duration::from_millis(10));
 
@@ -90,9 +96,9 @@ mod deadline_queue {
     fn many_missed_deadlines_works() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
-        let guard_1 = sut.add_cyclic_deadline(Duration::from_nanos(1)).unwrap();
-        let guard_2 = sut.add_cyclic_deadline(Duration::from_nanos(10)).unwrap();
-        let guard_3 = sut.add_cyclic_deadline(Duration::from_nanos(20)).unwrap();
+        let guard_1 = sut.add_deadline_interval(Duration::from_nanos(1)).unwrap();
+        let guard_2 = sut.add_deadline_interval(Duration::from_nanos(10)).unwrap();
+        let guard_3 = sut.add_deadline_interval(Duration::from_nanos(20)).unwrap();
 
         std::thread::sleep(Duration::from_millis(10));
 
@@ -110,8 +116,10 @@ mod deadline_queue {
     fn duration_until_next_deadline_is_zero_if_deadline_is_already_missed() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
-        let guard_1 = sut.add_cyclic_deadline(Duration::from_millis(100)).unwrap();
-        let _guard_2 = sut.add_cyclic_deadline(Duration::from_secs(1)).unwrap();
+        let guard_1 = sut
+            .add_deadline_interval(Duration::from_millis(100))
+            .unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_secs(1)).unwrap();
 
         std::thread::sleep(Duration::from_millis(110));
 

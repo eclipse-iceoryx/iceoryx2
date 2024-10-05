@@ -85,7 +85,7 @@ mod waitset {
     #[test]
     fn calling_run_on_empty_waitset_fails<S: Service>() {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
-        let result = sut.run(|_| {});
+        let result = sut.run_once(|_| {});
 
         assert_that!(result.err(), eq Some(WaitSetRunError::NoAttachments));
     }
@@ -196,7 +196,7 @@ mod waitset {
         let mut receiver_1_triggered = false;
         let mut receiver_2_triggered = false;
 
-        sut.run(|attachment_id| {
+        sut.run_once(|attachment_id| {
             if attachment_id.event_from(&listener_1_guard) {
                 listener_1_triggered = true;
             } else if attachment_id.event_from(&listener_2_guard) {
@@ -216,7 +216,7 @@ mod waitset {
     }
 
     #[test]
-    fn run_with_tick_blocks_for_at_least_timeout<S: Service>()
+    fn run_with_tick_interval_blocks_for_at_least_timeout<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
@@ -226,11 +226,11 @@ mod waitset {
 
         let (listener, _) = create_event::<S>(&node);
         let _guard = sut.attach_notification(&listener);
-        let tick_guard = sut.attach_tick(TIMEOUT).unwrap();
+        let tick_guard = sut.attach_interval(TIMEOUT).unwrap();
 
         let mut callback_called = false;
         let start = Instant::now();
-        sut.run(|id| {
+        sut.run_once(|id| {
             callback_called = true;
             assert_that!(id.event_from(&tick_guard), eq true);
             assert_that!(id.deadline_from(&tick_guard), eq false);
@@ -254,7 +254,7 @@ mod waitset {
         let guard = sut.attach_deadline(&listener, TIMEOUT).unwrap();
 
         let start = Instant::now();
-        sut.run(|id| {
+        sut.run_once(|id| {
             assert_that!(id.deadline_from(&guard), eq true);
         })
         .unwrap();
@@ -294,7 +294,7 @@ mod waitset {
         let mut receiver_1_triggered = false;
         let mut receiver_2_triggered = false;
 
-        sut.run(|attachment_id| {
+        sut.run_once(|attachment_id| {
             if attachment_id.event_from(&listener_1_guard) {
                 listener_1_triggered = true;
             } else if attachment_id.deadline_from(&listener_2_guard) {
@@ -322,10 +322,10 @@ mod waitset {
     {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
-        let tick_1_guard = sut.attach_tick(Duration::from_nanos(1)).unwrap();
-        let tick_2_guard = sut.attach_tick(Duration::from_nanos(1)).unwrap();
-        let tick_3_guard = sut.attach_tick(TIMEOUT * 1000).unwrap();
-        let tick_4_guard = sut.attach_tick(TIMEOUT * 1000).unwrap();
+        let tick_1_guard = sut.attach_interval(Duration::from_nanos(1)).unwrap();
+        let tick_2_guard = sut.attach_interval(Duration::from_nanos(1)).unwrap();
+        let tick_3_guard = sut.attach_interval(TIMEOUT * 1000).unwrap();
+        let tick_4_guard = sut.attach_interval(TIMEOUT * 1000).unwrap();
 
         std::thread::sleep(TIMEOUT);
 
@@ -334,7 +334,7 @@ mod waitset {
         let mut tick_3_triggered = false;
         let mut tick_4_triggered = false;
 
-        sut.run(|attachment_id| {
+        sut.run_once(|attachment_id| {
             if attachment_id.event_from(&tick_1_guard) {
                 tick_1_triggered = true;
             } else if attachment_id.event_from(&tick_2_guard) {
@@ -368,8 +368,8 @@ mod waitset {
         let (listener_3, notifier_3) = create_event::<S>(&node);
         let (listener_4, _notifier_4) = create_event::<S>(&node);
 
-        let tick_1_guard = sut.attach_tick(Duration::from_nanos(1)).unwrap();
-        let tick_2_guard = sut.attach_tick(TIMEOUT * 1000).unwrap();
+        let tick_1_guard = sut.attach_interval(Duration::from_nanos(1)).unwrap();
+        let tick_2_guard = sut.attach_interval(TIMEOUT * 1000).unwrap();
         let notification_1_guard = sut.attach_notification(&listener_1).unwrap();
         let notification_2_guard = sut.attach_notification(&listener_2).unwrap();
         let deadline_1_guard = sut.attach_deadline(&listener_3, TIMEOUT * 1000).unwrap();
@@ -391,7 +391,7 @@ mod waitset {
         let mut deadline_1_missed = false;
         let mut deadline_2_missed = false;
 
-        sut.run(|attachment_id| {
+        sut.run_once(|attachment_id| {
             if attachment_id.event_from(&tick_1_guard) {
                 tick_1_triggered = true;
             } else if attachment_id.event_from(&tick_2_guard) {
@@ -443,7 +443,7 @@ mod waitset {
         let mut missed_deadline = false;
         let mut received_event = false;
 
-        sut.run(|attachment_id| {
+        sut.run_once(|attachment_id| {
             if attachment_id.event_from(&deadline_1_guard) {
                 received_event = true;
             } else if attachment_id.deadline_from(&deadline_1_guard) {

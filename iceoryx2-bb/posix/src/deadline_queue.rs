@@ -21,9 +21,9 @@
 //! // the DeadlineQueue waits on the following time points
 //! // 4 5 8 9 10 12 15 16 18
 //!
-//! let guard_1 = deadline_queue.add_cyclic_deadline(Duration::from_secs(4));
-//! let guard_2 = deadline_queue.add_cyclic_deadline(Duration::from_secs(5));
-//! let guard_3 = deadline_queue.add_cyclic_deadline(Duration::from_secs(9));
+//! let guard_1 = deadline_queue.add_deadline_interval(Duration::from_secs(4));
+//! let guard_2 = deadline_queue.add_deadline_interval(Duration::from_secs(5));
+//! let guard_3 = deadline_queue.add_deadline_interval(Duration::from_secs(9));
 //!
 //! std::thread::sleep(deadline_queue.duration_until_next_deadline().unwrap());
 //!
@@ -44,13 +44,13 @@ use crate::{
     clock::{Time, TimeError},
 };
 
-/// Represents an index to identify an added deadline_queue with [`DeadlineQueue::add_cyclic_deadline()`].
+/// Represents an index to identify an added deadline_queue with [`DeadlineQueue::add_deadline_interval()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DeadlineQueueIndex(u64);
 
 pub trait DeadlineQueueGuardable: Debug {}
 
-/// Represents the RAII guard of [`DeadlineQueue`] and is returned by [`DeadlineQueue::add_cyclic_deadline()`].
+/// Represents the RAII guard of [`DeadlineQueue`] and is returned by [`DeadlineQueue::add_deadline_interval()`].
 /// As soon as it goes out of scope it removes the attached cyclic deadline from [`DeadlineQueue`].
 #[derive(Debug)]
 pub struct DeadlineQueueGuard<'deadline_queue> {
@@ -148,7 +148,7 @@ impl Attachment {
 }
 
 /// The [`DeadlineQueue`] allows the user to attach multiple periodic deadline_queues with
-/// [`DeadlineQueue::add_cyclic_deadline()`], to wait on them by acquiring the waiting time to the next deadline_queue
+/// [`DeadlineQueue::add_deadline_interval()`], to wait on them by acquiring the waiting time to the next deadline_queue
 /// with [`DeadlineQueue::duration_until_next_deadline()`] and to acquire all missed deadline_queues via
 /// [`DeadlineQueue::missed_deadlines()`].
 #[derive(Debug)]
@@ -165,7 +165,10 @@ impl DeadlineQueue {
     /// identify the attachment uniquely.
     /// [`DeadlineQueue::duration_until_next_deadline()`] will schedule the timings in a way that the
     /// attached deadline is considered cyclicly.
-    pub fn add_cyclic_deadline(&self, deadline: Duration) -> Result<DeadlineQueueGuard, TimeError> {
+    pub fn add_deadline_interval(
+        &self,
+        deadline: Duration,
+    ) -> Result<DeadlineQueueGuard, TimeError> {
         let current_idx = self.id_count.load(Ordering::Relaxed);
         self.attachments.borrow_mut().push(Attachment::new(
             current_idx,

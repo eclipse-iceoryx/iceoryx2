@@ -23,11 +23,12 @@
 //!     timeout has passed, the [`WaitSet`](crate::port::waitset::WaitSet) wakes up and informs
 //!     the user that th *Deadline* has missed its timeout.
 //!     Whenever a *Deadline* receives an event, the timeout is reset.
-//!     One example is a sensor that shall send an update every 100ms. If after 100ms an update
+//!     One example is a sensor that shall send an update every 100ms and the applications requires
+//!     the sensor data latest after 120ms. If after 120ms an update
 //!     is not available the application must wake up and take counter measures. If the update
-//!     arrives already after 78ms, the timeout is reset back to 100ms.
-//! * **Tick** - A cyclic timeout after which the [`WaitSet`](crate::port::waitset::WaitSet)
-//!     wakes up and informs the user that the timeout has passed by providing a tick.
+//!     arrives already after 78ms, the timeout is reset back to 120ms.
+//! * **Tick** - An interval after which the [`WaitSet`](crate::port::waitset::WaitSet)
+//!     wakes up and informs the user that the interval time has passed by providing a tick.
 //!     This is useful when a [`Publisher`](crate::port::publisher::Publisher) shall send an
 //!     heartbeat every 100ms.
 //!
@@ -36,7 +37,7 @@
 //! anything that implements
 //! [`SynchronousMultiplexing`](iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing)
 //! with timeouts (Deadline) or without them (Notification). Additional, an arbitrary amount of
-//! cyclic wakeup timeouts (Ticks) can be attached.
+//! intervals (Ticks) can be attached.
 //!
 //! # Example
 //!
@@ -56,7 +57,7 @@
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 //! let guard = waitset.attach_notification(&listener)?;
 //!
-//! let event_handler = |attachment_id: AttachmentId<ipc::Service>| {
+//! let on_event = |attachment_id: AttachmentId<ipc::Service>| {
 //!     if attachment_id.event_from(&guard) {
 //!         while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!             println!("received notification {:?}", event_id);
@@ -64,7 +65,7 @@
 //!     }
 //! };
 //!
-//! while waitset.run(event_handler).is_ok() {}
+//! waitset.run(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -87,7 +88,7 @@
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 //! let guard = waitset.attach_deadline(&listener, listener_deadline)?;
 //!
-//! let event_handler = |attachment_id: AttachmentId<ipc::Service>| {
+//! let on_event = |attachment_id: AttachmentId<ipc::Service>| {
 //!     if attachment_id.event_from(&guard) {
 //!         while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!             println!("received notification {:?}", event_id);
@@ -97,7 +98,7 @@
 //!     }
 //! };
 //!
-//! while waitset.run(event_handler).is_ok() {}
+//! waitset.run(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -121,10 +122,10 @@
 //! let pub_2_period = Duration::from_millis(718);
 //!
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-//! let guard_1 = waitset.attach_tick(pub_1_period)?;
-//! let guard_2 = waitset.attach_tick(pub_2_period)?;
+//! let guard_1 = waitset.attach_interval(pub_1_period)?;
+//! let guard_2 = waitset.attach_interval(pub_2_period)?;
 //!
-//! let event_handler = |attachment_id: AttachmentId<ipc::Service>| {
+//! let on_event = |attachment_id: AttachmentId<ipc::Service>| {
 //!     if attachment_id.event_from(&guard_1) {
 //!         publisher_1.send_copy(123);
 //!     } else if attachment_id.event_from(&guard_2) {
@@ -132,7 +133,7 @@
 //!     }
 //! };
 //!
-//! while waitset.run(event_handler).is_ok() {}
+//! waitset.run(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -166,13 +167,15 @@
 //! listeners.insert(guard_1.to_attachment_id(), &listener_1);
 //! listeners.insert(guard_2.to_attachment_id(), &listener_2);
 //!
-//! while waitset.run(|attachment_id| {
+//! let on_event = |attachment_id| {
 //!     if let Some(listener) = listeners.get(&attachment_id) {
 //!         while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!             println!("received notification {:?}", event_id);
 //!         }
 //!     }
-//! }).is_ok() {}
+//! };
+//!
+//! waitset.run(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -192,10 +195,21 @@ use iceoryx2_bb_posix::{
     signal::SignalHandler,
 };
 use iceoryx2_cal::reactor::*;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+
+/// States why the [`WaitSet::run()`] method returned.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum WaitSetRunResult {
+    /// A termination signal `SIGTERM` was received.
+    TerminationRequest,
+    /// An interrupt signal `SIGINT` was received.
+    Interrupt,
+    /// The user explicitly called [`WaitSet::stop()`].
+    StopRequest,
+}
 
 /// Defines the failures that can occur when attaching something with
-/// [`WaitSet::attach_notification()`], [`WaitSet::attach_tick()`] or [`WaitSet::attach_deadline()`].
+/// [`WaitSet::attach_notification()`], [`WaitSet::attach_interval()`] or [`WaitSet::attach_deadline()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetAttachmentError {
     /// The [`WaitSet`]s capacity is exceeded.
@@ -428,6 +442,7 @@ impl WaitSetBuilder {
                 attachment_to_deadline: RefCell::new(HashMap::new()),
                 deadline_to_attachment: RefCell::new(HashMap::new()),
                 attachment_counter: IoxAtomicUsize::new(0),
+                keep_running: IoxAtomicBool::new(true),
             }),
             Err(ReactorCreateError::UnknownError(e)) => {
                 fail!(from self, with WaitSetCreateError::InternalError,
@@ -438,7 +453,9 @@ impl WaitSetBuilder {
 }
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::run()`].
+/// single call [`WaitSet::run_once()`] until it wakes up or to run repeatedly with
+/// [`WaitSet::run()`] until the a interrupt or termination signal was received or the user
+/// has explicitly requested to stop with [`WaitSet::stop()`].
 ///
 /// An struct must implement [`SynchronousMultiplexing`] to be attachable. The
 /// [`Listener`](crate::port::listener::Listener) can be attached as well as sockets or anything else that
@@ -452,6 +469,7 @@ pub struct WaitSet<Service: crate::service::Service> {
     attachment_to_deadline: RefCell<HashMap<i32, DeadlineQueueIndex>>,
     deadline_to_attachment: RefCell<HashMap<DeadlineQueueIndex, i32>>,
     attachment_counter: IoxAtomicUsize,
+    keep_running: IoxAtomicBool,
 }
 
 impl<Service: crate::service::Service> WaitSet<Service> {
@@ -590,8 +608,11 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
     /// informs the user in [`WaitSet::run()`].
-    pub fn attach_tick(&self, timeout: Duration) -> Result<Guard<Service>, WaitSetAttachmentError> {
-        let deadline_queue_guard = self.attach_to_deadline_queue(timeout)?;
+    pub fn attach_interval(
+        &self,
+        interval: Duration,
+    ) -> Result<Guard<Service>, WaitSetAttachmentError> {
+        let deadline_queue_guard = self.attach_to_deadline_queue(interval)?;
         self.attach()?;
 
         Ok(Guard {
@@ -600,11 +621,43 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         })
     }
 
+    /// Can be called from within a callback during [`WaitSet::run()`] to signal the [`WaitSet`]
+    /// to stop running after this iteration.
+    pub fn stop(&self) {
+        self.keep_running.store(false, Ordering::Relaxed);
+    }
+
+    /// Waits in an infinite loop on the [`WaitSet`]. The provided callback is called for every
+    /// attachment that was triggered and the [`AttachmentId`] is provided as an input argument to
+    /// acquire the source.
+    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+    /// the loop and inform the user via [`WaitSetRunResult`].
+    pub fn run<F: FnMut(AttachmentId<Service>)>(
+        &self,
+        mut fn_call: F,
+    ) -> Result<WaitSetRunResult, WaitSetRunError> {
+        while self.keep_running.load(Ordering::Relaxed) {
+            match self.run_once(&mut fn_call) {
+                Ok(()) => (),
+                Err(WaitSetRunError::TerminationRequest) => {
+                    return Ok(WaitSetRunResult::TerminationRequest)
+                }
+                Err(WaitSetRunError::Interrupt) => return Ok(WaitSetRunResult::Interrupt),
+                Err(e) => {
+                    fail!(from self, with e,
+                            "Unable to run in WaitSet::run() loop since ({:?}) has occurred.", e);
+                }
+            }
+        }
+
+        Ok(WaitSetRunResult::StopRequest)
+    }
+
     /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
     /// was triggered and the [`AttachmentId`] is provided as an input argument to acquire the
     /// source.
     /// If nothing was triggered the [`WaitSet`] returns immediately.
-    pub fn run<F: FnMut(AttachmentId<Service>)>(
+    pub fn run_once<F: FnMut(AttachmentId<Service>)>(
         &self,
         mut fn_call: F,
     ) -> Result<(), WaitSetRunError> {

@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Waiting on the following services: {:?}", args.services);
 
     // the callback that is called when a listener has received an event
-    let trigger_call = |attachment_id: AttachmentId<ipc::Service>| {
+    let on_event = |attachment_id: AttachmentId<ipc::Service>| {
         if let Some((service_name, listener)) = listener_attachments.get(&attachment_id) {
             print!("Received trigger from \"{}\" ::", service_name);
 
@@ -65,9 +65,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // wait until at least one listener has received an event or the user has pressed CTRL+c
-    // or send SIGTERM/SIGINT
-    while waitset.run(trigger_call).is_ok() {}
+    // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT
+    // signal or the user has called explicitly `waitset.stop()` in the `on_event` callback. We
+    // didn't add this to the example so feel free to play around with it.
+    waitset.run(on_event)?;
 
     println!("Exit");
 
