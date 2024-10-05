@@ -16,6 +16,25 @@ mod deadline_queue {
     use std::time::Duration;
 
     #[test]
+    fn attach_detach_works() {
+        const NUMBER_OF_ATTACHMENTS: usize = 16;
+        let sut = DeadlineQueueBuilder::new().create().unwrap();
+        let mut guards = vec![];
+
+        assert_that!(sut.is_empty(), eq true);
+        assert_that!(sut.len(), eq 0);
+        for n in 0..NUMBER_OF_ATTACHMENTS {
+            guards.push(sut.add_deadline_interval(Duration::from_secs((n + 1) as u64)));
+            assert_that!(sut.is_empty(), eq false);
+            assert_that!(sut.len(), eq n);
+        }
+
+        guards.clear();
+        assert_that!(sut.is_empty(), eq true);
+        assert_that!(sut.len(), eq 0);
+    }
+
+    #[test]
     fn next_iteration_works_smallest_deadline_added_first() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 

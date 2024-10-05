@@ -684,13 +684,16 @@ impl<Service: crate::service::Service> WaitSet<Service> {
             triggered_file_descriptors.push(fd);
         };
 
-        match self.reactor.timed_wait(
-            // Collect all triggered file descriptors. We need to collect them first, then reset
-            // the deadline and then call the callback, otherwise a long callback may destroy the
-            // deadline contract.
-            collect_triggered_fds,
-            next_timeout,
-        ) {
+        // Collect all triggered file descriptors. We need to collect them first, then reset
+        // the deadline and then call the callback, otherwise a long callback may destroy the
+        // deadline contract.
+        let reactor_wait_result = if self.deadline_queue.is_empty() {
+            self.reactor.blocking_wait(collect_triggered_fds)
+        } else {
+            self.reactor.timed_wait(collect_triggered_fds, next_timeout)
+        };
+
+        match reactor_wait_result {
             Ok(0) => {
                 self.handle_deadlines(&mut fn_call, msg)?;
                 Ok(())

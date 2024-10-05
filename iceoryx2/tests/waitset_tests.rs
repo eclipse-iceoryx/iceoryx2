@@ -175,6 +175,7 @@ mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
+        set_log_level(LogLevel::Debug);
         let node = NodeBuilder::new().create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 

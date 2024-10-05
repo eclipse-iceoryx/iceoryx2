@@ -161,6 +161,16 @@ pub struct DeadlineQueue {
 }
 
 impl DeadlineQueue {
+    /// Returns the number of attachments.
+    pub fn len(&self) -> usize {
+        self.attachments.borrow().len()
+    }
+
+    /// Returns true if the deadline queue does not contain any attachments.
+    pub fn is_empty(&self) -> bool {
+        self.attachments.borrow().is_empty()
+    }
+
     /// Adds a cyclic deadline to the [`DeadlineQueue`] and returns an [`DeadlineQueueGuard`] to
     /// identify the attachment uniquely.
     /// [`DeadlineQueue::duration_until_next_deadline()`] will schedule the timings in a way that the
