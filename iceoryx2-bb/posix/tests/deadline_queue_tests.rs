@@ -26,7 +26,7 @@ mod deadline_queue {
         for n in 0..NUMBER_OF_ATTACHMENTS {
             guards.push(sut.add_deadline_interval(Duration::from_secs((n + 1) as u64)));
             assert_that!(sut.is_empty(), eq false);
-            assert_that!(sut.len(), eq n);
+            assert_that!(sut.len(), eq n + 1);
         }
 
         guards.clear();
