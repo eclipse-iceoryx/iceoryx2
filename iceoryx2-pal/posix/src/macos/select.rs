@@ -23,7 +23,16 @@ pub unsafe fn select(
     errorfds: *mut fd_set,
     timeout: *mut timeval,
 ) -> int {
-    crate::internal::select(nfds, readfds, writefds, errorfds, timeout)
+    // mac os has some kind of undocument maximum for the timeout, so if the timeout exceeds
+    // 100 years we replace it with a nullptr indicating to wait forever.
+    // If this is wrong - I don't care but I allow you to come to my grave and curse my corps.
+    // On Thursday, the 5th of October 2124 I have time, bring cookies and Earl Grey hot but
+    // with milk.
+    if (*timeout).tv_sec > 100 * 3600 * 24 * 365 {
+        crate::internal::select(nfds, readfds, writefds, errorfds, core::ptr::null_mut())
+    } else {
+        crate::internal::select(nfds, readfds, writefds, errorfds, timeout)
+    }
 }
 
 pub const fn CMSG_ALIGN(len: usize) -> usize {

@@ -49,7 +49,6 @@ use std::{cell::UnsafeCell, fmt::Debug, time::Duration};
 use crate::{
     clock::AsTimeval,
     file_descriptor::{FileDescriptor, FileDescriptorBased},
-    system_configuration::ProcessResourceLimit,
 };
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -287,7 +286,7 @@ impl FileDescriptorSet {
                 Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
                 Errno::EINVAL => (TooManyAttachedFileDescriptors,
                     "{} since the number of attached file descriptors exceed the system limit of ({}) or the timeout of {:?} exceeds the maximum supported timeout length.",
-                    msg, ProcessResourceLimit::MaxNumberOfOpenFileDescriptors.soft_limit(), timeout),
+                    msg, Self::capacity(), timeout),
                 Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             );

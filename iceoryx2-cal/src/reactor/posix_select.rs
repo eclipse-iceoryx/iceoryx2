@@ -142,8 +142,7 @@ impl crate::reactor::Reactor for Reactor {
         &self,
         fn_call: F,
     ) -> Result<usize, super::ReactorWaitError> {
-        const INFINITE_TIMEOUT: Duration = Duration::from_secs(3600 * 24 * 365);
-        self.wait(fn_call, INFINITE_TIMEOUT)
+        self.wait(fn_call, Duration::MAX)
     }
 }
 
