@@ -1,7 +1,8 @@
 # Examples
 
-> [!IMPORTANT] The examples are not yet functional in all languages. Check the
-> list below to see what is already working!
+> [!IMPORTANT]
+> The examples are not yet functional in all languages. Check the list below to see
+> what is already working!
 
 ## Foundations of Communication in iceoryx2 Applications
 
@@ -39,6 +40,29 @@ of service parameters, ensuring that your communication behaves precisely as you
 intend. The service port factory allows you to fine-tune the settings and
 behavior of individual ports, giving you precise control over how they interact
 and exchange data.
+
+## Payload Type Restrictions
+
+> [!CAUTION]
+> iceoryx2 stores payload data in shared memory, which imposes the restriction that
+> the payload type must be self-contained and cannot use heap memory. Additionally,
+> internal pointers are not allowed because the shared memory is mapped at different
+> offsets in each process, making absolute pointers invalid and potentially leading
+> to segmentation faults.
+
+To address these limitations, we provide data types that are compatible with shared
+memory. For Rust, we offer:
+
+* `FixedSizeByteString`
+* `FixedSizeVec`
+
+For C++, we provide:
+
+* `iox::vector`
+* `iox::string`
+* `iox::list`
+
+These types are demonstrated in the complex data types example.
 
 ## Overview
 

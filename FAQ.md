@@ -1,5 +1,19 @@
 # Frequently Asked Questions
 
+## Encountered a SEGFAULT. What Kind Of Data Types Can Be Transmitted Via iceoryx2
+
+iceoryx2 stores all data in shared memory, which imposes certain restrictions.
+Only data that is self-contained and does not use pointers to reference itself
+is allowed. This is because shared memory is mapped at different offsets in
+each process, rendering absolute pointers invalid. Additionally, if the data
+structure uses the heap, it is stored locally within a process and cannot be
+accessed by other processes. As a result, data types such as `String`, `Vec`,
+or `HashMap` cannot be used as payload types.
+
+To address this, iceoryx2 provides shared-memory-compatible data types. You
+can refer to the [complex data types example](examples/rust/complex_data_types),
+which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
+
 ## How To Send Data Where The Size Is Unknown At Compilation-Time?
 
 Take a look at the
