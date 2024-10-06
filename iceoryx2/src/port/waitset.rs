@@ -26,7 +26,7 @@
 //!     One example is a sensor that shall send an update every 100ms and the applications requires
 //!     the sensor data latest after 120ms. If after 120ms an update
 //!     is not available the application must wake up and take counter measures. If the update
-//!     arrives already after 78ms, the timeout is reset back to 120ms.
+//!     arrives within the timeout, the timeout is reset back to 120ms.
 //! * **Tick** - An interval after which the [`WaitSet`](crate::port::waitset::WaitSet)
 //!     wakes up and informs the user that the interval time has passed by providing a tick.
 //!     This is useful when a [`Publisher`](crate::port::publisher::Publisher) shall send an
@@ -164,8 +164,8 @@
 //! // attach all listeners to the waitset
 //! let guard_1 = waitset.attach_notification(&listener_1)?;
 //! let guard_2 = waitset.attach_notification(&listener_2)?;
-//! listeners.insert(guard_1.to_attachment_id(), &listener_1);
-//! listeners.insert(guard_2.to_attachment_id(), &listener_2);
+//! listeners.insert(AttachmentId::from_guard(&guard_1), &listener_1);
+//! listeners.insert(AttachmentId::from_guard(&guard_2), &listener_2);
 //!
 //! let on_event = |attachment_id| {
 //!     if let Some(listener) = listeners.get(&attachment_id) {
@@ -280,6 +280,25 @@ pub struct AttachmentId<Service: crate::service::Service> {
     _data: PhantomData<Service>,
 }
 
+impl<Service: crate::service::Service> AttachmentId<Service> {
+    /// Creates an [`AttachmentId`] from a [`Guard`] that was returned via
+    /// [`WaitSet::attach_interval()`], [`WaitSet::attach_notification()`] or
+    /// [`WaitSet::attach_deadline()`].
+    pub fn from_guard(guard: &Guard<Service>) -> Self {
+        match &guard.guard_type {
+            GuardType::Tick(t) => AttachmentId::tick(guard.waitset, t.index()),
+            GuardType::Deadline(r, t) => AttachmentId::deadline(
+                guard.waitset,
+                unsafe { r.file_descriptor().native_handle() },
+                t.index(),
+            ),
+            GuardType::Notification(r) => AttachmentId::notification(guard.waitset, unsafe {
+                r.file_descriptor().native_handle()
+            }),
+        }
+    }
+}
+
 impl<Service: crate::service::Service> PartialEq for AttachmentId<Service> {
     fn eq(&self, other: &Self) -> bool {
         self.attachment_type == other.attachment_type
@@ -333,7 +352,7 @@ impl<Service: crate::service::Service> AttachmentId<Service> {
     /// Returns true if an event was emitted from a notification or deadline attachment
     /// corresponding to [`Guard`].
     pub fn event_from(&self, other: &Guard<Service>) -> bool {
-        let other_attachment = other.to_attachment_id();
+        let other_attachment = AttachmentId::from_guard(other);
         if let AttachmentIdType::Deadline(other_waitset, other_reactor_idx, _) =
             other_attachment.attachment_type
         {
@@ -350,7 +369,7 @@ impl<Service: crate::service::Service> AttachmentId<Service> {
     /// Returns true if the deadline for the attachment corresponding to [`Guard`] was missed.
     pub fn deadline_from(&self, other: &Guard<Service>) -> bool {
         if let AttachmentIdType::Deadline(..) = self.attachment_type {
-            self.attachment_type == other.to_attachment_id().attachment_type
+            self.attachment_type == AttachmentId::from_guard(other).attachment_type
         } else {
             false
         }
@@ -377,25 +396,6 @@ where
 {
     waitset: &'waitset WaitSet<Service>,
     guard_type: GuardType<'waitset, 'attachment, Service>,
-}
-
-impl<'waitset, 'attachment, Service: crate::service::Service>
-    Guard<'waitset, 'attachment, Service>
-{
-    /// Extracts the [`AttachmentId`] from the guard.
-    pub fn to_attachment_id(&self) -> AttachmentId<Service> {
-        match &self.guard_type {
-            GuardType::Tick(t) => AttachmentId::tick(self.waitset, t.index()),
-            GuardType::Deadline(r, t) => AttachmentId::deadline(
-                self.waitset,
-                unsafe { r.file_descriptor().native_handle() },
-                t.index(),
-            ),
-            GuardType::Notification(r) => AttachmentId::notification(self.waitset, unsafe {
-                r.file_descriptor().native_handle()
-            }),
-        }
-    }
 }
 
 impl<'waitset, 'attachment, Service: crate::service::Service> Drop

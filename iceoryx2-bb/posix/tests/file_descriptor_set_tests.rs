@@ -156,7 +156,7 @@ fn file_descriptor_set_timed_wait_works() {
 }
 
 #[test]
-fn file_descriptor_set_blocking_wait_works() {
+fn file_descriptor_set_blocking_wait_immediately_returns_notifications() {
     let socket_name = generate_socket_name();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)

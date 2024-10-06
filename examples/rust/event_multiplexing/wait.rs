@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // attach all listeners to the waitset and store the guard
     for (service, listener) in &listeners {
         let guard = waitset.attach_notification(listener)?;
-        listener_attachments.insert(guard.to_attachment_id(), (service, listener));
+        listener_attachments.insert(AttachmentId::from_guard(&guard), (service, listener));
         guards.push(guard);
     }
 
