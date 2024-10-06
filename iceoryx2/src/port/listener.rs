@@ -60,6 +60,8 @@
 
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
+use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::{ListenerBuilder, ListenerWaitError, NamedConceptMgmt, TriggerId};
 use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptRemoveError};
@@ -104,6 +106,20 @@ pub struct Listener<Service: service::Service> {
     listener: <Service::Event as iceoryx2_cal::event::Event>::Listener,
     service_state: Arc<ServiceState<Service>>,
     listener_id: UniqueListenerId,
+}
+
+impl<Service: service::Service> FileDescriptorBased for Listener<Service>
+where
+    <Service::Event as iceoryx2_cal::event::Event>::Listener: FileDescriptorBased,
+{
+    fn file_descriptor(&self) -> &iceoryx2_bb_posix::file_descriptor::FileDescriptor {
+        self.listener.file_descriptor()
+    }
+}
+
+impl<Service: service::Service> SynchronousMultiplexing for Listener<Service> where
+    <Service::Event as iceoryx2_cal::event::Event>::Listener: SynchronousMultiplexing
+{
 }
 
 impl<Service: service::Service> Drop for Listener<Service> {

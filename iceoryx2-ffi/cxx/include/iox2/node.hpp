@@ -21,10 +21,10 @@
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/node_event.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/node_state.hpp"
+#include "iox2/node_wait_failure.hpp"
 #include "iox2/service_builder.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
@@ -53,9 +53,9 @@ class Node {
     /// [`ServiceName`] of the [`Service`] is provided as argument.
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
 
-    /// Waits a given time for a [`NodeEvent`]. If the [`cycle_time`] has passed
-    /// [`NodeEvent::Tick`] is returned.
-    auto wait(iox::units::Duration cycle_time) const -> NodeEvent;
+    /// Waits a given time for a [`WaitEvent`]. If the [`cycle_time`] has passed
+    /// [`WaitEvent::Tick`] is returned.
+    auto wait(iox::units::Duration cycle_time) const -> iox::expected<void, NodeWaitFailure>;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is
     /// called for every [`Node`] and gets the [`NodeState`] as input argument.

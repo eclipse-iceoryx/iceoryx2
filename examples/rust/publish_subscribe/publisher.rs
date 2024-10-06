@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut counter: u64 = 0;
 
-    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+    while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
         let sample = publisher.loan_uninit()?;
 

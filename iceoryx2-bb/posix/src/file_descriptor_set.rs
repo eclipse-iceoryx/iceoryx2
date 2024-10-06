@@ -49,7 +49,6 @@ use std::{cell::UnsafeCell, fmt::Debug, time::Duration};
 use crate::{
     clock::AsTimeval,
     file_descriptor::{FileDescriptor, FileDescriptorBased},
-    system_configuration::ProcessResourceLimit,
 };
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -69,6 +68,7 @@ pub enum FileDescriptorSetWaitError {
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileDescriptorSetAddError {
+    AlreadyAttached,
     CapacityExceeded,
 }
 
@@ -168,10 +168,16 @@ impl FileDescriptorSet {
         &'set self,
         fd: &'fd FileDescriptor,
     ) -> Result<FileDescriptorSetGuard<'set, 'fd>, FileDescriptorSetAddError> {
+        let msg = "Unable to add file descriptor";
         if self.internals().file_descriptors.len() >= Self::capacity() {
             fail!(from self, with FileDescriptorSetAddError::CapacityExceeded,
-                "Unable to add file descriptor {:?} since the amount of file descriptors {} exceeds the maximum supported amount of file descriptors for a set {}.",
+                "{msg} {:?} since the amount of file descriptors {} exceeds the maximum supported amount of file descriptors for a set {}.",
                 fd.file_descriptor(), self.internals().file_descriptors.len(), Self::capacity());
+        }
+
+        if self.contains_impl(fd) {
+            fail!(from self, with FileDescriptorSetAddError::AlreadyAttached,
+                "{msg} {:?} since it is already attached.", fd);
         }
 
         unsafe {
@@ -223,12 +229,21 @@ impl FileDescriptorSet {
 
     /// Returns true if the object is attached to the [`FileDescriptorSet`], otherwise false.
     pub fn contains<T: SynchronousMultiplexing>(&self, fd: &T) -> bool {
-        unsafe {
-            posix::FD_ISSET(
-                fd.file_descriptor().native_handle(),
-                &self.internals().fd_set,
-            )
-        }
+        self.contains_impl(fd.file_descriptor())
+    }
+
+    fn contains_impl(&self, fd: &FileDescriptor) -> bool {
+        unsafe { posix::FD_ISSET(fd.native_handle(), &self.internals().fd_set) }
+    }
+
+    /// Blocks until the specified event has occurred. It
+    /// returns a list with all [`FileDescriptor`]s which were triggered.
+    pub fn blocking_wait<F: FnMut(&FileDescriptor)>(
+        &self,
+        event: FileEvent,
+        fd_callback: F,
+    ) -> Result<usize, FileDescriptorSetWaitError> {
+        self.wait(core::ptr::null_mut(), event, fd_callback)
     }
 
     /// Waits until either the timeout has passed or the specified event has occurred. It
@@ -237,8 +252,18 @@ impl FileDescriptorSet {
         &self,
         timeout: Duration,
         event: FileEvent,
+        fd_callback: F,
+    ) -> Result<usize, FileDescriptorSetWaitError> {
+        let mut raw_timeout = timeout.as_timeval();
+        self.wait(&mut raw_timeout, event, fd_callback)
+    }
+
+    fn wait<F: FnMut(&FileDescriptor)>(
+        &self,
+        timeout: *mut posix::timeval,
+        event: FileEvent,
         mut fd_callback: F,
-    ) -> Result<(), FileDescriptorSetWaitError> {
+    ) -> Result<usize, FileDescriptorSetWaitError> {
         let mut fd_set: posix::fd_set = self.internals().fd_set;
 
         let read_fd: *mut posix::fd_set = match event {
@@ -263,25 +288,24 @@ impl FileDescriptorSet {
             _ => std::ptr::null_mut::<posix::fd_set>(),
         };
 
-        let mut raw_timeout = timeout.as_timeval();
         let msg = "Failure while waiting for file descriptor events";
-
-        if unsafe {
+        let number_of_notifications = unsafe {
             posix::select(
                 self.internals().max_fd,
                 read_fd,
                 write_fd,
                 exceptional_fd,
-                &mut raw_timeout,
+                timeout,
             )
-        } == -1
-        {
+        };
+
+        if number_of_notifications == -1 {
             handle_errno!(FileDescriptorSetWaitError, from self,
                 fatal Errno::EBADF => ("This should never happen! {} since at least one of the attached file descriptors is invalid.", msg),
                 Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
                 Errno::EINVAL => (TooManyAttachedFileDescriptors,
-                    "{} since the number of attached file descriptors exceed the system limit of ({}) or the timeout of {:?} exceeds the maximum supported timeout length.",
-                    msg, ProcessResourceLimit::MaxNumberOfOpenFileDescriptors.soft_limit(), timeout),
+                    "{} since the number of attached file descriptors exceed the system limit of ({}).",
+                    msg, Self::capacity()),
                 Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
                 v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
             );
@@ -294,6 +318,6 @@ impl FileDescriptorSet {
             }
         }
 
-        Ok(())
+        Ok(number_of_notifications as _)
     }
 }

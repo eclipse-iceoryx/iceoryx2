@@ -14,15 +14,21 @@ use std::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
+    clock::{nanosleep, NanosleepError},
     file_descriptor::FileDescriptor,
     file_descriptor_set::{
-        FileDescriptorSet, FileDescriptorSetGuard, FileDescriptorSetWaitError, FileEvent,
+        FileDescriptorSet, FileDescriptorSetAddError, FileDescriptorSetGuard,
+        FileDescriptorSetWaitError, FileEvent,
     },
 };
 
 use crate::reactor::{ReactorAttachError, ReactorWaitError};
 
-impl crate::reactor::ReactorGuard<'_, '_> for FileDescriptorSetGuard<'_, '_> {}
+impl crate::reactor::ReactorGuard<'_, '_> for FileDescriptorSetGuard<'_, '_> {
+    fn file_descriptor(&self) -> &FileDescriptor {
+        self.file_descriptor()
+    }
+}
 
 #[derive(Debug)]
 pub struct Reactor {
@@ -36,28 +42,48 @@ impl Reactor {
         }
     }
 
-    fn wait<F: FnMut(&FileDescriptor)>(
+    fn wait<
+        F: FnMut(&FileDescriptor),
+        W: FnMut(F, FileEvent) -> Result<usize, FileDescriptorSetWaitError>,
+    >(
         &self,
         fn_call: F,
-        timeout: std::time::Duration,
-    ) -> Result<(), super::ReactorWaitError> {
+        mut wait_call: W,
+        timeout: Duration,
+    ) -> Result<usize, super::ReactorWaitError> {
         let msg = "Unable to wait on Reactor";
-        match self.set.timed_wait(timeout, FileEvent::Read, fn_call) {
-            Ok(()) => Ok(()),
-            Err(FileDescriptorSetWaitError::Interrupt) => {
-                fail!(from self, with ReactorWaitError::Interrupt,
+        if self.set.is_empty() {
+            match nanosleep(timeout) {
+                Ok(()) => Ok(0),
+                Err(NanosleepError::InterruptedBySignal(_)) => {
+                    fail!(from self, with ReactorWaitError::Interrupt,
                         "{} since an interrupt signal was received while waiting.",
                         msg);
+                }
+                Err(v) => {
+                    fail!(from self, with ReactorWaitError::UnknownError,
+                        "{} since an unknown failure occurred while waiting ({:?}).",
+                        msg, v);
+                }
             }
-            Err(FileDescriptorSetWaitError::InsufficientPermissions) => {
-                fail!(from self, with ReactorWaitError::Interrupt,
+        } else {
+            match wait_call(fn_call, FileEvent::Read) {
+                Ok(number_of_notifications) => Ok(number_of_notifications),
+                Err(FileDescriptorSetWaitError::Interrupt) => {
+                    fail!(from self, with ReactorWaitError::Interrupt,
+                        "{} since an interrupt signal was received while waiting.",
+                        msg);
+                }
+                Err(FileDescriptorSetWaitError::InsufficientPermissions) => {
+                    fail!(from self, with ReactorWaitError::Interrupt,
                         "{} due to insufficient permissions.",
                         msg);
-            }
-            Err(v) => {
-                fail!(from self, with ReactorWaitError::UnknownError,
+                }
+                Err(v) => {
+                    fail!(from self, with ReactorWaitError::UnknownError,
                         "{} since an unknown failure occurred in the underlying FileDescriptorSet ({:?}).",
                         msg, v);
+                }
             }
         }
     }
@@ -67,7 +93,7 @@ impl crate::reactor::Reactor for Reactor {
     type Guard<'reactor, 'attachment> = FileDescriptorSetGuard<'reactor, 'attachment>;
     type Builder = ReactorBuilder;
 
-    fn capacity() -> usize {
+    fn capacity(&self) -> usize {
         FileDescriptorSet::capacity()
     }
 
@@ -87,33 +113,52 @@ impl crate::reactor::Reactor for Reactor {
         &'reactor self,
         value: &'attachment F,
     ) -> Result<Self::Guard<'reactor, 'attachment>, super::ReactorAttachError> {
-        Ok(fail!(from self, when self.set.add(value),
-                with ReactorAttachError::CapacityExceeded,
-                "Unable to attach {:?} to reactor since the capacity of the underlying file descriptor set was exceeded.",
-                value))
+        let msg = format!("Unable to attach {:?} to the reactor", value);
+        match self.set.add(value) {
+            Ok(guard) => Ok(guard),
+            Err(FileDescriptorSetAddError::CapacityExceeded) => {
+                fail!(from self, with ReactorAttachError::CapacityExceeded,
+                        "{msg} since the capacity of the underlying file descriptor set was exceeded.");
+            }
+            Err(FileDescriptorSetAddError::AlreadyAttached) => {
+                fail!(from self, with ReactorAttachError::AlreadyAttached,
+                        "{msg} since it is already attached.");
+            }
+        }
     }
 
     fn try_wait<F: FnMut(&FileDescriptor)>(
         &self,
         fn_call: F,
-    ) -> Result<(), super::ReactorWaitError> {
-        self.wait(fn_call, Duration::ZERO)
+    ) -> Result<usize, super::ReactorWaitError> {
+        self.wait(
+            fn_call,
+            |f: F, event: FileEvent| self.set.timed_wait(Duration::ZERO, event, f),
+            Duration::ZERO,
+        )
     }
 
     fn timed_wait<F: FnMut(&FileDescriptor)>(
         &self,
         fn_call: F,
         timeout: std::time::Duration,
-    ) -> Result<(), super::ReactorWaitError> {
-        self.wait(fn_call, timeout)
+    ) -> Result<usize, super::ReactorWaitError> {
+        self.wait(
+            fn_call,
+            |f: F, event: FileEvent| self.set.timed_wait(timeout, event, f),
+            timeout,
+        )
     }
 
     fn blocking_wait<F: FnMut(&FileDescriptor)>(
         &self,
         fn_call: F,
-    ) -> Result<(), super::ReactorWaitError> {
-        const INFINITE_TIMEOUT: Duration = Duration::from_secs(3600 * 24 * 365);
-        self.wait(fn_call, INFINITE_TIMEOUT)
+    ) -> Result<usize, super::ReactorWaitError> {
+        self.wait(
+            fn_call,
+            |f: F, event: FileEvent| self.set.blocking_wait(event, f),
+            Duration::MAX,
+        )
     }
 }
 

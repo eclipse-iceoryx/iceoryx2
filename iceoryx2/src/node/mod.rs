@@ -74,7 +74,7 @@
 //!                 .name(&"my_little_node".try_into()?)
 //!                 .create::<ipc::Service>()?;
 //!
-//! while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+//! while node.wait(CYCLE_TIME).is_ok() {
 //!     // your algorithm in here
 //! }
 //! # Ok(())
@@ -85,6 +85,7 @@
 //!
 //! ```no_run
 //! use core::time::Duration;
+//! use iceoryx2::node::NodeWaitFailure;
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -95,14 +96,14 @@
 //!
 //! loop {
 //!     match node.wait(CYCLE_TIME) {
-//!         NodeEvent::Tick => {
+//!         Ok(()) => {
 //!             println!("entered next cycle");
 //!         }
-//!         NodeEvent::TerminationRequest => {
+//!         Err(NodeWaitFailure::TerminationRequest) => {
 //!             println!("User pressed CTRL+c, terminating");
 //!             break;
 //!         }
-//!         NodeEvent::InterruptSignal => {
+//!         Err(NodeWaitFailure::Interrupt) => {
 //!             println!("Someone send an interrupt signal ...");
 //!         }
 //!     }
@@ -146,17 +147,6 @@ use std::marker::PhantomData;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-
-/// A complete list of all events that can occur in the main event loop, [`Node::wait()`].
-#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
-pub enum NodeEvent {
-    /// The timeout passed.
-    Tick,
-    /// SIGTERM signal was received
-    TerminationRequest,
-    /// SIGINT signal was received
-    InterruptSignal,
-}
 
 /// The system-wide unique id of a [`Node`]
 #[derive(
@@ -202,6 +192,23 @@ impl std::fmt::Display for NodeCreationFailure {
 }
 
 impl std::error::Error for NodeCreationFailure {}
+
+/// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`].
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum NodeWaitFailure {
+    /// The process received an interrupt signal while acquiring the list of all [`Node`]s.
+    Interrupt,
+    /// A termination signal `SIGTERM` was received.
+    TerminationRequest,
+}
+
+impl std::fmt::Display for NodeWaitFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "NodeWaitFailure::{:?}", self)
+    }
+}
+
+impl std::error::Error for NodeWaitFailure {}
 
 /// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -796,22 +803,29 @@ impl<Service: service::Service> Node<Service> {
         (*self.shared.monitoring_token.get()).take().unwrap()
     }
 
-    /// Waits until an event was received. It returns
-    /// [`NodeEvent::Tick`] when the `cycle_time` has passed, otherwise event that occurred.
-    pub fn wait(&self, cycle_time: Duration) -> NodeEvent {
+    /// Waits until the cycle time has passed. It returns [`NodeWaitFailure::TerminationRequest`]
+    /// when a `SIGTERM` signal was received or [`NodeWaitFailure::Interrupt`] when a `SIGINT`
+    /// signal was received.
+    pub fn wait(&self, cycle_time: Duration) -> Result<(), NodeWaitFailure> {
+        let msg = "Unable to wait on node";
         if SignalHandler::termination_requested() {
-            return NodeEvent::TerminationRequest;
+            fail!(from self, with NodeWaitFailure::TerminationRequest,
+                "{msg} since a termination request was received.");
         }
 
         match nanosleep(cycle_time) {
             Ok(()) => {
                 if SignalHandler::termination_requested() {
-                    NodeEvent::TerminationRequest
+                    fail!(from self, with NodeWaitFailure::TerminationRequest,
+                        "{msg} since a termination request was received.");
                 } else {
-                    NodeEvent::Tick
+                    Ok(())
                 }
             }
-            Err(NanosleepError::InterruptedBySignal(_)) => NodeEvent::InterruptSignal,
+            Err(NanosleepError::InterruptedBySignal(_)) => {
+                fail!(from self, with NodeWaitFailure::Interrupt,
+                        "{msg} since a interrupt signal was received.");
+            }
             Err(v) => {
                 fatal_panic!(from self,
                     "Failed to wait with cycle time {:?} in main event look, caused by ({:?}).",

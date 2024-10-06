@@ -53,8 +53,10 @@ impl crate::service::Service for Service {
     type ServiceNameHasher = hash::sha1::Sha1;
     type SharedMemory = shared_memory::process_local::Memory<PoolAllocator>;
     type Connection = zero_copy_connection::process_local::Connection;
-    type Event = event::process_local::EventImpl;
+    //type Event = event::process_local::EventImpl;
+    type Event = event::unix_datagram_socket::EventImpl;
     type Monitoring = monitoring::process_local::ProcessLocalMonitoring;
+    type Reactor = reactor::posix_select::Reactor;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,31 +10,42 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use clap::Parser;
 use core::time::Duration;
 use iceoryx2::prelude::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let event = node
-        .service_builder(&"MyEventName".try_into()?)
+        .service_builder(&args.service.as_str().try_into()?)
         .event()
         .open_or_create()?;
-    let max_event_id = event.static_config().event_id_max_value();
 
     let notifier = event.notifier_builder().create()?;
 
-    let mut counter: usize = 0;
     while node.wait(CYCLE_TIME).is_ok() {
-        counter += 1;
-        notifier.notify_with_custom_event_id(EventId::new(counter % max_event_id))?;
+        notifier.notify_with_custom_event_id(EventId::new(args.event_id))?;
 
-        println!("Trigger event with id {} ...", counter);
+        println!("[service: \"{}\"] Trigger event ...", args.service);
     }
 
     println!("exit");
 
     Ok(())
+}
+
+#[derive(Parser, Debug)]
+#[clap(version, about, long_about = None)]
+struct Args {
+    /// Defines the service to which events are emitted.
+    #[clap(short, long)]
+    service: String,
+
+    /// The event id used for triggering
+    #[clap(short, long, default_value_t = 0)]
+    event_id: usize,
 }

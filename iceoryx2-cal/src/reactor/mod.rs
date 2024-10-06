@@ -25,6 +25,7 @@ pub enum ReactorCreateError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorAttachError {
+    AlreadyAttached,
     CapacityExceeded,
     UnknownError(i32),
 }
@@ -36,15 +37,17 @@ pub enum ReactorWaitError {
     UnknownError,
 }
 
-pub trait ReactorGuard<'reactor, 'attachment> {}
+pub trait ReactorGuard<'reactor, 'attachment> {
+    fn file_descriptor(&self) -> &FileDescriptor;
+}
 
-pub trait Reactor: Sized {
+pub trait Reactor: Sized + Debug {
     type Guard<'reactor, 'attachment>: ReactorGuard<'reactor, 'attachment>
     where
         Self: 'reactor;
     type Builder: ReactorBuilder<Self>;
 
-    fn capacity() -> usize;
+    fn capacity(&self) -> usize;
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool;
 
@@ -53,13 +56,16 @@ pub trait Reactor: Sized {
         value: &'attachment F,
     ) -> Result<Self::Guard<'reactor, 'attachment>, ReactorAttachError>;
 
-    fn try_wait<F: FnMut(&FileDescriptor)>(&self, fn_call: F) -> Result<(), ReactorWaitError>;
+    fn try_wait<F: FnMut(&FileDescriptor)>(&self, fn_call: F) -> Result<usize, ReactorWaitError>;
     fn timed_wait<F: FnMut(&FileDescriptor)>(
         &self,
         fn_call: F,
         timeout: Duration,
-    ) -> Result<(), ReactorWaitError>;
-    fn blocking_wait<F: FnMut(&FileDescriptor)>(&self, fn_call: F) -> Result<(), ReactorWaitError>;
+    ) -> Result<usize, ReactorWaitError>;
+    fn blocking_wait<F: FnMut(&FileDescriptor)>(
+        &self,
+        fn_call: F,
+    ) -> Result<usize, ReactorWaitError>;
 }
 
 pub trait ReactorBuilder<T: Reactor> {

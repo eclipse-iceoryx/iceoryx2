@@ -92,6 +92,21 @@ mod reactor {
     }
 
     #[test]
+    fn attach_the_same_attachment_twice_fails<Sut: Reactor>() {
+        let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+
+        let name = generate_name();
+        let listener = unix_datagram_socket::ListenerBuilder::new(&name)
+            .create()
+            .unwrap();
+
+        let _guard = sut.attach(&listener).unwrap();
+        let result = sut.attach(&listener);
+
+        assert_that!(result.err(), eq Some(ReactorAttachError::AlreadyAttached));
+    }
+
+    #[test]
     fn try_wait_does_not_block_when_triggered_single<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
 
@@ -103,7 +118,7 @@ mod reactor {
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
-            is_ok
+            eq Ok(1)
         );
 
         assert_that!(triggered_fds, len 1);
@@ -125,7 +140,7 @@ mod reactor {
                 |fd| triggered_fds.push(unsafe { fd.native_handle() }),
                 INFINITE_TIMEOUT
             ),
-            is_ok
+            eq Ok(1)
         );
 
         assert_that!(triggered_fds, len 1);
@@ -144,7 +159,7 @@ mod reactor {
         let mut triggered_fds = vec![];
         assert_that!(
             sut.blocking_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() }),),
-            is_ok
+            eq Ok(1)
         );
 
         assert_that!(triggered_fds, len 1);
@@ -164,7 +179,7 @@ mod reactor {
             let mut triggered_fds = vec![];
             assert_that!(
                 sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
-                is_ok
+                eq Ok(1)
             );
 
             assert_that!(triggered_fds, len 1);
@@ -197,7 +212,7 @@ mod reactor {
                     |fd| triggered_fds.push(unsafe { fd.native_handle() }),
                     INFINITE_TIMEOUT
                 ),
-                is_ok
+                eq Ok(1)
             );
 
             assert_that!(triggered_fds, len 1);
@@ -227,7 +242,7 @@ mod reactor {
             let mut triggered_fds = vec![];
             assert_that!(
                 sut.blocking_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() }),),
-                is_ok
+                eq Ok(1)
             );
 
             assert_that!(triggered_fds, len 1);
@@ -263,7 +278,7 @@ mod reactor {
         let mut triggered_fds = vec![];
         assert_that!(
             sut.try_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
-            is_ok
+            eq Ok(NUMBER_OF_ATTACHMENTS)
         );
 
         assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS);
@@ -294,7 +309,7 @@ mod reactor {
                 |fd| triggered_fds.push(unsafe { fd.native_handle() }),
                 INFINITE_TIMEOUT
             ),
-            is_ok
+            eq Ok(NUMBER_OF_ATTACHMENTS)
         );
 
         assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS);
@@ -322,7 +337,7 @@ mod reactor {
         let mut triggered_fds = vec![];
         assert_that!(
             sut.blocking_wait(|fd| triggered_fds.push(unsafe { fd.native_handle() })),
-            is_ok
+            eq Ok(NUMBER_OF_ATTACHMENTS)
         );
 
         assert_that!(triggered_fds, len NUMBER_OF_ATTACHMENTS);
@@ -346,7 +361,7 @@ mod reactor {
                 |fd| triggered_fds.push(unsafe { fd.native_handle() }),
                 TIMEOUT
             ),
-            is_ok
+            eq Ok(0)
         );
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
 

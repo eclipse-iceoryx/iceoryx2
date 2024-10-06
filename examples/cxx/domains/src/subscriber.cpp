@@ -58,7 +58,7 @@ auto main(int argc, char** argv) -> int {
 
     std::cout << "subscribed to: [domain: \"" << args.domain() << "\", service: \"" << args.service() << "\"]"
               << std::endl;
-    while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
+    while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {
             std::cout << "received: " << sample->payload() << std::endl;

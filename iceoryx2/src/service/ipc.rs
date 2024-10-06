@@ -55,6 +55,7 @@ impl crate::service::Service for Service {
     type Connection = zero_copy_connection::posix_shared_memory::Connection;
     type Event = event::unix_datagram_socket::EventImpl;
     type Monitoring = monitoring::file_lock::FileLockMonitoring;
+    type Reactor = reactor::posix_select::Reactor;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {

@@ -43,6 +43,16 @@ path = "rust/event/listener.rs"
 name = "event_notifier"
 path = "rust/event/notifier.rs"
 
+# event multiplexing
+
+[[example]]
+name = "event_multiplexing_notifier"
+path = "rust/event_multiplexing/notifier.rs"
+
+[[example]]
+name = "event_multiplexing_wait"
+path = "rust/event_multiplexing/wait.rs"
+
 # publish_subscribe
 
 [[example]]

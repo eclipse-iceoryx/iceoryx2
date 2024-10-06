@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    while let NodeEvent::Tick = node.wait(CYCLE_TIME) {
+    while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
             println!("received: {:?}", *sample);
         }

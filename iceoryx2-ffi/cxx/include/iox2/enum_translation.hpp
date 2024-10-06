@@ -22,8 +22,8 @@
 #include "iox2/listener_error.hpp"
 #include "iox2/log_level.hpp"
 #include "iox2/messaging_pattern.hpp"
-#include "iox2/node_event.hpp"
 #include "iox2/node_failure_enums.hpp"
+#include "iox2/node_wait_failure.hpp"
 #include "iox2/notifier_error.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/semantic_string.hpp"
@@ -130,15 +130,13 @@ constexpr auto from<int, iox2::NodeListFailure>(const int value) noexcept -> iox
 }
 
 template <>
-constexpr auto from<int, iox2::NodeEvent>(const int value) noexcept -> iox2::NodeEvent {
-    const auto error = static_cast<iox2_node_event_e>(value);
+constexpr auto from<int, iox2::NodeWaitFailure>(const int value) noexcept -> iox2::NodeWaitFailure {
+    const auto error = static_cast<iox2_node_wait_failure_e>(value);
     switch (error) {
-    case iox2_node_event_e_TICK:
-        return iox2::NodeEvent::Tick;
-    case iox2_node_event_e_TERMINATION_REQUEST:
-        return iox2::NodeEvent::TerminationRequest;
-    case iox2_node_event_e_INTERRUPT_SIGNAL:
-        return iox2::NodeEvent::InterruptSignal;
+    case iox2_node_wait_failure_e_TERMINATION_REQUEST:
+        return iox2::NodeWaitFailure::TerminationRequest;
+    case iox2_node_wait_failure_e_INTERRUPT:
+        return iox2::NodeWaitFailure::Interrupt;
     }
 
     IOX_UNREACHABLE();

@@ -43,7 +43,7 @@ auto main() -> int {
 
     std::cout << "defined service attributes: " << service.attributes() << std::endl;
 
-    while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
+    while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = publisher.loan().expect("acquire sample");
         sample.payload_mut() = 0;
         send(std::move(sample)).expect("send successful");

@@ -52,7 +52,7 @@ int main(void) {
     }
     iox2_event_id_t event_id;
 
-    while (iox2_node_wait(&node_handle, 0, 0) == iox2_node_event_e_TICK) {
+    while (iox2_node_wait(&node_handle, 0, 0) == IOX2_OK) {
         bool has_received_one = false;
         if (iox2_listener_timed_wait_one(&listener, &event_id, &has_received_one, 1, 0) != IOX2_OK) {
             printf("Unable to wait for notification!\n");

@@ -23,7 +23,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
@@ -92,8 +91,6 @@ impl Drop for TestFixture {
 
 #[test]
 fn unix_datagram_socket_send_receive_works() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
-
     let socket_name = generate_socket_name();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
@@ -119,8 +116,6 @@ fn unix_datagram_socket_send_receive_works() {
 
 #[test]
 fn unix_datagram_socket_adjust_buffer_size_works() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
-
     let socket_name = generate_socket_name();
     let mut sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
@@ -141,8 +136,6 @@ fn unix_datagram_socket_adjust_buffer_size_works() {
 
 #[test]
 fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
-
     let socket_name = generate_socket_name();
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
         .permission(Permission::OWNER_ALL)
@@ -162,8 +155,6 @@ fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received
 
 #[test]
 fn unix_datagram_socket_blocking_mode_blocks() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
-
     let socket_name = generate_socket_name();
     let received_message = AtomicBool::new(false);
     let handle = BarrierHandle::new();
@@ -203,8 +194,6 @@ fn unix_datagram_socket_blocking_mode_blocks() {
 
 #[test]
 fn unix_datagram_socket_timeout_blocks_at_least() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
-
     let socket_name = generate_socket_name();
     let handle = BarrierHandle::new();
     let handle_2 = BarrierHandle::new();
@@ -241,7 +230,6 @@ fn unix_datagram_socket_timeout_blocks_at_least() {
 #[ignore]
 #[test]
 fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut test = TestFixture::new();
@@ -291,7 +279,6 @@ fn unix_datagram_socket_sending_receiving_with_single_fd_works() {
 #[ignore]
 #[test]
 fn unix_datagram_socket_sending_receiving_credentials_works() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let socket_name = generate_socket_name();
@@ -322,7 +309,6 @@ fn unix_datagram_socket_sending_receiving_credentials_works() {
 #[ignore]
 #[test]
 fn unix_datagram_socket_sending_receiving_with_max_supported_fd_and_credentials_works() {
-    test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS);
     test_requires!(POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA);
 
     let mut test = TestFixture::new();

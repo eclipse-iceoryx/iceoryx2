@@ -14,6 +14,9 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use std::time::{Duration, Instant};
+
+use crate::posix::Struct;
 use crate::{posix::types::*, win32call};
 
 use super::win32_handle_translator::{FdHandleEntry, HandleTranslator};
@@ -25,8 +28,65 @@ pub unsafe fn select(
     errorfds: *mut fd_set,
     timeout: *mut timeval,
 ) -> int {
-    let (num_handles, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::select(nfds, readfds, writefds, errorfds, timeout) };
-    num_handles
+    let now = Instant::now();
+
+    // infinite blocking means on windows 10 years
+    let mut timeout = if timeout.is_null() {
+        timeval {
+            tv_sec: 3600 * 24 * 365,
+            tv_usec: 0,
+        }
+    } else {
+        *timeout
+    };
+
+    let mut remaining_time =
+        Duration::from_secs(timeout.tv_sec as _) + Duration::from_micros(timeout.tv_usec as _);
+    let full_timeout = remaining_time;
+
+    let readfds_copy = if readfds.is_null() {
+        fd_set::new()
+    } else {
+        *readfds
+    };
+    let writefds_copy = if writefds.is_null() {
+        fd_set::new()
+    } else {
+        *writefds
+    };
+    let errorfds_copy = if errorfds.is_null() {
+        fd_set::new()
+    } else {
+        *errorfds
+    };
+
+    loop {
+        let (num_handles, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::select(nfds, readfds, writefds, errorfds, &timeout) };
+        if num_handles > 0 {
+            return num_handles;
+        }
+
+        let elapsed = now.elapsed();
+        if elapsed > full_timeout {
+            return num_handles;
+        } else {
+            remaining_time = full_timeout - elapsed;
+            timeout.tv_sec = remaining_time.as_secs() as _;
+            timeout.tv_usec = remaining_time.subsec_micros() as _;
+
+            if !readfds.is_null() {
+                *readfds = readfds_copy;
+            }
+
+            if !writefds.is_null() {
+                *writefds = writefds_copy;
+            }
+
+            if !errorfds.is_null() {
+                *errorfds = errorfds_copy;
+            }
+        }
+    }
 }
 
 pub const fn CMSG_ALIGN(len: usize) -> usize {
