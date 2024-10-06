@@ -17,6 +17,7 @@ use iceoryx2_bb_container::semantic_string::SemanticStringError;
 
 use core::ffi::{c_int, c_void};
 
+mod attachment_id;
 mod config;
 mod event_id;
 mod iceoryx2_settings;
@@ -51,7 +52,9 @@ mod unique_listener_id;
 mod unique_notifier_id;
 mod unique_publisher_id;
 mod unique_subscriber_id;
+mod waitset;
 
+pub use attachment_id::*;
 pub use config::*;
 pub use event_id::*;
 pub use iceoryx2_settings::*;
@@ -85,6 +88,7 @@ pub use unique_listener_id::*;
 pub use unique_notifier_id::*;
 pub use unique_publisher_id::*;
 pub use unique_subscriber_id::*;
+pub use waitset::*;
 
 /// This constant signals an successful function call
 pub const IOX2_OK: c_int = 0;
