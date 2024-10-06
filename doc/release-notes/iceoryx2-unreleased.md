@@ -20,7 +20,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Fix misleading warning related to default config file
+  [#437](https://github.com/eclipse-iceoryx/iceoryx2/issues/437)
 
 ### Refactoring
 
