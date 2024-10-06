@@ -78,7 +78,7 @@ use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use iceoryx2_bb_log::{fail, trace, warn};
+use iceoryx2_bb_log::{debug, fail, trace, warn};
 
 use crate::service::port_factory::publisher::UnableToDeliverStrategy;
 
@@ -395,14 +395,24 @@ impl Config {
     /// is called after this function was called, no file will be loaded since the global default
     /// config was already populated.
     pub fn global_config() -> &'static Config {
-        if !ICEORYX2_CONFIG.is_initialized()
-            && Config::setup_global_config_from_file(unsafe {
+        if !ICEORYX2_CONFIG.is_initialized() {
+            match Config::setup_global_config_from_file(unsafe {
                 &FilePath::new_unchecked(DEFAULT_CONFIG_FILE)
-            })
-            .is_err()
-        {
-            warn!(from "Config::global_config()", "Default config file found but unable to read data, populate config with default values.");
-            ICEORYX2_CONFIG.set_value(Config::default());
+            }) {
+                Ok(_) => (),
+                Err(ConfigCreationError::FailedToOpenConfigFile) => {
+                    debug!(from "Config::global_config()", "Default config file not found, populate config with default values.");
+                    ICEORYX2_CONFIG.set_value(Config::default());
+                }
+                Err(ConfigCreationError::FailedToReadConfigFileContents) => {
+                    warn!(from "Config::global_config()", "Default config file found but unable to read content, populate config with default values.");
+                    ICEORYX2_CONFIG.set_value(Config::default());
+                }
+                Err(ConfigCreationError::UnableToDeserializeContents) => {
+                    warn!(from "Config::global_config()", "Default config file found but unable to load data, populate config with default values.");
+                    ICEORYX2_CONFIG.set_value(Config::default());
+                }
+            }
         }
 
         ICEORYX2_CONFIG.get()
