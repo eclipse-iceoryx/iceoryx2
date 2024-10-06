@@ -271,6 +271,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         }
     }
 
+    // triggers the underlying is_service_available method to check whether the service described in base is available.
     fn is_service_available(
         &mut self,
         error_msg: &str,
@@ -370,6 +371,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         self
     }
 
+    /// Validates configuration and overrides the invalid setting with meaningful values.
     fn adjust_attributes_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.publish_subscribe_mut();

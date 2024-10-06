@@ -20,9 +20,24 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum TypeVariant {
     #[default]
-    /// A fixed size type like [`u64`]
+    /// A type notated by [`#[repr(C)]`](https://doc.rust-lang.org/reference/type-layout.html#reprc).
+    /// with a constant size known at compile time is recognized as FixedSize.
+    /// The FixedSize type should satisfy the [`Sized`].
+    /// For example, all primitive types are FixedSize. The self-contained structs(without pointer members
+    /// or heap-usages) are FixedSize.
     FixedSize,
-    /// A dynamic sized type like a slice
+
+    /// A dynamic sized type strictly refers to the slice of an iceoryx2 compatible types.
+    /// The struct with pointer members or with heap usage MUSTN't be recognized as Dynamic type.
+    /// Indeed, they're the in-compatible iceoryx2 types.
+    ///
+    /// The underlying reason is the shared memory which we use to store the payload data.
+    /// If the payload type would use the heap then the type would use
+    /// process local memory that is not available to another process.
+    ///
+    /// The pointer requirement comes again from shared memory.
+    /// It has a different pointer address offset in every process rendering any absolute pointer
+    /// useless and dereferencing it would end up in a segfault.
     Dynamic,
 }
 
@@ -33,9 +48,10 @@ pub struct TypeDetail {
     pub variant: TypeVariant,
     /// Contains the output of [`core::any::type_name()`].
     pub type_name: String,
-    /// The size of the underlying type.
+    /// The size of the underlying type calculated by [`core::mem::size_of`].
     pub size: usize,
-    /// The alignment of the underlying type.
+    /// The ABI-required minimum alignment of the underlying type calculated by [`core::mem::align_of`].
+    /// It may be set by users with a larger alignment, e.g. the memory provided by allocator used by SIMD.
     pub alignment: usize,
 }
 
@@ -64,11 +80,11 @@ pub struct MessageTypeDetails {
 }
 
 impl MessageTypeDetails {
-    pub(crate) fn from<Header, UserHeader, Payload>(variant: TypeVariant) -> Self {
+    pub(crate) fn from<Header, UserHeader, Payload>(payload_variant: TypeVariant) -> Self {
         Self {
             header: TypeDetail::__internal_new::<Header>(TypeVariant::FixedSize),
             user_header: TypeDetail::__internal_new::<UserHeader>(TypeVariant::FixedSize),
-            payload: TypeDetail::__internal_new::<Payload>(variant),
+            payload: TypeDetail::__internal_new::<Payload>(payload_variant),
         }
     }
 
@@ -78,6 +94,7 @@ impl MessageTypeDetails {
         payload_start as *const u8
     }
 
+    /// returns the pointer to the user header
     pub(crate) fn user_header_ptr_from_header(&self, header: *const u8) -> *const u8 {
         let header = header as usize;
         let user_header_start = align(header + self.header.size, self.user_header.alignment);
@@ -118,5 +135,135 @@ impl MessageTypeDetails {
             && self.payload.variant == rhs.payload.variant
             && self.payload.size == rhs.payload.size
             && self.payload.alignment <= rhs.payload.alignment
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iceoryx2_bb_testing::assert_that;
+
+    #[cfg(target_pointer_width = "32")]
+    const ALIGNMENT: usize = 4;
+    #[cfg(target_pointer_width = "64")]
+    const ALIGNMENT: usize = 8;
+
+    #[test]
+    fn test_from() {
+        #[repr(C)]
+        struct MyPayload {
+            _a: i32,
+            _b: bool,
+            _c: i64,
+        }
+
+        let sut = MessageTypeDetails::from::<i32, i64, MyPayload>(TypeVariant::FixedSize);
+        let expected = MessageTypeDetails{
+            header:  TypeDetail{
+                variant: TypeVariant::FixedSize,
+                type_name: "i32".to_string(),
+                size: 4,
+                alignment: 4, // i32 uses 4 bytes, so its aliment is always 4 no matter x32 or x64.
+            },
+            user_header: TypeDetail{
+                variant: TypeVariant::FixedSize,
+                type_name: "i64".to_string(),
+                size: 8,
+                alignment: ALIGNMENT,
+            },
+            payload: TypeDetail{
+                variant: TypeVariant::FixedSize,
+                type_name: "iceoryx2::service::static_config::message_type_details::tests::test_from::MyPayload".to_string(),
+                size: 16,
+                alignment: ALIGNMENT,
+            },
+        };
+        assert_that!(sut, eq expected);
+
+        let sut = MessageTypeDetails::from::<i32, bool, i64>(TypeVariant::Dynamic);
+        let expected = MessageTypeDetails {
+            header: TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: "i32".to_string(),
+                size: 4,
+                alignment: 4,
+            },
+            user_header: TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: "bool".to_string(),
+                size: 1,
+                alignment: 1,
+            },
+            payload: TypeDetail {
+                variant: TypeVariant::Dynamic,
+                type_name: "i64".to_string(),
+                size: 8,
+                alignment: ALIGNMENT,
+            },
+        };
+        assert_that!(sut, eq expected);
+    }
+
+    #[test]
+    fn test_user_header_ptr_from_header() {
+        let details = MessageTypeDetails::from::<i32, bool, i64>(TypeVariant::Dynamic);
+        #[repr(C)]
+        struct Demo {
+            header: i32,
+            user_header: bool,
+            _payload: i64,
+        }
+
+        let demo = Demo {
+            header: 123,
+            user_header: true,
+            _payload: 123,
+        };
+
+        let ptr: *const u8 = &demo.header as *const _ as *const u8;
+        let user_header_ptr = details.user_header_ptr_from_header(ptr);
+        let sut: *const bool = user_header_ptr as *const bool;
+        assert_that!(unsafe { *sut } , eq demo.user_header);
+
+        let details = MessageTypeDetails::from::<i64, i32, i64>(TypeVariant::Dynamic);
+        #[repr(C)]
+        struct Demo2 {
+            header: i64,
+            user_header: i32,
+            _payload: i64,
+        }
+
+        let demo = Demo2 {
+            header: 123,
+            user_header: 999,
+            _payload: 123,
+        };
+
+        let ptr: *const u8 = &demo.header as *const _ as *const u8;
+        let user_header_ptr = details.user_header_ptr_from_header(ptr);
+        let sut: *const i32 = user_header_ptr as *const i32;
+        assert_that!(unsafe { *sut } , eq demo.user_header);
+    }
+
+    #[test]
+    fn test_payload_ptr_from_header() {
+        let details = MessageTypeDetails::from::<i32, i32, i32>(TypeVariant::Dynamic);
+        #[repr(C)]
+        struct Demo {
+            header: i32,
+            _user_header: i32,
+            payload: i32,
+        }
+
+        let demo = Demo {
+            header: 123,
+            _user_header: 123,
+            payload: 9999,
+        };
+
+        let ptr: *const u8 = &demo.header as *const _ as *const u8;
+        let payload_ptr = details.payload_ptr_from_header(ptr) as *const i32;
+        let sut = unsafe { *payload_ptr };
+        assert_that!(sut, eq demo.payload);
     }
 }
