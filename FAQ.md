@@ -10,6 +10,10 @@ structure uses the heap, it is stored locally within a process and cannot be
 accessed by other processes. As a result, data types such as `String`, `Vec`,
 or `HashMap` cannot be used as payload types.
 
+Additionally, every data type must be annotated with `#[repr(C)]`. The Rust
+compiler may reorder the members of a struct, which can lead to undefined
+behavior if another process expects a different ordering.
+
 To address this, iceoryx2 provides shared-memory-compatible data types. You
 can refer to the [complex data types example](examples/rust/complex_data_types),
 which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
