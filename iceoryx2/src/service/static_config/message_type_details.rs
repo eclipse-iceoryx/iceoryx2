@@ -120,3 +120,30 @@ impl MessageTypeDetails {
             && self.payload.alignment <= rhs.payload.alignment
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iceoryx2_bb_testing::assert_that;
+
+    #[test]
+    fn test_payload_ptr_from_header(){
+        let details = MessageTypeDetails::from::<i32,bool,i32>(TypeVariant::Dynamic);
+        struct Demo {
+            header: i32,
+            _user_header: bool,
+            _payload: i32,
+        }
+        
+        let demo = Demo{
+            header: 123,
+            _user_header: true,
+            _payload:9999,
+        };
+
+        let ptr: *const u8 = &demo.header as *const _ as *const u8;
+        let payload_ptr = details.payload_ptr_from_header(ptr) as *const i32;
+        let got = unsafe { *payload_ptr };
+        assert_that!(got, eq 9999);
+    }
+}
