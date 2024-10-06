@@ -21,7 +21,7 @@ use iceoryx2::{
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use crate::iox2_service_type_e;
+use crate::{iox2_guard_h_ref, iox2_service_type_e};
 
 use super::{AssertNonNullHandle, HandleToType};
 
@@ -126,5 +126,45 @@ pub unsafe extern "C" fn iox2_attachment_id_drop(handle: iox2_attachment_id_h) {
         }
     }
     (attachment_id.deleter)(attachment_id);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_attachment_id_from_guard(
+    guard: iox2_guard_h_ref,
+    attachment_id_struct_ptr: *mut iox2_attachment_id_t,
+    attachment_id_handle_ptr: *mut iox2_attachment_id_h,
+) {
+    guard.assert_non_null();
+    attachment_id_handle_ptr.assert_non_null();
+
+    let guard = &*guard.as_type();
+
+    let mut attachment_id_struct_ptr = attachment_id_struct_ptr;
+    fn no_op(_: *mut iox2_attachment_id_t) {}
+    let mut deleter: fn(*mut iox2_attachment_id_t) = no_op;
+    if attachment_id_struct_ptr.is_null() {
+        attachment_id_struct_ptr = iox2_attachment_id_t::alloc();
+        deleter = iox2_attachment_id_t::dealloc;
+    }
+    debug_assert!(!attachment_id_struct_ptr.is_null());
+
+    match guard.service_type {
+        iox2_service_type_e::IPC => {
+            (*attachment_id_struct_ptr).init(
+                guard.service_type,
+                AttachmentIdUnion::new_ipc(AttachmentId::from_guard(&*guard.value.as_ref().ipc)),
+                deleter,
+            );
+        }
+        iox2_service_type_e::LOCAL => {
+            (*attachment_id_struct_ptr).init(
+                guard.service_type,
+                AttachmentIdUnion::new_local(AttachmentId::from_guard(
+                    &*guard.value.as_ref().local,
+                )),
+                deleter,
+            );
+        }
+    }
 }
 // END C API

@@ -12,9 +12,12 @@
 
 #![allow(non_camel_case_types)]
 
-use std::{ffi::c_int, mem::ManuallyDrop};
+use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
 
-use crate::{c_size_t, iox2_attachment_id_h, iox2_callback_context, iox2_service_type_e, IOX2_OK};
+use crate::{
+    c_size_t, iox2_attachment_id_h, iox2_callback_context, iox2_guard_h, iox2_guard_t,
+    iox2_service_type_e, GuardUnion, IOX2_OK,
+};
 
 use super::{AssertNonNullHandle, HandleToType, IntoCInt};
 use iceoryx2::{
@@ -259,6 +262,58 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
         iox2_service_type_e::IPC => waitset.value.as_ref().ipc.stop(),
         iox2_service_type_e::LOCAL => waitset.value.as_ref().local.stop(),
     }
+}
+
+/// Returns [`iox2_waitset_attachment_error_e`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_attach_interval(
+    handle: iox2_waitset_h_ref,
+    seconds: u64,
+    nanoseconds: u32,
+    guard_struct_ptr: *mut iox2_guard_t,
+    guard_handle_ptr: *mut iox2_guard_h,
+) -> c_int {
+    handle.assert_non_null();
+    guard_handle_ptr.assert_non_null();
+
+    let waitset = &mut *handle.as_type();
+    let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
+
+    let mut guard_struct_ptr = guard_struct_ptr;
+    fn no_op(_: *mut iox2_guard_t) {}
+    let mut deleter: fn(*mut iox2_guard_t) = no_op;
+    if guard_struct_ptr.is_null() {
+        guard_struct_ptr = iox2_guard_t::alloc();
+        deleter = iox2_guard_t::dealloc;
+    }
+    debug_assert!(!guard_struct_ptr.is_null());
+
+    match waitset.service_type {
+        iox2_service_type_e::IPC => match waitset.value.as_ref().ipc.attach_interval(interval) {
+            Ok(guard) => {
+                (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
+            }
+            Err(e) => {
+                return e.into_c_int();
+            }
+        },
+        iox2_service_type_e::LOCAL => {
+            match waitset.value.as_ref().local.attach_interval(interval) {
+                Ok(guard) => {
+                    (*guard_struct_ptr).init(
+                        waitset.service_type,
+                        GuardUnion::new_local(guard),
+                        deleter,
+                    );
+                }
+                Err(e) => {
+                    return e.into_c_int();
+                }
+            }
+        }
+    }
+
+    IOX2_OK
 }
 
 /// Returns [`iox2_waitset_run_error_e`].
