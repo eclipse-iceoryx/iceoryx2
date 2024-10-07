@@ -2,17 +2,18 @@
 
 ## Running The Example
 
+> [!CAUTION]
+> Every payload you transmit with iceoryx2 must be compatible with shared
+> memory. Specifically, it must:
+>
+> * be self contained, no heap, no pointers to external sources
+> * have a uniform memory representation -> `#[repr(C)]`
+> * not use pointers to manage their internal structure
+
 This example demonstrates how the zero-copy compatible versions of `Vec` or
-`String` can be sent. All data types that are used as building blocks for
-communication must:
-
-* be self contained, no heap, no pointers to external sources
-* have a uniform memory representation -> `#[repr(C)]`
-* not use pointers to manage their internal structure
-
-This excludes many types Rust offers via its standard library. The crate
-`iceoryx2-bb-container` provides versions that satisfy the strict zero-copy
-requirements like `FixedSizeVec` and `FixedSizeByteString`.
+`String` can be sent.
+The crate `iceoryx2-bb-container` provides versions that are shared memory
+compatible like `FixedSizeVec` and `FixedSizeByteString`.
 
 **Note**:** There also exist more advanced types called `Relocatable**`, that
 will become the basic building blocks for dynamic-sized messages in iceoryx2, so

@@ -18,6 +18,34 @@ To address this, iceoryx2 provides shared-memory-compatible data types. You
 can refer to the [complex data types example](examples/rust/complex_data_types),
 which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
 
+## How To Define Custom Data Types (Rust)
+
+1. Ensure to only use data types suitable for shared memory communication like
+   pod-types (plain old data, e.g. `u64`, `f32`, ...) or explicitly
+   shared-memory compatible containers like some of the constructs in the
+   `iceoryx2-bb-containers`.
+2. Add `#[repr(C`)]` to your custom data type so that it has a uniform memory
+   representation.
+
+   ```rust
+    #[repr(C)]
+    struct MyDataType {
+        //....
+    }
+   ```
+
+3. **Do not use pointers, or data types that are not self-contained or use
+   pointers for their internal management!**
+
+## How To Define Custom Data Types (C++)
+
+1. Ensure to only use data types suitable for shared memory communication like
+   pod-types (plain old data, e.g. `uint64_t`, `int32_t`, ...) or explicitly
+   shared-memory compatible containers like some of the constructs in the
+   `iceoryx-hoofs`.
+2. **Do not use pointers, or data types that are not self-contained or use
+   pointers for their internal management!**
+
 ## How To Send Data Where The Size Is Unknown At Compilation-Time?
 
 Take a look at the
@@ -30,10 +58,12 @@ insufficient, a new publisher with a larger `max_slice_len` can be created.
 
 <!-- markdownlint-disable -->
 
-> [!IMPORTANT] Be aware that the history of the old publisher is lost when it is
+> [!IMPORTANT]
+> Be aware that the history of the old publisher is lost when it is
 > removed.
 
-> [!NOTE] We are also working on an API that does not require the user to
+> [!NOTE]
+> We are also working on an API that does not require the user to
 > explicitly create a new publisher whenever the memory is insufficient. It
 > would also solve the history issue.
 
