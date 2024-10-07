@@ -67,10 +67,10 @@ void AttachmentId<S>::drop() {
         m_handle = nullptr;
     }
 }
-
 ////////////////////////////
 // END: AttachmentId
 ////////////////////////////
+
 ////////////////////////////
 // BEGIN: Guard
 ////////////////////////////
@@ -218,11 +218,11 @@ auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_deadline(const int32_t file_descriptor, const iox::units::Duration deadline)
+auto WaitSet<S>::attach_deadline(FileDescriptorView file_descriptor, const iox::units::Duration deadline)
     -> iox::expected<Guard<S>, WaitSetAttachmentError> {
     iox2_guard_h guard_handle {};
     auto result = iox2_waitset_attach_deadline(&m_handle,
-                                               file_descriptor,
+                                               file_descriptor.m_handle,
                                                deadline.toSeconds(),
                                                deadline.toNanoseconds()
                                                    - deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC,
@@ -239,13 +239,14 @@ auto WaitSet<S>::attach_deadline(const int32_t file_descriptor, const iox::units
 template <ServiceType S>
 auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox::units::Duration deadline)
     -> iox::expected<Guard<S>, WaitSetAttachmentError> {
-    return attach_deadline(iox2_listener_get_file_descriptor(&listener.m_handle), deadline);
+    return attach_deadline(FileDescriptorView(iox2_listener_get_file_descriptor(&listener.m_handle)), deadline);
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_notification(const int32_t file_descriptor) -> iox::expected<Guard<S>, WaitSetAttachmentError> {
+auto WaitSet<S>::attach_notification(const FileDescriptorView file_descriptor)
+    -> iox::expected<Guard<S>, WaitSetAttachmentError> {
     iox2_guard_h guard_handle {};
-    auto result = iox2_waitset_attach_notification(&m_handle, file_descriptor, nullptr, &guard_handle);
+    auto result = iox2_waitset_attach_notification(&m_handle, file_descriptor.m_handle, nullptr, &guard_handle);
 
     if (result == IOX2_OK) {
         return iox::ok(Guard<S>(guard_handle));
@@ -256,7 +257,7 @@ auto WaitSet<S>::attach_notification(const int32_t file_descriptor) -> iox::expe
 
 template <ServiceType S>
 auto WaitSet<S>::attach_notification(const Listener<S>& listener) -> iox::expected<Guard<S>, WaitSetAttachmentError> {
-    return attach_notification(iox2_listener_get_file_descriptor(&listener.m_handle));
+    return attach_notification(FileDescriptorView(iox2_listener_get_file_descriptor(&listener.m_handle)));
 }
 
 template <ServiceType S>

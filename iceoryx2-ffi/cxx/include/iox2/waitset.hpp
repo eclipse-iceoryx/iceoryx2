@@ -15,6 +15,7 @@
 
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
+#include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener.hpp"
 #include "iox2/service_type.hpp"
@@ -86,10 +87,10 @@ class WaitSet {
     auto is_empty() const -> bool;
 
     auto attach_notification(const Listener<S>& listener) -> iox::expected<Guard<S>, WaitSetAttachmentError>;
-    auto attach_notification(int32_t file_descriptor) -> iox::expected<Guard<S>, WaitSetAttachmentError>;
+    auto attach_notification(FileDescriptorView file_descriptor) -> iox::expected<Guard<S>, WaitSetAttachmentError>;
     auto attach_deadline(const Listener<S>& listener,
                          iox::units::Duration deadline) -> iox::expected<Guard<S>, WaitSetAttachmentError>;
-    auto attach_deadline(int32_t file_descriptor,
+    auto attach_deadline(FileDescriptorView file_descriptor,
                          iox::units::Duration deadline) -> iox::expected<Guard<S>, WaitSetAttachmentError>;
     auto attach_interval(iox::units::Duration deadline) -> iox::expected<Guard<S>, WaitSetAttachmentError>;
 

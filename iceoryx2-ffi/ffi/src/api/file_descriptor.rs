@@ -12,8 +12,6 @@
 
 #![allow(non_camel_case_types)]
 
-use std::mem::ManuallyDrop;
-
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_posix::{
     file_descriptor::{FileDescriptor, FileDescriptorBased},
@@ -27,20 +25,23 @@ use super::{AssertNonNullHandle, HandleToType};
 
 #[derive(Debug)]
 #[repr(C)]
-pub struct CFileDescriptor(FileDescriptor);
+pub struct CFileDescriptor {
+    value: i32,
+    is_owned: bool,
+}
 
 impl FileDescriptorBased for CFileDescriptor {
     fn file_descriptor(&self) -> &FileDescriptor {
-        &self.0
+        unsafe { core::mem::transmute(self) }
     }
 }
 
 impl SynchronousMultiplexing for CFileDescriptor {}
 
 #[repr(C)]
-#[repr(align(1))] // alignment of Option<CFileDescriptor>
+#[repr(align(8))] // alignment of Option<CFileDescriptor>
 pub struct iox2_file_descriptor_storage_t {
-    internal: [u8; 1], // magic number obtained with size_of::<Option<CFileDescriptor>>()
+    internal: [u8; 8], // magic number obtained with size_of::<Option<CFileDescriptor>>()
 }
 
 #[repr(C)]
@@ -108,6 +109,15 @@ impl HandleToType for iox2_file_descriptor_h_ref {
 
 // BEGIN C API
 #[no_mangle]
+pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
+    handle: iox2_file_descriptor_h,
+) -> iox2_file_descriptor_ptr {
+    debug_assert!(!handle.is_null());
+
+    (*handle.as_type()).value.as_ref()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_h) {
     handle.assert_non_null();
 
@@ -117,25 +127,30 @@ pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
+    handle: iox2_file_descriptor_h_ref,
+) -> i32 {
+    handle.assert_non_null();
+
+    (*handle.as_type())
+        .value
+        .as_ref()
+        .file_descriptor()
+        .native_handle()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn iox2_file_descriptor_new(
     value: i32,
-    is_owner: bool,
+    is_owned: bool,
     struct_ptr: *mut iox2_file_descriptor_t,
     handle_ptr: *mut iox2_file_descriptor_h,
 ) -> bool {
     handle_ptr.assert_non_null();
 
-    let fd = if is_owner {
-        FileDescriptor::new(value)
-    } else {
-        FileDescriptor::non_owning_new(value)
-    };
-
-    if fd.is_none() {
+    if FileDescriptor::non_owning_new(value).is_none() {
         return false;
     }
-
-    let fd = fd.unwrap();
 
     let mut struct_ptr = struct_ptr;
     fn no_op(_: *mut iox2_file_descriptor_t) {}
@@ -146,7 +161,7 @@ pub unsafe extern "C" fn iox2_file_descriptor_new(
     }
     debug_assert!(!struct_ptr.is_null());
 
-    (*struct_ptr).init(CFileDescriptor(fd), deleter);
+    (*struct_ptr).init(CFileDescriptor { value, is_owned }, deleter);
     *handle_ptr = (*struct_ptr).as_handle();
 
     true

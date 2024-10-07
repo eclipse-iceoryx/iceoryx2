@@ -16,6 +16,7 @@ use crate::api::{
     iox2_callback_context, iox2_event_id_t, iox2_service_type_e, iox2_unique_listener_id_h,
     iox2_unique_listener_id_t, AssertNonNullHandle, HandleToType, IntoCInt, IOX2_OK,
 };
+use crate::iox2_file_descriptor_ptr;
 
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
@@ -177,25 +178,17 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
     listener_handle: iox2_listener_h_ref,
-) -> i32 {
+) -> iox2_file_descriptor_ptr {
     listener_handle.assert_non_null();
 
     let listener = &mut *listener_handle.as_type();
 
-    match listener.service_type {
-        iox2_service_type_e::IPC => listener
-            .value
-            .as_ref()
-            .ipc
-            .file_descriptor()
-            .native_handle(),
-        iox2_service_type_e::LOCAL => listener
-            .value
-            .as_ref()
-            .local
-            .file_descriptor()
-            .native_handle(),
-    }
+    let fd = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_ref().ipc.file_descriptor(),
+        iox2_service_type_e::LOCAL => listener.value.as_ref().local.file_descriptor(),
+    };
+
+    core::mem::transmute(fd)
 }
 
 /// Tries to wait on the listener and calls the callback for every received event providing the

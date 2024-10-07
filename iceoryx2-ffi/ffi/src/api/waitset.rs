@@ -16,8 +16,8 @@ use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
     c_size_t, iox2_attachment_id_h, iox2_attachment_id_t, iox2_callback_context,
-    iox2_file_descriptor_h_ref, iox2_guard_h, iox2_guard_t, iox2_service_type_e, AttachmentIdUnion,
-    CFileDescriptor, GuardUnion, IOX2_OK,
+    iox2_file_descriptor_ptr, iox2_guard_h, iox2_guard_t, iox2_service_type_e, AttachmentIdUnion,
+    GuardUnion, IOX2_OK,
 };
 
 use super::{AssertNonNullHandle, HandleToType, IntoCInt};
@@ -274,7 +274,7 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_notification(
     handle: iox2_waitset_h_ref,
-    fd: iox2_file_descriptor_h_ref,
+    fd: iox2_file_descriptor_ptr,
     guard_struct_ptr: *mut iox2_guard_t,
     guard_handle_ptr: *mut iox2_guard_h,
 ) -> c_int {
@@ -291,7 +291,6 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
         deleter = iox2_guard_t::dealloc;
     }
     debug_assert!(!guard_struct_ptr.is_null());
-    let fd = (*fd.as_type()).value.as_ref() as *const CFileDescriptor;
 
     match waitset.service_type {
         iox2_service_type_e::IPC => match waitset.value.as_ref().ipc.attach_notification(&*fd) {
@@ -327,7 +326,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     handle: iox2_waitset_h_ref,
-    fd: iox2_file_descriptor_h_ref,
+    fd: iox2_file_descriptor_ptr,
     seconds: u64,
     nanoseconds: u32,
     guard_struct_ptr: *mut iox2_guard_t,
@@ -347,7 +346,6 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
         deleter = iox2_guard_t::dealloc;
     }
     debug_assert!(!guard_struct_ptr.is_null());
-    let fd = (*fd.as_type()).value.as_ref() as *const CFileDescriptor;
 
     match waitset.service_type {
         iox2_service_type_e::IPC => {
