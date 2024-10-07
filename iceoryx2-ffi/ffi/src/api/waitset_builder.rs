@@ -127,8 +127,9 @@ pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_
 
 // Returns [`iox2_waitset_create_error_e`]
 #[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_builder_create_ipc(
+pub unsafe extern "C" fn iox2_waitset_builder_create(
     handle: iox2_waitset_builder_h,
+    service_type: iox2_service_type_e,
     struct_ptr: *mut iox2_waitset_t,
     handle_ptr: *mut iox2_waitset_h,
 ) -> c_int {
@@ -137,65 +138,45 @@ pub unsafe extern "C" fn iox2_waitset_builder_create_ipc(
     let handle = unsafe { &mut *handle.as_type() };
     let waitset_builder = ManuallyDrop::take(&mut handle.value.as_mut().value);
 
-    let waitset = match waitset_builder.create::<ipc::Service>() {
-        Ok(waitset) => waitset,
-        Err(e) => return e.into_c_int(),
-    };
-
-    *handle_ptr = std::ptr::null_mut();
-    let mut struct_ptr = struct_ptr;
     fn no_op(_: *mut iox2_waitset_t) {}
     let mut deleter: fn(*mut iox2_waitset_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_waitset_t::alloc();
-        deleter = iox2_waitset_t::dealloc;
-    }
-    debug_assert!(!struct_ptr.is_null());
+    let mut struct_ptr = struct_ptr;
+    *handle_ptr = std::ptr::null_mut();
 
-    (*struct_ptr).deleter = deleter;
-    (*struct_ptr).init(
-        iox2_service_type_e::IPC,
-        WaitSetUnion::new_ipc(waitset),
-        deleter,
-    );
+    let mut alloc_memory = || {
+        if struct_ptr.is_null() {
+            struct_ptr = iox2_waitset_t::alloc();
+            deleter = iox2_waitset_t::dealloc;
+        }
+        debug_assert!(!struct_ptr.is_null());
 
-    IOX2_OK
-}
-
-// Returns [`iox2_waitset_create_error_e`]
-#[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_builder_create_local(
-    handle: iox2_waitset_builder_h,
-    struct_ptr: *mut iox2_waitset_t,
-    handle_ptr: *mut iox2_waitset_h,
-) -> c_int {
-    debug_assert!(!handle.is_null());
-
-    let handle = unsafe { &mut *handle.as_type() };
-    let waitset_builder = ManuallyDrop::take(&mut handle.value.as_mut().value);
-
-    let waitset = match waitset_builder.create::<local::Service>() {
-        Ok(waitset) => waitset,
-        Err(e) => return e.into_c_int(),
+        (*struct_ptr).deleter = deleter;
     };
 
-    *handle_ptr = std::ptr::null_mut();
-    let mut struct_ptr = struct_ptr;
-    fn no_op(_: *mut iox2_waitset_t) {}
-    let mut deleter: fn(*mut iox2_waitset_t) = no_op;
-    if struct_ptr.is_null() {
-        struct_ptr = iox2_waitset_t::alloc();
-        deleter = iox2_waitset_t::dealloc;
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let waitset = match waitset_builder.create::<ipc::Service>() {
+                Ok(waitset) => waitset,
+                Err(e) => return e.into_c_int(),
+            };
+
+            alloc_memory();
+
+            (*struct_ptr).init(service_type, WaitSetUnion::new_ipc(waitset), deleter);
+        }
+        iox2_service_type_e::LOCAL => {
+            let waitset = match waitset_builder.create::<local::Service>() {
+                Ok(waitset) => waitset,
+                Err(e) => return e.into_c_int(),
+            };
+
+            alloc_memory();
+
+            (*struct_ptr).init(service_type, WaitSetUnion::new_local(waitset), deleter);
+        }
     }
-    debug_assert!(!struct_ptr.is_null());
 
-    (*struct_ptr).deleter = deleter;
-    (*struct_ptr).init(
-        iox2_service_type_e::LOCAL,
-        WaitSetUnion::new_local(waitset),
-        deleter,
-    );
-
+    *handle_ptr = (*struct_ptr).as_handle();
     IOX2_OK
 }
 

@@ -58,6 +58,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/static_config_event.cpp
     src/static_config_publish_subscribe.cpp
     src/unique_port_id.cpp
+    src/waitset.cpp
 )
 
 set_target_properties(iceoryx2-cxx-object-lib

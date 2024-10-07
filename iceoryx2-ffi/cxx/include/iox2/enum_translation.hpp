@@ -34,6 +34,7 @@
 #include "iox2/subscriber_error.hpp"
 #include "iox2/type_variant.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
+#include "iox2/waitset_enums.hpp"
 
 namespace iox {
 template <>
@@ -658,6 +659,66 @@ constexpr auto from<iox2::LogLevel, iox2_log_level_e>(iox2::LogLevel value) noex
     case iox2::LogLevel::FATAL:
         return iox2_log_level_e_FATAL;
     }
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::WaitSetCreateError>(const int value) noexcept -> iox2::WaitSetCreateError {
+    const auto variant = static_cast<iox2_waitset_create_error_e>(value);
+    switch (variant) {
+    case iox2_waitset_create_error_e_INTERNAL_ERROR:
+        return iox2::WaitSetCreateError::InternalError;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::WaitSetRunResult>(const int value) noexcept -> iox2::WaitSetRunResult {
+    const auto variant = static_cast<iox2_waitset_run_result_e>(value);
+    switch (variant) {
+    case iox2_waitset_run_result_e_INTERRUPT:
+        return iox2::WaitSetRunResult::Interrupt;
+    case iox2_waitset_run_result_e_TERMINATION_REQUEST:
+        return iox2::WaitSetRunResult::TerminationRequest;
+    case iox2_waitset_run_result_e_STOP_REQUEST:
+        return iox2::WaitSetRunResult::StopRequest;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::WaitSetAttachmentError>(const int value) noexcept -> iox2::WaitSetAttachmentError {
+    const auto variant = static_cast<iox2_waitset_attachment_error_e>(value);
+    switch (variant) {
+    case iox2_waitset_attachment_error_e_ALREADY_ATTACHED:
+        return iox2::WaitSetAttachmentError::AlreadyAttached;
+    case iox2_waitset_attachment_error_e_INSUFFICIENT_CAPACITY:
+        return iox2::WaitSetAttachmentError::InsufficientCapacity;
+    case iox2_waitset_attachment_error_e_INTERNAL_ERROR:
+        return iox2::WaitSetAttachmentError::InternalError;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::WaitSetRunError>(const int value) noexcept -> iox2::WaitSetRunError {
+    const auto variant = static_cast<iox2_waitset_run_error_e>(value);
+    switch (variant) {
+    case iox2_waitset_run_error_e_INSUFFICIENT_PERMISSIONS:
+        return iox2::WaitSetRunError::InsufficientPermissions;
+    case iox2_waitset_run_error_e_INTERNAL_ERROR:
+        return iox2::WaitSetRunError::InternalError;
+    case iox2_waitset_run_error_e_NO_ATTACHMENTS:
+        return iox2::WaitSetRunError::NoAttachments;
+    case iox2_waitset_run_error_e_TERMINATION_REQUEST:
+        return iox2::WaitSetRunError::TerminationRequest;
+    case iox2_waitset_run_error_e_INTERRUPT:
+        return iox2::WaitSetRunError::Interrupt;
+    }
+
     IOX_UNREACHABLE();
 }
 
