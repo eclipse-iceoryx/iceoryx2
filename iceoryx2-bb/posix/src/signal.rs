@@ -40,7 +40,7 @@
 //!
 //! fn some_task() {}
 //!
-//! while SignalHandler::last_signal() != Some(FetchableSignal::Terminate) {
+//! while SignalHandler::last_signal() != Some(NonFatalFetchableSignal::Terminate) {
 //!     some_task();
 //! }
 //! ```
@@ -50,7 +50,7 @@
 //! ```no_run
 //! use iceoryx2_bb_posix::signal::*;
 //!
-//! SignalHandler::wait_for_signal(FetchableSignal::Terminate);
+//! SignalHandler::wait_for_signal(NonFatalFetchableSignal::Terminate);
 //! ```
 use std::{
     fmt::{Debug, Display},
@@ -75,14 +75,34 @@ use tiny_fn::tiny_fn;
 
 macro_rules! define_signals {
     {fetchable: $($entry:ident = $nn:ident::$value:ident),*
+     fatal_fetchable: $($fatal_entry:ident = $fatal_nn:ident::$fatal_value:ident),*
      unknown_translates_to: $unknown_entry:ident = $unknown_nn:ident::$unknown_value:ident
      unfetchable: $($uentry:ident = $unn:ident::$uvalue:ident),*
     } => {
         /// Represents signals which cannot be fetched by a signal handler.
-        #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+        #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Sequence)]
         #[repr(i32)]
         pub enum UnfetchableSignal {
           $($uentry = $unn::$uvalue),*,
+        }
+
+        enum_gen! {
+            /// Represents signals that can be fetched and are non-fatal, meaning that they do not
+            /// indicate that the process is somehow corrupted. For example: `SIGUSR1` or `SIGINT`.
+            #[derive(Sequence)]
+            NonFatalFetchableSignal
+          unknown_translates_to:
+            $unknown_entry = $unknown_nn::$unknown_value
+          entry:
+            $($entry = $nn::$value),*
+        }
+
+        /// Represents signals that can be fetched and are fatal, meaning that they
+        /// indicate that the process is somehow corrupted and should terminate.
+        #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Sequence)]
+        #[repr(i32)]
+        pub enum FatalFetchableSignal {
+          $($fatal_entry = $fatal_nn::$value),*,
         }
 
         enum_gen! {
@@ -92,15 +112,17 @@ macro_rules! define_signals {
           unknown_translates_to:
             $unknown_entry = $unknown_nn::$unknown_value
           entry:
-            $($entry = $nn::$value),*
+            $($entry = $nn::$value),*,
+            $($fatal_entry = $fatal_nn::$fatal_value),*
         }
 
         /// Represents all known POSIX signals
-        #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+        #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Sequence)]
         #[repr(i32)]
         pub enum Signal {
             $($entry = $nn::$value),*,
             $($uentry = $unn::$uvalue),*,
+            $($fatal_entry = $fatal_nn::$fatal_value),*,
             $unknown_entry = $unknown_nn::$unknown_value
         }
 
@@ -112,10 +134,45 @@ macro_rules! define_signals {
             }
         }
 
+        impl From<FatalFetchableSignal> for FetchableSignal {
+            fn from(v: FatalFetchableSignal) -> Self {
+                match v {
+                    $(FatalFetchableSignal::$fatal_entry => FetchableSignal::$fatal_entry),*
+                }
+            }
+        }
+
+        impl From<FatalFetchableSignal> for Signal {
+            fn from(v: FatalFetchableSignal) -> Self {
+                match v {
+                    $(FatalFetchableSignal::$fatal_entry => Signal::$fatal_entry),*
+                }
+            }
+        }
+
+        impl From<NonFatalFetchableSignal> for FetchableSignal {
+            fn from(v: NonFatalFetchableSignal) -> Self {
+                match v {
+                    $(NonFatalFetchableSignal::$entry => FetchableSignal::$entry),*,
+                    NonFatalFetchableSignal::$unknown_entry => FetchableSignal::$unknown_entry,
+                }
+            }
+        }
+
+        impl From<NonFatalFetchableSignal> for Signal {
+            fn from(v: NonFatalFetchableSignal) -> Self {
+                match v {
+                    $(NonFatalFetchableSignal::$entry => Signal::$entry),*,
+                    NonFatalFetchableSignal::$unknown_entry => Signal::$unknown_entry,
+                }
+            }
+        }
+
         impl From<FetchableSignal> for Signal {
             fn from(v: FetchableSignal) -> Self {
                 match v {
                     $(FetchableSignal::$entry => Signal::$entry),*,
+                    $(FetchableSignal::$fatal_entry => Signal::$fatal_entry),*,
                     FetchableSignal::$unknown_entry => Signal::$unknown_entry,
                 }
             }
@@ -125,20 +182,12 @@ macro_rules! define_signals {
 
 define_signals! {
   fetchable:
-    Abort = posix::SIGABRT,
-    Alarm = posix::SIGALRM,
-    Bus = posix::SIGBUS,
-    Child = posix::SIGCHLD,
     //TODO: https://github.com/eclipse-iceoryx/iceoryx2/issues/81
     //  comment in Continue again when the bindgen bug is fixed
     //Continue = posix::SIGCONT,
-    FloatingPointError = posix::SIGFPE,
-    Hangup = posix::SIGHUP,
-    IllegalInstruction = posix::SIGILL,
+    Abort = posix::SIGABRT,
     Interrupt = posix::SIGINT,
-    BrokenPipe = posix::SIGPIPE,
     TerminalQuit = posix::SIGQUIT,
-    SegmentationFault = posix::SIGSEGV,
     Terminate = posix::SIGTERM,
     TerminalStop = posix::SIGTSTP,
     BackgroundProcessReadAttempt = posix::SIGTTIN,
@@ -146,12 +195,21 @@ define_signals! {
     UserDefined1 = posix::SIGUSR1,
     PollableEvent = posix::SIGPOLL,
     ProfilingTimerExpired = posix::SIGPROF,
-    BadSystemCall = posix::SIGSYS,
-    TraceTrap = posix::SIGTRAP,
     UrgentDataAvailableAtSocket = posix::SIGURG,
-    VirtualTimerExpired = posix::SIGVTALRM,
+    VirtualTimerExpired = posix::SIGVTALRM
+  fatal_fetchable:
+    Alarm = posix::SIGALRM,
+    BadSystemCall = posix::SIGSYS,
+    BrokenPipe = posix::SIGPIPE,
+    Bus = posix::SIGBUS,
+    Child = posix::SIGCHLD,
     CpuTimeLimitExceeded = posix::SIGXCPU,
-    FileSizeLimitExceeded = posix::SIGXFSZ
+    FileSizeLimitExceeded = posix::SIGXFSZ,
+    FloatingPointError = posix::SIGFPE,
+    Hangup = posix::SIGHUP,
+    IllegalInstruction = posix::SIGILL,
+    SegmentationFault = posix::SIGSEGV,
+    TraceTrap = posix::SIGTRAP
   unknown_translates_to:
     UserDefined2 = posix::SIGUSR2
   unfetchable:
@@ -322,8 +380,8 @@ impl SignalHandler {
     /// Calls a provided callable and fetches possible signals which where raised indirectly by
     /// the call. This is helpful for instance when a low level C call can fail by emitting a
     /// signal. On example is `memset` when it writes on a preallocated chunk but the actual
-    /// memory of the operating system does not suffice.
-    pub fn call_and_fetch<F: FnOnce()>(call: F) -> Option<FetchableSignal> {
+    /// memory of the operating system does not suffice then it emits `SIGABRT`
+    pub fn call_and_fetch<F: FnOnce()>(call: F) -> Option<NonFatalFetchableSignal> {
         {
             let _sighandle = Self::instance();
             LAST_SIGNAL.store(posix::MAX_SIGNAL_VALUE, Ordering::Relaxed);
@@ -339,7 +397,7 @@ impl SignalHandler {
 
     /// Returns the last signal which was raised. After the call the last signal is reset and would
     /// return [`None`] on the next call when no new signal was raised again.
-    pub fn last_signal() -> Option<FetchableSignal> {
+    pub fn last_signal() -> Option<NonFatalFetchableSignal> {
         Self::instance();
         match LAST_SIGNAL.swap(posix::MAX_SIGNAL_VALUE, Ordering::Relaxed) {
             posix::MAX_SIGNAL_VALUE => None,
@@ -347,27 +405,30 @@ impl SignalHandler {
         }
     }
 
-    /// Returns true if ([`FetchableSignal::Interrupt`] or [`FetchableSignal::Terminate`]) was emitted
+    /// Returns true if ([`NonFatalFetchableSignal::Interrupt`] or
+    /// [`NonFatalFetchableSignal::Terminate`]) was emitted
     /// for instance by pressing CTRL+c, otherwise false
     pub fn termination_requested() -> bool {
         let last_signal = Self::last_signal();
-        last_signal == Some(FetchableSignal::Interrupt)
-            || last_signal == Some(FetchableSignal::Terminate)
+        last_signal == Some(NonFatalFetchableSignal::Interrupt)
+            || last_signal == Some(NonFatalFetchableSignal::Terminate)
     }
 
     /// Blocks until the provided signal was raised or an error occurred.
     /// ```no_run
     /// use iceoryx2_bb_posix::signal::*;
     ///
-    /// SignalHandler::wait_for_signal(FetchableSignal::Terminate);
+    /// SignalHandler::wait_for_signal(NonFatalFetchableSignal::Terminate);
     /// ```
-    pub fn wait_for_signal(signal: FetchableSignal) -> Result<(), SignalWaitError> {
+    pub fn wait_for_signal(signal: NonFatalFetchableSignal) -> Result<(), SignalWaitError> {
         let s = vec![signal];
         Self::wait_for_multiple_signals(&s)
     }
 
     /// Blocks until the provided vector signals was raised or an error occurred.
-    pub fn wait_for_multiple_signals(signals: &[FetchableSignal]) -> Result<(), SignalWaitError> {
+    pub fn wait_for_multiple_signals(
+        signals: &[NonFatalFetchableSignal],
+    ) -> Result<(), SignalWaitError> {
         Self::instance();
 
         let origin = "Signal::wait_for_multiple_signals";
@@ -401,7 +462,7 @@ impl SignalHandler {
     /// }
     /// ```
     pub fn timed_wait_for_signal(
-        signal: FetchableSignal,
+        signal: NonFatalFetchableSignal,
         timeout: Duration,
     ) -> Result<bool, SignalWaitError> {
         let signals = vec![signal];
@@ -411,9 +472,9 @@ impl SignalHandler {
     /// Blocks until one of the provided signals was raised or the timeout was reached. If one of the
     /// signals raised it returns its value, otherwise [`None`].
     pub fn timed_wait_for_multiple_signals(
-        signals: &Vec<FetchableSignal>,
+        signals: &Vec<NonFatalFetchableSignal>,
         timeout: Duration,
-    ) -> Result<Option<FetchableSignal>, SignalWaitError> {
+    ) -> Result<Option<NonFatalFetchableSignal>, SignalWaitError> {
         Self::instance();
 
         let origin = "Signal::timed_wait_for_multiple_signals";
@@ -474,8 +535,8 @@ impl SignalHandler {
             do_repeat_eintr_call: false,
         };
 
-        for signal in all::<FetchableSignal>().collect::<Vec<_>>() {
-            sighandle.register_raw_signal(signal, capture_signal as posix::sighandler_t);
+        for signal in all::<NonFatalFetchableSignal>().collect::<Vec<_>>() {
+            sighandle.register_raw_signal(signal.into(), capture_signal as posix::sighandler_t);
         }
 
         sighandle

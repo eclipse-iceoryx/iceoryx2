@@ -50,7 +50,7 @@ impl TestFixture {
         COUNTER.fetch_add(1, Ordering::SeqCst);
     }
 
-    pub fn verify(&self, signal: FetchableSignal, counter_value: usize) {
+    pub fn verify(&self, signal: NonFatalFetchableSignal, counter_value: usize) {
         assert_that!(
             || { COUNTER.load(Ordering::SeqCst) },
             block_until counter_value
@@ -70,7 +70,7 @@ fn signal_register_single_handler_works() {
         SignalHandler::register(FetchableSignal::UserDefined1, &TestFixture::signal_callback);
 
     Process::from_self().send_signal(Signal::UserDefined1).ok();
-    test.verify(FetchableSignal::UserDefined1, 1)
+    test.verify(NonFatalFetchableSignal::UserDefined1, 1)
 }
 
 #[test]
@@ -85,10 +85,10 @@ fn signal_register_multiple_handler_works() {
         SignalHandler::register(FetchableSignal::UserDefined2, &TestFixture::signal_callback);
 
     Process::from_self().send_signal(Signal::UserDefined1).ok();
-    test.verify(FetchableSignal::UserDefined1, 1);
+    test.verify(NonFatalFetchableSignal::UserDefined1, 1);
 
     Process::from_self().send_signal(Signal::UserDefined2).ok();
-    test.verify(FetchableSignal::UserDefined2, 2);
+    test.verify(NonFatalFetchableSignal::UserDefined2, 2);
 }
 
 #[test]
@@ -100,10 +100,10 @@ fn signal_register_handler_with_multiple_signals_works() {
     let _guard1 = SignalHandler::register_multiple_signals(&s, &TestFixture::signal_callback);
 
     Process::from_self().send_signal(Signal::UserDefined1).ok();
-    test.verify(FetchableSignal::UserDefined1, 1);
+    test.verify(NonFatalFetchableSignal::UserDefined1, 1);
 
     Process::from_self().send_signal(Signal::UserDefined2).ok();
-    test.verify(FetchableSignal::UserDefined2, 2);
+    test.verify(NonFatalFetchableSignal::UserDefined2, 2);
 }
 
 #[test]
@@ -122,7 +122,7 @@ fn signal_guard_unregisters_on_drop() {
     });
 
     Process::from_self().send_signal(Signal::UserDefined1).ok();
-    test.verify(FetchableSignal::UserDefined1, 10);
+    test.verify(NonFatalFetchableSignal::UserDefined1, 10);
 }
 
 #[test]
@@ -144,13 +144,12 @@ fn signal_call_and_fetch_works() {
     test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
 
     let _test = TestFixture::new();
-
     let result = SignalHandler::call_and_fetch(|| {
         Process::from_self().send_signal(Signal::Interrupt).ok();
         nanosleep(TIMEOUT).ok();
     });
 
-    assert_that!(result, eq Some(FetchableSignal::Interrupt));
+    assert_that!(result, eq Some(NonFatalFetchableSignal::Interrupt));
 }
 
 #[test]
@@ -167,8 +166,8 @@ fn signal_call_and_fetch_with_registered_handler_works() {
         nanosleep(TIMEOUT).ok();
     });
 
-    assert_that!(result, eq Some(FetchableSignal::UserDefined1));
-    test.verify(FetchableSignal::UserDefined1, 1);
+    assert_that!(result, eq Some(NonFatalFetchableSignal::UserDefined1));
+    test.verify(NonFatalFetchableSignal::UserDefined1, 1);
 }
 
 #[test]
@@ -177,7 +176,10 @@ fn signal_wait_for_signal_blocks() {
 
     let _test = TestFixture::new();
 
-    let signals = vec![FetchableSignal::UserDefined2, FetchableSignal::UserDefined1];
+    let signals = vec![
+        NonFatalFetchableSignal::UserDefined2,
+        NonFatalFetchableSignal::UserDefined1,
+    ];
     let counter = AtomicI32::new(0);
     thread::scope(|s| {
         s.spawn(|| {
@@ -206,7 +208,7 @@ fn signal_wait_twice_for_same_signal_blocks() {
     let counter = AtomicI32::new(0);
     thread::scope(|s| {
         s.spawn(|| {
-            SignalHandler::wait_for_signal(FetchableSignal::UserDefined2).unwrap();
+            SignalHandler::wait_for_signal(NonFatalFetchableSignal::UserDefined2).unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
@@ -215,7 +217,7 @@ fn signal_wait_twice_for_same_signal_blocks() {
         Process::from_self().send_signal(Signal::UserDefined2).ok();
 
         s.spawn(|| {
-            SignalHandler::wait_for_signal(FetchableSignal::UserDefined2).unwrap();
+            SignalHandler::wait_for_signal(NonFatalFetchableSignal::UserDefined2).unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
@@ -239,7 +241,7 @@ fn signal_timed_wait_blocks_at_least_for_timeout() {
     let _test = TestFixture::new();
 
     let start = Time::now_with_clock(ClockType::Monotonic).unwrap();
-    SignalHandler::timed_wait_for_signal(FetchableSignal::UserDefined2, TIMEOUT).unwrap();
+    SignalHandler::timed_wait_for_signal(NonFatalFetchableSignal::UserDefined2, TIMEOUT).unwrap();
     assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
 }
 
@@ -249,7 +251,10 @@ fn signal_timed_wait_blocks_until_signal() {
 
     let _test = TestFixture::new();
 
-    let signals = vec![FetchableSignal::UserDefined2, FetchableSignal::UserDefined1];
+    let signals = vec![
+        NonFatalFetchableSignal::UserDefined2,
+        NonFatalFetchableSignal::UserDefined1,
+    ];
     let counter = AtomicI32::new(0);
     thread::scope(|s| {
         s.spawn(|| {
