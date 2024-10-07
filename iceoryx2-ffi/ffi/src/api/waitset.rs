@@ -122,19 +122,19 @@ impl IntoCInt for WaitSetCreateError {
     }
 }
 
-pub(super) union WaitSetUnion {
+pub(crate) union WaitSetUnion {
     ipc: ManuallyDrop<WaitSet<ipc::Service>>,
     local: ManuallyDrop<WaitSet<local::Service>>,
 }
 
 impl WaitSetUnion {
-    pub(super) fn new_ipc(waitset: WaitSet<ipc::Service>) -> Self {
+    pub(crate) fn new_ipc(waitset: WaitSet<ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(waitset),
         }
     }
 
-    pub(super) fn new_local(waitset: WaitSet<local::Service>) -> Self {
+    pub(crate) fn new_local(waitset: WaitSet<local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(waitset),
         }
@@ -150,13 +150,13 @@ pub struct iox2_waitset_storage_t {
 #[repr(C)]
 #[iceoryx2_ffi(WaitSetUnion)]
 pub struct iox2_waitset_t {
-    service_type: iox2_service_type_e,
-    value: iox2_waitset_storage_t,
-    deleter: fn(*mut iox2_waitset_t),
+    pub(crate) service_type: iox2_service_type_e,
+    pub(crate) value: iox2_waitset_storage_t,
+    pub(crate) deleter: fn(*mut iox2_waitset_t),
 }
 
 impl iox2_waitset_t {
-    pub(super) fn init(
+    pub(crate) fn init(
         &mut self,
         service_type: iox2_service_type_e,
         value: WaitSetUnion,

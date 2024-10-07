@@ -54,6 +54,7 @@ mod unique_notifier_id;
 mod unique_publisher_id;
 mod unique_subscriber_id;
 mod waitset;
+mod waitset_builder;
 
 pub use attachment_id::*;
 pub use config::*;
@@ -91,6 +92,7 @@ pub use unique_notifier_id::*;
 pub use unique_publisher_id::*;
 pub use unique_subscriber_id::*;
 pub use waitset::*;
+pub use waitset_builder::*;
 
 /// This constant signals an successful function call
 pub const IOX2_OK: c_int = 0;
