@@ -17,6 +17,9 @@ use bindgen::*;
 use std::env;
 use std::path::PathBuf;
 
+// ICEORYX2_CLANG_ARG is used to specify the clang_arg for bindgen.
+const IOX2_CLANG_ARG: &str = "IOX2_CLANG_ARG";
+
 fn main() {
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     println!("cargo:rustc-link-lib=pthread");
@@ -25,8 +28,17 @@ fn main() {
     println!("cargo:rustc-link-lib=acl");
     println!("cargo:rerun-if-changed=src/c/posix.h");
 
+    if !cc::Build::new().get_compiler().is_like_clang() {
+        println!("cargo:warning=Clang is not available, you may set up environment {} to avoid missing some headers.", IOX2_CLANG_ARG);
+    }
+
+    let mut builder = bindgen::Builder::default();
+    if let Ok(value) = env::var(IOX2_CLANG_ARG) {
+        builder = builder.clang_arg(format!("-I{}", value));
+    }
+
     let bindings = if std::env::var("DOCS_RS").is_ok() {
-        bindgen::Builder::default()
+        builder
             .header("src/c/posix.h")
             .blocklist_type("max_align_t")
             .parse_callbacks(Box::new(CargoCallbacks::new()))
@@ -37,7 +49,7 @@ fn main() {
     } else {
         #[cfg(not(feature = "acl"))]
         {
-            bindgen::Builder::default()
+            builder
                 .header("src/c/posix.h")
                 .blocklist_type("max_align_t")
                 .parse_callbacks(Box::new(CargoCallbacks::new()))
