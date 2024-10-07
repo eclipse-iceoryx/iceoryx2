@@ -329,7 +329,7 @@ impl Default for Config {
                     subscriber_expired_connection_buffer: 128,
                 },
                 event: Event {
-                    max_listeners: 2,
+                    max_listeners: 16,
                     max_notifiers: 16,
                     max_nodes: 36,
                     event_id_max_value: 32,

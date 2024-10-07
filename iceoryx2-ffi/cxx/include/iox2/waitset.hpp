@@ -60,6 +60,8 @@ class AttachmentId {
 
   private:
     explicit AttachmentId(iox2_attachment_id_h handle);
+    template <ServiceType>
+    friend auto run_callback(iox2_attachment_id_h, void*);
 
     void drop();
 

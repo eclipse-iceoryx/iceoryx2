@@ -262,7 +262,7 @@ auto WaitSet<S>::attach_notification(const Listener<S>& listener) -> iox::expect
 template <ServiceType S>
 auto run_callback(iox2_attachment_id_h attachment_id, void* context) {
     auto* fn_call = internal::ctx_cast<iox::function<void(AttachmentId<S>)>>(context);
-    // fn_call->value()();
+    fn_call->value()(AttachmentId<S>(attachment_id));
 }
 
 template <ServiceType S>
