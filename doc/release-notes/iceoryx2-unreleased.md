@@ -21,6 +21,8 @@
     conflicts when merging.
 -->
 
+* Split SignalHandler signals to avoid infinite loops on SIGSEGV
+  [#436](https://github.com/eclipse-iceoryx/iceoryx2/issues/436)
 * Fix misleading warning related to default config file
   [#437](https://github.com/eclipse-iceoryx/iceoryx2/issues/437)
 
