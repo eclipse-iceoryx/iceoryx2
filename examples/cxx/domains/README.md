@@ -1,7 +1,7 @@
 # Domains
 
-Please install all dependencies first, as described in the
-[C++ Examples Readme](../README.md).
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C++ Examples Readme](../README.md).
 
 Let's assume you want to create multiple iceoryx2 groups of processes where the
 processes inside a group can communicate and interact with each other. However,

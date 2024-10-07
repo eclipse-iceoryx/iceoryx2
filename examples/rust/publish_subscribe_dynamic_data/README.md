@@ -1,6 +1,20 @@
-# Publish-Subscribe With Dynamic Data
+# Publish-Subscribe With Dynamic Data (Slice Of Shared Memory Compatible Types)
 
 ## Running The Example
+
+> [!CAUTION]
+> Every payload you transmit with iceoryx2 must be compatible with shared
+> memory. Specifically, it must:
+>
+> * be self contained, no heap, no pointers to external sources
+> * have a uniform memory representation -> `#[repr(C)]`
+> * not use pointers to manage their internal structure
+>
+> Data types like `String` or `Vec` will cause undefined behavior and may
+> result in segmentation faults. We provide alternative data types that are
+> compatible with shared memory. See the
+> [complex data type example](../complex_data_types) for guidance on how to
+> use them.
 
 This example demonstrates a robust publisher-subscriber communication pattern
 between two separate processes. A service with the payload type of an `u8` slice
