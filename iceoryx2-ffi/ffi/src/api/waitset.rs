@@ -15,8 +15,9 @@
 use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
-    c_size_t, iox2_attachment_id_h, iox2_callback_context, iox2_guard_h, iox2_guard_t,
-    iox2_service_type_e, GuardUnion, IOX2_OK,
+    c_size_t, iox2_attachment_id_drop, iox2_attachment_id_h_ref, iox2_attachment_id_t,
+    iox2_callback_context, iox2_guard_h, iox2_guard_t, iox2_service_type_e, AttachmentIdUnion,
+    GuardUnion, IOX2_OK,
 };
 
 use super::{AssertNonNullHandle, HandleToType, IntoCInt};
@@ -27,6 +28,10 @@ use iceoryx2::{
     service::{ipc, local},
 };
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_posix::{
+    file_descriptor::{FileDescriptor, FileDescriptorBased},
+    file_descriptor_set::SynchronousMultiplexing,
+};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
@@ -65,11 +70,17 @@ pub enum iox2_waitset_run_result_e {
 
 impl IntoCInt for WaitSetRunResult {
     fn into_c_int(self) -> c_int {
-        (match self {
+        Into::<iox2_waitset_run_result_e>::into(self) as c_int
+    }
+}
+
+impl Into<iox2_waitset_run_result_e> for WaitSetRunResult {
+    fn into(self) -> iox2_waitset_run_result_e {
+        match self {
             WaitSetRunResult::TerminationRequest => iox2_waitset_run_result_e::TERMINATION_REQUEST,
             WaitSetRunResult::Interrupt => iox2_waitset_run_result_e::INTERRUPT,
             WaitSetRunResult::StopRequest => iox2_waitset_run_result_e::STOP_REQUEST,
-        }) as c_int
+        }
     }
 }
 
@@ -194,8 +205,7 @@ impl HandleToType for iox2_waitset_h_ref {
     }
 }
 
-pub type iox2_waitset_run_callback = extern "C" fn(iox2_attachment_id_h, iox2_callback_context);
-
+pub type iox2_waitset_run_callback = extern "C" fn(iox2_attachment_id_h_ref, iox2_callback_context);
 // END type definition
 
 // BEGIN C API
@@ -264,6 +274,159 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
     }
 }
 
+#[derive(Debug)]
+struct FileDescriptorStub {
+    fd: FileDescriptor,
+}
+
+impl FileDescriptorStub {
+    fn new(raw_fd: i32) -> Self {
+        let fd = FileDescriptor::non_owning_new(raw_fd).expect("Always valid file descriptor.");
+        Self { fd }
+    }
+}
+
+impl FileDescriptorBased for FileDescriptorStub {
+    fn file_descriptor(&self) -> &FileDescriptor {
+        &self.fd
+    }
+}
+
+impl SynchronousMultiplexing for FileDescriptorStub {}
+
+/// Returns [`iox2_waitset_attachment_error_e`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_attach_notification(
+    handle: iox2_waitset_h_ref,
+    fd: i32,
+    guard_struct_ptr: *mut iox2_guard_t,
+    guard_handle_ptr: *mut iox2_guard_h,
+) -> c_int {
+    handle.assert_non_null();
+    guard_handle_ptr.assert_non_null();
+
+    let waitset = &mut *handle.as_type();
+
+    let mut guard_struct_ptr = guard_struct_ptr;
+    fn no_op(_: *mut iox2_guard_t) {}
+    let mut deleter: fn(*mut iox2_guard_t) = no_op;
+    if guard_struct_ptr.is_null() {
+        guard_struct_ptr = iox2_guard_t::alloc();
+        deleter = iox2_guard_t::dealloc;
+    }
+    debug_assert!(!guard_struct_ptr.is_null());
+
+    let fd_stub = FileDescriptorStub::new(fd);
+    let fd_stub_ptr: *const FileDescriptorStub = &fd_stub;
+
+    match waitset.service_type {
+        iox2_service_type_e::IPC => match waitset
+            .value
+            .as_ref()
+            .ipc
+            .attach_notification(&*fd_stub_ptr)
+        {
+            Ok(guard) => {
+                (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
+            }
+            Err(e) => {
+                return e.into_c_int();
+            }
+        },
+        iox2_service_type_e::LOCAL => {
+            match waitset
+                .value
+                .as_ref()
+                .local
+                .attach_notification(&*fd_stub_ptr)
+            {
+                Ok(guard) => {
+                    (*guard_struct_ptr).init(
+                        waitset.service_type,
+                        GuardUnion::new_local(guard),
+                        deleter,
+                    );
+                }
+                Err(e) => {
+                    return e.into_c_int();
+                }
+            }
+        }
+    }
+
+    *guard_handle_ptr = (*guard_struct_ptr).as_handle();
+
+    IOX2_OK
+}
+
+/// Returns [`iox2_waitset_attachment_error_e`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_attach_deadline(
+    handle: iox2_waitset_h_ref,
+    fd: i32,
+    seconds: u64,
+    nanoseconds: u32,
+    guard_struct_ptr: *mut iox2_guard_t,
+    guard_handle_ptr: *mut iox2_guard_h,
+) -> c_int {
+    handle.assert_non_null();
+    guard_handle_ptr.assert_non_null();
+
+    let waitset = &mut *handle.as_type();
+    let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
+
+    let mut guard_struct_ptr = guard_struct_ptr;
+    fn no_op(_: *mut iox2_guard_t) {}
+    let mut deleter: fn(*mut iox2_guard_t) = no_op;
+    if guard_struct_ptr.is_null() {
+        guard_struct_ptr = iox2_guard_t::alloc();
+        deleter = iox2_guard_t::dealloc;
+    }
+    debug_assert!(!guard_struct_ptr.is_null());
+
+    let fd_stub = FileDescriptorStub::new(fd);
+    let fd_stub_ptr: *const FileDescriptorStub = &fd_stub;
+
+    match waitset.service_type {
+        iox2_service_type_e::IPC => match waitset
+            .value
+            .as_ref()
+            .ipc
+            .attach_deadline(&*fd_stub_ptr, interval)
+        {
+            Ok(guard) => {
+                (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
+            }
+            Err(e) => {
+                return e.into_c_int();
+            }
+        },
+        iox2_service_type_e::LOCAL => {
+            match waitset
+                .value
+                .as_ref()
+                .local
+                .attach_deadline(&*fd_stub_ptr, interval)
+            {
+                Ok(guard) => {
+                    (*guard_struct_ptr).init(
+                        waitset.service_type,
+                        GuardUnion::new_local(guard),
+                        deleter,
+                    );
+                }
+                Err(e) => {
+                    return e.into_c_int();
+                }
+            }
+        }
+    }
+
+    *guard_handle_ptr = (*guard_struct_ptr).as_handle();
+
+    IOX2_OK
+}
+
 /// Returns [`iox2_waitset_attachment_error_e`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_interval(
@@ -313,6 +476,8 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
         }
     }
 
+    *guard_handle_ptr = (*guard_struct_ptr).as_handle();
+
     IOX2_OK
 }
 
@@ -321,8 +486,41 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 pub unsafe extern "C" fn iox2_waitset_run_once(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
+    callback_ctx: iox2_callback_context,
 ) -> c_int {
-    todo!()
+    handle.assert_non_null();
+
+    let waitset = &mut *handle.as_type();
+
+    let run_once_result = match waitset.service_type {
+        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.run_once(|attachment_id| {
+            let attachment_id_ptr = iox2_attachment_id_t::alloc();
+            (*attachment_id_ptr).init(
+                waitset.service_type,
+                AttachmentIdUnion::new_ipc(attachment_id),
+                iox2_attachment_id_t::dealloc,
+            );
+            let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+            callback(&attachment_id_handle_ptr, callback_ctx);
+            iox2_attachment_id_drop(attachment_id_handle_ptr)
+        }),
+        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.run_once(|attachment_id| {
+            let attachment_id_ptr = iox2_attachment_id_t::alloc();
+            (*attachment_id_ptr).init(
+                waitset.service_type,
+                AttachmentIdUnion::new_local(attachment_id),
+                iox2_attachment_id_t::dealloc,
+            );
+            let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+            callback(&attachment_id_handle_ptr, callback_ctx);
+            iox2_attachment_id_drop(attachment_id_handle_ptr)
+        }),
+    };
+
+    match run_once_result {
+        Ok(()) => IOX2_OK,
+        Err(e) => e.into_c_int(),
+    }
 }
 
 /// Returns [`iox2_waitset_run_error_e`].
@@ -330,9 +528,46 @@ pub unsafe extern "C" fn iox2_waitset_run_once(
 pub unsafe extern "C" fn iox2_waitset_run(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
+    callback_ctx: iox2_callback_context,
     result: *mut iox2_waitset_run_result_e,
 ) -> c_int {
-    todo!()
+    handle.assert_non_null();
+    debug_assert!(!result.is_null());
+
+    let waitset = &mut *handle.as_type();
+
+    let run_result = match waitset.service_type {
+        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.run(|attachment_id| {
+            let attachment_id_ptr = iox2_attachment_id_t::alloc();
+            (*attachment_id_ptr).init(
+                waitset.service_type,
+                AttachmentIdUnion::new_ipc(attachment_id),
+                iox2_attachment_id_t::dealloc,
+            );
+            let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+            callback(&attachment_id_handle_ptr, callback_ctx);
+            iox2_attachment_id_drop(attachment_id_handle_ptr)
+        }),
+        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.run(|attachment_id| {
+            let attachment_id_ptr = iox2_attachment_id_t::alloc();
+            (*attachment_id_ptr).init(
+                waitset.service_type,
+                AttachmentIdUnion::new_local(attachment_id),
+                iox2_attachment_id_t::dealloc,
+            );
+            let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+            callback(&attachment_id_handle_ptr, callback_ctx);
+            iox2_attachment_id_drop(attachment_id_handle_ptr)
+        }),
+    };
+
+    match run_result {
+        Ok(v) => {
+            (*result) = v.into();
+            IOX2_OK
+        }
+        Err(e) => e.into_c_int(),
+    }
 }
 
 // END C API

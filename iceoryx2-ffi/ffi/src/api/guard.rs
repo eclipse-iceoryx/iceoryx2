@@ -23,7 +23,7 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 use super::{AssertNonNullHandle, HandleToType};
 
 // BEGIN types definition
-pub(super) union GuardUnion {
+pub(crate) union GuardUnion {
     pub(crate) ipc: ManuallyDrop<Guard<'static, 'static, ipc::Service>>,
     pub(crate) local: ManuallyDrop<Guard<'static, 'static, local::Service>>,
 }

@@ -26,19 +26,19 @@ use crate::{iox2_guard_h_ref, iox2_service_type_e};
 use super::{AssertNonNullHandle, HandleToType};
 
 // BEGIN types definition
-pub(super) union AttachmentIdUnion {
+pub(crate) union AttachmentIdUnion {
     ipc: ManuallyDrop<AttachmentId<ipc::Service>>,
     local: ManuallyDrop<AttachmentId<local::Service>>,
 }
 
 impl AttachmentIdUnion {
-    pub(super) fn new_ipc(attachment: AttachmentId<ipc::Service>) -> Self {
+    pub(crate) fn new_ipc(attachment: AttachmentId<ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(attachment),
         }
     }
 
-    pub(super) fn new_local(attachment: AttachmentId<local::Service>) -> Self {
+    pub(crate) fn new_local(attachment: AttachmentId<local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(attachment),
         }
@@ -165,6 +165,8 @@ pub unsafe extern "C" fn iox2_attachment_id_from_guard(
                 deleter,
             );
         }
-    }
+    };
+
+    *attachment_id_handle_ptr = (*attachment_id_struct_ptr).as_handle();
 }
 // END C API
