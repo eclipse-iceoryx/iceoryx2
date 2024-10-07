@@ -22,7 +22,23 @@
 
 namespace iox2 {
 template <ServiceType S>
-class Guard { };
+class Guard {
+  public:
+    Guard(Guard&&) noexcept;
+    auto operator=(Guard&& rhs) noexcept -> Guard&;
+    ~Guard();
+
+    Guard(const Guard&) = delete;
+    auto operator=(const Guard&) = delete;
+
+  private:
+    template <ServiceType>
+    friend class WaitSet;
+    explicit Guard(iox2_guard_h handle);
+    void drop();
+
+    iox2_guard_h m_handle {};
+};
 
 template <ServiceType S>
 class AttachmentId {

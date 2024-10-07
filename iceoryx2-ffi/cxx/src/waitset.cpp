@@ -14,6 +14,47 @@
 
 namespace iox2 {
 ////////////////////////////
+// BEGIN: Guard
+////////////////////////////
+template <ServiceType S>
+Guard<S>::Guard(Guard&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S>
+auto Guard<S>::operator=(Guard&& rhs) noexcept -> Guard& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType S>
+Guard<S>::~Guard() {
+    drop();
+}
+
+template <ServiceType S>
+Guard<S>::Guard(iox2_guard_h handle)
+    : m_handle { handle } {
+}
+
+template <ServiceType S>
+void Guard<S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_guard_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+////////////////////////////
+// END: Guard
+////////////////////////////
+
+////////////////////////////
 // BEGIN: WaitSetBuilder
 ////////////////////////////
 WaitSetBuilder::WaitSetBuilder()
@@ -94,10 +135,77 @@ template <ServiceType S>
 auto WaitSet<S>::is_empty() const -> bool {
     return iox2_waitset_is_empty(&m_handle);
 }
+
+template <ServiceType S>
+void WaitSet<S>::stop() {
+    return iox2_waitset_stop(&m_handle);
+}
+
+template <ServiceType S>
+auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
+    -> iox::expected<Guard<S>, WaitSetAttachmentError> {
+    iox2_guard_h guard_handle {};
+    auto result = iox2_waitset_attach_interval(&m_handle,
+                                               deadline.toSeconds(),
+                                               deadline.toNanoseconds()
+                                                   - deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC,
+                                               nullptr,
+                                               &guard_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Guard<S>(guard_handle));
+    }
+
+    return iox::err(iox::into<WaitSetAttachmentError>(result));
+}
+
+template <ServiceType S>
+auto WaitSet<S>::attach_deadline(const int32_t file_descriptor, const iox::units::Duration deadline)
+    -> iox::expected<Guard<S>, WaitSetAttachmentError> {
+    iox2_guard_h guard_handle {};
+    auto result = iox2_waitset_attach_deadline(&m_handle,
+                                               file_descriptor,
+                                               deadline.toSeconds(),
+                                               deadline.toNanoseconds()
+                                                   - deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC,
+                                               nullptr,
+                                               &guard_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Guard<S>(guard_handle));
+    }
+
+    return iox::err(iox::into<WaitSetAttachmentError>(result));
+}
+
+template <ServiceType S>
+auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox::units::Duration deadline)
+    -> iox::expected<Guard<S>, WaitSetAttachmentError> {
+    return attach_deadline(0, deadline);
+}
+
+template <ServiceType S>
+auto WaitSet<S>::attach_notification(const int32_t file_descriptor) -> iox::expected<Guard<S>, WaitSetAttachmentError> {
+    iox2_guard_h guard_handle {};
+    auto result = iox2_waitset_attach_notification(&m_handle, file_descriptor, nullptr, &guard_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Guard<S>(guard_handle));
+    }
+
+    return iox::err(iox::into<WaitSetAttachmentError>(result));
+}
+
+template <ServiceType S>
+auto WaitSet<S>::attach_notification(const Listener<S>& listener) -> iox::expected<Guard<S>, WaitSetAttachmentError> {
+    return attach_notification(0);
+}
 ////////////////////////////
 // END: WaitSet
 ////////////////////////////
 
+template class Guard<ServiceType::Ipc>;
+template class Guard<ServiceType::Local>;
 template class WaitSet<ServiceType::Ipc>;
 template class WaitSet<ServiceType::Local>;
 
