@@ -274,7 +274,7 @@ auto WaitSet<S>::run(const iox::function<void(AttachmentId<S>)>& fn_call)
     auto result = iox2_waitset_run(&m_handle, run_callback<S>, static_cast<void*>(&ctx), &run_result);
 
     if (result == IOX2_OK) {
-        return iox::ok(iox::into<WaitSetRunResult>(result));
+        return iox::ok(iox::into<WaitSetRunResult>(static_cast<int>(run_result)));
     }
 
     return iox::err(iox::into<WaitSetRunError>(result));

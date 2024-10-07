@@ -286,15 +286,19 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
     let mut guard_struct_ptr = guard_struct_ptr;
     fn no_op(_: *mut iox2_guard_t) {}
     let mut deleter: fn(*mut iox2_guard_t) = no_op;
-    if guard_struct_ptr.is_null() {
-        guard_struct_ptr = iox2_guard_t::alloc();
-        deleter = iox2_guard_t::dealloc;
-    }
-    debug_assert!(!guard_struct_ptr.is_null());
+    let mut alloc_memory = || {
+        if guard_struct_ptr.is_null() {
+            guard_struct_ptr = iox2_guard_t::alloc();
+            deleter = iox2_guard_t::dealloc;
+        }
+        debug_assert!(!guard_struct_ptr.is_null());
+    };
 
     match waitset.service_type {
         iox2_service_type_e::IPC => match waitset.value.as_ref().ipc.attach_notification(&*fd) {
             Ok(guard) => {
+                alloc_memory();
+
                 (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
             }
             Err(e) => {
@@ -304,6 +308,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
         iox2_service_type_e::LOCAL => {
             match waitset.value.as_ref().local.attach_notification(&*fd) {
                 Ok(guard) => {
+                    alloc_memory();
                     (*guard_struct_ptr).init(
                         waitset.service_type,
                         GuardUnion::new_local(guard),
@@ -341,16 +346,20 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     let mut guard_struct_ptr = guard_struct_ptr;
     fn no_op(_: *mut iox2_guard_t) {}
     let mut deleter: fn(*mut iox2_guard_t) = no_op;
-    if guard_struct_ptr.is_null() {
-        guard_struct_ptr = iox2_guard_t::alloc();
-        deleter = iox2_guard_t::dealloc;
-    }
-    debug_assert!(!guard_struct_ptr.is_null());
+    let mut alloc_memory = || {
+        if guard_struct_ptr.is_null() {
+            guard_struct_ptr = iox2_guard_t::alloc();
+            deleter = iox2_guard_t::dealloc;
+        }
+        debug_assert!(!guard_struct_ptr.is_null());
+    };
 
     match waitset.service_type {
         iox2_service_type_e::IPC => {
             match waitset.value.as_ref().ipc.attach_deadline(&*fd, interval) {
                 Ok(guard) => {
+                    alloc_memory();
+
                     (*guard_struct_ptr).init(
                         waitset.service_type,
                         GuardUnion::new_ipc(guard),
@@ -365,6 +374,8 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
         iox2_service_type_e::LOCAL => {
             match waitset.value.as_ref().local.attach_deadline(&*fd, interval) {
                 Ok(guard) => {
+                    alloc_memory();
+
                     (*guard_struct_ptr).init(
                         waitset.service_type,
                         GuardUnion::new_local(guard),
@@ -401,15 +412,19 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
     let mut guard_struct_ptr = guard_struct_ptr;
     fn no_op(_: *mut iox2_guard_t) {}
     let mut deleter: fn(*mut iox2_guard_t) = no_op;
-    if guard_struct_ptr.is_null() {
-        guard_struct_ptr = iox2_guard_t::alloc();
-        deleter = iox2_guard_t::dealloc;
-    }
-    debug_assert!(!guard_struct_ptr.is_null());
+    let mut alloc_memory = || {
+        if guard_struct_ptr.is_null() {
+            guard_struct_ptr = iox2_guard_t::alloc();
+            deleter = iox2_guard_t::dealloc;
+        }
+        debug_assert!(!guard_struct_ptr.is_null());
+    };
 
     match waitset.service_type {
         iox2_service_type_e::IPC => match waitset.value.as_ref().ipc.attach_interval(interval) {
             Ok(guard) => {
+                alloc_memory();
+
                 (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
             }
             Err(e) => {
@@ -419,6 +434,8 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
         iox2_service_type_e::LOCAL => {
             match waitset.value.as_ref().local.attach_interval(interval) {
                 Ok(guard) => {
+                    alloc_memory();
+
                     (*guard_struct_ptr).init(
                         waitset.service_type,
                         GuardUnion::new_local(guard),
