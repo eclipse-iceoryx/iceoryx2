@@ -67,6 +67,7 @@ TYPED_TEST(WaitSetTest, newly_created_waitset_is_empty) {
     ASSERT_THAT(sut.is_empty(), Eq(true));
 }
 
+//NOLINTBEGIN(readability-function-cognitive-complexity)
 TYPED_TEST(WaitSetTest, attaching_different_elements_works) {
     constexpr uint64_t NUMBER_OF_DEADLINES = 3;
     constexpr uint64_t NUMBER_OF_NOTIFICATIONS = 5;
@@ -103,6 +104,7 @@ TYPED_TEST(WaitSetTest, attaching_different_elements_works) {
     ASSERT_THAT(sut.len(), Eq(0));
     ASSERT_THAT(sut.is_empty(), Eq(true));
 }
+//NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(WaitSetTest, attaching_same_deadline_twice_fails) {
     auto sut = this->create_sut();

@@ -13,28 +13,47 @@
 #ifndef IOX2_WAITSET_ENUMS_HPP
 #define IOX2_WAITSET_ENUMS_HPP
 
+#include <cstdint>
+
 namespace iox2 {
-enum class WaitSetCreateError {
+/// Defines the failures that can occur when calling [`WaitSetBuilder::create()`].
+enum class WaitSetCreateError : uint8_t {
+    /// An internal error has occurred.
     InternalError
 };
 
-enum class WaitSetRunResult {
+/// States why the [`WaitSet::run()`] method returned.
+enum class WaitSetRunResult : uint8_t {
+    /// A termination signal `SIGTERM` was received.
     TerminationRequest,
+    /// An interrupt signal `SIGINT` was received.
     Interrupt,
+    /// The user explicitly called [`WaitSet::stop()`].
     StopRequest
 };
 
-enum class WaitSetAttachmentError {
+/// Defines the failures that can occur when attaching something with
+/// [`WaitSet::attach_notification()`], [`WaitSet::attach_interval()`] or [`WaitSet::attach_deadline()`].
+enum class WaitSetAttachmentError : uint8_t {
+    /// The [`WaitSet`]s capacity is exceeded.
     InsufficientCapacity,
+    /// The attachment is already attached.
     AlreadyAttached,
+    /// An internal error has occurred.
     InternalError
 };
 
-enum class WaitSetRunError {
+/// Defines the failures that can occur when calling [`WaitSet::run()`].
+enum class WaitSetRunError : uint8_t {
+    /// The process has not sufficient permissions to wait on the attachments.
     InsufficientPermissions,
+    /// An internal error has occurred.
     InternalError,
+    /// Waiting on an empty [`WaitSet`] would lead to a deadlock therefore it causes an error.
     NoAttachments,
+    /// A termination signal `SIGTERM` was received.
     TerminationRequest,
+    /// An interrupt signal `SIGINT` was received.
     Interrupt
 };
 } // namespace iox2

@@ -45,7 +45,7 @@ use crate::{
 };
 
 /// Represents an index to identify an added deadline_queue with [`DeadlineQueue::add_deadline_interval()`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct DeadlineQueueIndex(u64);
 
 pub trait DeadlineQueueGuardable: Debug {}

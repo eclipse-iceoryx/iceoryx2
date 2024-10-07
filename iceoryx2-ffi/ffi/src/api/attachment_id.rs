@@ -129,6 +129,52 @@ pub unsafe extern "C" fn iox2_attachment_id_drop(handle: iox2_attachment_id_h) {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn iox2_attachment_id_equal(
+    lhs: iox2_attachment_id_h_ref,
+    rhs: iox2_attachment_id_h_ref,
+) -> bool {
+    lhs.assert_non_null();
+    rhs.assert_non_null();
+
+    let lhs_type = &mut *lhs.as_type();
+    let rhs_type = &mut *rhs.as_type();
+
+    if lhs_type.service_type != rhs_type.service_type {
+        return false;
+    }
+
+    match lhs_type.service_type {
+        iox2_service_type_e::IPC => *lhs_type.value.as_ref().ipc == *rhs_type.value.as_ref().ipc,
+        iox2_service_type_e::LOCAL => {
+            *lhs_type.value.as_ref().local == *rhs_type.value.as_ref().local
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_attachment_id_less(
+    lhs: iox2_attachment_id_h_ref,
+    rhs: iox2_attachment_id_h_ref,
+) -> bool {
+    lhs.assert_non_null();
+    rhs.assert_non_null();
+
+    let lhs_type = &mut *lhs.as_type();
+    let rhs_type = &mut *rhs.as_type();
+
+    if lhs_type.service_type != rhs_type.service_type {
+        return false;
+    }
+
+    match lhs_type.service_type {
+        iox2_service_type_e::IPC => *lhs_type.value.as_ref().ipc < *rhs_type.value.as_ref().ipc,
+        iox2_service_type_e::LOCAL => {
+            *lhs_type.value.as_ref().local < *rhs_type.value.as_ref().local
+        }
+    }
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn iox2_attachment_id_event_from(
     handle: iox2_attachment_id_h_ref,
     guard: iox2_guard_h_ref,

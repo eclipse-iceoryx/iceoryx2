@@ -266,7 +266,7 @@ impl std::fmt::Display for WaitSetCreateError {
 
 impl std::error::Error for WaitSetCreateError {}
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 enum AttachmentIdType {
     Tick(u64, DeadlineQueueIndex),
     Deadline(u64, i32, DeadlineQueueIndex),
@@ -296,6 +296,18 @@ impl<Service: crate::service::Service> AttachmentId<Service> {
                 r.file_descriptor().native_handle()
             }),
         }
+    }
+}
+
+impl<Service: crate::service::Service> PartialOrd for AttachmentId<Service> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.attachment_type.partial_cmp(&other.attachment_type)
+    }
+}
+
+impl<Service: crate::service::Service> Ord for AttachmentId<Service> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.attachment_type.cmp(&other.attachment_type)
     }
 }
 

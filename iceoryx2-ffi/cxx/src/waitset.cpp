@@ -67,6 +67,18 @@ void AttachmentId<S>::drop() {
         m_handle = nullptr;
     }
 }
+
+template <ServiceType S>
+auto operator==(const AttachmentId<S>& lhs, const AttachmentId<S>& rhs) -> bool {
+    return iox2_attachment_id_equal(&lhs.m_handle, &rhs.m_handle);
+}
+
+template <ServiceType S>
+auto operator<(const AttachmentId<S>& lhs, const AttachmentId<S>& rhs) -> bool {
+    return iox2_attachment_id_less(&lhs.m_handle, &rhs.m_handle);
+}
+
+
 ////////////////////////////
 // END: AttachmentId
 ////////////////////////////
@@ -196,7 +208,7 @@ auto WaitSet<S>::is_empty() const -> bool {
 
 template <ServiceType S>
 void WaitSet<S>::stop() {
-    return iox2_waitset_stop(&m_handle);
+    iox2_waitset_stop(&m_handle);
 }
 
 template <ServiceType S>
@@ -305,4 +317,11 @@ template class WaitSet<ServiceType::Local>;
 
 template auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<ServiceType::Ipc>, WaitSetCreateError>;
 template auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<ServiceType::Local>, WaitSetCreateError>;
+
+template auto operator==(const AttachmentId<ServiceType::Ipc>& lhs, const AttachmentId<ServiceType::Ipc>& rhs) -> bool;
+template auto operator==(const AttachmentId<ServiceType::Local>& lhs,
+                         const AttachmentId<ServiceType::Local>& rhs) -> bool;
+template auto operator<(const AttachmentId<ServiceType::Ipc>& lhs, const AttachmentId<ServiceType::Ipc>& rhs) -> bool;
+template auto operator<(const AttachmentId<ServiceType::Local>& lhs,
+                        const AttachmentId<ServiceType::Local>& rhs) -> bool;
 } // namespace iox2

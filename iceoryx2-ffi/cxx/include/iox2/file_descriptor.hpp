@@ -17,6 +17,7 @@
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
+/// A view to a [`FileDescriptor`].
 class FileDescriptorView {
   private:
     template <ServiceType>
@@ -28,9 +29,16 @@ class FileDescriptorView {
     iox2_file_descriptor_ptr m_handle = nullptr;
 };
 
+/// Contains a [`FileDescriptor`] that will be closed when the object owns the descriptor and
+/// goes out of scope.
 class FileDescriptor {
   public:
+    /// Creates a new [`FileDescriptor`] object that owns it. If the provided value is an
+    /// invalid [`FileDescriptor`] it returns [`iox::nullopt`].
     static auto create_owning(int32_t file_descriptor) -> iox::optional<FileDescriptor>;
+
+    /// Creates a new [`FileDescriptor`] object that does not own it. If the provided value is an
+    /// invalid [`FileDescriptor`] it returns [`iox::nullopt`].
     static auto create_non_owning(int32_t file_descriptor) -> iox::optional<FileDescriptor>;
 
     FileDescriptor(const FileDescriptor&) = delete;
@@ -40,7 +48,11 @@ class FileDescriptor {
     auto operator=(FileDescriptor&& rhs) noexcept -> FileDescriptor&;
     ~FileDescriptor();
 
+    /// Returns the underlying [`FileDescriptor`] value.
     auto native_handle() const -> int32_t;
+
+    /// Creates a [`FileDescriptorView`] out of the [`FileDescriptor`]. The view is only valid as
+    /// long as the [`FileDescriptor`] is living - otherwise it will be a dangling view.
     auto as_view() const -> FileDescriptorView;
 
   private:
