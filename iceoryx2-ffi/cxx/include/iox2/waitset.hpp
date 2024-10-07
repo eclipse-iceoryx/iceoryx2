@@ -34,19 +34,36 @@ class Guard {
   private:
     template <ServiceType>
     friend class WaitSet;
+
+    template <ServiceType>
+    friend class AttachmentId;
     explicit Guard(iox2_guard_h handle);
     void drop();
 
-    iox2_guard_h m_handle {};
+    iox2_guard_h m_handle = nullptr;
 };
 
 template <ServiceType S>
 class AttachmentId {
   public:
-    static auto from_guard() -> AttachmentId;
+    AttachmentId(const AttachmentId& rhs) = delete;
+    auto operator=(const AttachmentId& rhs) -> AttachmentId& = delete;
+
+    AttachmentId(AttachmentId&& rhs) noexcept;
+    auto operator=(AttachmentId&& rhs) noexcept -> AttachmentId&;
+    ~AttachmentId();
+
+    static auto from_guard(const Guard<S>& guard) -> AttachmentId;
 
     auto event_from(const Guard<S>& guard) const -> bool;
     auto deadline_from(const Guard<S>& guard) const -> bool;
+
+  private:
+    explicit AttachmentId(iox2_attachment_id_h handle);
+
+    void drop();
+
+    iox2_attachment_id_h m_handle = nullptr;
 };
 
 template <ServiceType S>

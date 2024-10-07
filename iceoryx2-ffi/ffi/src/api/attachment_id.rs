@@ -129,6 +129,56 @@ pub unsafe extern "C" fn iox2_attachment_id_drop(handle: iox2_attachment_id_h) {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn iox2_attachment_id_event_from(
+    handle: iox2_attachment_id_h_ref,
+    guard: iox2_guard_h_ref,
+) -> bool {
+    handle.assert_non_null();
+    guard.assert_non_null();
+
+    let attachment_id = &mut *handle.as_type();
+    let guard = &*guard.as_type();
+
+    match attachment_id.service_type {
+        iox2_service_type_e::IPC => attachment_id
+            .value
+            .as_ref()
+            .ipc
+            .event_from(&*guard.value.as_ref().ipc),
+        iox2_service_type_e::LOCAL => attachment_id
+            .value
+            .as_ref()
+            .local
+            .event_from(&*guard.value.as_ref().local),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_attachment_id_deadline_from(
+    handle: iox2_attachment_id_h_ref,
+    guard: iox2_guard_h_ref,
+) -> bool {
+    handle.assert_non_null();
+    guard.assert_non_null();
+
+    let attachment_id = &mut *handle.as_type();
+    let guard = &*guard.as_type();
+
+    match attachment_id.service_type {
+        iox2_service_type_e::IPC => attachment_id
+            .value
+            .as_ref()
+            .ipc
+            .deadline_from(&*guard.value.as_ref().ipc),
+        iox2_service_type_e::LOCAL => attachment_id
+            .value
+            .as_ref()
+            .local
+            .deadline_from(&*guard.value.as_ref().local),
+    }
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn iox2_attachment_id_from_guard(
     guard: iox2_guard_h_ref,
     attachment_id_struct_ptr: *mut iox2_attachment_id_t,

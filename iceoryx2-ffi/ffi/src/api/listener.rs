@@ -20,6 +20,7 @@ use crate::api::{
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 use iceoryx2_cal::event::ListenerWaitError;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -162,6 +163,39 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
         }
     }
     (listener.deleter)(listener);
+}
+
+/// Returns the underlying non-owning file descriptor of the [`iox2_listener_h`].
+///
+/// # Arguments
+///
+/// * `listener_handle` - A valid [`iox2_listener_h_ref`],
+///
+/// # Safety
+///
+/// * The `listener_handle` must be a valid handle.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
+    listener_handle: iox2_listener_h_ref,
+) -> i32 {
+    listener_handle.assert_non_null();
+
+    let listener = &mut *listener_handle.as_type();
+
+    match listener.service_type {
+        iox2_service_type_e::IPC => listener
+            .value
+            .as_ref()
+            .ipc
+            .file_descriptor()
+            .native_handle(),
+        iox2_service_type_e::LOCAL => listener
+            .value
+            .as_ref()
+            .local
+            .file_descriptor()
+            .native_handle(),
+    }
 }
 
 /// Tries to wait on the listener and calls the callback for every received event providing the

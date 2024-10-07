@@ -11,8 +11,66 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/waitset.hpp"
+#include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
+////////////////////////////
+// BEGIN: AttachmentId
+////////////////////////////
+template <ServiceType S>
+AttachmentId<S>::AttachmentId(iox2_attachment_id_h handle)
+    : m_handle { handle } {
+}
+
+template <ServiceType S>
+AttachmentId<S>::AttachmentId(AttachmentId&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+template <ServiceType S>
+auto AttachmentId<S>::operator=(AttachmentId&& rhs) noexcept -> AttachmentId& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+template <ServiceType S>
+AttachmentId<S>::~AttachmentId() {
+    drop();
+}
+
+template <ServiceType S>
+auto AttachmentId<S>::from_guard(const Guard<S>& guard) -> AttachmentId {
+    iox2_attachment_id_h handle {};
+    iox2_attachment_id_from_guard(&guard.m_handle, nullptr, &handle);
+    return AttachmentId(handle);
+}
+
+template <ServiceType S>
+auto AttachmentId<S>::event_from(const Guard<S>& guard) const -> bool {
+    return iox2_attachment_id_event_from(&m_handle, &guard.m_handle);
+}
+
+template <ServiceType S>
+auto AttachmentId<S>::deadline_from(const Guard<S>& guard) const -> bool {
+    return iox2_attachment_id_deadline_from(&m_handle, &guard.m_handle);
+}
+
+template <ServiceType S>
+void AttachmentId<S>::drop() {
+    if (m_handle != nullptr) {
+        iox2_attachment_id_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+////////////////////////////
+// END: AttachmentId
+////////////////////////////
 ////////////////////////////
 // BEGIN: Guard
 ////////////////////////////
@@ -181,7 +239,7 @@ auto WaitSet<S>::attach_deadline(const int32_t file_descriptor, const iox::units
 template <ServiceType S>
 auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox::units::Duration deadline)
     -> iox::expected<Guard<S>, WaitSetAttachmentError> {
-    return attach_deadline(0, deadline);
+    return attach_deadline(iox2_listener_get_file_descriptor(&listener.m_handle), deadline);
 }
 
 template <ServiceType S>
@@ -198,12 +256,47 @@ auto WaitSet<S>::attach_notification(const int32_t file_descriptor) -> iox::expe
 
 template <ServiceType S>
 auto WaitSet<S>::attach_notification(const Listener<S>& listener) -> iox::expected<Guard<S>, WaitSetAttachmentError> {
-    return attach_notification(0);
+    return attach_notification(iox2_listener_get_file_descriptor(&listener.m_handle));
 }
+
+template <ServiceType S>
+auto run_callback(iox2_attachment_id_h attachment_id, void* context) {
+    auto* fn_call = internal::ctx_cast<iox::function<void(AttachmentId<S>)>>(context);
+    // fn_call->value()();
+}
+
+template <ServiceType S>
+auto WaitSet<S>::run(const iox::function<void(AttachmentId<S>)>& fn_call)
+    -> iox::expected<WaitSetRunResult, WaitSetRunError> {
+    iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
+    auto ctx = internal::ctx(fn_call);
+    auto result = iox2_waitset_run(&m_handle, run_callback<S>, static_cast<void*>(&ctx), &run_result);
+
+    if (result == IOX2_OK) {
+        return iox::ok(iox::into<WaitSetRunResult>(result));
+    }
+
+    return iox::err(iox::into<WaitSetRunError>(result));
+}
+
+template <ServiceType S>
+auto WaitSet<S>::run_once(const iox::function<void(AttachmentId<S>)>& fn_call) -> iox::expected<void, WaitSetRunError> {
+    auto ctx = internal::ctx(fn_call);
+    auto result = iox2_waitset_run_once(&m_handle, run_callback<S>, static_cast<void*>(&ctx));
+
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<WaitSetRunError>(result));
+}
+
 ////////////////////////////
 // END: WaitSet
 ////////////////////////////
 
+template class AttachmentId<ServiceType::Ipc>;
+template class AttachmentId<ServiceType::Local>;
 template class Guard<ServiceType::Ipc>;
 template class Guard<ServiceType::Local>;
 template class WaitSet<ServiceType::Ipc>;

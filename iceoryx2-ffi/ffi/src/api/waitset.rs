@@ -15,9 +15,8 @@
 use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
-    c_size_t, iox2_attachment_id_drop, iox2_attachment_id_h_ref, iox2_attachment_id_t,
-    iox2_callback_context, iox2_guard_h, iox2_guard_t, iox2_service_type_e, AttachmentIdUnion,
-    GuardUnion, IOX2_OK,
+    c_size_t, iox2_attachment_id_h, iox2_attachment_id_t, iox2_callback_context, iox2_guard_h,
+    iox2_guard_t, iox2_service_type_e, AttachmentIdUnion, GuardUnion, IOX2_OK,
 };
 
 use super::{AssertNonNullHandle, HandleToType, IntoCInt};
@@ -205,7 +204,7 @@ impl HandleToType for iox2_waitset_h_ref {
     }
 }
 
-pub type iox2_waitset_run_callback = extern "C" fn(iox2_attachment_id_h_ref, iox2_callback_context);
+pub type iox2_waitset_run_callback = extern "C" fn(iox2_attachment_id_h, iox2_callback_context);
 // END type definition
 
 // BEGIN C API
@@ -501,8 +500,7 @@ pub unsafe extern "C" fn iox2_waitset_run_once(
                 iox2_attachment_id_t::dealloc,
             );
             let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-            callback(&attachment_id_handle_ptr, callback_ctx);
-            iox2_attachment_id_drop(attachment_id_handle_ptr)
+            callback(attachment_id_handle_ptr, callback_ctx);
         }),
         iox2_service_type_e::LOCAL => waitset.value.as_ref().local.run_once(|attachment_id| {
             let attachment_id_ptr = iox2_attachment_id_t::alloc();
@@ -512,8 +510,7 @@ pub unsafe extern "C" fn iox2_waitset_run_once(
                 iox2_attachment_id_t::dealloc,
             );
             let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-            callback(&attachment_id_handle_ptr, callback_ctx);
-            iox2_attachment_id_drop(attachment_id_handle_ptr)
+            callback(attachment_id_handle_ptr, callback_ctx);
         }),
     };
 
@@ -545,8 +542,7 @@ pub unsafe extern "C" fn iox2_waitset_run(
                 iox2_attachment_id_t::dealloc,
             );
             let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-            callback(&attachment_id_handle_ptr, callback_ctx);
-            iox2_attachment_id_drop(attachment_id_handle_ptr)
+            callback(attachment_id_handle_ptr, callback_ctx);
         }),
         iox2_service_type_e::LOCAL => waitset.value.as_ref().local.run(|attachment_id| {
             let attachment_id_ptr = iox2_attachment_id_t::alloc();
@@ -556,8 +552,7 @@ pub unsafe extern "C" fn iox2_waitset_run(
                 iox2_attachment_id_t::dealloc,
             );
             let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-            callback(&attachment_id_handle_ptr, callback_ctx);
-            iox2_attachment_id_drop(attachment_id_handle_ptr)
+            callback(attachment_id_handle_ptr, callback_ctx);
         }),
     };
 
