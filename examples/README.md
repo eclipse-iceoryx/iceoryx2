@@ -49,6 +49,10 @@ and exchange data.
 > internal pointers are not allowed because the shared memory is mapped at different
 > offsets in each process, making absolute pointers invalid and potentially leading
 > to segmentation faults.
+>
+> Furthermore, every data type must be annotated with `#[repr(C)]`. The Rust
+> compiler may reorder the members of a struct, which can lead to undefined
+> behavior if another process expects a different ordering.
 
 To address these limitations, we provide data types that are compatible with shared
 memory. For Rust, we offer:
