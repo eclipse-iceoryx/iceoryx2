@@ -15,8 +15,9 @@
 use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
-    c_size_t, iox2_attachment_id_h, iox2_attachment_id_t, iox2_callback_context, iox2_guard_h,
-    iox2_guard_t, iox2_service_type_e, AttachmentIdUnion, GuardUnion, IOX2_OK,
+    c_size_t, iox2_attachment_id_h, iox2_attachment_id_t, iox2_callback_context,
+    iox2_file_descriptor_h_ref, iox2_guard_h, iox2_guard_t, iox2_service_type_e, AttachmentIdUnion,
+    CFileDescriptor, GuardUnion, IOX2_OK,
 };
 
 use super::{AssertNonNullHandle, HandleToType, IntoCInt};
@@ -27,10 +28,6 @@ use iceoryx2::{
     service::{ipc, local},
 };
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_posix::{
-    file_descriptor::{FileDescriptor, FileDescriptorBased},
-    file_descriptor_set::SynchronousMultiplexing,
-};
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
@@ -273,31 +270,11 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
     }
 }
 
-#[derive(Debug)]
-struct FileDescriptorStub {
-    fd: FileDescriptor,
-}
-
-impl FileDescriptorStub {
-    fn new(raw_fd: i32) -> Self {
-        let fd = FileDescriptor::non_owning_new(raw_fd).expect("Always valid file descriptor.");
-        Self { fd }
-    }
-}
-
-impl FileDescriptorBased for FileDescriptorStub {
-    fn file_descriptor(&self) -> &FileDescriptor {
-        &self.fd
-    }
-}
-
-impl SynchronousMultiplexing for FileDescriptorStub {}
-
 /// Returns [`iox2_waitset_attachment_error_e`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_notification(
     handle: iox2_waitset_h_ref,
-    fd: i32,
+    fd: iox2_file_descriptor_h_ref,
     guard_struct_ptr: *mut iox2_guard_t,
     guard_handle_ptr: *mut iox2_guard_h,
 ) -> c_int {
@@ -314,17 +291,10 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
         deleter = iox2_guard_t::dealloc;
     }
     debug_assert!(!guard_struct_ptr.is_null());
-
-    let fd_stub = FileDescriptorStub::new(fd);
-    let fd_stub_ptr: *const FileDescriptorStub = &fd_stub;
+    let fd = (*fd.as_type()).value.as_ref() as *const CFileDescriptor;
 
     match waitset.service_type {
-        iox2_service_type_e::IPC => match waitset
-            .value
-            .as_ref()
-            .ipc
-            .attach_notification(&*fd_stub_ptr)
-        {
+        iox2_service_type_e::IPC => match waitset.value.as_ref().ipc.attach_notification(&*fd) {
             Ok(guard) => {
                 (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
             }
@@ -333,12 +303,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
             }
         },
         iox2_service_type_e::LOCAL => {
-            match waitset
-                .value
-                .as_ref()
-                .local
-                .attach_notification(&*fd_stub_ptr)
-            {
+            match waitset.value.as_ref().local.attach_notification(&*fd) {
                 Ok(guard) => {
                     (*guard_struct_ptr).init(
                         waitset.service_type,
@@ -362,7 +327,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     handle: iox2_waitset_h_ref,
-    fd: i32,
+    fd: iox2_file_descriptor_h_ref,
     seconds: u64,
     nanoseconds: u32,
     guard_struct_ptr: *mut iox2_guard_t,
@@ -382,31 +347,25 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
         deleter = iox2_guard_t::dealloc;
     }
     debug_assert!(!guard_struct_ptr.is_null());
-
-    let fd_stub = FileDescriptorStub::new(fd);
-    let fd_stub_ptr: *const FileDescriptorStub = &fd_stub;
+    let fd = (*fd.as_type()).value.as_ref() as *const CFileDescriptor;
 
     match waitset.service_type {
-        iox2_service_type_e::IPC => match waitset
-            .value
-            .as_ref()
-            .ipc
-            .attach_deadline(&*fd_stub_ptr, interval)
-        {
-            Ok(guard) => {
-                (*guard_struct_ptr).init(waitset.service_type, GuardUnion::new_ipc(guard), deleter);
+        iox2_service_type_e::IPC => {
+            match waitset.value.as_ref().ipc.attach_deadline(&*fd, interval) {
+                Ok(guard) => {
+                    (*guard_struct_ptr).init(
+                        waitset.service_type,
+                        GuardUnion::new_ipc(guard),
+                        deleter,
+                    );
+                }
+                Err(e) => {
+                    return e.into_c_int();
+                }
             }
-            Err(e) => {
-                return e.into_c_int();
-            }
-        },
+        }
         iox2_service_type_e::LOCAL => {
-            match waitset
-                .value
-                .as_ref()
-                .local
-                .attach_deadline(&*fd_stub_ptr, interval)
-            {
+            match waitset.value.as_ref().local.attach_deadline(&*fd, interval) {
                 Ok(guard) => {
                     (*guard_struct_ptr).init(
                         waitset.service_type,
