@@ -12,12 +12,24 @@
 
 package(default_visibility = ["//visibility:public"])
 
+# load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 filegroup(
-    name = "all_srcs",
-    srcs = glob(["**"]),
+    name = "cbindgen-cli",
+    srcs = ["@cbindgen//file"],
     visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "iceoryx2-ffi-cbindgen",
+    srcs = glob(["src/**/*.rs"]) + [
+        "cbindgen.toml",
+        ":cbindgen-cli",
+        "src"
+    ],
+    outs = ["iceoryx2-ffi-cbindgen/include/iox2/iceoryx2.h"],
+    cmd = "$(execpath :cbindgen-cli) --config $(location cbindgen.toml) --output $(OUTS) $(location src)/..",
 )
 
 rust_library(
@@ -39,3 +51,11 @@ rust_library(
 )
 
 # TODO: [349] add tests
+
+
+# NOTE: this can be removed once 'rules_foreign_cc' is retired from building the C and C++ bindings
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)

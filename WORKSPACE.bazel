@@ -12,7 +12,7 @@
 
 workspace(name = "org_eclipse_iceoryx_iceoryx2")
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
 maybe(
@@ -74,6 +74,13 @@ filegroup(
     """,
 )
 
+# Load prebuilt cbindgen
+http_file(
+    name = "cbindgen",
+    sha256 = "521836d00863cb129283054e5090eb17563614e6328b7a1610e30949a05feaea",
+    urls = ["https://github.com/mozilla/cbindgen/releases/download/0.26.0/cbindgen"],
+    executable = True,
+)
 
 # Load external crates
 load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
