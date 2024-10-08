@@ -31,7 +31,7 @@ use crate::{
 use super::IntoCInt;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum iox2_service_type_e {
     LOCAL,
     IPC,

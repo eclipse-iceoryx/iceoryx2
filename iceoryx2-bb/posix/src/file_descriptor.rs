@@ -105,6 +105,7 @@ use iceoryx2_pal_posix::*;
 ///
 /// println!("Created FD: {:?}", valid_fd.unwrap());
 /// ```
+#[repr(C)]
 #[derive(Debug, Eq, PartialEq)]
 pub struct FileDescriptor {
     value: i32,

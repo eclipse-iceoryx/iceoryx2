@@ -12,7 +12,7 @@
 
 //! A [`WaitSet`](crate::port::waitset::WaitSet) is an implementation of an event multiplexer
 //! (Reactor of the reactor design pattern). It allows the user to attach notifications,
-//! deadlines or ticks.
+//! deadlines or intervals.
 //!
 //! * **Notification** - An object that emits an event. Whenever the event is detected the
 //!     [`WaitSet`](crate::port::waitset::WaitSet) wakes up and informs the user.
@@ -27,8 +27,8 @@
 //!     the sensor data latest after 120ms. If after 120ms an update
 //!     is not available the application must wake up and take counter measures. If the update
 //!     arrives within the timeout, the timeout is reset back to 120ms.
-//! * **Tick** - An interval after which the [`WaitSet`](crate::port::waitset::WaitSet)
-//!     wakes up and informs the user that the interval time has passed by providing a tick.
+//! * **Interval** - An time period after which the [`WaitSet`](crate::port::waitset::WaitSet)
+//!     wakes up and informs the user that the time has passed by.
 //!     This is useful when a [`Publisher`](crate::port::publisher::Publisher) shall send an
 //!     heartbeat every 100ms.
 //!
@@ -57,15 +57,15 @@
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 //! let guard = waitset.attach_notification(&listener)?;
 //!
-//! let on_event = |attachment_id: AttachmentId<ipc::Service>| {
-//!     if attachment_id.event_from(&guard) {
+//! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+//!     if attachment_id.has_event_from(&guard) {
 //!         while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!             println!("received notification {:?}", event_id);
 //!         }
 //!     }
 //! };
 //!
-//! waitset.run(on_event)?;
+//! waitset.wait_and_process(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -88,17 +88,17 @@
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 //! let guard = waitset.attach_deadline(&listener, listener_deadline)?;
 //!
-//! let on_event = |attachment_id: AttachmentId<ipc::Service>| {
-//!     if attachment_id.event_from(&guard) {
+//! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+//!     if attachment_id.has_event_from(&guard) {
 //!         while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!             println!("received notification {:?}", event_id);
 //!         }
-//!     } else if attachment_id.deadline_from(&guard) {
+//!     } else if attachment_id.has_missed_deadline(&guard) {
 //!         println!("Oh no, we hit the deadline without receiving any kind of event");
 //!     }
 //! };
 //!
-//! waitset.run(on_event)?;
+//! waitset.wait_and_process(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -125,15 +125,15 @@
 //! let guard_1 = waitset.attach_interval(pub_1_period)?;
 //! let guard_2 = waitset.attach_interval(pub_2_period)?;
 //!
-//! let on_event = |attachment_id: AttachmentId<ipc::Service>| {
-//!     if attachment_id.event_from(&guard_1) {
+//! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+//!     if attachment_id.has_event_from(&guard_1) {
 //!         publisher_1.send_copy(123);
-//!     } else if attachment_id.event_from(&guard_2) {
+//!     } else if attachment_id.has_event_from(&guard_2) {
 //!         publisher_2.send_copy(456);
 //!     }
 //! };
 //!
-//! waitset.run(on_event)?;
+//! waitset.wait_and_process(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -158,14 +158,14 @@
 //! let listener_1 = event_1.listener_builder().create()?;
 //! let listener_2 = event_2.listener_builder().create()?;
 //!
-//! let mut listeners: HashMap<AttachmentId<ipc::Service>, &Listener<ipc::Service>> = HashMap::new();
+//! let mut listeners: HashMap<WaitSetAttachmentId<ipc::Service>, &Listener<ipc::Service>> = HashMap::new();
 //! let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 //!
 //! // attach all listeners to the waitset
 //! let guard_1 = waitset.attach_notification(&listener_1)?;
 //! let guard_2 = waitset.attach_notification(&listener_2)?;
-//! listeners.insert(AttachmentId::from_guard(&guard_1), &listener_1);
-//! listeners.insert(AttachmentId::from_guard(&guard_2), &listener_2);
+//! listeners.insert(WaitSetAttachmentId::from_guard(&guard_1), &listener_1);
+//! listeners.insert(WaitSetAttachmentId::from_guard(&guard_2), &listener_2);
 //!
 //! let on_event = |attachment_id| {
 //!     if let Some(listener) = listeners.get(&attachment_id) {
@@ -175,7 +175,7 @@
 //!     }
 //! };
 //!
-//! waitset.run(on_event)?;
+//! waitset.wait_and_process(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -197,7 +197,7 @@ use iceoryx2_bb_posix::{
 use iceoryx2_cal::reactor::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
-/// States why the [`WaitSet::run()`] method returned.
+/// States why the [`WaitSet::wait_and_process()`] method returned.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetRunResult {
     /// A termination signal `SIGTERM` was received.
@@ -228,7 +228,7 @@ impl std::fmt::Display for WaitSetAttachmentError {
 
 impl std::error::Error for WaitSetAttachmentError {}
 
-/// Defines the failures that can occur when calling [`WaitSet::run()`].
+/// Defines the failures that can occur when calling [`WaitSet::wait_and_process()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetRunError {
     /// The process has not sufficient permissions to wait on the attachments.
@@ -266,7 +266,7 @@ impl std::fmt::Display for WaitSetCreateError {
 
 impl std::error::Error for WaitSetCreateError {}
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 enum AttachmentIdType {
     Tick(u64, DeadlineQueueIndex),
     Deadline(u64, i32, DeadlineQueueIndex),
@@ -275,45 +275,59 @@ enum AttachmentIdType {
 
 /// Represents an attachment to the [`WaitSet`]
 #[derive(Debug, Clone, Copy)]
-pub struct AttachmentId<Service: crate::service::Service> {
+pub struct WaitSetAttachmentId<Service: crate::service::Service> {
     attachment_type: AttachmentIdType,
     _data: PhantomData<Service>,
 }
 
-impl<Service: crate::service::Service> AttachmentId<Service> {
-    /// Creates an [`AttachmentId`] from a [`Guard`] that was returned via
+impl<Service: crate::service::Service> WaitSetAttachmentId<Service> {
+    /// Creates an [`WaitSetAttachmentId`] from a [`WaitSetGuard`] that was returned via
     /// [`WaitSet::attach_interval()`], [`WaitSet::attach_notification()`] or
     /// [`WaitSet::attach_deadline()`].
-    pub fn from_guard(guard: &Guard<Service>) -> Self {
+    pub fn from_guard(guard: &WaitSetGuard<Service>) -> Self {
         match &guard.guard_type {
-            GuardType::Tick(t) => AttachmentId::tick(guard.waitset, t.index()),
-            GuardType::Deadline(r, t) => AttachmentId::deadline(
+            GuardType::Tick(t) => WaitSetAttachmentId::tick(guard.waitset, t.index()),
+            GuardType::Deadline(r, t) => WaitSetAttachmentId::deadline(
                 guard.waitset,
                 unsafe { r.file_descriptor().native_handle() },
                 t.index(),
             ),
-            GuardType::Notification(r) => AttachmentId::notification(guard.waitset, unsafe {
-                r.file_descriptor().native_handle()
-            }),
+            GuardType::Notification(r) => {
+                WaitSetAttachmentId::notification(guard.waitset, unsafe {
+                    r.file_descriptor().native_handle()
+                })
+            }
         }
     }
 }
 
-impl<Service: crate::service::Service> PartialEq for AttachmentId<Service> {
+impl<Service: crate::service::Service> PartialOrd for WaitSetAttachmentId<Service> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<Service: crate::service::Service> Ord for WaitSetAttachmentId<Service> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.attachment_type.cmp(&other.attachment_type)
+    }
+}
+
+impl<Service: crate::service::Service> PartialEq for WaitSetAttachmentId<Service> {
     fn eq(&self, other: &Self) -> bool {
         self.attachment_type == other.attachment_type
     }
 }
 
-impl<Service: crate::service::Service> Eq for AttachmentId<Service> {}
+impl<Service: crate::service::Service> Eq for WaitSetAttachmentId<Service> {}
 
-impl<Service: crate::service::Service> Hash for AttachmentId<Service> {
+impl<Service: crate::service::Service> Hash for WaitSetAttachmentId<Service> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.attachment_type.hash(state)
     }
 }
 
-impl<Service: crate::service::Service> AttachmentId<Service> {
+impl<Service: crate::service::Service> WaitSetAttachmentId<Service> {
     fn tick(waitset: &WaitSet<Service>, deadline_queue_idx: DeadlineQueueIndex) -> Self {
         Self {
             attachment_type: AttachmentIdType::Tick(
@@ -350,9 +364,9 @@ impl<Service: crate::service::Service> AttachmentId<Service> {
     }
 
     /// Returns true if an event was emitted from a notification or deadline attachment
-    /// corresponding to [`Guard`].
-    pub fn event_from(&self, other: &Guard<Service>) -> bool {
-        let other_attachment = AttachmentId::from_guard(other);
+    /// corresponding to [`WaitSetGuard`].
+    pub fn has_event_from(&self, other: &WaitSetGuard<Service>) -> bool {
+        let other_attachment = WaitSetAttachmentId::from_guard(other);
         if let AttachmentIdType::Deadline(other_waitset, other_reactor_idx, _) =
             other_attachment.attachment_type
         {
@@ -366,10 +380,10 @@ impl<Service: crate::service::Service> AttachmentId<Service> {
         }
     }
 
-    /// Returns true if the deadline for the attachment corresponding to [`Guard`] was missed.
-    pub fn deadline_from(&self, other: &Guard<Service>) -> bool {
+    /// Returns true if the deadline for the attachment corresponding to [`WaitSetGuard`] was missed.
+    pub fn has_missed_deadline(&self, other: &WaitSetGuard<Service>) -> bool {
         if let AttachmentIdType::Deadline(..) = self.attachment_type {
-            self.attachment_type == AttachmentId::from_guard(other).attachment_type
+            self.attachment_type == WaitSetAttachmentId::from_guard(other).attachment_type
         } else {
             false
         }
@@ -390,7 +404,7 @@ where
 
 /// Is returned when something is attached to the [`WaitSet`]. As soon as it goes out
 /// of scope, the attachment is detached.
-pub struct Guard<'waitset, 'attachment, Service: crate::service::Service>
+pub struct WaitSetGuard<'waitset, 'attachment, Service: crate::service::Service>
 where
     Service::Reactor: 'waitset,
 {
@@ -399,7 +413,7 @@ where
 }
 
 impl<'waitset, 'attachment, Service: crate::service::Service> Drop
-    for Guard<'waitset, 'attachment, Service>
+    for WaitSetGuard<'waitset, 'attachment, Service>
 {
     fn drop(&mut self) {
         if let GuardType::Deadline(r, t) = &self.guard_type {
@@ -453,8 +467,8 @@ impl WaitSetBuilder {
 }
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::run_once()`] until it wakes up or to run repeatedly with
-/// [`WaitSet::run()`] until the a interrupt or termination signal was received or the user
+/// single call [`WaitSet::try_wait_and_process()`] until it wakes up or to run repeatedly with
+/// [`WaitSet::wait_and_process()`] until the a interrupt or termination signal was received or the user
 /// has explicitly requested to stop with [`WaitSet::stop()`].
 ///
 /// An struct must implement [`SynchronousMultiplexing`] to be attachable. The
@@ -512,7 +526,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         }
     }
 
-    fn handle_deadlines<F: FnMut(AttachmentId<Service>)>(
+    fn handle_deadlines<F: FnMut(WaitSetAttachmentId<Service>)>(
         &self,
         fn_call: &mut F,
         error_msg: &str,
@@ -520,9 +534,9 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         let deadline_to_attachment = self.deadline_to_attachment.borrow();
         let call = |idx: DeadlineQueueIndex| {
             if let Some(reactor_idx) = deadline_to_attachment.get(&idx) {
-                fn_call(AttachmentId::deadline(self, *reactor_idx, idx));
+                fn_call(WaitSetAttachmentId::deadline(self, *reactor_idx, idx));
             } else {
-                fn_call(AttachmentId::tick(self, idx));
+                fn_call(WaitSetAttachmentId::tick(self, idx));
             }
         };
 
@@ -534,7 +548,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         Ok(())
     }
 
-    fn handle_all_attachments<F: FnMut(AttachmentId<Service>)>(
+    fn handle_all_attachments<F: FnMut(WaitSetAttachmentId<Service>)>(
         &self,
         triggered_file_descriptors: &Vec<i32>,
         fn_call: &mut F,
@@ -553,31 +567,31 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         self.handle_deadlines(fn_call, error_msg)?;
 
         for fd in triggered_file_descriptors {
-            fn_call(AttachmentId::notification(self, *fd));
+            fn_call(WaitSetAttachmentId::notification(self, *fd));
         }
 
         Ok(())
     }
 
     /// Attaches an object as notification to the [`WaitSet`]. Whenever an event is received on the
-    /// object the [`WaitSet`] informs the user in [`WaitSet::run()`] to handle the event.
+    /// object the [`WaitSet`] informs the user in [`WaitSet::wait_and_process()`] to handle the event.
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     pub fn attach_notification<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
         &'waitset self,
         attachment: &'attachment T,
-    ) -> Result<Guard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
+    ) -> Result<WaitSetGuard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
         let reactor_guard = self.attach_to_reactor(attachment)?;
         self.attach()?;
 
-        Ok(Guard {
+        Ok(WaitSetGuard {
             waitset: self,
             guard_type: GuardType::Notification(reactor_guard),
         })
     }
 
     /// Attaches an object as deadline to the [`WaitSet`]. Whenever the event is received or the
-    /// deadline is hit, the user is informed in [`WaitSet::run()`].
+    /// deadline is hit, the user is informed in [`WaitSet::wait_and_process()`].
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     /// Whenever the object emits an event the deadline is reset by the [`WaitSet`].
@@ -585,7 +599,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         &'waitset self,
         attachment: &'attachment T,
         deadline: Duration,
-    ) -> Result<Guard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
+    ) -> Result<WaitSetGuard<'waitset, 'attachment, Service>, WaitSetAttachmentError> {
         let reactor_guard = self.attach_to_reactor(attachment)?;
         let deadline_queue_guard = self.attach_to_deadline_queue(deadline)?;
 
@@ -600,44 +614,44 @@ impl<Service: crate::service::Service> WaitSet<Service> {
             .insert(deadline_idx, reactor_idx);
         self.attach()?;
 
-        Ok(Guard {
+        Ok(WaitSetGuard {
             waitset: self,
             guard_type: GuardType::Deadline(reactor_guard, deadline_queue_guard),
         })
     }
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
-    /// informs the user in [`WaitSet::run()`].
+    /// informs the user in [`WaitSet::wait_and_process()`].
     pub fn attach_interval(
         &self,
         interval: Duration,
-    ) -> Result<Guard<Service>, WaitSetAttachmentError> {
+    ) -> Result<WaitSetGuard<Service>, WaitSetAttachmentError> {
         let deadline_queue_guard = self.attach_to_deadline_queue(interval)?;
         self.attach()?;
 
-        Ok(Guard {
+        Ok(WaitSetGuard {
             waitset: self,
             guard_type: GuardType::Tick(deadline_queue_guard),
         })
     }
 
-    /// Can be called from within a callback during [`WaitSet::run()`] to signal the [`WaitSet`]
+    /// Can be called from within a callback during [`WaitSet::wait_and_process()`] to signal the [`WaitSet`]
     /// to stop running after this iteration.
     pub fn stop(&self) {
         self.keep_running.store(false, Ordering::Relaxed);
     }
 
     /// Waits in an infinite loop on the [`WaitSet`]. The provided callback is called for every
-    /// attachment that was triggered and the [`AttachmentId`] is provided as an input argument to
+    /// attachment that was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to
     /// acquire the source.
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user via [`WaitSetRunResult`].
-    pub fn run<F: FnMut(AttachmentId<Service>)>(
+    pub fn wait_and_process<F: FnMut(WaitSetAttachmentId<Service>)>(
         &self,
         mut fn_call: F,
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
         while self.keep_running.load(Ordering::Relaxed) {
-            match self.run_once(&mut fn_call) {
+            match self.try_wait_and_process(&mut fn_call) {
                 Ok(()) => (),
                 Err(WaitSetRunError::TerminationRequest) => {
                     return Ok(WaitSetRunResult::TerminationRequest)
@@ -645,7 +659,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                 Err(WaitSetRunError::Interrupt) => return Ok(WaitSetRunResult::Interrupt),
                 Err(e) => {
                     fail!(from self, with e,
-                            "Unable to run in WaitSet::run() loop since ({:?}) has occurred.", e);
+                            "Unable to run in WaitSet::wait_and_process() loop since ({:?}) has occurred.", e);
                 }
             }
         }
@@ -654,14 +668,14 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     }
 
     /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
-    /// was triggered and the [`AttachmentId`] is provided as an input argument to acquire the
+    /// was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to acquire the
     /// source.
     /// If nothing was triggered the [`WaitSet`] returns immediately.
-    pub fn run_once<F: FnMut(AttachmentId<Service>)>(
+    pub fn try_wait_and_process<F: FnMut(WaitSetAttachmentId<Service>)>(
         &self,
         mut fn_call: F,
     ) -> Result<(), WaitSetRunError> {
-        let msg = "Unable to call WaitSet::run()";
+        let msg = "Unable to call WaitSet::try_wait_and_process()";
 
         if SignalHandler::termination_requested() {
             fail!(from self, with WaitSetRunError::TerminationRequest,

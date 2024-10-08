@@ -83,6 +83,8 @@ class Listener {
   private:
     template <ServiceType>
     friend class PortFactoryListener;
+    template <ServiceType>
+    friend class WaitSet;
 
     explicit Listener(iox2_listener_h handle);
     void drop();

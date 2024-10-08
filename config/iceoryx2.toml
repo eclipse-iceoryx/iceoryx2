@@ -34,7 +34,7 @@ unable-to-deliver-strategy                  = 'Block' # or 'DiscardSample'
 subscriber-expired-connection-buffer        = 128
 
 [defaults.event]
-max-listeners                               = 2
+max-listeners                               = 16
 max-notifiers                               = 16
 max-nodes                                   = 36
 event-id-max-value                          = 32

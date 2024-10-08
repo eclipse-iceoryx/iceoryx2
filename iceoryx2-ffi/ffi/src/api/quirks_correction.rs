@@ -22,7 +22,8 @@ use crate::{
     iox2_pub_sub_open_or_create_error_e, iox2_publisher_create_error_e,
     iox2_publisher_loan_error_e, iox2_publisher_send_error_e, iox2_semantic_string_error_e,
     iox2_service_details_error_e, iox2_service_list_error_e, iox2_subscriber_create_error_e,
-    iox2_subscriber_receive_error_e, iox2_type_detail_error_e,
+    iox2_subscriber_receive_error_e, iox2_type_detail_error_e, iox2_waitset_attachment_error_e,
+    iox2_waitset_create_error_e, iox2_waitset_run_error_e, iox2_waitset_run_result_e,
 };
 
 use super::iox2_connection_failure_e;
@@ -179,4 +180,34 @@ pub unsafe extern "C" fn __iox2_internal_connection_failure_stub() -> iox2_conne
 pub unsafe extern "C" fn __iox2_internal_config_creation_error_stub() -> iox2_config_creation_error_e
 {
     iox2_config_creation_error_e::INVALID_FILE_PATH
+}
+
+#[doc(hidden)]
+#[no_mangle]
+// TODO: enums are only exported when they are actually used by some function
+pub unsafe extern "C" fn __iox2_internal_waitset_create_error_stub() -> iox2_waitset_create_error_e
+{
+    iox2_waitset_create_error_e::INTERNAL_ERROR
+}
+
+#[doc(hidden)]
+#[no_mangle]
+// TODO: enums are only exported when they are actually used by some function
+pub unsafe extern "C" fn __iox2_internal_waitset_run_error_stub() -> iox2_waitset_run_error_e {
+    iox2_waitset_run_error_e::INTERRUPT
+}
+
+#[doc(hidden)]
+#[no_mangle]
+// TODO: enums are only exported when they are actually used by some function
+pub unsafe extern "C" fn __iox2_internal_waitset_run_result_stub() -> iox2_waitset_run_result_e {
+    iox2_waitset_run_result_e::INTERRUPT
+}
+
+#[doc(hidden)]
+#[no_mangle]
+// TODO: enums are only exported when they are actually used by some function
+pub unsafe extern "C" fn __iox2_internal_waitset_attachment_error_stub(
+) -> iox2_waitset_attachment_error_e {
+    iox2_waitset_attachment_error_e::INTERNAL_ERROR
 }

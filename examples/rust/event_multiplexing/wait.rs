@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let mut listeners = vec![];
     let mut listener_attachments: HashMap<
-        AttachmentId<ipc::Service>,
+        WaitSetAttachmentId<ipc::Service>,
         (&String, &Listener<ipc::Service>),
     > = HashMap::new();
     let mut guards = vec![];
@@ -46,14 +46,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // attach all listeners to the waitset and store the guard
     for (service, listener) in &listeners {
         let guard = waitset.attach_notification(listener)?;
-        listener_attachments.insert(AttachmentId::from_guard(&guard), (service, listener));
+        listener_attachments.insert(WaitSetAttachmentId::from_guard(&guard), (service, listener));
         guards.push(guard);
     }
 
     println!("Waiting on the following services: {:?}", args.services);
 
     // the callback that is called when a listener has received an event
-    let on_event = |attachment_id: AttachmentId<ipc::Service>| {
+    let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if let Some((service_name, listener)) = listener_attachments.get(&attachment_id) {
             print!("Received trigger from \"{}\" ::", service_name);
 
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT
     // signal or the user has called explicitly `waitset.stop()` in the `on_event` callback. We
     // didn't add this to the example so feel free to play around with it.
-    waitset.run(on_event)?;
+    waitset.wait_and_process(on_event)?;
 
     println!("Exit");
 

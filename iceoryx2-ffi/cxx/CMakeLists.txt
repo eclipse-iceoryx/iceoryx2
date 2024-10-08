@@ -38,6 +38,7 @@ target_include_directories(includes-only-cxx
 add_library(iceoryx2-cxx-object-lib OBJECT
     src/config.cpp
     src/event_id.cpp
+    src/file_descriptor.cpp
     src/header_publish_subscribe.cpp
     src/listener.cpp
     src/log.cpp
@@ -58,6 +59,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/static_config_event.cpp
     src/static_config_publish_subscribe.cpp
     src/unique_port_id.cpp
+    src/waitset.cpp
 )
 
 set_target_properties(iceoryx2-cxx-object-lib

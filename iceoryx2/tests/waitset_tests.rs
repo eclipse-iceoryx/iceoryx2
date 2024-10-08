@@ -85,7 +85,7 @@ mod waitset {
     #[test]
     fn calling_run_on_empty_waitset_fails<S: Service>() {
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
-        let result = sut.run_once(|_| {});
+        let result = sut.try_wait_and_process(|_| {});
 
         assert_that!(result.err(), eq Some(WaitSetRunError::NoAttachments));
     }
@@ -197,14 +197,14 @@ mod waitset {
         let mut receiver_1_triggered = false;
         let mut receiver_2_triggered = false;
 
-        sut.run_once(|attachment_id| {
-            if attachment_id.event_from(&listener_1_guard) {
+        sut.try_wait_and_process(|attachment_id| {
+            if attachment_id.has_event_from(&listener_1_guard) {
                 listener_1_triggered = true;
-            } else if attachment_id.event_from(&listener_2_guard) {
+            } else if attachment_id.has_event_from(&listener_2_guard) {
                 listener_2_triggered = true;
-            } else if attachment_id.event_from(&receiver_1_guard) {
+            } else if attachment_id.has_event_from(&receiver_1_guard) {
                 receiver_1_triggered = true;
-            } else if attachment_id.event_from(&receiver_2_guard) {
+            } else if attachment_id.has_event_from(&receiver_2_guard) {
                 receiver_2_triggered = true;
             } else {
                 test_fail!("only attachments shall trigger");
@@ -231,10 +231,10 @@ mod waitset {
 
         let mut callback_called = false;
         let start = Instant::now();
-        sut.run_once(|id| {
+        sut.try_wait_and_process(|id| {
             callback_called = true;
-            assert_that!(id.event_from(&tick_guard), eq true);
-            assert_that!(id.deadline_from(&tick_guard), eq false);
+            assert_that!(id.has_event_from(&tick_guard), eq true);
+            assert_that!(id.has_missed_deadline(&tick_guard), eq false);
         })
         .unwrap();
 
@@ -255,8 +255,8 @@ mod waitset {
         let guard = sut.attach_deadline(&listener, TIMEOUT).unwrap();
 
         let start = Instant::now();
-        sut.run_once(|id| {
-            assert_that!(id.deadline_from(&guard), eq true);
+        sut.try_wait_and_process(|id| {
+            assert_that!(id.has_missed_deadline(&guard), eq true);
         })
         .unwrap();
 
@@ -295,14 +295,14 @@ mod waitset {
         let mut receiver_1_triggered = false;
         let mut receiver_2_triggered = false;
 
-        sut.run_once(|attachment_id| {
-            if attachment_id.event_from(&listener_1_guard) {
+        sut.try_wait_and_process(|attachment_id| {
+            if attachment_id.has_event_from(&listener_1_guard) {
                 listener_1_triggered = true;
-            } else if attachment_id.deadline_from(&listener_2_guard) {
+            } else if attachment_id.has_missed_deadline(&listener_2_guard) {
                 listener_2_triggered = true;
-            } else if attachment_id.event_from(&receiver_1_guard) {
+            } else if attachment_id.has_event_from(&receiver_1_guard) {
                 receiver_1_triggered = true;
-            } else if attachment_id.deadline_from(&receiver_2_guard) {
+            } else if attachment_id.has_missed_deadline(&receiver_2_guard) {
                 receiver_2_triggered = true;
             } else {
                 test_fail!("only attachments shall trigger");
@@ -335,14 +335,14 @@ mod waitset {
         let mut tick_3_triggered = false;
         let mut tick_4_triggered = false;
 
-        sut.run_once(|attachment_id| {
-            if attachment_id.event_from(&tick_1_guard) {
+        sut.try_wait_and_process(|attachment_id| {
+            if attachment_id.has_event_from(&tick_1_guard) {
                 tick_1_triggered = true;
-            } else if attachment_id.event_from(&tick_2_guard) {
+            } else if attachment_id.has_event_from(&tick_2_guard) {
                 tick_2_triggered = true;
-            } else if attachment_id.event_from(&tick_3_guard) {
+            } else if attachment_id.has_event_from(&tick_3_guard) {
                 tick_3_triggered = true;
-            } else if attachment_id.event_from(&tick_4_guard) {
+            } else if attachment_id.has_event_from(&tick_4_guard) {
                 tick_4_triggered = true;
             } else {
                 test_fail!("only attachments shall trigger");
@@ -392,22 +392,22 @@ mod waitset {
         let mut deadline_1_missed = false;
         let mut deadline_2_missed = false;
 
-        sut.run_once(|attachment_id| {
-            if attachment_id.event_from(&tick_1_guard) {
+        sut.try_wait_and_process(|attachment_id| {
+            if attachment_id.has_event_from(&tick_1_guard) {
                 tick_1_triggered = true;
-            } else if attachment_id.event_from(&tick_2_guard) {
+            } else if attachment_id.has_event_from(&tick_2_guard) {
                 tick_2_triggered = true;
-            } else if attachment_id.event_from(&notification_1_guard) {
+            } else if attachment_id.has_event_from(&notification_1_guard) {
                 notification_1_triggered = true;
-            } else if attachment_id.event_from(&notification_2_guard) {
+            } else if attachment_id.has_event_from(&notification_2_guard) {
                 notification_2_triggered = true;
-            } else if attachment_id.event_from(&deadline_1_guard) {
+            } else if attachment_id.has_event_from(&deadline_1_guard) {
                 deadline_1_triggered = true;
-            } else if attachment_id.event_from(&deadline_2_guard) {
+            } else if attachment_id.has_event_from(&deadline_2_guard) {
                 deadline_2_triggered = true;
-            } else if attachment_id.deadline_from(&deadline_1_guard) {
+            } else if attachment_id.has_missed_deadline(&deadline_1_guard) {
                 deadline_1_missed = true;
-            } else if attachment_id.deadline_from(&deadline_2_guard) {
+            } else if attachment_id.has_missed_deadline(&deadline_2_guard) {
                 deadline_2_missed = true;
             } else {
                 test_fail!("only attachments shall trigger");
@@ -444,10 +444,10 @@ mod waitset {
         let mut missed_deadline = false;
         let mut received_event = false;
 
-        sut.run_once(|attachment_id| {
-            if attachment_id.event_from(&deadline_1_guard) {
+        sut.try_wait_and_process(|attachment_id| {
+            if attachment_id.has_event_from(&deadline_1_guard) {
                 received_event = true;
-            } else if attachment_id.deadline_from(&deadline_1_guard) {
+            } else if attachment_id.has_missed_deadline(&deadline_1_guard) {
                 missed_deadline = true;
             } else {
                 test_fail!("only attachments shall trigger");
