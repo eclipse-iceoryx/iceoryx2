@@ -10,8 +10,32 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
     visibility = ["//visibility:public"],
 )
+
+rust_library(
+    name = "iceoryx2-ffi",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "@//iceoryx2:iceoryx2",
+        "@//iceoryx2-bb/container:iceoryx2-bb-container",
+        "@//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "@//iceoryx2-bb/log:iceoryx2-bb-log",
+        "@//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "@//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "@//iceoryx2-cal:iceoryx2-cal",
+        "@crate_index//:serde",
+    ],
+    proc_macro_deps = [
+        "@//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
+    ],
+)
+
+# TODO: [349] add tests
