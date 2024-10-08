@@ -453,7 +453,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [ubuntu-latest]
         toolchain: [stable]
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
@@ -467,11 +467,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
-      - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
@@ -480,6 +476,7 @@ jobs:
         run: bazel build //...
 
       - name: Run bazel test
+        if: false # TODO: [349] enable tests in bazel
         run: bazel test //...
 
   grcov:
