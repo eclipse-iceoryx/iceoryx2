@@ -24,12 +24,10 @@ constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1)
 // NOLINTBEGIN
 struct Args {
     IOX_CLI_DEFINITION(Args);
-    IOX_CLI_OPTIONAL(iox::string<256>, service, { "my_funky_service" }, 's', "service", "The name of the service.");
-    IOX_CLI_OPTIONAL(
-        uint64_t, event_id, { 0 }, 'e', "event_id", "The event id that shall be used to trigger the service.");
+    IOX_CLI_OPTIONAL(iox::string<64>, service, { "fuu" }, 's', "service", "The name of the service.");
+    IOX_CLI_OPTIONAL(uint64_t, event_id, 0, 'e', "event_id", "The event id that shall be used to trigger the service.");
 };
 // NOLINTEND
-
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
