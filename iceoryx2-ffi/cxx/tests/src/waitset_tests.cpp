@@ -156,8 +156,8 @@ TYPED_TEST(WaitSetTest, interval_attachment_blocks_for_at_least_timeout) {
     auto result = sut.run([&](auto attachment_id) {
         callback_called = true;
         sut.stop();
-        ASSERT_THAT(attachment_id.event_from(guard), Eq(true));
-        ASSERT_THAT(attachment_id.deadline_from(guard), Eq(false));
+        ASSERT_THAT(attachment_id.has_event_from(guard), Eq(true));
+        ASSERT_THAT(attachment_id.has_missed_deadline(guard), Eq(false));
     });
 
     auto end = std::chrono::steady_clock::now();
@@ -178,8 +178,8 @@ TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
     auto result = sut.run([&](auto attachment_id) {
         callback_called = true;
         sut.stop();
-        ASSERT_THAT(attachment_id.event_from(guard), Eq(false));
-        ASSERT_THAT(attachment_id.deadline_from(guard), Eq(true));
+        ASSERT_THAT(attachment_id.has_event_from(guard), Eq(false));
+        ASSERT_THAT(attachment_id.has_missed_deadline(guard), Eq(true));
     });
 
     auto end = std::chrono::steady_clock::now();
@@ -204,8 +204,8 @@ TYPED_TEST(WaitSetTest, deadline_attachment_wakes_up_when_notified) {
     auto result = sut.run([&](auto attachment_id) {
         callback_called = true;
         sut.stop();
-        ASSERT_THAT(attachment_id.event_from(guard), Eq(true));
-        ASSERT_THAT(attachment_id.deadline_from(guard), Eq(false));
+        ASSERT_THAT(attachment_id.has_event_from(guard), Eq(true));
+        ASSERT_THAT(attachment_id.has_missed_deadline(guard), Eq(false));
     });
 
     notifier_thread.join();
@@ -227,8 +227,8 @@ TYPED_TEST(WaitSetTest, notification_attachment_wakes_up_when_notified) {
     auto result = sut.run([&](auto attachment_id) {
         callback_called = true;
         sut.stop();
-        ASSERT_THAT(attachment_id.event_from(guard), Eq(true));
-        ASSERT_THAT(attachment_id.deadline_from(guard), Eq(false));
+        ASSERT_THAT(attachment_id.has_event_from(guard), Eq(true));
+        ASSERT_THAT(attachment_id.has_missed_deadline(guard), Eq(false));
     });
 
     notifier_thread.join();
@@ -268,7 +268,7 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
 
     sut.run_once([&](auto attachment_id) {
            for (uint64_t idx = 0; idx < guards.size(); ++idx) {
-               if (attachment_id.event_from(guards[idx])) {
+               if (attachment_id.has_event_from(guards[idx])) {
                    was_triggered[idx] = true;
                    break;
                }

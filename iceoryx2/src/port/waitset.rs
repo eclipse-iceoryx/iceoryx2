@@ -58,7 +58,7 @@
 //! let guard = waitset.attach_notification(&listener)?;
 //!
 //! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
-//!     if attachment_id.event_from(&guard) {
+//!     if attachment_id.has_event_from(&guard) {
 //!         while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!             println!("received notification {:?}", event_id);
 //!         }
@@ -89,11 +89,11 @@
 //! let guard = waitset.attach_deadline(&listener, listener_deadline)?;
 //!
 //! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
-//!     if attachment_id.event_from(&guard) {
+//!     if attachment_id.has_event_from(&guard) {
 //!         while let Ok(Some(event_id)) = listener.try_wait_one() {
 //!             println!("received notification {:?}", event_id);
 //!         }
-//!     } else if attachment_id.deadline_from(&guard) {
+//!     } else if attachment_id.has_missed_deadline(&guard) {
 //!         println!("Oh no, we hit the deadline without receiving any kind of event");
 //!     }
 //! };
@@ -126,9 +126,9 @@
 //! let guard_2 = waitset.attach_interval(pub_2_period)?;
 //!
 //! let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
-//!     if attachment_id.event_from(&guard_1) {
+//!     if attachment_id.has_event_from(&guard_1) {
 //!         publisher_1.send_copy(123);
-//!     } else if attachment_id.event_from(&guard_2) {
+//!     } else if attachment_id.has_event_from(&guard_2) {
 //!         publisher_2.send_copy(456);
 //!     }
 //! };
@@ -365,7 +365,7 @@ impl<Service: crate::service::Service> WaitSetAttachmentId<Service> {
 
     /// Returns true if an event was emitted from a notification or deadline attachment
     /// corresponding to [`WaitSetGuard`].
-    pub fn event_from(&self, other: &WaitSetGuard<Service>) -> bool {
+    pub fn has_event_from(&self, other: &WaitSetGuard<Service>) -> bool {
         let other_attachment = WaitSetAttachmentId::from_guard(other);
         if let AttachmentIdType::Deadline(other_waitset, other_reactor_idx, _) =
             other_attachment.attachment_type
@@ -381,7 +381,7 @@ impl<Service: crate::service::Service> WaitSetAttachmentId<Service> {
     }
 
     /// Returns true if the deadline for the attachment corresponding to [`WaitSetGuard`] was missed.
-    pub fn deadline_from(&self, other: &WaitSetGuard<Service>) -> bool {
+    pub fn has_missed_deadline(&self, other: &WaitSetGuard<Service>) -> bool {
         if let AttachmentIdType::Deadline(..) = self.attachment_type {
             self.attachment_type == WaitSetAttachmentId::from_guard(other).attachment_type
         } else {

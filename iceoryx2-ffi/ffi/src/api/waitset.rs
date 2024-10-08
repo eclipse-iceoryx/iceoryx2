@@ -307,7 +307,7 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
 /// [`iox2_waitset_h`]. As soon as the attachment receives data, the WaitSet
 /// wakes up in [`iox2_waitset_run()`] and informs the user.
 ///
-/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
 /// [`iox2_waitset_guard_h`].
 ///
@@ -383,11 +383,11 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
 /// [`iox2_waitset_h`]. As soon as the attachment receives data or the deadline
 /// was missed, the WaitSet wakes up in [`iox2_waitset_run()`] and informs the user.
 ///
-/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
 /// [`iox2_waitset_guard_h`].
 /// If the deadline was hit the function
-/// [`iox2_waitset_attachment_id_deadline_from()`](crate::iox2_waitset_attachment_id_deadline_from())
+/// [`iox2_waitset_attachment_id_has_missed_deadline()`](crate::iox2_waitset_attachment_id_has_missed_deadline())
 /// can be used to identify it.
 ///
 /// # Return
@@ -471,7 +471,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
 /// Attaches an interval to the [`iox2_waitset_h`]. As soon as the interval has passed
 /// the WaitSet wakes up in [`iox2_waitset_run()`] and informs the user.
 ///
-/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
 /// [`iox2_waitset_guard_h`].
 ///
@@ -550,11 +550,11 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 /// for every events that was received and the corresponding owning [`iox2_waitset_attachment_id_h`]
 /// is provided as input argument, as well as the `callback_ctx`.
 ///
-/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
 /// [`iox2_waitset_guard_h`].
 /// If the deadline was hit the function
-/// [`iox2_waitset_attachment_id_deadline_from()`](crate::iox2_waitset_attachment_id_deadline_from())
+/// [`iox2_waitset_attachment_id_has_missed_deadline()`](crate::iox2_waitset_attachment_id_has_missed_deadline())
 /// can be used to identify it.
 ///
 /// # Return
@@ -613,11 +613,11 @@ pub unsafe extern "C" fn iox2_waitset_run_once(
 /// The infinite loop is interrupted either by a `SIGINT` or `SIGTERM` signal or
 /// when the user has called [`iox2_waitset_stop()`].
 ///
-/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
 /// [`iox2_waitset_guard_h`].
 /// If the deadline was hit the function
-/// [`iox2_waitset_attachment_id_deadline_from()`](crate::iox2_waitset_attachment_id_deadline_from())
+/// [`iox2_waitset_attachment_id_has_missed_deadline()`](crate::iox2_waitset_attachment_id_has_missed_deadline())
 /// can be used to identify it.
 ///
 /// # Return

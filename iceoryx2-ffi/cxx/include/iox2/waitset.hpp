@@ -25,7 +25,8 @@ namespace iox2 {
 /// The [`WaitSetGuard`] is returned by [`WaitSet::attach_deadline()`], [`WaitSet::attach_notification()`]
 /// or [`WaitSet::attach_interval()`]. As soon as it goes out-of-scope it detaches the attachment.
 /// It can also be used to determine the origin of an event in [`WaitSet::run()`] or
-/// [`WaitSet::run_once()`] via [`WaitSetAttachmentId::event_from()`] or [`WaitSetAttachmentId::deadline_from()`].
+/// [`WaitSet::run_once()`] via [`WaitSetAttachmentId::has_event_from()`] or
+/// [`WaitSetAttachmentId::has_missed_deadline()`].
 template <ServiceType S>
 class WaitSetGuard {
   public:
@@ -66,10 +67,10 @@ class WaitSetAttachmentId {
 
     /// Returns true if an event was emitted from a notification or deadline attachment
     /// corresponding to [`WaitSetGuard`].
-    auto event_from(const WaitSetGuard<S>& guard) const -> bool;
+    auto has_event_from(const WaitSetGuard<S>& guard) const -> bool;
 
     /// Returns true if the deadline for the attachment corresponding to [`WaitSetGuard`] was missed.
-    auto deadline_from(const WaitSetGuard<S>& guard) const -> bool;
+    auto has_missed_deadline(const WaitSetGuard<S>& guard) const -> bool;
 
   private:
     explicit WaitSetAttachmentId(iox2_waitset_attachment_id_h handle);

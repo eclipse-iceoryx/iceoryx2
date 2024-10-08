@@ -51,13 +51,13 @@ auto WaitSetAttachmentId<S>::from_guard(const WaitSetGuard<S>& guard) -> WaitSet
 }
 
 template <ServiceType S>
-auto WaitSetAttachmentId<S>::event_from(const WaitSetGuard<S>& guard) const -> bool {
-    return iox2_waitset_attachment_id_event_from(&m_handle, &guard.m_handle);
+auto WaitSetAttachmentId<S>::has_event_from(const WaitSetGuard<S>& guard) const -> bool {
+    return iox2_waitset_attachment_id_has_event_from(&m_handle, &guard.m_handle);
 }
 
 template <ServiceType S>
-auto WaitSetAttachmentId<S>::deadline_from(const WaitSetGuard<S>& guard) const -> bool {
-    return iox2_waitset_attachment_id_deadline_from(&m_handle, &guard.m_handle);
+auto WaitSetAttachmentId<S>::has_missed_deadline(const WaitSetGuard<S>& guard) const -> bool {
+    return iox2_waitset_attachment_id_has_missed_deadline(&m_handle, &guard.m_handle);
 }
 
 template <ServiceType S>

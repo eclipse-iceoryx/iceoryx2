@@ -197,7 +197,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_less(
 ///  * `handle` must be valid and non-null.
 ///  * `guard` must be valid and non-null.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_attachment_id_event_from(
+pub unsafe extern "C" fn iox2_waitset_attachment_id_has_event_from(
     handle: iox2_waitset_attachment_id_h_ref,
     guard: iox2_waitset_guard_h_ref,
 ) -> bool {
@@ -212,12 +212,12 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_event_from(
             .value
             .as_ref()
             .ipc
-            .event_from(&*guard.value.as_ref().ipc),
+            .has_event_from(&*guard.value.as_ref().ipc),
         iox2_service_type_e::LOCAL => attachment_id
             .value
             .as_ref()
             .local
-            .event_from(&*guard.value.as_ref().local),
+            .has_event_from(&*guard.value.as_ref().local),
     }
 }
 
@@ -228,7 +228,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_event_from(
 ///  * `handle` must be valid and non-null.
 ///  * `guard` must be valid and non-null.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_attachment_id_deadline_from(
+pub unsafe extern "C" fn iox2_waitset_attachment_id_has_missed_deadline(
     handle: iox2_waitset_attachment_id_h_ref,
     guard: iox2_waitset_guard_h_ref,
 ) -> bool {
@@ -243,12 +243,12 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_deadline_from(
             .value
             .as_ref()
             .ipc
-            .deadline_from(&*guard.value.as_ref().ipc),
+            .has_missed_deadline(&*guard.value.as_ref().ipc),
         iox2_service_type_e::LOCAL => attachment_id
             .value
             .as_ref()
             .local
-            .deadline_from(&*guard.value.as_ref().local),
+            .has_missed_deadline(&*guard.value.as_ref().local),
     }
 }
 
