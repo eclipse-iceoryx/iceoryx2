@@ -283,7 +283,7 @@ pub unsafe extern "C" fn iox2_waitset_capacity(handle: iox2_waitset_h_ref) -> c_
     }
 }
 
-/// Stops the current [`iox2_waitset_wait_and_process_events()`] operation. Any [`iox2_waitset_wait_and_process_events()`]
+/// Stops the current [`iox2_waitset_wait_and_process()`] operation. Any [`iox2_waitset_wait_and_process()`]
 /// call after this call is not affected and the user needs to call
 /// [`iox2_waitset_stop()`] again.
 ///
@@ -305,7 +305,7 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
 
 /// Attaches a provided [`iox2_file_descriptor_ptr`] as notification to the
 /// [`iox2_waitset_h`]. As soon as the attachment receives data, the WaitSet
-/// wakes up in [`iox2_waitset_wait_and_process_events()`] and informs the user.
+/// wakes up in [`iox2_waitset_wait_and_process()`] and informs the user.
 ///
 /// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
@@ -381,7 +381,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
 
 /// Attaches a provided [`iox2_file_descriptor_ptr`] as deadline to the
 /// [`iox2_waitset_h`]. As soon as the attachment receives data or the deadline
-/// was missed, the WaitSet wakes up in [`iox2_waitset_wait_and_process_events()`] and informs the user.
+/// was missed, the WaitSet wakes up in [`iox2_waitset_wait_and_process()`] and informs the user.
 ///
 /// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
@@ -469,7 +469,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
 }
 
 /// Attaches an interval to the [`iox2_waitset_h`]. As soon as the interval has passed
-/// the WaitSet wakes up in [`iox2_waitset_wait_and_process_events()`] and informs the user.
+/// the WaitSet wakes up in [`iox2_waitset_wait_and_process()`] and informs the user.
 ///
 /// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
@@ -568,7 +568,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 ///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
 ///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
 #[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_try_wait_and_process_events(
+pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
     callback_ctx: iox2_callback_context,
@@ -583,7 +583,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process_events(
                 .value
                 .as_ref()
                 .ipc
-                .try_wait_and_process_events(|attachment_id| {
+                .try_wait_and_process(|attachment_id| {
                     let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
                     (*attachment_id_ptr).init(
                         waitset.service_type,
@@ -599,7 +599,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process_events(
                 .value
                 .as_ref()
                 .local
-                .try_wait_and_process_events(|attachment_id| {
+                .try_wait_and_process(|attachment_id| {
                     let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
                     (*attachment_id_ptr).init(
                         waitset.service_type,
@@ -643,7 +643,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process_events(
 ///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
 ///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
 #[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_wait_and_process_events(
+pub unsafe extern "C" fn iox2_waitset_wait_and_process(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
     callback_ctx: iox2_callback_context,
@@ -655,28 +655,26 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_events(
     let waitset = &mut *handle.as_type();
 
     let run_result = match waitset.service_type {
-        iox2_service_type_e::IPC => {
-            waitset
-                .value
-                .as_ref()
-                .ipc
-                .wait_and_process_events(|attachment_id| {
-                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                    (*attachment_id_ptr).init(
-                        waitset.service_type,
-                        AttachmentIdUnion::new_ipc(attachment_id),
-                        iox2_waitset_attachment_id_t::dealloc,
-                    );
-                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx);
-                })
-        }
+        iox2_service_type_e::IPC => waitset
+            .value
+            .as_ref()
+            .ipc
+            .wait_and_process(|attachment_id| {
+                let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                (*attachment_id_ptr).init(
+                    waitset.service_type,
+                    AttachmentIdUnion::new_ipc(attachment_id),
+                    iox2_waitset_attachment_id_t::dealloc,
+                );
+                let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                callback(attachment_id_handle_ptr, callback_ctx);
+            }),
         iox2_service_type_e::LOCAL => {
             waitset
                 .value
                 .as_ref()
                 .local
-                .wait_and_process_events(|attachment_id| {
+                .wait_and_process(|attachment_id| {
                     let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
                     (*attachment_id_ptr).init(
                         waitset.service_type,

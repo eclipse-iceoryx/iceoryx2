@@ -132,7 +132,7 @@ TYPED_TEST(WaitSetTest, attaching_same_notification_twice_fails) {
 
 TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
     auto sut = this->create_sut();
-    auto result = sut.wait_and_process_events([](auto) {});
+    auto result = sut.wait_and_process([](auto) {});
 
     ASSERT_THAT(result.has_error(), Eq(true));
     ASSERT_THAT(result.get_error(), Eq(WaitSetRunError::NoAttachments));
@@ -140,7 +140,7 @@ TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
 
 TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run_once) {
     auto sut = this->create_sut();
-    auto result = sut.try_wait_and_process_events([](auto) {});
+    auto result = sut.try_wait_and_process([](auto) {});
 
     ASSERT_THAT(result.has_error(), Eq(true));
     ASSERT_THAT(result.get_error(), Eq(WaitSetRunError::NoAttachments));
@@ -153,7 +153,7 @@ TYPED_TEST(WaitSetTest, interval_attachment_blocks_for_at_least_timeout) {
     auto guard = sut.attach_interval(TIMEOUT).expect("");
 
     auto callback_called = false;
-    auto result = sut.wait_and_process_events([&](auto attachment_id) {
+    auto result = sut.wait_and_process([&](auto attachment_id) {
         callback_called = true;
         sut.stop();
         ASSERT_THAT(attachment_id.has_event_from(guard), Eq(true));
@@ -175,7 +175,7 @@ TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
     auto guard = sut.attach_deadline(listener, TIMEOUT).expect("");
 
     auto callback_called = false;
-    auto result = sut.wait_and_process_events([&](auto attachment_id) {
+    auto result = sut.wait_and_process([&](auto attachment_id) {
         callback_called = true;
         sut.stop();
         ASSERT_THAT(attachment_id.has_event_from(guard), Eq(false));
@@ -201,7 +201,7 @@ TYPED_TEST(WaitSetTest, deadline_attachment_wakes_up_when_notified) {
         auto notifier = this->create_notifier();
         notifier.notify().expect("");
     });
-    auto result = sut.wait_and_process_events([&](auto attachment_id) {
+    auto result = sut.wait_and_process([&](auto attachment_id) {
         callback_called = true;
         sut.stop();
         ASSERT_THAT(attachment_id.has_event_from(guard), Eq(true));
@@ -224,7 +224,7 @@ TYPED_TEST(WaitSetTest, notification_attachment_wakes_up_when_notified) {
         auto notifier = this->create_notifier();
         notifier.notify().expect("");
     });
-    auto result = sut.wait_and_process_events([&](auto attachment_id) {
+    auto result = sut.wait_and_process([&](auto attachment_id) {
         callback_called = true;
         sut.stop();
         ASSERT_THAT(attachment_id.has_event_from(guard), Eq(true));
@@ -266,7 +266,7 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
     std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.toMilliseconds()));
     std::vector<bool> was_triggered(guards.size(), false);
 
-    sut.try_wait_and_process_events([&](auto attachment_id) {
+    sut.try_wait_and_process([&](auto attachment_id) {
            for (uint64_t idx = 0; idx < guards.size(); ++idx) {
                if (attachment_id.has_event_from(guards[idx])) {
                    was_triggered[idx] = true;
