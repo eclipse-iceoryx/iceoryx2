@@ -14,7 +14,6 @@ package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_rust//rust:defs.bzl", "rust_library")
-load("@rules_rust//bindgen:defs.bzl", "rust_bindgen_library")
 
 # Generate the binding lib
 cc_library(
@@ -31,21 +30,20 @@ cc_library(
 )
 
 # Generate the Rust binding file
-# This will generate 'posix_generated__bindgen.rs'
-rust_bindgen_library(
-    name = "posix_generated",
-    bindgen_flags = [
-        "--blocklist-type=max_align_t",
+genrule(
+    name = "iceoryx2-pal-posix-bindgen",
+    srcs = [
+        "src/c/posix.h",
+        "@bindgen//:bindgen-cli",
     ],
-    cc_lib = "iceoryx2-pal-posix-c-lib",
-    header = "src/c/posix.h",
-    wrap_static_fns = True,
+    outs = ["src/posix_generated.rs"],
+    cmd = "$(execpath @bindgen//:bindgen-cli) --use-core --blocklist-type max_align_t $(location src/c/posix.h) --output $(OUTS)",
 )
 
 # Create the actual crate
 rust_library(
     name = "iceoryx2-pal-posix",
-    srcs = glob(["src/**/*.rs"]) + [ ":posix_generated__bindgen.rs" ],
+    srcs = glob(["src/**/*.rs"]) + [ ":src/posix_generated.rs" ],
     deps = [
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
@@ -53,7 +51,10 @@ rust_library(
         ":iceoryx2-pal-posix-c-lib",
     ],
     rustc_env = {
-        "OUT_DIR": ".." # the file is generated in 'posix', not in 'posix/src' where the 'lib.rs' is located; therefore the relative path of '..'
+        # - the file is generated in 'posix/src'
+        # - 'lib.rs' expects the location at 'env!("OUT_DIR")/posix_generated.rs'
+        # - therefore 'OUT_DIR' needs to point to the same dir where 'lib.rs' is located
+        "OUT_DIR": "."
     },
 )
 

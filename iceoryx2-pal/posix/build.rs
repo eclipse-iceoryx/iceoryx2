@@ -45,11 +45,8 @@ fn main() {
     };
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    // bazel generates 'posix_generated__bindgen.rs' and there is no way to set the name
-    // the simplest solution is to use the same name here; the workaround in bazel would
-    // require to have a 'genrule' and copy the file
     bindings
-        .write_to_file(out_path.join("posix_generated__bindgen.rs"))
+        .write_to_file(out_path.join("posix_generated.rs"))
         .expect("Couldn't write bindings!");
 
     println!("cargo:rerun-if-changed=src/c/sigaction.c");

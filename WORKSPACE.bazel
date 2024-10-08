@@ -59,16 +59,20 @@ rust_register_toolchains(
 )
 
 
-# Load bindgen rules
-load("@rules_rust//bindgen:repositories.bzl", "rust_bindgen_dependencies", "rust_bindgen_register_toolchains")
-
-rust_bindgen_dependencies()
-
-rust_bindgen_register_toolchains()
-
-load("@rules_rust//bindgen:transitive_repositories.bzl", "rust_bindgen_transitive_dependencies")
-
-rust_bindgen_transitive_dependencies()
+# Load prebuilt bindgen
+http_archive(
+    name = "bindgen",
+    sha256 = "b7e2321ee8c617f14ccc5b9f39b3a804db173ee217e924ad93ed16af6bc62b1d",
+    strip_prefix = "bindgen-cli-x86_64-unknown-linux-gnu",
+    urls = ["https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-x86_64-unknown-linux-gnu.tar.xz"],
+    build_file_content = """
+filegroup(
+    name = "bindgen-cli",
+    srcs = ["bindgen"],
+    visibility = ["//visibility:public"],
+)
+    """,
+)
 
 
 # Load external crates
