@@ -142,7 +142,8 @@ pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_
 ///
 /// # Returns
 ///
-///  [`IOX2_OK`] on success otherwise [`iox2_waitset_create_error_e`].
+///  [`IOX2_OK`] on success otherwise
+///  [`iox2_waitset_create_error_e`](crate::iox2_waitset_create_error_e).
 ///
 /// # Safety
 ///
