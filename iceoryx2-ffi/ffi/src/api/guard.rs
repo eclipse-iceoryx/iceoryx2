@@ -108,6 +108,14 @@ impl HandleToType for iox2_guard_h_ref {
 // END type definition
 
 // BEGIN C API
+/// Drops a [`iox2_guard_h`] that was successfully acquired with
+/// * [`iox2_waitset_attach_interval()`](crate::iox2_waitset_attach_interval())
+/// * [`iox2_waitset_attach_deadline()`](crate::iox2_waitset_attach_deadline())
+/// * [`iox2_waitset_attach_notification()`](crate::iox2_waitset_attach_notification())
+///
+/// # Safety
+///
+/// * `handle` must be valid and non null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_guard_drop(handle: iox2_guard_h) {
     handle.assert_non_null();

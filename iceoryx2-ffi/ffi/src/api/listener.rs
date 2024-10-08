@@ -21,7 +21,7 @@ use crate::iox2_file_descriptor_ptr;
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
+use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_cal::event::ListenerWaitError;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -188,7 +188,7 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
         iox2_service_type_e::LOCAL => listener.value.as_ref().local.file_descriptor(),
     };
 
-    core::mem::transmute(fd)
+    core::mem::transmute(fd as *const FileDescriptor)
 }
 
 /// Tries to wait on the listener and calls the callback for every received event providing the

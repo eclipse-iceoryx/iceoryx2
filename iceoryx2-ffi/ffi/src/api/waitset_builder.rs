@@ -90,6 +90,14 @@ impl HandleToType for iox2_waitset_builder_h_ref {
 // END type definition
 
 // BEGIN C API
+/// Creates a new [`iox2_waitset_builder_t`] to create a [`iox2_waitset_t`] with
+/// [`iox2_waitset_builder_create()`]
+///
+/// # Safety
+///
+///  * `struct_ptr` must be either a valid pointer to uninitialized memory or `null`
+///  * `handle_ptr` must point to a valid uninitialized memory location
+///  * The acquire handle must be cleaned up with [`iox2_waitset_builder_drop()`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_builder_new(
     struct_ptr: *mut iox2_waitset_builder_t,
@@ -116,6 +124,11 @@ pub unsafe extern "C" fn iox2_waitset_builder_new(
     *handle_ptr = (*struct_ptr).as_handle();
 }
 
+/// Drops a [`iox2_waitset_builder_h`] and calls all corresponding cleanup functions.
+///
+/// # Safety
+///
+///  * `handle` must be acquired with [`iox2_waitset_builder_new()`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_h) {
     debug_assert!(!handle.is_null());
@@ -125,7 +138,19 @@ pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_
     (waitset_builder.deleter)(waitset_builder);
 }
 
-// Returns [`iox2_waitset_create_error_e`]
+/// Creates a new [`iox2_waitset_t`].
+///
+/// # Returns
+///
+///  [`IOX2_OK`] on success otherwise [`iox2_waitset_create_error_e`].
+///
+/// # Safety
+///
+///  * `handle` must be acquired with [`iox2_waitset_builder_new()`] and valid
+///  * `handle` is invalidated after a successful operation and cannot used again
+///     with this function.
+///  * `struct_ptr` must be either a valid pointer to uninitialized memory or `null`
+///  * `handle_ptr` must point to a valid uninitialized memory location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_builder_create(
     handle: iox2_waitset_builder_h,

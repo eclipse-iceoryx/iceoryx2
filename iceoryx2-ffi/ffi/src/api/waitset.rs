@@ -70,9 +70,9 @@ impl IntoCInt for WaitSetRunResult {
     }
 }
 
-impl Into<iox2_waitset_run_result_e> for WaitSetRunResult {
-    fn into(self) -> iox2_waitset_run_result_e {
-        match self {
+impl From<WaitSetRunResult> for iox2_waitset_run_result_e {
+    fn from(value: WaitSetRunResult) -> Self {
+        match value {
             WaitSetRunResult::TerminationRequest => iox2_waitset_run_result_e::TERMINATION_REQUEST,
             WaitSetRunResult::Interrupt => iox2_waitset_run_result_e::INTERRUPT,
             WaitSetRunResult::StopRequest => iox2_waitset_run_result_e::STOP_REQUEST,
@@ -205,6 +205,12 @@ pub type iox2_waitset_run_callback = extern "C" fn(iox2_attachment_id_h, iox2_ca
 // END type definition
 
 // BEGIN C API
+/// Drops a [`iox2_waitset_h`] and calls all corresponding cleanup functions.
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_drop(handle: iox2_waitset_h) {
     handle.assert_non_null();
@@ -222,6 +228,12 @@ pub unsafe extern "C" fn iox2_waitset_drop(handle: iox2_waitset_h) {
     (waitset.deleter)(waitset);
 }
 
+/// Returns `true` if the [`iox2_waitset_h`] is empty, otherwise false.
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_is_empty(handle: iox2_waitset_h_ref) -> bool {
     handle.assert_non_null();
@@ -234,6 +246,12 @@ pub unsafe extern "C" fn iox2_waitset_is_empty(handle: iox2_waitset_h_ref) -> bo
     }
 }
 
+/// Returns the number of attachments of the [`iox2_waitset_h`].
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_len(handle: iox2_waitset_h_ref) -> c_size_t {
     handle.assert_non_null();
@@ -246,6 +264,12 @@ pub unsafe extern "C" fn iox2_waitset_len(handle: iox2_waitset_h_ref) -> c_size_
     }
 }
 
+/// Returns the capacity of the [`iox2_waitset_h`].
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_capacity(handle: iox2_waitset_h_ref) -> c_size_t {
     handle.assert_non_null();
@@ -258,6 +282,14 @@ pub unsafe extern "C" fn iox2_waitset_capacity(handle: iox2_waitset_h_ref) -> c_
     }
 }
 
+/// Stops the current [`iox2_waitset_run()`] operation. Any [`iox2_waitset_run()`]
+/// call after this call is not affected and the user needs to call
+/// [`iox2_waitset_stop()`] again.
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
     handle.assert_non_null();
@@ -270,7 +302,26 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
     }
 }
 
-/// Returns [`iox2_waitset_attachment_error_e`].
+/// Attaches a provided [`iox2_file_descriptor_ptr`] as notification to the
+/// [`iox2_waitset_h`]. As soon as the attachment receives data, the WaitSet
+/// wakes up in [`iox2_waitset_run()`] and informs the user.
+///
+/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// the origin of the event can be determined from its corresponding
+/// [`iox2_guard_h`].
+///
+/// # Return
+///
+/// `IOX2_OK` on success, otherwise [`iox2_waitset_attachment_error_e`].
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
+///  * `guard_struct_ptr` must be either pointing to a valid uninitialized memory
+///    position or `null`
+///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
+///  * `guard_handle_ptr` must be released with [`iox2_guard_drop()`](crate::iox2_guard_drop()).
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_notification(
     handle: iox2_waitset_h_ref,
@@ -327,7 +378,29 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
     IOX2_OK
 }
 
-/// Returns [`iox2_waitset_attachment_error_e`].
+/// Attaches a provided [`iox2_file_descriptor_ptr`] as deadline to the
+/// [`iox2_waitset_h`]. As soon as the attachment receives data or the deadline
+/// was missed, the WaitSet wakes up in [`iox2_waitset_run()`] and informs the user.
+///
+/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// the origin of the event can be determined from its corresponding
+/// [`iox2_guard_h`].
+/// If the deadline was hit the function
+/// [`iox2_attachment_id_deadline_from()`](crate::iox2_attachment_id_deadline_from())
+/// can be used to identify it.
+///
+/// # Return
+///
+/// `IOX2_OK` on success, otherwise [`iox2_waitset_attachment_error_e`].
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
+///  * `guard_struct_ptr` must be either pointing to a valid uninitialized memory
+///    position or `null`
+///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
+///  * `guard_handle_ptr` must be released with [`iox2_guard_drop()`](crate::iox2_guard_drop()).
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     handle: iox2_waitset_h_ref,
@@ -394,7 +467,25 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     IOX2_OK
 }
 
-/// Returns [`iox2_waitset_attachment_error_e`].
+/// Attaches an interval to the [`iox2_waitset_h`]. As soon as the interval has passed
+/// the WaitSet wakes up in [`iox2_waitset_run()`] and informs the user.
+///
+/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// the origin of the event can be determined from its corresponding
+/// [`iox2_guard_h`].
+///
+/// # Return
+///
+/// `IOX2_OK` on success, otherwise [`iox2_waitset_attachment_error_e`].
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
+///  * `guard_struct_ptr` must be either pointing to a valid uninitialized memory
+///    position or `null`
+///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
+///  * `guard_handle_ptr` must be released with [`iox2_guard_drop()`](crate::iox2_guard_drop()).
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_interval(
     handle: iox2_waitset_h_ref,
@@ -454,7 +545,27 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
     IOX2_OK
 }
 
-/// Returns [`iox2_waitset_run_error_e`].
+/// Checks the [`iox2_waitset_h`] for new events once. The provided `callback` is called
+/// for every events that was received and the corresponding owning [`iox2_attachment_id_h`]
+/// is provided as input argument, as well as the `callback_ctx`.
+///
+/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// the origin of the event can be determined from its corresponding
+/// [`iox2_guard_h`].
+/// If the deadline was hit the function
+/// [`iox2_attachment_id_deadline_from()`](crate::iox2_attachment_id_deadline_from())
+/// can be used to identify it.
+///
+/// # Return
+///
+/// `IOX2_OK` on success, otherwise [`iox2_waitset_run_error_e`].
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
+///  * the provided [`iox2_attachment_id_h`] in the callback must be released via
+///    [`iox2_attachment_id_drop()`](crate::iox2_attachment_id_drop())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_run_once(
     handle: iox2_waitset_h_ref,
@@ -494,7 +605,30 @@ pub unsafe extern "C" fn iox2_waitset_run_once(
     }
 }
 
-/// Returns [`iox2_waitset_run_error_e`].
+/// Checks the [`iox2_waitset_h`] for new events in an infinite loop. The provided
+/// `callback` is called for every events that was received and the corresponding
+/// owning [`iox2_attachment_id_h`] is provided as input argument, as well as the
+/// `callback_ctx`.
+/// The infinite loop is interrupted either by a `SIGINT` or `SIGTERM` signal or
+/// when the user has called [`iox2_waitset_stop()`].
+///
+/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// the origin of the event can be determined from its corresponding
+/// [`iox2_guard_h`].
+/// If the deadline was hit the function
+/// [`iox2_attachment_id_deadline_from()`](crate::iox2_attachment_id_deadline_from())
+/// can be used to identify it.
+///
+/// # Return
+///
+/// `IOX2_OK` on success, otherwise [`iox2_waitset_run_error_e`].
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
+///  * the provided [`iox2_attachment_id_h`] in the callback must be released via
+///    [`iox2_attachment_id_drop()`](crate::iox2_attachment_id_drop())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_run(
     handle: iox2_waitset_h_ref,

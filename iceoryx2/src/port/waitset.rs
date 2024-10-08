@@ -301,7 +301,7 @@ impl<Service: crate::service::Service> AttachmentId<Service> {
 
 impl<Service: crate::service::Service> PartialOrd for AttachmentId<Service> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.attachment_type.partial_cmp(&other.attachment_type)
+        Some(self.cmp(other))
     }
 }
 

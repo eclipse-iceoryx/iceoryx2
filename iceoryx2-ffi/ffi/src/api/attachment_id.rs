@@ -111,6 +111,12 @@ impl HandleToType for iox2_attachment_id_h_ref {
 // END type definition
 
 // BEGIN C API
+/// Release an [`iox2_attachment_id_h`] that was acquired by calling either
+/// * [`iox2_waitset_run()`](crate::iox2_waitset_run())
+/// * [`iox2_waitset_run_once()`](crate::iox2_waitset_run_once())
+///
+/// # Safety
+///  * `handle` must be valid and provided by the previously mentioned functions.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attachment_id_drop(handle: iox2_attachment_id_h) {
     handle.assert_non_null();
@@ -128,6 +134,11 @@ pub unsafe extern "C" fn iox2_attachment_id_drop(handle: iox2_attachment_id_h) {
     (attachment_id.deleter)(attachment_id);
 }
 
+/// Checks if two provided [`iox2_attachment_id_h_ref`] are semantically equal.
+///
+/// # Safety
+///  * `lhs` must be valid and non-null.
+///  * `rhs` must be valid and non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attachment_id_equal(
     lhs: iox2_attachment_id_h_ref,
@@ -151,6 +162,11 @@ pub unsafe extern "C" fn iox2_attachment_id_equal(
     }
 }
 
+/// Checks the ordering of two provided [`iox2_attachment_id_h_ref`].
+///
+/// # Safety
+///  * `lhs` must be valid and non-null.
+///  * `rhs` must be valid and non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attachment_id_less(
     lhs: iox2_attachment_id_h_ref,
@@ -174,6 +190,12 @@ pub unsafe extern "C" fn iox2_attachment_id_less(
     }
 }
 
+/// Checks if the event corresponding to [`iox2_guard_h_ref`] was originating from the
+/// provided [`iox2_attachment_id_h_ref`].
+///
+/// # Safety
+///  * `handle` must be valid and non-null.
+///  * `guard` must be valid and non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attachment_id_event_from(
     handle: iox2_attachment_id_h_ref,
@@ -199,6 +221,12 @@ pub unsafe extern "C" fn iox2_attachment_id_event_from(
     }
 }
 
+/// Checks if the deadline corresponding to [`iox2_guard_h_ref`] was originating from the
+/// provided [`iox2_attachment_id_h_ref`].
+///
+/// # Safety
+///  * `handle` must be valid and non-null.
+///  * `guard` must be valid and non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attachment_id_deadline_from(
     handle: iox2_attachment_id_h_ref,
@@ -224,6 +252,14 @@ pub unsafe extern "C" fn iox2_attachment_id_deadline_from(
     }
 }
 
+/// Creates a new [`iox2_attachment_id_t`] from an existing [`iox2_guard_h_ref`].
+///
+/// # Safety
+///  * `guard` must be valid and non-null.
+///  * `attachment_id_struct_ptr` must be either null or pointing to a valid uninitialized memory
+///    location.
+///  * `attachment_id_handle_ptr` must point to a valid uninitialized memory location
+///  * `attachment_id_handle_ptr` must be released with [`iox2_attachment_id_drop()`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attachment_id_from_guard(
     guard: iox2_guard_h_ref,

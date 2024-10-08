@@ -108,6 +108,13 @@ impl HandleToType for iox2_file_descriptor_h_ref {
 // END type definition
 
 // BEGIN C API
+
+/// Casts a [`iox2_file_descriptor_h`] into an [`iox2_file_descriptor_ptr`]. The result
+/// is valid as long as the source is valid.
+///
+/// # Safety
+///
+/// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
     handle: iox2_file_descriptor_h,
@@ -117,6 +124,11 @@ pub unsafe extern "C" fn iox2_cast_file_descriptor_ptr(
     (*handle.as_type()).value.as_ref()
 }
 
+/// Releases a [`iox2_file_descriptor_h`].
+///
+/// # Safety
+///
+/// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_h) {
     handle.assert_non_null();
@@ -126,6 +138,13 @@ pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_
     (file_descriptor.deleter)(file_descriptor);
 }
 
+/// Returns the underlying native file descriptor value. When the
+/// [`iox2_file_descriptor_h_ref`] is owning the file descriptor, the native value is
+/// valid until [`iox2_file_descriptor_drop()`] is called.
+///
+/// # Safety
+///
+/// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
     handle: iox2_file_descriptor_h_ref,
@@ -139,6 +158,18 @@ pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
         .native_handle()
 }
 
+/// Creates a new [`iox2_file_descriptor_t`].
+///
+/// # Return
+///
+/// Returns true, when the [`iox2_file_descriptor_h`] was initialized successfully.
+/// If the user provided an invalid file descriptor it returns false.
+///
+/// # Safety
+///
+/// * `struct_ptr` must be either null or pointing to a valid uninitialized memory location
+/// * `handle_ptr` must be non-null and pointing to valid uninitialized memory
+/// * `handle_ptr` must be cleaned up with [`iox2_file_descriptor_drop()`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_file_descriptor_new(
     value: i32,
