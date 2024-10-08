@@ -140,7 +140,7 @@ impl WaitSetUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<WaitSetUnion>
 pub struct iox2_waitset_storage_t {
-    internal: [u8; 384], // magic number obtained with size_of::<Option<WaitSetUnion>>()
+    internal: [u8; 784], // magic number obtained with size_of::<Option<WaitSetUnion>>()
 }
 
 #[repr(C)]
