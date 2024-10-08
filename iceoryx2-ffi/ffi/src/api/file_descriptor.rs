@@ -177,7 +177,7 @@ pub unsafe extern "C" fn iox2_file_descriptor_new(
     struct_ptr: *mut iox2_file_descriptor_t,
     handle_ptr: *mut iox2_file_descriptor_h,
 ) -> bool {
-    handle_ptr.assert_non_null();
+    debug_assert!(!handle_ptr.is_null());
 
     if FileDescriptor::non_owning_new(value).is_none() {
         return false;

@@ -330,7 +330,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
     guard_handle_ptr: *mut iox2_guard_h,
 ) -> c_int {
     handle.assert_non_null();
-    guard_handle_ptr.assert_non_null();
+    debug_assert!(!guard_handle_ptr.is_null());
 
     let waitset = &mut *handle.as_type();
 
@@ -411,7 +411,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     guard_handle_ptr: *mut iox2_guard_h,
 ) -> c_int {
     handle.assert_non_null();
-    guard_handle_ptr.assert_non_null();
+    debug_assert!(!guard_handle_ptr.is_null());
 
     let waitset = &mut *handle.as_type();
     let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
@@ -495,7 +495,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
     guard_handle_ptr: *mut iox2_guard_h,
 ) -> c_int {
     handle.assert_non_null();
-    guard_handle_ptr.assert_non_null();
+    debug_assert!(!guard_handle_ptr.is_null());
 
     let waitset = &mut *handle.as_type();
     let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);

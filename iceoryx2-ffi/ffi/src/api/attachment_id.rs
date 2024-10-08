@@ -267,7 +267,7 @@ pub unsafe extern "C" fn iox2_attachment_id_from_guard(
     attachment_id_handle_ptr: *mut iox2_attachment_id_h,
 ) {
     guard.assert_non_null();
-    attachment_id_handle_ptr.assert_non_null();
+    debug_assert!(!attachment_id_handle_ptr.is_null());
 
     let guard = &*guard.as_type();
 
