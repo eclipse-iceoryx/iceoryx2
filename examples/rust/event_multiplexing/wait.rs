@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT
     // signal or the user has called explicitly `waitset.stop()` in the `on_event` callback. We
     // didn't add this to the example so feel free to play around with it.
-    waitset.wait(on_event)?;
+    waitset.wait_and_process_events(on_event)?;
 
     println!("Exit");
 
