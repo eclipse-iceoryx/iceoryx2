@@ -24,8 +24,8 @@
 namespace iox2 {
 /// The [`WaitSetGuard`] is returned by [`WaitSet::attach_deadline()`], [`WaitSet::attach_notification()`]
 /// or [`WaitSet::attach_interval()`]. As soon as it goes out-of-scope it detaches the attachment.
-/// It can also be used to determine the origin of an event in [`WaitSet::run()`] or
-/// [`WaitSet::run_once()`] via [`WaitSetAttachmentId::has_event_from()`] or
+/// It can also be used to determine the origin of an event in [`WaitSet::wait()`] or
+/// [`WaitSet::try_wait()`] via [`WaitSetAttachmentId::has_event_from()`] or
 /// [`WaitSetAttachmentId::has_missed_deadline()`].
 template <ServiceType S>
 class WaitSetGuard {
@@ -93,8 +93,8 @@ template <ServiceType S>
 auto operator<(const WaitSetAttachmentId<S>& lhs, const WaitSetAttachmentId<S>& rhs) -> bool;
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::run_once()`] until it wakes up or to run repeatedly with
-/// [`WaitSet::run()`] until the a interrupt or termination signal was received or the user
+/// single call [`WaitSet::try_wait()`] until it wakes up or to run repeatedly with
+/// [`WaitSet::wait()`] until the a interrupt or termination signal was received or the user
 /// has explicitly requested to stop with [`WaitSet::stop()`].
 ///
 /// The [`Listener`] can be attached as well as sockets or anything else that
@@ -110,7 +110,7 @@ class WaitSet {
     auto operator=(WaitSet&&) noexcept -> WaitSet&;
     ~WaitSet();
 
-    /// Can be called from within a callback during [`WaitSet::run()`] to signal the [`WaitSet`]
+    /// Can be called from within a callback during [`WaitSet::wait()`] to signal the [`WaitSet`]
     /// to stop running after this iteration.
     void stop();
 
@@ -119,14 +119,14 @@ class WaitSet {
     /// acquire the source.
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user via [`WaitSetRunResult`].
-    auto
-    run(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call) -> iox::expected<WaitSetRunResult, WaitSetRunError>;
+    auto wait(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
+        -> iox::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
     /// was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to acquire the
     /// source.
     /// If nothing was triggered the [`WaitSet`] returns immediately.
-    auto run_once(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call) -> iox::expected<void, WaitSetRunError>;
+    auto try_wait(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call) -> iox::expected<void, WaitSetRunError>;
 
     /// Returns the capacity of the [`WaitSet`]
     auto capacity() const -> uint64_t;
@@ -138,7 +138,7 @@ class WaitSet {
     auto is_empty() const -> bool;
 
     /// Attaches a [`Listener`] as notification to the [`WaitSet`]. Whenever an event is received on the
-    /// object the [`WaitSet`] informs the user in [`WaitSet::run()`] to handle the event.
+    /// object the [`WaitSet`] informs the user in [`WaitSet::wait()`] to handle the event.
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     ///
@@ -149,7 +149,7 @@ class WaitSet {
     auto attach_notification(const Listener<S>& listener) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`FileDescriptorView`] as notification to the [`WaitSet`]. Whenever an event is received on the
-    /// object the [`WaitSet`] informs the user in [`WaitSet::run()`] to handle the event.
+    /// object the [`WaitSet`] informs the user in [`WaitSet::wait()`] to handle the event.
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     ///
@@ -161,7 +161,7 @@ class WaitSet {
     attach_notification(FileDescriptorView file_descriptor) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`Listener`] as deadline to the [`WaitSet`]. Whenever the event is received or the
-    /// deadline is hit, the user is informed in [`WaitSet::run()`].
+    /// deadline is hit, the user is informed in [`WaitSet::wait()`].
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     /// Whenever the object emits an event the deadline is reset by the [`WaitSet`].
@@ -174,7 +174,7 @@ class WaitSet {
                          iox::units::Duration deadline) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`FileDescriptorView`] as deadline to the [`WaitSet`]. Whenever the event is received or the
-    /// deadline is hit, the user is informed in [`WaitSet::run()`].
+    /// deadline is hit, the user is informed in [`WaitSet::wait()`].
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     /// Whenever the object emits an event the deadline is reset by the [`WaitSet`].
@@ -187,7 +187,7 @@ class WaitSet {
                          iox::units::Duration deadline) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
-    /// informs the user in [`WaitSet::run()`].
+    /// informs the user in [`WaitSet::wait()`].
     ///
     /// # Safety
     ///

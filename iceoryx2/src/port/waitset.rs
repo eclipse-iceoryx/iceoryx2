@@ -65,7 +65,7 @@
 //!     }
 //! };
 //!
-//! waitset.run(on_event)?;
+//! waitset.wait(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -98,7 +98,7 @@
 //!     }
 //! };
 //!
-//! waitset.run(on_event)?;
+//! waitset.wait(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -133,7 +133,7 @@
 //!     }
 //! };
 //!
-//! waitset.run(on_event)?;
+//! waitset.wait(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -175,7 +175,7 @@
 //!     }
 //! };
 //!
-//! waitset.run(on_event)?;
+//! waitset.wait(on_event)?;
 //!
 //! # Ok(())
 //! # }
@@ -197,7 +197,7 @@ use iceoryx2_bb_posix::{
 use iceoryx2_cal::reactor::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
-/// States why the [`WaitSet::run()`] method returned.
+/// States why the [`WaitSet::wait()`] method returned.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetRunResult {
     /// A termination signal `SIGTERM` was received.
@@ -228,7 +228,7 @@ impl std::fmt::Display for WaitSetAttachmentError {
 
 impl std::error::Error for WaitSetAttachmentError {}
 
-/// Defines the failures that can occur when calling [`WaitSet::run()`].
+/// Defines the failures that can occur when calling [`WaitSet::wait()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitSetRunError {
     /// The process has not sufficient permissions to wait on the attachments.
@@ -467,8 +467,8 @@ impl WaitSetBuilder {
 }
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::run_once()`] until it wakes up or to run repeatedly with
-/// [`WaitSet::run()`] until the a interrupt or termination signal was received or the user
+/// single call [`WaitSet::try_wait()`] until it wakes up or to run repeatedly with
+/// [`WaitSet::wait()`] until the a interrupt or termination signal was received or the user
 /// has explicitly requested to stop with [`WaitSet::stop()`].
 ///
 /// An struct must implement [`SynchronousMultiplexing`] to be attachable. The
@@ -574,7 +574,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     }
 
     /// Attaches an object as notification to the [`WaitSet`]. Whenever an event is received on the
-    /// object the [`WaitSet`] informs the user in [`WaitSet::run()`] to handle the event.
+    /// object the [`WaitSet`] informs the user in [`WaitSet::wait()`] to handle the event.
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     pub fn attach_notification<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
@@ -591,7 +591,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     }
 
     /// Attaches an object as deadline to the [`WaitSet`]. Whenever the event is received or the
-    /// deadline is hit, the user is informed in [`WaitSet::run()`].
+    /// deadline is hit, the user is informed in [`WaitSet::wait()`].
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     /// Whenever the object emits an event the deadline is reset by the [`WaitSet`].
@@ -621,7 +621,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     }
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
-    /// informs the user in [`WaitSet::run()`].
+    /// informs the user in [`WaitSet::wait()`].
     pub fn attach_interval(
         &self,
         interval: Duration,
@@ -635,7 +635,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         })
     }
 
-    /// Can be called from within a callback during [`WaitSet::run()`] to signal the [`WaitSet`]
+    /// Can be called from within a callback during [`WaitSet::wait()`] to signal the [`WaitSet`]
     /// to stop running after this iteration.
     pub fn stop(&self) {
         self.keep_running.store(false, Ordering::Relaxed);
@@ -646,12 +646,12 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// acquire the source.
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user via [`WaitSetRunResult`].
-    pub fn run<F: FnMut(WaitSetAttachmentId<Service>)>(
+    pub fn wait<F: FnMut(WaitSetAttachmentId<Service>)>(
         &self,
         mut fn_call: F,
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
         while self.keep_running.load(Ordering::Relaxed) {
-            match self.run_once(&mut fn_call) {
+            match self.try_wait(&mut fn_call) {
                 Ok(()) => (),
                 Err(WaitSetRunError::TerminationRequest) => {
                     return Ok(WaitSetRunResult::TerminationRequest)
@@ -659,7 +659,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                 Err(WaitSetRunError::Interrupt) => return Ok(WaitSetRunResult::Interrupt),
                 Err(e) => {
                     fail!(from self, with e,
-                            "Unable to run in WaitSet::run() loop since ({:?}) has occurred.", e);
+                            "Unable to run in WaitSet::wait() loop since ({:?}) has occurred.", e);
                 }
             }
         }
@@ -671,11 +671,11 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to acquire the
     /// source.
     /// If nothing was triggered the [`WaitSet`] returns immediately.
-    pub fn run_once<F: FnMut(WaitSetAttachmentId<Service>)>(
+    pub fn try_wait<F: FnMut(WaitSetAttachmentId<Service>)>(
         &self,
         mut fn_call: F,
     ) -> Result<(), WaitSetRunError> {
-        let msg = "Unable to call WaitSet::run()";
+        let msg = "Unable to call WaitSet::wait()";
 
         if SignalHandler::termination_requested() {
             fail!(from self, with WaitSetRunError::TerminationRequest,

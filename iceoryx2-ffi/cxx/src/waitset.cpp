@@ -280,11 +280,11 @@ auto run_callback(iox2_waitset_attachment_id_h attachment_id, void* context) {
 }
 
 template <ServiceType S>
-auto WaitSet<S>::run(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
+auto WaitSet<S>::wait(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
     -> iox::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
-    auto result = iox2_waitset_run(&m_handle, run_callback<S>, static_cast<void*>(&ctx), &run_result);
+    auto result = iox2_waitset_wait(&m_handle, run_callback<S>, static_cast<void*>(&ctx), &run_result);
 
     if (result == IOX2_OK) {
         return iox::ok(iox::into<WaitSetRunResult>(static_cast<int>(run_result)));
@@ -294,10 +294,10 @@ auto WaitSet<S>::run(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
 }
 
 template <ServiceType S>
-auto WaitSet<S>::run_once(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
+auto WaitSet<S>::try_wait(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
     -> iox::expected<void, WaitSetRunError> {
     auto ctx = internal::ctx(fn_call);
-    auto result = iox2_waitset_run_once(&m_handle, run_callback<S>, static_cast<void*>(&ctx));
+    auto result = iox2_waitset_try_wait(&m_handle, run_callback<S>, static_cast<void*>(&ctx));
 
     if (result == IOX2_OK) {
         return iox::ok();

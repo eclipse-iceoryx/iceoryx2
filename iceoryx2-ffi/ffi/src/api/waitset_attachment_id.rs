@@ -112,8 +112,8 @@ impl HandleToType for iox2_waitset_attachment_id_h_ref {
 
 // BEGIN C API
 /// Release an [`iox2_waitset_attachment_id_h`] that was acquired by calling either
-/// * [`iox2_waitset_run()`](crate::iox2_waitset_run())
-/// * [`iox2_waitset_run_once()`](crate::iox2_waitset_run_once())
+/// * [`iox2_waitset_wait()`](crate::iox2_waitset_wait())
+/// * [`iox2_waitset_try_wait()`](crate::iox2_waitset_try_wait())
 ///
 /// # Safety
 ///  * `handle` must be valid and provided by the previously mentioned functions.
