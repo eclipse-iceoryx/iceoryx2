@@ -75,7 +75,7 @@ TYPED_TEST(WaitSetTest, attaching_different_elements_works) {
     auto sut = this->create_sut();
 
     std::vector<Listener<TestFixture::TYPE>> listeners;
-    std::vector<Guard<TestFixture::TYPE>> guards;
+    std::vector<WaitSetGuard<TestFixture::TYPE>> guards;
 
     for (uint64_t idx = 0; idx < NUMBER_OF_INTERVALS; ++idx) {
         guards.emplace_back(sut.attach_interval(Duration::fromSeconds(idx + 1)).expect(""));
@@ -242,7 +242,7 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
     auto sut = this->create_sut();
 
     std::vector<Listener<TestFixture::TYPE>> listeners;
-    std::vector<Guard<TestFixture::TYPE>> guards;
+    std::vector<WaitSetGuard<TestFixture::TYPE>> guards;
 
     for (uint64_t idx = 0; idx < NUMBER_OF_INTERVALS; ++idx) {
         guards.emplace_back(sut.attach_interval(Duration::fromNanoseconds(1)).expect(""));

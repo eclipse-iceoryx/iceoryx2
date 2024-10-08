@@ -15,7 +15,7 @@
 use std::mem::ManuallyDrop;
 
 use crate::iox2_service_type_e;
-use iceoryx2::port::waitset::Guard;
+use iceoryx2::port::waitset::WaitSetGuard;
 use iceoryx2::service::{ipc, local};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -24,18 +24,18 @@ use super::{AssertNonNullHandle, HandleToType};
 
 // BEGIN types definition
 pub(crate) union GuardUnion {
-    pub(crate) ipc: ManuallyDrop<Guard<'static, 'static, ipc::Service>>,
-    pub(crate) local: ManuallyDrop<Guard<'static, 'static, local::Service>>,
+    pub(crate) ipc: ManuallyDrop<WaitSetGuard<'static, 'static, ipc::Service>>,
+    pub(crate) local: ManuallyDrop<WaitSetGuard<'static, 'static, local::Service>>,
 }
 
 impl GuardUnion {
-    pub(super) fn new_ipc(guard: Guard<'static, 'static, ipc::Service>) -> Self {
+    pub(super) fn new_ipc(guard: WaitSetGuard<'static, 'static, ipc::Service>) -> Self {
         Self {
             ipc: ManuallyDrop::new(guard),
         }
     }
 
-    pub(super) fn new_local(guard: Guard<'static, 'static, local::Service>) -> Self {
+    pub(super) fn new_local(guard: WaitSetGuard<'static, 'static, local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(guard),
         }
@@ -44,24 +44,24 @@ impl GuardUnion {
 
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<GuardUnion>
-pub struct iox2_guard_storage_t {
+pub struct iox2_waitset_guard_storage_t {
     internal: [u8; 56], // magic number obtained with size_of::<Option<GuardUnion>>()
 }
 
 #[repr(C)]
 #[iceoryx2_ffi(GuardUnion)]
-pub struct iox2_guard_t {
+pub struct iox2_waitset_guard_t {
     pub(crate) service_type: iox2_service_type_e,
-    pub(crate) value: iox2_guard_storage_t,
-    deleter: fn(*mut iox2_guard_t),
+    pub(crate) value: iox2_waitset_guard_storage_t,
+    deleter: fn(*mut iox2_waitset_guard_t),
 }
 
-impl iox2_guard_t {
+impl iox2_waitset_guard_t {
     pub(super) fn init(
         &mut self,
         service_type: iox2_service_type_e,
         value: GuardUnion,
-        deleter: fn(*mut iox2_guard_t),
+        deleter: fn(*mut iox2_waitset_guard_t),
     ) {
         self.service_type = service_type;
         self.value.init(value);
@@ -69,19 +69,19 @@ impl iox2_guard_t {
     }
 }
 
-pub struct iox2_guard_h_t;
-/// The owning handle for `iox2_guard_t`. Passing the handle to an function transfers the ownership.
-pub type iox2_guard_h = *mut iox2_guard_h_t;
+pub struct iox2_waitset_guard_h_t;
+/// The owning handle for `iox2_waitset_guard_t`. Passing the handle to an function transfers the ownership.
+pub type iox2_waitset_guard_h = *mut iox2_waitset_guard_h_t;
 /// The non-owning handle for `iox2_attachment_id_t`. Passing the handle to an function does not transfers the ownership.
-pub type iox2_guard_h_ref = *const iox2_guard_h;
+pub type iox2_waitset_guard_h_ref = *const iox2_waitset_guard_h;
 
-impl AssertNonNullHandle for iox2_guard_h {
+impl AssertNonNullHandle for iox2_waitset_guard_h {
     fn assert_non_null(self) {
         debug_assert!(!self.is_null());
     }
 }
 
-impl AssertNonNullHandle for iox2_guard_h_ref {
+impl AssertNonNullHandle for iox2_waitset_guard_h_ref {
     fn assert_non_null(self) {
         debug_assert!(!self.is_null());
         unsafe {
@@ -90,16 +90,16 @@ impl AssertNonNullHandle for iox2_guard_h_ref {
     }
 }
 
-impl HandleToType for iox2_guard_h {
-    type Target = *mut iox2_guard_t;
+impl HandleToType for iox2_waitset_guard_h {
+    type Target = *mut iox2_waitset_guard_t;
 
     fn as_type(self) -> Self::Target {
         self as *mut _ as _
     }
 }
 
-impl HandleToType for iox2_guard_h_ref {
-    type Target = *mut iox2_guard_t;
+impl HandleToType for iox2_waitset_guard_h_ref {
+    type Target = *mut iox2_waitset_guard_t;
 
     fn as_type(self) -> Self::Target {
         unsafe { *self as *mut _ as _ }
@@ -108,7 +108,7 @@ impl HandleToType for iox2_guard_h_ref {
 // END type definition
 
 // BEGIN C API
-/// Drops a [`iox2_guard_h`] that was successfully acquired with
+/// Drops a [`iox2_waitset_guard_h`] that was successfully acquired with
 /// * [`iox2_waitset_attach_interval()`](crate::iox2_waitset_attach_interval())
 /// * [`iox2_waitset_attach_deadline()`](crate::iox2_waitset_attach_deadline())
 /// * [`iox2_waitset_attach_notification()`](crate::iox2_waitset_attach_notification())
@@ -117,7 +117,7 @@ impl HandleToType for iox2_guard_h_ref {
 ///
 /// * `handle` must be valid and non null
 #[no_mangle]
-pub unsafe extern "C" fn iox2_guard_drop(handle: iox2_guard_h) {
+pub unsafe extern "C" fn iox2_waitset_guard_drop(handle: iox2_waitset_guard_h) {
     handle.assert_non_null();
 
     let guard = &mut *handle.as_type();

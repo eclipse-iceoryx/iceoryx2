@@ -15,20 +15,20 @@
 
 namespace iox2 {
 ////////////////////////////
-// BEGIN: AttachmentId
+// BEGIN: WaitSetAttachmentId
 ////////////////////////////
 template <ServiceType S>
-AttachmentId<S>::AttachmentId(iox2_attachment_id_h handle)
+WaitSetAttachmentId<S>::WaitSetAttachmentId(iox2_waitset_attachment_id_h handle)
     : m_handle { handle } {
 }
 
 template <ServiceType S>
-AttachmentId<S>::AttachmentId(AttachmentId&& rhs) noexcept {
+WaitSetAttachmentId<S>::WaitSetAttachmentId(WaitSetAttachmentId&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
 template <ServiceType S>
-auto AttachmentId<S>::operator=(AttachmentId&& rhs) noexcept -> AttachmentId& {
+auto WaitSetAttachmentId<S>::operator=(WaitSetAttachmentId&& rhs) noexcept -> WaitSetAttachmentId& {
     if (this != &rhs) {
         drop();
         m_handle = std::move(rhs.m_handle);
@@ -39,60 +39,60 @@ auto AttachmentId<S>::operator=(AttachmentId&& rhs) noexcept -> AttachmentId& {
 }
 
 template <ServiceType S>
-AttachmentId<S>::~AttachmentId() {
+WaitSetAttachmentId<S>::~WaitSetAttachmentId() {
     drop();
 }
 
 template <ServiceType S>
-auto AttachmentId<S>::from_guard(const Guard<S>& guard) -> AttachmentId {
-    iox2_attachment_id_h handle {};
-    iox2_attachment_id_from_guard(&guard.m_handle, nullptr, &handle);
-    return AttachmentId(handle);
+auto WaitSetAttachmentId<S>::from_guard(const WaitSetGuard<S>& guard) -> WaitSetAttachmentId {
+    iox2_waitset_attachment_id_h handle {};
+    iox2_waitset_attachment_id_from_guard(&guard.m_handle, nullptr, &handle);
+    return WaitSetAttachmentId(handle);
 }
 
 template <ServiceType S>
-auto AttachmentId<S>::event_from(const Guard<S>& guard) const -> bool {
-    return iox2_attachment_id_event_from(&m_handle, &guard.m_handle);
+auto WaitSetAttachmentId<S>::event_from(const WaitSetGuard<S>& guard) const -> bool {
+    return iox2_waitset_attachment_id_event_from(&m_handle, &guard.m_handle);
 }
 
 template <ServiceType S>
-auto AttachmentId<S>::deadline_from(const Guard<S>& guard) const -> bool {
-    return iox2_attachment_id_deadline_from(&m_handle, &guard.m_handle);
+auto WaitSetAttachmentId<S>::deadline_from(const WaitSetGuard<S>& guard) const -> bool {
+    return iox2_waitset_attachment_id_deadline_from(&m_handle, &guard.m_handle);
 }
 
 template <ServiceType S>
-void AttachmentId<S>::drop() {
+void WaitSetAttachmentId<S>::drop() {
     if (m_handle != nullptr) {
-        iox2_attachment_id_drop(m_handle);
+        iox2_waitset_attachment_id_drop(m_handle);
         m_handle = nullptr;
     }
 }
 
 template <ServiceType S>
-auto operator==(const AttachmentId<S>& lhs, const AttachmentId<S>& rhs) -> bool {
-    return iox2_attachment_id_equal(&lhs.m_handle, &rhs.m_handle);
+auto operator==(const WaitSetAttachmentId<S>& lhs, const WaitSetAttachmentId<S>& rhs) -> bool {
+    return iox2_waitset_attachment_id_equal(&lhs.m_handle, &rhs.m_handle);
 }
 
 template <ServiceType S>
-auto operator<(const AttachmentId<S>& lhs, const AttachmentId<S>& rhs) -> bool {
-    return iox2_attachment_id_less(&lhs.m_handle, &rhs.m_handle);
+auto operator<(const WaitSetAttachmentId<S>& lhs, const WaitSetAttachmentId<S>& rhs) -> bool {
+    return iox2_waitset_attachment_id_less(&lhs.m_handle, &rhs.m_handle);
 }
 
 
 ////////////////////////////
-// END: AttachmentId
+// END: WaitSetAttachmentId
 ////////////////////////////
 
 ////////////////////////////
-// BEGIN: Guard
+// BEGIN: WaitSetGuard
 ////////////////////////////
 template <ServiceType S>
-Guard<S>::Guard(Guard&& rhs) noexcept {
+WaitSetGuard<S>::WaitSetGuard(WaitSetGuard&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
 template <ServiceType S>
-auto Guard<S>::operator=(Guard&& rhs) noexcept -> Guard& {
+auto WaitSetGuard<S>::operator=(WaitSetGuard&& rhs) noexcept -> WaitSetGuard& {
     if (this != &rhs) {
         drop();
         m_handle = std::move(rhs.m_handle);
@@ -103,25 +103,25 @@ auto Guard<S>::operator=(Guard&& rhs) noexcept -> Guard& {
 }
 
 template <ServiceType S>
-Guard<S>::~Guard() {
+WaitSetGuard<S>::~WaitSetGuard() {
     drop();
 }
 
 template <ServiceType S>
-Guard<S>::Guard(iox2_guard_h handle)
+WaitSetGuard<S>::WaitSetGuard(iox2_waitset_guard_h handle)
     : m_handle { handle } {
 }
 
 template <ServiceType S>
-void Guard<S>::drop() {
+void WaitSetGuard<S>::drop() {
     if (m_handle != nullptr) {
-        iox2_guard_drop(m_handle);
+        iox2_waitset_guard_drop(m_handle);
         m_handle = nullptr;
     }
 }
 
 ////////////////////////////
-// END: Guard
+// END: WaitSetGuard
 ////////////////////////////
 
 ////////////////////////////
@@ -213,8 +213,8 @@ void WaitSet<S>::stop() {
 
 template <ServiceType S>
 auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
-    -> iox::expected<Guard<S>, WaitSetAttachmentError> {
-    iox2_guard_h guard_handle {};
+    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
+    iox2_waitset_guard_h guard_handle {};
     auto result = iox2_waitset_attach_interval(&m_handle,
                                                deadline.toSeconds(),
                                                deadline.toNanoseconds()
@@ -223,7 +223,7 @@ auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
                                                &guard_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(Guard<S>(guard_handle));
+        return iox::ok(WaitSetGuard<S>(guard_handle));
     }
 
     return iox::err(iox::into<WaitSetAttachmentError>(result));
@@ -231,8 +231,8 @@ auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
 
 template <ServiceType S>
 auto WaitSet<S>::attach_deadline(FileDescriptorView file_descriptor, const iox::units::Duration deadline)
-    -> iox::expected<Guard<S>, WaitSetAttachmentError> {
-    iox2_guard_h guard_handle {};
+    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
+    iox2_waitset_guard_h guard_handle {};
     auto result = iox2_waitset_attach_deadline(&m_handle,
                                                file_descriptor.m_handle,
                                                deadline.toSeconds(),
@@ -242,7 +242,7 @@ auto WaitSet<S>::attach_deadline(FileDescriptorView file_descriptor, const iox::
                                                &guard_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(Guard<S>(guard_handle));
+        return iox::ok(WaitSetGuard<S>(guard_handle));
     }
 
     return iox::err(iox::into<WaitSetAttachmentError>(result));
@@ -250,36 +250,37 @@ auto WaitSet<S>::attach_deadline(FileDescriptorView file_descriptor, const iox::
 
 template <ServiceType S>
 auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox::units::Duration deadline)
-    -> iox::expected<Guard<S>, WaitSetAttachmentError> {
+    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     return attach_deadline(FileDescriptorView(iox2_listener_get_file_descriptor(&listener.m_handle)), deadline);
 }
 
 template <ServiceType S>
 auto WaitSet<S>::attach_notification(const FileDescriptorView file_descriptor)
-    -> iox::expected<Guard<S>, WaitSetAttachmentError> {
-    iox2_guard_h guard_handle {};
+    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
+    iox2_waitset_guard_h guard_handle {};
     auto result = iox2_waitset_attach_notification(&m_handle, file_descriptor.m_handle, nullptr, &guard_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(Guard<S>(guard_handle));
+        return iox::ok(WaitSetGuard<S>(guard_handle));
     }
 
     return iox::err(iox::into<WaitSetAttachmentError>(result));
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_notification(const Listener<S>& listener) -> iox::expected<Guard<S>, WaitSetAttachmentError> {
+auto WaitSet<S>::attach_notification(const Listener<S>& listener)
+    -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     return attach_notification(FileDescriptorView(iox2_listener_get_file_descriptor(&listener.m_handle)));
 }
 
 template <ServiceType S>
-auto run_callback(iox2_attachment_id_h attachment_id, void* context) {
-    auto* fn_call = internal::ctx_cast<iox::function<void(AttachmentId<S>)>>(context);
-    fn_call->value()(AttachmentId<S>(attachment_id));
+auto run_callback(iox2_waitset_attachment_id_h attachment_id, void* context) {
+    auto* fn_call = internal::ctx_cast<iox::function<void(WaitSetAttachmentId<S>)>>(context);
+    fn_call->value()(WaitSetAttachmentId<S>(attachment_id));
 }
 
 template <ServiceType S>
-auto WaitSet<S>::run(const iox::function<void(AttachmentId<S>)>& fn_call)
+auto WaitSet<S>::run(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
     -> iox::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
@@ -293,7 +294,8 @@ auto WaitSet<S>::run(const iox::function<void(AttachmentId<S>)>& fn_call)
 }
 
 template <ServiceType S>
-auto WaitSet<S>::run_once(const iox::function<void(AttachmentId<S>)>& fn_call) -> iox::expected<void, WaitSetRunError> {
+auto WaitSet<S>::run_once(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
+    -> iox::expected<void, WaitSetRunError> {
     auto ctx = internal::ctx(fn_call);
     auto result = iox2_waitset_run_once(&m_handle, run_callback<S>, static_cast<void*>(&ctx));
 
@@ -308,20 +310,22 @@ auto WaitSet<S>::run_once(const iox::function<void(AttachmentId<S>)>& fn_call) -
 // END: WaitSet
 ////////////////////////////
 
-template class AttachmentId<ServiceType::Ipc>;
-template class AttachmentId<ServiceType::Local>;
-template class Guard<ServiceType::Ipc>;
-template class Guard<ServiceType::Local>;
+template class WaitSetAttachmentId<ServiceType::Ipc>;
+template class WaitSetAttachmentId<ServiceType::Local>;
+template class WaitSetGuard<ServiceType::Ipc>;
+template class WaitSetGuard<ServiceType::Local>;
 template class WaitSet<ServiceType::Ipc>;
 template class WaitSet<ServiceType::Local>;
 
 template auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<ServiceType::Ipc>, WaitSetCreateError>;
 template auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<ServiceType::Local>, WaitSetCreateError>;
 
-template auto operator==(const AttachmentId<ServiceType::Ipc>& lhs, const AttachmentId<ServiceType::Ipc>& rhs) -> bool;
-template auto operator==(const AttachmentId<ServiceType::Local>& lhs,
-                         const AttachmentId<ServiceType::Local>& rhs) -> bool;
-template auto operator<(const AttachmentId<ServiceType::Ipc>& lhs, const AttachmentId<ServiceType::Ipc>& rhs) -> bool;
-template auto operator<(const AttachmentId<ServiceType::Local>& lhs,
-                        const AttachmentId<ServiceType::Local>& rhs) -> bool;
+template auto operator==(const WaitSetAttachmentId<ServiceType::Ipc>& lhs,
+                         const WaitSetAttachmentId<ServiceType::Ipc>& rhs) -> bool;
+template auto operator==(const WaitSetAttachmentId<ServiceType::Local>& lhs,
+                         const WaitSetAttachmentId<ServiceType::Local>& rhs) -> bool;
+template auto operator<(const WaitSetAttachmentId<ServiceType::Ipc>& lhs,
+                        const WaitSetAttachmentId<ServiceType::Ipc>& rhs) -> bool;
+template auto operator<(const WaitSetAttachmentId<ServiceType::Local>& lhs,
+                        const WaitSetAttachmentId<ServiceType::Local>& rhs) -> bool;
 } // namespace iox2

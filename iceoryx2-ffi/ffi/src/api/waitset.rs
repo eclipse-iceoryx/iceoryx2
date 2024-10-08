@@ -15,9 +15,9 @@
 use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
-    c_size_t, iox2_attachment_id_h, iox2_attachment_id_t, iox2_callback_context,
-    iox2_file_descriptor_ptr, iox2_guard_h, iox2_guard_t, iox2_service_type_e, AttachmentIdUnion,
-    GuardUnion, IOX2_OK,
+    c_size_t, iox2_callback_context, iox2_file_descriptor_ptr, iox2_service_type_e,
+    iox2_waitset_attachment_id_h, iox2_waitset_attachment_id_t, iox2_waitset_guard_h,
+    iox2_waitset_guard_t, AttachmentIdUnion, GuardUnion, IOX2_OK,
 };
 
 use super::{AssertNonNullHandle, HandleToType, IntoCInt};
@@ -201,7 +201,8 @@ impl HandleToType for iox2_waitset_h_ref {
     }
 }
 
-pub type iox2_waitset_run_callback = extern "C" fn(iox2_attachment_id_h, iox2_callback_context);
+pub type iox2_waitset_run_callback =
+    extern "C" fn(iox2_waitset_attachment_id_h, iox2_callback_context);
 // END type definition
 
 // BEGIN C API
@@ -306,9 +307,9 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
 /// [`iox2_waitset_h`]. As soon as the attachment receives data, the WaitSet
 /// wakes up in [`iox2_waitset_run()`] and informs the user.
 ///
-/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
 /// the origin of the event can be determined from its corresponding
-/// [`iox2_guard_h`].
+/// [`iox2_waitset_guard_h`].
 ///
 /// # Return
 ///
@@ -321,13 +322,13 @@ pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
 ///  * `guard_struct_ptr` must be either pointing to a valid uninitialized memory
 ///    position or `null`
 ///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
-///  * `guard_handle_ptr` must be released with [`iox2_guard_drop()`](crate::iox2_guard_drop()).
+///  * `guard_handle_ptr` must be released with [`iox2_waitset_guard_drop()`](crate::iox2_waitset_guard_drop()).
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_notification(
     handle: iox2_waitset_h_ref,
     fd: iox2_file_descriptor_ptr,
-    guard_struct_ptr: *mut iox2_guard_t,
-    guard_handle_ptr: *mut iox2_guard_h,
+    guard_struct_ptr: *mut iox2_waitset_guard_t,
+    guard_handle_ptr: *mut iox2_waitset_guard_h,
 ) -> c_int {
     handle.assert_non_null();
     debug_assert!(!guard_handle_ptr.is_null());
@@ -335,12 +336,12 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
     let waitset = &mut *handle.as_type();
 
     let mut guard_struct_ptr = guard_struct_ptr;
-    fn no_op(_: *mut iox2_guard_t) {}
-    let mut deleter: fn(*mut iox2_guard_t) = no_op;
+    fn no_op(_: *mut iox2_waitset_guard_t) {}
+    let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
     let mut alloc_memory = || {
         if guard_struct_ptr.is_null() {
-            guard_struct_ptr = iox2_guard_t::alloc();
-            deleter = iox2_guard_t::dealloc;
+            guard_struct_ptr = iox2_waitset_guard_t::alloc();
+            deleter = iox2_waitset_guard_t::dealloc;
         }
         debug_assert!(!guard_struct_ptr.is_null());
     };
@@ -382,11 +383,11 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
 /// [`iox2_waitset_h`]. As soon as the attachment receives data or the deadline
 /// was missed, the WaitSet wakes up in [`iox2_waitset_run()`] and informs the user.
 ///
-/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
 /// the origin of the event can be determined from its corresponding
-/// [`iox2_guard_h`].
+/// [`iox2_waitset_guard_h`].
 /// If the deadline was hit the function
-/// [`iox2_attachment_id_deadline_from()`](crate::iox2_attachment_id_deadline_from())
+/// [`iox2_waitset_attachment_id_deadline_from()`](crate::iox2_waitset_attachment_id_deadline_from())
 /// can be used to identify it.
 ///
 /// # Return
@@ -400,15 +401,15 @@ pub unsafe extern "C" fn iox2_waitset_attach_notification(
 ///  * `guard_struct_ptr` must be either pointing to a valid uninitialized memory
 ///    position or `null`
 ///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
-///  * `guard_handle_ptr` must be released with [`iox2_guard_drop()`](crate::iox2_guard_drop()).
+///  * `guard_handle_ptr` must be released with [`iox2_waitset_guard_drop()`](crate::iox2_waitset_guard_drop()).
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     handle: iox2_waitset_h_ref,
     fd: iox2_file_descriptor_ptr,
     seconds: u64,
     nanoseconds: u32,
-    guard_struct_ptr: *mut iox2_guard_t,
-    guard_handle_ptr: *mut iox2_guard_h,
+    guard_struct_ptr: *mut iox2_waitset_guard_t,
+    guard_handle_ptr: *mut iox2_waitset_guard_h,
 ) -> c_int {
     handle.assert_non_null();
     debug_assert!(!guard_handle_ptr.is_null());
@@ -417,12 +418,12 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
     let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
 
     let mut guard_struct_ptr = guard_struct_ptr;
-    fn no_op(_: *mut iox2_guard_t) {}
-    let mut deleter: fn(*mut iox2_guard_t) = no_op;
+    fn no_op(_: *mut iox2_waitset_guard_t) {}
+    let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
     let mut alloc_memory = || {
         if guard_struct_ptr.is_null() {
-            guard_struct_ptr = iox2_guard_t::alloc();
-            deleter = iox2_guard_t::dealloc;
+            guard_struct_ptr = iox2_waitset_guard_t::alloc();
+            deleter = iox2_waitset_guard_t::dealloc;
         }
         debug_assert!(!guard_struct_ptr.is_null());
     };
@@ -470,9 +471,9 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
 /// Attaches an interval to the [`iox2_waitset_h`]. As soon as the interval has passed
 /// the WaitSet wakes up in [`iox2_waitset_run()`] and informs the user.
 ///
-/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
 /// the origin of the event can be determined from its corresponding
-/// [`iox2_guard_h`].
+/// [`iox2_waitset_guard_h`].
 ///
 /// # Return
 ///
@@ -485,14 +486,14 @@ pub unsafe extern "C" fn iox2_waitset_attach_deadline(
 ///  * `guard_struct_ptr` must be either pointing to a valid uninitialized memory
 ///    position or `null`
 ///  * `guard_handle_ptr` must be pointing to valid uninitialized memory.
-///  * `guard_handle_ptr` must be released with [`iox2_guard_drop()`](crate::iox2_guard_drop()).
+///  * `guard_handle_ptr` must be released with [`iox2_waitset_guard_drop()`](crate::iox2_waitset_guard_drop()).
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attach_interval(
     handle: iox2_waitset_h_ref,
     seconds: u64,
     nanoseconds: u32,
-    guard_struct_ptr: *mut iox2_guard_t,
-    guard_handle_ptr: *mut iox2_guard_h,
+    guard_struct_ptr: *mut iox2_waitset_guard_t,
+    guard_handle_ptr: *mut iox2_waitset_guard_h,
 ) -> c_int {
     handle.assert_non_null();
     debug_assert!(!guard_handle_ptr.is_null());
@@ -501,12 +502,12 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
     let interval = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as _);
 
     let mut guard_struct_ptr = guard_struct_ptr;
-    fn no_op(_: *mut iox2_guard_t) {}
-    let mut deleter: fn(*mut iox2_guard_t) = no_op;
+    fn no_op(_: *mut iox2_waitset_guard_t) {}
+    let mut deleter: fn(*mut iox2_waitset_guard_t) = no_op;
     let mut alloc_memory = || {
         if guard_struct_ptr.is_null() {
-            guard_struct_ptr = iox2_guard_t::alloc();
-            deleter = iox2_guard_t::dealloc;
+            guard_struct_ptr = iox2_waitset_guard_t::alloc();
+            deleter = iox2_waitset_guard_t::dealloc;
         }
         debug_assert!(!guard_struct_ptr.is_null());
     };
@@ -546,14 +547,14 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 }
 
 /// Checks the [`iox2_waitset_h`] for new events once. The provided `callback` is called
-/// for every events that was received and the corresponding owning [`iox2_attachment_id_h`]
+/// for every events that was received and the corresponding owning [`iox2_waitset_attachment_id_h`]
 /// is provided as input argument, as well as the `callback_ctx`.
 ///
-/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
 /// the origin of the event can be determined from its corresponding
-/// [`iox2_guard_h`].
+/// [`iox2_waitset_guard_h`].
 /// If the deadline was hit the function
-/// [`iox2_attachment_id_deadline_from()`](crate::iox2_attachment_id_deadline_from())
+/// [`iox2_waitset_attachment_id_deadline_from()`](crate::iox2_waitset_attachment_id_deadline_from())
 /// can be used to identify it.
 ///
 /// # Return
@@ -564,8 +565,8 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 ///
 ///  * `handle` must be valid and acquired with
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-///  * the provided [`iox2_attachment_id_h`] in the callback must be released via
-///    [`iox2_attachment_id_drop()`](crate::iox2_attachment_id_drop())
+///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
+///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_run_once(
     handle: iox2_waitset_h_ref,
@@ -578,21 +579,21 @@ pub unsafe extern "C" fn iox2_waitset_run_once(
 
     let run_once_result = match waitset.service_type {
         iox2_service_type_e::IPC => waitset.value.as_ref().ipc.run_once(|attachment_id| {
-            let attachment_id_ptr = iox2_attachment_id_t::alloc();
+            let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
             (*attachment_id_ptr).init(
                 waitset.service_type,
                 AttachmentIdUnion::new_ipc(attachment_id),
-                iox2_attachment_id_t::dealloc,
+                iox2_waitset_attachment_id_t::dealloc,
             );
             let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
             callback(attachment_id_handle_ptr, callback_ctx);
         }),
         iox2_service_type_e::LOCAL => waitset.value.as_ref().local.run_once(|attachment_id| {
-            let attachment_id_ptr = iox2_attachment_id_t::alloc();
+            let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
             (*attachment_id_ptr).init(
                 waitset.service_type,
                 AttachmentIdUnion::new_local(attachment_id),
-                iox2_attachment_id_t::dealloc,
+                iox2_waitset_attachment_id_t::dealloc,
             );
             let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
             callback(attachment_id_handle_ptr, callback_ctx);
@@ -607,16 +608,16 @@ pub unsafe extern "C" fn iox2_waitset_run_once(
 
 /// Checks the [`iox2_waitset_h`] for new events in an infinite loop. The provided
 /// `callback` is called for every events that was received and the corresponding
-/// owning [`iox2_attachment_id_h`] is provided as input argument, as well as the
+/// owning [`iox2_waitset_attachment_id_h`] is provided as input argument, as well as the
 /// `callback_ctx`.
 /// The infinite loop is interrupted either by a `SIGINT` or `SIGTERM` signal or
 /// when the user has called [`iox2_waitset_stop()`].
 ///
-/// With [`iox2_attachment_id_event_from()`](crate::iox2_attachment_id_event_from())
+/// With [`iox2_waitset_attachment_id_event_from()`](crate::iox2_waitset_attachment_id_event_from())
 /// the origin of the event can be determined from its corresponding
-/// [`iox2_guard_h`].
+/// [`iox2_waitset_guard_h`].
 /// If the deadline was hit the function
-/// [`iox2_attachment_id_deadline_from()`](crate::iox2_attachment_id_deadline_from())
+/// [`iox2_waitset_attachment_id_deadline_from()`](crate::iox2_waitset_attachment_id_deadline_from())
 /// can be used to identify it.
 ///
 /// # Return
@@ -627,8 +628,8 @@ pub unsafe extern "C" fn iox2_waitset_run_once(
 ///
 ///  * `handle` must be valid and acquired with
 ///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-///  * the provided [`iox2_attachment_id_h`] in the callback must be released via
-///    [`iox2_attachment_id_drop()`](crate::iox2_attachment_id_drop())
+///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
+///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_run(
     handle: iox2_waitset_h_ref,
@@ -643,21 +644,21 @@ pub unsafe extern "C" fn iox2_waitset_run(
 
     let run_result = match waitset.service_type {
         iox2_service_type_e::IPC => waitset.value.as_ref().ipc.run(|attachment_id| {
-            let attachment_id_ptr = iox2_attachment_id_t::alloc();
+            let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
             (*attachment_id_ptr).init(
                 waitset.service_type,
                 AttachmentIdUnion::new_ipc(attachment_id),
-                iox2_attachment_id_t::dealloc,
+                iox2_waitset_attachment_id_t::dealloc,
             );
             let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
             callback(attachment_id_handle_ptr, callback_ctx);
         }),
         iox2_service_type_e::LOCAL => waitset.value.as_ref().local.run(|attachment_id| {
-            let attachment_id_ptr = iox2_attachment_id_t::alloc();
+            let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
             (*attachment_id_ptr).init(
                 waitset.service_type,
                 AttachmentIdUnion::new_local(attachment_id),
-                iox2_attachment_id_t::dealloc,
+                iox2_waitset_attachment_id_t::dealloc,
             );
             let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
             callback(attachment_id_handle_ptr, callback_ctx);
