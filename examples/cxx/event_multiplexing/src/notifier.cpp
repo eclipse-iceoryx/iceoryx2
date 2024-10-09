@@ -40,7 +40,6 @@ auto main(int argc, char** argv) -> int {
 
     auto service =
         node.service_builder(service_name).event().open_or_create().expect("successful service creation/opening");
-    auto max_event_id = service.static_config().event_id_max_value();
 
     auto notifier = service.notifier_builder().create().expect("successful notifier creation");
 

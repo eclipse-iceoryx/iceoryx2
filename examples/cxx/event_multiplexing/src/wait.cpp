@@ -58,24 +58,27 @@ auto main(int argc, char** argv) -> int {
 
     // create the waitset and attach the listeners to it
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    // NOLINTNEXTLINE(misc-const-correctness) false positive
     iox::vector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
 
     guards.emplace_back(waitset.attach_notification(listener_1).expect(""));
     guards.emplace_back(waitset.attach_notification(listener_2).expect(""));
 
+    // NOLINTNEXTLINE(misc-const-correctness) false positive
     std::map<WaitSetAttachmentId<ServiceType::Ipc>, ServiceNameListenerPair> listeners;
 
-    listeners.emplace(std::make_pair(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards[0]),
-                                     ServiceNameListenerPair { service_name_1, std::move(listener_1) }));
-    listeners.emplace(std::make_pair(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards[1]),
-                                     ServiceNameListenerPair { service_name_2, std::move(listener_2) }));
+    listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards[0]),
+                      ServiceNameListenerPair { service_name_1, std::move(listener_1) });
+    listeners.emplace(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards[1]),
+                      ServiceNameListenerPair { service_name_2, std::move(listener_2) });
 
     // the callback that is called when a listener has received an event
     auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) {
-        if (auto l = listeners.find(attachment_id); l != listeners.end()) {
-            std::cout << "Received trigger from \"" << l->second.service_name.to_string().c_str() << "\"" << std::endl;
+        if (auto entry = listeners.find(attachment_id); entry != listeners.end()) {
+            std::cout << "Received trigger from \"" << entry->second.service_name.to_string().c_str() << "\""
+                      << std::endl;
 
-            auto& listener = l->second.listener;
+            auto& listener = entry->second.listener;
             listener.try_wait_one().expect("").and_then([](auto event_id) { std::cout << " " << event_id; });
             std::cout << std::endl;
         }

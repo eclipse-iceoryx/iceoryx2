@@ -45,12 +45,12 @@ or different event id's. Or to for different services.
 
 The `WaitSet` utilizes `epoll`, `select`, or other event-multiplexing
 mechanisms. Before the `WaitSet` can monitor a specific event, it must first be
-attached using `WaitSet::attach_notification()`, which returns a RAII `Guard`. This `Guard`
-automatically detaches the attachment when it goes out of scope.
+attached using `WaitSet::attach_notification()`, which returns a RAII `Guard`.
+This `Guard` automatically detaches the attachment when it goes out of scope.
 
-The `WaitSet::wait_and_process()` call requires a closure that is invoked for each
-triggered attachment and provides the `AttachmentId`. The user can either use
-`AttachmentId::has_event_from($ATTACHED_OBJECT$)` to identify the object
+The `WaitSet::wait_and_process()` call requires a closure that is invoked for
+each triggered attachment and provides the `AttachmentId`. The user can either
+use `AttachmentId::has_event_from($ATTACHED_OBJECT$)` to identify the object
 associated with the `AttachmentId`, or set up a
 `std::map::<AttachmentId, Listener<ipc::Service>>` to quickly access the
 corresponding object.

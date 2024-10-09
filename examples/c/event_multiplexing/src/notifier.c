@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <string.h>
 
+const int BASE_10 = 10;
+
 #ifdef _WIN64
 #include <windows.h>
 #define sleep Sleep
@@ -29,7 +31,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    size_t event_id_value = strtoull(argv[1], NULL, 10);
+    size_t event_id_value = strtoull(argv[1], NULL, BASE_10);
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
@@ -65,6 +67,7 @@ int main(int argc, char** argv) {
         goto drop_service;
     }
 
+    // notifier with a period of 1 second
     while (iox2_node_wait(&node_handle, 0, 0) == IOX2_OK) {
         iox2_event_id_t event_id = { .value = event_id_value }; // NOLINT
         if (iox2_notifier_notify_with_custom_event_id(&notifier, &event_id, NULL) != IOX2_OK) {
@@ -82,6 +85,9 @@ drop_notifier:
 
 drop_service:
     iox2_port_factory_event_drop(service);
+
+drop_service_name:
+    iox2_service_name_drop(service_name);
 
 drop_node:
     iox2_node_drop(node_handle);

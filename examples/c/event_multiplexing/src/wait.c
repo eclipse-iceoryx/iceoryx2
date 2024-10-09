@@ -21,8 +21,49 @@ struct CallbackContext {
     iox2_waitset_guard_h_ref guard_2;
     iox2_listener_h_ref listener_1;
     iox2_listener_h_ref listener_2;
+    const char* service_name_1;
+    const char* service_name_2;
 };
 
+
+// the function that is called when a listener has received an event
+void on_event(iox2_waitset_attachment_id_h attachment_id, void* context) {
+    struct CallbackContext* ctx = (struct CallbackContext*) context;
+
+    iox2_event_id_t event_id;
+    bool has_received_event = false;
+    // check if the event originated from guard_1 of listener_1
+    if (iox2_waitset_attachment_id_has_event_from(&attachment_id, ctx->guard_1)) {
+        printf("Received trigger from \"%s\" ::", ctx->service_name_1);
+        do {
+            if (iox2_listener_try_wait_one(ctx->listener_1, &event_id, &has_received_event) != IOX2_OK) {
+                printf("failed to receive event on listener: %s\n", ctx->service_name_1);
+            }
+
+            if (has_received_event) {
+                printf(" %lu", (long unsigned) event_id.value);
+            }
+        } while (has_received_event);
+        printf("\n");
+        // check if the event originated from guard_2 of listener_2
+    } else if (iox2_waitset_attachment_id_has_event_from(&attachment_id, ctx->guard_2)) {
+        printf("Received trigger from \"%s\" ::", ctx->service_name_2);
+        do {
+            if (iox2_listener_try_wait_one(ctx->listener_2, &event_id, &has_received_event) != IOX2_OK) {
+                printf("failed to receive event on listener: %s\n", ctx->service_name_2);
+            }
+
+            if (has_received_event) {
+                printf(" %lu", (long unsigned) event_id.value);
+            }
+        } while (has_received_event);
+        printf("\n");
+    }
+
+    iox2_waitset_attachment_id_drop(attachment_id);
+}
+
+//NOLINTBEGIN(readability-function-size)
 int main(int argc, char** argv) {
     if (argc != 3) {
         printf("Usage: %s SERVICE_NAME_1 SERVICE_NAME_2\n", argv[0]);
@@ -47,7 +88,7 @@ int main(int argc, char** argv) {
     iox2_service_name_h service_name_2 = NULL;
     if (iox2_service_name_new(NULL, argv[2], strlen(argv[2]), &service_name_2) != IOX2_OK) {
         printf("Unable to create service name!\n");
-        goto drop_node;
+        goto drop_service_name_1;
     }
 
     // create services
@@ -57,7 +98,7 @@ int main(int argc, char** argv) {
     iox2_port_factory_event_h service_1 = NULL;
     if (iox2_service_builder_event_open_or_create(service_builder_event_1, NULL, &service_1) != IOX2_OK) {
         printf("Unable to create service!\n");
-        goto drop_node;
+        goto drop_service_name_2;
     }
 
     iox2_service_name_ptr service_name_ptr_2 = iox2_cast_service_name_ptr(service_name_2);
@@ -87,23 +128,23 @@ int main(int argc, char** argv) {
     }
 
     // create waitset
-    iox2_waitset_builder_h waitset_builder;
+    iox2_waitset_builder_h waitset_builder = NULL;
     iox2_waitset_builder_new(NULL, &waitset_builder);
-    iox2_waitset_h waitset;
+    iox2_waitset_h waitset = NULL;
     if (iox2_waitset_builder_create(waitset_builder, iox2_service_type_e_IPC, NULL, &waitset) != IOX2_OK) {
         printf("Unable to create waitset\n");
         goto drop_waitset_builder;
     }
 
     // attach listeners to waitset
-    iox2_waitset_guard_h guard_1;
+    iox2_waitset_guard_h guard_1 = NULL;
     if (iox2_waitset_attach_notification(&waitset, iox2_listener_get_file_descriptor(&listener_1), NULL, &guard_1)
         != IOX2_OK) {
         printf("Unable to attach listener 1\n");
         goto drop_waitset;
     }
 
-    iox2_waitset_guard_h guard_2;
+    iox2_waitset_guard_h guard_2 = NULL;
     if (iox2_waitset_attach_notification(&waitset, iox2_listener_get_file_descriptor(&listener_2), NULL, &guard_2)
         != IOX2_OK) {
         printf("Unable to attach listener 2\n");
@@ -115,10 +156,16 @@ int main(int argc, char** argv) {
     context.guard_2 = &guard_2;
     context.listener_1 = &listener_1;
     context.listener_2 = &listener_2;
+    context.service_name_1 = argv[1];
+    context.service_name_2 = argv[2];
 
-    // iox2_waitset_run_result_e result;
-    // iox2_waitset_wait_and_process(
-    //     &waitset, iox2_waitset_run_callback callback, iox2_callback_context callback_ctx, &result);
+    iox2_waitset_run_result_e result = iox2_waitset_run_result_e_STOP_REQUEST;
+    // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT
+    // signal or the user has called explicitly `iox2_waitset_stop` in the `on_event` function. We
+    // didn't add this to the example so feel free to play around with it.
+    if (iox2_waitset_wait_and_process(&waitset, on_event, (void*) &context, &result) != IOX2_OK) {
+        printf("Failure in WaitSet::wait_and_process loop \n");
+    }
 
     iox2_event_id_t event_id;
 
@@ -146,9 +193,16 @@ drop_service_2:
 drop_service_1:
     iox2_port_factory_event_drop(service_1);
 
+drop_service_name_2:
+    iox2_service_name_drop(service_name_2);
+
+drop_service_name_1:
+    iox2_service_name_drop(service_name_1);
+
 drop_node:
     iox2_node_drop(node_handle);
 
 end:
     return 0;
 }
+//NOLINTEND(readability-function-size)

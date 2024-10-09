@@ -5,42 +5,51 @@ instructions in the [C Examples Readme](../README.md).
 
 ## Running The Example
 
-This example offers a practical demonstration of inter-process event signaling
-in iceoryx2. It showcases how one process can signal an event to another
-process, allowing for efficient communication.
+This example demonstrates iceoryx2's event multiplexing mechanism,
+called the `WaitSet`. It allows waiting, with a single call, on
+multiple `Listener` ports as well as external file descriptor-based
+events such as `sockets`.
 
-In this scenario, the 'listener' process waits for incoming events. When an
-event arrives, it promptly awakens and reports the [`EventId`] of the received
-event. On the other end, the 'notifier' process periodically sends notifications
-with an incrementing `EventId` every second.
+In this setup, the `wait` process monitors two services, which the
+user can specify via the command line option `-s` and `-t`.
+The `notifier` can define the service to which it will send event
+notifications using the `-s` option and specify the event ID with
+the `-e` option.
 
-First you have to build the C examples:
-
-```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
-```
-
-To see this in action, open two separate terminals and run the following
-commands:
+In the example below, we are waiting for events on the services `fuu` and
+`bar`. Service `fuu` is notified with event ID `123`, and service `bar` is
+notified with event ID `456`.
 
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/c/event/example_c_event_listener
+./target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_wait fuu bar
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/c/event/example_c_event_notifier
+./target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 123 fuu
 ```
 
-Feel free to run multiple listeners or notifiers concurrently to observe how
-iceoryx2 efficiently handles event signaling across processes.
+### Terminal 3
 
-You may hit the maximum supported number of ports when too many listener or
-notifier processes run. Take a look at the [iceoryx2 config](../../../config) to
-set the limits globally or at the
-[API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
-to set them for a single service.
+```sh
+./target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 456 bar
+```
+
+Feel free to instantiate multiple notifiers for the same service with the same
+or different event id's. Or to for different services.
+
+## Technical Details
+
+The `iox2_waitset_t` utilizes `epoll`, `select`, or other event-multiplexing
+mechanisms. Before the `iox2_waitset_t` can monitor a specific event, it must
+first be attached using `iox2_waitset_attach_notification()`, which returns a
+RAII `iox2_waitset_guard_t`. This `Guard` automatically detaches the attachment
+when it is cleaned up with `iox2_waitset_guard_drop()`.
+
+The `iox2_waitset_wait_and_process()` call requires a callback that is invoked
+for each triggered attachment and provides the `iox2_waitset_attachment_id_h`.
+The user can either use `iox2_waitset_attachment_id_has_event_from()` to
+identify the object associated with the `iox2_waitset_attachment_id_h`.
