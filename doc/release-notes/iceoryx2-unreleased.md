@@ -34,6 +34,7 @@
 -->
 
 * Rename `NodeEvent` into `WaitEvent` [#390](https://github.com/eclipse-iceoryx/iceoryx2/issues/390)
+* Remove ACL dependency [#457](https://github.com/eclipse-iceoryx/iceoryx2/issues/457)
 
 ### Workflow
 
