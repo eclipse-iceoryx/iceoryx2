@@ -11,17 +11,12 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-project(examples_cxx LANGUAGES CXX)
+project(example_cxx_event_multiplexing LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+find_package(iceoryx2-cxx 0.4.1 REQUIRED)
 
-add_subdirectory(complex_data_types)
-add_subdirectory(discovery)
-add_subdirectory(domains)
-add_subdirectory(event)
-add_subdirectory(event_multiplexing)
-add_subdirectory(publish_subscribe)
-add_subdirectory(publish_subscribe_dynamic_data)
-add_subdirectory(publish_subscribe_with_user_header)
-add_subdirectory(service_attributes)
+add_executable(example_cxx_event_multiplexing_wait src/wait.cpp)
+target_link_libraries(example_cxx_event_multiplexing_wait iceoryx2-cxx::static-lib-cxx)
+
+add_executable(example_cxx_event_multiplexing_notifier src/notifier.cpp)
+target_link_libraries(example_cxx_event_multiplexing_notifier iceoryx2-cxx::static-lib-cxx)

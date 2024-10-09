@@ -45,9 +45,9 @@ mechanisms. Before the `WaitSet` can monitor a specific event, it must first be
 attached using `WaitSet::attach()`, which returns a RAII `Guard`. This `Guard`
 automatically detaches the attachment when it goes out of scope.
 
-The `WaitSet::**_wait()` calls require a closure that is invoked for each
+The `WaitSet::wait_and_process()` call requires a closure that is invoked for each
 triggered attachment and provides the `AttachmentId`. The user can either use
-`AttachmentId::originates_from($ATTACHED_OBJECT$)` to identify the object
+`AttachmentId::has_event_from($ATTACHED_OBJECT$)` to identify the object
 associated with the `AttachmentId`, or set up a
 `HashMap::<AttachmentId, Listener<ipc::Service>>` to quickly access the
 corresponding object.

@@ -37,4 +37,4 @@ subscriber-expired-connection-buffer        = 128
 max-listeners                               = 16
 max-notifiers                               = 16
 max-nodes                                   = 36
-event-id-max-value                          = 32
+event-id-max-value                          = 4294967295

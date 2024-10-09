@@ -332,7 +332,7 @@ impl Default for Config {
                     max_listeners: 16,
                     max_notifiers: 16,
                     max_nodes: 36,
-                    event_id_max_value: 32,
+                    event_id_max_value: 4294967295,
                 },
             },
         }

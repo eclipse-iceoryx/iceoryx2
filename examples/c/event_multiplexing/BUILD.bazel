@@ -10,18 +10,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-cmake_minimum_required(VERSION 3.22)
-project(examples_cxx LANGUAGES CXX)
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+cc_binary(
+    name = "example_c_event_multiplexing_wait",
+    srcs = [
+        "src/wait.c",
+    ],
+    deps = [
+        "//:iceoryx2-c",
+    ],
+)
 
-add_subdirectory(complex_data_types)
-add_subdirectory(discovery)
-add_subdirectory(domains)
-add_subdirectory(event)
-add_subdirectory(event_multiplexing)
-add_subdirectory(publish_subscribe)
-add_subdirectory(publish_subscribe_dynamic_data)
-add_subdirectory(publish_subscribe_with_user_header)
-add_subdirectory(service_attributes)
+cc_binary(
+    name = "example_c_event_multiplexing_notifier",
+    srcs = [
+        "src/notifier.c",
+    ],
+    deps = [
+        "//:iceoryx2-c",
+    ],
+)
