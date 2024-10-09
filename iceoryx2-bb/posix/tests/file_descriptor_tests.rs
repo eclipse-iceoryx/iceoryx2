@@ -12,8 +12,6 @@
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::math::ToB64;
-#[cfg(feature = "acl")]
-use iceoryx2_bb_posix::access_control_list::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
@@ -26,8 +24,6 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::{POSIX_SUPPORT_PERMISSIONS, POSIX_SUPPORT_USERS_AND_GROUPS};
-#[cfg(feature = "acl")]
-use iceoryx2_pal_posix::*;
 
 #[test]
 fn file_descriptor_smaller_zero_is_invalid() {
@@ -142,36 +138,6 @@ mod file_descriptor_management {
         test(Permission::OTHERS_EXEC);
 
         test(Permission::OWNER_ALL | Permission::GROUP_ALL | Permission::OTHERS_ALL);
-    }
-
-    #[cfg(feature = "acl")]
-    #[test]
-    fn access_control_list_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
-        test_requires!(posix::POSIX_SUPPORT_ACL);
-
-        let sut = Sut::sut();
-
-        let mut acl = sut.access_control_list().unwrap();
-        let testuser1_id = "testuser1".as_user().unwrap().uid();
-        acl.add_user(testuser1_id, AclPermission::ReadWriteExecute)
-            .unwrap();
-        acl.set(
-            Acl::MaxAccessRightsForNonOwners,
-            AclPermission::ReadWriteExecute,
-        )
-        .unwrap();
-        sut.set_access_control_list(&acl).unwrap();
-
-        let acl_entries = sut.access_control_list().unwrap().get().unwrap();
-        for entry in acl_entries {
-            if entry.tag() == AclTag::User && entry.id() == Some(testuser1_id) {
-                assert_that!(entry.permission(), eq AclPermission::ReadWriteExecute);
-                return;
-            }
-        }
-
-        // entry not found and test failed
-        assert_that!(false, eq true);
     }
 
     #[instantiate_tests(<File>)]

@@ -12,8 +12,6 @@
 
 //! Abstraction of POSIX constructs with a safe API
 
-#[cfg(feature = "acl")]
-use access_control_list::AccessControlListError;
 use barrier::BarrierCreationError;
 use clock::ClockError;
 use directory::DirectoryError;
@@ -32,8 +30,6 @@ use thread::ThreadError;
 use unix_datagram_socket::UnixDatagramError;
 use user::UserError;
 
-#[cfg(feature = "acl")]
-pub mod access_control_list;
 pub mod access_mode;
 pub mod adaptive_wait;
 pub mod barrier;
@@ -76,29 +72,6 @@ pub mod unique_system_id;
 pub mod unix_datagram_socket;
 pub mod user;
 
-#[cfg(feature = "acl")]
-enum_gen! {Error
-  generalization:
-    AccessControlList <= AccessControlListError,
-    Barrier <= BarrierCreationError,
-    Clock <= ClockError,
-    Directory <= DirectoryError,
-    File <= FileError,
-    FileLock <= FileLockError,
-    Group <= GroupError,
-    MemoryLock <= MemoryLockError,
-    Mutex <= MutexError,
-    Process <= ProcessError,
-    ReadWriteMutex <= ReadWriteMutexError,
-    Semaphore <= SemaphoreError,
-    SharedMemory <= SharedMemoryCreationError,
-    Signal <= SignalError,
-    Thread <= ThreadError,
-    User <= UserError,
-    UnixDatagramSocket <= UnixDatagramError
-}
-
-#[cfg(not(feature = "acl"))]
 enum_gen! {Error
   generalization:
     Barrier <= BarrierCreationError,

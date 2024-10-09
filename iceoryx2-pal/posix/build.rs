@@ -21,8 +21,6 @@ fn main() {
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     println!("cargo:rustc-link-lib=pthread");
 
-    #[cfg(all(target_os = "linux", feature = "acl"))]
-    println!("cargo:rustc-link-lib=acl");
     println!("cargo:rerun-if-changed=src/c/posix.h");
 
     let bindings = if std::env::var("DOCS_RS").is_ok() {
@@ -35,24 +33,12 @@ fn main() {
             .generate()
             .expect("Unable to generate bindings")
     } else {
-        #[cfg(not(feature = "acl"))]
         {
             bindgen::Builder::default()
                 .header("src/c/posix.h")
                 .blocklist_type("max_align_t")
                 .parse_callbacks(Box::new(CargoCallbacks::new()))
                 .use_core()
-                .generate()
-                .expect("Unable to generate bindings")
-        }
-
-        #[cfg(feature = "acl")]
-        {
-            bindgen::Builder::default()
-                .header("src/c/posix.h")
-                .blocklist_type("max_align_t")
-                .parse_callbacks(Box::new(CargoCallbacks::new()))
-                .clang_arg("-D IOX2_ACL_SUPPORT")
                 .generate()
                 .expect("Unable to generate bindings")
         }
