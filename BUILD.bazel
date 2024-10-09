@@ -49,17 +49,23 @@ alias(
     visibility = ["//visibility:public"],
 )
 
+alias(
+    name = "iceoryx2-cxx-shared",
+    actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx-shared",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "iceoryx2-cxx-static",
+    actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx-static",
+    visibility = ["//visibility:public"],
+)
+
 # NOTE: the following lines can be removed once 'rules_foreign_cc' is retired from building the C and C++ bindings
 
 alias(
     name = "iceoryx2-c",
     actual = "//iceoryx2-ffi/c:iceoryx2-c-foreigncc",
-    visibility = ["//visibility:public"],
-)
-
-alias(
-    name = "iceoryx2-cxx",
-    actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx",
     visibility = ["//visibility:public"],
 )
 

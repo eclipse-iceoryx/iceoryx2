@@ -20,7 +20,7 @@ cc_binary(
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",
-        "//:iceoryx2-cxx",
+        "//:iceoryx2-cxx-static",
     ],
 )
 
@@ -32,7 +32,7 @@ cc_binary(
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",
-        "//:iceoryx2-cxx",
+        "//:iceoryx2-cxx-static",
     ],
 )
 
@@ -43,6 +43,6 @@ cc_binary(
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",
-        "//:iceoryx2-cxx",
+        "//:iceoryx2-cxx-static",
     ],
 )

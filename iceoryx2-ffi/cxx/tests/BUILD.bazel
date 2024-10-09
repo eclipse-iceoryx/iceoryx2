@@ -30,7 +30,7 @@ cc_test(
     visibility = ["//visibility:private"],
     deps = [
         "@iceoryx//:iceoryx_hoofs",
-        "//:iceoryx2-cxx",
+        "//:iceoryx2-cxx-static",
         "@googletest//:gtest",
     ],
 )
