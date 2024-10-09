@@ -10,8 +10,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
-
 exports_files([
     "LICENSE-APACHE",
     "LICENSE-MIT",
@@ -61,14 +59,6 @@ alias(
     visibility = ["//visibility:public"],
 )
 
-# NOTE: the following lines can be removed once 'rules_foreign_cc' is retired from building the C and C++ bindings
-
-alias(
-    name = "iceoryx2-c",
-    actual = "//iceoryx2-ffi/c:iceoryx2-c-foreigncc",
-    visibility = ["//visibility:public"],
-)
-
 filegroup(
     name = "all_srcs",
     srcs = glob([
@@ -82,6 +72,7 @@ filegroup(
         "iceoryx2-pal/**",
         "iceoryx2/**",
         "*.bazel",
+        "*.lock",
         "*.toml",
         "*.txt",
         "*.md",
