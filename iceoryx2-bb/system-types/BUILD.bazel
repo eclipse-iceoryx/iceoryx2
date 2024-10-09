@@ -18,10 +18,10 @@ rust_library(
     name = "iceoryx2-bb-system-types",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "@//iceoryx2-bb/container:iceoryx2-bb-container",
-        "@//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "@//iceoryx2-bb/log:iceoryx2-bb-log",
-        "@//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
         "@crate_index//:serde",
     ],
 )

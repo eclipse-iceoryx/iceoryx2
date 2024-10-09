@@ -18,7 +18,7 @@ rust_binary(
         "publisher.rs",
     ],
     deps = [
-        "@//iceoryx2:iceoryx2",
+        "//iceoryx2:iceoryx2",
         "@//examples/rust:examples-common",
     ],
 )
@@ -29,7 +29,7 @@ rust_binary(
         "subscriber.rs",
     ],
     deps = [
-        "@//iceoryx2:iceoryx2",
+        "//iceoryx2:iceoryx2",
         "@//examples/rust:examples-common",
     ],
 )

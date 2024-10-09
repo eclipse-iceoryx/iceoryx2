@@ -18,7 +18,7 @@ rust_binary(
         "complex_data_types.rs",
     ],
     deps = [
-        "@//iceoryx2:iceoryx2",
-        "@//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
     ],
 )

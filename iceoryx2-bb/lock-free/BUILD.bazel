@@ -18,9 +18,9 @@ rust_library(
     name = "iceoryx2-bb-lock-free",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "@//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "@//iceoryx2-bb/log:iceoryx2-bb-log",
-        "@//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "@crate_index//:tiny-fn",
     ],
 )

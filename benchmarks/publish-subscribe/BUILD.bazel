@@ -18,10 +18,10 @@ rust_binary(
     name = "benchmark-event",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "@//iceoryx2:iceoryx2",
-        "@//iceoryx2-bb/container:iceoryx2-bb-container",
-        "@//iceoryx2-bb/log:iceoryx2-bb-log",
-        "@//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "@crate_index//:clap",
     ],
 )

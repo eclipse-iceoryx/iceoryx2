@@ -18,9 +18,9 @@ rust_binary(
         "discovery.rs",
     ],
     deps = [
-        "@//iceoryx2:iceoryx2",
-        "@//iceoryx2-bb/log:iceoryx2-bb-log",
-        "@//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "@crate_index//:clap",
     ],
 )
@@ -31,9 +31,9 @@ rust_binary(
         "publisher.rs",
     ],
     deps = [
-        "@//iceoryx2:iceoryx2",
-        "@//iceoryx2-bb/log:iceoryx2-bb-log",
-        "@//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "@//examples/rust:examples-common",
         "@crate_index//:clap",
     ],
@@ -45,9 +45,9 @@ rust_binary(
         "subscriber.rs",
     ],
     deps = [
-        "@//iceoryx2:iceoryx2",
-        "@//iceoryx2-bb/log:iceoryx2-bb-log",
-        "@//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "@//examples/rust:examples-common",
         "@crate_index//:clap",
     ],

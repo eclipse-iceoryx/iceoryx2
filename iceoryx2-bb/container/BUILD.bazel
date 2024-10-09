@@ -18,13 +18,13 @@ rust_library(
     name = "iceoryx2-bb-container",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "@//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "@//iceoryx2-bb/log:iceoryx2-bb-log",
-        "@//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "@crate_index//:serde",
     ],
     proc_macro_deps = [
-        "@//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
     ],
 )
 

@@ -18,7 +18,7 @@ rust_proc_macro(
     name = "iceoryx2-bb-derive-macros",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "@//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "@crate_index//:proc-macro2",
         "@crate_index//:quote",
         "@crate_index//:syn",
