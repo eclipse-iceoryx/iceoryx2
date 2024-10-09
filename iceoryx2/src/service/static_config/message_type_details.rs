@@ -266,4 +266,130 @@ mod tests {
         let sut = unsafe { *payload_ptr };
         assert_that!(sut, eq demo.payload);
     }
+
+    #[test]
+    fn test_payload_layout() {
+        let details = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
+        let sut = details.payload_layout(0);
+        assert_that!(sut.size(), eq 0);
+        let sut = details.payload_layout(5);
+        assert_that!(sut.size(), eq 40);
+
+        #[repr(C)]
+        struct Demo {
+            _b: bool,
+            _i16: i16,
+            _i64: i64,
+        }
+
+        let details = MessageTypeDetails::from::<i64, i64, Demo>(TypeVariant::FixedSize);
+        let sut = details.payload_layout(1);
+        #[cfg(target_pointer_width = "32")]
+        let expected = 12;
+        #[cfg(target_pointer_width = "64")]
+        let expected = 16;
+        assert_that!(sut.size(), eq expected);
+
+        #[cfg(target_pointer_width = "32")]
+        let expected = 36;
+        #[cfg(target_pointer_width = "64")]
+        let expected = 48;
+        let sut = details.payload_layout(3);
+        assert_that!(sut.size(), eq expected);
+    }
+
+    #[test]
+    // test_sample_layout tests the sample layout for combinations of different types.
+    fn test_sample_layout() {
+        let details = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
+        let sut = details.sample_layout(0);
+        #[cfg(target_pointer_width = "32")]
+        let expected = 24;
+        #[cfg(target_pointer_width = "64")]
+        let expected = 32;
+        assert_that!(sut.size(), eq expected);
+
+        let details = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
+        let sut = details.sample_layout(2);
+        #[cfg(target_pointer_width = "32")]
+        let expected = 40;
+        #[cfg(target_pointer_width = "64")]
+        let expected = 48;
+        assert_that!(sut.size(), eq expected);
+
+        let details = MessageTypeDetails::from::<i64, i64, bool>(TypeVariant::FixedSize);
+        let sut = details.sample_layout(3);
+        #[cfg(target_pointer_width = "32")]
+        let expected = 24;
+        #[cfg(target_pointer_width = "64")]
+        let expected = 32;
+        assert_that!(sut.size(), eq expected);
+
+        let details = MessageTypeDetails::from::<i64, i32, bool>(TypeVariant::FixedSize);
+        let sut = details.sample_layout(11);
+
+        #[cfg(target_pointer_width = "32")]
+        let expected = 28;
+        #[cfg(target_pointer_width = "64")]
+        let expected = 32;
+        assert_that!(sut.size(), eq expected);
+
+        #[repr(C)]
+        struct Demo {
+            _b: bool,
+            _i16: i16,
+            _i64: i64,
+        }
+
+        let details = MessageTypeDetails::from::<i64, i64, Demo>(TypeVariant::FixedSize);
+        let sut = details.sample_layout(2);
+        #[cfg(target_pointer_width = "32")]
+        let expected = 48;
+        #[cfg(target_pointer_width = "64")]
+        let expected = 64;
+        assert_that!(sut.size(), eq expected);
+    }
+
+    #[test]
+    fn test_is_compatible_to() {
+        let left = MessageTypeDetails::from::<i64, i64, i8>(TypeVariant::FixedSize);
+        let right = MessageTypeDetails::from::<i64, i64, u8>(TypeVariant::FixedSize);
+        let sut = left.is_compatible_to(&right);
+        assert_that!(sut, eq false);
+
+        let left = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
+        let right = MessageTypeDetails::from::<i64, i64, i32>(TypeVariant::FixedSize);
+        let sut = left.is_compatible_to(&right);
+        assert_that!(sut, eq false);
+
+        // right may have a different alignment from left.
+        // but note that the header alignment must be the same
+        let right = MessageTypeDetails {
+            header: TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: "i64".to_string(),
+                size: 8,
+                alignment: ALIGNMENT,
+            },
+            user_header: TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: "i64".to_string(),
+                size: 8,
+                alignment: 2 * ALIGNMENT,
+            },
+            payload: TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: "i64".to_string(),
+                size: 8,
+                alignment: 2 * ALIGNMENT,
+            },
+        };
+        // smaller to bigger is allowed.
+        let sut = left.is_compatible_to(&right);
+        assert_that!(sut, eq true);
+
+        // bigger to smaller is invalid.
+        let sut = right.is_compatible_to(&left);
+        assert_that!(sut, eq false);
+    }
 }
