@@ -33,6 +33,10 @@ struct Args {
 };
 // NOLINTEND
 
+struct ServiceNameListenerPair {
+    iox2::ServiceName service_name;
+    iox2::Listener<iox2::ServiceType::Ipc> listener;
+};
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
@@ -42,34 +46,36 @@ auto main(int argc, char** argv) -> int {
     auto service_name_1 = ServiceName::create(args.service1().c_str()).expect("valid service name");
     auto service_name_2 = ServiceName::create(args.service2().c_str()).expect("valid service name");
 
+    // create node and services
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
     auto service_1 =
         node.service_builder(service_name_1).event().open_or_create().expect("successful service creation/opening");
     auto service_2 =
         node.service_builder(service_name_2).event().open_or_create().expect("successful service creation/opening");
-
-    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
     auto listener_1 = service_1.listener_builder().create().expect("successful listener creation");
     auto listener_2 = service_2.listener_builder().create().expect("successful listener creation");
 
+    // create the waitset and attach the listeners to it
+    auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
     iox::vector<WaitSetGuard<ServiceType::Ipc>, 2> guards;
 
     guards.emplace_back(waitset.attach_notification(listener_1).expect(""));
     guards.emplace_back(waitset.attach_notification(listener_2).expect(""));
 
-    std::map<WaitSetAttachmentId<ServiceType::Ipc>, std::pair<ServiceName, Listener<ServiceType::Ipc>>> listeners;
+    std::map<WaitSetAttachmentId<ServiceType::Ipc>, ServiceNameListenerPair> listeners;
 
     listeners.emplace(std::make_pair(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards[0]),
-                                     std::make_pair(service_name_1, std::move(listener_1))));
+                                     ServiceNameListenerPair { service_name_1, std::move(listener_1) }));
     listeners.emplace(std::make_pair(WaitSetAttachmentId<ServiceType::Ipc>::from_guard(guards[1]),
-                                     std::make_pair(service_name_2, std::move(listener_2))));
+                                     ServiceNameListenerPair { service_name_2, std::move(listener_2) }));
 
+    // the callback that is called when a listener has received an event
     auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) {
         if (auto l = listeners.find(attachment_id); l != listeners.end()) {
-            std::cout << "Received trigger from \"" << l->second.first.to_string().c_str() << "\"" << std::endl;
+            std::cout << "Received trigger from \"" << l->second.service_name.to_string().c_str() << "\"" << std::endl;
 
-            auto& listener = l->second.second;
+            auto& listener = l->second.listener;
             listener.try_wait_one().expect("").and_then([](auto event_id) { std::cout << " " << event_id; });
             std::cout << std::endl;
         }
@@ -77,6 +83,10 @@ auto main(int argc, char** argv) -> int {
 
     std::cout << "Waiting on the following services: " << service_name_1.to_string().c_str() << ", "
               << service_name_2.to_string().c_str() << std::endl;
+
+    // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT
+    // signal or the user has called explicitly `waitset.stop()` in the `on_event` callback. We
+    // didn't add this to the example so feel free to play around with it.
     waitset.wait_and_process(on_event).expect("");
 
     std::cout << "exit" << std::endl;
