@@ -10,17 +10,30 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+package(default_visibility = ["//visibility:public"])
+
+alias(
+    name = "iceoryx2-c-shared",
+    actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-shared",
+)
+
+alias(
+    name = "iceoryx2-c-static",
+    actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-static",
+)
+
+# NOTE: the following lines can be removed once 'rules_foreign_cc' is retired from building the C and C++ bindings
+
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
 
 filegroup(
     name = "cmake_srcs",
     srcs = glob(["cmake/**"]),
-    visibility = ["//visibility:public"],
 )
 
 cmake(
-    name = "iceoryx2-c",
+    name = "iceoryx2-c-foreigncc",
     cache_entries = {
         "IOX2_VERSION_STRING": "0.4.1",
     },
@@ -67,5 +80,4 @@ cmake(
         "//:win-gcc": [],
         "//conditions:default": [],
     }),
-    visibility = ["//visibility:public"],
 )

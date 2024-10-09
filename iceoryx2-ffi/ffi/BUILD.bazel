@@ -12,13 +12,12 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_static_library")
 
 filegroup(
     name = "cbindgen-cli",
     srcs = ["@cbindgen//file"],
-    visibility = ["//visibility:public"],
 )
 
 genrule(
@@ -28,12 +27,12 @@ genrule(
         ":cbindgen-cli",
         "src"
     ],
-    outs = ["iceoryx2-ffi-cbindgen/include/iox2/iceoryx2.h"],
+    outs = ["include/iox2/iceoryx2.h"],
     cmd = "$(execpath :cbindgen-cli) --config $(location cbindgen.toml) --output $(OUTS) $(location src)/..",
 )
 
-rust_library(
-    name = "iceoryx2-ffi",
+rust_shared_library(
+    name = "iceoryx2-ffi-shared-rust",
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "@//iceoryx2:iceoryx2",
@@ -50,12 +49,51 @@ rust_library(
     ],
 )
 
+rust_static_library(
+    name = "iceoryx2-ffi-static-rust",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "@//iceoryx2:iceoryx2",
+        "@//iceoryx2-bb/container:iceoryx2-bb-container",
+        "@//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "@//iceoryx2-bb/log:iceoryx2-bb-log",
+        "@//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "@//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "@//iceoryx2-cal:iceoryx2-cal",
+        "@crate_index//:serde",
+    ],
+    proc_macro_deps = [
+        "@//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
+    ],
+)
+
+# Combined library with header file
+
+cc_library(
+    name = "iceoryx2-ffi-shared",
+    hdrs = [ "include/iox2/iceoryx2.h" ],
+    includes = [ "include" ],
+    deps = [
+        ":iceoryx2-ffi-shared-rust",
+    ],
+    linkstatic = False,
+)
+
+cc_library(
+    name = "iceoryx2-ffi-static",
+    hdrs = [ "include/iox2/iceoryx2.h" ],
+    includes = [ "include" ],
+    deps = [
+        ":iceoryx2-ffi-static-rust",
+    ],
+    linkstatic = True,
+)
+
 # TODO: [349] add tests
 
+# NOTE: the following lines can be removed once 'rules_foreign_cc' is retired from building the C and C++ bindings
 
-# NOTE: this can be removed once 'rules_foreign_cc' is retired from building the C and C++ bindings
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
-    visibility = ["//visibility:public"],
 )

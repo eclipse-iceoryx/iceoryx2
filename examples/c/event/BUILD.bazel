@@ -18,7 +18,7 @@ cc_binary(
         "src/listener.c",
     ],
     deps = [
-        "//:iceoryx2-c",
+        "//:iceoryx2-c-static",
     ],
 )
 
@@ -28,6 +28,6 @@ cc_binary(
         "src/notifier.c",
     ],
     deps = [
-        "//:iceoryx2-c",
+        "//:iceoryx2-c-static",
     ],
 )
