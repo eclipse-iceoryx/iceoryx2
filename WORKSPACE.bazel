@@ -47,8 +47,9 @@ rust_register_toolchains(
 
 
 # Load prebuilt bindgen
-http_archive(
+maybe(
     name = "bindgen",
+    repo_rule = http_archive,
     sha256 = "b7e2321ee8c617f14ccc5b9f39b3a804db173ee217e924ad93ed16af6bc62b1d",
     strip_prefix = "bindgen-cli-x86_64-unknown-linux-gnu",
     urls = ["https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-x86_64-unknown-linux-gnu.tar.xz"],
@@ -62,8 +63,9 @@ filegroup(
 )
 
 # Load prebuilt cbindgen
-http_file(
+maybe(
     name = "cbindgen",
+    repo_rule = http_file,
     sha256 = "521836d00863cb129283054e5090eb17563614e6328b7a1610e30949a05feaea",
     urls = ["https://github.com/mozilla/cbindgen/releases/download/0.26.0/cbindgen"],
     executable = True,
@@ -76,8 +78,9 @@ crate_universe_dependencies()
 
 load("@rules_rust//crate_universe:defs.bzl", "crates_repository")
 
-crates_repository(
+maybe(
     name = "crate_index",
+    repo_rule = crates_repository,
     cargo_lockfile = "//:Cargo.lock",
     lockfile = "//:Cargo.Bazel.lock",
     manifests = [
