@@ -10,9 +10,6 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
-[features]
-acl = ["iceoryx2-pal-posix/acl"]
-
 [dependencies]
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }

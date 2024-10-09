@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[cfg(feature = "acl")]
-pub mod acl;
 pub mod constants;
 pub mod dirent;
 pub mod errno;
@@ -43,8 +41,6 @@ pub mod win32_handle_translator;
 pub mod win32_security_attributes;
 mod win32_udp_port_to_uds_name;
 
-#[cfg(feature = "acl")]
-pub use crate::windows::acl::*;
 pub use crate::windows::constants::*;
 pub use crate::windows::dirent::*;
 pub use crate::windows::errno::*;
