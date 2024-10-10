@@ -13,6 +13,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 # Generate the binding lib
@@ -36,25 +37,33 @@ genrule(
         "src/c/posix.h",
         "@bindgen//:bindgen-cli",
     ],
-    outs = ["src/posix_generated.rs"],
+    outs = ["posix_generated.rs"],
     cmd = "$(execpath @bindgen//:bindgen-cli) --use-core --blocklist-type max_align_t $(location src/c/posix.h) --output $(OUTS)",
+)
+
+cargo_build_script(
+    name = "bazel_bindgen_workaround",
+    srcs = ["bazel_bindgen_workaround.rs"],
 )
 
 # Create the actual crate
 rust_library(
     name = "iceoryx2-pal-posix",
-    srcs = glob(["src/**/*.rs"]) + [ ":src/posix_generated.rs" ],
+    srcs = glob(["src/**/*.rs"]),
+    compile_data = [ "posix_generated.rs" ],
     deps = [
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
         "@crate_index//:lazy_static",
         ":iceoryx2-pal-posix-c-lib",
+        ":bazel_bindgen_workaround",
     ],
     rustc_env = {
-        # - the file is generated in 'posix/src'
         # - 'lib.rs' expects the location at 'env!("OUT_DIR")/posix_generated.rs'
-        # - therefore 'OUT_DIR' needs to point to the same dir where 'lib.rs' is located
-        "OUT_DIR": "."
+        # - 'OUT_DIR' is set by 'bazel_bindgen_workaround' and points to the same
+        #   folder where 'posix_generated.rs' is preset
+        # - therefore the path needs to be corrected
+        "BAZEL_BINDGEN_PATH_CORRECTION": "/.."
     },
 )
 

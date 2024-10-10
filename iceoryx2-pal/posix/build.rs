@@ -44,6 +44,9 @@ fn main() {
         }
     };
 
+    // needed for bazel but can be empty for cargo builds
+    println!("cargo:rustc-env=BAZEL_BINDGEN_PATH_CORRECTION=");
+
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
         .write_to_file(out_path.join("posix_generated.rs"))
