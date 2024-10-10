@@ -59,7 +59,13 @@ use std::sync::atomic::Ordering;
 
 use self::dynamic_storage_configuration::DynamicStorageConfiguration;
 
+const INIT_PERMISSIONS: Permission = Permission::OWNER_WRITE;
+
+#[cfg(not(feature = "dev_permissions"))]
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_ALL;
+
+#[cfg(feature = "dev_permissions")]
+const FINAL_PERMISSIONS: Permission = Permission::ALL;
 
 /// The builder of [`Storage`].
 #[derive(Debug)]
@@ -257,7 +263,7 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
             // posix shared memory is always aligned to the greatest possible value (PAGE_SIZE)
             // therefore we do not have to add additional alignment space for T
             .size(std::mem::size_of::<Data<T>>() + self.supplementary_size)
-            .permission(Permission::OWNER_WRITE)
+            .permission(INIT_PERMISSIONS)
             .zero_memory(false)
             .has_ownership(self.has_ownership)
             .create()
