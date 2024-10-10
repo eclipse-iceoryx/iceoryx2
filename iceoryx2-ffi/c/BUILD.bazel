@@ -12,6 +12,11 @@
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
 alias(
     name = "iceoryx2-c-shared",
     actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-shared",

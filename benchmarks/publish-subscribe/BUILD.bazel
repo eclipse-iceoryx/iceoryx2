@@ -14,6 +14,11 @@ package(default_visibility = ["//visibility:public"])
 
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
 rust_binary(
     name = "benchmark-event",
     srcs = glob(["src/**/*.rs"]),

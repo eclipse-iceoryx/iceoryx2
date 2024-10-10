@@ -12,6 +12,11 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_test")
 
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
 cc_test(
     name = "iceoryx2-cxx-tests",
     srcs = glob([

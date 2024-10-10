@@ -1,5 +1,3 @@
-build --spawn_strategy=standalone --strategy=Genrule=standalone
-
 build --enable_platform_specific_config
 build:linux --cxxopt="-std=c++17"
 build:windows --cxxopt="/std:c++17"

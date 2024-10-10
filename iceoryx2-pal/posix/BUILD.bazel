@@ -16,6 +16,11 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
 # Generate the binding lib
 cc_library(
     name = "iceoryx2-pal-posix-c-lib",

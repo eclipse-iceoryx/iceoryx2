@@ -16,6 +16,11 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_static_library")
 
 filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
+filegroup(
     name = "cbindgen-cli",
     srcs = ["@cbindgen//file"],
 )
@@ -23,12 +28,14 @@ filegroup(
 genrule(
     name = "iceoryx2-ffi-cbindgen",
     srcs = glob(["src/**/*.rs"]) + [
+        "//:all_srcs",
+        "Cargo.toml",
         "cbindgen.toml",
         ":cbindgen-cli",
-        "src"
     ],
     outs = ["include/iox2/iceoryx2.h"],
-    cmd = "$(execpath :cbindgen-cli) --config $(location cbindgen.toml) --output $(OUTS) $(location src)/..",
+    # this is actually just 'cbindgen iceoryx2-ffi/ffi --quiet --config iceoryx2-ffi/ffi/cbindgen.toml --output include/iox2/iceoryx2.h'
+    cmd = "$(execpath :cbindgen-cli) $$(dirname $(location Cargo.toml)) --quiet --config $(location cbindgen.toml) --output $(OUTS)",
 )
 
 rust_shared_library(
@@ -74,6 +81,7 @@ cc_library(
     hdrs = [ "include/iox2/iceoryx2.h" ],
     includes = [ "include" ],
     deps = [
+        ":iceoryx2-ffi-cbindgen",
         ":iceoryx2-ffi-shared-rust",
     ],
     linkstatic = False,
@@ -84,16 +92,10 @@ cc_library(
     hdrs = [ "include/iox2/iceoryx2.h" ],
     includes = [ "include" ],
     deps = [
+        ":iceoryx2-ffi-cbindgen",
         ":iceoryx2-ffi-static-rust",
     ],
     linkstatic = True,
 )
 
 # TODO: [349] add tests
-
-# NOTE: the following lines can be removed once 'rules_foreign_cc' is retired from building the C and C++ bindings
-
-filegroup(
-    name = "all_srcs",
-    srcs = glob(["**"]),
-)

@@ -14,6 +14,11 @@ package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
 cc_library(
     name = "iceoryx2-cxx-shared",
     srcs = glob(
