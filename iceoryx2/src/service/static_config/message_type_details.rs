@@ -351,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    fn test_is_compatible_to() {
+    fn test_is_compatible_to_failed_when_types_differ() {
         let left = MessageTypeDetails::from::<i64, i64, i8>(TypeVariant::FixedSize);
         let right = MessageTypeDetails::from::<i64, i64, u8>(TypeVariant::FixedSize);
         let sut = left.is_compatible_to(&right);
@@ -361,6 +361,11 @@ mod tests {
         let right = MessageTypeDetails::from::<i64, i64, i32>(TypeVariant::FixedSize);
         let sut = left.is_compatible_to(&right);
         assert_that!(sut, eq false);
+    }
+
+    #[test]
+    fn test_is_compatible_to_succeed_when_rhs_aligment_is_bigger() {
+        let left = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
 
         // right may have a different alignment from left.
         // but note that the header alignment must be the same
@@ -388,6 +393,37 @@ mod tests {
         let sut = left.is_compatible_to(&right);
         assert_that!(sut, eq true);
 
+        // bigger to smaller is invalid.
+        let sut = right.is_compatible_to(&left);
+        assert_that!(sut, eq false);
+    }
+
+    #[test]
+    fn test_is_compatible_to_fail_when_rhs_aligment_is_smaller() {
+        let left = MessageTypeDetails::from::<i64, i64, i64>(TypeVariant::FixedSize);
+
+        // right may have a different alignment from left.
+        // but note that the header alignment must be the same
+        let right = MessageTypeDetails {
+            header: TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: "i64".to_string(),
+                size: 8,
+                alignment: ALIGNMENT,
+            },
+            user_header: TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: "i64".to_string(),
+                size: 8,
+                alignment: 2 * ALIGNMENT,
+            },
+            payload: TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: "i64".to_string(),
+                size: 8,
+                alignment: 2 * ALIGNMENT,
+            },
+        };
         // bigger to smaller is invalid.
         let sut = right.is_compatible_to(&left);
         assert_that!(sut, eq false);
