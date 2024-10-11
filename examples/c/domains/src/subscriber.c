@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     iox2_node_builder_set_config(&node_builder_handle, &config);
     if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node_handle) != IOX2_OK) {
         printf("Could not create node!\n");
-        goto end;
+        goto drop_config;
     }
 
     // create service name
@@ -129,6 +129,6 @@ drop_node:
 drop_config:
     iox2_config_drop(config);
 
-end:
+    //[unused-label] end:
     return 0;
 }
