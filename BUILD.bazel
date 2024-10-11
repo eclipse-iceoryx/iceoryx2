@@ -38,6 +38,12 @@ config_setting(
 )
 
 alias(
+    name = "iceoryx2",
+    actual = "//iceoryx2:iceoryx2",
+    visibility = ["//visibility:public"],
+)
+
+alias(
     name = "iceoryx2-c-shared",
     actual = "//iceoryx2-ffi/c:iceoryx2-c-shared",
     visibility = ["//visibility:public"],
