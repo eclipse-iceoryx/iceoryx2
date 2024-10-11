@@ -473,7 +473,7 @@ jobs:
           uname -a
 
       - name: Run bazel build
-        run: bazel build //...
+        run: CARGO_BAZEL_REPIN=true bazel build //...
 
       - name: Run bazel test
         if: false # TODO: [349] enable tests in bazel
