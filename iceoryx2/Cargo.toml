@@ -16,6 +16,10 @@ version = { workspace = true }
 logger_log = ["iceoryx2-bb-log/logger_log"]
 # Enables https://crates.io/crates/tracing as default logger
 logger_tracing = ["iceoryx2-bb-log/logger_tracing"]
+# The permissions of all resources will be set to read, write, execute for everyone.
+# This shall not be used in production and is meant to be enabled in a docker environment
+# with inconsistent user configuration.
+dev_permissions = ["iceoryx2-cal/dev_permissions"]
 
 [dependencies]
 iceoryx2-bb-container = { workspace = true }

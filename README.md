@@ -123,7 +123,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let publisher = service.publisher_builder().create()?;
 
-    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+    while node.wait(CYCLE_TIME).is_ok() {
         let sample = publisher.loan_uninit()?;
         let sample = sample.write_payload(1234);
         sample.send()?;
@@ -150,7 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let subscriber = service.subscriber_builder().create()?;
 
-    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+    while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
             println!("received: {:?}", *sample);
         }
@@ -200,7 +200,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let notifier = event.notifier_builder().create()?;
 
     let id = EventId::new(12);
-    while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+    while node.wait(CYCLE_TIME).is_ok() {
         notifier.notify_with_custom_event_id(id)?;
 
         println!("Trigger event with id {:?} ...", id);
@@ -227,7 +227,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = event.listener_builder().create()?;
 
-    while node.wait(Duration::ZERO) != WaitEvent::TerminationRequest {
+    while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
             println!("event was triggered with id: {:?}", event_id);
         }
@@ -254,7 +254,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = event.listener_builder().create()?;
 
-    while node.wait(Duration::ZERO) != WaitEvent::TerminationRequest {
+    while node.wait(Duration::ZERO).is_ok() {
         listener.timed_wait_all(
             |event_id| {
                 println!("event was triggered with id: {:?}", event_id);

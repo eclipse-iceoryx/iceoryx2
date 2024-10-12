@@ -10,6 +10,12 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[features]
+# The permissions of all resources will be set to read, write, execute for everyone.
+# This shall not be used in production and is meant to be enabled in a docker environment
+# with inconsistent user configuration.
+dev_permissions = []
+
 [dependencies]
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-container = { workspace = true }

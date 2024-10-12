@@ -35,6 +35,14 @@ pub struct Channel<T: Copy> {
     _phantom_data: PhantomData<T>,
 }
 
+const INIT_PERMISSIONS: Permission = Permission::OWNER_WRITE;
+
+#[cfg(not(feature = "dev_permissions"))]
+const FINAL_PERMISSIONS: Permission = Permission::OWNER_ALL;
+
+#[cfg(feature = "dev_permissions")]
+const FINAL_PERMISSIONS: Permission = Permission::ALL;
+
 impl<T: Copy + Debug> NamedConceptMgmt for Channel<T> {
     type Configuration = Configuration;
 
@@ -257,7 +265,7 @@ impl<T: Copy + Debug> CommunicationChannelCreator<T, Channel<T>> for Creator<T> 
 
         let mut _shared_memory = match SharedMemoryBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
-            .permission(Permission::OWNER_WRITE)
+            .permission(INIT_PERMISSIONS)
             .size(std::mem::size_of::<SharedConfiguration>())
             .create()
         {
@@ -281,9 +289,7 @@ impl<T: Copy + Debug> CommunicationChannelCreator<T, Channel<T>> for Creator<T> 
         };
 
         // we are finished with the setup and we open the channel for others to connect
-        _shared_memory
-            .set_permission(Permission::OWNER_READ | Permission::OWNER_WRITE)
-            .unwrap();
+        _shared_memory.set_permission(FINAL_PERMISSIONS).unwrap();
 
         Ok(Receiver {
             name: self.channel_name,

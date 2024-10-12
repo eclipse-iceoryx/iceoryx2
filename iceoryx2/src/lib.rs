@@ -267,6 +267,9 @@
 //!
 //! # Feature Flags
 //!
+//!  * `dev_permissions` - The permissions of all resources will be set to read, write, execute
+//!     for everyone. This shall not be used in production and is meant to be enabled in a docker
+//!     environment with inconsistent user configuration.
 //!  * `logger_log` - Uses the [log crate](https://crates.io/crates/log) as default log backend
 //!  * `logger_tracing` - Uses the [tracing crate](https://crates.io/crates/tracing) as default log
 //!     backend
