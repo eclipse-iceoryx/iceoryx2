@@ -20,20 +20,50 @@ use std::time::Instant;
 const TIMEOUT: Duration = Duration::from_millis(50);
 
 #[test]
-fn adaptive_wait_wait_loop_initial_repetitions_plus_one_is_at_least_final_waiting_time() {
-    let start = Instant::now();
+fn adaptive_wait_wait_at_different_time_depends_on_repetition_times() {
     let mut counter: u64 = 0;
 
-    AdaptiveWaitBuilder::new()
-        .create()
-        .unwrap()
+    let mut waiter = AdaptiveWaitBuilder::new().create().unwrap();
+
+    waiter
         .wait_while(move || -> bool {
             counter += 1;
-            counter < ADAPTIVE_WAIT_INITIAL_REPETITIONS
+            counter <= ADAPTIVE_WAIT_YIELD_REPETITIONS
+        })
+        .expect("failed to test wait_loop");
+    // the waiter starts to sleep ADAPTIVE_WAIT_INITIAL_WAITING_TIME instead of yield later.
+    assert_that!(waiter.yield_count(), eq ADAPTIVE_WAIT_YIELD_REPETITIONS);
+
+    // test sleep time ADAPTIVE_WAIT_INITIAL_WAITING_TIME
+    let start = Instant::now();
+    waiter
+        .wait_while(move || -> bool {
+            counter += 1;
+            counter <= 1 // stop at the second turn
+        })
+        .expect("failed to test wait_loop");
+    assert_that!(start.elapsed(), time_at_least ADAPTIVE_WAIT_INITIAL_WAITING_TIME);
+
+    waiter
+        .wait_while(move || -> bool {
+            counter += 1;
+            // continue to reach the edge of sleeping time.
+            counter < ADAPTIVE_WAIT_INITIAL_REPETITIONS - ADAPTIVE_WAIT_YIELD_REPETITIONS
         })
         .expect("failed to test wait_loop");
 
-    assert_that!(start.elapsed(), ge ADAPTIVE_WAIT_FINAL_WAITING_TIME);
+    // verify the waiter will enter the next stage at the next repetition.
+    // the waiter starts to sleep longer as ADAPTIVE_WAIT_FINAL_WAITING_TIME
+    // instead of ADAPTIVE_WAIT_INITIAL_WAITING_TIME later.
+    assert_that!(waiter.yield_count(), eq ADAPTIVE_WAIT_INITIAL_REPETITIONS);
+    let start = Instant::now();
+    waiter
+        .wait_while(move || -> bool {
+            counter += 1;
+            counter <= 1 // stop at the second turn
+        })
+        .expect("failed to test wait_loop");
+    assert_that!(start.elapsed(), time_at_least ADAPTIVE_WAIT_FINAL_WAITING_TIME);
 }
 
 #[test]
