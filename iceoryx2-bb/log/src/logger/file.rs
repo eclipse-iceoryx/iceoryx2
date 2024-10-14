@@ -10,10 +10,31 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! Using the file logger.
+//!
+//! ```no_run
+//! use iceoryx2_bb_log::{info, set_logger, set_log_level, LogLevel, logger::file};
+//! use std::sync::LazyLock;
+//!
+//! const LOG_FILE: &str = "fuu.log";
+//! static FILE_LOGGER: LazyLock<file::Logger> = LazyLock::new(|| file::Logger::new(LOG_FILE));
+//! set_logger(&*FILE_LOGGER);
+//! set_log_level(LogLevel::Trace);
+//!
+//! // written into log file "fuu.log"
+//! info!("hello world");
+//! ```
+
+// TODO: [Reminder to my future self]
+// In the long-term the file logger may be required to be based on the same
+// iceoryx2_pal_posix platform. In this case, the logger needs to use the low-level calls directly
+// to avoid a circular dependency with iceoryx2_bb_posix.
 use std::{
     collections::VecDeque,
     fmt::Debug,
-    fs::File,
+    fs::OpenOptions,
     io::Write,
     sync::{Arc, Condvar, Mutex},
     thread::JoinHandle,
@@ -21,8 +42,6 @@ use std::{
 };
 
 use crate::LogLevel;
-
-use super::Logger;
 
 struct Entry {
     timestamp: Duration,
@@ -56,38 +75,57 @@ impl Default for State {
     }
 }
 
-pub struct FileLogger {
+/// A logger that logs all messages into a file. It implements an active object pattern. A
+/// background thread waits on a queue of log messages and whenever a new message is added.
+pub struct Logger {
     state: Arc<Mutex<State>>,
     trigger: Arc<Condvar>,
     start_time: Instant,
     _background_thread: Arc<Option<JoinHandle<()>>>,
 }
 
-impl FileLogger {
+impl Logger {
+    /// Creates a new file logger.
     pub fn new(file_name: &str) -> Self {
         let state = Arc::new(Mutex::new(State::default()));
         let trigger = Arc::new(Condvar::new());
-        let mut file = File::create(file_name).unwrap();
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(file_name)
+            .expect("Open log file for writing.");
 
         let self_state = state.clone();
         let self_trigger = trigger.clone();
 
         let write_buffer_to_file = move || loop {
-            println!("write buffer to file");
-            let mut lock = state.lock().unwrap();
+            let lock = state.lock().expect("Acquire internal state mutex.");
 
-            lock = trigger
-                .wait_while(lock, |state: &mut State| state.buffer.is_empty())
-                .unwrap();
+            let lock = trigger
+                .wait_while(lock, |state: &mut State| {
+                    state.buffer.is_empty() || !state.keep_running
+                })
+                .expect("Wait for internal state trigger.");
+            drop(lock);
 
-            while let Some(entry) = lock.buffer.pop_front() {
-                println!("write_entry");
-                file.write_all(format!("{:?}\n", entry).as_bytes()).unwrap();
+            loop {
+                // acquiring the lock only to get the next buffer to minimize contention as much
+                // as possible.
+                let mut lock = state.lock().expect("Acquire internal state mutex.");
+                let buffer = lock.buffer.pop_front();
+                drop(lock);
+
+                match buffer {
+                    Some(entry) => file
+                        .write_all(format!("{:?}\n", entry).as_bytes())
+                        .expect("Writing log message into log file."),
+                    None => break,
+                }
             }
-            file.sync_all().unwrap();
+            file.sync_all().expect("Sync log file with disc.");
 
+            let lock = state.lock().expect("Acquire internal state mutex.");
             if !lock.keep_running {
-                println!("buffer len {}", lock.buffer.len());
                 break;
             }
         };
@@ -101,27 +139,27 @@ impl FileLogger {
     }
 }
 
-impl Drop for FileLogger {
+impl Drop for Logger {
     fn drop(&mut self) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock().expect("Acquire internal state mutex.");
         state.keep_running = false;
         self.trigger.notify_one();
     }
 }
 
-impl Logger for FileLogger {
+impl crate::Logger for Logger {
     fn log(
         &self,
         log_level: LogLevel,
         origin: std::fmt::Arguments,
         formatted_message: std::fmt::Arguments,
     ) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock().expect("Acquire internal state mutex.");
         state.buffer.push_back(Entry {
             log_level,
             timestamp: SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap(),
+                .expect("Acquire current system time."),
             elapsed_time: self.start_time.elapsed(),
             origin: origin.to_string(),
             message: formatted_message.to_string(),
