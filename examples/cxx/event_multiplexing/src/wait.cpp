@@ -79,7 +79,11 @@ auto main(int argc, char** argv) -> int {
                       << std::endl;
 
             auto& listener = entry->second.listener;
-            listener.try_wait_one().expect("").and_then([](auto event_id) { std::cout << " " << event_id; });
+            // IMPORTANT:
+            // We need to collect all notifications since the WaitSet will wake us up as long as
+            // there is something to read. If we skip this step completely we will end up in a
+            // busy loop.
+            listener.try_wait_all([](auto event_id) { std::cout << " " << event_id; }).expect("");
             std::cout << std::endl;
         }
     };

@@ -86,6 +86,13 @@ In this example the `PlacementDefault` trait is introduced that allows in place
 initialization and solves the stack overflow issue when the data type is larger
 than the available stack size.
 
+## 100% CPU Load When Using The WaitSet
+
+The WaitSet wakes up whenever an attachment, such as a `Listener` or a `socket`,
+has something to read. If you do not handle all notifications, for example,
+with `Listener::try_wait_one()`, the WaitSet will wake up immediately again,
+potentially causing an infinite loop and resulting in 100% CPU usage.
+
 ## Does iceoryx2 Offer an Async API?
 
 No, but it is
@@ -106,7 +113,7 @@ handles termination requests gracefully, see
 [publish subscribe example](examples/rust/publish_subscribe) and
 
 ```rust
-while let Iox2Event::Tick = Iox2::wait(CYCLE_TIME) {
+while node.wait(CYCLE_TIME).is_ok() {
   // user code
 }
 ```
@@ -137,47 +144,46 @@ set_log_level(LogLevel::Trace);
 
 ## A crash leads to the failure `PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`
 
-**Note:** A command line tool and internal service is already planned to cleanup
-resources from crashed applications, see issue #65.
+When an application crashes, some resources may remain in the system and need
+to be cleaned up. This issue is detected whenever a new iceoryx2 instance is
+created, removed, or when someone opens the service that the crashed process
+had previously opened. On the command line, you may see a message like this:
 
-When an application crashes some resources may remain in the system and must be
-cleaned up manually. If this occurs, stop all services and remove manually all
-shared memory segments and static service config files.
-
-```sh
-rm -rf /dev/shm/iox2_*
-rm -rf /tmp/iceoryx2/*
+```ascii
+6 [W] "Node::<iceoryx2::service::ipc::Service>::cleanup_dead_nodes()"
+      | Dead node (NodeId(UniqueSystemId { value: 1667667095615766886193595845
+      | , pid: 34245, creation_time: Time { clock_type: Realtime, seconds: 172
+      | 8553806, nanoseconds: 90404414 } })) detected
 ```
 
-If you cannot stop all running services, you can look up the `uuid` of the
-service in question and remove the files manually. Assume, the service
-`My/Funk/ServiceName` is corrupted. You can identify the static config by
-grepping the service name in the `/tmp/iceoryx2/service` folder.
+However, for successful cleanup, the process attempting the cleanup must have
+sufficient permissions to remove the stale resources of the dead process. If
+the cleanup fails due to insufficient permissions, the process that attempted
+the cleanup will continue without removing the resources.
 
-So the command
+Generally, it is not necessary to manually clean up these resources, as other
+processes should detect and handle the cleanup when creating or removing nodes,
+or when services are opened or closed.
 
-```sh
-cd /tmp/iceoryx2/service
-grep -RIne "My/Funk/ServiceName"
-```
+Nevertheless, there are three different approaches to initiate stale resource
+cleanup:
 
-provides us with the output
+1. **Using the iceoryx2 API**:
+   ```rust
+   Node::<ipc::Service>::list(Config::global_config(), |node_state| {
+     if let NodeState::<ipc::Service>::Dead(view) = node_state {
+       println!("Cleanup resources of dead node {:?}", view);
+       if let Err(e) = view.remove_stale_resources() {
+         println!("Failed to clean up resources due to {:?}", e);
+       }
+     }
+     CallbackProgression::Continue
+   })?;
+   ```
 
-```text
-iox2_25b25afeb7557886e9f69408151e018e268e5917.service:2:service_name = "My/Funk/ServiceName"
-```
+2. **Using the command line tool**: `iox2 node -h` (NOT YET IMPLEMENTED)
 
-The file name corresponds with the `uuid` of the service. So removing the
-dynamic and static service config with the following commands, removes the
-service completely from the system.
-
-```sh
-# static service config
-rm /tmp/iceoryx2/service/iox2_25b25afeb7557886e9f69408151e018e268e5917.service
-
-# dynamic service config
-rm /dev/shm/iox2_25b25afeb7557886e9f69408151e018e268e5917.dynamic
-```
-
-Be aware, that if an application with a publisher crashes, the data segment of
-the publisher must be cleaned up as well.
+3. **Manual cleanup**: Stop all running services and remove all shared memory
+    files with the `iox2` prefix from:
+   * POSIX: `/dev/shm/`, `/tmp/iceoryx2`
+   * Windows: `c:\Temp\iceoryx2`

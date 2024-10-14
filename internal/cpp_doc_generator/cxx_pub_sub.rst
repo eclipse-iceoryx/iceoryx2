@@ -47,7 +47,7 @@ Publisher
 
        auto publisher = service.publisher_builder().create().expect("");
 
-       while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
+       while (node.wait(CYCLE_TIME).has_value()) {
            auto sample = publisher.loan_uninit().expect("acquire sample");
            sample.write_payload(1234);
            send_sample(std::move(sample)).expect("send successful");
@@ -78,7 +78,7 @@ Subscriber
 
        auto subscriber = service.subscriber_builder().create().expect("");
 
-       while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
+       while (node.wait(CYCLE_TIME).has_value()) {
            auto sample = subscriber.receive().expect("receive succeeds");
            while (sample.has_value()) {
                std::cout << "received: " << sample->payload() << std::endl;

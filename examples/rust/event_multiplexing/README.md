@@ -2,6 +2,12 @@
 
 ## Running The Example
 
+> [!CAUTION]
+> The WaitSet wakes up as soon as there is data to read. If the data
+> is not consumed in the callback, the WaitSet will immediately wake
+> up the process again, potentially causing an infinite loop and leading
+> to 100% CPU usage.
+
 This example demonstrates iceoryx2's event multiplexing mechanism,
 called the `WaitSet`. It allows waiting, with a single call, on
 multiple `Listener` ports as well as external file descriptor-based
