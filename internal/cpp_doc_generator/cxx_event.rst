@@ -47,7 +47,7 @@ Listener
 
        auto listener = service.listener_builder().create().expect("");
 
-       while (node.wait(iox::units::Duration::zero()) == NodeEvent::Tick) {
+       while (node.wait(iox::units::Duration::zero()).has_value()) {
            listener.timed_wait_one(CYCLE_TIME).and_then([](auto maybe_event_id) {
                maybe_event_id.and_then(
                    [](auto event_id) {
@@ -86,7 +86,7 @@ Notifier
 
        auto notifier = service.notifier_builder().create().expect("");
 
-       while (node.wait(CYCLE_TIME) == NodeEvent::Tick) {
+       while (node.wait(CYCLE_TIME).has_value()) {
            const auto event_id = EventId(1234);
            notifier.notify_with_custom_event_id(event_id).expect("notification");
 
