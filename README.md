@@ -20,17 +20,26 @@
 
 # iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust
 
-1. [Introduction](#introduction)
-2. [Documentation](#documentation)
-3. [Performance](#performance)
-4. [Getting Started](#getting-started)
-   1. [Publish Subscribe](#publish-subscribe)
-   2. [Events](#events)
-   3. [Custom Configuration](#custom-configuration)
-5. [Supported Platforms](#supported-platforms)
-6. [Language Bindings](#language-bindings)
-7. [Commercial Support](#commercial-support)
-8. [Thanks To All Contributors](#thanks-to-all-contributors)
+- [iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust](#iceoryx2---zero-copy-lock-free-ipc-purely-written-in-rust)
+  - [Introduction](#introduction)
+  - [Documentation](#documentation)
+  - [Performance](#performance)
+    - [Comparision Of Mechanisms](#comparision-of-mechanisms)
+      - [Benchmark-System](#benchmark-system)
+    - [Comparision Of Architectures](#comparision-of-architectures)
+  - [Getting Started](#getting-started)
+    - [Publish Subscribe](#publish-subscribe)
+      - [publisher.rs](#publisherrs)
+      - [subscriber.rs](#subscriberrs)
+    - [Events](#events)
+      - [notifier.rs](#notifierrs)
+      - [listener.rs](#listenerrs)
+      - [listener.rs (grabbing all events at once)](#listenerrs-grabbing-all-events-at-once)
+    - [Custom Configuration](#custom-configuration)
+  - [Supported Platforms](#supported-platforms)
+  - [Language Bindings](#language-bindings)
+  - [Commercial Support](#commercial-support)
+  - [Thanks To All Contributors](#thanks-to-all-contributors)
 
 ## Introduction
 
@@ -384,6 +393,11 @@ The support levels can be adjusted when required.
           <a href="https://github.com/FerdinandSpitzschnueffler">
           <img src="https://avatars.githubusercontent.com/u/61289993" width="120px;" alt="»FerdinandSpitzschnueffler«"/><br />
           <sub><b>»FerdinandSpitzschnueffler«</b></sub></a></td>
+          <sub><b>»xieyuschen«</b></sub></a></td>                   
+      <td align="center" valign="top" width="14.28%">
+          <a href="https://github.com/brosier01">
+          <img src="https://avatars.githubusercontent.com/u/71630425?v=4" width="120px;" alt="Bruce »brosier01« Rosier"/><br />
+          <sub><b>Bruce »brosier01« Rosier</b></sub></a></td>
     </tr>
   </tbody>
 </table>
