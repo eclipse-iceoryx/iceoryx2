@@ -12,22 +12,8 @@
 
 workspace(name = "org_eclipse_iceoryx_iceoryx2")
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
-
-maybe(
-    name = "rules_foreign_cc",
-    repo_rule = http_archive,
-    sha256 = "4b33d62cf109bcccf286b30ed7121129cc34cf4f4ed9d8a11f38d9108f40ba74",
-    strip_prefix = "rules_foreign_cc-0.11.1",
-    url = "https://github.com/bazelbuild/rules_foreign_cc/releases/download/0.11.1/rules_foreign_cc-0.11.1.tar.gz",
-)
-
-load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-
-# This sets up some common toolchains for building targets. For more details, please see
-# https://bazelbuild.github.io/rules_foreign_cc/0.11.1/flatten.html#rules_foreign_cc_dependencies
-rules_foreign_cc_dependencies()
 
 # Setup gtest
 GOOGLETEST_VERSION = "1.14.0"
@@ -39,8 +25,97 @@ maybe(
     strip_prefix = "googletest-{version}".format(version = GOOGLETEST_VERSION),
 )
 
-# Fetch iceoryx_hoofs and iceoryx_platform
 
+# Load Rust rules
+# Use v0.26 to support bazel v6.2
+maybe(
+    name = "rules_rust",
+    repo_rule = http_archive,
+    sha256 = "9d04e658878d23f4b00163a72da3db03ddb451273eb347df7d7c50838d698f49",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.26.0/rules_rust-v0.26.0.tar.gz"],
+)
+
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
+
+rules_rust_dependencies()
+rust_register_toolchains(
+    edition = "2021",
+    versions = [
+        "1.80.0"
+    ],
+)
+
+
+# Load prebuilt bindgen
+maybe(
+    name = "bindgen",
+    repo_rule = http_archive,
+    sha256 = "b7e2321ee8c617f14ccc5b9f39b3a804db173ee217e924ad93ed16af6bc62b1d",
+    strip_prefix = "bindgen-cli-x86_64-unknown-linux-gnu",
+    urls = ["https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-x86_64-unknown-linux-gnu.tar.xz"],
+    build_file_content = """
+filegroup(
+    name = "bindgen-cli",
+    srcs = ["bindgen"],
+    visibility = ["//visibility:public"],
+)
+    """,
+)
+
+# Load prebuilt cbindgen
+maybe(
+    name = "cbindgen",
+    repo_rule = http_file,
+    sha256 = "521836d00863cb129283054e5090eb17563614e6328b7a1610e30949a05feaea",
+    urls = ["https://github.com/mozilla/cbindgen/releases/download/0.26.0/cbindgen"],
+    executable = True,
+)
+
+# Load external crates
+load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
+
+crate_universe_dependencies()
+
+load("@rules_rust//crate_universe:defs.bzl", "crates_repository")
+
+maybe(
+    name = "crate_index",
+    repo_rule = crates_repository,
+    cargo_lockfile = "//:Cargo.lock",
+    lockfile = "//:Cargo.Bazel.lock",
+    manifests = [
+        "//:Cargo.toml",
+        "//:benchmarks/event/Cargo.toml",
+        "//:benchmarks/publish-subscribe/Cargo.toml",
+        "//:examples/Cargo.toml",
+        "//:iceoryx2/Cargo.toml",
+        "//:iceoryx2-bb/container/Cargo.toml",
+        "//:iceoryx2-bb/derive-macros/Cargo.toml",
+        "//:iceoryx2-bb/elementary/Cargo.toml",
+        "//:iceoryx2-bb/lock-free/Cargo.toml",
+        "//:iceoryx2-bb/log/Cargo.toml",
+        "//:iceoryx2-bb/memory/Cargo.toml",
+        "//:iceoryx2-bb/posix/Cargo.toml",
+        "//:iceoryx2-bb/system-types/Cargo.toml",
+        "//:iceoryx2-bb/testing/Cargo.toml",
+        "//:iceoryx2-bb/threadsafe/Cargo.toml",
+        "//:iceoryx2-bb/trait-tests/Cargo.toml",
+        "//:iceoryx2-cal/Cargo.toml",
+        "//:iceoryx2-cli/Cargo.toml",
+        "//:iceoryx2-ffi/ffi-macros/Cargo.toml",
+        "//:iceoryx2-ffi/ffi/Cargo.toml",
+        "//:iceoryx2-pal/concurrency-sync/Cargo.toml",
+        "//:iceoryx2-pal/configuration/Cargo.toml",
+        "//:iceoryx2-pal/posix/Cargo.toml",
+    ],
+)
+
+load("@crate_index//:defs.bzl", "crate_repositories")
+
+crate_repositories()
+
+
+# Load iceoryx rules
 ICEORYX_VERSION = "2.95.2"
 
 maybe(

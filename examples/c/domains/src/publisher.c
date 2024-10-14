@@ -132,6 +132,6 @@ drop_node:
 drop_config:
     iox2_config_drop(config);
 
-end:
+    //[unused-label] end:
     return 0;
 }

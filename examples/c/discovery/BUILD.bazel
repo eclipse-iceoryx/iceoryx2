@@ -18,6 +18,6 @@ cc_binary(
         "src/main.c",
     ],
     deps = [
-        "//:iceoryx2-c",
+        "//:iceoryx2-c-shared",
     ],
 )

@@ -10,62 +10,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
-
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
-    name = "cmake_srcs",
-    srcs = glob(["cmake/**"]),
-    visibility = ["//visibility:public"],
+    name = "all_srcs",
+    srcs = glob(["**"]),
 )
 
-cmake(
-    name = "iceoryx2-c",
-    cache_entries = {
-        "IOX2_VERSION_STRING": "0.4.1",
-    },
-    build_data = [
-        ":cmake_srcs",
-        "//:all_srcs",
-        "//iceoryx2-ffi/ffi:all_srcs",
-    ],
-    lib_source = "CMakeLists.txt",
-    out_static_libs = select({
-        "//:win-msvc": ["iceoryx2_ffi.lib"],
-        "//:win-gcc": ["libiceoryx2_ffi.a"],
-        "//conditions:default": ["libiceoryx2_ffi.a"],
-    }),
-    out_interface_libs = select({
-        "//:win-msvc": ["iceoryx2_ffi.dll.lib"],
-        "//:win-gcc": ["libiceoryx2_ffi.dll.a"],
-        "//conditions:default": [],
-    }),
-    out_shared_libs = select({
-        "//:win-msvc": ["iceoryx2_ffi.dll"],
-        "//:win-gcc": ["iceoryx2_ffi.dll"],
-        "//conditions:default": ["libiceoryx2_ffi.so"],
-    }),
-    out_dll_dir = select({
-        "//:win-msvc": "lib",
-        "//conditions:default": "",
-    }),
-    out_include_dir = "include/iceoryx2/v0.4.1/",
-    exec_properties = {
-        "requires-network": "true",
-    },
-    linkopts = select({
-        "//:win-msvc": [
-            "advapi32.lib",
-            "bcrypt.lib",
-            "ntdll.lib",
-            "psapi.lib",
-            "userenv.lib",
-            "synchronization.lib",
-            "ws2_32.lib",
-            "wsock32.lib",
-        ],
-        "//:win-gcc": [],
-        "//conditions:default": [],
-    }),
-    visibility = ["//visibility:public"],
+alias(
+    name = "iceoryx2-c-shared",
+    actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-shared",
+)
+
+alias(
+    name = "iceoryx2-c-static",
+    actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-static",
 )

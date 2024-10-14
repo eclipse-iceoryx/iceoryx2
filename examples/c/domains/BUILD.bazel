@@ -19,7 +19,7 @@ cc_binary(
         "src/transmission_data.h",
     ],
     deps = [
-        "//:iceoryx2-c",
+        "//:iceoryx2-c-static",
     ],
 )
 
@@ -30,7 +30,7 @@ cc_binary(
         "src/transmission_data.h",
     ],
     deps = [
-        "//:iceoryx2-c",
+        "//:iceoryx2-c-static",
     ],
 )
 
@@ -40,6 +40,6 @@ cc_binary(
         "src/discovery.c",
     ],
     deps = [
-        "//:iceoryx2-c",
+        "//:iceoryx2-c-static",
     ],
 )

@@ -131,7 +131,6 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::receive() const
     -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> {
     Sample<S, Payload, UserHeader> sample;
-    iox2_sample_h sample_handle {};
     auto result = iox2_subscriber_receive(&m_handle, &sample.m_sample, &sample.m_handle);
 
     if (result == IOX2_OK) {

@@ -1,0 +1,82 @@
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
+rust_library(
+    name = "iceoryx2-cli",
+    srcs = glob(["lib/src/**/*.rs"]),
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
+        "@crate_index//:anyhow",
+        "@crate_index//:clap",
+        "@crate_index//:colored",
+        "@crate_index//:serde",
+        "@crate_index//:serde_yaml",
+        "@crate_index//:serde_json",
+        "@crate_index//:ron",
+    ],
+)
+
+rust_binary(
+    name = "iox2",
+    srcs = glob(["iox2/src/**/*.rs"]),
+    deps = [
+        ":iceoryx2-cli",
+        "//iceoryx2:iceoryx2",
+        "@crate_index//:anyhow",
+        "@crate_index//:better-panic",
+        "@crate_index//:cargo_metadata",
+        "@crate_index//:clap",
+        "@crate_index//:colored",
+        "@crate_index//:human-panic",
+    ],
+)
+
+rust_binary(
+    name = "iox2-node",
+    srcs = glob(["iox2-node/src/**/*.rs"]),
+    deps = [
+        ":iceoryx2-cli",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "@crate_index//:anyhow",
+        "@crate_index//:better-panic",
+        "@crate_index//:clap",
+        "@crate_index//:human-panic",
+    ],
+)
+
+rust_binary(
+    name = "iox2-service",
+    srcs = glob(["iox2-service/src/**/*.rs"]),
+    deps = [
+        ":iceoryx2-cli",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "@crate_index//:anyhow",
+        "@crate_index//:better-panic",
+        "@crate_index//:clap",
+        "@crate_index//:human-panic",
+    ],
+)
+
+# TODO: [349] add tests

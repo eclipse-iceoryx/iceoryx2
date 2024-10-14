@@ -171,9 +171,7 @@ int main(int argc, char** argv) {
         printf("Failure in WaitSet::wait_and_process loop \n");
     }
 
-    iox2_event_id_t event_id;
-
-drop_guard_2:
+    //[unused-label] drop_guard_2:
     iox2_waitset_guard_drop(guard_2);
 
 drop_guard_1:
@@ -185,7 +183,7 @@ drop_waitset:
 drop_waitset_builder:
     iox2_waitset_builder_drop(waitset_builder);
 
-drop_listener_2:
+    //[unused-label] drop_listener_2:
     iox2_listener_drop(listener_2);
 
 drop_listener_1:

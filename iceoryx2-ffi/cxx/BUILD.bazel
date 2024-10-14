@@ -10,10 +10,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+package(default_visibility = ["//visibility:public"])
+
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
 cc_library(
-    name = "iceoryx2-cxx",
+    name = "iceoryx2-cxx-shared",
     srcs = glob(
         [
             "src/**",
@@ -21,9 +28,25 @@ cc_library(
     ),
     hdrs = glob(["include/**"]),
     strip_include_prefix = "include",
-    visibility = ["//visibility:public"],
     deps = [
-        "//:iceoryx2-c",
+        "//:iceoryx2-c-shared",
         "@iceoryx//:iceoryx_hoofs",
     ],
+    linkstatic = False,
+)
+
+cc_library(
+    name = "iceoryx2-cxx-static",
+    srcs = glob(
+        [
+            "src/**",
+        ],
+    ),
+    hdrs = glob(["include/**"]),
+    strip_include_prefix = "include",
+    deps = [
+        "//:iceoryx2-c-static",
+        "@iceoryx//:iceoryx_hoofs",
+    ],
+    linkstatic = True,
 )
