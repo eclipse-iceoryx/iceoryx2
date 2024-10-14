@@ -6,10 +6,7 @@
 
 ### Features
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+Create a new CLI for iceoryx2 `iox2-config`
 
 * Lookup config file in default locations
     [#442](https://github.com/eclipse-iceoryx/iceoryx2/issues/442)
@@ -55,18 +52,20 @@
     [#605](https://github.com/eclipse-iceoryx/iceoryx2/issues/605)
 * LogLevel is considered for custom loggers.
     [#608](https://github.com/eclipse-iceoryx/iceoryx2/issues/608)
+`iox2-config` can `show` the configuration currently in use and `generate` a new
+configuration file at the default location iceoryx2 is looking for.
+
+* Add CLI to display complete system configuration [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 ### Refactoring
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+Remove the `print_system_configuration()` function in
+`iceoryx2-bb/posix/src/system_configuration.rs` file and move it into the CLI `iox2-config`
+[#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 * Remove obsolete POSIX wrapper
     [#594](https://github.com/eclipse-iceoryx/iceoryx2/issues/594)
-
-### Workflow
+### New CLI features
 
 <!--
     NOTE: Add new entries sorted by issue number to minimize the possibility of
