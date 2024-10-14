@@ -1,4 +1,3 @@
-
 // Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
@@ -46,14 +45,12 @@ fn main() {
             if let Some(action) = cli.action {
                 match action {
                     Action::Show => {
-                        if let Err(e) = commands::show()
-                        {
+                        if let Err(e) = commands::show() {
                             eprintln!("Failed to show options: {}", e);
                         }
                     }
                     Action::Generate => {
-                        if let Err(e) = commands::generate()
-                        {
+                        if let Err(e) = commands::generate() {
                             eprintln!("Failed to generate default configuration: {}", e);
                         }
                     }

@@ -11,9 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use anyhow::Result;
-use iceoryx2_bb_posix::system_configuration::*;
 use enum_iterator::all;
 use iceoryx2::config::Config;
+use iceoryx2_bb_posix::system_configuration::*;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -118,7 +118,10 @@ pub fn generate() -> Result<()> {
     let mut file = File::create(&default_file_path)?;
     file.write_all(toml_string.as_bytes())?;
 
-    println!("Default configuration is generated at {}", default_file_path.display());
+    println!(
+        "Default configuration is generated at {}",
+        default_file_path.display()
+    );
 
     Ok(())
 }
