@@ -16,16 +16,18 @@
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
-static iox::optional<LoggerInterface*> LOGGER = iox::nullopt;
+
+//NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables): the static keyword prevents it from being accessible in any other compilation unit, therefore it is not a global variable - false positive
+static iox::optional<LoggerInterface*> global_logger = iox::nullopt;
 
 void internal_log_callback(iox2_log_level_e log_level, const char* origin, const char* message) {
-    (*LOGGER)->log(iox::into<LogLevel>(static_cast<int>(log_level)), origin, message);
+    (*global_logger)->log(iox::into<LogLevel>(static_cast<int>(log_level)), origin, message);
 }
 
 auto set_logger(LoggerInterface& logger) -> bool {
     auto success = iox2_set_logger(internal_log_callback);
     if (success) {
-        LOGGER.emplace(&logger);
+        global_logger.emplace(&logger);
     }
     return success;
 }
