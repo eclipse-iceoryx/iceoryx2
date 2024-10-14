@@ -35,6 +35,7 @@ namespace iox2 {
 /// @endcode
 class LoggerInterface {
   public:
+    LoggerInterface() = default;
     LoggerInterface(const LoggerInterface&) = default;
     LoggerInterface(LoggerInterface&&) = default;
     auto operator=(const LoggerInterface&) -> LoggerInterface& = default;
