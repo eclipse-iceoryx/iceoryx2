@@ -11,9 +11,28 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/log.hpp"
+#include "iox/into.hpp"
+#include "iox/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
+static iox::optional<LoggerInterface*> LOGGER = iox::nullopt;
+
+void internal_log_callback(iox2_log_level_e log_level, const char* origin, const char* message) {
+    (*LOGGER)->log(iox::into<LogLevel>(static_cast<int>(log_level)), origin, message);
+}
+
+auto set_logger(LoggerInterface& logger) -> bool {
+    auto success = iox2_set_logger(internal_log_callback);
+    if (success) {
+        LOGGER.emplace(&logger);
+    }
+    return success;
+}
+
+void log(LogLevel log_level, const char* origin, const char* message) {
+    iox2_log(iox::into<iox2_log_level_e>(log_level), origin, message);
+}
 
 auto set_log_level(LogLevel level) -> void {
     iox2_set_log_level(iox::into<iox2_log_level_e>(level));

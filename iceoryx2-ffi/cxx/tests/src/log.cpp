@@ -19,20 +19,23 @@ namespace {
 using namespace iox2;
 
 TEST(LogLevel, can_set_and_get_log_level) {
-    set_log_level(LogLevel::INFO);
-    EXPECT_EQ(get_log_level(), LogLevel::INFO);
+    set_log_level(LogLevel::Trace);
+    EXPECT_EQ(get_log_level(), LogLevel::Trace);
 
-    set_log_level(LogLevel::DEBUG);
-    EXPECT_EQ(get_log_level(), LogLevel::DEBUG);
+    set_log_level(LogLevel::Debug);
+    EXPECT_EQ(get_log_level(), LogLevel::Debug);
 
-    set_log_level(LogLevel::WARN);
-    EXPECT_EQ(get_log_level(), LogLevel::WARN);
+    set_log_level(LogLevel::Info);
+    EXPECT_EQ(get_log_level(), LogLevel::Info);
 
-    set_log_level(LogLevel::ERROR);
-    EXPECT_EQ(get_log_level(), LogLevel::ERROR);
+    set_log_level(LogLevel::Warn);
+    EXPECT_EQ(get_log_level(), LogLevel::Warn);
 
-    set_log_level(LogLevel::FATAL);
-    EXPECT_EQ(get_log_level(), LogLevel::FATAL);
+    set_log_level(LogLevel::Error);
+    EXPECT_EQ(get_log_level(), LogLevel::Error);
+
+    set_log_level(LogLevel::Fatal);
+    EXPECT_EQ(get_log_level(), LogLevel::Fatal);
 }
 
 } // namespace
