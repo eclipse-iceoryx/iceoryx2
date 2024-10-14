@@ -57,9 +57,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some((service_name, listener)) = listener_attachments.get(&attachment_id) {
             print!("Received trigger from \"{}\" ::", service_name);
 
-            while let Ok(Some(event_id)) = listener.try_wait_one() {
-                print!(" {:?}", event_id);
-            }
+            // IMPORTANT:
+            // We need to collect all notifications since the WaitSet will wake us up as long as
+            // there is something to read. If we skip this step completely we will end up in a
+            // busy loop.
+            listener
+                .try_wait_all(|event_id| {
+                    print!(" {:?}", event_id);
+                })
+                .unwrap();
 
             println!("");
         }

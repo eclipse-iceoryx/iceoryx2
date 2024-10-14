@@ -36,6 +36,10 @@ void on_event(iox2_waitset_attachment_id_h attachment_id, void* context) {
     if (iox2_waitset_attachment_id_has_event_from(&attachment_id, ctx->guard_1)) {
         printf("Received trigger from \"%s\" ::", ctx->service_name_1);
         do {
+            // IMPORTANT:
+            // We need to collect all notifications since the WaitSet will wake us up as long as
+            // there is something to read. If we skip this step completely we will end up in a
+            // busy loop.
             if (iox2_listener_try_wait_one(ctx->listener_1, &event_id, &has_received_event) != IOX2_OK) {
                 printf("failed to receive event on listener: %s\n", ctx->service_name_1);
             }
