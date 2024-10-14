@@ -6,57 +6,23 @@
 
 ### Features
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+Create a new CLI for iceoryx2 `iox2-config`
 
-* Add `PeriodicTimer` into POSIX building blocks [#425](https://github.com/eclipse-iceoryx/iceoryx2/issues/425)
+`iox2-config` can `show` the configuration currently in use and `generate` a new
+configuration file at the default location iceoryx2 is looking for.
 
-### Bugfixes
-
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
-
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add CLI to display complete system configuration [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 ### Refactoring
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+Remove the `print_system_configuration()` function in
+`iceoryx2-bb/posix/src/system_configuration.rs` file and move it into the CLI `iox2-config`
+[#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+### New CLI features
 
-### Workflow
+```bash
+   cargo run --bin iox2-config show
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
-
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
-
-### New API features
-
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
-
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
-
-### API Breaking Changes
-
-1. Example
-
-   ```rust
-   // old
-   let fuu = hello().is_it_me_you_re_looking_for()
-
-   // new
-   let fuu = hypnotoad().all_glory_to_the_hypnotoad()
-   ```
+   cargo run --bin iox2-config generate
+```
