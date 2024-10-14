@@ -124,6 +124,13 @@ or
 CARGO_BAZEL_REPIN=1 bazel build //...
 ```
 
+Alternatively, this can also be achieved by adding the following
+line to the `.bazelrc` file:
+
+```
+build --action_env=CARGO_BAZEL_REPIN=true
+```
+
 For more details, refer to the
 [Crate Universe Repinning Guide](https://bazelbuild.github.io/rules_rust/crate_universe.html#repinning--updating-dependencies-1).
 

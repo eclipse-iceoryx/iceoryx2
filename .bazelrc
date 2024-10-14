@@ -4,3 +4,5 @@ build:windows --cxxopt="/std:c++17"
 
 # this has to be specified manually
 build:mingw --cxxopt="-std=c++17"
+
+build --action_env=CARGO_BAZEL_REPIN=true
