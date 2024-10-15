@@ -14,9 +14,8 @@ use anyhow::Result;
 use enum_iterator::all;
 use iceoryx2::config::Config;
 use iceoryx2_bb_posix::system_configuration::*;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Write;
-use std::path::Path;
 
 /// Prints the whole system configuration with all limits, features and details to the console.
 pub fn print_system_configuration() {
@@ -109,11 +108,12 @@ pub fn show() -> Result<()> {
 }
 
 pub fn generate() -> Result<()> {
-    let default_file_path = Path::new("config/iceoryx2.toml");
+    let config_dir = dirs::config_dir().unwrap().join("iceoryx2/");
+    fs::create_dir_all(&config_dir)?;
 
-    let default_config = Config::default();
+    let default_file_path = config_dir.join("config.toml");
 
-    let toml_string = toml::to_string_pretty(&default_config)?;
+    let toml_string = toml::to_string_pretty(&Config::default())?;
 
     let mut file = File::create(&default_file_path)?;
     file.write_all(toml_string.as_bytes())?;
