@@ -41,7 +41,7 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
-use crate::LogLevel;
+use crate::{get_log_level, LogLevel};
 
 struct Entry {
     timestamp: Duration,
@@ -154,6 +154,10 @@ impl crate::Logger for Logger {
         origin: std::fmt::Arguments,
         formatted_message: std::fmt::Arguments,
     ) {
+        if get_log_level() > log_level as u8 {
+            return;
+        }
+
         let mut state = self.state.lock().expect("Acquire internal state mutex.");
         state.buffer.push_back(Entry {
             log_level,
