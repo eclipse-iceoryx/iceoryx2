@@ -56,10 +56,8 @@ Create a new CLI for iceoryx2 `iox2-config`
     [#605](https://github.com/eclipse-iceoryx/iceoryx2/issues/605)
 * LogLevel is considered for custom loggers.
     [#608](https://github.com/eclipse-iceoryx/iceoryx2/issues/608)
-`iox2-config` can `show` the configuration currently in use and `generate` a new
-configuration file at the default location iceoryx2 is looking for.
-
-* Add CLI to display complete system configuration [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
+* Add CLI to display complete system configuration
+    [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 ### Refactoring
 
