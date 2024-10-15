@@ -34,7 +34,7 @@ rust_binary(
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
-        "@//examples/rust:examples-common",
+        "//examples/rust:examples-common",
         "@crate_index//:clap",
     ],
 )
@@ -48,7 +48,7 @@ rust_binary(
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
-        "@//examples/rust:examples-common",
+        "//examples/rust:examples-common",
         "@crate_index//:clap",
     ],
 )
