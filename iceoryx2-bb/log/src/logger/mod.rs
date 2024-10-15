@@ -15,6 +15,7 @@
 
 pub mod buffer;
 pub mod console;
+pub mod file;
 #[cfg(feature = "logger_log")]
 pub mod log;
 #[cfg(feature = "logger_tracing")]
