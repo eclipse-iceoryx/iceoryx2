@@ -10,6 +10,8 @@ Welcome to iceoryx2's C / C++ documentation!
 
    getting_started
 
+   developer_guide
+
    iceoryx_hoofs_api
 
    iceoryx2_c_api
