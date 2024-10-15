@@ -9,11 +9,11 @@ in your `WORKSPACE` file:
 
 ```bazel
 # Load iceoryx2 rules
-ICEORYX2_VERSION = "3d80636cd3d123239bb96e3ec889bbe7eb514338"
+ICEORYX2_VERSION = "0248ea57d0c405383ab099e14293ed8be2d23dac"
 
 http_archive(
     name = "iceoryx2",
-    sha256 = "0277b0687953243b546e24994f2137607da5459fdfc358cdb7b70f3168e76fef",
+    sha256 = "8844b229d2ba23597dfe17df7a3baabd086a62944534aa804d482a6e46bdf5b8",
     strip_prefix = "iceoryx2-{}".format(ICEORYX2_VERSION),
     urls = [
         "https://github.com/eclipse-iceoryx/iceoryx2/archive/{}.tar.gz".format(ICEORYX2_VERSION),
