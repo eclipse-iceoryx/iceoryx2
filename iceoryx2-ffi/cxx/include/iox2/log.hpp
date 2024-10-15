@@ -22,7 +22,7 @@ namespace iox2 {
 /// # Example
 ///
 /// @code
-/// class ConsoleLogger : public LoggerInterface {
+/// class ConsoleLogger : public Log {
 ///   public:
 ///     void log(LogLevel log_level, const char* origin, const char* message) override {
 ///         std::cout << "origin = " << origin << ", message = " << message << std::endl;
@@ -33,14 +33,14 @@ namespace iox2 {
 ///
 /// set_logger(CUSTOM_LOGGER);
 /// @endcode
-class LoggerInterface {
+class Log {
   public:
-    LoggerInterface() = default;
-    LoggerInterface(const LoggerInterface&) = default;
-    LoggerInterface(LoggerInterface&&) = default;
-    auto operator=(const LoggerInterface&) -> LoggerInterface& = default;
-    auto operator=(LoggerInterface&&) -> LoggerInterface& = default;
-    virtual ~LoggerInterface() = default;
+    Log() = default;
+    Log(const Log&) = default;
+    Log(Log&&) = default;
+    auto operator=(const Log&) -> Log& = default;
+    auto operator=(Log&&) -> Log& = default;
+    virtual ~Log() = default;
 
     /// The actual log method. The system provides the log level, the origin of the message and
     /// the actual message.
@@ -53,7 +53,7 @@ void log(LogLevel log_level, const char* origin, const char* message);
 /// Sets the logger that shall be used. This function can only be called once and must be called
 /// before any log message was created.
 /// It returns true if the logger was set, otherwise false.
-auto set_logger(LoggerInterface& logger) -> bool;
+auto set_logger(Log& logger) -> bool;
 
 /// Sets the global log level for the application
 auto set_log_level(LogLevel level) -> void;

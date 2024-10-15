@@ -16,7 +16,7 @@
 // BEGIN type definition
 
 use iceoryx2_bb_log::{
-    get_log_level, logger::Logger, set_log_level, set_logger, LogLevel, __internal_print_log_msg,
+    get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
 };
 use std::{
     ffi::{c_char, CStr},
@@ -87,7 +87,7 @@ impl CLogger {
     }
 }
 
-impl Logger for CLogger {
+impl Log for CLogger {
     fn log(
         &self,
         log_level: LogLevel,

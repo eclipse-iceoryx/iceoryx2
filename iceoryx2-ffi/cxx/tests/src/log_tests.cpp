@@ -38,7 +38,7 @@ class Entry {
     }
 };
 
-class TestLogger : public LoggerInterface {
+class TestLogger : public Log {
   public:
     static auto set_global_logger() {
         auto& instance = get_instance();

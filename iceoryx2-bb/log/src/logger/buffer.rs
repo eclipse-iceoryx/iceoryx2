@@ -84,7 +84,7 @@ impl Logger {
     }
 }
 
-impl crate::logger::Logger for Logger {
+impl crate::Log for Logger {
     fn log(
         &self,
         log_level: LogLevel,
