@@ -24,5 +24,5 @@ Remove the `print_system_configuration()` function in
 ```bash
    cargo run --bin iox2-config show
 
-   cargo run --bin iox2-config generate
+   iox2 config generate
 ```
