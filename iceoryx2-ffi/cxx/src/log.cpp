@@ -45,4 +45,11 @@ auto get_log_level() -> LogLevel {
     return LogLevel(iox2_get_log_level());
 }
 
+auto use_console_logger() -> bool {
+    return iox2_use_console_logger();
+}
+
+auto use_file_logger(const char* log_file) -> bool {
+    return iox2_use_file_logger(log_file);
+}
 } // namespace iox2

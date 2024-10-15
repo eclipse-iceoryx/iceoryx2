@@ -17,6 +17,7 @@
 
 use iceoryx2_bb_log::{
     get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
+    logger::{use_console_logger, use_file_logger},
 };
 use std::{
     ffi::{c_char, CStr},
@@ -131,6 +132,8 @@ pub unsafe extern "C" fn iox2_log(
     origin: *const c_char,
     message: *const c_char,
 ) {
+    debug_assert!(!message.is_null());
+
     let empty_origin = b"\0";
     let origin = if origin.is_null() {
         CStr::from_bytes_with_nul(empty_origin).unwrap()
@@ -144,6 +147,25 @@ pub unsafe extern "C" fn iox2_log(
         format_args!("{}", origin.to_string_lossy()),
         format_args!("{}", message.to_string_lossy()),
     );
+}
+
+/// Sets the console logger as default logger. Returns true if the logger was set, otherwise false.
+#[no_mangle]
+pub extern "C" fn iox2_use_console_logger() -> bool {
+    use_console_logger()
+}
+
+/// Sets the file logger as default logger. Returns true if the logger was set, otherwise false.
+///
+/// # Safety
+///
+///  * log_file must be a valid pointer to a string
+#[no_mangle]
+pub unsafe extern "C" fn iox2_use_file_logger(log_file: *const c_char) -> bool {
+    debug_assert!(!log_file.is_null());
+
+    let log_file = CStr::from_ptr(log_file).to_string_lossy();
+    use_file_logger(&log_file)
 }
 
 /// Sets the log level.

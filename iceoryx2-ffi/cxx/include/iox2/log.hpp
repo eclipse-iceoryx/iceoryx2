@@ -50,6 +50,12 @@ class Log {
 /// Adds a log message to the logger.
 void log(LogLevel log_level, const char* origin, const char* message);
 
+/// Sets the console logger as default logger. Returns true if the logger was set, otherwise false.
+auto use_console_logger() -> bool;
+
+/// Sets the file logger as default logger. Returns true if the logger was set, otherwise false.
+auto use_file_logger(const char* log_file) -> bool;
+
 /// Sets the logger that shall be used. This function can only be called once and must be called
 /// before any log message was created.
 /// It returns true if the logger was set, otherwise false.
