@@ -42,10 +42,6 @@ class Entry {
 
 class TestLogger : public Log {
   public:
-    TestLogger()
-        : Log() {
-    }
-
     static auto set_global_logger() {
         auto& instance = get_instance();
         set_logger(instance);
