@@ -8,16 +8,37 @@ To use iceoryx2 as an external dependency, ensure the following setup is present
 in your `WORKSPACE` file:
 
 ```bazel
-ICEORYX2_VERSION = "branch-tag-or-commit-hash"
+# Load iceoryx2 rules
+ICEORYX2_VERSION = "3d80636cd3d123239bb96e3ec889bbe7eb514338"
 
 http_archive(
     name = "iceoryx2",
-    sha256 = "add-the-correct-sha256-sum",
+    sha256 = "0277b0687953243b546e24994f2137607da5459fdfc358cdb7b70f3168e76fef",
     strip_prefix = "iceoryx2-{}".format(ICEORYX2_VERSION),
     urls = [
         "https://github.com/eclipse-iceoryx/iceoryx2/archive/{}.tar.gz".format(ICEORYX2_VERSION),
     ],
 )
+
+
+# Load iceoryx rules
+ICEORYX_VERSION = "2.95.3"
+
+maybe(
+    name = "iceoryx",
+    repo_rule = http_archive,
+    sha256 = "14b854906b58a48140a5d074167d5f3a5af2d578574940501a330954af79b9d4",
+    strip_prefix = "iceoryx-{}".format(ICEORYX_VERSION),
+    url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
+)
+
+load("@iceoryx//bazel:load_repositories.bzl", "load_repositories")
+
+load_repositories()
+
+load("@iceoryx//bazel:setup_repositories.bzl", "setup_repositories")
+
+setup_repositories()
 
 
 # Load Rust rules
@@ -107,6 +128,25 @@ maybe(
 load("@crate_index//:defs.bzl", "crate_repositories")
 
 crate_repositories()
+
+
+# Load skylib rules
+BAZEL_SKYLIB_VERSION = "1.7.1"
+
+# Load skylib for custom build config
+maybe(
+    name = "bazel_skylib",
+    repo_rule = http_archive,
+    sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = BAZEL_SKYLIB_VERSION),
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = BAZEL_SKYLIB_VERSION),
+    ],
+)
+
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
 ```
 
 ### Syncing Dependencies
