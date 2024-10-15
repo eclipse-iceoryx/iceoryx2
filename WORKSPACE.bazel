@@ -114,6 +114,23 @@ load("@crate_index//:defs.bzl", "crate_repositories")
 
 crate_repositories()
 
+BAZEL_SKYLIB_VERSION = "1.7.1"
+
+# Load skylib for custom build config
+maybe(
+    name = "bazel_skylib",
+    repo_rule = http_archive,
+    sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = BAZEL_SKYLIB_VERSION),
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = BAZEL_SKYLIB_VERSION),
+    ],
+)
+
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
+
 
 # Load iceoryx rules
 ICEORYX_VERSION = "2.95.2"

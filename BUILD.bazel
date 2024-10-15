@@ -38,6 +38,12 @@ config_setting(
 )
 
 alias(
+    name = "feature_dev_permissions",
+    actual = "//iceoryx2-cal:feature_dev_permissions",
+    visibility = ["//visibility:public"],
+)
+
+alias(
     name = "iceoryx2",
     actual = "//iceoryx2:iceoryx2",
     visibility = ["//visibility:public"],

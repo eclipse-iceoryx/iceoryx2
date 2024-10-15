@@ -12,6 +12,8 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 filegroup(
@@ -19,9 +21,44 @@ filegroup(
     srcs = glob(["**"]),
 )
 
+string_flag(
+    name = "feature_dev_permissions",
+    build_setting_default = "auto",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "dev_permissions_auto",
+    flag_values = {
+        ":feature_dev_permissions": "auto",
+    },
+)
+
+config_setting(
+    name = "dev_permissions_enabled",
+    flag_values = {
+        ":feature_dev_permissions": "on",
+    },
+)
+
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_dev_permissions",
+    match_any = [
+        ":dev_permissions_enabled",
+    ],
+)
+
 rust_library(
     name = "iceoryx2-cal",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "cfg_feature_dev_permissions": [
+            "dev_permissions"
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",

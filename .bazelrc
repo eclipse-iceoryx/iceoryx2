@@ -4,3 +4,13 @@ build:windows --cxxopt="/std:c++17"
 
 # this has to be specified manually
 build:mingw --cxxopt="-std=c++17"
+
+build --action_env=CARGO_BAZEL_REPIN=true
+
+#
+# feature flags
+#
+
+# value [auto, on, off]
+# 'auto' is defined by the crate owner ('off' for this feature) and the default value if the flag is not set
+#build --//:feature_dev_permissions=on

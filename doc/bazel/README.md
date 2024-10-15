@@ -124,6 +124,13 @@ or
 CARGO_BAZEL_REPIN=1 bazel build //...
 ```
 
+To make syncing dependencies automatic for every build, add the
+following line to your `.bazelrc` file:
+
+```bazel
+build --action_env=CARGO_BAZEL_REPIN=true
+```
+
 For more details, refer to the
 [Crate Universe Repinning Guide](https://bazelbuild.github.io/rules_rust/crate_universe.html#repinning--updating-dependencies-1).
 
@@ -151,6 +158,49 @@ cc_binary(
   `@iceoryx2//:iceoryx2-c-shared`
 * **For C++**: Use `@iceoryx2//:iceoryx2-cxx-static` or
   `@iceoryx2//:iceoryx2-cxx-shared`
+
+### Feature Flags
+
+iceoryx2 provides several feature flags that can be configured using bazel
+build options. These flags allow you to enable or disable specific features
+when building the project.
+
+#### Enabling a Feature Flag via Command Line
+
+To set a feature flag directly from the command line during the build, use the
+following format:
+
+```bash
+bazel build --@iceoryx2//:<feature_flag> //...
+```
+
+For example, to enable a feature flag called `foo`, you would run:
+
+```bash
+bazel build --@iceoryx2//:foo //...
+```
+
+#### Setting Feature Flags in .bazelrc
+
+You can also persist feature flag configurations by specifying them in the
+`.bazelrc` file. This method is useful for keeping your build settings
+consistent across different environments.
+
+```bazel
+build --@iceoryx2//:<feature_flag>=on
+```
+
+For instance, to enable the `foo` feature by default in `.bazelrc`, you would add:
+
+```bazel
+build --@iceoryx2//:foo=on
+```
+
+#### List of Available Features
+
+| Feature Flag            | Valid Values                 | Crate Default      |
+| ----------------------- | ---------------------------- | ------------------ |
+| dev_permissions         | auto, on, off                | auto == off        |
 
 ## Instructions for iceoryx2 Developers
 
