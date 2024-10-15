@@ -10,11 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <mutex>
-#include <string>
-#include <vector>
-
-
+#include "iox/string.hpp"
+#include "iox/vector.hpp"
 #include "iox2/log.hpp"
 #include "iox2/log_level.hpp"
 
@@ -22,57 +19,53 @@
 
 namespace {
 using namespace iox2;
+constexpr uint64_t TEST_LOGGER_CAPACITY = 10;
+constexpr uint64_t STRING_CAPACITY = 64;
 class Entry {
   private:
     LogLevel m_log_level;
-    std::string m_origin;
-    std::string m_message;
+    iox::string<STRING_CAPACITY> m_origin;
+    iox::string<STRING_CAPACITY> m_message;
 
   public:
     Entry(LogLevel log_level, const char* origin, const char* message)
         : m_log_level { log_level }
-        , m_origin { origin }
-        , m_message { message } {
+        , m_origin { iox::TruncateToCapacity, origin }
+        , m_message { iox::TruncateToCapacity, message } {
     }
 
     auto is_equal(LogLevel log_level, const char* origin, const char* message) -> bool {
-        return m_log_level == log_level && m_origin == origin && m_message == message;
+        return m_log_level == log_level && m_origin == iox::string<STRING_CAPACITY>(iox::TruncateToCapacity, origin)
+               && m_message == iox::string<STRING_CAPACITY>(iox::TruncateToCapacity, message);
     }
 };
 
+
 class TestLogger : public Log {
   public:
-    static auto set_global_logger() {
-        auto& instance = get_instance();
-        set_logger(instance);
-    }
-
     static auto get_instance() -> TestLogger& {
         static TestLogger INSTANCE;
         return INSTANCE;
     }
 
     void log(LogLevel log_level, const char* origin, const char* message) override {
-        m_lock.lock();
-        m_log_buffer.emplace_back(log_level, origin, message);
-        m_lock.unlock();
+        if (m_log_buffer.size() < TEST_LOGGER_CAPACITY) {
+            m_log_buffer.emplace_back(log_level, origin, message);
+        }
     }
 
-    auto get_log_buffer() -> std::vector<Entry> {
-        m_lock.lock();
+    auto get_log_buffer() -> iox::vector<Entry, TEST_LOGGER_CAPACITY> {
         auto buffer = m_log_buffer;
         m_log_buffer.clear();
-        m_lock.unlock();
         return buffer;
     }
 
   private:
-    std::mutex m_lock;
-    std::vector<Entry> m_log_buffer;
+    iox::vector<Entry, TEST_LOGGER_CAPACITY> m_log_buffer;
 };
 
 TEST(Log, custom_logger_works) {
-    TestLogger::set_global_logger();
+    ASSERT_TRUE(set_logger(TestLogger::get_instance()));
 
     log(LogLevel::Trace, "hello", "world");
     log(LogLevel::Debug, "goodbye", "hypnotoad");
