@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include <mutex>
 #include <string>
 #include <vector>
+
 
 #include "iox2/log.hpp"
 #include "iox2/log_level.hpp"
@@ -40,10 +42,13 @@ class Entry {
 
 class TestLogger : public Log {
   public:
+    TestLogger()
+        : Log() {
+    }
+
     static auto set_global_logger() {
         auto& instance = get_instance();
         set_logger(instance);
-        instance.m_log_buffer.clear();
     }
 
     static auto get_instance() -> TestLogger& {
@@ -52,16 +57,21 @@ class TestLogger : public Log {
     }
 
     void log(LogLevel log_level, const char* origin, const char* message) override {
+        m_lock.lock();
         m_log_buffer.emplace_back(log_level, origin, message);
+        m_lock.unlock();
     }
 
     auto get_log_buffer() -> std::vector<Entry> {
+        m_lock.lock();
         auto buffer = m_log_buffer;
         m_log_buffer.clear();
+        m_lock.unlock();
         return buffer;
     }
 
   private:
+    std::mutex m_lock;
     std::vector<Entry> m_log_buffer;
 };
 
