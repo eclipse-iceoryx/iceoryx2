@@ -151,6 +151,8 @@ use std::{
 };
 
 use logger::Logger;
+use once_cell::sync::Lazy;
+use std::env;
 
 #[cfg(feature = "logger_tracing")]
 static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
@@ -159,9 +161,14 @@ static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
 static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 
 #[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
-static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
+pub static DEFAULT_LOGGER: Lazy<logger::console::Logger> =
+    Lazy::new(logger::console::Logger::new);
 
 const DEFAULT_LOG_LEVEL: u8 = LogLevel::Info as u8;
+pub static ENV_LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
+    let log_level_str = env::var("IOX2_LOG_LEVEL").unwrap_or_else(|_| "Info".to_string());
+    LogLevel::from_str(&log_level_str) // Default to Info
+});
 
 static mut LOGGER: Option<&'static dyn logger::Logger> = None;
 static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL);
@@ -179,6 +186,20 @@ pub enum LogLevel {
     Fatal = 5,
 }
 
+impl LogLevel {
+    fn from_str(s: &str) -> LogLevel {
+        match s {
+            "Trace" => LogLevel::Trace,
+            "Debug" => LogLevel::Debug,
+            "Info" => LogLevel::Info,
+            "Warn" => LogLevel::Warn,
+            "Error" => LogLevel::Error,
+            "Fatal" => LogLevel::Fatal,
+            _ => LogLevel::Info,
+        }
+    }
+}
+
 /// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
 /// Here you have to use the log-level settings of that framework.
 pub fn set_log_level(v: LogLevel) {
@@ -187,6 +208,7 @@ pub fn set_log_level(v: LogLevel) {
 
 /// Returns the current log level
 pub fn get_log_level() -> u8 {
+    LOG_LEVEL.store(*ENV_LOG_LEVEL as u8, Ordering::Relaxed);
     LOG_LEVEL.load(Ordering::Relaxed)
 }
 
@@ -205,7 +227,7 @@ pub fn set_logger<T: logger::Logger + 'static>(value: &'static T) -> bool {
 /// Returns a reference to the [`Logger`].
 pub fn get_logger() -> &'static dyn Logger {
     INIT.call_once(|| {
-        unsafe { LOGGER = Some(&DEFAULT_LOGGER) };
+        unsafe { LOGGER = Some(&*DEFAULT_LOGGER) };
     });
 
     unsafe { *LOGGER.as_ref().unwrap() }
