@@ -215,18 +215,18 @@ impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
 
         let init_state = shm.base_address().as_ptr() as *const Data<T>;
 
-        // The mem-sync is actually not required since an uninitialized dynamic storage has
-        // only write permissions and can be therefore not consumed.
-        // This is only for the case that this strategy fails on an obscure POSIX platform.
-        //
-        //////////////////////////////////////////
-        // SYNC POINT: read Data<T>::data
-        //////////////////////////////////////////
-        let package_version = unsafe { &(*init_state) }
-            .version
-            .load(std::sync::atomic::Ordering::SeqCst);
-
         loop {
+            // The mem-sync is actually not required since an uninitialized dynamic storage has
+            // only write permissions and can be therefore not consumed.
+            // This is only for the case that this strategy fails on an obscure POSIX platform.
+            //
+            //////////////////////////////////////////
+            // SYNC POINT: read Data<T>::data
+            //////////////////////////////////////////
+            let package_version = unsafe { &(*init_state) }
+                .version
+                .load(std::sync::atomic::Ordering::SeqCst);
+
             let package_version = PackageVersion::from_u64(package_version);
             if package_version.to_u64() == 0 {
                 if elapsed_time >= self.timeout {
