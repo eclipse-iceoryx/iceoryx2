@@ -19,7 +19,7 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "@//examples/rust:examples-common",
+        "//examples/rust:examples-common",
     ],
 )
 
@@ -30,6 +30,6 @@ rust_binary(
     ],
     deps = [
         "//iceoryx2:iceoryx2",
-        "@//examples/rust:examples-common",
+        "//examples/rust:examples-common",
     ],
 )

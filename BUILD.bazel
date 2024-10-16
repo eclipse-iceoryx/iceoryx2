@@ -12,6 +12,8 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+
 exports_files([
     "LICENSE-APACHE",
     "LICENSE-MIT",
@@ -37,9 +39,9 @@ config_setting(
     flag_values = {"@bazel_tools//tools/cpp:compiler": "msvc-cl"},
 )
 
-alias(
+string_flag(
     name = "feature_dev_permissions",
-    actual = "//iceoryx2-cal:feature_dev_permissions",
+    build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
 

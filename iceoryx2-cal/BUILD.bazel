@@ -13,7 +13,6 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
-load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 filegroup(
@@ -21,23 +20,17 @@ filegroup(
     srcs = glob(["**"]),
 )
 
-string_flag(
-    name = "feature_dev_permissions",
-    build_setting_default = "auto",
-    visibility = ["//visibility:public"],
-)
-
 config_setting(
     name = "dev_permissions_auto",
     flag_values = {
-        ":feature_dev_permissions": "auto",
+        "//:feature_dev_permissions": "auto",
     },
 )
 
 config_setting(
     name = "dev_permissions_enabled",
     flag_values = {
-        ":feature_dev_permissions": "on",
+        "//:feature_dev_permissions": "on",
     },
 )
 
