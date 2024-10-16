@@ -257,6 +257,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
+        # NOTE: enable for MinGW
         # toolchain: [stable, stable-gnu, 1.75.0]
         toolchain: [stable, 1.75.0]
         mode:
@@ -269,16 +270,18 @@ jobs:
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
         include:
-          - toolchain: stable-gnu
-            cmake-build-system-generator: '-G "MinGW Makefiles"'
+          # NOTE: enable for MinGW
+          # - toolchain: stable-gnu
+          #  cmake-build-system-generator: '-G "MinGW Makefiles"'
           - os: windows-latest
             toolchain: stable
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
-        exclude:
-          - os: ubuntu-latest
-            toolchain: stable-gnu
-          - os: macos-latest
-            toolchain: stable-gnu
+        # NOTE: enable for MinGW
+        # exclude:
+        #  - os: ubuntu-latest
+        #    toolchain: stable-gnu
+        #  - os: macos-latest
+        #    toolchain: stable-gnu
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
