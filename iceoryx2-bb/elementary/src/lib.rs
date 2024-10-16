@@ -18,6 +18,8 @@ pub mod enum_gen;
 /// A strong type that represents the alignment part of [`std::alloc::Layout`]
 pub mod alignment;
 pub mod allocator;
+
+#[cfg(feature = "testing")]
 pub mod bump_allocator;
 pub mod lazy_singleton;
 pub mod math;
