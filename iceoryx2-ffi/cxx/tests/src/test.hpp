@@ -34,8 +34,8 @@ using ServiceTypes = ::testing::Types<ServiceTypeIpc, ServiceTypeLocal>;
 
 inline auto generate_service_name() -> ServiceName {
     static std::atomic<uint64_t> COUNTER = 0;
-    uint64_t now = std::chrono::system_clock::now().time_since_epoch().count();
-    int random_number = rand(); // NOLINT(cert-msc30-c,cert-msc50-cpp)
+    const auto now = std::chrono::system_clock::now().time_since_epoch().count();
+    const auto random_number = rand(); // NOLINT(cert-msc30-c,cert-msc50-cpp)
     return ServiceName::create((std::string("service_event_tests_") + std::to_string(COUNTER.fetch_add(1)) + "_"
                                 + std::to_string(now) + "_" + std::to_string(random_number))
                                    .c_str())
