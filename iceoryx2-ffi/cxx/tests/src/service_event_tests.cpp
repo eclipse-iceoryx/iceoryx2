@@ -12,7 +12,6 @@
 
 #include <cstdlib>
 
-#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/service.hpp"
@@ -138,7 +137,6 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_listeners_requirem
 }
 
 TYPED_TEST(ServiceEventTest, open_or_create_service_does_exist) {
-    iox2::set_log_level(LogLevel::TRACE);
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();

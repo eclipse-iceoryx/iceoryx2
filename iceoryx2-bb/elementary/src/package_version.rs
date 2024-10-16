@@ -76,10 +76,17 @@ impl PackageVersion {
                 .and_then(|s| s.parse::<u16>().ok())
                 .unwrap_or(u16::MAX);
 
-            PACKAGE_VERSION.store(
-                PackageVersion::from_version(major, minor, patch).0,
-                Ordering::Relaxed,
-            );
+            if major == 0 && minor == 0 && patch == 0 {
+                PACKAGE_VERSION.store(
+                    PackageVersion::from_version(u16::MAX, u16::MAX, u16::MAX).0,
+                    Ordering::Relaxed,
+                );
+            } else {
+                PACKAGE_VERSION.store(
+                    PackageVersion::from_version(major, minor, patch).0,
+                    Ordering::Relaxed,
+                );
+            }
         }
 
         PackageVersion::from_u64(PACKAGE_VERSION.load(Ordering::Relaxed))
