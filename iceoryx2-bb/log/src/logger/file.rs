@@ -118,7 +118,7 @@ impl Drop for Logger {
     }
 }
 
-impl crate::Logger for Logger {
+impl crate::Log for Logger {
     fn log(
         &self,
         log_level: LogLevel,

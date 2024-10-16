@@ -646,20 +646,41 @@ constexpr auto from<int, iox2::ConfigCreationError>(const int value) noexcept ->
 template <>
 constexpr auto from<iox2::LogLevel, iox2_log_level_e>(iox2::LogLevel value) noexcept -> iox2_log_level_e {
     switch (value) {
-    case iox2::LogLevel::TRACE:
+    case iox2::LogLevel::Trace:
         return iox2_log_level_e_TRACE;
-    case iox2::LogLevel::DEBUG:
+    case iox2::LogLevel::Debug:
         return iox2_log_level_e_DEBUG;
-    case iox2::LogLevel::INFO:
+    case iox2::LogLevel::Info:
         return iox2_log_level_e_INFO;
-    case iox2::LogLevel::WARN:
+    case iox2::LogLevel::Warn:
         return iox2_log_level_e_WARN;
-    case iox2::LogLevel::ERROR:
+    case iox2::LogLevel::Error:
         return iox2_log_level_e_ERROR;
-    case iox2::LogLevel::FATAL:
+    case iox2::LogLevel::Fatal:
         return iox2_log_level_e_FATAL;
     }
     IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::LogLevel>(int value) noexcept -> iox2::LogLevel {
+    const auto variant = static_cast<iox2_log_level_e>(value);
+    switch (value) {
+    case iox2_log_level_e_TRACE:
+        return iox2::LogLevel::Trace;
+    case iox2_log_level_e_DEBUG:
+        return iox2::LogLevel::Debug;
+    case iox2_log_level_e_INFO:
+        return iox2::LogLevel::Info;
+    case iox2_log_level_e_WARN:
+        return iox2::LogLevel::Warn;
+    case iox2_log_level_e_ERROR:
+        return iox2::LogLevel::Error;
+    case iox2_log_level_e_FATAL:
+        return iox2::LogLevel::Fatal;
+    default:
+        IOX_UNREACHABLE();
+    }
 }
 
 template <>

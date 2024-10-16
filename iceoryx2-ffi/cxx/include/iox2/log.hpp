@@ -17,6 +17,50 @@
 
 namespace iox2 {
 
+/// The abstract base class every custom logger has to implement.
+///
+/// # Example
+///
+/// @code
+/// class ConsoleLogger : public Log {
+///   public:
+///     void log(LogLevel log_level, const char* origin, const char* message) override {
+///         std::cout << "origin = " << origin << ", message = " << message << std::endl;
+///     }
+/// };
+///
+/// static ConsoleLogger CUSTOM_LOGGER = ConsoleLogger();
+///
+/// set_logger(CUSTOM_LOGGER);
+/// @endcode
+class Log {
+  public:
+    Log() = default;
+    Log(const Log&) = default;
+    Log(Log&&) = default;
+    auto operator=(const Log&) -> Log& = default;
+    auto operator=(Log&&) -> Log& = default;
+    virtual ~Log() = default;
+
+    /// The actual log method. The system provides the log level, the origin of the message and
+    /// the actual message.
+    virtual void log(LogLevel log_level, const char* origin, const char* message) = 0;
+};
+
+/// Adds a log message to the logger.
+void log(LogLevel log_level, const char* origin, const char* message);
+
+/// Sets the console logger as default logger. Returns true if the logger was set, otherwise false.
+auto use_console_logger() -> bool;
+
+/// Sets the file logger as default logger. Returns true if the logger was set, otherwise false.
+auto use_file_logger(const char* log_file) -> bool;
+
+/// Sets the logger that shall be used. This function can only be called once and must be called
+/// before any log message was created.
+/// It returns true if the logger was set, otherwise false.
+auto set_logger(Log& logger) -> bool;
+
 /// Sets the global log level for the application
 auto set_log_level(LogLevel level) -> void;
 

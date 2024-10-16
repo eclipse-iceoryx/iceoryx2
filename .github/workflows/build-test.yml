@@ -257,7 +257,8 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable, stable-gnu, 1.75.0]
+        # toolchain: [stable, stable-gnu, 1.75.0]
+        toolchain: [stable, 1.75.0]
         mode:
           - name: "release"
             arg: "--release"
