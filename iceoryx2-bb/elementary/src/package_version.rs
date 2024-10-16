@@ -10,8 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::{fmt::Display, sync::atomic::Ordering};
+use std::fmt::Display;
 
 /// Represents the crates version acquired through the internal environment variables set by cargo,
 /// ("CARGO_PKG_VERSION_{MAJOR|MINOR|PATCH}").
@@ -63,33 +62,11 @@ impl PackageVersion {
 
     /// Returns the current [`PackageVersion`]
     pub fn get() -> PackageVersion {
-        static PACKAGE_VERSION: IoxAtomicU64 = IoxAtomicU64::new(0);
+        const MAJOR: u16 = 0;
+        const MINOR: u16 = 4;
+        const PATCH: u16 = 1;
 
-        if PACKAGE_VERSION.load(Ordering::Relaxed) == 0 {
-            let major = option_env!("CARGO_PKG_VERSION_MAJOR")
-                .and_then(|s| s.parse::<u16>().ok())
-                .unwrap_or(u16::MAX);
-            let minor = option_env!("CARGO_PKG_VERSION_MINOR")
-                .and_then(|s| s.parse::<u16>().ok())
-                .unwrap_or(u16::MAX);
-            let patch = option_env!("CARGO_PKG_VERSION_PATCH")
-                .and_then(|s| s.parse::<u16>().ok())
-                .unwrap_or(u16::MAX);
-
-            if major == 0 && minor == 0 && patch == 0 {
-                PACKAGE_VERSION.store(
-                    PackageVersion::from_version(u16::MAX, u16::MAX, u16::MAX).0,
-                    Ordering::Relaxed,
-                );
-            } else {
-                PACKAGE_VERSION.store(
-                    PackageVersion::from_version(major, minor, patch).0,
-                    Ordering::Relaxed,
-                );
-            }
-        }
-
-        PackageVersion::from_u64(PACKAGE_VERSION.load(Ordering::Relaxed))
+        PackageVersion::from_version(MAJOR, MINOR, PATCH)
     }
 }
 
