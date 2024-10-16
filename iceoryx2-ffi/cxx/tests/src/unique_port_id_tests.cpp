@@ -25,19 +25,13 @@
 namespace {
 using namespace iox2;
 
-auto generate_name() -> ServiceName {
-    static std::atomic<uint64_t> COUNTER = 0;
-    return ServiceName::create((std::string("unique_port_id_tests_") + std::to_string(COUNTER.fetch_add(1))).c_str())
-        .expect("");
-}
-
 template <typename T>
 struct UniquePortIdTest : public ::testing::Test {
     static constexpr ServiceType TYPE = T::TYPE;
 
     UniquePortIdTest()
         : node { NodeBuilder().create<TYPE>().expect("") }
-        , service_name { generate_name() }
+        , service_name { iox2_testing::generate_service_name() }
         , event { node.service_builder(service_name).event().create().expect("") }
         , pubsub { node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("") }
         , listener_1 { event.listener_builder().create().expect("") }

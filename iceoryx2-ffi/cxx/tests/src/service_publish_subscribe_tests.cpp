@@ -36,8 +36,7 @@ TYPED_TEST_SUITE(ServicePublishSubscribeTest, iox2_testing::ServiceTypes);
 TYPED_TEST(ServicePublishSubscribeTest, created_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
@@ -60,8 +59,7 @@ TYPED_TEST(ServicePublishSubscribeTest, created_service_does_exist) {
 TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
@@ -78,8 +76,7 @@ TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
 TYPED_TEST(ServicePublishSubscribeTest, open_or_create_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::PublishSubscribe)
@@ -119,8 +116,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_or_create_service_does_exist) {
 TYPED_TEST(ServicePublishSubscribeTest, opening_non_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().open();
@@ -131,8 +127,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_non_existing_service_fails) {
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
@@ -143,8 +138,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_works) {
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_wrong_payload_type_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
@@ -156,8 +150,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_wrong_payl
 TYPED_TEST(ServicePublishSubscribeTest, open_or_create_existing_service_with_wrong_payload_type_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
@@ -169,8 +162,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_or_create_existing_service_with_wro
 TYPED_TEST(ServicePublishSubscribeTest, send_copy_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
@@ -189,8 +181,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_copy_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
@@ -211,8 +202,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
@@ -233,8 +223,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "Whoop here it is - the publishers historyyyy!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
@@ -264,8 +253,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     constexpr uint64_t SUBSCRIBER_MAX_BUFFER_SIZE = 14;
     constexpr uint64_t SUBSCRIBER_MAX_BORROWED_SAMPLES = 15;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name)
@@ -295,8 +283,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
 TYPED_TEST(ServicePublishSubscribeTest, safe_overflow_can_be_set) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
@@ -317,8 +304,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_publisher_r
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_PUBLISHERS = 11;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name)
@@ -340,8 +326,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name)
@@ -362,8 +347,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_with_incompatible_subscriber_
 TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_strategy) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
@@ -382,8 +366,7 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_stra
 TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service_pub = node.service_builder(service_name)
@@ -420,8 +403,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
 TYPED_TEST(ServicePublishSubscribeTest, has_sample_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "I am floating through the galaxy of my brain. Oh the colors!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
@@ -437,6 +419,4 @@ TYPED_TEST(ServicePublishSubscribeTest, has_sample_works) {
     auto sample = sut_subscriber.receive().expect("");
     ASSERT_FALSE(*sut_subscriber.has_samples());
 }
-
-
 } // namespace

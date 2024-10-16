@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include <cstdlib>
+
 #include "iox2/node.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/service.hpp"
@@ -24,8 +26,7 @@ constexpr iox::units::Duration TIMEOUT = iox::units::Duration::fromMilliseconds(
 template <typename T>
 struct ServiceEventTest : public ::testing::Test {
     ServiceEventTest()
-        : service_name_value { "We all love the hypnotoad!" }
-        , service_name { ServiceName::create(service_name_value).expect("") }
+        : service_name { iox2_testing::generate_service_name() }
         , node { NodeBuilder().create<T::TYPE>().expect("") }
         , service { node.service_builder(service_name).event().create().expect("") }
         , notifier { service.notifier_builder().create().expect("") }
@@ -37,7 +38,6 @@ struct ServiceEventTest : public ::testing::Test {
     static std::atomic<size_t> event_id_counter;
     static constexpr ServiceType TYPE = T::TYPE;
     //NOLINTBEGIN(misc-non-private-member-variables-in-classes), required for tests
-    const char* service_name_value { nullptr };
     ServiceName service_name;
     Node<T::TYPE> node;
     PortFactoryEvent<T::TYPE> service;
@@ -56,8 +56,7 @@ TYPED_TEST_SUITE(ServiceEventTest, iox2_testing::ServiceTypes);
 TYPED_TEST(ServiceEventTest, created_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
@@ -78,8 +77,7 @@ TYPED_TEST(ServiceEventTest, created_service_does_exist) {
 TYPED_TEST(ServiceEventTest, creating_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut = node.service_builder(service_name).event().create().expect("");
@@ -94,8 +92,7 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
     constexpr uint64_t NUMBER_OF_NOTIFIERS = 5;
     constexpr uint64_t NUMBER_OF_LISTENERS = 7;
 
-    const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut = node.service_builder(service_name)
@@ -115,8 +112,7 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_notifiers_requirem
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_NOTIFIERS = 5;
 
-    const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS).create().expect("");
@@ -130,8 +126,7 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_listeners_requirem
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_LISTENERS = 7;
 
-    const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS).create().expect("");
@@ -144,8 +139,7 @@ TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_listeners_requirem
 TYPED_TEST(ServiceEventTest, open_or_create_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
@@ -180,8 +174,7 @@ TYPED_TEST(ServiceEventTest, open_or_create_service_does_exist) {
 TYPED_TEST(ServiceEventTest, opening_non_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut = node.service_builder(service_name).event().open();
@@ -192,8 +185,7 @@ TYPED_TEST(ServiceEventTest, opening_non_existing_service_fails) {
 TYPED_TEST(ServiceEventTest, opening_existing_service_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "First time we met, I saw the ocean, it was wet!";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut_create = node.service_builder(service_name).event().create();
@@ -204,8 +196,7 @@ TYPED_TEST(ServiceEventTest, opening_existing_service_works) {
 TYPED_TEST(ServiceEventTest, service_name_is_set) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-    const auto* name_value = "Another one bites the toad.";
-    const auto service_name = ServiceName::create(name_value).expect("");
+    const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto sut = node.service_builder(service_name).event().create().expect("");

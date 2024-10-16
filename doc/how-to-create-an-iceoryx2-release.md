@@ -79,10 +79,11 @@ number is `Xold.Yold.Zold`.
 10. Adjust the `<version>` to `X.Y.Z` in `$GIT_ROOT$/package.xml`.
 11. Call `rg "Xold\.Yold\.Zold"` and adjust all findings.
     * C and C++ examples, `BUILD.bazel` & `CMakeLists.txt`
-12. **Merge all changes to `main`.**
-13. Set tag on GitHub and add the release document as notes to the tag
+12. Adjust the major, minor and patch version number in `iceoryx2_bb_elementary::PackageVersion`
+13. **Merge all changes to `main`.**
+14. Set tag on GitHub and add the release document as notes to the tag
     description. Add also a link to the file.
-14. Check the order of all dependencies in
+15. Check the order of all dependencies in
     `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh`.
     When calling `cargo publish -p $PACKAGE$` all dependencies, also dev-dependencies,
     must be already published to `crates.io` via `cargo publish -p`. Verify the
@@ -92,7 +93,7 @@ number is `Xold.Yold.Zold`.
     * If the publish script was started and a crate requires a dependency which
       is not available on `crates.io` the release has to be redone and the patch
       version has to increase by one for the whole workspace.
-15. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
+16. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
     all crates on `crates.io` and `docs.rs`.
-16. Verify that the release looks fine on `docs.rs` (click through the
+17. Verify that the release looks fine on `docs.rs` (click through the
     documentation to check if everything was generated correctly)
