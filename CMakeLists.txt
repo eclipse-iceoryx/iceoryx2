@@ -36,6 +36,19 @@ macro(add_param)
     message(STATUS "  ${ADD_PARAM_NAME}: ${${ADD_PARAM_NAME}} (Description: ${ADD_PARAM_DESCRIPTION})")
 endmacro()
 
+set(IOX2_RUST_FEATURES "")
+macro(add_rust_feature)
+    set(ONE_VALUE_ARGS NAME DESCRIPTION DEFAULT_VALUE RUST_FEATURE)
+    cmake_parse_arguments(ADD_RUST_FEATURE "" "${ONE_VALUE_ARGS}" "" ${ARGN})
+
+    option(${ADD_RUST_FEATURE_NAME} ${ADD_RUST_FEATURE_DESCRIPTION} ${ADD_RUST_FEATURE_DEFAULT_VALUE})
+    message(STATUS "  ${ADD_RUST_FEATURE_NAME}: ${${ADD_RUST_FEATURE_NAME}} (Description: ${ADD_RUST_FEATURE_DESCRIPTION})")
+
+    if(${ADD_RUST_FEATURE_NAME})
+        list(APPEND IOX2_RUST_FEATURES ${ADD_RUST_FEATURE_RUST_FEATURE})
+    endif()
+endmacro()
+
 message(STATUS "iceoryx2 options:")
 
 add_option(
@@ -66,6 +79,29 @@ add_param(
     NAME RUST_TARGET_TRIPLET
     DESCRIPTION "The target triplet for cross compilation, e.g. 'aarch64-unknown-linux-gnu'"
     DEFAULT_VALUE ""
+)
+
+message(STATUS "iceoryx2 Rust feature flags:")
+
+add_rust_feature(
+    NAME IOX2_FEATURE_DEV_PERMISSIONS
+    DESCRIPTION "The permissions of all resources will be set to read, write, execute for everyone."
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2/dev_permissions"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_LOG
+    DESCRIPTION "Enables https://crates.io/crates/log as default logger"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2/logger_log"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_TRACING
+    DESCRIPTION "Enables https://crates.io/crates/tracing as default logger"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2/logger_tracing"
 )
 
 if(SANITIZERS)
