@@ -161,13 +161,13 @@ static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
 static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 
 #[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
-pub static DEFAULT_LOGGER: Lazy<logger::console::Logger> =
-    Lazy::new(logger::console::Logger::new);
+pub static DEFAULT_LOGGER: Lazy<logger::console::Logger> = Lazy::new(logger::console::Logger::new);
 
 const DEFAULT_LOG_LEVEL: u8 = LogLevel::Info as u8;
-pub static ENV_LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
-    let log_level_str = env::var("IOX2_LOG_LEVEL").unwrap_or_else(|_| "Info".to_string());
-    LogLevel::from_str(&log_level_str) // Default to Info
+pub static ENV_LOG_LEVEL: Lazy<u8> = Lazy::new(|| {
+    env::var("IOX2_LOG_LEVEL")
+        .map(|log_level| LogLevel::from_str_fuzzy(&log_level))
+        .unwrap_or(LogLevel::Info as u8)
 });
 
 static mut LOGGER: Option<&'static dyn logger::Logger> = None;
@@ -187,15 +187,18 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
-    fn from_str(s: &str) -> LogLevel {
-        match s {
-            "Trace" => LogLevel::Trace,
-            "Debug" => LogLevel::Debug,
-            "Info" => LogLevel::Info,
-            "Warn" => LogLevel::Warn,
-            "Error" => LogLevel::Error,
-            "Fatal" => LogLevel::Fatal,
-            _ => LogLevel::Info,
+    fn from_str_fuzzy(s: &str) -> u8 {
+        match s.to_lowercase().as_str() {
+            "trace" => LogLevel::Trace as u8,
+            "tebug" => LogLevel::Debug as u8,
+            "info" => LogLevel::Info as u8,
+            "warn" => LogLevel::Warn as u8,
+            "error" => LogLevel::Error as u8,
+            "fatal" => LogLevel::Fatal as u8,
+            _ => {
+                println!("Error: you are using unknown logging level {:?}", s);
+                DEFAULT_LOG_LEVEL
+            }
         }
     }
 }
@@ -208,7 +211,6 @@ pub fn set_log_level(v: LogLevel) {
 
 /// Returns the current log level
 pub fn get_log_level() -> u8 {
-    LOG_LEVEL.store(*ENV_LOG_LEVEL as u8, Ordering::Relaxed);
     LOG_LEVEL.load(Ordering::Relaxed)
 }
 
@@ -228,6 +230,7 @@ pub fn set_logger<T: logger::Logger + 'static>(value: &'static T) -> bool {
 pub fn get_logger() -> &'static dyn Logger {
     INIT.call_once(|| {
         unsafe { LOGGER = Some(&*DEFAULT_LOGGER) };
+        LOG_LEVEL.store(*ENV_LOG_LEVEL, Ordering::Relaxed);
     });
 
     unsafe { *LOGGER.as_ref().unwrap() }
