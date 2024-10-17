@@ -14,6 +14,7 @@
 #define IOX2_SAMPLE_HPP
 
 #include "iox/assertions_addendum.hpp"
+#include "iox/slice.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/service_type.hpp"
@@ -49,7 +50,12 @@ class Sample {
     auto operator->() const -> const Payload*;
 
     /// Returns a reference to the payload of the [`Sample`]
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const Payload&;
+
+    /// Returns a slice to navigate the payload of the [`Sample`]
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload_slice() const -> Payload;
 
     /// Returns a reference to the user_header of the [`Sample`]
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
@@ -121,14 +127,24 @@ inline auto Sample<S, Payload, UserHeader>::operator->() const -> const Payload*
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
 inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
-    const void* payload_ptr = nullptr;
-    size_t payload_len = 0;
+    const void* ptr = nullptr;
 
-    iox2_sample_payload(&m_handle, &payload_ptr, &payload_len);
-    IOX_ASSERT(sizeof(Payload) <= payload_len, "");
+    iox2_sample_payload(&m_handle, &ptr, nullptr);
 
-    return *static_cast<const Payload*>(payload_ptr);
+    return *static_cast<const Payload*>(ptr);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto Sample<S, Payload, UserHeader>::payload_slice() const -> Payload {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_sample_payload(&m_handle, &ptr, &number_of_elements);
+
+    return Payload(static_cast<const typename Payload::ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -153,7 +169,6 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Sample<S, Payload, UserHeader>::origin() const -> UniquePublisherId {
     return header().publisher_id();
 }
-
 
 } // namespace iox2
 

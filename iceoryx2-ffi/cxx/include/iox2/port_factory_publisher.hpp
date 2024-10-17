@@ -71,7 +71,26 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publi
         iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
             &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
     });
-    m_max_slice_len.and_then([](auto) { IOX_TODO(); });
+    m_max_slice_len
+        .and_then([&](auto value) {
+            // The payload type used by the C API is always a [u8].
+            // Thus need to convert from N to N * sizeof(payload).
+            // TODO: Consider alignment... not aligning each element properly will impact performance
+            if constexpr (iox::IsSlice<Payload>::VALUE) {
+                iox2_port_factory_publisher_builder_set_max_slice_len(&m_handle,
+                                                                      value * sizeof(typename Payload::ValueType));
+            } else {
+                iox2_port_factory_publisher_builder_set_max_slice_len(&m_handle, value * sizeof(Payload));
+            }
+        })
+        .or_else([&]() {
+            // Assume only one element if not otherwise specified
+            if constexpr (iox::IsSlice<Payload>::VALUE) {
+                iox2_port_factory_publisher_builder_set_max_slice_len(&m_handle, sizeof(typename Payload::ValueType));
+            } else {
+                iox2_port_factory_publisher_builder_set_max_slice_len(&m_handle, sizeof(Payload));
+            }
+        });
     m_max_loaned_samples.and_then(
         [&](auto value) { iox2_port_factory_publisher_builder_set_max_loaned_samples(&m_handle, value); });
 

@@ -47,6 +47,9 @@ class Publisher {
     /// since the [`Subscriber`]s buffer is full.
     auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
 
+    /// Returns the maximum number of elements that can be loaned in a slice.
+    auto max_slice_len() const -> uint64_t;
+
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
@@ -56,6 +59,7 @@ class Publisher {
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto loan_uninit() -> iox::expected<SampleMutUninit<S, Payload, UserHeader>, PublisherLoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
@@ -63,6 +67,7 @@ class Publisher {
     /// can be used to loan an uninitalized [`SampleMut`].
     ///
     /// On failure it returns [`PublisherLoanError`] describing the failure.
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto loan() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError>;
 
     /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`]
@@ -139,6 +144,20 @@ inline auto Publisher<S, Payload, UserHeader>::unable_to_deliver_strategy() cons
     return iox::into<UnableToDeliverStrategy>(static_cast<int>(iox2_publisher_unable_to_deliver_strategy(&m_handle)));
 }
 
+
+template <ServiceType S, typename Payload, typename UserHeader>
+inline auto Publisher<S, Payload, UserHeader>::max_slice_len() const -> uint64_t {
+    // NOTE: The C API always uses a [u8] payload, therefore the max length returned is the number of bytes.
+    //       Dividing by the size gives the number of slice elements available to the C++ API.
+    //
+    // NOTE: For non-slice types, the number of slice elements is always 1.
+    if constexpr (iox::IsSlice<Payload>::VALUE) {
+        return iox2_publisher_max_slice_len(&m_handle) / sizeof(typename Payload::ValueType);
+    } else {
+        return iox2_publisher_max_slice_len(&m_handle) / sizeof(Payload);
+    }
+}
+
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
     iox2_unique_publisher_id_h id_handle = nullptr;
@@ -164,11 +183,12 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
     -> iox::expected<SampleMutUninit<S, Payload, UserHeader>, PublisherLoanError> {
     SampleMutUninit<S, Payload, UserHeader> sample;
 
-    auto result = iox2_publisher_loan(&m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle);
+    auto result = iox2_publisher_loan_slice_uninit(&m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle, 1);
 
     if (result == IOX2_OK) {
         return iox::ok(std::move(sample));
@@ -178,6 +198,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
 inline auto
 Publisher<S, Payload, UserHeader>::loan() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
     auto sample = loan_uninit();
@@ -195,14 +216,34 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_slice(const uint64_t number_of_elements)
     -> iox::expected<SampleMut<S, T, UserHeader>, PublisherLoanError> {
-    IOX_TODO();
+    auto sample_uninit = loan_slice_uninit(number_of_elements);
+
+    if (sample_uninit.has_error()) {
+        return iox::err(sample_uninit.error());
+    }
+    auto sample_init = std::move(sample_uninit.value());
+
+    for (auto& item : sample_init.payload_slice()) {
+        new (&item) typename T::ValueType();
+    }
+
+    return iox::ok(assume_init(std::move(sample_init)));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::loan_slice_uninit(const uint64_t number_of_elements)
     -> iox::expected<SampleMutUninit<S, T, UserHeader>, PublisherLoanError> {
-    IOX_TODO();
+    SampleMutUninit<S, Payload, UserHeader> sample;
+
+    auto result = iox2_publisher_loan_slice_uninit(
+        &m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle, number_of_elements);
+
+    if (result == IOX2_OK) {
+        return iox::ok(std::move(sample));
+    }
+
+    return iox::err(iox::into<PublisherLoanError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

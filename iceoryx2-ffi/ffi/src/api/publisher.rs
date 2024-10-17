@@ -72,18 +72,14 @@ impl IntoCInt for PublisherSendError {
 impl IntoCInt for PublisherLoanError {
     fn into_c_int(self) -> c_int {
         (match self {
-            PublisherLoanError::OutOfMemory => {
-                iox2_publisher_send_error_e::LOAN_ERROR_OUT_OF_MEMORY
-            }
+            PublisherLoanError::OutOfMemory => iox2_publisher_loan_error_e::OUT_OF_MEMORY,
             PublisherLoanError::ExceedsMaxLoanedSamples => {
-                iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES
+                iox2_publisher_loan_error_e::EXCEEDS_MAX_LOANED_SAMPLES
             }
             PublisherLoanError::ExceedsMaxLoanSize => {
-                iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE
+                iox2_publisher_loan_error_e::EXCEEDS_MAX_LOAN_SIZE
             }
-            PublisherLoanError::InternalFailure => {
-                iox2_publisher_send_error_e::LOAN_ERROR_INTERNAL_FAILURE
-            }
+            PublisherLoanError::InternalFailure => iox2_publisher_loan_error_e::INTERNAL_FAILURE,
         }) as c_int
     }
 }
@@ -253,6 +249,19 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
     }
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn iox2_publisher_max_slice_len(
+    publisher_handle: iox2_publisher_h_ref,
+) -> c_int {
+    publisher_handle.assert_non_null();
+
+    let publisher = &mut *publisher_handle.as_type();
+    match publisher.service_type {
+        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.max_slice_len() as c_int,
+        iox2_service_type_e::LOCAL => publisher.value.as_mut().local.max_slice_len() as c_int,
+    }
+}
+
 /// Returns the unique port id of the publisher.
 ///
 /// # Arguments
@@ -349,6 +358,7 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 /// * `sample_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_sample_mut_t`].
 ///    If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+/// * `number_of_bytes` - The number of bytes to loan from the publisher's payload segment
 ///
 /// Return [`IOX2_OK`] on success, otherwise [`iox2_publisher_loan_error_e`].
 ///
@@ -357,10 +367,11 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 /// * `publisher_handle` is valid and non-null
 /// * The `sample_handle_ptr` is pointing to a valid [`iox2_sample_mut_h`].
 #[no_mangle]
-pub unsafe extern "C" fn iox2_publisher_loan(
+pub unsafe extern "C" fn iox2_publisher_loan_slice_uninit(
     publisher_handle: iox2_publisher_h_ref,
     sample_struct_ptr: *mut iox2_sample_mut_t,
     sample_handle_ptr: *mut iox2_sample_mut_h,
+    number_of_elements: usize,
 ) -> c_int {
     publisher_handle.assert_non_null();
     debug_assert!(!sample_handle_ptr.is_null());
@@ -383,7 +394,12 @@ pub unsafe extern "C" fn iox2_publisher_loan(
     let publisher = &mut *publisher_handle.as_type();
 
     match publisher.service_type {
-        iox2_service_type_e::IPC => match publisher.value.as_ref().ipc.loan_custom_payload(1) {
+        iox2_service_type_e::IPC => match publisher
+            .value
+            .as_ref()
+            .ipc
+            .loan_custom_payload(number_of_elements)
+        {
             Ok(sample) => {
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
@@ -396,7 +412,12 @@ pub unsafe extern "C" fn iox2_publisher_loan(
             }
             Err(error) => error.into_c_int(),
         },
-        iox2_service_type_e::LOCAL => match publisher.value.as_ref().local.loan_custom_payload(1) {
+        iox2_service_type_e::LOCAL => match publisher
+            .value
+            .as_ref()
+            .local
+            .loan_custom_payload(number_of_elements)
+        {
             Ok(sample) => {
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(

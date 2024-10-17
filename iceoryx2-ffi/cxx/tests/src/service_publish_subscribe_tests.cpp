@@ -199,6 +199,160 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     ASSERT_THAT(**recv_sample, Eq(payload));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    constexpr auto CXX_SLICE_MAX_LENGTH = 10;
+
+    constexpr uint64_t DEFAULT_VALUE_A = 42;
+    constexpr uint64_t DEFAULT_VALUE_B = 777;
+    constexpr uint64_t DEFAULT_VALUE_Z = 21;
+    struct MyNestedStruct {
+        uint64_t a { DEFAULT_VALUE_A };
+        uint64_t b { DEFAULT_VALUE_B };
+    };
+    struct MyStruct {
+        uint64_t z { DEFAULT_VALUE_Z };
+        MyNestedStruct data;
+    };
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<iox::Slice<MyStruct>>()
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
+                       .create()
+                       .expect("");
+
+    auto sut_publisher = service.publisher_builder().max_slice_len(CXX_SLICE_MAX_LENGTH).create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto send_sample = sut_publisher.loan_slice(CXX_SLICE_MAX_LENGTH).expect("");
+
+    send(std::move(send_sample)).expect("");
+
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+    auto recv_sample = std::move(recv_result.value());
+
+    auto iterations = 0;
+    for (const auto& item : recv_sample.payload_slice()) {
+        ASSERT_THAT(item.z, Eq(DEFAULT_VALUE_Z));
+        ASSERT_THAT(item.data.a, Eq(DEFAULT_VALUE_A));
+        ASSERT_THAT(item.data.b, Eq(DEFAULT_VALUE_B));
+        ++iterations;
+    }
+
+    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(CXX_SLICE_MAX_LENGTH));
+    ASSERT_THAT(iterations, Eq(CXX_SLICE_MAX_LENGTH));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    constexpr auto CXX_SLICE_MAX_LENGTH = 10;
+
+    constexpr uint64_t DEFAULT_VALUE_A = 42;
+    constexpr uint64_t DEFAULT_VALUE_B = 777;
+    constexpr uint64_t DEFAULT_VALUE_Z = 21;
+    struct MyNestedStruct {
+        uint64_t a { DEFAULT_VALUE_A };
+        uint64_t b { DEFAULT_VALUE_B };
+    };
+    struct MyStruct {
+        uint64_t z { DEFAULT_VALUE_Z };
+        MyNestedStruct data;
+    };
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<iox::Slice<MyStruct>>()
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
+                       .create()
+                       .expect("");
+
+    auto sut_publisher = service.publisher_builder().max_slice_len(CXX_SLICE_MAX_LENGTH).create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto send_sample = sut_publisher.loan_slice_uninit(CXX_SLICE_MAX_LENGTH).expect("");
+
+    auto iterations = 0;
+    for (auto& item : send_sample.payload_slice()) {
+        new (&item) MyStruct { DEFAULT_VALUE_Z + iterations,
+                               MyNestedStruct { DEFAULT_VALUE_A + iterations, DEFAULT_VALUE_B + iterations } };
+        ++iterations;
+    }
+
+    send(assume_init(std::move(send_sample))).expect("");
+
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+    auto recv_sample = std::move(recv_result.value());
+
+    iterations = 0;
+    for (const auto& item : recv_sample.payload_slice()) {
+        ASSERT_THAT(item.z, Eq(DEFAULT_VALUE_Z + iterations));
+        ASSERT_THAT(item.data.a, Eq(DEFAULT_VALUE_A + iterations));
+        ASSERT_THAT(item.data.b, Eq(DEFAULT_VALUE_B + iterations));
+        ++iterations;
+    }
+
+    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(CXX_SLICE_MAX_LENGTH));
+    ASSERT_THAT(iterations, Eq(CXX_SLICE_MAX_LENGTH));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    constexpr auto CXX_SLICE_MAX_LENGTH = 10;
+
+    constexpr uint64_t DEFAULT_VALUE_A = 42;
+    constexpr uint64_t DEFAULT_VALUE_B = 777;
+    constexpr uint64_t DEFAULT_VALUE_Z = 21;
+    struct MyNestedStruct {
+        uint64_t a { DEFAULT_VALUE_A };
+        uint64_t b { DEFAULT_VALUE_B };
+    };
+    struct MyStruct {
+        uint64_t z { DEFAULT_VALUE_Z };
+        MyNestedStruct data;
+    };
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<iox::Slice<uint8_t>>()
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
+                       .create()
+                       .expect("");
+
+    auto sut_publisher = service.publisher_builder().max_slice_len(sizeof(MyStruct)).create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto send_sample = sut_publisher.loan_slice_uninit(sizeof(MyStruct)).expect("");
+
+    new (send_sample.payload_slice().data())
+        MyStruct { DEFAULT_VALUE_Z, MyNestedStruct { DEFAULT_VALUE_A, DEFAULT_VALUE_B } };
+
+    send(assume_init(std::move(send_sample))).expect("");
+
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+
+    auto recv_sample = std::move(recv_result.value());
+    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(sizeof(MyStruct)));
+
+    auto recv_data = reinterpret_cast<MyStruct*>(recv_sample.payload_slice().data());
+
+    ASSERT_THAT(recv_data->z, Eq(DEFAULT_VALUE_Z));
+    ASSERT_THAT(recv_data->data.a, Eq(DEFAULT_VALUE_A));
+    ASSERT_THAT(recv_data->data.b, Eq(DEFAULT_VALUE_B));
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -252,6 +406,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     constexpr uint64_t HISTORY_SIZE = 13;
     constexpr uint64_t SUBSCRIBER_MAX_BUFFER_SIZE = 14;
     constexpr uint64_t SUBSCRIBER_MAX_BORROWED_SAMPLES = 15;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 4;
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -264,6 +419,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
                        .history_size(HISTORY_SIZE)
                        .subscriber_max_buffer_size(SUBSCRIBER_MAX_BUFFER_SIZE)
                        .subscriber_max_borrowed_samples(SUBSCRIBER_MAX_BORROWED_SAMPLES)
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
                        .create()
                        .expect("");
 
@@ -361,6 +517,22 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_stra
 
     ASSERT_THAT(sut_pub_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
     ASSERT_THAT(sut_pub_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_slice_len) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t DESIRED_MAX_SLICE_LEN = 10;
+    using ValueType = uint8_t;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<ValueType>>().create().expect("");
+
+    auto sut = service.publisher_builder().max_slice_len(DESIRED_MAX_SLICE_LEN).create().expect("");
+
+    ASSERT_THAT(sut.max_slice_len(), Eq(DESIRED_MAX_SLICE_LEN));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {

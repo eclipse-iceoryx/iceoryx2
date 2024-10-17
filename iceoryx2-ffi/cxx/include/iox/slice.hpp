@@ -16,6 +16,7 @@
 #include "iox/assertions_addendum.hpp"
 
 #include <cstdint>
+#include <type_traits>
 
 namespace iox {
 template <typename T>
@@ -25,28 +26,80 @@ class Slice {
     using ConstIterator = const T*;
     using ValueType = T;
 
-    auto size() const -> uint64_t {
-        IOX_TODO();
-    }
-    auto operator[](const uint64_t n) const -> const T& {
-        IOX_TODO();
-    }
-    auto operator[](const uint64_t n) -> T& {
-        IOX_TODO();
-    }
-    auto begin() -> Iterator {
-        IOX_TODO();
-    }
-    auto begin() const -> ConstIterator {
-        IOX_TODO();
-    }
-    auto end() -> Iterator {
-        IOX_TODO();
-    }
-    auto end() const -> ConstIterator {
-        IOX_TODO();
-    }
+    Slice(const T* data, uint64_t number_of_elements);
+
+    auto number_of_elements() const -> uint64_t;
+    auto operator[](uint64_t n) const -> const T&;
+    auto operator[](uint64_t n) -> T&;
+
+    auto begin() -> Iterator;
+    auto begin() const -> ConstIterator;
+    auto end() -> Iterator;
+    auto end() const -> ConstIterator;
+
+    auto data() -> T*;
+    auto data() const -> const T*;
+
+  private:
+    T* m_data;
+    uint64_t m_number_of_elements;
 };
+
+template <typename T>
+Slice<T>::Slice(const T* data, uint64_t number_of_elements)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) constness protected by const class specification
+    : m_data { const_cast<T*>(data) }
+    , m_number_of_elements { number_of_elements } {
+}
+
+template <typename T>
+auto Slice<T>::number_of_elements() const -> uint64_t {
+    return m_number_of_elements;
+}
+
+template <typename T>
+auto Slice<T>::operator[](const uint64_t n) const -> const T& {
+    IOX_ASSERT(n < m_number_of_elements, "Index out of bounds");
+    return *(m_data + n);
+}
+
+template <typename T>
+auto Slice<T>::operator[](const uint64_t n) -> T& {
+    IOX_ASSERT(n < m_number_of_elements, "Index out of bounds");
+    return *(m_data + n);
+}
+
+template <typename T>
+auto Slice<T>::begin() -> Iterator {
+    return m_data;
+}
+
+template <typename T>
+auto Slice<T>::begin() const -> ConstIterator {
+    return m_data;
+}
+
+template <typename T>
+auto Slice<T>::end() -> Iterator {
+    static_assert(!std::is_same_v<T, void>, "Slice<void> is not allowed");
+    return m_data + m_number_of_elements;
+}
+
+template <typename T>
+auto Slice<T>::end() const -> ConstIterator {
+    static_assert(!std::is_same_v<T, void>, "Slice<void> is not allowed");
+    return m_data + m_number_of_elements;
+}
+
+template <typename T>
+auto Slice<T>::data() -> T* {
+    return m_data;
+}
+
+template <typename T>
+auto Slice<T>::data() const -> const T* {
+    return m_data;
+}
 
 template <typename>
 struct IsSlice {
