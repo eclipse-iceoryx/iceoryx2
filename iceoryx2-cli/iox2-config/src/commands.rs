@@ -11,34 +11,33 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use anyhow::Result;
+use colored::Colorize;
+use dialoguer::Confirm;
 use enum_iterator::all;
 use iceoryx2::config::Config;
 use iceoryx2_bb_posix::system_configuration::*;
 use std::fs::{self, File};
 use std::io::Write;
+use std::panic::catch_unwind;
 
 /// Prints the whole system configuration with all limits, features and details to the console.
 pub fn print_system_configuration() {
-    const HEADER_COLOR: &str = "\x1b[4;92m";
-    const VALUE_COLOR: &str = "\x1b[0;94m";
-    const DISABLED_VALUE_COLOR: &str = "\x1b[0;90m";
-    const ENTRY_COLOR: &str = "\x1b[0;37m";
-    const DISABLED_ENTRY_COLOR: &str = "\x1b[0;90m";
-    const COLOR_RESET: &str = "\x1b[0m";
-
-    println!("{}posix system configuration{}", HEADER_COLOR, COLOR_RESET);
+    println!(
+        "{}",
+        "posix system configuration".underline().bright_green()
+    );
     println!();
-    println!(" {}system info{}", HEADER_COLOR, COLOR_RESET);
+    println!(" {}", "system info".underline().bright_green());
     for i in all::<SystemInfo>().collect::<Vec<_>>() {
         println!(
-            "  {ENTRY_COLOR}{:<50}{COLOR_RESET} {VALUE_COLOR}{}{COLOR_RESET}",
-            format!("{:?}", i),
-            i.value(),
+            "  {:<50} {}",
+            format!("{:?}", i).white(),
+            format!("{}", i.value()).bright_blue(),
         );
     }
 
     println!();
-    println!(" {}limits{}", HEADER_COLOR, COLOR_RESET);
+    println!(" {}", "limit".underline().bright_green());
     for i in all::<Limit>().collect::<Vec<_>>() {
         let limit = i.value();
         let limit = if limit == 0 {
@@ -47,57 +46,63 @@ pub fn print_system_configuration() {
             limit.to_string()
         };
         println!(
-            "  {ENTRY_COLOR}{:<50}{COLOR_RESET} {VALUE_COLOR}{}{COLOR_RESET}",
-            format!("{:?}", i),
-            limit,
+            "  {:<50} {}",
+            format!("{:?}", i).white(),
+            limit.bright_blue(),
         );
     }
 
     println!();
-    println!(" {}options{}", HEADER_COLOR, COLOR_RESET);
+    println!(" {}", "options".underline().bright_green());
     for i in all::<SysOption>().collect::<Vec<_>>() {
         if i.is_available() {
             println!(
-                "  {ENTRY_COLOR}{:<50}{COLOR_RESET} {VALUE_COLOR}{}{COLOR_RESET}",
-                format!("{:?}", i),
-                i.is_available(),
+                "  {:<50} {}",
+                format!("{:?}", i).white(),
+                format!("{}", i.is_available()).bright_blue()
             );
         } else {
-            println!(
-                "  {DISABLED_ENTRY_COLOR}{:<50}{COLOR_RESET} {DISABLED_VALUE_COLOR}{}{COLOR_RESET}",
-                format!("{:?}", i),
-                i.is_available(),
-            );
+            println!("  {:<50} {}", format!("{:?}", i), i.is_available(),);
         }
     }
 
     println!();
-    println!(" {}features{}", HEADER_COLOR, COLOR_RESET);
+    println!(" {}", "features".underline().bright_green());
     for i in all::<Feature>().collect::<Vec<_>>() {
         if i.is_available() {
             println!(
-                "  {ENTRY_COLOR}{:<50}{COLOR_RESET} {VALUE_COLOR}{}{COLOR_RESET}",
-                format!("{:?}", i),
-                i.is_available(),
+                "  {:<50} {}",
+                format!("{:?}", i).white(),
+                format!("{}", i.is_available()).bright_blue(),
             );
         } else {
-            println!(
-                "  {DISABLED_ENTRY_COLOR}{:<50}{COLOR_RESET} {DISABLED_VALUE_COLOR}{}{COLOR_RESET}",
-                format!("{:?}", i),
-                i.is_available(),
-            );
+            println!("  {:<50} {}", format!("{:?}", i), i.is_available(),);
         }
     }
 
     println!();
-    println!(" {}process resource limits{}", HEADER_COLOR, COLOR_RESET);
+    println!(" {}", "process resource limits".underline().bright_green());
     for i in all::<ProcessResourceLimit>().collect::<Vec<_>>() {
-        println!(
-            "  {ENTRY_COLOR}{:<43}{COLOR_RESET} soft:  {VALUE_COLOR}{:<24}{COLOR_RESET} hard:  {VALUE_COLOR}{}{COLOR_RESET}",
-            format!("{:?}", i),
-            i.soft_limit(),
-            i.hard_limit()
-        );
+        let soft_limit_result = catch_unwind(|| i.soft_limit());
+        let hard_limit_result = catch_unwind(|| i.hard_limit());
+
+        match (soft_limit_result, hard_limit_result) {
+            (Ok(soft), Ok(hard)) => {
+                println!(
+                    "  {:<43} soft:  {:<24} hard:  {}",
+                    format!("{:?}", i).white(),
+                    format!("{}", soft).bright_blue(),
+                    format!("{}", hard).bright_blue()
+                );
+            }
+            (Err(e), _) | (_, Err(e)) => {
+                println!(
+                    "  {:<43} Error: {}",
+                    format!("{:?}", i).white(),
+                    format!("Unable to acquire limit due to: {:?}", e).red()
+                );
+            }
+        }
     }
 }
 
@@ -112,6 +117,18 @@ pub fn generate() -> Result<()> {
     fs::create_dir_all(&config_dir)?;
 
     let default_file_path = config_dir.join("config.toml");
+
+    if default_file_path.exists() {
+        let proceed = Confirm::new()
+            .with_prompt("Configuration file already exists. Do you want to overwrite it?")
+            .default(false)
+            .interact()?;
+
+        if !proceed {
+            println!("Operation cancelled. Configuration file was not overwritten.");
+            return Ok(());
+        }
+    }
 
     let toml_string = toml::to_string_pretty(&Config::default())?;
 
