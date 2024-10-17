@@ -22,6 +22,22 @@ filegroup(
 rust_library(
     name = "iceoryx2",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = select({
+        "//:cfg_feature_dev_permissions": [
+            "dev_permissions"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_log": [
+            "logger_log"
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//:cfg_feature_logger_tracing": [
+            "logger_tracing"
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
@@ -44,5 +60,4 @@ rust_library(
     ],
 )
 
-# TODO: [349] add feature flags
 # TODO: [349] add tests

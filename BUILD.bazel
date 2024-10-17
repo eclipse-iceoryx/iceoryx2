@@ -50,27 +50,76 @@ string_flag(
     build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
-
 config_setting(
     name = "dev_permissions_auto",
     flag_values = {
         "//:feature_dev_permissions": "auto",
     },
 )
-
 config_setting(
     name = "dev_permissions_enabled",
     flag_values = {
         "//:feature_dev_permissions": "on",
     },
 )
-
 # NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
 #       therefore this target is introduced to keep all feature flags consistent
 selects.config_setting_group(
     name = "cfg_feature_dev_permissions",
     match_any = [
         "//:dev_permissions_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_logger_log",
+    build_setting_default = "auto",
+    visibility = ["//visibility:public"],
+)
+config_setting(
+    name = "logger_log_auto",
+    flag_values = {
+        "//:feature_logger_log": "auto",
+    },
+)
+config_setting(
+    name = "logger_log_enabled",
+    flag_values = {
+        "//:feature_logger_log": "on",
+    },
+)
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_logger_log",
+    match_any = [
+        ":logger_log_enabled",
+    ],
+)
+
+string_flag(
+    name = "feature_logger_tracing",
+    build_setting_default = "auto",
+    visibility = ["//visibility:public"],
+)
+config_setting(
+    name = "logger_tracing_auto",
+    flag_values = {
+        "//:feature_logger_tracing": "auto",
+    },
+)
+config_setting(
+    name = "logger_tracing_enabled",
+    flag_values = {
+        "//:feature_logger_tracing": "on",
+    },
+)
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_logger_tracing",
+    match_any = [
+        ":logger_tracing_enabled",
     ],
 )
 
