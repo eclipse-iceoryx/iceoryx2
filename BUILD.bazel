@@ -12,6 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 
 exports_files([
@@ -22,6 +23,7 @@ exports_files([
 #
 # Config & Platform support
 #
+
 config_setting(
     name = "linux",
     constraint_values = ["@platforms//os:linux"],
@@ -39,11 +41,42 @@ config_setting(
     flag_values = {"@bazel_tools//tools/cpp:compiler": "msvc-cl"},
 )
 
+#
+# Rust Feature Flags
+#
+
 string_flag(
     name = "feature_dev_permissions",
     build_setting_default = "auto",
     visibility = ["//visibility:public"],
 )
+
+config_setting(
+    name = "dev_permissions_auto",
+    flag_values = {
+        "//:feature_dev_permissions": "auto",
+    },
+)
+
+config_setting(
+    name = "dev_permissions_enabled",
+    flag_values = {
+        "//:feature_dev_permissions": "on",
+    },
+)
+
+# NOTE: while this seems superfluous, it is the pattern for cases where *_auto is on by default;
+#       therefore this target is introduced to keep all feature flags consistent
+selects.config_setting_group(
+    name = "cfg_feature_dev_permissions",
+    match_any = [
+        "//:dev_permissions_enabled",
+    ],
+)
+
+#
+# Alias
+#
 
 alias(
     name = "iceoryx2",
@@ -74,6 +107,10 @@ alias(
     actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx-static",
     visibility = ["//visibility:public"],
 )
+
+#
+# all_srcs
+#
 
 filegroup(
     name = "all_srcs",
