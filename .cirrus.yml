@@ -226,6 +226,8 @@ ubuntu_22_04_x64_stable_release_task:
 # Pipeline 4
 
 ubuntu_22_04_aarch64_min_version_debug_task:
+  # TODO run only after merge on main branch
+  only_if: $CIRRUS_BRANCH == 'main'
   depends_on: preflight_check
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
@@ -254,6 +256,8 @@ ubuntu_22_04_aarch64_beta_debug_task:
 # Pipeline 5
 
 ubuntu_22_04_aarch64_stable_release_task:
+  # TODO run only after merge on main branch
+  only_if: $CIRRUS_BRANCH == 'main'
   depends_on: preflight_check
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
@@ -268,6 +272,8 @@ ubuntu_22_04_aarch64_stable_release_task:
 # Pipeline 6
 
 arch_linux_x64_stable_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
   depends_on: preflight_check
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_ARCH_LINUX_X64
