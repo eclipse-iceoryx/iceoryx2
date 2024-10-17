@@ -425,6 +425,7 @@ fn unnamed_semaphore_multiple_ipc_semaphores_are_working() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn unnamed_semaphore_acquire_uninitialized_ipc_handle_failes() {
     let handle = UnnamedSemaphoreHandle::new();
 
@@ -433,6 +434,7 @@ fn unnamed_semaphore_acquire_uninitialized_ipc_handle_failes() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn unnamed_semaphore_acquiring_non_ipc_capable_handle_fails() {
     let handle = UnnamedSemaphoreHandle::new();
     let _sut1 = UnnamedSemaphoreBuilder::new()

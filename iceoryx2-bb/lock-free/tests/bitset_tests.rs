@@ -106,6 +106,7 @@ fn bit_set_set_single_bit_works() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn bit_set_set_bit_outside_of_bitset_leads_to_panic() {
     const CAPACITY: usize = 1551;
     let sut = BitSet::new(CAPACITY);
