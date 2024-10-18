@@ -241,6 +241,8 @@ build --@iceoryx2//:foo=on
 | Feature Flag            | Valid Values                 | Crate Default      |
 | ----------------------- | ---------------------------- | ------------------ |
 | dev_permissions         | auto, on, off                | auto == off        |
+| logger_log              | auto, on, off                | auto == off        |
+| logger_tracing          | auto, on, off                | auto == off        |
 
 ## Instructions for iceoryx2 Developers
 

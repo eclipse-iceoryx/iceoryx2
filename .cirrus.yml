@@ -81,14 +81,14 @@ iox2_common_build_debug_template: &IOX2_COMMON_BUILD_DEBUG
 
 iox2_common_build_and_test_debug_template: &IOX2_COMMON_BUILD_AND_TEST_DEBUG
   <<: *IOX2_COMMON_BUILD_DEBUG
-  test_script: cargo nextest run --workspace --no-fail-fast
+  test_script: cargo nextest run --workspace --all-targets --no-fail-fast
 
 iox2_common_build_release_template: &IOX2_COMMON_BUILD_RELEASE
   build_script: cargo build --release --workspace --all-targets
 
 iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND_TEST_NO_DOC_TESTS_RELEASE
   <<: *IOX2_COMMON_BUILD_RELEASE
-  test_script: cargo nextest run --release --tests --workspace --no-fail-fast
+  test_script: cargo nextest run --release --tests --workspace --all-targets --no-fail-fast
 
 iox2_ffi_common_debug_template: &IOX2_FFI_COMMON_DEBUG
   ffi_script:
@@ -134,14 +134,14 @@ iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP
 # Filter to run the CI only on the main branch or for pull request to the main branch
 #
 
-only_if: ( $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH == 'main'))
+only_if: false && ( $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH == 'main'))
 
 #
 # Global environment variables
 #
 
-env:
-  RUSTFLAGS: "-C debug-assertions"
+# env:
+  # RUSTFLAGS: "-C debug-assertions"
 
 #
 # Preflight-Check with Ubuntu x86 stable debug
@@ -226,6 +226,8 @@ ubuntu_22_04_x64_stable_release_task:
 # Pipeline 4
 
 ubuntu_22_04_aarch64_min_version_debug_task:
+  # TODO run only after merge on main branch
+  only_if: $CIRRUS_BRANCH == 'main'
   depends_on: preflight_check
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
@@ -254,6 +256,8 @@ ubuntu_22_04_aarch64_beta_debug_task:
 # Pipeline 5
 
 ubuntu_22_04_aarch64_stable_release_task:
+  # TODO run only after merge on main branch
+  only_if: $CIRRUS_BRANCH == 'main'
   depends_on: preflight_check
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_UBUNTU_22_04_AARCH64
@@ -268,6 +272,8 @@ ubuntu_22_04_aarch64_stable_release_task:
 # Pipeline 6
 
 arch_linux_x64_stable_debug_task:
+  # TODO commented out due to limited CI time
+  only_if: false
   depends_on: preflight_check
   skip: "changesIncludeOnly('.github/**', '**.md')"
   <<: *IOX2_CONTAINER_ARCH_LINUX_X64

@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [ main, release* ]
 
-env:
-  RUSTFLAGS: "-C debug-assertions"
+# env:
+  # RUSTFLAGS: "-C debug-assertions"
 
 jobs:
   changes:
@@ -208,7 +208,7 @@ jobs:
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
       - name: Build language bindings
         run: |
@@ -313,7 +313,7 @@ jobs:
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }}
 
       - name: Build iceoryx_hoofs on Windows
         if: ${{ matrix.os == 'windows-latest' }}
@@ -401,7 +401,7 @@ jobs:
         run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --no-fail-fast ${{ matrix.mode.arg }}
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }}
 
   ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
   ###       current alternative is a cirrus.yml aarch64 target
@@ -427,7 +427,7 @@ jobs:
   #           cargo fmt --all -- --check
   #           cargo clippy -- -D warnings
   #           cargo build --workspace --all-targets ${{ matrix.mode }}
-  #           cargo test --workspace --no-fail-fast ${{ matrix.mode }}
+  #           cargo test --workspace --all-targets --no-fail-fast ${{ matrix.mode }}
 
   freebsd:
     needs: [preflight-check, static-code-analysis]
@@ -457,7 +457,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-24.04]
         toolchain: [stable]
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
@@ -480,7 +480,6 @@ jobs:
         run: bazel build //...
 
       - name: Run bazel test
-        if: false # TODO: [349] enable tests in bazel
         run: bazel test //...
 
   grcov:

@@ -665,7 +665,7 @@ constexpr auto from<iox2::LogLevel, iox2_log_level_e>(iox2::LogLevel value) noex
 template <>
 constexpr auto from<int, iox2::LogLevel>(int value) noexcept -> iox2::LogLevel {
     const auto variant = static_cast<iox2_log_level_e>(value);
-    switch (value) {
+    switch (variant) {
     case iox2_log_level_e_TRACE:
         return iox2::LogLevel::Trace;
     case iox2_log_level_e_DEBUG:

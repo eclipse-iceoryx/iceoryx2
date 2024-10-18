@@ -72,5 +72,4 @@ rust_library(
     },
 )
 
-# TODO: [349] add feature flags
 # TODO: [349] add tests

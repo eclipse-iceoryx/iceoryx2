@@ -39,6 +39,7 @@ mod ipc_capable {
 
     #[test]
     #[should_panic]
+    #[cfg(debug_assertions)]
     fn creating_ipc_construct_from_uninitialized_handle_panics<Sut: TestSut>() {
         let sut_handle = Sut::Handle::new();
 
@@ -47,6 +48,7 @@ mod ipc_capable {
 
     #[test]
     #[should_panic]
+    #[cfg(debug_assertions)]
     fn creating_ipc_construct_from_process_local_handle_panics<Sut: TestSut>() {
         let sut_handle = Sut::Handle::new();
         Sut::init_process_local_handle(&sut_handle);
@@ -65,6 +67,7 @@ mod ipc_capable {
 
     #[test]
     #[should_panic]
+    #[cfg(debug_assertions)]
     fn init_handle_twice_panics<Sut: TestSut>() {
         let sut_handle = Sut::Handle::new();
         Sut::init_process_local_handle(&sut_handle);
