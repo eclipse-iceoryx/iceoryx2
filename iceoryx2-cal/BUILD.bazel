@@ -63,7 +63,6 @@ rust_test_suite(
         "@crate_index//:lazy_static",
         "@crate_index//:serde",
     ],
-    tags = ["external", "no-sandbox", "requires-fakeroot", "no-remote"],
     proc_macro_deps = [
         "@crate_index//:generic-tests",
     ],
