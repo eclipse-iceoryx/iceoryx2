@@ -11,25 +11,16 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod shared_memory_posix_shared_memory_tests {
-    use iceoryx2_bb_elementary::math::ToB64;
     use iceoryx2_bb_posix::creation_mode::CreationMode;
     use iceoryx2_bb_posix::permission::Permission;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_bb_system_types::file_name::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::shared_memory::*;
     use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
+    use iceoryx2_cal::testing::generate_name;
     use std::time::Duration;
 
     const TIMEOUT: Duration = Duration::from_millis(100);
-
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"test_").unwrap();
-        file.push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
-            .unwrap();
-        file
-    }
 
     #[test]
     fn waiting_for_initialization_works() {
