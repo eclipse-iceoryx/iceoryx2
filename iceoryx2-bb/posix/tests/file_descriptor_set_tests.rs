@@ -14,6 +14,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 use iceoryx2_bb_posix::file_descriptor_set::*;
+use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -41,6 +42,7 @@ fn generate_socket_name() -> FilePath {
 
 #[test]
 fn file_descriptor_set_timed_wait_blocks_at_least_timeout() {
+    create_test_directory();
     let socket_name = generate_socket_name();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -77,6 +79,7 @@ fn file_descriptor_set_add_and_remove_works() {
     let mut sockets = vec![];
     let number_of_fds: usize = core::cmp::min(128, posix::FD_SETSIZE);
 
+    create_test_directory();
     for _ in 0..number_of_fds {
         let socket_name = generate_socket_name();
         sockets.push(
@@ -113,6 +116,7 @@ fn file_descriptor_set_add_and_remove_works() {
 fn file_descriptor_set_add_same_fd_twice_fails() {
     let fd_set = FileDescriptorSet::new();
 
+    create_test_directory();
     let socket_name = generate_socket_name();
     let socket = UnixDatagramReceiverBuilder::new(&socket_name)
         .creation_mode(CreationMode::PurgeAndCreate)
@@ -127,6 +131,7 @@ fn file_descriptor_set_add_same_fd_twice_fails() {
 
 #[test]
 fn file_descriptor_set_timed_wait_works() {
+    create_test_directory();
     let socket_name = generate_socket_name();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -157,6 +162,7 @@ fn file_descriptor_set_timed_wait_works() {
 
 #[test]
 fn file_descriptor_set_blocking_wait_immediately_returns_notifications() {
+    create_test_directory();
     let socket_name = generate_socket_name();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -187,6 +193,7 @@ fn file_descriptor_set_blocking_wait_immediately_returns_notifications() {
 
 #[test]
 fn file_descriptor_guard_has_access_to_underlying_fd() {
+    create_test_directory();
     let socket_name = generate_socket_name();
 
     let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
@@ -215,6 +222,7 @@ fn file_descriptor_triggering_many_returns_correct_number_of_notifications() {
     let mut senders = vec![];
     let number_of_fds: usize = core::cmp::min(128, posix::FD_SETSIZE);
 
+    create_test_directory();
     for _ in 0..number_of_fds {
         let socket_name = generate_socket_name();
         sockets.push(

@@ -17,6 +17,7 @@ use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::process::ProcessId;
 use iceoryx2_bb_posix::socket_ancillary::*;
+use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
@@ -102,6 +103,7 @@ fn socket_ancillary_add_file_descriptors_work() {
     let mut test = TestFixture::new();
     let mut sut = SocketAncillary::new();
 
+    create_test_directory();
     for _i in 0..MAX_FILE_DESCRIPTORS_PER_MESSAGE - 1 {
         assert_that!(sut.add_fd(test.create_file().file_descriptor().clone()), eq true);
         assert_that!(sut, is_not_empty);

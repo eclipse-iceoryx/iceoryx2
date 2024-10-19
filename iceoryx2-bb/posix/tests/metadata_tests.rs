@@ -17,6 +17,7 @@ use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::file_type::*;
 use iceoryx2_bb_posix::group::*;
+use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::user::*;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -27,6 +28,7 @@ use iceoryx2_pal_posix::posix::POSIX_SUPPORT_USERS_AND_GROUPS;
 
 #[test]
 fn metadata_reads_basic_stats_correctly() {
+    create_test_directory();
     let file_name =
         FilePath::from_path_and_file(&test_directory(), &FileName::new(b"meta_test").unwrap())
             .unwrap();
@@ -49,6 +51,7 @@ fn metadata_reads_basic_stats_correctly() {
 fn metadata_reads_owner_and_permission_stats_correctly() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS && POSIX_SUPPORT_PERMISSIONS);
 
+    create_test_directory();
     let file_name =
         FilePath::from_path_and_file(&test_directory(), &FileName::new(b"meta_test_123").unwrap())
             .unwrap();

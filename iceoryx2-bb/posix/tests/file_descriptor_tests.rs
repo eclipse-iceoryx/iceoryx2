@@ -17,6 +17,7 @@ use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::ownership::*;
 use iceoryx2_bb_posix::shared_memory::*;
+use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_posix::user::*;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -53,6 +54,7 @@ impl GenericTestBuilder for File {
 
         let file_content = [170u8; 2048];
 
+        create_test_directory();
         let mut file = FileBuilder::new(&name)
             .creation_mode(CreationMode::PurgeAndCreate)
             .create()
@@ -82,6 +84,8 @@ mod file_descriptor_management {
     fn owner_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
+        create_test_directory();
+
         let mut sut = Sut::sut();
 
         let uid = User::from_self().unwrap().uid();
@@ -101,6 +105,8 @@ mod file_descriptor_management {
     fn permission_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_PERMISSIONS);
 
+        create_test_directory();
+
         let mut sut = Sut::sut();
 
         assert_that!(sut.set_permission(Permission::ALL), is_ok);
@@ -111,6 +117,8 @@ mod file_descriptor_management {
     #[test]
     fn metadata_handling_works<Sut: GenericTestBuilder + FileDescriptorManagement>() {
         test_requires!(POSIX_SUPPORT_PERMISSIONS);
+
+        create_test_directory();
 
         let mut sut = Sut::sut();
 

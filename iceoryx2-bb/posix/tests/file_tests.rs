@@ -14,6 +14,7 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
+use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -33,6 +34,8 @@ fn generate_file_name() -> FilePath {
     )
     .unwrap();
 
+    println!("#### {}", file);
+
     FilePath::from_path_and_file(&test_directory(), &file).unwrap()
 }
 
@@ -42,6 +45,7 @@ struct TestFixture {
 
 impl TestFixture {
     fn new() -> TestFixture {
+        create_test_directory();
         let file = generate_file_name();
         File::remove(&file).ok();
         TestFixture { file }
@@ -265,6 +269,7 @@ fn file_remove_returns_false_when_file_not_exists() -> Result<(), FileError> {
 
 #[test]
 fn file_newly_created_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
+    create_test_directory();
     let file_name = generate_file_name();
 
     let file = FileBuilder::new(&file_name)
@@ -282,6 +287,7 @@ fn file_newly_created_file_is_removed_when_it_has_ownership() -> Result<(), File
 
 #[test]
 fn file_newly_created_file_has_not_ownership_by_default() -> Result<(), FileError> {
+    create_test_directory();
     let file_name = generate_file_name();
 
     let file = FileBuilder::new(&file_name)
@@ -300,6 +306,7 @@ fn file_newly_created_file_has_not_ownership_by_default() -> Result<(), FileErro
 
 #[test]
 fn file_opened_file_is_removed_when_it_has_ownership() -> Result<(), FileError> {
+    create_test_directory();
     let file_name = generate_file_name();
 
     FileBuilder::new(&file_name)
@@ -321,6 +328,7 @@ fn file_opened_file_is_removed_when_it_has_ownership() -> Result<(), FileError> 
 
 #[test]
 fn file_opened_file_has_not_ownership_by_default() -> Result<(), FileError> {
+    create_test_directory();
     let file_name = generate_file_name();
 
     FileBuilder::new(&file_name)
@@ -343,6 +351,7 @@ fn file_opened_file_has_not_ownership_by_default() -> Result<(), FileError> {
 
 #[test]
 fn file_acquire_ownership_works() -> Result<(), FileError> {
+    create_test_directory();
     let file_name = generate_file_name();
 
     let mut file = FileBuilder::new(&file_name)
@@ -361,6 +370,7 @@ fn file_acquire_ownership_works() -> Result<(), FileError> {
 
 #[test]
 fn file_release_ownership_works() -> Result<(), FileError> {
+    create_test_directory();
     let file_name = generate_file_name();
 
     let mut file = FileBuilder::new(&file_name)
