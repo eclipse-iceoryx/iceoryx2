@@ -12,30 +12,18 @@
 
 #[generic_tests::define]
 mod monitoring {
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::monitoring::*;
     use iceoryx2_cal::named_concept::*;
-
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"monitoring_tests_").unwrap();
-        file.push_bytes(
-            UniqueSystemId::new()
-                .unwrap()
-                .value()
-                .to_string()
-                .as_bytes(),
-        )
-        .unwrap();
-        file
-    }
+    use iceoryx2_cal::testing::*;
 
     #[test]
     fn create_works<Sut: Monitoring>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_token = Sut::Builder::new(&name).token();
+        let sut_token = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_token, is_ok);
         assert_that!(*sut_token.as_ref().unwrap().name(), eq name);
     }
@@ -43,11 +31,12 @@ mod monitoring {
     #[test]
     fn create_same_token_twice_fails<Sut: Monitoring>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_token_1 = Sut::Builder::new(&name).token();
+        let sut_token_1 = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_token_1, is_ok);
 
-        let sut_token_2 = Sut::Builder::new(&name).token();
+        let sut_token_2 = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_token_2, is_err);
         assert_that!(
             sut_token_2.err().unwrap(), eq
@@ -58,20 +47,22 @@ mod monitoring {
     #[test]
     fn token_removes_resources_when_going_out_of_scope<Sut: Monitoring>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_token_1 = Sut::Builder::new(&name).token();
+        let sut_token_1 = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_token_1, is_ok);
         drop(sut_token_1);
 
-        let sut_token_2 = Sut::Builder::new(&name).token();
+        let sut_token_2 = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_token_2, is_ok);
     }
 
     #[test]
     fn create_cleaner_fails_when_token_does_not_exist<Sut: Monitoring>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_cleaner = Sut::Builder::new(&name).cleaner();
+        let sut_cleaner = Sut::Builder::new(&name).config(&config).cleaner();
         assert_that!(sut_cleaner, is_err);
         assert_that!(sut_cleaner.err().unwrap(), eq MonitoringCreateCleanerError::DoesNotExist);
     }
@@ -80,12 +71,13 @@ mod monitoring {
     #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
     fn monitor_works<Sut: Monitoring>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_monitor = Sut::Builder::new(&name).monitor().unwrap();
+        let sut_monitor = Sut::Builder::new(&name).config(&config).monitor().unwrap();
         assert_that!(*sut_monitor.name(), eq name);
         assert_that!(sut_monitor.state().unwrap(), eq State::DoesNotExist);
 
-        let sut_token = Sut::Builder::new(&name).token();
+        let sut_token = Sut::Builder::new(&name).config(&config).token();
         assert_that!(sut_monitor.state().unwrap(), eq State::Alive);
 
         drop(sut_token);
@@ -96,15 +88,16 @@ mod monitoring {
     fn list_monitoring_token_works<Sut: Monitoring>() {
         let mut sut_names = vec![];
         const LIMIT: usize = 10;
+        let config = generate_isolated_config::<Sut>();
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
         for i in 0..LIMIT {
             sut_names.push(generate_name());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(false));
-            std::mem::forget(Sut::Builder::new(&sut_names[i]).token());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
+            std::mem::forget(Sut::Builder::new(&sut_names[i]).config(&config).token());
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(true));
 
-            let list = <Sut as NamedConceptMgmt>::list().unwrap();
+            let list = <Sut as NamedConceptMgmt>::list_cfg(&config).unwrap();
             assert_that!(list, len i + 1);
             let does_exist_in_list = |value| {
                 for e in &list {
@@ -121,19 +114,20 @@ mod monitoring {
         }
 
         for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(false));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
         }
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
     #[test]
     fn custom_suffix_keeps_monitoring_token_separated<Sut: Monitoring>() {
-        let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
+        let config = generate_isolated_config::<Sut>();
+        let config_1 = config
+            .clone()
             .suffix(unsafe { &FileName::new_unchecked(b".suffix_1") });
-        let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { &FileName::new_unchecked(b".suffix_2") });
+        let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".suffix_2") });
 
         let sut_name = generate_name();
 
