@@ -14,6 +14,7 @@ build --action_env=CARGO_BAZEL_REPIN=true
 # build --strategy=Genrule=standalone
 
 test --test_output=streamed
+test --nocache_test_results
 
 #
 # feature flags
