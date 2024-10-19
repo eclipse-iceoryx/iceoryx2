@@ -13,7 +13,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_static_library")
+load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_static_library", "rust_test")
 
 filegroup(
     name = "all_srcs",
@@ -98,4 +98,21 @@ cc_library(
     linkstatic = True,
 )
 
-# TODO: [349] add tests
+rust_test(
+    name = "iceoryx2-ffi-tests",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-cal:iceoryx2-cal",
+    ],
+    proc_macro_deps = [
+        "//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
+        "@crate_index//:generic-tests",
+    ],
+)

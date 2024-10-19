@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_proc_macro")
+load("@rules_rust//rust:defs.bzl", "rust_proc_macro", "rust_test_suite")
 
 filegroup(
     name = "all_srcs",
@@ -30,4 +30,15 @@ rust_proc_macro(
     ],
 )
 
-# TODO: [349] add tests
+rust_test_suite(
+    name = "iceoryx2-bb-derive-macros-tests",
+    srcs = glob(["tests/**/*.rs"]),
+    deps = [
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+    ],
+    proc_macro_deps = [
+        ":iceoryx2-bb-derive-macros",
+        "@crate_index//:generic-tests",
+    ],
+)

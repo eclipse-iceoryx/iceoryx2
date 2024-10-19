@@ -15,6 +15,13 @@ use iceoryx2_bb_testing::assert_that;
 
 #[test]
 fn package_version_works() {
+    // NOTE: The test is skipped when not run with cargo but with bazel
+    //       The CI which runs with cargo ensures that the constants defined
+    //       in PackageVersion::get equal the package version.
+    if option_env!("CARGO").is_none() {
+        return;
+    }
+
     let major = option_env!("CARGO_PKG_VERSION_MAJOR")
         .and_then(|s| s.parse::<u16>().ok())
         .expect("Contains a valid major version number.");

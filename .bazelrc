@@ -7,6 +7,8 @@ build:mingw --cxxopt="-std=c++17"
 
 build --action_env=CARGO_BAZEL_REPIN=true
 
+#test --local_test_jobs=1
+
 #
 # feature flags
 #
