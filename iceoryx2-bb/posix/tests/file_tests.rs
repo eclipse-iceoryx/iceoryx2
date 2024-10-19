@@ -34,8 +34,6 @@ fn generate_file_name() -> FilePath {
     )
     .unwrap();
 
-    println!("#### {}", file);
-
     FilePath::from_path_and_file(&test_directory(), &file).unwrap()
 }
 
