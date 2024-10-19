@@ -18,6 +18,7 @@ mod waitset {
     use iceoryx2::port::notifier::Notifier;
     use iceoryx2::port::waitset::{WaitSetAttachmentError, WaitSetRunError};
     use iceoryx2::prelude::{WaitSetBuilder, *};
+    use iceoryx2::testing::*;
     use iceoryx2_bb_posix::config::test_directory;
     use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_posix::file::Permission;
@@ -98,7 +99,8 @@ mod waitset {
         const LISTENER_LIMIT: usize = 16;
         const EXTERNAL_LIMIT: usize = 16;
 
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
         let mut listeners = vec![];
         let mut sockets = vec![];
@@ -139,7 +141,8 @@ mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
@@ -157,7 +160,8 @@ mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
@@ -176,7 +180,8 @@ mod waitset {
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
         set_log_level(LogLevel::Debug);
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
@@ -222,7 +227,8 @@ mod waitset {
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
         let _watchdog = Watchdog::new();
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
@@ -248,7 +254,8 @@ mod waitset {
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
         let _watchdog = Watchdog::new();
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener, _) = create_event::<S>(&node);
@@ -268,7 +275,8 @@ mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
@@ -361,7 +369,8 @@ mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
@@ -430,7 +439,8 @@ mod waitset {
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,
     {
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let sut = WaitSetBuilder::new().create::<S>().unwrap();
 
         let (listener_1, notifier_1) = create_event::<S>(&node);
