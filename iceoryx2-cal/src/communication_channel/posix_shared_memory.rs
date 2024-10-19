@@ -94,6 +94,7 @@ impl Default for Configuration {
 impl From<Configuration> for dynamic_storage::posix_shared_memory::Configuration<Management> {
     fn from(value: Configuration) -> Self {
         Self::default()
+            .prefix(&value.prefix)
             .suffix(&value.suffix)
             .path_hint(&value.path_hint)
     }

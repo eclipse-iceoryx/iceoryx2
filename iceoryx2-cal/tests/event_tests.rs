@@ -14,39 +14,33 @@
 mod event {
     use std::collections::HashSet;
     use std::sync::atomic::{AtomicU64, Ordering};
-    use std::sync::Barrier;
+    use std::sync::{Barrier, Mutex};
     use std::time::{Duration, Instant};
 
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::event::{TriggerId, *};
     use iceoryx2_cal::named_concept::*;
+    use iceoryx2_cal::testing::*;
 
     const TIMEOUT: Duration = Duration::from_millis(25);
-
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"event_tests_").unwrap();
-        file.push_bytes(
-            UniqueSystemId::new()
-                .unwrap()
-                .value()
-                .to_string()
-                .as_bytes(),
-        )
-        .unwrap();
-        file
-    }
 
     #[test]
     fn create_works<Sut: Event>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         assert_that!(*sut_listener.name(), eq name);
         assert_that!(*sut_notifier.name(), eq name);
@@ -55,21 +49,29 @@ mod event {
     #[test]
     fn listener_cleans_up_when_out_of_scope<Sut: Event>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        assert_that!(Sut::does_exist(&name).unwrap(), eq false);
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
-        assert_that!(Sut::does_exist(&name).unwrap(), eq true);
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq true);
 
         drop(sut_listener);
-        assert_that!(Sut::does_exist(&name).unwrap(), eq false);
+        assert_that!(Sut::does_exist_cfg(&name, &config).unwrap(), eq false);
     }
 
     #[test]
     fn cannot_be_created_twice<Sut: Event>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let _sut = Sut::ListenerBuilder::new(&name).create().unwrap();
-        let sut = Sut::ListenerBuilder::new(&name).create();
+        let _sut = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut = Sut::ListenerBuilder::new(&name).config(&config).create();
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq ListenerCreateError::AlreadyExists);
@@ -78,8 +80,9 @@ mod event {
     #[test]
     fn cannot_open_non_existing<Sut: Event>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut = Sut::NotifierBuilder::new(&name).open();
+        let sut = Sut::NotifierBuilder::new(&name).config(&config).open();
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq NotifierCreateError::DoesNotExist);
@@ -90,9 +93,16 @@ mod event {
         let _watchdog = Watchdog::new();
         const REPETITIONS: u64 = 8;
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         let trigger_id = TriggerId::new(0);
 
@@ -121,9 +131,16 @@ mod event {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 8;
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         for i in 0..REPETITIONS {
             sut_notifier.notify(TriggerId::new(i)).unwrap();
@@ -155,9 +172,16 @@ mod event {
     ) {
         const REPETITIONS: usize = 8;
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         for i in 0..REPETITIONS {
             sut_notifier.notify(TriggerId::new(i)).unwrap();
@@ -199,11 +223,20 @@ mod event {
         const REPETITIONS: usize = 2;
         const SOURCES: usize = 4;
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
         let mut sources = vec![];
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
         for _ in 0..SOURCES {
-            sources.push(Sut::NotifierBuilder::new(&name).open().unwrap());
+            sources.push(
+                Sut::NotifierBuilder::new(&name)
+                    .config(&config)
+                    .open()
+                    .unwrap(),
+            );
         }
 
         let mut event_ids = vec![];
@@ -250,9 +283,16 @@ mod event {
     #[test]
     fn try_wait_does_not_block<Sut: Event>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
-        let _sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let _sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         let result = sut_listener.try_wait_one().unwrap();
         assert_that!(result, is_none);
@@ -261,9 +301,16 @@ mod event {
     #[test]
     fn timed_wait_does_block_for_at_least_timeout<Sut: Event>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
-        let _sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let _sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         let start = Instant::now();
         let result = sut_listener.timed_wait_one(TIMEOUT).unwrap();
@@ -275,6 +322,7 @@ mod event {
     fn blocking_wait_blocks_until_notification_arrives<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_name();
+        let config = Mutex::new(generate_isolated_config::<Sut>());
 
         let counter = AtomicU64::new(0);
         let handle = BarrierHandle::new();
@@ -282,7 +330,10 @@ mod event {
 
         std::thread::scope(|s| {
             let t = s.spawn(|| {
-                let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+                let sut_listener = Sut::ListenerBuilder::new(&name)
+                    .config(&config.lock().unwrap())
+                    .create()
+                    .unwrap();
                 barrier.wait();
                 let result = sut_listener.blocking_wait_one().unwrap();
                 counter.store(1, Ordering::SeqCst);
@@ -291,7 +342,10 @@ mod event {
             });
 
             barrier.wait();
-            let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+            let sut_notifier = Sut::NotifierBuilder::new(&name)
+                .config(&config.lock().unwrap())
+                .open()
+                .unwrap();
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::SeqCst);
             sut_notifier.notify(TriggerId::new(89)).unwrap();
@@ -308,6 +362,7 @@ mod event {
     fn timed_wait_blocks_until_notification_arrives<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_name();
+        let config = Mutex::new(generate_isolated_config::<Sut>());
 
         let counter = AtomicU64::new(0);
         let handle = BarrierHandle::new();
@@ -315,7 +370,10 @@ mod event {
 
         std::thread::scope(|s| {
             let t = s.spawn(|| {
-                let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+                let sut_listener = Sut::ListenerBuilder::new(&name)
+                    .config(&config.lock().unwrap())
+                    .create()
+                    .unwrap();
                 barrier.wait();
                 let result = sut_listener.timed_wait_one(TIMEOUT * 1000).unwrap();
                 counter.store(1, Ordering::SeqCst);
@@ -324,7 +382,10 @@ mod event {
             });
 
             barrier.wait();
-            let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+            let sut_notifier = Sut::NotifierBuilder::new(&name)
+                .config(&config.lock().unwrap())
+                .open()
+                .unwrap();
             std::thread::sleep(TIMEOUT);
             let counter_old = counter.load(Ordering::SeqCst);
             sut_notifier.notify(TriggerId::new(82)).unwrap();
@@ -339,15 +400,20 @@ mod event {
     fn list_events_works<Sut: Event>() {
         let mut sut_names = vec![];
         const LIMIT: usize = 10;
+        let config = generate_isolated_config::<Sut>();
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
         for i in 0..LIMIT {
             sut_names.push(generate_name());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(false));
-            std::mem::forget(Sut::ListenerBuilder::new(&sut_names[i]).create());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
+            std::mem::forget(
+                Sut::ListenerBuilder::new(&sut_names[i])
+                    .config(&config)
+                    .create(),
+            );
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(true));
 
-            let list = <Sut as NamedConceptMgmt>::list().unwrap();
+            let list = <Sut as NamedConceptMgmt>::list_cfg(&config).unwrap();
             assert_that!(list, len i + 1);
             let does_exist_in_list = |value| {
                 for e in &list {
@@ -364,19 +430,20 @@ mod event {
         }
 
         for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(false));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
         }
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
     #[test]
     fn custom_suffix_keeps_events_separated<Sut: Event>() {
-        let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
+        let config = generate_isolated_config::<Sut>();
+        let config_1 = config
+            .clone()
             .suffix(unsafe { &FileName::new_unchecked(b".suffix_1") });
-        let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { &FileName::new_unchecked(b".suffix_2") });
+        let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".suffix_2") });
 
         let sut_name = generate_name();
 
@@ -434,12 +501,17 @@ mod event {
 
         const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1234);
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let _sut_listener = Sut::ListenerBuilder::new(&name)
             .trigger_id_max(TRIGGER_ID_MAX)
+            .config(&config)
             .create()
             .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         if Sut::has_trigger_id_limit() {
             assert_that!(sut_notifier.trigger_id_max(), eq TRIGGER_ID_MAX);
@@ -454,12 +526,17 @@ mod event {
 
         const TRIGGER_ID_MAX: TriggerId = TriggerId::new(1024);
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .trigger_id_max(TRIGGER_ID_MAX)
+            .config(&config)
             .create()
             .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         for i in 0..TRIGGER_ID_MAX.as_value() {
             assert_that!(sut_notifier.notify(TriggerId::new(i)), is_ok);
@@ -490,12 +567,17 @@ mod event {
         let _watchdog = Watchdog::new();
         const REPETITIONS: usize = 8;
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut_listener = Sut::ListenerBuilder::new(&name)
             .trigger_id_max(TriggerId::new(REPETITIONS))
+            .config(&config)
             .create()
             .unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         for i in 1..=REPETITIONS {
             for n in 0..i {
@@ -537,8 +619,12 @@ mod event {
     fn try_wait_all_does_not_block<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
 
         let mut callback_called = false;
         sut_listener
@@ -551,8 +637,12 @@ mod event {
     fn timed_wait_all_does_block_for_at_least_timeout<Sut: Event>() {
         let _watchdog = Watchdog::new();
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
 
         let mut callback_called = false;
         let now = Instant::now();
@@ -574,10 +664,14 @@ mod event {
         let barrier = Barrier::new(2);
         let counter = AtomicU64::new(0);
         let id = TriggerId::new(5);
+        let config = Mutex::new(generate_isolated_config::<Sut>());
 
         std::thread::scope(|s| {
             let t1 = s.spawn(|| {
-                let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
+                let sut_listener = Sut::ListenerBuilder::new(&name)
+                    .config(&config.lock().unwrap())
+                    .create()
+                    .unwrap();
                 barrier.wait();
 
                 let mut id_vec = vec![];
@@ -589,7 +683,10 @@ mod event {
             });
 
             barrier.wait();
-            let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+            let sut_notifier = Sut::NotifierBuilder::new(&name)
+                .config(&config.lock().unwrap())
+                .open()
+                .unwrap();
             std::thread::sleep(TIMEOUT);
             assert_that!(counter.load(Ordering::Relaxed), eq 0);
             sut_notifier.notify(id).unwrap();
@@ -615,9 +712,16 @@ mod event {
     #[test]
     fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_listener = Sut::ListenerBuilder::new(&name).create().unwrap();
-        let sut_notifier = Sut::NotifierBuilder::new(&name).open().unwrap();
+        let sut_listener = Sut::ListenerBuilder::new(&name)
+            .config(&config)
+            .create()
+            .unwrap();
+        let sut_notifier = Sut::NotifierBuilder::new(&name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         drop(sut_listener);
 
