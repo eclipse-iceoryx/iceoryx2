@@ -23,7 +23,6 @@ mod node {
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -246,10 +245,6 @@ mod node {
             assert_node_presence::<S>(&node_details_1, &config_1);
             assert_node_presence::<S>(&node_details_2, &config_2);
         }
-
-        let mut path = *config.global.root_path();
-        path.add_path_entry(&config.global.node.directory).unwrap();
-        let _ = Directory::remove(&path);
     }
 
     #[test]
