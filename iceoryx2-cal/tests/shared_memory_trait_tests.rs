@@ -15,11 +15,10 @@ mod shared_memory {
     use std::alloc::Layout;
 
     use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_elementary::math::ToB64;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::named_concept::*;
+    use iceoryx2_cal::testing::*;
     use iceoryx2_cal::{
         named_concept::NamedConceptBuilder,
         shared_memory::*,
@@ -37,19 +36,16 @@ mod shared_memory {
         bucket_layout: DEFAULT_LAYOUT,
     };
 
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"test_").unwrap();
-        file.push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
-            .unwrap();
-        file
-    }
-
     #[test]
     fn size_of_zero_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_create = Sut::Builder::new(&name).size(0).create(&SHM_CONFIG);
-        let sut_open = Sut::Builder::new(&name).open();
+        let sut_create = Sut::Builder::new(&name)
+            .size(0)
+            .config(&config)
+            .create(&SHM_CONFIG);
+        let sut_open = Sut::Builder::new(&name).config(&config).open();
 
         assert_that!(sut_create, is_err);
         assert_that!(sut_open, is_err);
@@ -64,12 +60,14 @@ mod shared_memory {
     #[test]
     fn non_zero_size_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut_create = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
+            .config(&config)
             .create(&SHM_CONFIG)
             .unwrap();
-        let sut_open = Sut::Builder::new(&name).open().unwrap();
+        let sut_open = Sut::Builder::new(&name).config(&config).open().unwrap();
 
         assert_that!(sut_create.size(), ge DEFAULT_SIZE);
         assert_that!(sut_open.size(), ge DEFAULT_SIZE);
@@ -78,9 +76,11 @@ mod shared_memory {
     #[test]
     fn create_after_drop_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut_create = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
+            .config(&config)
             .create(&SHM_CONFIG);
 
         assert_that!(sut_create, is_ok);
@@ -88,6 +88,7 @@ mod shared_memory {
 
         let sut_create = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
+            .config(&config)
             .create(&SHM_CONFIG);
 
         assert_that!(sut_create, is_ok);
@@ -96,12 +97,15 @@ mod shared_memory {
     #[test]
     fn creating_it_twice_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut_create1 = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
+            .config(&config)
             .create(&SHM_CONFIG);
         let sut_create2 = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
+            .config(&config)
             .create(&SHM_CONFIG);
 
         assert_that!(sut_create1, is_ok);
@@ -116,8 +120,9 @@ mod shared_memory {
     #[test]
     fn opening_non_existing_fails<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_open = Sut::Builder::new(&name).open();
+        let sut_open = Sut::Builder::new(&name).config(&config).open();
 
         assert_that!(sut_open, is_err);
 
@@ -127,10 +132,12 @@ mod shared_memory {
     #[test]
     fn allocation_with_creator_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
         let mut chunks = vec![];
 
         let sut_create = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
+            .config(&config)
             .create(&SHM_CONFIG)
             .unwrap();
 
@@ -158,10 +165,12 @@ mod shared_memory {
     #[test]
     fn allocation_with_creator_and_client_works<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
         let mut chunks = vec![];
 
         let sut_create = Sut::Builder::new(&name)
             .size(DEFAULT_SIZE)
+            .config(&config)
             .create(&SHM_CONFIG)
             .unwrap();
 
@@ -171,7 +180,7 @@ mod shared_memory {
             chunks.push(chunk.unwrap());
         }
 
-        let sut_open = Sut::Builder::new(&name).open().unwrap();
+        let sut_open = Sut::Builder::new(&name).config(&config).open().unwrap();
         for _ in 0..NUMBER_OF_CHUNKS / 2 {
             let chunk = sut_open.allocate(DEFAULT_LAYOUT);
             assert_that!(chunk, is_ok);
@@ -196,6 +205,7 @@ mod shared_memory {
     #[test]
     fn allocated_chunks_have_correct_alignment<Sut: SharedMemory<DefaultAllocator>>() {
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         for i in 0..12 {
             let layout = unsafe { Layout::from_size_align_unchecked(128, 2_usize.pow(i)) };
@@ -206,6 +216,7 @@ mod shared_memory {
             for n in 0..=i {
                 let sut_create = Sut::Builder::new(&name)
                     .size(DEFAULT_SIZE)
+                    .config(&config)
                     .create(&shm_config)
                     .unwrap();
 
@@ -224,21 +235,23 @@ mod shared_memory {
         let mut storage_names = vec![];
         let mut storages = vec![];
         const LIMIT: usize = 8;
+        let config = generate_isolated_config::<Sut>();
 
         for i in 0..LIMIT {
-            assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len i);
+            assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len i);
             storage_names.push(generate_name());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&storage_names[i]), eq Ok(false));
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_names[i], &config), eq Ok(false));
             storages.push(
                 Sut::Builder::new(&storage_names[i])
                     .size(DEFAULT_SIZE)
+                    .config(&config)
                     .create(&SHM_CONFIG)
                     .unwrap(),
             );
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&storage_names[i]), eq Ok(true));
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_names[i], &config), eq Ok(true));
 
-            let list = <Sut as NamedConceptMgmt>::list().unwrap();
-            assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len i + 1);
+            let list = <Sut as NamedConceptMgmt>::list_cfg(&config).unwrap();
+            assert_that!(list, len i + 1);
             let does_exist_in_list = |value| {
                 for e in &list {
                     if e == value {
@@ -253,24 +266,25 @@ mod shared_memory {
             }
         }
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len LIMIT);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len LIMIT);
 
         for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&storage_names[i])}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&storage_names[i])}, eq Ok(false));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_names[i], &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_names[i], &config)}, eq Ok(false));
         }
 
         std::mem::forget(storages);
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
     #[test]
     fn custom_suffix_keeps_storages_separated<Sut: SharedMemory<DefaultAllocator>>() {
-        let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
+        let config = generate_isolated_config::<Sut>();
+        let config_1 = config
+            .clone()
             .suffix(unsafe { &FileName::new_unchecked(b".s1") });
-        let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { &FileName::new_unchecked(b".s2") });
+        let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".s2") });
 
         let storage_name = generate_name();
 
@@ -327,6 +341,7 @@ mod shared_memory {
     #[test]
     fn shm_does_not_remove_resources_without_ownership<Sut: SharedMemory<DefaultAllocator>>() {
         test_requires!(Sut::does_support_persistency());
+        let config = generate_isolated_config::<Sut>();
 
         let name_1 = generate_name();
         let name_2 = generate_name();
@@ -334,6 +349,7 @@ mod shared_memory {
         let sut_1 = Sut::Builder::new(&name_1)
             .size(1024)
             .has_ownership(true)
+            .config(&config)
             .create(&SHM_CONFIG)
             .unwrap();
         sut_1.release_ownership();
@@ -341,6 +357,7 @@ mod shared_memory {
         let sut_2 = Sut::Builder::new(&name_2)
             .size(1024)
             .has_ownership(false)
+            .config(&config)
             .create(&SHM_CONFIG)
             .unwrap();
 
@@ -350,11 +367,11 @@ mod shared_memory {
         drop(sut_1);
         drop(sut_2);
 
-        assert_that!(Sut::does_exist(&name_1), eq Ok(true));
-        assert_that!(Sut::does_exist(&name_2), eq Ok(true));
+        assert_that!(Sut::does_exist_cfg(&name_1, &config), eq Ok(true));
+        assert_that!(Sut::does_exist_cfg(&name_2, &config), eq Ok(true));
 
-        assert_that!(unsafe { Sut::remove(&name_1) }, eq Ok(true));
-        assert_that!(unsafe { Sut::remove(&name_2) }, eq Ok(true));
+        assert_that!(unsafe { Sut::remove_cfg(&name_1, &config) }, eq Ok(true));
+        assert_that!(unsafe { Sut::remove_cfg(&name_2, &config) }, eq Ok(true));
     }
 
     #[test]
@@ -362,10 +379,12 @@ mod shared_memory {
         test_requires!(Sut::does_support_persistency());
 
         let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&name)
             .size(1024)
             .has_ownership(false)
+            .config(&config)
             .create(&SHM_CONFIG)
             .unwrap();
 
@@ -374,7 +393,7 @@ mod shared_memory {
         assert_that!(sut.has_ownership(), eq true);
 
         drop(sut);
-        assert_that!(Sut::does_exist(&name), eq Ok(false));
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
     }
 
     #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>)]
