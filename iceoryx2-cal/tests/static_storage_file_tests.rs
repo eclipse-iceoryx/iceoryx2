@@ -14,7 +14,6 @@ use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::*;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;

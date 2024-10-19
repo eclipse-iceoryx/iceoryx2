@@ -11,7 +11,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_elementary::math::ToB64;
-use iceoryx2_bb_posix::{config::test_directory, unique_system_id::UniqueSystemId};
+use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_posix::{
+    config::test_directory,
+    directory::{Directory, DirectoryCreateError},
+    file::Permission,
+    unique_system_id::UniqueSystemId,
+};
 use iceoryx2_bb_system_types::file_name::*;
 
 use crate::{
@@ -28,6 +34,15 @@ pub fn generate_node_name() -> NodeName {
 }
 
 pub fn generate_isolated_config() -> Config {
+    match Directory::create(&test_directory(), Permission::OWNER_ALL) {
+        Ok(_) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+        Err(e) => fatal_panic!(
+            "Failed to create test directory {} due to {:?}.",
+            test_directory(),
+            e
+        ),
+    };
+
     let mut prefix = FileName::new(b"test_prefix_").unwrap();
     prefix
         .push_bytes(
