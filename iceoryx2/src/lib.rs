@@ -310,3 +310,6 @@ pub mod service;
 
 /// Loads a meaninful subset to cover 90% of the iceoryx2 communication use cases.
 pub mod prelude;
+
+#[doc(hidden)]
+pub mod testing;

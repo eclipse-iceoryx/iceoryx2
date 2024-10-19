@@ -19,18 +19,11 @@ mod node_death_tests {
     use iceoryx2::node::{CleanupState, NodeState};
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
+    use iceoryx2::testing::*;
     use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "node_death_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     struct TestDetails<S: Service> {
         node: Node<S>,
@@ -79,7 +72,7 @@ mod node_death_tests {
     #[test]
     fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
         const NUMBER_OF_DEAD_NODES_LIMIT: usize = 5;
-        let mut config = Config::global_config().clone();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
         for i in 1..NUMBER_OF_DEAD_NODES_LIMIT {
@@ -124,7 +117,7 @@ mod node_death_tests {
         const NUMBER_OF_PUBLISHERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
         const NUMBER_OF_SUBSCRIBERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
 
-        let mut config = Config::global_config().clone();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
         let mut bad_nodes = vec![];
@@ -150,7 +143,7 @@ mod node_death_tests {
         let mut good_subscribers = vec![];
 
         for _ in 0..NUMBER_OF_SERVICES {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
 
             for node in &bad_nodes {
                 let service = node
@@ -188,7 +181,7 @@ mod node_death_tests {
         core::mem::forget(bad_publishers);
         core::mem::forget(bad_subscribers);
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(Config::global_config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES, failed_cleanups: 0});
 
         for service in &services {
             assert_that!(service.dynamic_config().number_of_publishers(), eq NUMBER_OF_PUBLISHERS - NUMBER_OF_BAD_NODES);
@@ -206,7 +199,7 @@ mod node_death_tests {
         const NUMBER_OF_NOTIFIERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
         const NUMBER_OF_LISTENERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
 
-        let mut config = Config::global_config().clone();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
         let mut bad_nodes = vec![];
@@ -232,7 +225,7 @@ mod node_death_tests {
         let mut good_listeners = vec![];
 
         for _ in 0..NUMBER_OF_SERVICES {
-            let service_name = generate_name();
+            let service_name = generate_service_name();
 
             for node in &bad_nodes {
                 let service = node
@@ -271,7 +264,7 @@ mod node_death_tests {
         core::mem::forget(bad_notifiers);
         core::mem::forget(bad_listeners);
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(Config::global_config()), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES, failed_cleanups: 0});
 
         for service in &services {
             assert_that!(service.dynamic_config().number_of_notifiers(), eq NUMBER_OF_NOTIFIERS - NUMBER_OF_BAD_NODES);
@@ -281,8 +274,8 @@ mod node_death_tests {
 
     #[test]
     fn event_service_is_removed_when_last_node_dies<S: Test>() {
-        let service_name = generate_name();
-        let mut config = Config::global_config().clone();
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
         let mut sut = S::create_test_node(&config).node;
@@ -302,7 +295,7 @@ mod node_death_tests {
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(Config::global_config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::Service::list(&config, |_| {
@@ -314,8 +307,8 @@ mod node_death_tests {
 
     #[test]
     fn pubsub_service_is_removed_when_last_node_dies<S: Test>() {
-        let service_name = generate_name();
-        let mut config = Config::global_config().clone();
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
         let mut sut = S::create_test_node(&config).node;
@@ -335,7 +328,7 @@ mod node_death_tests {
             is_ok
         );
 
-        assert_that!(Node::<S::Service>::cleanup_dead_nodes(Config::global_config()), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         assert_that!(
             S::Service::list(&config, |_| {
@@ -347,7 +340,7 @@ mod node_death_tests {
 
     #[test]
     fn node_cleanup_option_works_on_node_creation<S: Test>() {
-        let mut config = Config::global_config().clone();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
         let mut sut = S::create_test_node(&config);
@@ -373,7 +366,7 @@ mod node_death_tests {
 
         assert_that!(number_of_nodes(), eq 2);
 
-        let mut config = Config::global_config().clone();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = true;
         let node_with_cleanup = NodeBuilder::new()
             .config(&config)
@@ -390,14 +383,14 @@ mod node_death_tests {
 
     #[test]
     fn node_cleanup_option_works_on_node_destruction<S: Test>() {
-        let mut config = Config::global_config().clone();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_destruction = true;
         let node_with_cleanup = NodeBuilder::new()
             .config(&config)
             .create::<S::Service>()
             .unwrap();
 
-        let mut config = Config::global_config().clone();
+        let mut config = config.clone();
         config.global.node.cleanup_dead_nodes_on_destruction = false;
         let node_without_cleanup = NodeBuilder::new()
             .config(&config)
