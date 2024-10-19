@@ -205,35 +205,35 @@ mod fixed_size_vec {
 
     #[test]
     fn drops_all_objects_when_out_of_scope() {
-        LifetimeTracker::start_tracking();
+        let state = LifetimeTracker::start_tracking();
         let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
 
         for _ in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new()), eq true);
         }
 
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq SUT_CAPACITY);
+        assert_that!(state.number_of_living_instances(), eq SUT_CAPACITY);
         drop(sut);
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
     fn drops_all_objects_with_clear() {
-        LifetimeTracker::start_tracking();
+        let state = LifetimeTracker::start_tracking();
         let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
 
         for _ in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new()), eq true);
         }
 
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq SUT_CAPACITY);
+        assert_that!(state.number_of_living_instances(), eq SUT_CAPACITY);
         sut.clear();
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
     fn pop_releases_ownership() {
-        LifetimeTracker::start_tracking();
+        let state = LifetimeTracker::start_tracking();
         let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
 
         for _ in 0..SUT_CAPACITY {
@@ -244,7 +244,7 @@ mod fixed_size_vec {
             let result = sut.pop();
             assert_that!(result, is_some);
             drop(result);
-            assert_that!(LifetimeTracker::number_of_living_instances(), eq i);
+            assert_that!(state.number_of_living_instances(), eq i);
         }
     }
 

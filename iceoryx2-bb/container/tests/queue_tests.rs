@@ -203,35 +203,35 @@ mod queue {
 
     #[test]
     fn drops_all_objects_when_out_of_scope() {
-        LifetimeTracker::start_tracking();
+        let state = LifetimeTracker::start_tracking();
         let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
 
         for _ in 0..sut.capacity() {
             sut.push(LifetimeTracker::new());
         }
 
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq SUT_CAPACITY);
+        assert_that!(state.number_of_living_instances(), eq SUT_CAPACITY);
         drop(sut);
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
     fn drops_all_objects_with_clear() {
-        LifetimeTracker::start_tracking();
+        let state = LifetimeTracker::start_tracking();
         let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
 
         for _ in 0..sut.capacity() {
             sut.push(LifetimeTracker::new());
         }
 
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq SUT_CAPACITY);
+        assert_that!(state.number_of_living_instances(), eq SUT_CAPACITY);
         sut.clear();
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
     fn pop_releases_object() {
-        LifetimeTracker::start_tracking();
+        let state = LifetimeTracker::start_tracking();
         let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
 
         for _ in 0..sut.capacity() {
@@ -242,13 +242,13 @@ mod queue {
             let result = sut.pop();
             assert_that!(result, is_some);
             drop(result);
-            assert_that!(LifetimeTracker::number_of_living_instances(), eq i);
+            assert_that!(state.number_of_living_instances(), eq i);
         }
     }
 
     #[test]
     fn queue_clear_drops_all_objects() {
-        LifetimeTracker::start_tracking();
+        let state = LifetimeTracker::start_tracking();
         let mut sut = Queue::<LifetimeTracker>::new(SUT_CAPACITY);
 
         for _ in 0..sut.capacity() {
@@ -256,12 +256,12 @@ mod queue {
         }
 
         sut.clear();
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
     fn fixed_size_queue_clear_drops_all_objects() {
-        LifetimeTracker::start_tracking();
+        let state = LifetimeTracker::start_tracking();
         let mut sut = FixedSizeQueue::<LifetimeTracker, SUT_CAPACITY>::new();
 
         for _ in 0..sut.capacity() {
@@ -269,7 +269,7 @@ mod queue {
         }
 
         sut.clear();
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]

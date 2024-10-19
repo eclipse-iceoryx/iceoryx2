@@ -499,9 +499,9 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let state = LifetimeTracker::start_tracking();
 
-        LifetimeTracker::start_tracking();
+        let storage_name = generate_name();
 
         let sut = Sut::Builder::new(&storage_name)
             .create(TestData::new(123))
@@ -510,7 +510,7 @@ mod dynamic_storage {
         assert_that!(sut.has_ownership(), eq true);
         drop(sut);
 
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
@@ -518,11 +518,11 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        let state = LifetimeTracker::start_tracking();
+
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_name();
-
-        LifetimeTracker::start_tracking();
 
         let sut = Sut::Builder::new(&storage_name)
             .create(TestData::new(123))
@@ -530,7 +530,7 @@ mod dynamic_storage {
         sut.release_ownership();
         drop(sut);
 
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
+        assert_that!(state.number_of_living_instances(), eq 1);
         assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
     }
 
@@ -539,9 +539,9 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let state = LifetimeTracker::start_tracking();
 
-        LifetimeTracker::start_tracking();
+        let storage_name = generate_name();
 
         let sut = Sut::Builder::new(&storage_name)
             .create(TestData::new(123))
@@ -552,7 +552,7 @@ mod dynamic_storage {
         std::mem::forget(sut);
 
         assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
@@ -560,6 +560,8 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData> + 'static,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        let state = LifetimeTracker::start_tracking();
+
         if std::any::TypeId::of::<Sut>()
             // skip process local test since the process locality ensures that an initializer
             // never dies
@@ -567,7 +569,6 @@ mod dynamic_storage {
             )
         {
             let storage_name = generate_name();
-            LifetimeTracker::start_tracking();
 
             let _ = Sut::Builder::new(&storage_name)
                 .has_ownership(false)
@@ -577,7 +578,7 @@ mod dynamic_storage {
                 })
                 .create(TestData::new(0));
 
-            assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
+            assert_that!(state.number_of_living_instances(), eq 1);
         }
     }
 
