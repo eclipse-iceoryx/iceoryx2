@@ -18,6 +18,13 @@ mod node_name {
 
     #[test]
     fn config_file_settings_and_default_config_are_equal() {
+        // NOTE: The test is skipped when not run with cargo but with bazel,
+        //       since it does not work with the sandbox.
+        //       The CI which runs with cargo ensures that the settings are equal.
+        if option_env!("CARGO").is_none() {
+            return;
+        }
+
         let default_config = Config::default();
         let top_level_dir = std::process::Command::new("git")
             .args(["rev-parse", "--show-toplevel"])
