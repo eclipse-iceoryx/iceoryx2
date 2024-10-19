@@ -17,6 +17,7 @@ mod sample {
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
+    use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 
@@ -38,8 +39,8 @@ mod sample {
     }
 
     impl<Sut: Service> TestContext<Sut> {
-        fn new() -> Self {
-            let node = NodeBuilder::new().create::<Sut>().unwrap();
+        fn new(config: &Config) -> Self {
+            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
             let service_name = generate_name();
             let service = node
                 .service_builder(&service_name)
@@ -68,7 +69,8 @@ mod sample {
 
     #[test]
     fn origin_is_tracked_correctly<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
 
         assert_that!(test_context.publisher_1.send_copy(123), eq Ok(1));
         let sample = test_context.subscriber.receive().unwrap().unwrap();
@@ -81,7 +83,8 @@ mod sample {
 
     #[test]
     fn sample_of_dropped_service_does_not_block_new_service_creation<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
 
         let service_name = test_context.service_name.clone();
 
@@ -91,7 +94,7 @@ mod sample {
 
         drop(test_context);
 
-        let test_context = TestContext::<Sut>::new();
+        let test_context = TestContext::<Sut>::new(&config);
 
         let result = test_context
             .node
@@ -103,7 +106,8 @@ mod sample {
 
     #[test]
     fn when_everything_is_dropped_the_sample_can_still_be_consumed<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
 
         let sut = test_context.service;
         let publisher_1 = test_context.publisher_1;
@@ -126,7 +130,8 @@ mod sample {
 
     #[test]
     fn sample_received_from_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
         const PAYLOAD_1: u64 = 123554;
 
         let publisher = test_context.publisher_1;
@@ -147,7 +152,8 @@ mod sample {
 
     #[test]
     fn sample_from_dropped_subscriber_does_not_block_new_subscribers<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
         const PAYLOAD_1: u64 = 7781123554;
 
         let subscriber = test_context.subscriber;
