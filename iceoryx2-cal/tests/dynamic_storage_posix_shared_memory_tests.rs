@@ -11,26 +11,16 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod dynamic_storage_posix_shared_memory {
-    use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_elementary::math::ToB64;
     use iceoryx2_bb_posix::creation_mode::CreationMode;
     use iceoryx2_bb_posix::permission::Permission;
     use iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
+    use iceoryx2_cal::testing::*;
     use std::time::Duration;
 
     const TIMEOUT: Duration = Duration::from_millis(100);
-
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"test_").unwrap();
-        file.push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
-            .unwrap();
-        file
-    }
 
     #[derive(Debug)]
     struct TestData {}
@@ -42,9 +32,8 @@ mod dynamic_storage_posix_shared_memory {
     fn version_check_works() {
         type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
         let storage_name = generate_name();
-        let file_name = <Sut as NamedConceptMgmt>::Configuration::default()
-            .path_for(&storage_name)
-            .file_name();
+        let config = generate_isolated_config::<Sut>();
+        let file_name = config.path_for(&storage_name).file_name();
 
         let raw_shm = SharedMemoryBuilder::new(&file_name)
             .creation_mode(CreationMode::PurgeAndCreate)
@@ -57,7 +46,9 @@ mod dynamic_storage_posix_shared_memory {
             *(raw_shm.base_address().as_ptr() as *mut u64) = u64::MAX;
         }
 
-        let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name).open();
+        let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name)
+            .config(&config)
+            .open();
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::VersionMismatch);
@@ -67,9 +58,8 @@ mod dynamic_storage_posix_shared_memory {
     fn write_only_segment_is_not_initialized() {
         type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
         let storage_name = generate_name();
-        let file_name = <Sut as NamedConceptMgmt>::Configuration::default()
-            .path_for(&storage_name)
-            .file_name();
+        let config = generate_isolated_config::<Sut>();
+        let file_name = config.path_for(&storage_name).file_name();
 
         let _raw_shm = SharedMemoryBuilder::new(&file_name)
             .creation_mode(CreationMode::PurgeAndCreate)
@@ -79,7 +69,9 @@ mod dynamic_storage_posix_shared_memory {
             .create()
             .unwrap();
 
-        let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name).open();
+        let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name)
+            .config(&config)
+            .open();
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::InitializationNotYetFinalized);
@@ -89,9 +81,8 @@ mod dynamic_storage_posix_shared_memory {
     fn waiting_for_initialization_works() {
         type Sut = iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>;
         let storage_name = generate_name();
-        let file_name = <Sut as NamedConceptMgmt>::Configuration::default()
-            .path_for(&storage_name)
-            .file_name();
+        let config = generate_isolated_config::<Sut>();
+        let file_name = config.path_for(&storage_name).file_name();
 
         let _raw_shm = SharedMemoryBuilder::new(&file_name)
             .creation_mode(CreationMode::PurgeAndCreate)
@@ -104,6 +95,7 @@ mod dynamic_storage_posix_shared_memory {
         let start = std::time::SystemTime::now();
         let sut = <Sut as DynamicStorage<TestData>>::Builder::new(&storage_name)
             .timeout(TIMEOUT)
+            .config(&config)
             .open();
 
         assert_that!(sut, is_err);
