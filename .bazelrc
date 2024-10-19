@@ -15,6 +15,7 @@ build --action_env=CARGO_BAZEL_REPIN=true
 
 test --test_output=streamed
 test --nocache_test_results
+test --action_env=RUST_TEST_THREADS=1
 
 #
 # feature flags
