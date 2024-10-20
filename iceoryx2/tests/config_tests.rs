@@ -14,16 +14,14 @@ mod node_name {
     use iceoryx2::{config::DEFAULT_CONFIG_FILE, prelude::*};
     use iceoryx2_bb_system_types::file_path::*;
     use iceoryx2_bb_system_types::path::*;
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::{assert_that, test_requires};
 
     #[test]
     fn config_file_settings_and_default_config_are_equal() {
         // NOTE: The test is skipped when not run with cargo but with bazel,
         //       since it does not work with the sandbox.
         //       The CI which runs with cargo ensures that the settings are equal.
-        if option_env!("CARGO").is_none() {
-            return;
-        }
+        test_requires!(option_env!("CARGO").is_some());
 
         let default_config = Config::default();
         let top_level_dir = std::process::Command::new("git")
