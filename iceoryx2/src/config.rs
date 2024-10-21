@@ -69,6 +69,7 @@
 //! # }
 //! ```
 
+use dirs;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::lazy_singleton::*;
 use iceoryx2_bb_posix::{file::FileBuilder, shared_memory::AccessMode};
@@ -76,14 +77,11 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{os::unix::ffi::OsStrExt, time::Duration};
 
 use iceoryx2_bb_log::{fail, trace, warn};
 
 use crate::service::port_factory::publisher::UnableToDeliverStrategy;
-
-/// Path to the default config file
-pub const DEFAULT_CONFIG_FILE: &[u8] = b"config/iceoryx2.toml";
 
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`] or
 /// [`Config::setup_global_config_from_file()`]
@@ -394,10 +392,18 @@ impl Config {
     /// [`Config::setup_global_config_from_file()`]
     /// is called after this function was called, no file will be loaded since the global default
     /// config was already populated.
+
     pub fn global_config() -> &'static Config {
         if !ICEORYX2_CONFIG.is_initialized()
             && Config::setup_global_config_from_file(unsafe {
-                &FilePath::new_unchecked(DEFAULT_CONFIG_FILE)
+                &FilePath::new_unchecked(
+                    dirs::config_dir()
+                        .unwrap()
+                        .join("iceoryx2")
+                        .join("config.toml")
+                        .as_os_str()
+                        .as_bytes(),
+                )
             })
             .is_err()
         {
