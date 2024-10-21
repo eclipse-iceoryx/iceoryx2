@@ -244,6 +244,61 @@ build --@iceoryx2//:foo=on
 | logger_log              | auto, on, off                | auto == off        |
 | logger_tracing          | auto, on, off                | auto == off        |
 
+### Running iceory2x Tests in External Project
+
+In general, the iceoryx2 tests can be run in parallel. However, there are
+exceptions, as some tests deliberately try to bring the system into an
+inconsistent state. When these tests are executed in parallel, they can become
+flaky and may fail depending on which other tests are running concurrently.
+
+To mitigate this, it is sufficient to prevent other tests from the same file
+from running in parallel. This can be achieved by setting the following
+environment variable in your .bashrc:
+
+```bazel
+test --action_env=RUST_TEST_THREADS=1
+```
+
+Assuming there are two test binaries, without the environment variable, all
+tests would be executed in parallel, as illustrated below:
+
+```ascii
+bazel test /...
+   |
+   +--------------------+
+   |                    |
+  test-binary-A        test-binary-B
+   |                    |
+   +----------+         +----------+
+   |          |         |          |
+  test-A-1   test-A2   test-B-1   test-B2
+   |          |         |          |
+   +----------+         +----------+
+   |                    |
+   +--------------------+
+   |
+  test result
+```
+
+With the environment variable set, the test execution is partially serialized,
+as shown below:
+
+```ascii
+bazel test /...
+   |
+   +--------------------+
+   |                    |
+  test-binary-A        test-binary-B
+   |                    |
+  test-A-1             test-B-1
+   |                    |
+  test-A-2             test-B-2
+   |                    |
+   +--------------------+
+   |
+  test result
+```
+
 ## Instructions for iceoryx2 Developers
 
 When working with Bazel and Cargo in this project, ensure the following steps are
@@ -259,15 +314,6 @@ within the `BUILD.bazel` file.
 file, it must also be included in the `crate_index` target located in the
 `WORKSPACE.bazel` file.
 
-### Updating Dependencies
-
-Any time a dependency is added or changed, the `Cargo.Bazel.lock` file must be
-updated by running:
-
-```bash
-CARGO_BAZEL_REPIN=1 bazel build //...
-```
-
 ### Common Pitfalls
 
 1. **Handling `iceoryx2-ffi-cbindgen` Target**:
@@ -282,3 +328,10 @@ Every `BUILD.bazel` file includes an `all_srcs` filegroup to manage the source f
 within the sandbox. The root `BUILD.bazel` file has an `all_srcs` filegroup that
 references all sub-packages. When a new package is added, it must also be included
 in this `all_srcs` filegroup.
+
+1. **Not All Environment Variables are Available with Bazel**
+
+`bazel` does not automatically export some environment variables that are
+typically available with `cargo`, such as `CARGO_PKG_VERSION`. In these cases,
+you will need to either set the environment variable manually in your `bazel`
+configuration or find an appropriate workaround.

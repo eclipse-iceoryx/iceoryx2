@@ -14,25 +14,15 @@ mod shared_memory_directory {
     use std::alloc::Layout;
     use std::sync::Barrier;
 
-    use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_elementary::math::ToB64;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::shared_memory::SharedMemoryCreateError;
     use iceoryx2_cal::shared_memory_directory::SharedMemoryDirectory;
     use iceoryx2_cal::shm_allocator::ShmAllocator;
+    use iceoryx2_cal::testing::generate_name;
     use iceoryx2_cal::{
         shared_memory, shared_memory_directory::SharedMemoryDirectoryCreateFileError,
         shared_memory_directory::SharedMemoryDirectoryCreator, shm_allocator,
     };
-
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"test_").unwrap();
-        file.push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
-            .unwrap();
-        file
-    }
 
     type MgmtShm = shared_memory::posix::Memory<shm_allocator::bump_allocator::BumpAllocator>;
     type Allocator = shm_allocator::pool_allocator::PoolAllocator;

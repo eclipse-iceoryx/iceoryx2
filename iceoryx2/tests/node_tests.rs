@@ -22,7 +22,7 @@ mod node {
     };
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
-    use iceoryx2_bb_posix::directory::Directory;
+    use iceoryx2::testing::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -84,15 +84,21 @@ mod node {
 
     #[test]
     fn node_without_name_can_be_created<S: Service>() {
-        let sut = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let sut = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         assert_that!(*sut.name(), eq NodeName::new("").unwrap());
     }
 
     #[test]
     fn node_with_name_can_be_created<S: Service>() {
+        let config = generate_isolated_config();
         let node_name = NodeName::new("photons taste like chicken").unwrap();
-        let sut = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+        let sut = NodeBuilder::new()
+            .config(&config)
+            .name(&node_name)
+            .create::<S>()
+            .unwrap();
 
         assert_that!(*sut.name(), eq node_name);
     }
@@ -100,11 +106,18 @@ mod node {
     #[test]
     fn multiple_nodes_with_the_same_name_can_be_created<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
+        let config = generate_isolated_config();
         let node_name = NodeName::new("but what does an electron taste like?").unwrap();
 
         let mut nodes = vec![];
         for _ in 0..NUMBER_OF_NODES {
-            nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
+            nodes.push(
+                NodeBuilder::new()
+                    .config(&config)
+                    .name(&node_name)
+                    .create::<S>()
+                    .unwrap(),
+            );
         }
 
         for node in nodes {
@@ -122,28 +135,38 @@ mod node {
     #[test]
     fn nodes_can_be_listed<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
+        let config = generate_isolated_config();
 
         let mut nodes = vec![];
         let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "give me a bit");
-            let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+            let node = NodeBuilder::new()
+                .config(&config)
+                .name(&node_name)
+                .create::<S>()
+                .unwrap();
             node_details.push_back(Details::from_node(&node));
             nodes.push(node);
         }
 
-        assert_node_presence::<S>(&node_details, Config::global_config());
+        assert_node_presence::<S>(&node_details, &config);
     }
 
     #[test]
     fn when_node_goes_out_of_scope_it_cleans_up<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
+        let config = generate_isolated_config();
 
         let mut nodes = vec![];
         let mut node_details = VecDeque::new();
         for i in 0..NUMBER_OF_NODES {
             let node_name = generate_node_name(i, "gravity should be illegal");
-            let node = NodeBuilder::new().name(&node_name).create::<S>().unwrap();
+            let node = NodeBuilder::new()
+                .config(&config)
+                .name(&node_name)
+                .create::<S>()
+                .unwrap();
             node_details.push_back(Details::from_node(&node));
             nodes.push(node);
         }
@@ -151,13 +174,14 @@ mod node {
         for _ in 0..NUMBER_OF_NODES {
             nodes.pop();
             node_details.pop_back();
-            assert_node_presence::<S>(&node_details, Config::global_config());
+            assert_node_presence::<S>(&node_details, &config);
         }
     }
 
     #[test]
     fn id_is_unique<S: Service>() {
         const NUMBER_OF_NODES: usize = 16;
+        let config = generate_isolated_config();
 
         let mut nodes = vec![];
         let mut node_ids = HashSet::new();
@@ -166,7 +190,13 @@ mod node {
                 i,
                 "its a bird, its a plane, no its the mountain goat jumping through the code",
             );
-            nodes.push(NodeBuilder::new().name(&node_name).create::<S>().unwrap());
+            nodes.push(
+                NodeBuilder::new()
+                    .config(&config)
+                    .name(&node_name)
+                    .create::<S>()
+                    .unwrap(),
+            );
             assert_that!(node_ids.insert(nodes.last().unwrap().id().clone()), eq true);
         }
     }
@@ -180,15 +210,22 @@ mod node {
         let mut nodes_2 = VecDeque::new();
         let mut node_details_2 = VecDeque::new();
 
-        let mut config = Config::default();
-        config.global.node.directory = Path::new(b"node2").unwrap();
+        let config = generate_isolated_config();
+        let mut config_1 = config.clone();
+        config_1.global.node.directory = Path::new(b"node2").unwrap();
+        let mut config_2 = config.clone();
+        config_2.global.node.directory = Path::new(b"bud_spencer").unwrap();
 
         for i in 0..NUMBER_OF_NODES {
             let node_name_1 = generate_node_name(i, "gravity should be illegal");
             let node_name_2 = generate_node_name(i, "i like to name it name it");
-            let node_1 = NodeBuilder::new().name(&node_name_1).create::<S>().unwrap();
+            let node_1 = NodeBuilder::new()
+                .config(&config_1)
+                .name(&node_name_1)
+                .create::<S>()
+                .unwrap();
             let node_2 = NodeBuilder::new()
-                .config(&config)
+                .config(&config_2)
                 .name(&node_name_2)
                 .create::<S>()
                 .unwrap();
@@ -205,13 +242,9 @@ mod node {
             node_details_1.pop_back();
             node_details_2.pop_front();
 
-            assert_node_presence::<S>(&node_details_1, Config::global_config());
-            assert_node_presence::<S>(&node_details_2, &config);
+            assert_node_presence::<S>(&node_details_1, &config_1);
+            assert_node_presence::<S>(&node_details_2, &config_2);
         }
-
-        let mut path = *config.global.root_path();
-        path.add_path_entry(&config.global.node.directory).unwrap();
-        let _ = Directory::remove(&path);
     }
 
     #[test]
@@ -248,7 +281,7 @@ mod node {
         let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
         const NUMBER_OF_ITERATIONS: usize = 100;
         let barrier = Barrier::new(number_of_creators);
-        let mut config = Config::global_config().clone();
+        let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         config.global.node.cleanup_dead_nodes_on_destruction = false;
 
@@ -300,8 +333,9 @@ mod node {
 
     #[test]
     fn node_listing_stops_when_callback_progression_signals_stop<S: Service>() {
-        let node_1 = NodeBuilder::new().create::<S>().unwrap();
-        let _node_2 = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node_1 = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let _node_2 = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         let mut node_counter = 0;
         let result = Node::<S>::list(node_1.config(), |_| {
@@ -315,7 +349,8 @@ mod node {
 
     #[test]
     fn i_am_not_dead<S: Service>() {
-        let node = NodeBuilder::new().create::<S>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         let mut nodes = vec![];
         let result = Node::<S>::list(node.config(), |node_state| {

@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
 
 filegroup(
     name = "all_srcs",
@@ -33,4 +33,13 @@ rust_library(
     ],
 )
 
-# TODO: [349] add tests
+rust_test_suite(
+    name = "iceoryx2-bb-container-tests",
+    srcs = glob(["tests/**/*.rs"]),
+    deps = [
+        ":iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "@crate_index//:serde_test",
+    ],
+)

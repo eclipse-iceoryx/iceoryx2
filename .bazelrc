@@ -7,6 +7,15 @@ build:mingw --cxxopt="-std=c++17"
 
 build --action_env=CARGO_BAZEL_REPIN=true
 
+# test --local_test_jobs=1
+# test --test_strategy=standalone
+# test --spawn_strategy=standalone
+# build --strategy=Genrule=standalone
+
+test --test_output=streamed
+test --nocache_test_results
+test --action_env=RUST_TEST_THREADS=1
+
 #
 # feature flags
 #

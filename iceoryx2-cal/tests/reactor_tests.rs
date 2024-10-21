@@ -12,16 +12,14 @@
 
 #[generic_tests::define]
 mod reactor {
-    use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::event::unix_datagram_socket::*;
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};
+    use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
     use std::sync::atomic::{AtomicU64, Ordering};
-    use std::sync::Barrier;
+    use std::sync::{Barrier, Mutex};
     use std::time::{Duration, Instant};
 
     const TIMEOUT: Duration = Duration::from_millis(50);
@@ -36,10 +34,13 @@ mod reactor {
     impl NotifierListenerPair {
         fn new() -> Self {
             let name = generate_name();
+            let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
             let listener = unix_datagram_socket::ListenerBuilder::new(&name)
+                .config(&config)
                 .create()
                 .unwrap();
             let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
+                .config(&config)
                 .open()
                 .unwrap();
 
@@ -47,22 +48,10 @@ mod reactor {
         }
     }
 
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"reactor_tests_").unwrap();
-        file.push_bytes(
-            UniqueSystemId::new()
-                .unwrap()
-                .value()
-                .to_string()
-                .as_bytes(),
-        )
-        .unwrap();
-        file
-    }
-
     #[test]
     fn attach_and_detach_works<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
 
         let mut listeners = vec![];
         let mut guards = vec![];
@@ -70,6 +59,7 @@ mod reactor {
             let name = generate_name();
             listeners.push(
                 unix_datagram_socket::ListenerBuilder::new(&name)
+                    .config(&config)
                     .create()
                     .unwrap(),
             );
@@ -94,9 +84,11 @@ mod reactor {
     #[test]
     fn attach_the_same_attachment_twice_fails<Sut: Reactor>() {
         let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
+        let config = generate_isolated_config::<unix_datagram_socket::EventImpl>();
 
         let name = generate_name();
         let listener = unix_datagram_socket::ListenerBuilder::new(&name)
+            .config(&config)
             .create()
             .unwrap();
 
@@ -496,11 +488,13 @@ mod reactor {
         let name = generate_name();
         let barrier = Barrier::new(2);
         let counter = AtomicU64::new(0);
+        let config = Mutex::new(generate_isolated_config::<unix_datagram_socket::EventImpl>());
 
         std::thread::scope(|s| {
             let t = s.spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
                 let listener = unix_datagram_socket::ListenerBuilder::new(&name)
+                    .config(&config.lock().unwrap())
                     .create()
                     .unwrap();
                 let _guard = sut.attach(&listener);
@@ -523,6 +517,7 @@ mod reactor {
             let counter_old = counter.load(Ordering::Relaxed);
 
             let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
+                .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
             notifier.notify(TriggerId::new(123)).unwrap();
@@ -537,11 +532,13 @@ mod reactor {
         let name = generate_name();
         let barrier = Barrier::new(2);
         let counter = AtomicU64::new(0);
+        let config = Mutex::new(generate_isolated_config::<unix_datagram_socket::EventImpl>());
 
         std::thread::scope(|s| {
             let t = s.spawn(|| {
                 let sut = <<Sut as Reactor>::Builder>::new().create().unwrap();
                 let listener = unix_datagram_socket::ListenerBuilder::new(&name)
+                    .config(&config.lock().unwrap())
                     .create()
                     .unwrap();
                 let _guard = sut.attach(&listener);
@@ -562,6 +559,7 @@ mod reactor {
             let counter_old = counter.load(Ordering::Relaxed);
 
             let notifier = unix_datagram_socket::NotifierBuilder::new(&name)
+                .config(&config.lock().unwrap())
                 .open()
                 .unwrap();
             notifier.notify(TriggerId::new(123)).unwrap();

@@ -14,34 +14,20 @@ use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::*;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_cal::static_storage::file::*;
+use iceoryx2_cal::testing::*;
 use std::time::Duration;
 
-fn generate_name() -> FileName {
-    let mut file = FileName::new(b"communication_channel_tests_").unwrap();
-    file.push_bytes(
-        UniqueSystemId::new()
-            .unwrap()
-            .value()
-            .to_string()
-            .as_bytes(),
-    )
-    .unwrap();
-    file
-}
-
 #[test]
-fn static_storage_file_custom_path_and_suffix_works() {
+fn static_storage_file_custom_suffix_works() {
     let storage_name = generate_name();
+    let config = generate_isolated_config::<Storage>()
+        .suffix(unsafe { &FileName::new_unchecked(b".blubbme") });
 
     let content = "some storage content".to_string();
-    let config = Configuration::default()
-        .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })
-        .path_hint(&test_directory());
 
     let storage_guard = Builder::new(&storage_name)
         .config(&config)
@@ -68,14 +54,13 @@ fn static_storage_file_custom_path_and_suffix_works() {
 #[test]
 fn static_storage_file_path_is_created_when_it_does_not_exist() {
     let storage_name = generate_name();
+    let config = generate_isolated_config::<Storage>();
     let content = "some more funky content".to_string();
     let non_existing_path =
         FilePath::from_path_and_file(&test_directory(), &generate_name()).unwrap();
 
     Directory::remove(&non_existing_path.into()).ok();
-    let config = Configuration::default()
-        .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })
-        .path_hint(&non_existing_path.into());
+    let config = config.path_hint(&non_existing_path.into());
 
     let storage_guard = Builder::new(&storage_name)
         .config(&config)
@@ -101,7 +86,7 @@ fn static_storage_file_path_is_created_when_it_does_not_exist() {
 #[test]
 fn static_storage_file_custom_path_and_suffix_list_storage_works() {
     const NUMBER_OF_STORAGES: u64 = 12;
-    let config = Configuration::default()
+    let config = generate_isolated_config::<Storage>()
         .suffix(unsafe { &FileName::new_unchecked(b".blubbme") })
         .path_hint(
             &FilePath::from_path_and_file(

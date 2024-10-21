@@ -26,10 +26,10 @@ mod service_static_config_message_type_details {
         #[repr(C)]
         struct Tmp;
         let sut = TypeDetail::__internal_new::<Tmp>(TypeVariant::FixedSize);
-        let expected = TypeDetail{
+        let expected = TypeDetail {
             variant: TypeVariant::FixedSize,
-            type_name: "service_static_config_tests::service_static_config_message_type_details::test_internal_new::Tmp".to_string(),
-            size: 0 ,
+            type_name: core::any::type_name::<Tmp>().to_string(),
+            size: 0,
             alignment: 1,
         };
         assert_that!(sut, eq expected);
@@ -37,7 +37,7 @@ mod service_static_config_message_type_details {
         let sut = TypeDetail::__internal_new::<i64>(TypeVariant::FixedSize);
         let expected = TypeDetail {
             variant: TypeVariant::FixedSize,
-            type_name: "i64".to_string(),
+            type_name: core::any::type_name::<i64>().to_string(),
             size: 8,
             alignment: ALIGNMENT,
         };
@@ -47,8 +47,7 @@ mod service_static_config_message_type_details {
         let sut = TypeDetail::__internal_new::<TypeDetail>(TypeVariant::FixedSize);
         let expected = TypeDetail {
             variant: TypeVariant::FixedSize,
-            type_name: "iceoryx2::service::static_config::message_type_details::TypeDetail"
-                .to_string(),
+            type_name: core::any::type_name::<TypeDetail>().to_string(),
             size: size_of::<TypeDetail>(),
             alignment: ALIGNMENT,
         };

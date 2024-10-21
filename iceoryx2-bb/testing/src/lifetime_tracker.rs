@@ -10,10 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
 static DROP_COUNTER: Mutex<usize> = Mutex::new(0);
+
+static TRACKING_LOCK: Mutex<LifetimeTrackingState> = Mutex::new(LifetimeTrackingState {});
+
+pub struct LifetimeTrackingState {}
+
+impl LifetimeTrackingState {
+    pub fn number_of_living_instances(&self) -> usize {
+        *CREATION_COUNTER.lock().unwrap() - *DROP_COUNTER.lock().unwrap()
+    }
+}
 
 #[derive(Debug)]
 pub struct LifetimeTracker {}
@@ -31,13 +41,13 @@ impl LifetimeTracker {
         Self::default()
     }
 
-    pub fn start_tracking() {
+    pub fn start_tracking() -> MutexGuard<'static, LifetimeTrackingState> {
+        let guard = TRACKING_LOCK.lock().unwrap();
+
         *CREATION_COUNTER.lock().unwrap() = 0;
         *DROP_COUNTER.lock().unwrap() = 0;
-    }
 
-    pub fn number_of_living_instances() -> usize {
-        *CREATION_COUNTER.lock().unwrap() - *DROP_COUNTER.lock().unwrap()
+        guard
     }
 }
 

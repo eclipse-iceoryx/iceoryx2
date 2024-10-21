@@ -14,28 +14,20 @@
 mod dynamic_storage {
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary::allocator::*;
-    use iceoryx2_bb_elementary::math::ToB64;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
+    use iceoryx2_cal::testing::*;
     use std::sync::atomic::{AtomicI64, Ordering};
-
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"test_").unwrap();
-        file.push_bytes(UniqueSystemId::new().unwrap().value().to_b64().as_bytes())
-            .unwrap();
-        file
-    }
 
     #[derive(Debug)]
     struct TestData {
         value: AtomicI64,
         supplementary_ptr: *mut u8,
         supplementary_len: usize,
-        _lifetime_tracker: LifetimeTracker,
+        _lifetime_tracker: Option<LifetimeTracker>,
     }
 
     impl TestData {
@@ -44,7 +36,16 @@ mod dynamic_storage {
                 value: AtomicI64::new(value),
                 supplementary_ptr: std::ptr::null_mut::<u8>(),
                 supplementary_len: 0,
-                _lifetime_tracker: LifetimeTracker::new(),
+                _lifetime_tracker: None,
+            }
+        }
+
+        fn new_with_lifetime_tracking(value: i64) -> Self {
+            Self {
+                value: AtomicI64::new(value),
+                supplementary_ptr: std::ptr::null_mut::<u8>(),
+                supplementary_len: 0,
+                _lifetime_tracker: Some(LifetimeTracker::new()),
             }
         }
     }
@@ -55,14 +56,19 @@ mod dynamic_storage {
     #[test]
     fn create_and_read_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
             .create(TestData::new(123))
             .unwrap();
 
         assert_that!(*sut.name(), eq storage_name);
 
-        let sut2 = Sut::Builder::new(&storage_name).open().unwrap();
+        let sut2 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         assert_that!(*sut2.name(), eq storage_name);
 
@@ -78,7 +84,9 @@ mod dynamic_storage {
     #[test]
     fn open_non_existing_fails<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         let storage_name = generate_name();
-        let sut = Sut::Builder::new(&storage_name).open();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name).config(&config).open();
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
@@ -90,11 +98,14 @@ mod dynamic_storage {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut = Sut::Builder::new(&storage_name).create(TestData::new(123));
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(TestData::new(123));
         drop(sut);
 
-        let sut = Sut::Builder::new(&storage_name).open();
+        let sut = Sut::Builder::new(&storage_name).config(&config).open();
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
@@ -106,9 +117,14 @@ mod dynamic_storage {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let _sut1 = Sut::Builder::new(&storage_name).create(TestData::new(123));
-        let sut2 = Sut::Builder::new(&storage_name).create(TestData::new(123));
+        let _sut1 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(TestData::new(123));
+        let sut2 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .create(TestData::new(123));
 
         assert_that!(sut2, is_err);
         assert_that!(
@@ -125,12 +141,17 @@ mod dynamic_storage {
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
             .create(TestData::new(123))
             .unwrap();
 
-        let sut2 = Sut::Builder::new(&storage_name).open().unwrap();
+        let sut2 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         drop(sut);
 
@@ -157,14 +178,21 @@ mod dynamic_storage {
     >() {
         const NUMBER_OF_OPENERS: u64 = 64;
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
             .create(TestData::new(789))
             .unwrap();
 
         let mut sut_vec = vec![];
         for _i in 0..NUMBER_OF_OPENERS {
-            sut_vec.push(Sut::Builder::new(&storage_name).open().unwrap());
+            sut_vec.push(
+                Sut::Builder::new(&storage_name)
+                    .config(&config)
+                    .open()
+                    .unwrap(),
+            );
         }
 
         for i in 0..NUMBER_OF_OPENERS {
@@ -186,8 +214,10 @@ mod dynamic_storage {
     fn release_ownership_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
             .create(TestData::new(9887))
             .unwrap();
 
@@ -196,10 +226,13 @@ mod dynamic_storage {
         assert_that!(sut.has_ownership(), eq false);
         drop(sut);
 
-        let sut2 = Sut::Builder::new(&storage_name).open().unwrap();
+        let sut2 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
         assert_that!(sut2.get().value.load(Ordering::Relaxed), eq 9887);
 
-        assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
         drop(sut2);
 
         let sut2 = Sut::Builder::new(&storage_name).open();
@@ -214,9 +247,11 @@ mod dynamic_storage {
     >() {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
             .has_ownership(false)
+            .config(&config)
             .create(TestData::new(9887))
             .unwrap();
 
@@ -224,13 +259,16 @@ mod dynamic_storage {
 
         drop(sut);
 
-        let sut2 = Sut::Builder::new(&storage_name).open().unwrap();
+        let sut2 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
         assert_that!(sut2.get().value.load(Ordering::Relaxed), eq 9887);
 
-        assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
         drop(sut2);
 
-        let sut2 = Sut::Builder::new(&storage_name).open();
+        let sut2 = Sut::Builder::new(&storage_name).config(&config).open();
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
@@ -239,9 +277,11 @@ mod dynamic_storage {
     fn acquire_ownership_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         test_requires!(Sut::does_support_persistency());
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
             .has_ownership(false)
+            .config(&config)
             .create(TestData::new(9887))
             .unwrap();
 
@@ -249,28 +289,31 @@ mod dynamic_storage {
 
         assert_that!(sut.has_ownership(), eq true);
         drop(sut);
-        assert_that!(Sut::does_exist(&storage_name).unwrap(), eq false);
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config).unwrap(), eq false);
     }
 
     #[test]
     fn does_exist_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
 
         let additional_size: usize = 256;
         let sut = Sut::Builder::new(&storage_name)
             .supplementary_size(additional_size)
+            .config(&config)
             .create(TestData::new(9887))
             .unwrap();
         let _sut2 = Sut::Builder::new(&storage_name)
             .supplementary_size(additional_size)
+            .config(&config)
             .open()
             .unwrap();
 
-        assert_that!(Sut::does_exist(&storage_name), eq Ok(true));
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
         drop(sut);
-        assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
     }
 
     #[test]
@@ -278,12 +321,17 @@ mod dynamic_storage {
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
             .create(TestData::new(123))
             .unwrap();
 
-        let sut2 = Sut::Builder::new(&storage_name).open().unwrap();
+        let sut2 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
 
         assert_that!(sut.has_ownership(), eq true);
         assert_that!(sut2.has_ownership(), eq false);
@@ -292,7 +340,7 @@ mod dynamic_storage {
         assert_that!(sut.has_ownership(), eq false);
         drop(sut);
         drop(sut2);
-        assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
     }
 
     #[test]
@@ -301,8 +349,10 @@ mod dynamic_storage {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
             .supplementary_size(134)
             .initializer(|value, allocator| {
                 let layout = Layout::from_size_align(134, 1).unwrap();
@@ -334,7 +384,10 @@ mod dynamic_storage {
             );
         }
 
-        let sut2 = Sut::Builder::new(&storage_name).open().unwrap();
+        let sut2 = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
         assert_that!(sut2.get().value.load(Ordering::Relaxed), eq 8912);
         assert_that!(sut2.get().supplementary_len, eq 134);
         for i in 0..134 {
@@ -351,10 +404,12 @@ mod dynamic_storage {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
             .supplementary_size(134)
             .initializer(|_, _| false)
+            .config(&config)
             .create(TestData::new(123));
 
         assert_that!(sut, is_err);
@@ -363,8 +418,8 @@ mod dynamic_storage {
             DynamicStorageCreateError::InitializationFailed
         );
 
-        assert_that!(<Sut as NamedConceptMgmt>::does_exist(&storage_name), eq Ok(false));
-        assert_that!(unsafe { <Sut as NamedConceptMgmt>::remove(&storage_name) }, eq Ok(false));
+        assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&storage_name, &config), eq Ok(false));
+        assert_that!(unsafe { <Sut as NamedConceptMgmt>::remove_cfg(&storage_name, &config) }, eq Ok(false));
     }
 
     #[test]
@@ -372,20 +427,22 @@ mod dynamic_storage {
         let mut sut_names = vec![];
         let mut suts = vec![];
         const LIMIT: usize = 5;
+        let config = generate_isolated_config::<Sut>();
 
         for i in 0..LIMIT {
-            assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len i );
+            assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len i );
             sut_names.push(generate_name());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(false));
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
             suts.push(
                 Sut::Builder::new(&sut_names[i])
                     .supplementary_size(134)
+                    .config(&config)
                     .create(TestData::new(123)),
             );
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(true));
 
-            let list = <Sut as NamedConceptMgmt>::list().unwrap();
-            assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len i + 1);
+            let list = <Sut as NamedConceptMgmt>::list_cfg(&config).unwrap();
+            assert_that!(list, len i + 1);
             let does_exist_in_list = |value| {
                 for e in &list {
                     if e == value {
@@ -400,16 +457,16 @@ mod dynamic_storage {
             }
         }
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len LIMIT);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len LIMIT);
 
         for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(false));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
         }
 
         std::mem::forget(suts);
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
     #[test]
@@ -417,10 +474,11 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
+        let config = generate_isolated_config::<Sut>();
+        let config_1 = config
+            .clone()
             .suffix(unsafe { &FileName::new_unchecked(b".s1") });
-        let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { &FileName::new_unchecked(b".s2") });
+        let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".s2") });
 
         let sut_name = generate_name();
 
@@ -480,18 +538,23 @@ mod dynamic_storage {
     #[test]
     fn open_or_create_works<Sut: DynamicStorage<TestData>, WrongTypeSut: DynamicStorage<u64>>() {
         let sut_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        assert_that!(Sut::does_exist(&sut_name), eq Ok(false));
-        let sut_1 = Sut::Builder::new(&sut_name).open_or_create(TestData::new(123));
+        assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(false));
+        let sut_1 = Sut::Builder::new(&sut_name)
+            .config(&config)
+            .open_or_create(TestData::new(123));
         assert_that!(sut_1, is_ok);
-        assert_that!(Sut::does_exist(&sut_name), eq Ok(true));
+        assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(true));
 
-        let sut_2 = Sut::Builder::new(&sut_name).open_or_create(TestData::new(123));
+        let sut_2 = Sut::Builder::new(&sut_name)
+            .config(&config)
+            .open_or_create(TestData::new(123));
         assert_that!(sut_2, is_ok);
 
         drop(sut_2);
         drop(sut_1);
-        assert_that!(Sut::does_exist(&sut_name), eq Ok(false));
+        assert_that!(Sut::does_exist_cfg(&sut_name, &config), eq Ok(false));
     }
 
     #[test]
@@ -499,18 +562,20 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let state = LifetimeTracker::start_tracking();
 
-        LifetimeTracker::start_tracking();
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
-            .create(TestData::new(123))
+            .config(&config)
+            .create(TestData::new_with_lifetime_tracking(123))
             .unwrap();
 
         assert_that!(sut.has_ownership(), eq true);
         drop(sut);
 
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
@@ -518,20 +583,22 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        let state = LifetimeTracker::start_tracking();
+
         test_requires!(Sut::does_support_persistency());
 
         let storage_name = generate_name();
-
-        LifetimeTracker::start_tracking();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
-            .create(TestData::new(123))
+            .config(&config)
+            .create(TestData::new_with_lifetime_tracking(123))
             .unwrap();
         sut.release_ownership();
         drop(sut);
 
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
-        assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
+        assert_that!(state.number_of_living_instances(), eq 1);
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
     }
 
     #[test]
@@ -539,20 +606,22 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
-        let storage_name = generate_name();
+        let state = LifetimeTracker::start_tracking();
 
-        LifetimeTracker::start_tracking();
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut = Sut::Builder::new(&storage_name)
-            .create(TestData::new(123))
+            .config(&config)
+            .create(TestData::new_with_lifetime_tracking(123))
             .unwrap();
         sut.release_ownership();
         // it leaks a memory mapping here but this we want explicitly to test remove also
         // for platforms that do not support persistent dynamic storage
         std::mem::forget(sut);
 
-        assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
-        assert_that!(LifetimeTracker::number_of_living_instances(), eq 0);
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
+        assert_that!(state.number_of_living_instances(), eq 0);
     }
 
     #[test]
@@ -560,6 +629,9 @@ mod dynamic_storage {
         Sut: DynamicStorage<TestData> + 'static,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
+        let state = LifetimeTracker::start_tracking();
+        let config = generate_isolated_config::<Sut>();
+
         if std::any::TypeId::of::<Sut>()
             // skip process local test since the process locality ensures that an initializer
             // never dies
@@ -567,17 +639,17 @@ mod dynamic_storage {
             )
         {
             let storage_name = generate_name();
-            LifetimeTracker::start_tracking();
 
             let _ = Sut::Builder::new(&storage_name)
                 .has_ownership(false)
+                .config(&config)
                 .initializer(|_, _| {
-                    assert_that!(unsafe { Sut::remove(&storage_name) }, eq Ok(true));
+                    assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
                     false
                 })
-                .create(TestData::new(0));
+                .create(TestData::new_with_lifetime_tracking(0));
 
-            assert_that!(LifetimeTracker::number_of_living_instances(), eq 1);
+            assert_that!(state.number_of_living_instances(), eq 1);
         }
     }
 
@@ -587,9 +659,16 @@ mod dynamic_storage {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_name();
-        let sut = WrongTypeSut::Builder::new(&storage_name).create(123);
+        let config = generate_isolated_config::<Sut>();
+        let wrong_type_config = WrongTypeSut::Configuration::default()
+            .prefix(config.get_prefix())
+            .suffix(config.get_suffix())
+            .path_hint(config.get_path_hint());
+        let sut = WrongTypeSut::Builder::new(&storage_name)
+            .config(&wrong_type_config)
+            .create(123);
         assert_that!(sut, is_ok);
-        assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
     }
 
     #[test]
@@ -605,10 +684,16 @@ mod dynamic_storage {
         let mut u64_storages = vec![];
         let mut u64_storages_names = vec![];
 
+        let config = generate_isolated_config::<Sut>();
+        let wrong_type_config = WrongTypeSut::Configuration::default()
+            .prefix(config.get_prefix())
+            .suffix(config.get_suffix())
+            .path_hint(config.get_path_hint());
         for _ in 0..NUMBER_OF_TESTDATA_STORAGES {
             let storage_name = generate_name();
             testdata_storages.push(
                 Sut::Builder::new(&storage_name)
+                    .config(&config)
                     .create(TestData::new(123))
                     .unwrap(),
             );
@@ -616,6 +701,7 @@ mod dynamic_storage {
 
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)
+                    .config(&wrong_type_config)
                     .create(34)
                     .unwrap(),
             );
@@ -627,14 +713,15 @@ mod dynamic_storage {
             let storage_name = generate_name();
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)
+                    .config(&wrong_type_config)
                     .create(21)
                     .unwrap(),
             );
             u64_storages_names.push(storage_name);
         }
 
-        let testdata_list = Sut::list().unwrap();
-        let u64_list = WrongTypeSut::list().unwrap();
+        let testdata_list = Sut::list_cfg(&config).unwrap();
+        let u64_list = WrongTypeSut::list_cfg(&wrong_type_config).unwrap();
 
         assert_that!(testdata_list, len testdata_storages.len());
         assert_that!(u64_list, len u64_storages.len());
@@ -654,10 +741,19 @@ mod dynamic_storage {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+        let wrong_type_config = WrongTypeSut::Configuration::default()
+            .prefix(config.get_prefix())
+            .suffix(config.get_suffix())
+            .path_hint(config.get_path_hint());
+
         let _sut = Sut::Builder::new(&storage_name)
+            .config(&config)
             .create(TestData::new(1234))
             .unwrap();
-        let sut = WrongTypeSut::Builder::new(&storage_name).open();
+        let sut = WrongTypeSut::Builder::new(&storage_name)
+            .config(&wrong_type_config)
+            .open();
         assert_that!(sut.err().unwrap(), eq DynamicStorageOpenError::DoesNotExist);
     }
 
@@ -667,10 +763,16 @@ mod dynamic_storage {
         WrongTypeSut: DynamicStorage<u64>,
     >() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+        let wrong_type_config = WrongTypeSut::Configuration::default()
+            .prefix(config.get_prefix())
+            .suffix(config.get_suffix())
+            .path_hint(config.get_path_hint());
         let _sut = Sut::Builder::new(&storage_name)
+            .config(&config)
             .create(TestData::new(1234))
             .unwrap();
-        assert_that!(unsafe { WrongTypeSut::remove(&storage_name) }, eq Ok(false));
+        assert_that!(unsafe { WrongTypeSut::remove_cfg(&storage_name, &wrong_type_config) }, eq Ok(false));
     }
 
     #[instantiate_tests(<iceoryx2_cal::dynamic_storage::posix_shared_memory::Storage<TestData>,

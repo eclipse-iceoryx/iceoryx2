@@ -10,28 +10,32 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
-
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+load("@rules_cc//cc:defs.bzl", "cc_test")
 
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
 )
 
-rust_library(
-    name = "iceoryx2-pal-concurrency-sync",
-    srcs = glob(["src/**/*.rs"]),
-)
-
-rust_test_suite(
-    name = "iceoryx2-pal-concurrency-sync-tests",
-    srcs = glob(["tests/**/*.rs"]),
-    deps = [
-        ":iceoryx2-pal-concurrency-sync",
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+cc_test(
+    name = "iceoryx2-c-tests",
+    srcs = glob([
+        "src/*.cpp",
+        "src/*.hpp",
+    ]),
+    includes = [
+        "src",
     ],
-    proc_macro_deps = [
-        "@crate_index//:generic-tests",
+    linkopts = select({
+        "//:win-gcc": [],
+        "//:win-msvc": [],
+        "//conditions:default": ["-ldl"],
+    }),
+    tags = ["exclusive"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
+        "@googletest//:gtest",
     ],
 )

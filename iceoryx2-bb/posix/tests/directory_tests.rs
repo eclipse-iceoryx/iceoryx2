@@ -16,6 +16,7 @@ use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 use iceoryx2_bb_posix::file_type::*;
+use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -108,16 +109,19 @@ impl TestFixture {
 
 #[test]
 fn directory_temp_directory_does_exist() {
+    create_test_directory();
     assert_that!(Directory::does_exist(&test_directory()).unwrap(), eq true);
 }
 
 #[test]
 fn directory_non_existing_directory_does_not_exist() {
+    create_test_directory();
     assert_that!(!Directory::does_exist(&Path::new(b"i_do_not_exist").unwrap()).unwrap(), eq true);
 }
 
 #[test]
 fn directory_file_is_not_a_directory() {
+    create_test_directory();
     FileBuilder::new(&FilePath::new(b"no_directory").unwrap())
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
@@ -130,6 +134,7 @@ fn directory_file_is_not_a_directory() {
 fn directory_create_from_path_works() {
     let mut test = TestFixture::new();
 
+    create_test_directory();
     let sut_name = test.generate_directory_name();
 
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
@@ -143,6 +148,7 @@ fn directory_create_from_path_works() {
 fn directory_create_from_path_works_recursively() {
     let mut test = TestFixture::new();
 
+    create_test_directory();
     let mut sut_name = test.generate_directory_name();
     sut_name
         .add_path_entry(&Path::new(b"all").unwrap())
@@ -168,6 +174,7 @@ fn directory_create_from_path_works_recursively() {
 fn directory_open_from_path_works() {
     let mut test = TestFixture::new();
 
+    create_test_directory();
     let sut_name = test.generate_directory_name();
 
     Directory::create(&sut_name, Permission::OWNER_ALL).unwrap();
@@ -180,6 +187,7 @@ fn directory_open_from_path_works() {
 fn directory_list_contents_works() {
     let mut test = TestFixture::new();
 
+    create_test_directory();
     let sut_name = test.generate_directory_name();
 
     let sut = Directory::create(&sut_name, Permission::OWNER_ALL);

@@ -19,6 +19,7 @@ use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::Permission;
 use iceoryx2_bb_posix::testing::__internal_process_guard_staged_death;
+use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::unix_datagram_socket::CreationMode;
 use iceoryx2_bb_posix::{process_state::*, unique_system_id::UniqueSystemId};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath};
@@ -41,6 +42,7 @@ fn generate_file_path() -> FilePath {
 
 #[test]
 pub fn process_state_guard_can_be_created() {
+    create_test_directory();
     let path = generate_file_path();
 
     let guard = ProcessGuard::new(&path).unwrap();
@@ -51,6 +53,7 @@ pub fn process_state_guard_can_be_created() {
 
 #[test]
 pub fn process_state_guard_removes_file_when_dropped() {
+    create_test_directory();
     let path = generate_file_path();
 
     let guard = ProcessGuard::new(&path).unwrap();
@@ -61,6 +64,7 @@ pub fn process_state_guard_removes_file_when_dropped() {
 
 #[test]
 pub fn process_state_guard_cannot_use_already_existing_file() {
+    create_test_directory();
     let path = generate_file_path();
 
     let file = FileBuilder::new(&path)
@@ -77,6 +81,7 @@ pub fn process_state_guard_cannot_use_already_existing_file() {
 
 #[test]
 pub fn process_state_monitor_detects_dead_state() {
+    create_test_directory();
     let path = generate_file_path();
     let mut cleaner_path = path.clone();
     cleaner_path.push_bytes(b"_owner_lock").unwrap();
@@ -92,6 +97,7 @@ pub fn process_state_monitor_detects_dead_state() {
 
 #[test]
 pub fn process_state_monitor_detects_non_existing_state() {
+    create_test_directory();
     let path = generate_file_path();
 
     let monitor = ProcessMonitor::new(&path).unwrap();
@@ -100,6 +106,7 @@ pub fn process_state_monitor_detects_non_existing_state() {
 
 #[test]
 pub fn process_state_monitor_transitions_work_starting_from_non_existing_process() {
+    create_test_directory();
     let path = generate_file_path();
     let mut cleaner_path = path.clone();
     cleaner_path.push_bytes(b"_owner_lock").unwrap();
@@ -125,6 +132,7 @@ pub fn process_state_monitor_transitions_work_starting_from_non_existing_process
 
 #[test]
 pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
+    create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path.clone();
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
@@ -155,6 +163,7 @@ pub fn process_state_monitor_transitions_work_starting_from_existing_process() {
 
 #[test]
 pub fn process_state_monitor_detects_initialized_state() {
+    create_test_directory();
     let path = generate_file_path();
 
     let mut file = FileBuilder::new(&path)
@@ -172,6 +181,7 @@ pub fn process_state_monitor_detects_initialized_state() {
 
 #[test]
 pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() {
+    create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path.clone();
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
@@ -214,6 +224,7 @@ pub fn process_state_owner_lock_cannot_be_created_when_process_does_not_exist() 
 
 #[test]
 pub fn process_state_cleaner_removes_state_files_on_drop() {
+    create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path.clone();
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
@@ -241,6 +252,7 @@ pub fn process_state_cleaner_removes_state_files_on_drop() {
 
 #[test]
 pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
+    create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path.clone();
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();
@@ -273,6 +285,7 @@ pub fn process_state_cleaner_keeps_state_files_when_abandoned() {
 #[test]
 #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
 pub fn process_state_monitor_detects_alive_state_from_existing_process() {
+    create_test_directory();
     let path = generate_file_path();
 
     let guard = ProcessGuard::new(&path).unwrap();
@@ -286,6 +299,7 @@ pub fn process_state_monitor_detects_alive_state_from_existing_process() {
 #[test]
 #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
 pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
+    create_test_directory();
     let path = generate_file_path();
 
     let _guard = ProcessGuard::new(&path).unwrap();
@@ -300,6 +314,7 @@ pub fn process_state_owner_lock_cannot_be_acquired_from_living_process() {
 #[test]
 #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
 pub fn process_state_owner_lock_cannot_be_acquired_twice() {
+    create_test_directory();
     let path = generate_file_path();
     let mut owner_lock_path = path.clone();
     owner_lock_path.push_bytes(b"_owner_lock").unwrap();

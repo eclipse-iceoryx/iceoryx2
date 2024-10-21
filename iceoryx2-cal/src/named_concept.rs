@@ -49,7 +49,7 @@ pub enum NamedConceptPathHintRemoveError {
 /// a custom [`NamedConceptConfiguration::suffix()`] for all file names that are transparent during
 /// usage as well as a [`NamedConceptConfiguration::path_hint()`] that can be ignored if the
 /// underlying resource does not support it.
-pub trait NamedConceptConfiguration: Default + Clone + Debug {
+pub trait NamedConceptConfiguration: Default + Clone + Debug + Send {
     /// Defines the prefix that the concept will use.
     fn prefix(self, value: &FileName) -> Self;
 

@@ -71,7 +71,10 @@ impl NamedConceptConfiguration for Configuration {
 
 impl From<Configuration> for crate::communication_channel::unix_datagram::Configuration {
     fn from(value: Configuration) -> Self {
-        Self::default().suffix(&value.suffix).path_hint(&value.path)
+        Self::default()
+            .prefix(&value.prefix)
+            .suffix(&value.suffix)
+            .path_hint(&value.path)
     }
 }
 

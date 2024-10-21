@@ -13,35 +13,27 @@
 #[generic_tests::define]
 mod communication_channel {
     use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_elementary::math::ToB64;
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_cal::communication_channel;
     use iceoryx2_cal::communication_channel::*;
     use iceoryx2_cal::named_concept::*;
-
-    fn generate_name() -> FileName {
-        let mut file = FileName::new(b"test_").unwrap();
-        file.push_bytes(
-            UniqueSystemId::new()
-                .unwrap()
-                .value()
-                .to_b64()
-                .to_lowercase()
-                .as_bytes(),
-        )
-        .unwrap();
-        file
-    }
+    use iceoryx2_cal::testing::*;
 
     #[test]
     fn names_are_set_correctly<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_receiver = Sut::Creator::new(&storage_name).create_receiver().unwrap();
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
 
         assert_that!(*sut_receiver.name(), eq storage_name);
         assert_that!(*sut_sender.name(), eq storage_name);
@@ -50,8 +42,12 @@ mod communication_channel {
     #[test]
     fn buffer_size_is_by_default_at_least_provided_constant<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_receiver = Sut::Creator::new(&storage_name).create_receiver().unwrap();
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
 
         assert_that!(sut_receiver.buffer_size(), ge DEFAULT_RECEIVER_BUFFER_SIZE);
     }
@@ -59,9 +55,16 @@ mod communication_channel {
     #[test]
     fn safe_overflow_is_disabled_by_default<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_receiver = Sut::Creator::new(&storage_name).create_receiver().unwrap();
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
 
         assert_that!(!sut_receiver.does_enable_safe_overflow(), eq true);
         assert_that!(!sut_sender.does_enable_safe_overflow(), eq true);
@@ -70,25 +73,34 @@ mod communication_channel {
     #[test]
     fn create_remove_and_create_again_works<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
-        let sut_receiver = Sut::Creator::new(&storage_name).create_receiver().unwrap();
-        assert_that!(Sut::does_exist(&storage_name), eq Ok(true));
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
 
         drop(sut_receiver);
-        assert_that!(Sut::does_exist(&storage_name), eq Ok(false));
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
 
-        let sut_receiver = Sut::Creator::new(&storage_name).create_receiver();
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver();
 
-        assert_that!(Sut::does_exist(&storage_name), eq Ok(true));
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
         assert_that!(sut_receiver, is_ok);
     }
 
     #[test]
     fn connecting_to_non_existing_channel_fails<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender();
         assert_that!(sut_sender, is_err);
         assert_that!(
             sut_sender.err().unwrap(), eq
@@ -99,9 +111,15 @@ mod communication_channel {
     #[test]
     fn connecting_to_receiver_works<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let _sut_receiver = Sut::Creator::new(&storage_name).create_receiver().unwrap();
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender();
+        let _sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender();
 
         assert_that!(sut_sender, is_ok);
     }
@@ -109,12 +127,21 @@ mod communication_channel {
     #[test]
     fn connecting_after_first_connection_has_dropped_works<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let _sut_receiver = Sut::Creator::new(&storage_name).create_receiver().unwrap();
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+        let _sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
         drop(sut_sender);
 
-        let sut_sender2 = Sut::Connector::new(&storage_name).open_sender();
+        let sut_sender2 = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender();
 
         assert_that!(sut_sender2, is_ok);
     }
@@ -122,9 +149,16 @@ mod communication_channel {
     #[test]
     fn send_and_receive_works_for_single_packets<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_receiver = Sut::Creator::new(&storage_name).create_receiver().unwrap();
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
 
         const MAX_NUMBER_OF_PACKETS: usize = 16;
 
@@ -143,12 +177,17 @@ mod communication_channel {
     #[test]
     fn send_and_receive_for_multi_packets_has_queue_behavior<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .buffer_size(4)
+            .config(&config)
             .create_receiver()
             .unwrap();
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
 
         const MAX_NUMBER_OF_PACKETS: usize = 1;
 
@@ -174,9 +213,16 @@ mod communication_channel {
     #[test]
     fn receive_without_transmission_returns_none<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
-        let sut_receiver = Sut::Creator::new(&storage_name).create_receiver().unwrap();
-        let _sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+        let sut_receiver = Sut::Creator::new(&storage_name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        let _sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
 
         let received = sut_receiver.receive();
 
@@ -187,12 +233,17 @@ mod communication_channel {
     #[test]
     fn send_will_return_receiver_cache_full_when_cache_is_full<Sut: CommunicationChannel<usize>>() {
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .buffer_size(4)
+            .config(&config)
             .create_receiver()
             .unwrap();
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
 
         let mut send_counter: usize = 0;
         loop {
@@ -235,12 +286,17 @@ mod communication_channel {
         }
 
         let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Creator::new(&storage_name)
             .enable_safe_overflow()
+            .config(&config)
             .create_receiver()
             .unwrap();
-        let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+        let sut_sender = Sut::Connector::new(&storage_name)
+            .config(&config)
+            .open_sender()
+            .unwrap();
 
         assert_that!(sut_sender.does_enable_safe_overflow(), eq true);
         assert_that!(sut_receiver.does_enable_safe_overflow(), eq true);
@@ -264,15 +320,20 @@ mod communication_channel {
         if !Sut::has_configurable_buffer_size() {
             return;
         }
+        let config = generate_isolated_config::<Sut>();
 
         for buffer_size in 1..DEFAULT_RECEIVER_BUFFER_SIZE + 2 {
             let storage_name = generate_name();
 
             let sut_receiver = Sut::Creator::new(&storage_name)
                 .buffer_size(buffer_size)
+                .config(&config)
                 .create_receiver()
                 .unwrap();
-            let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+            let sut_sender = Sut::Connector::new(&storage_name)
+                .config(&config)
+                .open_sender()
+                .unwrap();
 
             assert_that!(sut_receiver.buffer_size(), ge buffer_size);
 
@@ -293,6 +354,7 @@ mod communication_channel {
         if !Sut::has_configurable_buffer_size() || !Sut::does_support_safe_overflow() {
             return;
         }
+        let config = generate_isolated_config::<Sut>();
 
         for buffer_size in 1..DEFAULT_RECEIVER_BUFFER_SIZE + 2 {
             let storage_name = generate_name();
@@ -300,9 +362,13 @@ mod communication_channel {
             let sut_receiver = Sut::Creator::new(&storage_name)
                 .buffer_size(buffer_size)
                 .enable_safe_overflow()
+                .config(&config)
                 .create_receiver()
                 .unwrap();
-            let sut_sender = Sut::Connector::new(&storage_name).open_sender().unwrap();
+            let sut_sender = Sut::Connector::new(&storage_name)
+                .config(&config)
+                .open_sender()
+                .unwrap();
 
             assert_that!(sut_receiver.buffer_size(), eq buffer_size);
 
@@ -329,16 +395,21 @@ mod communication_channel {
         let mut sut_names = vec![];
         let mut suts = vec![];
         const LIMIT: usize = 8;
+        let config = generate_isolated_config::<Sut>();
 
         for i in 0..LIMIT {
-            assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len i);
+            assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len i);
             sut_names.push(generate_name());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(false));
-            suts.push(Sut::Creator::new(&sut_names[i]).create_receiver());
-            assert_that!(<Sut as NamedConceptMgmt>::does_exist(&sut_names[i]), eq Ok(true));
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
+            suts.push(
+                Sut::Creator::new(&sut_names[i])
+                    .config(&config)
+                    .create_receiver(),
+            );
+            assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(true));
 
-            let list = <Sut as NamedConceptMgmt>::list().unwrap();
-            assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len i + 1);
+            let list = <Sut as NamedConceptMgmt>::list_cfg(&config).unwrap();
+            assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len i + 1);
             let does_exist_in_list = |value| {
                 for e in &list {
                     if e == value {
@@ -353,26 +424,27 @@ mod communication_channel {
             }
         }
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len LIMIT);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len LIMIT);
 
         for i in 0..LIMIT {
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(true));
-            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove(&sut_names[i])}, eq Ok(false));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(true));
+            assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
         }
 
         std::mem::forget(suts);
 
-        assert_that!(<Sut as NamedConceptMgmt>::list().unwrap(), len 0);
+        assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
 
     #[test]
     fn custom_suffix_keeps_channels_separated<Sut: CommunicationChannel<usize>>() {
         let _watch_dog = Watchdog::new();
+        let config = generate_isolated_config::<Sut>();
 
-        let config_1 = <Sut as NamedConceptMgmt>::Configuration::default()
+        let config_1 = config
+            .clone()
             .suffix(unsafe { &FileName::new_unchecked(b".s1") });
-        let config_2 = <Sut as NamedConceptMgmt>::Configuration::default()
-            .suffix(unsafe { &FileName::new_unchecked(b".s2") });
+        let config_2 = config.suffix(unsafe { &FileName::new_unchecked(b".s2") });
 
         let sut_name = generate_name();
 

@@ -14,21 +14,9 @@
 mod listener {
     use std::collections::HashSet;
 
-    use iceoryx2::{
-        node::NodeBuilder,
-        port::listener::ListenerCreateError,
-        service::{service_name::ServiceName, Service},
-    };
-    use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+    use iceoryx2::testing::*;
+    use iceoryx2::{node::NodeBuilder, port::listener::ListenerCreateError, service::Service};
     use iceoryx2_bb_testing::assert_that;
-
-    fn generate_name() -> ServiceName {
-        ServiceName::new(&format!(
-            "listener_tests_{}",
-            UniqueSystemId::new().unwrap().value()
-        ))
-        .unwrap()
-    }
 
     #[test]
     fn create_error_display_works<S: Service>() {
@@ -40,8 +28,9 @@ mod listener {
 
     #[test]
     fn id_is_unique<Sut: Service>() {
-        let service_name = generate_name();
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_LISTENERS: usize = 8;
 
         let sut = node

@@ -18,6 +18,7 @@ mod subscriber {
         node::NodeBuilder,
         port::subscriber::{SubscriberCreateError, SubscriberReceiveError},
         service::{service_name::ServiceName, Service},
+        testing::*,
     };
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -47,7 +48,8 @@ mod subscriber {
     #[test]
     fn id_is_unique<Sut: Service>() {
         let service_name = generate_name();
-        let node = NodeBuilder::new().create::<Sut>().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_SUBSCRIBERS: usize = 8;
 
         let sut = node

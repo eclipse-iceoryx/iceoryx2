@@ -15,6 +15,7 @@ use iceoryx2_bb_posix::config;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_lock::*;
 use iceoryx2_bb_posix::process::*;
+use iceoryx2_bb_posix::testing::create_test_directory;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -49,6 +50,7 @@ struct TestFixture<'a> {
 
 impl<'a> TestFixture<'a> {
     fn new(handle: &'a ReadWriteMutexHandle<File>) -> TestFixture {
+        create_test_directory();
         let file_name = generate_file_name();
         let file = FileBuilder::new(&file_name)
             .creation_mode(CreationMode::PurgeAndCreate)

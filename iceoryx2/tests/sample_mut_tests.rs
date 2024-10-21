@@ -18,6 +18,7 @@ mod sample_mut {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
+    use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
 
@@ -40,8 +41,8 @@ mod sample_mut {
     }
 
     impl<Sut: Service> TestContext<Sut> {
-        fn new() -> Self {
-            let node = NodeBuilder::new().create::<Sut>().unwrap();
+        fn new(config: &Config) -> Self {
+            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
             let service_name = generate_name();
             let service = node
                 .service_builder(&service_name)
@@ -70,7 +71,8 @@ mod sample_mut {
 
     #[test]
     fn when_going_out_of_scope_it_is_released<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
 
         let mut sample_vec = vec![];
 
@@ -93,7 +95,8 @@ mod sample_mut {
 
     #[test]
     fn header_tracks_correct_origin<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
         let sample = test_context.publisher.loan().unwrap();
         assert_that!(sample.header().publisher_id(), eq test_context.publisher.id());
     }
@@ -102,7 +105,8 @@ mod sample_mut {
     fn write_payload_works<Sut: Service>() {
         const PAYLOAD_1: u64 = 891283689123555;
         const PAYLOAD_2: u64 = 71820;
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
         let sample = test_context.publisher.loan_uninit().unwrap();
         let mut sample = sample.write_payload(PAYLOAD_1);
 
@@ -118,7 +122,8 @@ mod sample_mut {
     #[test]
     fn assume_init_works<Sut: Service>() {
         const PAYLOAD: u64 = 7182055123;
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
         let mut sample = test_context.publisher.loan_uninit().unwrap();
         let _ = *sample.payload_mut().write(PAYLOAD);
         let mut sample = unsafe { sample.assume_init() };
@@ -130,7 +135,8 @@ mod sample_mut {
     #[test]
     fn send_works<Sut: Service>() {
         const PAYLOAD: u64 = 3215357;
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
         let sample = test_context.publisher.loan_uninit().unwrap();
         let sample = sample.write_payload(PAYLOAD);
 
@@ -142,13 +148,14 @@ mod sample_mut {
 
     #[test]
     fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
         let service_name = test_context.service_name.clone();
         let _sample = test_context.publisher.loan_uninit().unwrap();
 
         drop(test_context);
 
-        let test_context = TestContext::<Sut>::new();
+        let test_context = TestContext::<Sut>::new(&config);
         let result = test_context
             .node
             .service_builder(&service_name)
@@ -160,7 +167,8 @@ mod sample_mut {
 
     #[test]
     fn sample_of_dropped_publisher_does_not_block_new_publishers<Sut: Service>() {
-        let test_context = TestContext::<Sut>::new();
+        let config = generate_isolated_config();
+        let test_context = TestContext::<Sut>::new(&config);
         let service = test_context.service;
         let publisher = test_context.publisher;
         let _sample = publisher.loan_uninit().unwrap();
