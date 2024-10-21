@@ -56,12 +56,10 @@ Create a new CLI for iceoryx2 `iox2-config`
     [#605](https://github.com/eclipse-iceoryx/iceoryx2/issues/605)
 * LogLevel is considered for custom loggers.
     [#608](https://github.com/eclipse-iceoryx/iceoryx2/issues/608)
-* Add CLI to display complete system configuration
-    [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 ### Refactoring
 
-Remove the `print_system_configuration()` function in
+* Remove the `print_system_configuration()` function in
 `iceoryx2-bb/posix/src/system_configuration.rs` file and move it into the CLI `iox2-config`
 [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
@@ -77,7 +75,8 @@ Remove the `print_system_configuration()` function in
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add CLI to display complete system configuration
+    [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 ### New API features
 

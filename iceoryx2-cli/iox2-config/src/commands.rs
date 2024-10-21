@@ -1,4 +1,4 @@
-//  Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -13,6 +13,7 @@
 use anyhow::Result;
 use colored::Colorize;
 use dialoguer::Confirm;
+use dirs::config_dir;
 use enum_iterator::all;
 use iceoryx2::config::Config;
 use iceoryx2_bb_posix::system_configuration::*;
@@ -106,14 +107,22 @@ pub fn print_system_configuration() {
     }
 }
 
-pub fn show() -> Result<()> {
+pub fn show_system_config() -> Result<()> {
     print_system_configuration();
 
     Ok(())
 }
 
+pub fn show_current_config() -> Result<()> {
+    let config = Config::global_config();
+    let toml_config = toml::to_string_pretty(&config)?;
+    println!("{}", toml_config);
+
+    Ok(())
+}
+
 pub fn generate() -> Result<()> {
-    let config_dir = dirs::config_dir().unwrap().join("iceoryx2/");
+    let config_dir = config_dir().unwrap().join("iceoryx2");
     fs::create_dir_all(&config_dir)?;
 
     let default_file_path = config_dir.join("config.toml");

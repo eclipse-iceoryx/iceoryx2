@@ -17,6 +17,8 @@ use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
+use cli::Config;
+use cli::ShowSubcommand;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
 
 #[cfg(not(debug_assertions))]
@@ -44,11 +46,23 @@ fn main() {
         Ok(cli) => {
             if let Some(action) = cli.action {
                 match action {
-                    Action::Show => {
-                        if let Err(e) = commands::show() {
-                            eprintln!("Failed to show options: {}", e);
+                    Action::Show { subcommand } => match subcommand {
+                        Some(ShowSubcommand::System) => {
+                            if let Err(e) = commands::show_system_config() {
+                                eprintln!("Failed to show options: {}", e);
+                            }
                         }
-                    }
+                        Some(ShowSubcommand::Current) => {
+                            if let Err(e) = commands::show_current_config() {
+                                eprintln!("Failed to show options: {}", e);
+                            }
+                        }
+                        None => {
+                            Config::command()
+                                .print_help()
+                                .expect("Failed to print help");
+                        }
+                    },
                     Action::Generate => {
                         if let Err(e) = commands::generate() {
                             eprintln!("Failed to generate default configuration: {}", e);
