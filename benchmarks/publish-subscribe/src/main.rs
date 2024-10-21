@@ -60,11 +60,18 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
 
             barrier.wait();
 
-            let mut sample = unsafe {
+            let mut sample = if args.send_copy {
                 sender_a2b
                     .loan_slice_uninit(args.payload_size)
                     .unwrap()
-                    .assume_init()
+                    .write_from_fn(|_| 0)
+            } else {
+                unsafe {
+                    sender_a2b
+                        .loan_slice_uninit(args.payload_size)
+                        .unwrap()
+                        .assume_init()
+                }
             };
 
             for _ in 0..args.iterations {
@@ -93,12 +100,20 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
             barrier.wait();
 
             for _ in 0..args.iterations {
-                let sample = unsafe {
+                let sample = if args.send_copy {
                     sender_b2a
                         .loan_slice_uninit(args.payload_size)
                         .unwrap()
-                        .assume_init()
+                        .write_from_fn(|_| 0)
+                } else {
+                    unsafe {
+                        sender_b2a
+                            .loan_slice_uninit(args.payload_size)
+                            .unwrap()
+                            .assume_init()
+                    }
                 };
+
                 while receiver_a2b.receive().unwrap().is_none() {}
 
                 sample.send().unwrap();
@@ -152,6 +167,8 @@ struct Args {
     /// The size in bytes of the payload that shall be used
     #[clap(short, long, default_value_t = 8192)]
     payload_size: usize,
+    #[clap(long)]
+    send_copy: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
