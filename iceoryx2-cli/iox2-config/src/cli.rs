@@ -30,10 +30,36 @@ pub struct Cli {
     pub action: Option<Action>,
 }
 
+#[derive(Parser)]
+#[command(
+    name = "iox2-config",
+    about = "Query information about iceoryx2 configuration",
+    long_about = None,
+    version = env!("CARGO_PKG_VERSION"),
+    disable_help_subcommand = true,
+    arg_required_else_help = false,
+    help_template = help_template("iox2 config show", false),
+)]
+pub struct Config {
+    #[clap(subcommand)]
+    pub action: Option<ShowSubcommand>,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ShowSubcommand {
+    #[clap(about = "Show system configuration")]
+    System,
+    #[clap(about = "Show current iceoryx2 configuration")]
+    Current,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(about = "Show the currently used configuration")]
-    Show,
+    Show {
+        #[clap(subcommand)]
+        subcommand: Option<ShowSubcommand>,
+    },
     #[clap(about = "Generate a default configuration file")]
     Generate,
 }
