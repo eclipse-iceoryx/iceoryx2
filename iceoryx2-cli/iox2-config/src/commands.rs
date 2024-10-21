@@ -113,7 +113,7 @@ pub fn show() -> Result<()> {
 }
 
 pub fn generate() -> Result<()> {
-    let config_dir = dirs::config_dir().unwrap().join("iceoryx2/");
+    let config_dir = dirs::config_dir().unwrap().join("iceoryx2");
     fs::create_dir_all(&config_dir)?;
 
     let default_file_path = config_dir.join("config.toml");
