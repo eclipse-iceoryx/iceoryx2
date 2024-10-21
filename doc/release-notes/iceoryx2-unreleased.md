@@ -14,6 +14,7 @@
 * Add Event-Multiplexer `WaitSet` [#390](https://github.com/eclipse-iceoryx/iceoryx2/issues/390)
 * Add `PeriodicTimer` into POSIX building blocks [#425](https://github.com/eclipse-iceoryx/iceoryx2/issues/425)
 * Developer permissions for resources [#460](https://github.com/eclipse-iceoryx/iceoryx2/issues/460)
+* Add `--send-copy` flag to Benchmark to consider mem operations [#483](https://github.com/eclipse-iceoryx/iceoryx2/issues/483)
 
 ### Bugfixes
 
@@ -58,7 +59,7 @@
 
 ### API Breaking Changes
 
-1. Renamed `NodeEvent` into `WaitEvent`
+1. Removed `NodeEvent`. `Node::wait` returns now `Result<(), NodeWaitFailure>`
 
    ```rust
    // old
@@ -67,7 +68,7 @@
    }
 
    // new
-   while node.wait(CYCLE_TIME) != WaitEvent::TerminationRequest {
+   while node.wait(CYCLE_TIME).is_ok() {
     // ...
    }
    ```
