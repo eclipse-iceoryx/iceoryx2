@@ -596,7 +596,6 @@ impl Config {
                 ICEORYX2_CONFIG.set_value(Config::default());
             }
         }
-
         ICEORYX2_CONFIG.get()
     }
 }
