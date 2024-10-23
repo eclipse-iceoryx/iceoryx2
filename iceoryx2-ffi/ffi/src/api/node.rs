@@ -20,17 +20,19 @@ use crate::api::{
 
 use iceoryx2::node::{NodeId, NodeListFailure, NodeView, NodeWaitFailure};
 use iceoryx2::prelude::*;
+use iceoryx2_bb_derive_macros::StaticStringRepresentation;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_elementary::AsStaticString;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use std::time::Duration;
 
 // BEGIN type definition
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StaticStringRepresentation)]
 pub enum iox2_node_list_failure_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERRUPT,
@@ -50,7 +52,7 @@ impl IntoCInt for NodeListFailure {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StaticStringRepresentation)]
 pub enum iox2_node_wait_failure_e {
     INTERRUPT = IOX2_OK as isize + 1,
     TERMINATION_REQUEST,
@@ -184,6 +186,20 @@ pub type iox2_node_list_callback = extern "C" fn(
 // END type definition
 
 // BEGIN C API
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_node_list_failure_string(
+    error: iox2_node_list_failure_e,
+) -> *const c_char {
+    error.as_static_str().as_ptr() as *const c_char
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_node_wait_failure_string(
+    error: iox2_node_wait_failure_e,
+) -> *const c_char {
+    error.as_static_str().as_ptr() as *const c_char
+}
 
 /// Returns the [`iox2_node_name_ptr`](crate::iox2_node_name_ptr), an immutable pointer to the node name.
 ///

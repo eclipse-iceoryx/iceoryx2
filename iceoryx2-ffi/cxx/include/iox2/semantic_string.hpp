@@ -23,6 +23,10 @@ enum class SemanticStringError : uint8_t {
     /// @brief The added content would exceed the maximum capacity of the [`SemanticString`]
     ExceedsMaximumLength
 };
+
+
+auto error_string(const iox2::SemanticStringError& error) -> const char*;
+
 } // namespace iox2
 
 #endif

@@ -10,24 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_NODE_WAIT_FAILURE_HPP
-#define IOX2_NODE_WAIT_FAILURE_HPP
-
-#include <cstdint>
-
-namespace iox2 {
-
-/// Defines all possible errors that can occur during [`Node::wait()`].
-enum class NodeWaitFailure : uint8_t {
-    /// SIGTERM signal was received
-    TerminationRequest,
-    /// SIGINT signal was received
-    Interrupt,
-};
-
-
-auto error_string(const iox2::NodeWaitFailure& error) -> const char*;
-
-} // namespace iox2
-
-#endif
+pub trait AsStaticString {
+    fn as_static_str(&self) -> &'static str;
+}

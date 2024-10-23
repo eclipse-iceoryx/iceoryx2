@@ -41,6 +41,10 @@ enum class ListenerWaitError : uint8_t {
     /// configured system.
     InternalFailure,
 };
+
+auto error_string(const iox2::ListenerCreateError& error) -> const char*;
+auto error_string(const iox2::ListenerWaitError& error) -> const char*;
+
 } // namespace iox2
 
 #endif

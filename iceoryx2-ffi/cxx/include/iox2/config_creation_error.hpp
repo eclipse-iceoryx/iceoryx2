@@ -25,6 +25,9 @@ enum class ConfigCreationError : uint8_t {
     /// Parts of the config file could not be deserialized. Indicates some kind of syntax error.
     UnableToDeserializeContents
 };
+
+auto error_string(const iox2::ConfigCreationError& error) -> const char*;
+
 } // namespace iox2
 
 #endif

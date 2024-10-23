@@ -35,6 +35,10 @@ enum class NotifierNotifyError : uint8_t {
     /// [`Service`]
     EventIdOutOfBounds,
 };
+
+auto error_string(const iox2::NotifierCreateError& error) -> const char*;
+auto error_string(const iox2::NotifierNotifyError& error) -> const char*;
+
 } // namespace iox2
 
 #endif

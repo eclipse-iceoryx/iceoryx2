@@ -26,6 +26,8 @@ use iceoryx2::service::builder::publish_subscribe::{
 };
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2_bb_derive_macros::StaticStringRepresentation;
+use iceoryx2_bb_elementary::AsStaticString;
 use iceoryx2_bb_log::fatal_panic;
 
 use core::ffi::{c_char, c_int};
@@ -36,32 +38,55 @@ use std::alloc::Layout;
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StaticStringRepresentation)]
 pub enum iox2_pub_sub_open_or_create_error_e {
+    #[StaticString = "does not exist"]
     O_DOES_NOT_EXIST = IOX2_OK as isize + 1,
+    #[StaticString = "internal failure"]
     O_INTERNAL_FAILURE,
+    #[StaticString = "incompatible types"]
     O_INCOMPATIBLE_TYPES,
+    #[StaticString = "incompatible messaging pattern"]
     O_INCOMPATIBLE_MESSAGING_PATTERN,
+    #[StaticString = "incompatible attributes"]
     O_INCOMPATIBLE_ATTRIBUTES,
+    #[StaticString = "does not support requested min buffer size"]
     O_DOES_NOT_SUPPORT_REQUESTED_MIN_BUFFER_SIZE,
+    #[StaticString = "does not support requested min history size"]
     O_DOES_NOT_SUPPORT_REQUESTED_MIN_HISTORY_SIZE,
+    #[StaticString = "does not support requested min subscriber borrowed samples"]
     O_DOES_NOT_SUPPORT_REQUESTED_MIN_SUBSCRIBER_BORROWED_SAMPLES,
+    #[StaticString = "does not support requested amount of publishers"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_PUBLISHERS,
+    #[StaticString = "does not support requested amount of subscribers"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_SUBSCRIBERS,
+    #[StaticString = "does not support requested amount of nodes"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES,
+    #[StaticString = "incompatible overflow behavior"]
     O_INCOMPATIBLE_OVERFLOW_BEHAVIOR,
+    #[StaticString = "insufficient permissions"]
     O_INSUFFICIENT_PERMISSIONS,
+    #[StaticString = "service in corrupted state"]
     O_SERVICE_IN_CORRUPTED_STATE,
+    #[StaticString = "hangs in creation"]
     O_HANGS_IN_CREATION,
+    #[StaticString = "exceeds max number of nodes"]
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
+    #[StaticString = "is marked for destruction"]
     O_IS_MARKED_FOR_DESTRUCTION,
+    #[StaticString = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
+    #[StaticString = "subscriber buffer must be larger than history size"]
     C_SUBSCRIBER_BUFFER_MUST_BE_LARGER_THAN_HISTORY_SIZE,
+    #[StaticString = "already exists"]
     C_ALREADY_EXISTS,
+    #[StaticString = "insufficient permissions"]
     C_INSUFFICIENT_PERMISSIONS,
+    #[StaticString = "internal failure"]
     C_INTERNAL_FAILURE,
+    #[StaticString = "is being created by another instance"]
     C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE,
-    C_OLD_CONNECTION_STILL_ACTIVE,
+    #[StaticString = "hangs in creation"]
     C_HANGS_IN_CREATION,
 }
 
@@ -199,6 +224,13 @@ pub enum iox2_type_detail_error_e {
 // END type definition
 
 // BEGIN C API
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_pub_sub_open_or_create_error_string(
+    error: iox2_pub_sub_open_or_create_error_e,
+) -> *const c_char {
+    error.as_static_str().as_ptr() as *const c_char
+}
 
 /// Sets the user header type details for the builder
 ///

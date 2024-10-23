@@ -58,6 +58,11 @@ enum class WaitSetRunError : uint8_t {
     /// An interrupt signal `SIGINT` was received.
     Interrupt
 };
+
+auto error_string(const iox2::WaitSetCreateError& error) -> const char*;
+auto error_string(const iox2::WaitSetAttachmentError& error) -> const char*;
+auto error_string(const iox2::WaitSetRunError& error) -> const char*;
+
 } // namespace iox2
 
 #endif

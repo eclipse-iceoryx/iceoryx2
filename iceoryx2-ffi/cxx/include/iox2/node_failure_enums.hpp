@@ -39,6 +39,9 @@ enum class NodeCreationFailure : uint8_t {
 enum class NodeCleanupFailure : uint8_t {
 };
 
+auto error_string(const iox2::NodeListFailure& error) -> const char*;
+auto error_string(const iox2::NodeCreationFailure& error) -> const char*;
+
 } // namespace iox2
 
 #endif

@@ -43,6 +43,10 @@ enum class ServiceListError : uint8_t {
     /// configured system.
     InternalError,
 };
+
+auto error_string(const iox2::ServiceDetailsError& error) -> const char*;
+auto error_string(const iox2::ServiceListError& error) -> const char*;
+
 } // namespace iox2
 
 #endif

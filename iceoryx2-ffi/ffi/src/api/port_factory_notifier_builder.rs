@@ -20,16 +20,18 @@ use crate::api::{
 use iceoryx2::port::notifier::NotifierCreateError;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::notifier::PortFactoryNotifier;
+use iceoryx2_bb_derive_macros::StaticStringRepresentation;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_elementary::AsStaticString;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StaticStringRepresentation)]
 pub enum iox2_notifier_create_error_e {
     EXCEEDS_MAX_SUPPORTED_NOTIFIERS = IOX2_OK as isize + 1,
 }
@@ -129,6 +131,13 @@ impl HandleToType for iox2_port_factory_notifier_builder_h_ref {
 // END type definition
 
 // BEGIN C API
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_notifier_create_error_string(
+    error: iox2_notifier_create_error_e,
+) -> *const c_char {
+    error.as_static_str().as_ptr() as *const c_char
+}
 
 /// Sets the default event id for the builder
 ///

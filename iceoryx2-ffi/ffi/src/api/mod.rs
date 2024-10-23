@@ -14,8 +14,10 @@
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
+use iceoryx2_bb_derive_macros::StaticStringRepresentation;
+use iceoryx2_bb_elementary::AsStaticString;
 
-use core::ffi::{c_int, c_void};
+use core::ffi::{c_char, c_int, c_void};
 
 mod config;
 mod event_id;
@@ -119,7 +121,7 @@ impl From<iox2_callback_progression_e> for CallbackProgression {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StaticStringRepresentation)]
 pub enum iox2_semantic_string_error_e {
     INVALID_CONTENT = IOX2_OK as isize + 1,
     EXCEEDS_MAXIMUM_LENGTH,
@@ -185,4 +187,11 @@ trait HandleToType {
 
 trait AssertNonNullHandle {
     fn assert_non_null(self);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_semantic_string_error_string(
+    error: iox2_semantic_string_error_e,
+) -> *const c_char {
+    error.as_static_str().as_ptr() as *const c_char
 }

@@ -23,35 +23,55 @@ use iceoryx2::service::builder::event::{
     Builder, EventCreateError, EventOpenError, EventOpenOrCreateError,
 };
 use iceoryx2::service::port_factory::event::PortFactory;
+use iceoryx2_bb_derive_macros::StaticStringRepresentation;
+use iceoryx2_bb_elementary::AsStaticString;
 
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StaticStringRepresentation)]
 pub enum iox2_event_open_or_create_error_e {
+    #[StaticString = "does not exist"]
     O_DOES_NOT_EXIST = IOX2_OK as isize + 1,
+    #[StaticString = "insufficient permissions"]
     O_INSUFFICIENT_PERMISSIONS,
+    #[StaticString = "service in corrupted state"]
     O_SERVICE_IN_CORRUPTED_STATE,
+    #[StaticString = "incompatible messaging pattern"]
     O_INCOMPATIBLE_MESSAGING_PATTERN,
+    #[StaticString = "incompatible attributes"]
     O_INCOMPATIBLE_ATTRIBUTES,
+    #[StaticString = "internal failure"]
     O_INTERNAL_FAILURE,
+    #[StaticString = "hangs in creation"]
     O_HANGS_IN_CREATION,
+    #[StaticString = "does not support requested amount of notifiers"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NOTIFIERS,
+    #[StaticString = "does not support requested amount of listeners"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_LISTENERS,
+    #[StaticString = "does not support requested max event id"]
     O_DOES_NOT_SUPPORT_REQUESTED_MAX_EVENT_ID,
+    #[StaticString = "does not support requested amount of nodes"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES,
+    #[StaticString = "exceeds max number of nodes"]
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
+    #[StaticString = "is marked for destruction"]
     O_IS_MARKED_FOR_DESTRUCTION,
+    #[StaticString = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
+    #[StaticString = "internal failure"]
     C_INTERNAL_FAILURE,
+    #[StaticString = "is being created by another instance"]
     C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE,
+    #[StaticString = "already exists"]
     C_ALREADY_EXISTS,
+    #[StaticString = "hangs in creation"]
     C_HANGS_IN_CREATION,
+    #[StaticString = "insufficient permissions"]
     C_INSUFFICIENT_PERMISSIONS,
-    C_OLD_CONNECTION_STILL_ACTIVE,
 }
 
 impl IntoCInt for EventOpenError {
@@ -134,6 +154,13 @@ impl IntoCInt for EventOpenOrCreateError {
 // END type definition
 
 // BEGIN C API
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_event_open_or_create_error_string(
+    error: iox2_event_open_or_create_error_e,
+) -> *const c_char {
+    error.as_static_str().as_ptr() as *const c_char
+}
 
 /// Sets the max notifiers for the builder
 ///

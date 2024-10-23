@@ -758,6 +758,7 @@ dependencies = [
  "generic-tests",
  "iceoryx2",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",

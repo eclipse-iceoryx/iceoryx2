@@ -16,7 +16,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{parse_macro_input, Data, DeriveInput, Expr, ExprLit, Fields, Lit};
 
 /// Implements the [`iceoryx2_bb_elementary::placement_default::PlacementDefault`] trait when all
 /// fields of the struct implement it.
@@ -94,6 +94,98 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl #impl_generics PlacementDefault for #name #ty_generics #where_clause {
             #place_default_impl
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[proc_macro_derive(StaticStringRepresentation, attributes(StaticString))]
+pub fn as_static_string_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    let static_string_impl = match input.data {
+        Data::Enum(ref data_enum) => {
+            let match_arms = data_enum.variants.iter().map(|variant| {
+                let variant_ident = &variant.ident;
+
+                // Get the StaticString attribute if it exists
+                let static_string = variant
+                    .attrs
+                    .iter()
+                    .find_map(|attr| {
+                        if !attr.path().is_ident("StaticString") {
+                            return None;
+                        }
+
+                        match attr.meta.require_name_value() {
+                            Ok(meta) => {
+                                if let Expr::Lit(ExprLit {
+                                    lit: Lit::Str(lit), ..
+                                }) = &meta.value
+                                {
+                                    Some(lit.value())
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
+                        }
+                    })
+                    .unwrap_or_else(|| {
+                        let variant_str = variant_ident.to_string();
+                        variant_str
+                            .chars()
+                            .enumerate()
+                            .map(|(_, c)| {
+                                if c == '_' {
+                                    ' '
+                                } else {
+                                    c.to_ascii_lowercase()
+                                }
+                            })
+                            .collect::<String>()
+                    });
+
+                match &variant.fields {
+                    Fields::Unit => {
+                        quote! {
+                            Self::#variant_ident => concat!(#static_string, "\0")
+                        }
+                    }
+                    Fields::Unnamed(_) => {
+                        quote! {
+                            Self::#variant_ident(..) => concat!(#static_string, "\0")
+                        }
+                    }
+                    Fields::Named(_) => {
+                        quote! {
+                            Self::#variant_ident{..} => concat!(#static_string, "\0")
+                        }
+                    }
+                }
+            });
+
+            quote! {
+                fn as_static_str(&self) -> &'static str {
+                    match self {
+                        #(#match_arms,)*
+                    }
+                }
+            }
+        }
+        _ => {
+            let err =
+                syn::Error::new_spanned(&input, "AsStaticString can only be derived for enums");
+            return err.to_compile_error().into();
+        }
+    };
+
+    let expanded = quote! {
+        impl #impl_generics AsStaticString for #name #ty_generics #where_clause {
+            #static_string_impl
         }
     };
 
