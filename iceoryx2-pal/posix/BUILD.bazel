@@ -35,15 +35,25 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-# Generate the Rust binding file
+
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+
+alias(
+    name = "bindgen-cli",
+    actual = select({
+        "@bazel_tools//src/conditions:darwin": "@bindgen-macos//:bindgen-cli",
+        "//conditions:default": "@bindgen//:bindgen-cli",
+    }),
+)
+
 genrule(
     name = "iceoryx2-pal-posix-bindgen",
     srcs = [
         "src/c/posix.h",
-        "@bindgen//:bindgen-cli",
     ],
     outs = ["posix_generated.rs"],
-    cmd = "$(execpath @bindgen//:bindgen-cli) --use-core --blocklist-type max_align_t $(location src/c/posix.h) --output $(OUTS)",
+    cmd = "$(execpath :bindgen-cli) --use-core --blocklist-type max_align_t $(location src/c/posix.h) --output $(OUTS)",
+    tools = [":bindgen-cli"],
 )
 
 cargo_build_script(
