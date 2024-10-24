@@ -20,9 +20,33 @@ filegroup(
     srcs = glob(["**"]),
 )
 
-filegroup(
+
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+
+# load("@cbindgen_source//:BUILD.bazel", "srcs")
+rust_binary(
     name = "cbindgen-cli",
-    srcs = ["@cbindgen//file"],
+    srcs = [
+        "@cbindgen_source//:srcs",
+    ],
+    data = [
+        "@cbindgen_source//:Cargo.toml",
+        "@cbindgen_source//:Cargo.lock",
+    ],
+    edition = "2018",
+    deps = [
+        "@cbindgen_deps//:clap",
+        "@cbindgen_deps//:indexmap",
+        "@cbindgen_deps//:log",
+        "@cbindgen_deps//:serde",
+        "@cbindgen_deps//:serde_json",
+        "@cbindgen_deps//:tempfile",
+        "@cbindgen_deps//:toml",
+        "@cbindgen_deps//:proc-macro2",
+        "@cbindgen_deps//:quote",
+        "@cbindgen_deps//:heck",
+        "@cbindgen_deps//:syn",
+    ],
 )
 
 genrule(

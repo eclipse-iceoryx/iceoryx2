@@ -25,7 +25,6 @@ maybe(
     strip_prefix = "googletest-{version}".format(version = GOOGLETEST_VERSION),
 )
 
-
 # Load Rust rules
 # Use v0.26 to support bazel v6.2
 maybe(
@@ -48,6 +47,19 @@ rust_register_toolchains(
 
 # Load prebuilt bindgen
 maybe(
+    name = "bindgen-macos",
+    repo_rule = http_archive,
+    strip_prefix = "bindgen-cli-aarch64-apple-darwin",
+    urls = ["https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-aarch64-apple-darwin.tar.xz"],
+    build_file_content = """
+filegroup(
+    name = "bindgen-cli",
+    srcs = ["bindgen"],
+    visibility = ["//visibility:public"],
+)
+    """,
+)
+maybe(
     name = "bindgen",
     repo_rule = http_archive,
     sha256 = "b7e2321ee8c617f14ccc5b9f39b3a804db173ee217e924ad93ed16af6bc62b1d",
@@ -61,15 +73,37 @@ filegroup(
 )
     """,
 )
+load("@rules_rust//rust:repositories.bzl", "rust_repositories")
 
-# Load prebuilt cbindgen
-maybe(
-    name = "cbindgen",
-    repo_rule = http_file,
-    sha256 = "521836d00863cb129283054e5090eb17563614e6328b7a1610e30949a05feaea",
-    urls = ["https://github.com/mozilla/cbindgen/releases/download/0.26.0/cbindgen"],
-    executable = True,
+rust_repositories()
+
+http_archive(
+    name = "cbindgen_source",
+    urls = ["https://github.com/mozilla/cbindgen/archive/refs/tags/0.26.0.tar.gz"],
+    strip_prefix = "cbindgen-0.26.0",  
+    build_file_content = """
+filegroup(
+    name = "srcs",
+    srcs = glob(["src/**/*.rs", "build.rs", "Cargo.toml",  "Cargo.lock"]),
+    visibility = ["//visibility:public"],
+        
 )
+exports_files(["Cargo.toml", "Cargo.lock"], visibility = ["//visibility:public"])
+"""
+)
+
+load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//crate_universe:defs.bzl", "crates_repository")
+
+crates_repository(
+    name = "cbindgen_deps",
+    cargo_lockfile = "@cbindgen_source//:Cargo.lock",
+    manifests = ["@cbindgen_source//:Cargo.toml"],
+)
+
+load("@cbindgen_deps//:defs.bzl", cbindgen_deps = "crate_repositories")
+
+cbindgen_deps()
 
 # Load external crates
 load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
