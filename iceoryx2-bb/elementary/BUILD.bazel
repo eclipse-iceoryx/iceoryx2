@@ -22,6 +22,16 @@ filegroup(
 rust_library(
     name = "iceoryx2-bb-elementary",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = [ "testing" ],
+    deps = [
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+    ],
+)
+
+rust_library(
+    name = "iceoryx2-bb-elementary-with-feature-testing",
+    srcs = glob(["src/**/*.rs"]),
+    crate_features = [ "testing" ],
     deps = [
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
