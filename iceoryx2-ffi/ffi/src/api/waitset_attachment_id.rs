@@ -12,7 +12,8 @@
 
 #![allow(non_camel_case_types)]
 
-use std::mem::ManuallyDrop;
+use crate::c_size_t;
+use std::{ffi::c_char, mem::ManuallyDrop};
 
 use iceoryx2::{
     prelude::WaitSetAttachmentId,
@@ -303,4 +304,61 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_from_guard(
 
     *attachment_id_handle_ptr = (*attachment_id_struct_ptr).as_handle();
 }
+
+/// Stores the debug output in the provided `debug_output` variable that must provide enough
+/// memory to store the content. The content length can be acquired with
+/// [`iox2_waitset_attachment_id_debug_len()`]
+///
+/// # Safety
+///  * `handle` must be valid and non-null.
+///  * `debug_output` must be valid and provide enough memory
+///  * `debug_len` the provided memory length of `debug_output`
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_attachment_id_debug(
+    handle: iox2_waitset_attachment_id_h_ref,
+    debug_output: *mut c_char,
+    debug_len: c_size_t,
+) -> bool {
+    handle.assert_non_null();
+    debug_assert!(!debug_output.is_null());
+
+    let attachment_id = &mut *handle.as_type();
+
+    let raw_str = match attachment_id.service_type {
+        iox2_service_type_e::IPC => format!("{:?}\0", *attachment_id.value.as_mut().ipc),
+        iox2_service_type_e::LOCAL => format!("{:?}\0", *attachment_id.value.as_mut().local),
+    };
+
+    if debug_len < raw_str.len() {
+        return false;
+    }
+
+    std::ptr::copy_nonoverlapping(
+        raw_str.as_bytes().as_ptr().cast(),
+        debug_output,
+        raw_str.len(),
+    );
+
+    true
+}
+
+/// Returns the length of the debug output. Shall be used before calling
+/// [`iox2_waitset_attachment_id_debug()`] to acquire enough memory to store the output.
+///
+/// # Safety
+///  * `handle` must be valid and non-null.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_attachment_id_debug_len(
+    handle: iox2_waitset_attachment_id_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let attachment_id = &mut *handle.as_type();
+
+    match attachment_id.service_type {
+        iox2_service_type_e::IPC => format!("{:?}\0", *attachment_id.value.as_mut().ipc).len(),
+        iox2_service_type_e::LOCAL => format!("{:?}\0", *attachment_id.value.as_mut().local).len(),
+    }
+}
+
 // END C API

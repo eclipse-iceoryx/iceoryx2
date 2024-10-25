@@ -72,6 +72,9 @@ class WaitSetAttachmentId {
     /// Returns true if the deadline for the attachment corresponding to [`WaitSetGuard`] was missed.
     auto has_missed_deadline(const WaitSetGuard<S>& guard) const -> bool;
 
+    /// Returns the a non-secure hash for the [`WaitSetAttachmentId`].
+    auto hash() const -> std::size_t;
+
   private:
     explicit WaitSetAttachmentId(iox2_waitset_attachment_id_h handle);
     template <ServiceType>
@@ -80,6 +83,8 @@ class WaitSetAttachmentId {
     friend auto operator==(const WaitSetAttachmentId<ST>&, const WaitSetAttachmentId<ST>&) -> bool;
     template <ServiceType ST>
     friend auto operator<(const WaitSetAttachmentId<ST>&, const WaitSetAttachmentId<ST>&) -> bool;
+    template <ServiceType ST>
+    friend auto operator<<(std::ostream& stream, const WaitSetAttachmentId<ST>& self) -> std::ostream&;
 
     void drop();
 
@@ -91,6 +96,9 @@ auto operator==(const WaitSetAttachmentId<S>& lhs, const WaitSetAttachmentId<S>&
 
 template <ServiceType S>
 auto operator<(const WaitSetAttachmentId<S>& lhs, const WaitSetAttachmentId<S>& rhs) -> bool;
+
+template <ServiceType S>
+auto operator<<(std::ostream& stream, const WaitSetAttachmentId<S>& self) -> std::ostream&;
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
 /// single call [`WaitSet::try_wait_and_process()`] until it wakes up or to run repeatedly with
@@ -222,5 +230,4 @@ class WaitSetBuilder {
     iox2_waitset_builder_h m_handle;
 };
 } // namespace iox2
-
 #endif
