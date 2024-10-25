@@ -72,6 +72,9 @@ class WaitSetAttachmentId {
     /// Returns true if the deadline for the attachment corresponding to [`WaitSetGuard`] was missed.
     auto has_missed_deadline(const WaitSetGuard<S>& guard) const -> bool;
 
+    /// Returns the a non-secure hash for the [`WaitSetAttachmentId`].
+    auto hash() const -> std::size_t;
+
   private:
     explicit WaitSetAttachmentId(iox2_waitset_attachment_id_h handle);
     template <ServiceType>
@@ -227,5 +230,19 @@ class WaitSetBuilder {
     iox2_waitset_builder_h m_handle;
 };
 } // namespace iox2
+
+template <>
+struct std::hash<iox2::WaitSetAttachmentId<iox2::ServiceType::Ipc>> {
+    auto operator()(const iox2::WaitSetAttachmentId<iox2::ServiceType::Ipc>& self) -> std::size_t {
+        return self.hash();
+    }
+};
+
+template <>
+struct std::hash<iox2::WaitSetAttachmentId<iox2::ServiceType::Local>> {
+    auto operator()(const iox2::WaitSetAttachmentId<iox2::ServiceType::Local>& self) -> std::size_t {
+        return self.hash();
+    }
+};
 
 #endif

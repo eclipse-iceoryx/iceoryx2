@@ -69,6 +69,14 @@ void WaitSetAttachmentId<S>::drop() {
 }
 
 template <ServiceType S>
+auto WaitSetAttachmentId<S>::hash() const -> std::size_t {
+    auto len = iox2_waitset_attachment_id_debug_len(&m_handle);
+    std::string empty(len, '\0');
+    iox2_waitset_attachment_id_debug(&m_handle, empty.data(), len);
+    return std::hash<std::string> {}(empty);
+}
+
+template <ServiceType S>
 auto operator==(const WaitSetAttachmentId<S>& lhs, const WaitSetAttachmentId<S>& rhs) -> bool {
     return iox2_waitset_attachment_id_equal(&lhs.m_handle, &rhs.m_handle);
 }
