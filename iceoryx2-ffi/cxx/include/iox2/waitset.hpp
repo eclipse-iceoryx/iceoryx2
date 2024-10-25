@@ -230,19 +230,4 @@ class WaitSetBuilder {
     iox2_waitset_builder_h m_handle;
 };
 } // namespace iox2
-
-template <>
-struct std::hash<iox2::WaitSetAttachmentId<iox2::ServiceType::Ipc>> {
-    auto operator()(const iox2::WaitSetAttachmentId<iox2::ServiceType::Ipc>& self) -> std::size_t {
-        return self.hash();
-    }
-};
-
-template <>
-struct std::hash<iox2::WaitSetAttachmentId<iox2::ServiceType::Local>> {
-    auto operator()(const iox2::WaitSetAttachmentId<iox2::ServiceType::Local>& self) -> std::size_t {
-        return self.hash();
-    }
-};
-
 #endif
