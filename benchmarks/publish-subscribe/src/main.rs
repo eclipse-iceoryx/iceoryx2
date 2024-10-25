@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::mem::MaybeUninit;
+
 use clap::Parser;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_log::set_log_level;
@@ -60,11 +62,17 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
 
             barrier.wait();
 
-            let mut sample = unsafe {
-                sender_a2b
-                    .loan_slice_uninit(args.payload_size)
-                    .unwrap()
-                    .assume_init()
+            let mut sample = if args.send_copy {
+                let mut sample = sender_a2b.loan_slice_uninit(args.payload_size).unwrap();
+                sample.payload_mut().fill(MaybeUninit::new(0));
+                unsafe { sample.assume_init() }
+            } else {
+                unsafe {
+                    sender_a2b
+                        .loan_slice_uninit(args.payload_size)
+                        .unwrap()
+                        .assume_init()
+                }
             };
 
             for _ in 0..args.iterations {
@@ -93,12 +101,19 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
             barrier.wait();
 
             for _ in 0..args.iterations {
-                let sample = unsafe {
-                    sender_b2a
-                        .loan_slice_uninit(args.payload_size)
-                        .unwrap()
-                        .assume_init()
+                let sample = if args.send_copy {
+                    let mut sample = sender_b2a.loan_slice_uninit(args.payload_size).unwrap();
+                    sample.payload_mut().fill(MaybeUninit::new(0));
+                    unsafe { sample.assume_init() }
+                } else {
+                    unsafe {
+                        sender_b2a
+                            .loan_slice_uninit(args.payload_size)
+                            .unwrap()
+                            .assume_init()
+                    }
                 };
+
                 while receiver_a2b.receive().unwrap().is_none() {}
 
                 sample.send().unwrap();
@@ -152,6 +167,8 @@ struct Args {
     /// The size in bytes of the payload that shall be used
     #[clap(short, long, default_value_t = 8192)]
     payload_size: usize,
+    #[clap(long)]
+    send_copy: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
