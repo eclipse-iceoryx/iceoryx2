@@ -274,10 +274,21 @@ enum AttachmentIdType {
 }
 
 /// Represents an attachment to the [`WaitSet`]
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct WaitSetAttachmentId<Service: crate::service::Service> {
     attachment_type: AttachmentIdType,
     _data: PhantomData<Service>,
+}
+
+impl<Service: crate::service::Service> Debug for WaitSetAttachmentId<Service> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "WaitSetAttachmentId<{}> {{ attachment_type: {:?} }}",
+            core::any::type_name::<Service>(),
+            self.attachment_type
+        )
+    }
 }
 
 impl<Service: crate::service::Service> WaitSetAttachmentId<Service> {
