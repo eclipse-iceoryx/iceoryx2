@@ -211,7 +211,21 @@ pub fn get_logger() -> &'static dyn Log {
         unsafe { LOGGER = Some(&DEFAULT_LOGGER) };
     });
 
-    unsafe { *LOGGER.as_ref().unwrap() }
+    // # From The Compiler
+    //
+    // shared references to mutable statics are dangerous; it's undefined behavior
+    //   1. if the static is mutated or
+    //   2. if a mutable reference is created for it while the shared reference lives
+    //
+    // # Safety
+    //
+    // 1. The logger is always an immutable threadsafe object with only interior mutability.
+    // 2. [`std::sync::Once`] is used to ensure it can only mutated on initialization and the
+    //    lifetime is `'static`.
+    #[allow(static_mut_refs)]
+    unsafe {
+        *LOGGER.as_ref().unwrap()
+    }
 }
 
 #[doc(hidden)]
