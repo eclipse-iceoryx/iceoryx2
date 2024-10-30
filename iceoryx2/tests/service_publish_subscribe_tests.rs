@@ -2257,6 +2257,114 @@ mod service_publish_subscribe {
     }
 
     #[test]
+    fn service_can_be_opened_when_there_is_a_publisher<Sut: Service>() {
+        let payload = 1809723987;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
+
+        drop(sut);
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
+        assert_that!(sut, is_ok);
+        drop(sut);
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
+        assert_that!(sut.err().unwrap(), eq PublishSubscribeCreateError::AlreadyExists);
+        drop(subscriber);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .open()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        publisher.send_copy(payload).unwrap();
+        let sample = subscriber.receive().unwrap().unwrap();
+        assert_that!(*sample.payload(), eq payload);
+
+        drop(subscriber);
+        drop(sut);
+        drop(publisher);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
+        assert_that!(sut.err().unwrap(), eq PublishSubscribeOpenError::DoesNotExist);
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
+        assert_that!(sut, is_ok);
+    }
+
+    #[test]
+    fn service_can_be_opened_when_there_is_a_subscriber<Sut: Service>() {
+        let payload = 59123544;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
+
+        drop(sut);
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
+        assert_that!(sut, is_ok);
+        drop(sut);
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
+        assert_that!(sut.err().unwrap(), eq PublishSubscribeCreateError::AlreadyExists);
+        drop(publisher);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .open()
+            .unwrap();
+        let publisher = sut.publisher_builder().create().unwrap();
+        publisher.send_copy(payload).unwrap();
+        let sample = subscriber.receive().unwrap().unwrap();
+        assert_that!(*sample.payload(), eq payload);
+
+        drop(publisher);
+        drop(sut);
+        drop(subscriber);
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .open();
+        assert_that!(sut.err().unwrap(), eq PublishSubscribeOpenError::DoesNotExist);
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .create();
+        assert_that!(sut, is_ok);
+    }
+
+    #[test]
     fn subscriber_can_decrease_buffer_size<Sut: Service>() {
         const BUFFER_SIZE: usize = 16;
         let service_name = generate_name();
