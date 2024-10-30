@@ -419,4 +419,95 @@ TYPED_TEST(ServicePublishSubscribeTest, has_sample_works) {
     auto sample = sut_subscriber.receive().expect("");
     ASSERT_FALSE(*sut_subscriber.has_samples());
 }
+
+TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_publisher) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const uint64_t payload = 9871273;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = iox::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect(""));
+    auto subscriber =
+        iox::optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
+    auto publisher =
+        iox::optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
+
+    sut.reset();
+    {
+        auto temp_sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().open();
+        ASSERT_THAT(temp_sut.has_value(), Eq(true));
+    }
+    {
+        auto temp_sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
+        ASSERT_THAT(temp_sut.error(), Eq(PublishSubscribeCreateError::AlreadyExists));
+    }
+    subscriber.reset();
+
+    sut = iox::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect(""));
+    subscriber = iox::optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
+    publisher->send_copy(payload).expect("");
+    auto sample = subscriber->receive().expect("");
+    ASSERT_THAT(sample->payload(), Eq(payload));
+
+    subscriber.reset();
+    sut.reset();
+    publisher.reset();
+
+    {
+        auto temp_sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().open();
+        ASSERT_THAT(temp_sut.error(), Eq(PublishSubscribeOpenError::DoesNotExist));
+    }
+    {
+        auto temp_sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
+        ASSERT_THAT(temp_sut.has_value(), Eq(true));
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_subscriber) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const uint64_t payload = 57812;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = iox::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect(""));
+    auto subscriber =
+        iox::optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
+    auto publisher =
+        iox::optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
+
+    sut.reset();
+    {
+        auto temp_sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().open();
+        ASSERT_THAT(temp_sut.has_value(), Eq(true));
+    }
+    {
+        auto temp_sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
+        ASSERT_THAT(temp_sut.error(), Eq(PublishSubscribeCreateError::AlreadyExists));
+    }
+    publisher.reset();
+
+    sut = iox::optional<PortFactoryPublishSubscribe<SERVICE_TYPE, uint64_t, void>>(
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect(""));
+    publisher = iox::optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
+    publisher->send_copy(payload).expect("");
+    auto sample = subscriber->receive().expect("");
+    ASSERT_THAT(sample->payload(), Eq(payload));
+
+    publisher.reset();
+    sut.reset();
+    subscriber.reset();
+
+    {
+        auto temp_sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().open();
+        ASSERT_THAT(temp_sut.error(), Eq(PublishSubscribeOpenError::DoesNotExist));
+    }
+    {
+        auto temp_sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
+        ASSERT_THAT(temp_sut.has_value(), Eq(true));
+    }
+}
+
 } // namespace

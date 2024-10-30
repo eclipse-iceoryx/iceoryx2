@@ -833,6 +833,82 @@ mod service_event {
     }
 
     #[test]
+    fn service_can_be_opened_when_there_is_a_notifier<Sut: Service>() {
+        let event_id = EventId::new(76);
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let listener = sut.listener_builder().create().unwrap();
+        let notifier = sut.notifier_builder().create().unwrap();
+
+        drop(sut);
+        let sut = node.service_builder(&service_name).event().open();
+        assert_that!(sut, is_ok);
+        drop(sut);
+        let sut = node.service_builder(&service_name).event().create();
+        assert_that!(sut.err().unwrap(), eq EventCreateError::AlreadyExists);
+        drop(listener);
+
+        let sut = node.service_builder(&service_name).event().open().unwrap();
+        let listener = sut.listener_builder().create().unwrap();
+        notifier.notify_with_custom_event_id(event_id).unwrap();
+        let notification = listener.try_wait_one().unwrap();
+        assert_that!(notification, eq Some(event_id));
+
+        drop(listener);
+        drop(sut);
+        drop(notifier);
+
+        let sut = node.service_builder(&service_name).event().open();
+        assert_that!(sut.err().unwrap(), eq EventOpenError::DoesNotExist);
+        let sut = node.service_builder(&service_name).event().create();
+        assert_that!(sut, is_ok);
+    }
+
+    #[test]
+    fn service_can_be_opened_when_there_is_a_listener<Sut: Service>() {
+        let event_id = EventId::new(93);
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+        let listener = sut.listener_builder().create().unwrap();
+        let notifier = sut.notifier_builder().create().unwrap();
+
+        drop(sut);
+        let sut = node.service_builder(&service_name).event().open();
+        assert_that!(sut, is_ok);
+        drop(sut);
+        let sut = node.service_builder(&service_name).event().create();
+        assert_that!(sut.err().unwrap(), eq EventCreateError::AlreadyExists);
+        drop(notifier);
+
+        let sut = node.service_builder(&service_name).event().open().unwrap();
+        let notifier = sut.notifier_builder().create().unwrap();
+        notifier.notify_with_custom_event_id(event_id).unwrap();
+        let notification = listener.try_wait_one().unwrap();
+        assert_that!(notification, eq Some(event_id));
+
+        drop(notifier);
+        drop(sut);
+        drop(listener);
+
+        let sut = node.service_builder(&service_name).event().open();
+        assert_that!(sut.err().unwrap(), eq EventOpenError::DoesNotExist);
+        let sut = node.service_builder(&service_name).event().create();
+        assert_that!(sut, is_ok);
+    }
+
+    #[test]
     fn try_wait_does_not_block<Sut: Service>() {
         let _watch_dog = Watchdog::new();
         let service_name = generate_name();

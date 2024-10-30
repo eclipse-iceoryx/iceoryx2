@@ -277,4 +277,88 @@ TYPED_TEST(ServiceEventTest, timed_wait_one_does_not_deadlock) {
 TYPED_TEST(ServiceEventTest, timed_wait_all_does_not_deadlock) {
     this->listener.timed_wait_all([](auto) {}, TIMEOUT).expect("");
 }
+
+TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto event_id = EventId(54);
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut =
+        iox::optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().create().expect(""));
+    auto listener = iox::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    auto notifier = iox::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+
+    sut.reset();
+    {
+        auto temp_sut = node.service_builder(service_name).event().open();
+        ASSERT_THAT(temp_sut.has_value(), Eq(true));
+    }
+    {
+        auto temp_sut = node.service_builder(service_name).event().create();
+        ASSERT_THAT(temp_sut.error(), Eq(EventCreateError::AlreadyExists));
+    }
+    listener.reset();
+
+    sut = iox::optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().open().expect(""));
+    listener = iox::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    notifier->notify_with_custom_event_id(event_id).expect("");
+    auto notification = listener->try_wait_one().expect("");
+    ASSERT_THAT(notification->as_value(), Eq(event_id.as_value()));
+
+    listener.reset();
+    sut.reset();
+    notifier.reset();
+
+    {
+        auto temp_sut = node.service_builder(service_name).event().open();
+        ASSERT_THAT(temp_sut.error(), Eq(EventOpenError::DoesNotExist));
+    }
+    {
+        auto temp_sut = node.service_builder(service_name).event().create();
+        ASSERT_THAT(temp_sut.has_value(), Eq(true));
+    }
+}
+
+TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto event_id = EventId(24);
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut =
+        iox::optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().create().expect(""));
+    auto listener = iox::optional<Listener<SERVICE_TYPE>>(sut->listener_builder().create().expect(""));
+    auto notifier = iox::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+
+    sut.reset();
+    {
+        auto temp_sut = node.service_builder(service_name).event().open();
+        ASSERT_THAT(temp_sut.has_value(), Eq(true));
+    }
+    {
+        auto temp_sut = node.service_builder(service_name).event().create();
+        ASSERT_THAT(temp_sut.error(), Eq(EventCreateError::AlreadyExists));
+    }
+    notifier.reset();
+
+    sut = iox::optional<PortFactoryEvent<SERVICE_TYPE>>(node.service_builder(service_name).event().open().expect(""));
+    notifier = iox::optional<Notifier<SERVICE_TYPE>>(sut->notifier_builder().create().expect(""));
+    notifier->notify_with_custom_event_id(event_id).expect("");
+    auto notification = listener->try_wait_one().expect("");
+    ASSERT_THAT(notification->as_value(), Eq(event_id.as_value()));
+
+    notifier.reset();
+    sut.reset();
+    listener.reset();
+
+    {
+        auto temp_sut = node.service_builder(service_name).event().open();
+        ASSERT_THAT(temp_sut.error(), Eq(EventOpenError::DoesNotExist));
+    }
+    {
+        auto temp_sut = node.service_builder(service_name).event().create();
+        ASSERT_THAT(temp_sut.has_value(), Eq(true));
+    }
+}
 } // namespace
