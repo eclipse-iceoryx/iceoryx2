@@ -357,14 +357,6 @@ pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size
     Errno::ESUCCES as _
 }
 
-pub unsafe fn pthread_cancel(thread: pthread_t) -> int {
-    crate::internal::pthread_cancel(thread)
-}
-
-pub unsafe fn pthread_exit(value_ptr: *mut void) -> ! {
-    crate::internal::pthread_exit(value_ptr)
-}
-
 pub unsafe fn pthread_kill(_thread: pthread_t, _sig: int) -> int {
     todo!()
 }

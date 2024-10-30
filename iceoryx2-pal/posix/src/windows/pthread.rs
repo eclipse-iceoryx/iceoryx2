@@ -29,7 +29,7 @@ use windows_sys::Win32::{
     System::{
         Memory::LocalFree,
         Threading::{
-            CreateThread, ExitThread, GetCurrentThread, GetCurrentThreadId, GetExitCodeThread,
+            CreateThread, GetCurrentThread, GetCurrentThreadId, GetExitCodeThread,
             GetThreadDescription, GetThreadId, SetThreadAffinityMask, SetThreadDescription,
             SetThreadPriority, TerminateThread, WaitForSingleObject, WaitOnAddress,
             WakeByAddressAll, WakeByAddressSingle, INFINITE, THREAD_PRIORITY_ABOVE_NORMAL,
@@ -394,15 +394,6 @@ pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size
     win32call! { LocalFree(wide_name as isize) };
 
     Errno::ESUCCES as int
-}
-
-pub unsafe fn pthread_cancel(thread: pthread_t) -> int {
-    TerminateThread(thread.handle, 0);
-    Errno::ESUCCES as int
-}
-
-pub unsafe fn pthread_exit(value_ptr: *mut void) -> ! {
-    ExitThread(0);
 }
 
 pub unsafe fn pthread_kill(thread: pthread_t, sig: int) -> int {

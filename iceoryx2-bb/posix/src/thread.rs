@@ -159,11 +159,6 @@ enum_gen! {
     FailedToSetAffinity <= ThreadSetAffinityError
 }
 
-/// Terminates the callers thread
-pub fn thread_exit() -> ! {
-    unsafe { posix::pthread_exit(std::ptr::null_mut::<posix::void>()) }
-}
-
 /// Describes the scope in which a thread is competing with other threads for CPU time.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 #[repr(i32)]
@@ -802,11 +797,6 @@ impl<'thread> Thread<'thread> {
             Errno::ESRCH  => (ThreadNoLongerActive, "{} {:?} since the thread is no longer active.", msg, signal),
             v => (UnknownError(v as i32), "{} {:?} since an unknown error occurred ({})", msg, signal, v)
         );
-    }
-
-    /// Terminates the current thread.
-    pub fn cancel(&mut self) -> bool {
-        unsafe { posix::pthread_cancel(self.handle.handle) != 0 }
     }
 }
 
