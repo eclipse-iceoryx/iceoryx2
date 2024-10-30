@@ -126,14 +126,6 @@ pub unsafe fn pthread_getname_np(thread: pthread_t, name: *mut c_char, len: size
     internal::pthread_getname_np(thread, name, len)
 }
 
-pub unsafe fn pthread_cancel(thread: pthread_t) -> int {
-    crate::internal::pthread_cancel(thread)
-}
-
-pub unsafe fn pthread_exit(value_ptr: *mut void) -> ! {
-    crate::internal::pthread_exit(value_ptr)
-}
-
 pub unsafe fn pthread_kill(thread: pthread_t, sig: int) -> int {
     internal::pthread_kill(thread, sig)
 }

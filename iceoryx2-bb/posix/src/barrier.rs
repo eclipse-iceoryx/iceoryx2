@@ -213,7 +213,7 @@ impl<'a> Barrier<'a> {
 }
 
 impl<'a> IpcConstructible<'a, BarrierHandle> for Barrier<'a> {
-    fn new(handle: &'a BarrierHandle) -> Barrier {
+    fn new(handle: &BarrierHandle) -> Barrier {
         Barrier { handle }
     }
 }
