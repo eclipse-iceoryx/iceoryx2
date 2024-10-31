@@ -173,6 +173,17 @@ impl HandleToType for iox2_port_factory_publisher_builder_h_ref {
 
 // BEGIN C API
 
+/// Sets the max slice length for the publisher
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_h_ref`]
+///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder).
+/// * `value` - The value to set max slice length to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_slice_len(
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,

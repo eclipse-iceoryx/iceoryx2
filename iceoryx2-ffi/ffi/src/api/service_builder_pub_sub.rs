@@ -480,6 +480,17 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
     }
 }
 
+/// Sets the payload alignment for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
+/// * `value` - The value to set the payload alignment to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_alignment(
     service_builder_handle: iox2_service_builder_pub_sub_h_ref,

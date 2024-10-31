@@ -249,6 +249,18 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
     }
 }
 
+/// Returns the maximum `[u8]` length that can be loaned in one sample, i.e. the max number of
+/// elements in the `[u8]` payload type used by the C binding.
+///
+/// # Arguments
+///
+/// * `publisher_handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
+///
+/// Returns the maximum number of elements as a [`c_int`].
+///
+/// # Safety
+///
+/// * `publisher_handle` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_max_slice_len(
     publisher_handle: iox2_publisher_h_ref,
