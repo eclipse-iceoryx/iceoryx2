@@ -17,6 +17,7 @@ members = [
     "iceoryx2-ffi/ffi-macros",
 
     "iceoryx2-cal",
+    "iceoryx2-fal",
     "iceoryx2",
     "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal/posix/",
@@ -60,6 +61,7 @@ iceoryx2-pal-posix = { version = "0.4.1", path = "iceoryx2-pal/posix/" }
 iceoryx2-pal-configuration = { version = "0.4.1", path = "iceoryx2-pal/configuration/" }
 
 iceoryx2-cal = { version = "0.4.1", path = "iceoryx2-cal" }
+iceoryx2-fal = { version = "0.4.1", path = "iceoryx2-fal" }
 
 iceoryx2-ffi = { version = "0.4.1", path = "iceoryx2-ffi/ffi" }
 iceoryx2-ffi-macros = { version = "0.4.1", path = "iceoryx2-ffi/ffi-macros" }

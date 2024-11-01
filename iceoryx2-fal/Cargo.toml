@@ -1,0 +1,13 @@
+[package]
+name = "iceoryx2-fal"
+description = "iceoryx2: framework abstraction layer, public API if iceoryx2 shall be integrated in other communication frameworks"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
