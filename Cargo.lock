@@ -751,6 +751,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-fal"
+version = "0.4.1"
+dependencies = [
+ "iceoryx2-bb-system-types",
+ "iceoryx2-cal",
+]
+
+[[package]]
 name = "iceoryx2-ffi"
 version = "0.4.1"
 dependencies = [
