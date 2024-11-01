@@ -154,7 +154,12 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
-/// Returns the number of bytes of the payload
+/// Returns the number of elements of the payload.
+/// The element size is defined via this call when creating a new service
+/// [`crate::iox2_service_builder_pub_sub_set_payload_type_details()`].
+/// So if the payload is defined with alignment 8 and size 16 and this function returns 5. It
+/// means that the payload consists of 5 elements of size 16 and every element is 8 byte aligned.
+/// Therefore, the payload pointer points to a memory region with 5 * 16 = 80 bytes.
 ///
 /// # Arguments
 ///
@@ -165,16 +170,13 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
 ///
 /// * `header_handle` is valid and non-null
 #[no_mangle]
-pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_bytes(
+pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_elements(
     header_handle: iox2_publish_subscribe_header_h_ref,
 ) -> u64 {
     header_handle.assert_non_null();
 
     let header = &mut *header_handle.as_type();
 
-    // In the typed Rust API it is the number of elements and the element is a
-    // CustomPayloadMarker. But this translates to the number of bytes whenever CustomPayloadMarker
-    // is used.
     header.value.as_ref().number_of_elements()
 }
 // END C API

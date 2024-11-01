@@ -51,10 +51,7 @@ auto HeaderPublishSubscribe::publisher_id() const -> UniquePublisherId {
     return UniquePublisherId { id_handle };
 }
 
-auto HeaderPublishSubscribe::payload_type_layout() const -> iox::Layout {
-    auto size = iox2_publish_subscribe_header_payload_type_size(&m_handle);
-    auto alignment = iox2_publish_subscribe_header_payload_type_alignment(&m_handle);
-
-    return iox::Layout::create(size, alignment).expect("Payload layout is always valid.");
+auto HeaderPublishSubscribe::number_of_elements() const -> uint64_t {
+    return iox2_publish_subscribe_header_number_of_elements(&m_handle);
 }
 } // namespace iox2

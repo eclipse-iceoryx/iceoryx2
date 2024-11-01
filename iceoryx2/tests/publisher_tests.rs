@@ -394,8 +394,7 @@ mod publisher {
     }
 
     #[test]
-    fn publisher_with_overridden_payload_details_adjusts_slice_len<Sut: Service>() -> TestResult<()>
-    {
+    fn publisher_with_custom_payload_details_adjusts_slice_len<Sut: Service>() -> TestResult<()> {
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let service_name = generate_name()?;
         let config = generate_isolated_config();
@@ -417,6 +416,54 @@ mod publisher {
         assert_that!(sample.payload(), len TYPE_SIZE_OVERRIDE);
 
         Ok(())
+    }
+
+    #[test]
+    #[should_panic]
+    #[cfg(debug_assertions)]
+    fn publisher_with_custom_payload_details_panics_when_calling_loan_slice_uninit<Sut: Service>() {
+        const TYPE_SIZE_OVERRIDE: usize = 128;
+        let service_name = generate_name().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut type_detail = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        type_detail.size = TYPE_SIZE_OVERRIDE;
+
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&type_detail)
+                .create()
+                .unwrap()
+        };
+
+        let sut = service.publisher_builder().create().unwrap();
+
+        // panics here
+        let _sample = sut.loan_slice_uninit(1);
+    }
+
+    #[test]
+    #[should_panic]
+    #[cfg(debug_assertions)]
+    fn custom_fixed_size_payload_panics_when_loaning_more_than_one_element<Sut: Service>() {
+        set_log_level(LogLevel::Error);
+        let service_name = generate_name().unwrap();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let sut = service.publisher_builder().create().unwrap();
+
+        let _sample = unsafe { sut.loan_custom_payload(2) };
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

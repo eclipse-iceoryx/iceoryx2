@@ -114,7 +114,7 @@ use crate::{
 ///
 /// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
 pub struct SampleMutUninit<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> {
-    sample: SampleMut<Service, Payload, UserHeader>,
+    pub(crate) sample: SampleMut<Service, Payload, UserHeader>,
 }
 
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader>

@@ -43,7 +43,7 @@ pub struct CustomHeaderMarker {}
 #[repr(C)]
 #[derive(Debug)]
 #[doc(hidden)]
-pub struct CustomPayloadMarker {}
+pub struct CustomPayloadMarker(u8);
 
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
