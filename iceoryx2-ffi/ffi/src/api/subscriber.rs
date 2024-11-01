@@ -273,7 +273,7 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
     let subscriber = &mut *subscriber_handle.as_type();
 
     match subscriber.service_type {
-        iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.receive() {
+        iox2_service_type_e::IPC => match subscriber.value.as_ref().ipc.receive_custom_payload() {
             Ok(Some(sample)) => {
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
@@ -286,19 +286,21 @@ pub unsafe extern "C" fn iox2_subscriber_receive(
             Ok(None) => (),
             Err(error) => return error.into_c_int(),
         },
-        iox2_service_type_e::LOCAL => match subscriber.value.as_ref().local.receive() {
-            Ok(Some(sample)) => {
-                let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
-                (*sample_struct_ptr).init(
-                    subscriber.service_type,
-                    SampleUnion::new_local(sample),
-                    deleter,
-                );
-                *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+        iox2_service_type_e::LOCAL => {
+            match subscriber.value.as_ref().local.receive_custom_payload() {
+                Ok(Some(sample)) => {
+                    let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
+                    (*sample_struct_ptr).init(
+                        subscriber.service_type,
+                        SampleUnion::new_local(sample),
+                        deleter,
+                    );
+                    *sample_handle_ptr = (*sample_struct_ptr).as_handle();
+                }
+                Ok(None) => (),
+                Err(error) => return error.into_c_int(),
             }
-            Ok(None) => (),
-            Err(error) => return error.into_c_int(),
-        },
+        }
     }
 
     IOX2_OK

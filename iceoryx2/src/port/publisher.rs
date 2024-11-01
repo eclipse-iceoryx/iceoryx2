@@ -1042,10 +1042,7 @@ impl<Service: service::Service, UserHeader: Debug>
         PublisherLoanError,
     > {
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
-        debug_assert!(
-            slice_len == 1
-                || (slice_len != 1 && self.payload_type_variant() == TypeVariant::Dynamic)
-        );
+        debug_assert!(slice_len == 1 || self.payload_type_variant() == TypeVariant::Dynamic);
 
         self.loan_slice_uninit_impl(slice_len, self.payload_size * slice_len)
     }
