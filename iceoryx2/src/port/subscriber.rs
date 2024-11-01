@@ -429,8 +429,6 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     pub fn receive(
         &self,
     ) -> Result<Option<Sample<Service, Payload, UserHeader>>, SubscriberReceiveError> {
-        debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
-
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
             let user_header_ptr = self.user_header_ptr(header_ptr).cast();
@@ -480,9 +478,11 @@ impl<Service: service::Service, UserHeader: Debug>
     ///
     ///  * The number_of_elements in the [`Header`](crate::service::header::publish_subscribe::Header)
     ///     corresponds to the payload type details that where overridden in
-    ///     `MessageTypeDetails::payload.size`. Meaning, when the payload.size == 8 and the number
-    ///     of elements if 5, it means that the sample will contain a slice of 8 * 5 = 40
-    ///     [`CustomPayloadMarker`]s.
+    ///     `MessageTypeDetails::payload.size`.
+    ///     If the `payload.size == 8` a value for number_of_elements of 5 means that there are
+    ///     5 elements of size 8 stored in the [`Sample`].
+    ///  *  When the payload.size == 8 and the number of elements if 5, it means that the sample
+    ///     will contain a slice of 8 * 5 = 40 [`CustomPayloadMarker`]s or 40 bytes.
     #[doc(hidden)]
     pub unsafe fn receive_custom_payload(
         &self,

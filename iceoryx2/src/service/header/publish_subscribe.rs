@@ -55,7 +55,15 @@ impl Header {
         self.publisher_port_id
     }
 
-    /// Returns the amount of elements of the payload.
+    /// Returns how many elements are stored inside the sample's payload.
+    ///
+    /// # Details when using
+    /// [`CustomPayloadMarker`](crate::service::builder::publish_subscribe::CustomPayloadMarker)
+    ///
+    /// In this case the number of elements relates to the element defined in the
+    /// [`MessageTypeDetails`](crate::service::static_config::message_type_details::MessageTypeDetails).
+    /// When the element has a `payload.size == 40` and the `Sample::payload().len() == 120` it
+    /// means that it contains 3 elements (3 * 40 == 120).
     pub fn number_of_elements(&self) -> u64 {
         self.number_of_elements
     }
