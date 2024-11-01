@@ -154,7 +154,7 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
-/// Returns the payloads type size.
+/// Returns the number of bytes of the payload
 ///
 /// # Arguments
 ///
@@ -165,35 +165,16 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
 ///
 /// * `header_handle` is valid and non-null
 #[no_mangle]
-pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_size(
+pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_bytes(
     header_handle: iox2_publish_subscribe_header_h_ref,
-) -> usize {
+) -> u64 {
     header_handle.assert_non_null();
 
     let header = &mut *header_handle.as_type();
 
-    header.value.as_ref().payload_type_layout().size()
+    // In the typed Rust API it is the number of elements and the element is a
+    // CustomPayloadMarker. But this translates to the number of bytes whenever CustomPayloadMarker
+    // is used.
+    header.value.as_ref().number_of_elements()
 }
-
-/// Returns the payloads type alignment.
-///
-/// # Arguments
-///
-/// * `handle` is valid, non-null and was initialized with
-///    [`iox2_sample_header()`](crate::iox2_sample_header)
-///
-/// # Safety
-///
-/// * `header_handle` is valid and non-null
-#[no_mangle]
-pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_alignment(
-    header_handle: iox2_publish_subscribe_header_h_ref,
-) -> usize {
-    header_handle.assert_non_null();
-
-    let header = &mut *header_handle.as_type();
-
-    header.value.as_ref().payload_type_layout().align()
-}
-
 // END C API

@@ -108,6 +108,7 @@ use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
+use crate::service::builder::publish_subscribe::CustomPayloadMarker;
 use crate::service::config_scheme::{connection_config, data_segment_config};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -738,14 +739,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .sample_layout(number_of_elements)
     }
 
-    fn payload_layout(&self, number_of_elements: usize) -> Layout {
-        self.data_segment
-            .subscriber_connections
-            .static_config
-            .message_type_details
-            .payload_layout(number_of_elements)
-    }
-
     fn user_header_ptr(&self, header: *const Header) -> *const u8 {
         self.data_segment
             .subscriber_connections
@@ -837,12 +830,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
 
-        unsafe {
-            header_ptr.write(Header::new(
-                self.data_segment.port_id,
-                Layout::new::<Payload>(),
-            ))
-        };
+        unsafe { header_ptr.write(Header::new(self.data_segment.port_id, 1)) };
 
         let sample =
             unsafe { RawSampleMut::new_unchecked(header_ptr, user_header_ptr, payload_ptr) };
@@ -988,24 +976,13 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
 
-        unsafe {
-            header_ptr.write(Header::new(
-                self.data_segment.port_id,
-                self.payload_layout(slice_len),
-            ))
-        };
-
-        let slice_len_adjusted_to_payload_type_details =
-            self.payload_size * slice_len / core::mem::size_of::<Payload>();
+        unsafe { header_ptr.write(Header::new(self.data_segment.port_id, slice_len as _)) };
 
         let sample = unsafe {
             RawSampleMut::new_unchecked(
                 header_ptr,
                 user_header_ptr,
-                core::slice::from_raw_parts_mut(
-                    payload_ptr,
-                    slice_len_adjusted_to_payload_type_details,
-                ),
+                core::slice::from_raw_parts_mut(payload_ptr, slice_len),
             )
         };
 
@@ -1016,6 +993,50 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                 chunk.offset,
             ),
         )
+    }
+}
+
+impl<Service: service::Service, UserHeader: Debug>
+    Publisher<Service, [CustomPayloadMarker], UserHeader>
+{
+    #[doc(hidden)]
+    pub unsafe fn loan_custom_payload(
+        &self,
+        slice_len: usize,
+    ) -> Result<
+        SampleMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], UserHeader>,
+        PublisherLoanError,
+    > {
+        let max_slice_len = self.data_segment.config.max_slice_len;
+        if max_slice_len < slice_len {
+            fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
+                "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
+                slice_len, max_slice_len);
+        }
+
+        let sample_layout = self.sample_layout(slice_len);
+        let chunk = self.allocate(sample_layout)?;
+        let header_ptr = chunk.data_ptr as *mut Header;
+        let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
+        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<CustomPayloadMarker>;
+
+        let slice_len = self.payload_size * slice_len;
+
+        unsafe { header_ptr.write(Header::new(self.data_segment.port_id, slice_len as _)) };
+
+        let sample = unsafe {
+            RawSampleMut::new_unchecked(
+                header_ptr,
+                user_header_ptr,
+                core::slice::from_raw_parts_mut(payload_ptr, slice_len),
+            )
+        };
+
+        Ok(SampleMutUninit::<
+            Service,
+            [MaybeUninit<CustomPayloadMarker>],
+            UserHeader,
+        >::new(&self.data_segment, sample, chunk.offset))
     }
 }
 ////////////////////////

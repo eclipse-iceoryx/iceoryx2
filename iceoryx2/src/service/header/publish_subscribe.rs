@@ -30,7 +30,6 @@
 //! # Ok(())
 //! # }
 //! ```
-use std::alloc::Layout;
 
 use crate::port::port_identifiers::UniquePublisherId;
 
@@ -40,14 +39,14 @@ use crate::port::port_identifiers::UniquePublisherId;
 #[repr(C)]
 pub struct Header {
     publisher_port_id: UniquePublisherId,
-    payload_type_layout: Layout,
+    number_of_elements: u64,
 }
 
 impl Header {
-    pub(crate) fn new(publisher_port_id: UniquePublisherId, payload_type_layout: Layout) -> Self {
+    pub(crate) fn new(publisher_port_id: UniquePublisherId, number_of_elements: u64) -> Self {
         Self {
             publisher_port_id,
-            payload_type_layout,
+            number_of_elements,
         }
     }
 
@@ -56,8 +55,8 @@ impl Header {
         self.publisher_port_id
     }
 
-    /// Returns the [`Layout`] of the corresponding payload.
-    pub fn payload_type_layout(&self) -> Layout {
-        self.payload_type_layout
+    /// Returns the amount of elements of the payload.
+    pub fn number_of_elements(&self) -> u64 {
+        self.number_of_elements
     }
 }

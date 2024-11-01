@@ -18,6 +18,7 @@ mod publisher {
 
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::publish_subscribe::CustomPayloadMarker;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{service_name::ServiceName, Service};
@@ -404,14 +405,14 @@ mod publisher {
 
         let service = unsafe {
             node.service_builder(&service_name)
-                .publish_subscribe::<[u8]>()
+                .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&type_detail)
                 .create()?
         };
 
         let sut = service.publisher_builder().create()?;
 
-        let sample = sut.loan_slice(1)?;
+        let sample = unsafe { sut.loan_custom_payload(1)? };
 
         assert_that!(sample.payload(), len TYPE_SIZE_OVERRIDE);
 

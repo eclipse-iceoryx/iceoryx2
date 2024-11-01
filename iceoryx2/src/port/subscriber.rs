@@ -447,9 +447,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
             let header_ptr = absolute_address as *const Header;
             let user_header_ptr = self.user_header_ptr(header_ptr).cast();
             let payload_ptr = self.payload_ptr(header_ptr).cast();
-
-            let payload_layout = unsafe { (*header_ptr).payload_type_layout() };
-            let number_of_elements = payload_layout.size() / core::mem::size_of::<Payload>();
+            let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
 
             Sample {
                 details,
@@ -457,7 +455,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                     RawSample::<Header, UserHeader, [Payload]>::new_slice_unchecked(
                         header_ptr,
                         user_header_ptr,
-                        core::slice::from_raw_parts(payload_ptr, number_of_elements),
+                        core::slice::from_raw_parts(payload_ptr, number_of_elements as _),
                     )
                 },
             }

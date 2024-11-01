@@ -21,9 +21,9 @@ mod service_publish_subscribe {
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::builder::publish_subscribe::CustomHeaderMarker;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
+    use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
@@ -2611,7 +2611,7 @@ mod service_publish_subscribe {
 
         let _sut = unsafe {
             node.service_builder(&service_name)
-                .publish_subscribe::<[u8]>()
+                .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
                     TypeVariant::FixedSize,
                 ))
@@ -2704,7 +2704,7 @@ mod service_publish_subscribe {
 
         let sut2 = unsafe {
             node.service_builder(&service_name)
-                .publish_subscribe::<[u8]>()
+                .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u128>(
                     TypeVariant::FixedSize,
                 ))
@@ -2715,7 +2715,7 @@ mod service_publish_subscribe {
 
         let sut3 = unsafe {
             node.service_builder(&service_name)
-                .publish_subscribe::<[u8]>()
+                .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
                     TypeVariant::FixedSize,
                 ))

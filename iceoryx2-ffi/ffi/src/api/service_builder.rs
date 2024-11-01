@@ -15,7 +15,7 @@
 use crate::api::{iox2_service_type_e, AssertNonNullHandle, HandleToType};
 
 use iceoryx2::prelude::*;
-use iceoryx2::service::builder::publish_subscribe::CustomHeaderMarker;
+use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::builder::{
     event::Builder as ServiceBuilderEvent, publish_subscribe::Builder as ServiceBuilderPubSub,
     Builder as ServiceBuilderBase,
@@ -29,8 +29,8 @@ use core::mem::MaybeUninit;
 // BEGIN types definition
 
 pub(super) type UserHeaderFfi = CustomHeaderMarker;
-pub(super) type PayloadFfi = [u8];
-pub(super) type UninitPayloadFfi = [MaybeUninit<u8>];
+pub(super) type PayloadFfi = [CustomPayloadMarker];
+pub(super) type UninitPayloadFfi = [MaybeUninit<CustomPayloadMarker>];
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,
