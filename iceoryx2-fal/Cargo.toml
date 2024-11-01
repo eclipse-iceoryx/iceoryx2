@@ -13,3 +13,6 @@ version = { workspace = true }
 [dependencies]
 iceoryx2-cal = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }

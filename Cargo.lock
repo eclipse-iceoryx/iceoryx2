@@ -754,8 +754,11 @@ dependencies = [
 name = "iceoryx2-fal"
 version = "0.4.1"
 dependencies = [
+ "iceoryx2-bb-elementary",
+ "iceoryx2-bb-log",
  "iceoryx2-bb-system-types",
  "iceoryx2-cal",
+ "iceoryx2-pal-concurrency-sync",
 ]
 
 [[package]]
