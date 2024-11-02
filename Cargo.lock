@@ -559,7 +559,6 @@ version = "0.5.0"
 dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "log",
- "once_cell",
  "termsize",
  "tracing",
 ]

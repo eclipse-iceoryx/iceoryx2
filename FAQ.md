@@ -4,18 +4,18 @@
 
 iceoryx2 stores all data in shared memory, which imposes certain restrictions.
 Only data that is self-contained and does not use pointers to reference itself
-is allowed. This is because shared memory is mapped at different offsets in
-each process, rendering absolute pointers invalid. Additionally, if the data
+is allowed. This is because shared memory is mapped at different offsets in each
+process, rendering absolute pointers invalid. Additionally, if the data
 structure uses the heap, it is stored locally within a process and cannot be
-accessed by other processes. As a result, data types such as `String`, `Vec`,
-or `HashMap` cannot be used as payload types.
+accessed by other processes. As a result, data types such as `String`, `Vec`, or
+`HashMap` cannot be used as payload types.
 
 Additionally, every data type must be annotated with `#[repr(C)]`. The Rust
 compiler may reorder the members of a struct, which can lead to undefined
 behavior if another process expects a different ordering.
 
-To address this, iceoryx2 provides shared-memory-compatible data types. You
-can refer to the [complex data types example](examples/rust/complex_data_types),
+To address this, iceoryx2 provides shared-memory-compatible data types. You can
+refer to the [complex data types example](examples/rust/complex_data_types),
 which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
 
 ## How To Define Custom Data Types (Rust)
@@ -53,11 +53,11 @@ Take a look at the
 
 ## How To Make 32-bit and 64-bit iceoryx2 Applications Interoperatable
 
-This is currently not possible since we cannot guarantee to have the same
-layout of the data structures in the shared memory. On 32-bit architectures
-64-bit POD are aligned to a 4 byte boundary but to a 8 byte boundary on
-64-bit architectures. Some additional work is required to make 32-bit and
-64-bit applications interoperabel.
+This is currently not possible since we cannot guarantee to have the same layout
+of the data structures in the shared memory. On 32-bit architectures 64-bit POD
+are aligned to a 4 byte boundary but to a 8 byte boundary on 64-bit
+architectures. Some additional work is required to make 32-bit and 64-bit
+applications interoperabel.
 
 ## My Transmission Type Is Too Large, Encounter Stack Overflow On Initialization
 
@@ -71,8 +71,8 @@ than the available stack size.
 ## 100% CPU Load When Using The WaitSet
 
 The WaitSet wakes up whenever an attachment, such as a `Listener` or a `socket`,
-has something to read. If you do not handle all notifications, for example,
-with `Listener::try_wait_one()`, the WaitSet will wake up immediately again,
+has something to read. If you do not handle all notifications, for example, with
+`Listener::try_wait_one()`, the WaitSet will wake up immediately again,
 potentially causing an infinite loop and resulting in 100% CPU usage.
 
 ## Does iceoryx2 Offer an Async API?
@@ -105,31 +105,57 @@ But you can also use a crate like [ctrlc](https://docs.rs/ctrlc/latest/ctrlc/).
 ## How to use `log` or `tracing` as default log backend
 
 * **log**, add the feature flag `logger_log` to the dependency in `Cargo.toml`
-    ```toml
-    iceoryx2 = { version = "0.1.0", features = ["logger_log"]}
-    ```
+  ```toml
+  iceoryx2 = { version = "0.1.0", features = ["logger_log"]}
+  ```
 * **tracing**, add the feature flag `logger_tracing` to the dependency in
   `Cargo.toml`
-    ```toml
-     iceoryx2 = { version = "0.1.0", features = ["logger_tracing"]}
-    ```
+  ```toml
+   iceoryx2 = { version = "0.1.0", features = ["logger_tracing"]}
+  ```
+
+## Supported log levels
+
+iceoryx2 supports different log levels
+`trace, debug, info, warning, error, fatal`
 
 ## How to set the log level
+
+iceoryx2 provides different APIs which can be used to set the log level
+directly in the code or read the configured log level by environment variable
+
+`export IOX2_LOG_LEVEL=Trace`
+
+then in the `main.rs` call one of the functions to set the log level
 
 ```rust
 use iceoryx2::prelude::*
 
 // ...
 
+// Reads LogLevel from env and defaults to LogLevel INFO
+// if the environment variable is not set or has an unsupported value
+set_log_level_from_env_or_default();
+
+// Reads LogLevel from env and sets it with a user-given value
+// if the environment variable is not set or has an unsupported value  
+set_log_level_from_env_or(LogLevel::DEBUG);
+
+// sets LogLevel programmatically with a supported user-given value
+// and does not try to read the environment variable
 set_log_level(LogLevel::Trace);
 ```
 
+**Note**: While working on iceoryx2, it gets its default logging level from
+`.cargo/config.toml`, but this can be over-ridden by using the APIs that reads
+environment variable `IOX2_LOG_LEVEL` or set the log level directly in the code.
+
 ## A crash leads to the failure `PublishSubscribeOpenError(UnableToOpenDynamicServiceInformation)`
 
-When an application crashes, some resources may remain in the system and need
-to be cleaned up. This issue is detected whenever a new iceoryx2 instance is
-created, removed, or when someone opens the service that the crashed process
-had previously opened. On the command line, you may see a message like this:
+When an application crashes, some resources may remain in the system and need to
+be cleaned up. This issue is detected whenever a new iceoryx2 instance is
+created, removed, or when someone opens the service that the crashed process had
+previously opened. On the command line, you may see a message like this:
 
 ```ascii
 6 [W] "Node::<iceoryx2::service::ipc::Service>::cleanup_dead_nodes()"
@@ -139,9 +165,9 @@ had previously opened. On the command line, you may see a message like this:
 ```
 
 However, for successful cleanup, the process attempting the cleanup must have
-sufficient permissions to remove the stale resources of the dead process. If
-the cleanup fails due to insufficient permissions, the process that attempted
-the cleanup will continue without removing the resources.
+sufficient permissions to remove the stale resources of the dead process. If the
+cleanup fails due to insufficient permissions, the process that attempted the
+cleanup will continue without removing the resources.
 
 Generally, it is not necessary to manually clean up these resources, as other
 processes should detect and handle the cleanup when creating or removing nodes,
@@ -151,6 +177,7 @@ Nevertheless, there are three different approaches to initiate stale resource
 cleanup:
 
 1. **Using the iceoryx2 API**:
+
    ```rust
    Node::<ipc::Service>::list(Config::global_config(), |node_state| {
      if let NodeState::<ipc::Service>::Dead(view) = node_state {
@@ -166,7 +193,7 @@ cleanup:
 2. **Using the command line tool**: `iox2 node -h` (NOT YET IMPLEMENTED)
 
 3. **Manual cleanup**: Stop all running services and remove all shared memory
-    files with the `iox2` prefix from:
+   files with the `iox2` prefix from:
    * POSIX: `/dev/shm/`, `/tmp/iceoryx2`
    * Windows: `c:\Temp\iceoryx2`
 

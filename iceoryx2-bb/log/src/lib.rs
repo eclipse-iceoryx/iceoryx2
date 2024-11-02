@@ -153,8 +153,6 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 use core::{fmt::Arguments, sync::atomic::Ordering};
 use std::sync::Once;
 
-use logger::Logger;
-use once_cell::sync::Lazy;
 use std::env;
 
 #[cfg(feature = "logger_tracing")]
@@ -164,19 +162,13 @@ static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
 static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 
 #[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
-pub static DEFAULT_LOGGER: Lazy<logger::console::Logger> = Lazy::new(logger::console::Logger::new);
+static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
 
 const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
-pub static ENV_LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
-    env::var("IOX2_LOG_LEVEL")
-        .map(|log_level| LogLevel::from_str_fuzzy(&log_level))
-        .unwrap_or(LogLevel::Info)
-});
 
-static mut LOGGER: Option<&'static dyn logger::Logger> = None;
+static mut LOGGER: Option<&'static dyn Log> = None;
 static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
-static INIT_LOGGER: Once = Once::new();
-static INIT_LOG_LEVEL: Once = Once::new();
+static INIT: Once = Once::new();
 
 pub trait Log: Send + Sync {
     /// logs a message
@@ -196,8 +188,8 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
-    fn from_str_fuzzy(s: &str) -> LogLevel {
-        match s.to_lowercase().as_str() {
+    fn from_str_fuzzy(log_level_string: &str, log_level_fallback: LogLevel) -> LogLevel {
+        match log_level_string.to_lowercase().as_str() {
             "trace" => LogLevel::Trace,
             "debug" => LogLevel::Debug,
             "info" => LogLevel::Info,
@@ -205,28 +197,42 @@ impl LogLevel {
             "error" => LogLevel::Error,
             "fatal" => LogLevel::Fatal,
             _ => {
-                println!("Error: you are using unknown logging level {:?}", s);
-                println!("Warning: setting log level as : Info");
-                DEFAULT_LOG_LEVEL
+                println!(
+                    "Invalid value for 'IOX2_LOG_LEVEL' environment variable!\
+                \nFound: {:?}\
+                \nAllowed is one of: fatal, error, warn, info, debug, trace\
+                \nSetting log level as : {:?}",
+                    log_level_string, log_level_fallback
+                );
+                log_level_fallback
             }
         }
     }
 }
 
+/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it wiht LogLevel::INFO
+pub fn set_log_level_from_env_or_default() {
+    set_log_level_from_env_or(DEFAULT_LOG_LEVEL);
+}
+
+/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL", and if the environment variable
+/// doesn't exits it sets it with a user-defined logging level
+pub fn set_log_level_from_env_or(v: LogLevel) {
+    let log_level = env::var("IOX2_LOG_LEVEL")
+        .ok()
+        .map(|s| LogLevel::from_str_fuzzy(&s, v))
+        .unwrap_or(v);
+    set_log_level(log_level);
+}
+
 /// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
 /// Here you have to use the log-level settings of that framework.
 pub fn set_log_level(v: LogLevel) {
-    INIT_LOG_LEVEL.call_once(|| {
-        LOG_LEVEL.store(*ENV_LOG_LEVEL as u8, Ordering::Relaxed);
-    });
     LOG_LEVEL.store(v as u8, Ordering::Relaxed);
 }
 
 /// Returns the current log level
 pub fn get_log_level() -> u8 {
-    INIT_LOG_LEVEL.call_once(|| {
-        LOG_LEVEL.store(*ENV_LOG_LEVEL as u8, Ordering::Relaxed);
-    });
     LOG_LEVEL.load(Ordering::Relaxed)
 }
 
@@ -234,7 +240,7 @@ pub fn get_log_level() -> u8 {
 /// [`Log`]ger is already set it returns false and does not update it.
 pub fn set_logger<T: Log + 'static>(value: &'static T) -> bool {
     let mut set_logger_success = false;
-    INIT_LOGGER.call_once(|| {
+    INIT.call_once(|| {
         unsafe { LOGGER = Some(value) };
         set_logger_success = true;
     });
