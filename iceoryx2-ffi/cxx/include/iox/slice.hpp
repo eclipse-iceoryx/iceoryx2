@@ -28,7 +28,9 @@ class Slice {
 
     Slice(const T* data, uint64_t number_of_elements);
 
+    auto size() const -> uint64_t;
     auto number_of_elements() const -> uint64_t;
+
     auto operator[](uint64_t n) const -> const T&;
     auto operator[](uint64_t n) -> T&;
 
@@ -50,6 +52,11 @@ Slice<T>::Slice(const T* data, uint64_t number_of_elements)
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) constness protected by const class specification
     : m_data { const_cast<T*>(data) }
     , m_number_of_elements { number_of_elements } {
+}
+
+template <typename T>
+auto Slice<T>::size() const -> uint64_t {
+    return (sizeof(ValueType) * m_number_of_elements + alignof(ValueType) - 1) & ~(alignof(ValueType) - 1);
 }
 
 template <typename T>
