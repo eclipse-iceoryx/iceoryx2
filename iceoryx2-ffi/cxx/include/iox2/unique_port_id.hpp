@@ -21,6 +21,7 @@
 namespace iox2 {
 
 constexpr uint64_t UNIQUE_PORT_ID_LENGTH = 128;
+using RawIdType = std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>;
 
 /// The system-wide unique id of a [`Publisher`].
 class UniquePublisherId {
@@ -31,7 +32,7 @@ class UniquePublisherId {
     auto operator=(UniquePublisherId&& rhs) noexcept -> UniquePublisherId&;
     ~UniquePublisherId();
 
-    auto bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>>;
+    auto bytes() -> iox::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename, typename>
@@ -44,6 +45,7 @@ class UniquePublisherId {
     void drop();
 
     iox2_unique_publisher_id_h m_handle = nullptr;
+    iox::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Subscriber`].
@@ -55,7 +57,7 @@ class UniqueSubscriberId {
     auto operator=(UniqueSubscriberId&& rhs) noexcept -> UniqueSubscriberId&;
     ~UniqueSubscriberId();
 
-    auto bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>>;
+    auto bytes() -> iox::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename, typename>
@@ -67,6 +69,7 @@ class UniqueSubscriberId {
     void drop();
 
     iox2_unique_subscriber_id_h m_handle = nullptr;
+    iox::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Notifier`].
@@ -78,7 +81,7 @@ class UniqueNotifierId {
     auto operator=(UniqueNotifierId&& rhs) noexcept -> UniqueNotifierId&;
     ~UniqueNotifierId();
 
-    auto bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>>;
+    auto bytes() -> iox::optional<RawIdType>&;
 
   private:
     template <ServiceType>
@@ -90,6 +93,7 @@ class UniqueNotifierId {
     void drop();
 
     iox2_unique_notifier_id_h m_handle = nullptr;
+    iox::optional<RawIdType> m_raw_id;
 };
 
 /// The system-wide unique id of a [`Listener`].
@@ -101,7 +105,7 @@ class UniqueListenerId {
     auto operator=(UniqueListenerId&& rhs) noexcept -> UniqueListenerId&;
     ~UniqueListenerId();
 
-    auto bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>>;
+    auto bytes() -> iox::optional<RawIdType>&;
 
   private:
     template <ServiceType>
@@ -113,6 +117,7 @@ class UniqueListenerId {
     void drop();
 
     iox2_unique_listener_id_h m_handle = nullptr;
+    iox::optional<RawIdType> m_raw_id;
 };
 
 auto operator==(const UniquePublisherId& lhs, const UniquePublisherId& rhs) -> bool;

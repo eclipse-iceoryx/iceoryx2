@@ -43,13 +43,13 @@ UniquePublisherId::UniquePublisherId(iox2_unique_publisher_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniquePublisherId::bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>> {
-    if (m_handle != nullptr) {
-        std::array<uint8_t, UNIQUE_PORT_ID_LENGTH> bytes {};
+auto UniquePublisherId::bytes() -> iox::optional<RawIdType>& {
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes {};
         iox2_unique_publisher_id_value(m_handle, bytes.data());
-        return bytes;
+        m_raw_id.emplace(std::move(bytes));
     }
-    return iox::nullopt;
+    return m_raw_id;
 };
 
 void UniquePublisherId::drop() {
@@ -90,13 +90,13 @@ UniqueSubscriberId::UniqueSubscriberId(iox2_unique_subscriber_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueSubscriberId::bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>> {
-    if (m_handle != nullptr) {
-        std::array<uint8_t, UNIQUE_PORT_ID_LENGTH> bytes {};
+auto UniqueSubscriberId::bytes() -> iox::optional<RawIdType>& {
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes {};
         iox2_unique_subscriber_id_value(m_handle, bytes.data());
-        return bytes;
+        m_raw_id.emplace(std::move(bytes));
     }
-    return iox::nullopt;
+    return m_raw_id;
 };
 
 void UniqueSubscriberId::drop() {
@@ -136,13 +136,13 @@ UniqueNotifierId::UniqueNotifierId(iox2_unique_notifier_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueNotifierId::bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>> {
-    if (m_handle != nullptr) {
-        std::array<uint8_t, UNIQUE_PORT_ID_LENGTH> bytes {};
+auto UniqueNotifierId::bytes() -> iox::optional<RawIdType>& {
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes {};
         iox2_unique_notifier_id_value(m_handle, bytes.data());
-        return bytes;
+        m_raw_id.emplace(std::move(bytes));
     }
-    return iox::nullopt;
+    return m_raw_id;
 };
 
 void UniqueNotifierId::drop() {
@@ -182,13 +182,13 @@ UniqueListenerId::UniqueListenerId(iox2_unique_listener_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueListenerId::bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>> {
-    if (m_handle != nullptr) {
-        std::array<uint8_t, UNIQUE_PORT_ID_LENGTH> bytes {};
+auto UniqueListenerId::bytes() -> iox::optional<RawIdType>& {
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes {};
         iox2_unique_listener_id_value(m_handle, bytes.data());
-        return bytes;
+        m_raw_id.emplace(std::move(bytes));
     }
-    return iox::nullopt;
+    return m_raw_id;
 };
 
 void UniqueListenerId::drop() {
