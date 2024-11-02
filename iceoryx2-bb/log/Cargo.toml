@@ -21,4 +21,3 @@ iceoryx2-pal-concurrency-sync = { workspace = true }
 termsize = { workspace = true }
 log = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
-once_cell = { workspace = true }
