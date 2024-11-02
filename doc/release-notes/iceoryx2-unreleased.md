@@ -65,6 +65,7 @@
 
 * Remove obsolete POSIX wrapper
     [#594](https://github.com/eclipse-iceoryx/iceoryx2/issues/594)
+* Read LogLevel from environment variable [#396](https://github.com/eclipse-iceoryx/iceoryx2/issues/396)
 
 ### Workflow
 
