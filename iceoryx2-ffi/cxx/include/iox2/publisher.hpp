@@ -53,7 +53,11 @@ class Publisher {
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
     /// On success it returns the number of [`Subscriber`]s that received
     /// the data, otherwise a [`PublisherSendError`] describing the failure.
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto send_copy(const Payload& payload) const -> iox::expected<size_t, PublisherSendError>;
+
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto send_slice_copy(const Payload& payload) const -> iox::expected<size_t, PublisherSendError>;
 
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
@@ -167,6 +171,7 @@ inline auto Publisher<S, Payload, UserHeader>::id() const -> UniquePublisherId {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload) const
     -> iox::expected<size_t, PublisherSendError> {
     static_assert(std::is_trivially_copyable<Payload>::value);
@@ -174,6 +179,24 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
     size_t number_of_recipients = 0;
     auto result =
         iox2_publisher_send_copy(&m_handle, static_cast<const void*>(&payload), sizeof(Payload), &number_of_recipients);
+
+    if (result == IOX2_OK) {
+        return iox::ok(number_of_recipients);
+    }
+
+    return iox::err(iox::into<PublisherSendError>(result));
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto Publisher<S, Payload, UserHeader>::send_slice_copy(const Payload& payload) const
+    -> iox::expected<size_t, PublisherSendError> {
+    size_t number_of_recipients = 0;
+    auto result = iox2_publisher_send_slice_copy(&m_handle,
+                                                 payload.data(),
+                                                 sizeof(typename Payload::ValueType),
+                                                 payload.number_of_elements(),
+                                                 &number_of_recipients);
 
     if (result == IOX2_OK) {
         return iox::ok(number_of_recipients);

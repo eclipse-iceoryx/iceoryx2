@@ -15,6 +15,7 @@
 
 #include "iox/assertions.hpp"
 #include "iox/expected.hpp"
+#include "iox/slice.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
