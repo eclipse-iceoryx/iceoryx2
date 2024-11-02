@@ -199,7 +199,7 @@ impl LogLevel {
     fn from_str_fuzzy(s: &str) -> LogLevel {
         match s.to_lowercase().as_str() {
             "trace" => LogLevel::Trace,
-            "tebug" => LogLevel::Debug,
+            "debug" => LogLevel::Debug,
             "info" => LogLevel::Info,
             "warn" => LogLevel::Warn,
             "error" => LogLevel::Error,
