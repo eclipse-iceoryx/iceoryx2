@@ -13,9 +13,15 @@
 #ifndef IOX2_UNIQUE_PORT_ID_HPP
 #define IOX2_UNIQUE_PORT_ID_HPP
 
+#include "iox/optional.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
+#include <array>
+
 namespace iox2 {
+
+constexpr uint64_t UNIQUE_PORT_ID_LENGTH = 128;
+
 /// The system-wide unique id of a [`Publisher`].
 class UniquePublisherId {
   public:
@@ -24,6 +30,8 @@ class UniquePublisherId {
     auto operator=(const UniquePublisherId& rhs) -> UniquePublisherId& = delete;
     auto operator=(UniquePublisherId&& rhs) noexcept -> UniquePublisherId&;
     ~UniquePublisherId();
+
+    auto bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>>;
 
   private:
     template <ServiceType, typename, typename>
@@ -38,7 +46,6 @@ class UniquePublisherId {
     iox2_unique_publisher_id_h m_handle = nullptr;
 };
 
-
 /// The system-wide unique id of a [`Subscriber`].
 class UniqueSubscriberId {
   public:
@@ -47,6 +54,8 @@ class UniqueSubscriberId {
     auto operator=(const UniqueSubscriberId& rhs) -> UniqueSubscriberId& = delete;
     auto operator=(UniqueSubscriberId&& rhs) noexcept -> UniqueSubscriberId&;
     ~UniqueSubscriberId();
+
+    auto bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>>;
 
   private:
     template <ServiceType, typename, typename>
@@ -69,6 +78,8 @@ class UniqueNotifierId {
     auto operator=(UniqueNotifierId&& rhs) noexcept -> UniqueNotifierId&;
     ~UniqueNotifierId();
 
+    auto bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>>;
+
   private:
     template <ServiceType>
     friend class Notifier;
@@ -89,6 +100,8 @@ class UniqueListenerId {
     auto operator=(const UniqueListenerId& rhs) -> UniqueListenerId& = delete;
     auto operator=(UniqueListenerId&& rhs) noexcept -> UniqueListenerId&;
     ~UniqueListenerId();
+
+    auto bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>>;
 
   private:
     template <ServiceType>

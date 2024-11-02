@@ -86,6 +86,24 @@ impl HandleToType for iox2_unique_publisher_id_h_ref {
 
 // BEGIN C API
 
+#[no_mangle]
+unsafe extern "C" fn iox2_unique_publisher_id_value(
+    handle: iox2_unique_publisher_id_h,
+    id_ptr: *mut u8,
+) {
+    handle.assert_non_null();
+
+    let h = &mut *handle.as_type();
+
+    if let Some(Some(id)) = (h.value.internal.as_ptr() as *const Option<UniquePublisherId>).as_ref()
+    {
+        let bytes = id.value().to_ne_bytes();
+        unsafe {
+            std::ptr::copy_nonoverlapping(bytes.as_ptr(), id_ptr, bytes.len());
+        }
+    }
+}
+
 /// This function needs to be called to destroy the unique publisher id!
 ///
 /// # Arguments

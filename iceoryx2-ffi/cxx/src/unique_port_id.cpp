@@ -43,6 +43,15 @@ UniquePublisherId::UniquePublisherId(iox2_unique_publisher_id_h handle)
     : m_handle { handle } {
 }
 
+auto UniquePublisherId::bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>> {
+    if (m_handle != nullptr) {
+        std::array<uint8_t, UNIQUE_PORT_ID_LENGTH> bytes {};
+        iox2_unique_publisher_id_value(m_handle, bytes.data());
+        return bytes;
+    }
+    return iox::nullopt;
+};
+
 void UniquePublisherId::drop() {
     if (m_handle != nullptr) {
         iox2_unique_publisher_id_drop(m_handle);
@@ -81,6 +90,15 @@ UniqueSubscriberId::UniqueSubscriberId(iox2_unique_subscriber_id_h handle)
     : m_handle { handle } {
 }
 
+auto UniqueSubscriberId::bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>> {
+    if (m_handle != nullptr) {
+        std::array<uint8_t, UNIQUE_PORT_ID_LENGTH> bytes {};
+        iox2_unique_subscriber_id_value(m_handle, bytes.data());
+        return bytes;
+    }
+    return iox::nullopt;
+};
+
 void UniqueSubscriberId::drop() {
     if (m_handle != nullptr) {
         iox2_unique_subscriber_id_drop(m_handle);
@@ -118,6 +136,15 @@ UniqueNotifierId::UniqueNotifierId(iox2_unique_notifier_id_h handle)
     : m_handle { handle } {
 }
 
+auto UniqueNotifierId::bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>> {
+    if (m_handle != nullptr) {
+        std::array<uint8_t, UNIQUE_PORT_ID_LENGTH> bytes {};
+        iox2_unique_notifier_id_value(m_handle, bytes.data());
+        return bytes;
+    }
+    return iox::nullopt;
+};
+
 void UniqueNotifierId::drop() {
     if (m_handle != nullptr) {
         iox2_unique_notifier_id_drop(m_handle);
@@ -154,6 +181,15 @@ auto operator<(const UniqueListenerId& lhs, const UniqueListenerId& rhs) -> bool
 UniqueListenerId::UniqueListenerId(iox2_unique_listener_id_h handle)
     : m_handle { handle } {
 }
+
+auto UniqueListenerId::bytes() -> iox::optional<std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>> {
+    if (m_handle != nullptr) {
+        std::array<uint8_t, UNIQUE_PORT_ID_LENGTH> bytes {};
+        iox2_unique_listener_id_value(m_handle, bytes.data());
+        return bytes;
+    }
+    return iox::nullopt;
+};
 
 void UniqueListenerId::drop() {
     if (m_handle != nullptr) {

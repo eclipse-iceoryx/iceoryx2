@@ -17,10 +17,12 @@
 #include "iox2/publisher.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/subscriber.hpp"
+#include "iox2/unique_port_id.hpp"
 
 #include "test.hpp"
 
 #include <atomic>
+#include <gtest/gtest.h>
 
 namespace {
 using namespace iox2;
@@ -62,6 +64,26 @@ struct UniquePortIdTest : public ::testing::Test {
 };
 
 TYPED_TEST_SUITE(UniquePortIdTest, iox2_testing::ServiceTypes);
+
+TYPED_TEST(UniquePortIdTest, unique_port_id_value) {
+    auto null_id = std::array<uint8_t, iox2::UNIQUE_PORT_ID_LENGTH> {};
+
+    auto unique_publisher_id = this->publisher_1.id();
+    ASSERT_TRUE(unique_publisher_id.bytes().has_value());
+    ASSERT_NE(unique_publisher_id.bytes().value(), null_id);
+
+    auto unique_subscriber_id = this->publisher_1.id();
+    ASSERT_TRUE(unique_subscriber_id.bytes().has_value());
+    ASSERT_NE(unique_subscriber_id.bytes().value(), null_id);
+
+    auto unique_notifier_id = this->notifier_1.id();
+    ASSERT_TRUE(unique_notifier_id.bytes().has_value());
+    ASSERT_NE(unique_notifier_id.bytes().value(), null_id);
+
+    auto unique_listener_id = this->listener_1.id();
+    ASSERT_TRUE(unique_listener_id.bytes().has_value());
+    ASSERT_NE(unique_listener_id.bytes().value(), null_id);
+}
 
 TYPED_TEST(UniquePortIdTest, unique_port_id_from_same_port_is_equal) {
     ASSERT_TRUE(this->listener_1.id() == this->listener_1.id());
