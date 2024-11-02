@@ -74,7 +74,9 @@ mod subscriber {
     #[test]
     #[should_panic]
     #[cfg(debug_assertions)]
-    fn subscriber_with_custom_payload_details_panics_when_calling_receive<Sut: Service>() {
+    fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<
+        Sut: Service,
+    >() {
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let service_name = generate_name();
         let config = generate_isolated_config();

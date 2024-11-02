@@ -74,10 +74,4 @@
    }
    ```
 
-2. Removed `payload_type_layout` from pub/sub header.
-
-    ```rust
-    // old
-    let sample = publisher.loan()?;
-    sample.header().payload_type_layout();
-    ```
+2. Removed `payload_type_layout()` from `publish_subscribe::Header`.
