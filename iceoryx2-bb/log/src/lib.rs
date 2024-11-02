@@ -150,7 +150,6 @@ use std::{
     sync::{atomic::Ordering, Once},
 };
 
-use logger::Logger;
 use once_cell::sync::Lazy;
 use std::env;
 
@@ -170,7 +169,7 @@ pub static ENV_LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
         .unwrap_or(LogLevel::Info)
 });
 
-static mut LOGGER: Option<&'static dyn logger::Logger> = None;
+static mut LOGGER: Option<&'static dyn Log> = None;
 static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
 static INIT_LOGGER: Once = Once::new();
 static INIT_LOG_LEVEL: Once = Once::new();
@@ -240,8 +239,8 @@ pub fn set_logger<T: Log + 'static>(value: &'static T) -> bool {
 
 /// Returns a reference to the [`Log`]ger.
 pub fn get_logger() -> &'static dyn Log {
-    INIT.call_once(|| {
-        unsafe { LOGGER = Some(&DEFAULT_LOGGER) };
+    INIT_LOGGER.call_once(|| {
+        unsafe { LOGGER = Some(&*DEFAULT_LOGGER) };
     });
 
     // # From The Compiler
