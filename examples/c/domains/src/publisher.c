@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
 
         // loan sample
         iox2_sample_mut_h sample = NULL;
-        if (iox2_publisher_loan(&publisher, NULL, &sample) != IOX2_OK) {
+        if (iox2_publisher_loan_slice_uninit(&publisher, NULL, &sample, 1) != IOX2_OK) {
             printf("Failed to loan sample\n");
             goto drop_publisher;
         }

@@ -17,6 +17,7 @@
 #include "iox2/service_type.hpp"
 
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
@@ -35,9 +36,9 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {
-            std::cout << "received " << sample->payload().size() << " bytes: ";
-            for (auto byte : sample->payload()) {
-                std::cout << std::hex << byte << " ";
+            std::cout << "received " << std::dec << static_cast<int>(sample->payload_slice().size()) << " bytes: ";
+            for (auto byte : sample->payload_slice()) {
+                std::cout << std::setw(2) << std::setfill('0') << std::hex << static_cast<int>(byte) << " ";
             }
             std::cout << std::endl;
             sample = subscriber.receive().expect("receive succeeds");

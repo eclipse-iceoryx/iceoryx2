@@ -26,26 +26,64 @@ class Slice {
     using ConstIterator = const T*;
     using ValueType = T;
 
+    Slice(T* data, uint64_t number_of_elements);
     Slice(const T* data, uint64_t number_of_elements);
 
+    /// @brief Returns the size of the slice in bytes.
+    /// @return The size of the slice in bytes.
     auto size() const -> uint64_t;
+
+    /// @brief Returns the number of elements in the slice.
+    /// @return The number of elements in the slice.
     auto number_of_elements() const -> uint64_t;
 
+    /// @brief Accesses the element at the specified index (const version).
+    /// @param[in] n The index of the element to access.
+    /// @return A const reference to the element at the specified index.
+    /// @pre The index must be less than the number of elements in the slice.
     auto operator[](uint64_t n) const -> const T&;
+
+    /// @brief Accesses the element at the specified index (non-const version).
+    /// @param[in] n The index of the element to access.
+    /// @return A reference to the element at the specified index.
+    /// @pre The index must be less than the number of elements in the slice.
     auto operator[](uint64_t n) -> T&;
 
+    /// @brief Returns an iterator to the beginning of the slice.
+    /// @return An iterator pointing to the first element of the slice.
     auto begin() -> Iterator;
+
+    /// @brief Returns a const iterator to the beginning of the slice.
+    /// @return A const iterator pointing to the first element of the slice.
     auto begin() const -> ConstIterator;
+
+    /// @brief Returns an iterator to the end of the slice.
+    /// @return An iterator pointing one past the last element of the slice.
     auto end() -> Iterator;
+
+    /// @brief Returns a const iterator to the end of the slice.
+    /// @return A const iterator pointing one past the last element of the slice.
     auto end() const -> ConstIterator;
 
+    /// @brief Returns a pointer to the underlying data of the slice.
+    /// @return A pointer to the first element of the slice.
     auto data() -> T*;
+
+    /// @brief Returns a const pointer to the underlying data of the slice.
+    /// @return A const pointer to the first element of the slice.
     auto data() const -> const T*;
 
   private:
     T* m_data;
     uint64_t m_number_of_elements;
 };
+
+template <typename T>
+Slice<T>::Slice(T* data, uint64_t number_of_elements)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast) constness protected by const class specification
+    : m_data { data }
+    , m_number_of_elements { number_of_elements } {
+}
 
 template <typename T>
 Slice<T>::Slice(const T* data, uint64_t number_of_elements)

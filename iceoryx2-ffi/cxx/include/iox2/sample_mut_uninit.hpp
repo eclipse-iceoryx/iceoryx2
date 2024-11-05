@@ -173,13 +173,18 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline void SampleMutUninit<S, Payload, UserHeader>::write_from_fn(
     const iox::function<typename T::ValueType(uint64_t)>& initializer) {
-    IOX_TODO();
+    auto slice = payload_slice_mut();
+    for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {
+        new (&slice[i]) typename T::ValueType(initializer(i));
+    }
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline void SampleMutUninit<S, Payload, UserHeader>::write_from_slice(const T& value) {
-    IOX_TODO();
+    auto dest = payload_slice_mut();
+    IOX_ASSERT(dest.size() >= value.size(), "Destination payload size is smaller than source slice size");
+    std::memcpy(dest.begin(), value.begin(), value.size());
 }
 } // namespace iox2
 

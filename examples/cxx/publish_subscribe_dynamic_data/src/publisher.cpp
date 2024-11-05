@@ -32,25 +32,25 @@ auto main() -> int {
                        .open_or_create()
                        .expect("successful service creation/opening");
 
-    uint64_t worst_case_memory_size = 1024; // NOLINT
+    const uint64_t worst_case_memory_size = 1024; // NOLINT
     auto publisher = service.publisher_builder()
                          .max_slice_len(worst_case_memory_size)
                          .create()
                          .expect("successful publisher creation");
 
-    auto counter = 1;
+    auto counter = 0;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        counter += 1;
-
-        auto required_memory_size = (8 + counter) % 16; // NOLINT
+        const auto required_memory_size = (counter % 16) + 1; // NOLINT
         auto sample = publisher.loan_slice_uninit(required_memory_size).expect("acquire sample");
         sample.write_from_fn([&](auto byte_idx) { return (byte_idx + counter) % 255; }); // NOLINT
 
         auto initialized_sample = assume_init(std::move(sample));
         send(std::move(initialized_sample)).expect("send successful");
 
-        std::cout << "Send sample " << counter << "..." << std::endl;
+        std::cout << "Send sample " << counter << " with " << required_memory_size << " bytes..." << std::endl;
+
+        counter++;
     }
 
     std::cout << "exit" << std::endl;

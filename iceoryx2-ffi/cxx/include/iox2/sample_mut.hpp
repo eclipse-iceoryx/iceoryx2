@@ -85,7 +85,7 @@ class SampleMut {
     auto payload_mut() -> Payload&;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_slice() const -> const Payload;
+    auto payload_slice() const -> Payload;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload_slice_mut() -> Payload;
@@ -216,13 +216,13 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> Payload& {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMut<S, Payload, UserHeader>::payload_slice() const -> const Payload {
+inline auto SampleMut<S, Payload, UserHeader>::payload_slice() const -> Payload {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
 
     iox2_sample_mut_payload(&m_handle, &ptr, &number_of_elements);
 
-    return Payload(static_cast<typename Payload::ValueType*>(const_cast<void*>(ptr)), number_of_elements);
+    return Payload(static_cast<const typename Payload::ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -233,7 +233,7 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_slice_mut() -> Payload {
 
     iox2_sample_mut_payload_mut(&m_handle, &ptr, &number_of_elements);
 
-    return Payload(static_cast<typename Payload::ValueType*>(const_cast<void*>(ptr)), number_of_elements);
+    return Payload(static_cast<typename Payload::ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
