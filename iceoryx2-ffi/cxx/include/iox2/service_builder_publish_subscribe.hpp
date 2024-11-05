@@ -19,6 +19,7 @@
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_type.hpp"
@@ -26,16 +27,6 @@
 #include <typeinfo>
 
 namespace iox2 {
-
-template <typename T>
-struct PayloadValueType {
-    using TYPE = T;
-};
-
-template <typename T>
-struct PayloadValueType<iox::Slice<T>> {
-    using TYPE = typename iox::Slice<T>::ValueType;
-};
 
 /// Builder to create new [`MessagingPattern::PublishSubscribe`] based [`Service`]s
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -149,7 +140,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
         [&](auto value) { iox2_service_builder_pub_sub_set_payload_alignment(&m_handle, value); });
     m_max_nodes.and_then([&](auto value) { iox2_service_builder_pub_sub_set_max_nodes(&m_handle, value); });
 
-    using ValueType = typename PayloadValueType<Payload>::TYPE;
+    using ValueType = typename PayloadInfo<Payload>::TYPE;
     auto type_variant = iox::IsSlice<Payload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
     // payload type details
