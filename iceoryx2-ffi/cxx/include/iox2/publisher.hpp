@@ -50,6 +50,7 @@ class Publisher {
     auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
 
     /// Returns the maximum number of elements that can be loaned in a slice.
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto max_slice_len() const -> uint64_t;
 
     /// Copies the input `value` into a [`SampleMut`] and delivers it.
@@ -152,16 +153,9 @@ inline auto Publisher<S, Payload, UserHeader>::unable_to_deliver_strategy() cons
 
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::max_slice_len() const -> uint64_t {
-    // NOTE: The C API always uses a [u8] payload, therefore the max length returned is the number of bytes.
-    //       Dividing by the size gives the number of slice elements available to the C++ API.
-    //
-    // NOTE: For non-slice types, the number of slice elements is always 1.
-    if constexpr (iox::IsSlice<Payload>::VALUE) {
-        return iox2_publisher_max_slice_len(&m_handle) / sizeof(typename Payload::ValueType);
-    } else {
-        return iox2_publisher_max_slice_len(&m_handle) / sizeof(Payload);
-    }
+    return iox2_publisher_max_slice_len(&m_handle);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
