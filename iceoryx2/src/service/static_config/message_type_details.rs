@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 /// Defines if the type is a slice with a runtime-size ([`TypeVariant::Dynamic`])
 /// or if its a type that satisfies [`Sized`] ([`TypeVariant::FixedSize`]).
-#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum TypeVariant {
     #[default]
     /// A type notated by [`#[repr(C)]`](https://doc.rust-lang.org/reference/type-layout.html#reprc).

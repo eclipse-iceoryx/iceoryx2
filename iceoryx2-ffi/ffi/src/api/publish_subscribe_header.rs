@@ -154,7 +154,12 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
-/// Returns the payloads type size.
+/// Returns the number of elements of the payload.
+/// The element size is defined via this call when creating a new service
+/// [`crate::iox2_service_builder_pub_sub_set_payload_type_details()`].
+/// So if the payload is defined with alignment 8 and size 16 and this function returns 5. It
+/// means that the payload consists of 5 elements of size 16 and every element is 8 byte aligned.
+/// Therefore, the payload pointer points to a memory region with 5 * 16 = 80 bytes.
 ///
 /// # Arguments
 ///
@@ -165,35 +170,13 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
 ///
 /// * `header_handle` is valid and non-null
 #[no_mangle]
-pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_size(
+pub unsafe extern "C" fn iox2_publish_subscribe_header_number_of_elements(
     header_handle: iox2_publish_subscribe_header_h_ref,
-) -> usize {
+) -> u64 {
     header_handle.assert_non_null();
 
     let header = &mut *header_handle.as_type();
 
-    header.value.as_ref().payload_type_layout().size()
+    header.value.as_ref().number_of_elements()
 }
-
-/// Returns the payloads type alignment.
-///
-/// # Arguments
-///
-/// * `handle` is valid, non-null and was initialized with
-///    [`iox2_sample_header()`](crate::iox2_sample_header)
-///
-/// # Safety
-///
-/// * `header_handle` is valid and non-null
-#[no_mangle]
-pub unsafe extern "C" fn iox2_publish_subscribe_header_payload_type_alignment(
-    header_handle: iox2_publish_subscribe_header_h_ref,
-) -> usize {
-    header_handle.assert_non_null();
-
-    let header = &mut *header_handle.as_type();
-
-    header.value.as_ref().payload_type_layout().align()
-}
-
 // END C API

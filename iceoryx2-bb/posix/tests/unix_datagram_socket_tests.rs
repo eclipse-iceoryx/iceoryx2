@@ -14,7 +14,6 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::creation_mode::*;
-use iceoryx2_bb_posix::directory::Directory;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
 use iceoryx2_bb_posix::socket_ancillary::*;

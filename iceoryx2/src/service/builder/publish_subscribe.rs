@@ -40,6 +40,11 @@ use super::{OpenDynamicStorageFailure, ServiceState};
 #[doc(hidden)]
 pub struct CustomHeaderMarker {}
 
+#[repr(C)]
+#[derive(Debug)]
+#[doc(hidden)]
+pub struct CustomPayloadMarker(u8);
+
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PublishSubscribeOpenError {
@@ -716,7 +721,9 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     }
 }
 
-impl<UserHeader: Debug, ServiceType: service::Service> Builder<[u8], UserHeader, ServiceType> {
+impl<UserHeader: Debug, ServiceType: service::Service>
+    Builder<[CustomPayloadMarker], UserHeader, ServiceType>
+{
     #[doc(hidden)]
     pub unsafe fn __internal_set_payload_type_details(mut self, value: &TypeDetail) -> Self {
         self.override_payload_type = Some(value.clone());

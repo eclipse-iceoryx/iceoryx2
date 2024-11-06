@@ -192,7 +192,7 @@ unsafe fn send_copy<S: Service>(
     // loan_slice_uninit(1) <= 1 is correct here since it defines the number of
     // slice elements not bytes. The element was set via TypeDetails and has a
     // defined size and alignment.
-    let mut sample = match publisher.loan_slice_uninit(1) {
+    let mut sample = match publisher.loan_custom_payload(1) {
         Ok(sample) => sample,
         Err(e) => return e.into_c_int(),
     };
@@ -383,7 +383,7 @@ pub unsafe extern "C" fn iox2_publisher_loan(
     let publisher = &mut *publisher_handle.as_type();
 
     match publisher.service_type {
-        iox2_service_type_e::IPC => match publisher.value.as_ref().ipc.loan_slice_uninit(1) {
+        iox2_service_type_e::IPC => match publisher.value.as_ref().ipc.loan_custom_payload(1) {
             Ok(sample) => {
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(
@@ -396,7 +396,7 @@ pub unsafe extern "C" fn iox2_publisher_loan(
             }
             Err(error) => error.into_c_int(),
         },
-        iox2_service_type_e::LOCAL => match publisher.value.as_ref().local.loan_slice_uninit(1) {
+        iox2_service_type_e::LOCAL => match publisher.value.as_ref().local.loan_custom_payload(1) {
             Ok(sample) => {
                 let (sample_struct_ptr, deleter) = init_sample_struct_ptr(sample_struct_ptr);
                 (*sample_struct_ptr).init(

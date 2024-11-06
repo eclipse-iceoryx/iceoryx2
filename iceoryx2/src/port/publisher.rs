@@ -108,6 +108,7 @@ use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
+use crate::service::builder::publish_subscribe::CustomPayloadMarker;
 use crate::service::config_scheme::{connection_config, data_segment_config};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -115,6 +116,7 @@ use crate::service::naming_scheme::{
     data_segment_name, extract_publisher_id_from_connection, extract_subscriber_id_from_connection,
 };
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
+use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::static_config::publish_subscribe::{self};
 use crate::service::{self, ServiceState};
 use crate::{config, sample_mut::SampleMut};
@@ -138,6 +140,7 @@ use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
+use std::any::TypeId;
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::sync::atomic::Ordering;
@@ -528,7 +531,11 @@ impl<Service: service::Service> DataSegment<Service> {
 
 /// Sending endpoint of a publish-subscriber based communication.
 #[derive(Debug)]
-pub struct Publisher<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> {
+pub struct Publisher<
+    Service: service::Service,
+    Payload: Debug + ?Sized + 'static,
+    UserHeader: Debug,
+> {
     pub(crate) data_segment: Arc<DataSegment<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
     payload_size: usize,
@@ -738,14 +745,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .sample_layout(number_of_elements)
     }
 
-    fn payload_layout(&self, number_of_elements: usize) -> Layout {
-        self.data_segment
-            .subscriber_connections
-            .static_config
-            .message_type_details
-            .payload_layout(number_of_elements)
-    }
-
     fn user_header_ptr(&self, header: *const Header) -> *const u8 {
         self.data_segment
             .subscriber_connections
@@ -762,6 +761,15 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .message_type_details
             .payload_ptr_from_header(header.cast())
             .cast()
+    }
+
+    fn payload_type_variant(&self) -> TypeVariant {
+        self.data_segment
+            .subscriber_connections
+            .static_config
+            .message_type_details
+            .payload
+            .variant
     }
 }
 
@@ -837,12 +845,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
 
-        unsafe {
-            header_ptr.write(Header::new(
-                self.data_segment.port_id,
-                Layout::new::<Payload>(),
-            ))
-        };
+        unsafe { header_ptr.write(Header::new(self.data_segment.port_id, 1)) };
 
         let sample =
             unsafe { RawSampleMut::new_unchecked(header_ptr, user_header_ptr, payload_ptr) };
@@ -975,6 +978,18 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         slice_len: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError>
     {
+        // required since Rust does not support generic specializations or negative traits
+        debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
+
+        unsafe { self.loan_slice_uninit_impl(slice_len, slice_len) }
+    }
+
+    unsafe fn loan_slice_uninit_impl(
+        &self,
+        slice_len: usize,
+        underlying_number_of_slice_elements: usize,
+    ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError>
+    {
         let max_slice_len = self.data_segment.config.max_slice_len;
         if max_slice_len < slice_len {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
@@ -988,24 +1003,13 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
 
-        unsafe {
-            header_ptr.write(Header::new(
-                self.data_segment.port_id,
-                self.payload_layout(slice_len),
-            ))
-        };
-
-        let slice_len_adjusted_to_payload_type_details =
-            self.payload_size * slice_len / core::mem::size_of::<Payload>();
+        unsafe { header_ptr.write(Header::new(self.data_segment.port_id, slice_len as _)) };
 
         let sample = unsafe {
             RawSampleMut::new_unchecked(
                 header_ptr,
                 user_header_ptr,
-                core::slice::from_raw_parts_mut(
-                    payload_ptr,
-                    slice_len_adjusted_to_payload_type_details,
-                ),
+                core::slice::from_raw_parts_mut(payload_ptr, underlying_number_of_slice_elements),
             )
         };
 
@@ -1016,6 +1020,31 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                 chunk.offset,
             ),
         )
+    }
+}
+
+impl<Service: service::Service, UserHeader: Debug>
+    Publisher<Service, [CustomPayloadMarker], UserHeader>
+{
+    /// # Safety
+    ///
+    ///  * slice_len != 1 only when payload TypeVariant == Dynamic
+    ///  * The number_of_elements in the [`Header`](crate::service::header::publish_subscribe::Header)
+    ///     is set to `slice_len`
+    ///  * The [`SampleMutUninit`] will contain `slice_len` * `MessageTypeDetails::payload.size`
+    ///     elements of type [`CustomPayloadMarker`].
+    #[doc(hidden)]
+    pub unsafe fn loan_custom_payload(
+        &self,
+        slice_len: usize,
+    ) -> Result<
+        SampleMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], UserHeader>,
+        PublisherLoanError,
+    > {
+        // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
+        debug_assert!(slice_len == 1 || self.payload_type_variant() == TypeVariant::Dynamic);
+
+        self.loan_slice_uninit_impl(slice_len, self.payload_size * slice_len)
     }
 }
 ////////////////////////

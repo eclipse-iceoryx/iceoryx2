@@ -12,6 +12,8 @@
 
 #[generic_tests::define]
 mod subscriber {
+    use iceoryx2::service::builder::publish_subscribe::CustomPayloadMarker;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use std::collections::HashSet;
 
     use iceoryx2::{
@@ -67,6 +69,33 @@ mod subscriber {
             assert_that!(subscriber_id_set.insert(subscriber.id()), eq true);
             subscribers.push(subscriber);
         }
+    }
+
+    #[test]
+    #[should_panic]
+    #[cfg(debug_assertions)]
+    fn subscriber_with_custom_payload_details_panics_when_calling_non_custom_receive<
+        Sut: Service,
+    >() {
+        const TYPE_SIZE_OVERRIDE: usize = 128;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut type_detail = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        type_detail.size = TYPE_SIZE_OVERRIDE;
+
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&type_detail)
+                .create()
+                .unwrap()
+        };
+
+        let sut = service.subscriber_builder().create().unwrap();
+
+        // panics here
+        let _sample = sut.receive();
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

@@ -21,9 +21,9 @@ mod service_publish_subscribe {
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::builder::publish_subscribe::CustomHeaderMarker;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
+    use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
@@ -2611,7 +2611,7 @@ mod service_publish_subscribe {
 
         let _sut = unsafe {
             node.service_builder(&service_name)
-                .publish_subscribe::<[u8]>()
+                .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
                     TypeVariant::FixedSize,
                 ))
@@ -2704,7 +2704,7 @@ mod service_publish_subscribe {
 
         let sut2 = unsafe {
             node.service_builder(&service_name)
-                .publish_subscribe::<[u8]>()
+                .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u128>(
                     TypeVariant::FixedSize,
                 ))
@@ -2715,7 +2715,7 @@ mod service_publish_subscribe {
 
         let sut3 = unsafe {
             node.service_builder(&service_name)
-                .publish_subscribe::<[u8]>()
+                .publish_subscribe::<[CustomPayloadMarker]>()
                 .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
                     TypeVariant::FixedSize,
                 ))
@@ -2900,6 +2900,80 @@ mod service_publish_subscribe {
         assert_that!(*sample, eq 123);
         let sample = subscriber.receive().unwrap().unwrap();
         assert_that!(*sample, eq 456);
+    }
+
+    #[test]
+    fn communication_with_custom_payload_works<Sut: Service>() {
+        set_log_level(LogLevel::Error);
+        const NUMBER_OF_ELEMENTS: usize = 1;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        type_details.size = 1024;
+        type_details.alignment = 1024;
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let publisher = sut.publisher_builder().create().unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let sample = unsafe { publisher.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
+        assert_that!(sample.payload(), len type_details.size);
+        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+
+        unsafe { sample.assume_init().send().unwrap() };
+
+        let sample = unsafe { subscriber.receive_custom_payload().unwrap().unwrap() };
+        assert_that!(sample.payload(), len type_details.size);
+        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+    }
+
+    #[test]
+    fn communication_with_custom_slice_payload_works<Sut: Service>() {
+        set_log_level(LogLevel::Error);
+        const NUMBER_OF_ELEMENTS: usize = 7;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::Dynamic);
+        type_details.size = 2048;
+        type_details.alignment = 2048;
+
+        let sut = unsafe {
+            node.service_builder(&service_name)
+                .publish_subscribe::<[CustomPayloadMarker]>()
+                .__internal_set_payload_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let publisher = sut
+            .publisher_builder()
+            .max_slice_len(NUMBER_OF_ELEMENTS)
+            .create()
+            .unwrap();
+        let subscriber = sut.subscriber_builder().create().unwrap();
+
+        let sample = unsafe { publisher.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
+        assert_that!(sample.payload(), len type_details.size * NUMBER_OF_ELEMENTS);
+        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+
+        unsafe { sample.assume_init().send().unwrap() };
+
+        let sample = unsafe { subscriber.receive_custom_payload().unwrap().unwrap() };
+        assert_that!(sample.payload(), len type_details.size * NUMBER_OF_ELEMENTS);
+        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
