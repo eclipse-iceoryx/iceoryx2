@@ -228,7 +228,7 @@ struct DummyData {
     bool z { DEFAULT_VALUE_Z };
 };
 
-// NOLINTBEGIN(cppcoreguidelines-cognitive-complexity) : Cognitive complexity of 26 (+1) is OK. Test case is complex.
+// NOLINTBEGIN(readability-function-cognitive-complexity) : Cognitive complexity of 26 (+1) is OK. Test case is complex.
 TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
@@ -263,7 +263,7 @@ TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
     ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
-// NOLINTEND(cppcoreguidelines-cognitive-complexity)
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -301,6 +301,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 
+// NOLINTBEGIN(readability-function-cognitive-complexity) : Cognitive complexity of 26 (+1) is OK. Test case is complex.
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
@@ -342,6 +343,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
     ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -371,8 +373,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receiv
 
     auto recv_sample = std::move(recv_result.value());
     ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(sizeof(DummyData)));
-
-    const auto* recv_data = static_cast<const DummyData*>(static_cast<const void*>(recv_sample.payload().data()));
+    const auto* recv_data = reinterpret_cast<const DummyData*>(recv_sample.payload().data()); // NOLINT
 
     ASSERT_THAT(recv_data->a, Eq(DummyData::DEFAULT_VALUE_A));
     ASSERT_THAT(recv_data->z, Eq(DummyData::DEFAULT_VALUE_Z));
@@ -411,6 +412,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 
+// NOLINTBEGIN(readability-function-cognitive-complexity)
 TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
@@ -447,6 +449,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
     ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
