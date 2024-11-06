@@ -24,6 +24,8 @@ namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_sample' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class SampleMutUninit {
+    using ValueType = typename PayloadInfo<Payload>::ValueType;
+
   public:
     SampleMutUninit(SampleMutUninit&& rhs) noexcept = default;
     auto operator=(SampleMutUninit&& rhs) noexcept -> SampleMutUninit& = default;
@@ -64,10 +66,10 @@ class SampleMutUninit {
     auto payload_mut() -> Payload&;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_slice() const -> Payload;
+    auto payload_slice() const -> iox::ImmutableSlice<ValueType>;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_slice_mut() -> Payload;
+    auto payload_slice_mut() -> iox::MutableSlice<ValueType>;
 
     /// Writes the payload to the sample
     template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
@@ -79,7 +81,7 @@ class SampleMutUninit {
 
     /// mem copies the value to the sample
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    void write_from_slice(const T& value);
+    void write_from_slice(iox::ImmutableSlice<ValueType>& value);
 
   private:
     template <ServiceType, typename, typename>
@@ -153,13 +155,13 @@ inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> Payload& {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMutUninit<S, Payload, UserHeader>::payload_slice() const -> Payload {
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload_slice() const -> iox::ImmutableSlice<ValueType> {
     return m_sample.payload_slice();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMutUninit<S, Payload, UserHeader>::payload_slice_mut() -> Payload {
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload_slice_mut() -> iox::MutableSlice<ValueType> {
     return m_sample.payload_slice_mut();
 }
 
@@ -181,7 +183,7 @@ inline void SampleMutUninit<S, Payload, UserHeader>::write_from_fn(
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline void SampleMutUninit<S, Payload, UserHeader>::write_from_slice(const T& value) {
+inline void SampleMutUninit<S, Payload, UserHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value) {
     auto dest = payload_slice_mut();
     IOX_ASSERT(dest.size() >= value.size(), "Destination payload size is smaller than source slice size");
     std::memcpy(dest.begin(), value.begin(), value.size());

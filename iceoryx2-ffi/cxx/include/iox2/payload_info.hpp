@@ -19,12 +19,12 @@ namespace iox2 {
 
 template <typename T>
 struct PayloadInfo {
-    using TYPE = T;
+    using ValueType = T;
 };
 
 template <typename T>
 struct PayloadInfo<iox::Slice<T>> {
-    using TYPE = typename iox::Slice<T>::ValueType;
+    using ValueType = typename iox::Slice<T>::ValueType;
 };
 
 } // namespace iox2

@@ -246,7 +246,7 @@ TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
     for (auto& item : elements) {
         new (&item) DummyData {};
     }
-    auto payload = iox::Slice(elements.begin(), SLICE_MAX_LENGTH);
+    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     sut_publisher.send_slice_copy(payload).expect("");
 
     auto recv_result = sut_subscriber.receive().expect("");
@@ -321,7 +321,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
     auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
 
     auto iterations = 0;
-    for (auto& item : send_sample.payload_slice()) {
+    for (auto& item : send_sample.payload_slice_mut()) {
         new (&item) DummyData { DummyData::DEFAULT_VALUE_A + iterations, iterations % 2 == 0 };
         ++iterations;
     }
@@ -362,7 +362,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receiv
 
     auto send_sample = sut_publisher.loan_slice_uninit(sizeof(DummyData)).expect("");
 
-    new (send_sample.payload_slice().data()) DummyData {};
+    new (send_sample.payload_slice_mut().data()) DummyData {};
 
     send(assume_init(std::move(send_sample))).expect("");
 
@@ -428,7 +428,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
     for (auto& item : elements) {
         new (&item) DummyData {};
     }
-    auto payload = iox::Slice(elements.begin(), SLICE_MAX_LENGTH);
+    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
     send_sample.write_from_slice(payload);
     send(assume_init(std::move(send_sample))).expect("");

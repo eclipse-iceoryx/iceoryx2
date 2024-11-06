@@ -19,6 +19,7 @@
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/service_type.hpp"
 
@@ -45,6 +46,8 @@ namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_sample' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class SampleMut {
+    using ValueType = typename PayloadInfo<Payload>::ValueType;
+
   public:
     SampleMut(SampleMut&& rhs) noexcept;
     auto operator=(SampleMut&& rhs) noexcept -> SampleMut&;
@@ -85,10 +88,10 @@ class SampleMut {
     auto payload_mut() -> Payload&;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_slice() const -> Payload;
+    auto payload_slice() const -> iox::ImmutableSlice<ValueType>;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_slice_mut() -> Payload;
+    auto payload_slice_mut() const -> iox::MutableSlice<ValueType>;
 
   private:
     template <ServiceType, typename, typename>
@@ -216,24 +219,24 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> Payload& {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMut<S, Payload, UserHeader>::payload_slice() const -> Payload {
+inline auto SampleMut<S, Payload, UserHeader>::payload_slice() const -> iox::ImmutableSlice<ValueType> {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
 
     iox2_sample_mut_payload(&m_handle, &ptr, &number_of_elements);
 
-    return Payload(static_cast<const typename Payload::ValueType*>(ptr), number_of_elements);
+    return iox::ImmutableSlice<ValueType>(static_cast<ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMut<S, Payload, UserHeader>::payload_slice_mut() -> Payload {
+inline auto SampleMut<S, Payload, UserHeader>::payload_slice_mut() const -> iox::MutableSlice<ValueType> {
     void* ptr = nullptr;
     size_t number_of_elements = 0;
 
     iox2_sample_mut_payload_mut(&m_handle, &ptr, &number_of_elements);
 
-    return Payload(static_cast<typename Payload::ValueType*>(ptr), number_of_elements);
+    return iox::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

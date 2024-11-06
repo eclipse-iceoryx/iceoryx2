@@ -32,6 +32,8 @@ namespace iox2 {
 /// Sending endpoint of a publish-subscriber based communication.
 template <ServiceType S, typename Payload, typename UserHeader>
 class Publisher {
+    using ValueType = typename PayloadInfo<Payload>::ValueType;
+
   public:
     Publisher(Publisher&& rhs) noexcept;
     auto operator=(Publisher&& rhs) noexcept -> Publisher&;
@@ -57,7 +59,7 @@ class Publisher {
     auto send_copy(const Payload& payload) const -> iox::expected<size_t, PublisherSendError>;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto send_slice_copy(const Payload& payload) const -> iox::expected<size_t, PublisherSendError>;
+    auto send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<size_t, PublisherSendError>;
 
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
@@ -189,7 +191,7 @@ inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload)
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto Publisher<S, Payload, UserHeader>::send_slice_copy(const Payload& payload) const
+inline auto Publisher<S, Payload, UserHeader>::send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const
     -> iox::expected<size_t, PublisherSendError> {
     size_t number_of_recipients = 0;
     auto result = iox2_publisher_send_slice_copy(&m_handle,
@@ -246,8 +248,8 @@ inline auto Publisher<S, Payload, UserHeader>::loan_slice(const uint64_t number_
     }
     auto sample_init = std::move(sample_uninit.value());
 
-    for (auto& item : sample_init.payload_slice()) {
-        new (&item) typename T::ValueType();
+    for (auto& item : sample_init.payload_slice_mut()) {
+        new (&item) ValueType();
     }
 
     return iox::ok(assume_init(std::move(sample_init)));
