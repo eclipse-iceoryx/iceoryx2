@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2023 - 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -104,8 +104,6 @@ pub type RelocatableVec<T> = details::RelocatableVec<T, RelocatablePointer<Maybe
 
 #[doc(hidden)]
 pub mod details {
-    use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
-
     use super::*;
 
     /// **Non-movable** relocatable vector with runtime fixed size capacity.
@@ -228,11 +226,6 @@ pub mod details {
             );
         }
 
-        /// Returns the required memory size for a vec with a specified capacity
-        pub const fn const_memory_size(capacity: usize) -> usize {
-            unaligned_mem_size::<T>(capacity)
-        }
-
         /// Returns the capacity of the vector
         pub fn capacity(&self) -> usize {
             self.capacity
@@ -269,6 +262,12 @@ pub mod details {
         {
             for _ in self.len..self.capacity {
                 self.push_unchecked(value.clone());
+            }
+        }
+
+        fn fill_with_impl<F: FnMut() -> T>(&mut self, mut f: F) {
+            for _ in self.len..self.capacity {
+                self.push_unchecked(f());
             }
         }
 
@@ -358,6 +357,11 @@ pub mod details {
             self.fill_impl(value)
         }
 
+        /// Fill the remaining space of the vector by calling the provided closure repeatedly
+        pub fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
+            self.fill_with_impl(f)
+        }
+
         /// Append all elements from other via [`Clone`].
         pub fn extend_from_slice(&mut self, other: &[T]) -> bool
         where
@@ -389,6 +393,11 @@ pub mod details {
     }
 
     impl<T> RelocatableVec<T, RelocatablePointer<MaybeUninit<T>>> {
+        /// Returns the required memory size for a vec with a specified capacity
+        pub const fn const_memory_size(capacity: usize) -> usize {
+            unaligned_mem_size::<T>(capacity)
+        }
+
         /// Adds an element at the end of the vector. If the vector is full and the element cannot be
         /// added it returns false, otherwise true.
         ///
@@ -411,6 +420,16 @@ pub mod details {
             T: Clone,
         {
             self.fill_impl(value)
+        }
+
+        /// Fill the remaining space of the vector by calling the provided closure repeatedly
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
+            self.fill_with(f)
         }
 
         /// Append all elements from other via [`Clone`].
@@ -634,6 +653,11 @@ impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
         T: Clone,
     {
         unsafe { self.state.fill(value) }
+    }
+
+    /// Fill the remaining space of the vector with value.
+    pub fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
+        unsafe { self.state.fill_with(f) }
     }
 
     /// Append all elements from other via [`Clone`].

@@ -261,6 +261,11 @@ pub mod details {
     }
 
     impl<T> Queue<T, RelocatablePointer<MaybeUninit<T>>> {
+        /// Returns the required memory size for a queue with a specified capacity
+        pub const fn const_memory_size(capacity: usize) -> usize {
+            unaligned_mem_size::<T>(capacity)
+        }
+
         /// Removes all elements from the queue
         ///
         /// # Safety
@@ -334,11 +339,6 @@ pub mod details {
                 "From: {}, Undefined behavior - the object was not initialized with 'init' before.",
                 source
             );
-        }
-
-        /// Returns the required memory size for a queue with a specified capacity
-        pub const fn const_memory_size(capacity: usize) -> usize {
-            unaligned_mem_size::<T>(capacity)
         }
 
         /// Returns true if the queue is empty, otherwise false
