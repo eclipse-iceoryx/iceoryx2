@@ -40,25 +40,35 @@ class Slice {
     /// @param[in] n The index of the element to access.
     /// @return A const reference to the element at the specified index.
     /// @pre The index must be less than the number of elements in the slice.
-    template <typename U = T, typename = std::enable_if_t<std::is_const_v<U>>>
-    auto operator[](uint64_t n) const -> const ValueType&;
+    auto operator[](uint64_t n) const -> std::conditional_t<std::is_const_v<T>, const ValueType&, ValueType&>;
 
     /// @brief Accesses the element at the specified index (non-const version).
     /// @param[in] n The index of the element to access.
     /// @return A reference to the element at the specified index.
     /// @pre The index must be less than the number of elements in the slice.
-    template <typename U = T, typename = std::enable_if_t<!std::is_const_v<U>>>
-    auto operator[](uint64_t n) -> ValueType&;
+    auto operator[](uint64_t n) -> std::conditional_t<std::is_const_v<T>, const ValueType&, ValueType&>;
 
-    /// @brief Returns an iterator to the beginning of the slice.
+    /// @brief Returns an iterator to the beginning of the slice (const version).
+    /// @return An iterator pointing to the first element of the slice.
+    auto begin() const -> Iterator;
+
+    /// @brief Returns an iterator to the beginning of the slice (non-const version).
     /// @return An iterator pointing to the first element of the slice.
     auto begin() -> Iterator;
 
-    /// @brief Returns an iterator to the end of the slice.
+    /// @brief Returns an iterator to the end of the slice (const version).
+    /// @return An iterator pointing one past the last element of the slice.
+    auto end() const -> Iterator;
+
+    /// @brief Returns an iterator to the end of the slice (non-const version).
     /// @return An iterator pointing one past the last element of the slice.
     auto end() -> Iterator;
 
-    /// @brief Returns a pointer to the underlying data of the slice.
+    /// @brief Returns a pointer to the underlying data of the slice (const version).
+    /// @return A pointer to the first element of the slice.
+    auto data() const -> Iterator;
+
+    /// @brief Returns a pointer to the underlying data of the slice (non-const version).
     /// @return A pointer to the first element of the slice.
     auto data() -> Iterator;
 
@@ -90,15 +100,14 @@ auto Slice<T>::number_of_elements() const -> uint64_t {
 }
 
 template <typename T>
-template <typename U, typename>
-auto Slice<T>::operator[](const uint64_t n) const -> const ValueType& {
+auto Slice<T>::operator[](const uint64_t n) const
+    -> std::conditional_t<std::is_const_v<T>, const ValueType&, ValueType&> {
     IOX_ASSERT(n < m_number_of_elements, "Index out of bounds");
     return *(m_data + n);
 }
 
 template <typename T>
-template <typename U, typename>
-auto Slice<T>::operator[](const uint64_t n) -> ValueType& {
+auto Slice<T>::operator[](const uint64_t n) -> std::conditional_t<std::is_const_v<T>, const ValueType&, ValueType&> {
     IOX_ASSERT(n < m_number_of_elements, "Index out of bounds");
     return *(m_data + n);
 }
@@ -109,13 +118,29 @@ auto Slice<T>::begin() -> Iterator {
 }
 
 template <typename T>
+auto Slice<T>::begin() const -> Iterator {
+    return m_data;
+}
+
+template <typename T>
 auto Slice<T>::end() -> Iterator {
     static_assert(!std::is_same_v<T, void>, "Slice<void> is not allowed");
     return m_data + m_number_of_elements;
 }
 
 template <typename T>
+auto Slice<T>::end() const -> Iterator {
+    static_assert(!std::is_same_v<T, void>, "Slice<void> is not allowed");
+    return m_data + m_number_of_elements;
+}
+
+template <typename T>
 auto Slice<T>::data() -> Iterator {
+    return m_data;
+}
+
+template <typename T>
+auto Slice<T>::data() const -> Iterator {
     return m_data;
 }
 
