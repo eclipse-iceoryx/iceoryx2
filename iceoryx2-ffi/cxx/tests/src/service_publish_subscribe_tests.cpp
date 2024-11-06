@@ -254,13 +254,13 @@ TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
     auto recv_sample = std::move(recv_result.value());
 
     auto iterations = 0;
-    for (const auto& item : recv_sample.payload_slice()) {
+    for (const auto& item : recv_sample.payload()) {
         ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
         ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
         ++iterations;
     }
 
-    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 // NOLINTEND(cppcoreguidelines-cognitive-complexity)
@@ -291,13 +291,13 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
     auto recv_sample = std::move(recv_result.value());
 
     auto iterations = 0;
-    for (const auto& item : recv_sample.payload_slice()) {
+    for (const auto& item : recv_sample.payload()) {
         ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
         ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
         ++iterations;
     }
 
-    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 
@@ -321,7 +321,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
     auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
 
     auto iterations = 0;
-    for (auto& item : send_sample.payload_slice_mut()) {
+    for (auto& item : send_sample.payload_mut()) {
         new (&item) DummyData { DummyData::DEFAULT_VALUE_A + iterations, iterations % 2 == 0 };
         ++iterations;
     }
@@ -333,13 +333,13 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
     auto recv_sample = std::move(recv_result.value());
 
     iterations = 0;
-    for (const auto& item : recv_sample.payload_slice()) {
+    for (const auto& item : recv_sample.payload()) {
         ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
         ASSERT_THAT(item.z, Eq(iterations % 2 == 0));
         ++iterations;
     }
 
-    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 
@@ -362,7 +362,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receiv
 
     auto send_sample = sut_publisher.loan_slice_uninit(sizeof(DummyData)).expect("");
 
-    new (send_sample.payload_slice_mut().data()) DummyData {};
+    new (send_sample.payload_mut().data()) DummyData {};
 
     send(assume_init(std::move(send_sample))).expect("");
 
@@ -370,9 +370,9 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receiv
     ASSERT_TRUE(recv_result.has_value());
 
     auto recv_sample = std::move(recv_result.value());
-    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(sizeof(DummyData)));
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(sizeof(DummyData)));
 
-    const auto* recv_data = static_cast<const DummyData*>(static_cast<const void*>(recv_sample.payload_slice().data()));
+    const auto* recv_data = static_cast<const DummyData*>(static_cast<const void*>(recv_sample.payload().data()));
 
     ASSERT_THAT(recv_data->a, Eq(DummyData::DEFAULT_VALUE_A));
     ASSERT_THAT(recv_data->z, Eq(DummyData::DEFAULT_VALUE_Z));
@@ -401,13 +401,13 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
     auto recv_sample = std::move(recv_result.value());
 
     auto iterations = 0;
-    for (const auto& item : recv_sample.payload_slice()) {
+    for (const auto& item : recv_sample.payload()) {
         ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
         ASSERT_THAT(item.z, Eq(iterations % 2 == 0));
         ++iterations;
     }
 
-    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 
@@ -438,13 +438,13 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
     auto recv_sample = std::move(recv_result.value());
 
     auto iterations = 0;
-    for (const auto& item : recv_sample.payload_slice()) {
+    for (const auto& item : recv_sample.payload()) {
         ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
         ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
         ++iterations;
     }
 
-    ASSERT_THAT(recv_sample.payload_slice().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 

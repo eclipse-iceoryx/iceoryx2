@@ -248,7 +248,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_slice(const uint64_t number_
     }
     auto sample_init = std::move(sample_uninit.value());
 
-    for (auto& item : sample_init.payload_slice_mut()) {
+    for (auto& item : sample_init.payload_mut()) {
         new (&item) ValueType();
     }
 

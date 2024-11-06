@@ -59,7 +59,7 @@ class Sample {
 
     /// Returns a slice to navigate the payload of the [`Sample`]
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_slice() const -> iox::ImmutableSlice<ValueType>;
+    auto payload() const -> iox::ImmutableSlice<ValueType>;
 
     /// Returns a reference to the user_header of the [`Sample`]
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
@@ -142,7 +142,7 @@ inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto Sample<S, Payload, UserHeader>::payload_slice() const -> iox::ImmutableSlice<ValueType> {
+inline auto Sample<S, Payload, UserHeader>::payload() const -> iox::ImmutableSlice<ValueType> {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
 
