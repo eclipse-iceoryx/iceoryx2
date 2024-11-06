@@ -91,7 +91,7 @@ class SampleMut {
     auto payload_slice() const -> iox::ImmutableSlice<ValueType>;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
-    auto payload_slice_mut() const -> iox::MutableSlice<ValueType>;
+    auto payload_slice_mut() -> iox::MutableSlice<ValueType>;
 
   private:
     template <ServiceType, typename, typename>
@@ -230,7 +230,7 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_slice() const -> iox::Imm
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMut<S, Payload, UserHeader>::payload_slice_mut() const -> iox::MutableSlice<ValueType> {
+inline auto SampleMut<S, Payload, UserHeader>::payload_slice_mut() -> iox::MutableSlice<ValueType> {
     void* ptr = nullptr;
     size_t number_of_elements = 0;
 
