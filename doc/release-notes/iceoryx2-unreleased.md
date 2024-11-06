@@ -58,6 +58,9 @@
 -->
 
 * APIs to support slices in the C++ bindings [#490](https://github.com/eclipse-iceoryx/iceoryx2/issues/490)
+* Rename `iox2_publisher_loan` to `iox2_publisher_loan_slice_uninit` [#490](https://github.com/eclipse-iceoryx/iceoryx2/issues/490)
+    1. C always loans slices, for a single element, specify the
+       `number_of_elements` to be 1
 
 ### API Breaking Changes
 
