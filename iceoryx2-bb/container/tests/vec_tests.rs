@@ -10,15 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_container::vec::*;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+use iceoryx2_bb_testing::memory::RawMemory;
+use serde_test::{assert_tokens, Token};
+
 mod fixed_size_vec {
-    use iceoryx2_bb_container::vec::*;
-    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-    use iceoryx2_bb_elementary::placement_default::PlacementDefault;
-    use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-    use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-    use iceoryx2_bb_testing::memory::RawMemory;
-    use serde_test::{assert_tokens, Token};
+    use super::*;
 
     const SUT_CAPACITY: usize = 128;
     type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
@@ -310,5 +312,25 @@ mod fixed_size_vec {
                 Token::SeqEnd,
             ],
         );
+    }
+}
+
+mod vec {
+    use super::*;
+
+    #[test]
+    fn push_and_pop_element_works() {
+        const CAPACITY: usize = 12;
+        const TEST_VALUE: usize = 89123;
+        let mut sut = Vec::<usize>::new(CAPACITY);
+        assert_that!(sut.capacity(), eq CAPACITY);
+        assert_that!(sut, len 0);
+
+        sut.push(TEST_VALUE);
+
+        assert_that!(sut, len 1);
+        assert_that!(sut[0], eq TEST_VALUE);
+        assert_that!(sut.pop(), eq Some(TEST_VALUE));
+        assert_that!(sut, len 0);
     }
 }
