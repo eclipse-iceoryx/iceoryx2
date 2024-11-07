@@ -20,17 +20,26 @@
 
 namespace iox {
 
+/// @brief A class representing a slice of contiguous elements of type T.
+///
+/// A Slice provides a view into a contiguous sequence of elements without owning the memory.
+/// It allows for efficient access and iteration over a portion of a contiguous data structure.
+///
+/// @tparam T The type of elements in the slice. Can be const-qualified for read-only slices.
 template <typename T>
 class Slice {
   public:
     using Iterator = std::conditional_t<std::is_const_v<T>, const T*, T*>;
     using ValueType = std::remove_const_t<T>;
 
+    /// @brief Constructs a Slice object.
+    /// @param[in] data Pointer to the beginning of the data.
+    /// @param[in] number_of_elements The number of elements in the slice.
     Slice(T* data, uint64_t number_of_elements);
 
-    /// @brief Returns the size of the slice in bytes.
-    /// @return The size of the slice in bytes.
-    auto size() const -> uint64_t;
+    /// @brief Returns the total number of bytes occupied by the slice.
+    /// @return The number of bytes occupied by the slice, rounded up to the nearest alignment boundary.
+    auto number_of_bytes() const -> uint64_t;
 
     /// @brief Returns the number of elements in the slice.
     /// @return The number of elements in the slice.
@@ -90,7 +99,7 @@ Slice<T>::Slice(T* data, uint64_t number_of_elements)
 }
 
 template <typename T>
-auto Slice<T>::size() const -> uint64_t {
+auto Slice<T>::number_of_bytes() const -> uint64_t {
     return (sizeof(ValueType) * m_number_of_elements + alignof(ValueType) - 1) & ~(alignof(ValueType) - 1);
 }
 
