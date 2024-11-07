@@ -157,7 +157,7 @@ pub unsafe extern "C" fn iox2_sample_mut_move(
 ///
 /// # Safety
 ///
-/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_user_header(
@@ -181,7 +181,7 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header(
 ///
 /// # Safety
 ///
-/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///     [`iox2_publish_subscribe_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_publish_subscribe_header_h`].
@@ -218,7 +218,7 @@ pub unsafe extern "C" fn iox2_sample_mut_header(
 ///
 /// # Safety
 ///
-/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_user_header_mut(
@@ -242,28 +242,32 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header_mut(
 ///
 /// # Safety
 ///
-/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 /// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
     handle: iox2_sample_mut_h_ref,
     payload_ptr: *mut *mut c_void,
-    payload_len: *mut c_size_t,
+    number_of_elements: *mut c_size_t,
 ) {
     handle.assert_non_null();
     debug_assert!(!payload_ptr.is_null());
 
     let sample = &mut *handle.as_type();
+    let payload = sample.value.as_mut().ipc.payload_mut();
 
-    let payload = match sample.service_type {
-        iox2_service_type_e::IPC => sample.value.as_mut().ipc.payload_mut(),
-        iox2_service_type_e::LOCAL => sample.value.as_mut().local.payload_mut(),
+    match sample.service_type {
+        iox2_service_type_e::IPC => {
+            *payload_ptr = payload.as_mut_ptr().cast();
+        }
+        iox2_service_type_e::LOCAL => {
+            *payload_ptr = payload.as_mut_ptr().cast();
+        }
     };
 
-    *payload_ptr = payload.as_mut_ptr().cast();
-    if !payload_len.is_null() {
-        *payload_len = payload.len();
+    if !number_of_elements.is_null() {
+        *number_of_elements = sample.value.as_mut().local.header().number_of_elements() as c_size_t;
     }
 }
 
@@ -271,28 +275,32 @@ pub unsafe extern "C" fn iox2_sample_mut_payload_mut(
 ///
 /// # Safety
 ///
-/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 /// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_payload(
     handle: iox2_sample_mut_h_ref,
     payload_ptr: *mut *const c_void,
-    payload_len: *mut c_size_t,
+    number_of_elements: *mut c_size_t,
 ) {
     handle.assert_non_null();
     debug_assert!(!payload_ptr.is_null());
 
     let sample = &mut *handle.as_type();
+    let payload = sample.value.as_mut().ipc.payload_mut();
 
-    let payload = match sample.service_type {
-        iox2_service_type_e::IPC => sample.value.as_mut().ipc.payload(),
-        iox2_service_type_e::LOCAL => sample.value.as_mut().local.payload(),
+    match sample.service_type {
+        iox2_service_type_e::IPC => {
+            *payload_ptr = payload.as_mut_ptr().cast();
+        }
+        iox2_service_type_e::LOCAL => {
+            *payload_ptr = payload.as_mut_ptr().cast();
+        }
     };
 
-    *payload_ptr = payload.as_ptr().cast();
-    if !payload_len.is_null() {
-        *payload_len = payload.len();
+    if !number_of_elements.is_null() {
+        *number_of_elements = sample.value.as_mut().local.header().number_of_elements() as c_size_t;
     }
 }
 
@@ -300,7 +308,7 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
 ///
 /// # Safety
 ///
-/// * `handle` obtained by [`iox2_publisher_loan()`](crate::iox2_publisher_loan())
+/// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `number_of_recipients`, can be null or must point to a valid [`c_size_t`] to store the number
 ///                 of subscribers that received the sample
 #[no_mangle]

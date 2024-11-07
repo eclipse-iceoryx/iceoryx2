@@ -14,12 +14,15 @@
 #define IOX2_SAMPLE_HPP
 
 #include "iox/assertions_addendum.hpp"
+#include "iox/slice.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
+
 /// It stores the payload and is acquired by the [`Subscriber`] whenever
 /// it receives new data from a [`Publisher`] via
 /// [`Subscriber::receive()`].
@@ -34,6 +37,8 @@ namespace iox2 {
 template <ServiceType, typename Payload, typename UserHeader>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_sample' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class Sample {
+    using ValueType = typename PayloadInfo<Payload>::ValueType;
+
   public:
     Sample(Sample&& rhs) noexcept;
     auto operator=(Sample&& rhs) noexcept -> Sample&;
@@ -49,7 +54,12 @@ class Sample {
     auto operator->() const -> const Payload*;
 
     /// Returns a reference to the payload of the [`Sample`]
-    auto payload() const -> const Payload&;
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> const ValueType&;
+
+    /// Returns a slice to navigate the payload of the [`Sample`]
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> iox::ImmutableSlice<ValueType>;
 
     /// Returns a reference to the user_header of the [`Sample`]
     template <typename T = UserHeader, typename = std::enable_if_t<!std::is_same_v<void, UserHeader>, T>>
@@ -121,14 +131,24 @@ inline auto Sample<S, Payload, UserHeader>::operator->() const -> const Payload*
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
-    const void* payload_ptr = nullptr;
-    size_t payload_len = 0;
+template <typename T, typename>
+inline auto Sample<S, Payload, UserHeader>::payload() const -> const ValueType& {
+    const void* ptr = nullptr;
 
-    iox2_sample_payload(&m_handle, &payload_ptr, &payload_len);
-    IOX_ASSERT(sizeof(Payload) <= payload_len, "");
+    iox2_sample_payload(&m_handle, &ptr, nullptr);
 
-    return *static_cast<const Payload*>(payload_ptr);
+    return *static_cast<const ValueType*>(ptr);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto Sample<S, Payload, UserHeader>::payload() const -> iox::ImmutableSlice<ValueType> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_sample_payload(&m_handle, &ptr, &number_of_elements);
+
+    return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -153,7 +173,6 @@ template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Sample<S, Payload, UserHeader>::origin() const -> UniquePublisherId {
     return header().publisher_id();
 }
-
 
 } // namespace iox2
 

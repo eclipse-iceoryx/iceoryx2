@@ -17,6 +17,7 @@
 #include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
@@ -71,7 +72,9 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publi
         iox2_port_factory_publisher_builder_unable_to_deliver_strategy(
             &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
     });
-    m_max_slice_len.and_then([](auto) { IOX_TODO(); });
+    m_max_slice_len
+        .and_then([&](auto value) { iox2_port_factory_publisher_builder_set_max_slice_len(&m_handle, value); })
+        .or_else([&]() { iox2_port_factory_publisher_builder_set_max_slice_len(&m_handle, 1); });
     m_max_loaned_samples.and_then(
         [&](auto value) { iox2_port_factory_publisher_builder_set_max_loaned_samples(&m_handle, value); });
 

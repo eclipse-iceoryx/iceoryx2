@@ -24,6 +24,8 @@ namespace iox2 {
 template <ServiceType S, typename Payload, typename UserHeader>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_sample' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class SampleMutUninit {
+    using ValueType = typename PayloadInfo<Payload>::ValueType;
+
   public:
     SampleMutUninit(SampleMutUninit&& rhs) noexcept = default;
     auto operator=(SampleMutUninit&& rhs) noexcept -> SampleMutUninit& = default;
@@ -56,10 +58,18 @@ class SampleMutUninit {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the const payload of the sample.
-    auto payload() const -> const Payload&;
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> const ValueType&;
 
     /// Returns a reference to the payload of the sample.
-    auto payload_mut() -> Payload&;
+    template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    auto payload_mut() -> ValueType&;
+
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> iox::ImmutableSlice<ValueType>;
+
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload_mut() -> iox::MutableSlice<ValueType>;
 
     /// Writes the payload to the sample
     template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
@@ -71,7 +81,7 @@ class SampleMutUninit {
 
     /// mem copies the value to the sample
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    void write_from_slice(const T& value);
+    void write_from_slice(iox::ImmutableSlice<ValueType>& value);
 
   private:
     template <ServiceType, typename, typename>
@@ -132,12 +142,26 @@ inline auto SampleMutUninit<S, Payload, UserHeader>::user_header_mut() -> T& {
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMutUninit<S, Payload, UserHeader>::payload() const -> const Payload& {
+template <typename T, typename>
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload() const -> const ValueType& {
     return m_sample.payload();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> Payload& {
+template <typename T, typename>
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> ValueType& {
+    return m_sample.payload_mut();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload() const -> iox::ImmutableSlice<ValueType> {
+    return m_sample.payload();
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> iox::MutableSlice<ValueType> {
     return m_sample.payload_mut();
 }
 
@@ -151,13 +175,19 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline void SampleMutUninit<S, Payload, UserHeader>::write_from_fn(
     const iox::function<typename T::ValueType(uint64_t)>& initializer) {
-    IOX_TODO();
+    auto slice = payload_mut();
+    for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {
+        new (&slice[i]) typename T::ValueType(initializer(i));
+    }
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline void SampleMutUninit<S, Payload, UserHeader>::write_from_slice(const T& value) {
-    IOX_TODO();
+inline void SampleMutUninit<S, Payload, UserHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value) {
+    auto dest = payload_mut();
+    IOX_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
+               "Destination payload size is smaller than source slice size");
+    std::memcpy(dest.begin(), value.begin(), value.number_of_bytes());
 }
 } // namespace iox2
 

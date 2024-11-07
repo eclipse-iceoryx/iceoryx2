@@ -480,6 +480,52 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_max_subscribers(
     }
 }
 
+/// Sets the payload alignment for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
+/// * `value` - The value to set the payload alignment to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_alignment(
+    service_builder_handle: iox2_service_builder_pub_sub_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_pub_sub(
+                service_builder.payload_alignment(
+                    Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
+                ),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.pub_sub);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_pub_sub(
+                service_builder.payload_alignment(
+                    Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
+                ),
+            ));
+        }
+    }
+}
+
 /// Sets the history size
 ///
 /// # Arguments

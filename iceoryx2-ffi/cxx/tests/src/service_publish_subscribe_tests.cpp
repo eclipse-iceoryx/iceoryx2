@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox/uninitialized_array.hpp"
 #include "iox2/node.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/service.hpp"
@@ -178,6 +179,27 @@ TYPED_TEST(ServicePublishSubscribeTest, send_copy_receive_works) {
     ASSERT_THAT(**sample, Eq(payload));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    auto sut_publisher = service.publisher_builder().create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto sample = sut_publisher.loan().expect("");
+    const uint64_t payload = 781891729871;
+    *sample = payload;
+    send(std::move(sample)).expect("");
+    auto recv_sample = sut_subscriber.receive().expect("");
+
+    ASSERT_TRUE(recv_sample.has_value());
+    ASSERT_THAT(**recv_sample, Eq(payload));
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -199,26 +221,235 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     ASSERT_THAT(**recv_sample, Eq(payload));
 }
 
-TYPED_TEST(ServicePublishSubscribeTest, loan_send_receive_works) {
+struct DummyData {
+    static constexpr uint64_t DEFAULT_VALUE_A = 42;
+    static constexpr bool DEFAULT_VALUE_Z { false };
+    uint64_t a { DEFAULT_VALUE_A };
+    bool z { DEFAULT_VALUE_Z };
+};
+
+// NOLINTBEGIN(readability-function-cognitive-complexity) : Cognitive complexity of 26 (+1) is OK. Test case is complex.
+TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto SLICE_MAX_LENGTH = 10;
 
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().expect("");
 
-    auto sut_publisher = service.publisher_builder().create().expect("");
+    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
-    auto sample = sut_publisher.loan().expect("");
-    const uint64_t payload = 781891729871;
-    *sample = payload;
-    send(std::move(sample)).expect("");
-    auto recv_sample = sut_subscriber.receive().expect("");
+    iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
+    for (auto& item : elements) {
+        new (&item) DummyData {};
+    }
+    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
+    sut_publisher.send_slice_copy(payload).expect("");
 
-    ASSERT_TRUE(recv_sample.has_value());
-    ASSERT_THAT(**recv_sample, Eq(payload));
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+    auto recv_sample = std::move(recv_result.value());
+
+    auto iterations = 0;
+    for (const auto& item : recv_sample.payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
+        ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
+        ++iterations;
+    }
+
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<iox::Slice<DummyData>>()
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
+                       .create()
+                       .expect("");
+
+    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto send_sample = sut_publisher.loan_slice(SLICE_MAX_LENGTH).expect("");
+
+    send(std::move(send_sample)).expect("");
+
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+    auto recv_sample = std::move(recv_result.value());
+
+    auto iterations = 0;
+    for (const auto& item : recv_sample.payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
+        ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
+        ++iterations;
+    }
+
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
+}
+
+// NOLINTBEGIN(readability-function-cognitive-complexity) : Cognitive complexity of 26 (+1) is OK. Test case is complex.
+TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<iox::Slice<DummyData>>()
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
+                       .create()
+                       .expect("");
+
+    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
+
+    auto iterations = 0;
+    for (auto& item : send_sample.payload_mut()) {
+        new (&item) DummyData { DummyData::DEFAULT_VALUE_A + iterations, iterations % 2 == 0 };
+        ++iterations;
+    }
+
+    send(assume_init(std::move(send_sample))).expect("");
+
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+    auto recv_sample = std::move(recv_result.value());
+
+    iterations = 0;
+    for (const auto& item : recv_sample.payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
+        ASSERT_THAT(item.z, Eq(iterations % 2 == 0));
+        ++iterations;
+    }
+
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
+}
+// NOLINTEND(readability-function-cognitive-complexity)
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<iox::Slice<uint8_t>>()
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
+                       .create()
+                       .expect("");
+
+    auto sut_publisher = service.publisher_builder().max_slice_len(sizeof(DummyData)).create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto send_sample = sut_publisher.loan_slice_uninit(sizeof(DummyData)).expect("");
+
+    new (send_sample.payload_mut().data()) DummyData {};
+
+    send(assume_init(std::move(send_sample))).expect("");
+
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+
+    auto recv_sample = std::move(recv_result.value());
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(sizeof(DummyData)));
+    const auto* recv_data = reinterpret_cast<const DummyData*>(recv_sample.payload().data()); // NOLINT
+
+    ASSERT_THAT(recv_data->a, Eq(DummyData::DEFAULT_VALUE_A));
+    ASSERT_THAT(recv_data->z, Eq(DummyData::DEFAULT_VALUE_Z));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().expect("");
+
+    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
+    send_sample.write_from_fn(
+        [](auto index) { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
+    send(assume_init(std::move(send_sample))).expect("");
+
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+    auto recv_sample = std::move(recv_result.value());
+
+    auto iterations = 0;
+    for (const auto& item : recv_sample.payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A + iterations));
+        ASSERT_THAT(item.z, Eq(iterations % 2 == 0));
+        ++iterations;
+    }
+
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
+}
+
+// NOLINTBEGIN(readability-function-cognitive-complexity)
+TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().expect("");
+
+    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_subscriber = service.subscriber_builder().create().expect("");
+
+    iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
+    for (auto& item : elements) {
+        new (&item) DummyData {};
+    }
+    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
+    auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
+    send_sample.write_from_slice(payload);
+    send(assume_init(std::move(send_sample))).expect("");
+
+    auto recv_result = sut_subscriber.receive().expect("");
+    ASSERT_TRUE(recv_result.has_value());
+    auto recv_sample = std::move(recv_result.value());
+
+    auto iterations = 0;
+    for (const auto& item : recv_sample.payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
+        ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
+        ++iterations;
+    }
+
+    ASSERT_THAT(recv_sample.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
+}
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -252,6 +483,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     constexpr uint64_t HISTORY_SIZE = 13;
     constexpr uint64_t SUBSCRIBER_MAX_BUFFER_SIZE = 14;
     constexpr uint64_t SUBSCRIBER_MAX_BORROWED_SAMPLES = 15;
+    constexpr uint64_t PAYLOAD_ALIGNMENT = 4;
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -264,6 +496,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
                        .history_size(HISTORY_SIZE)
                        .subscriber_max_buffer_size(SUBSCRIBER_MAX_BUFFER_SIZE)
                        .subscriber_max_borrowed_samples(SUBSCRIBER_MAX_BORROWED_SAMPLES)
+                       .payload_alignment(PAYLOAD_ALIGNMENT)
                        .create()
                        .expect("");
 
@@ -361,6 +594,22 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_unable_to_deliver_stra
 
     ASSERT_THAT(sut_pub_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
     ASSERT_THAT(sut_pub_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_slice_len) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t DESIRED_MAX_SLICE_LEN = 10;
+    using ValueType = uint8_t;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<ValueType>>().create().expect("");
+
+    auto sut = service.publisher_builder().max_slice_len(DESIRED_MAX_SLICE_LEN).create().expect("");
+
+    ASSERT_THAT(sut.max_slice_len(), Eq(DESIRED_MAX_SLICE_LEN));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {

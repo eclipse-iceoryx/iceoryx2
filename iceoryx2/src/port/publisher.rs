@@ -704,6 +704,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         self.data_segment.config.unable_to_deliver_strategy
     }
 
+    /// Returns the maximum slice length configured for this [`Publisher`].
+    pub fn max_slice_len(&self) -> usize {
+        self.data_segment.config.max_slice_len
+    }
+
     fn allocate(&self, layout: Layout) -> Result<ShmPointer, PublisherLoanError> {
         let msg = "Unable to allocate Sample with";
 
