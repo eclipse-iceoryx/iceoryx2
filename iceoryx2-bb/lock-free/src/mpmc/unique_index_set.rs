@@ -27,7 +27,7 @@
 //! let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
 //! let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 //!
-//! let index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
+//! let mut index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
 //! unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
 //!
 //! let new_index = match unsafe { index_set.acquire() } {
@@ -187,7 +187,7 @@ impl Drop for UniqueIndex<'_> {
 /// let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
 /// let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 ///
-/// let index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
+/// let mut index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
 /// unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
 ///
 /// let new_index = match unsafe { index_set.acquire() } {
@@ -200,6 +200,7 @@ impl Drop for UniqueIndex<'_> {
 /// ```
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 /// use iceoryx2_bb_elementary::relocatable_container::*;
+/// use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 /// use std::mem::MaybeUninit;
 ///
 /// const CAPACITY: usize = 128;
@@ -214,15 +215,16 @@ impl Drop for UniqueIndex<'_> {
 ///
 /// impl FixedSizeSet {
 ///     pub fn new() -> Self {
-///         FixedSizeSet {
-///             set: unsafe {
-///                 UniqueIndexSet::new(CAPACITY,
-///                 // distance to data beginning from the start of the set (UniqueIndexSet)
-///                 // member start
-///                 std::mem::size_of::<UniqueIndexSet>() as isize)
-///             },
+///         let mut new_self = FixedSizeSet {
+///             set: unsafe { UniqueIndexSet::new_uninit(CAPACITY) },
 ///             data: [MaybeUninit::uninit(); UniqueIndexSet::const_memory_size(CAPACITY)]
-///         }
+///         };
+///
+///         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.data) as usize);
+///         unsafe {
+///             new_self.set.init(&allocator).expect("Enough memory provided.")
+///         };
+///         new_self
 ///     }
 /// }
 /// ```
@@ -324,8 +326,7 @@ impl UniqueIndexSet {
     ///
     /// # Safety
     ///
-    /// * Ensure that either the [`UniqueIndexSet`] was created with [`UniqueIndexSet::new()`] or
-    ///     [`UniqueIndexSet::init()`] was called.
+    /// * Ensure that [`UniqueIndexSet::init()`] was called once.
     ///
     pub unsafe fn acquire(&self) -> Result<UniqueIndex<'_>, UniqueIndexSetAcquireFailure> {
         self.verify_init("acquire");
@@ -383,8 +384,7 @@ impl UniqueIndexSet {
     ///
     /// # Safety
     ///
-    ///  * Ensure that either the [`UniqueIndexSet`] was created with [`UniqueIndexSet::new()`] or
-    ///     [`UniqueIndexSet::init()`] was called.
+    ///  * Ensure that [`UniqueIndexSet::init()`] was called once.
     ///  * The index must be manually released with [`UniqueIndexSet::release_raw_index()`]
     ///    otherwise the index is leaked.
     pub unsafe fn acquire_raw_index(&self) -> Result<u32, UniqueIndexSetAcquireFailure> {
@@ -437,6 +437,7 @@ impl UniqueIndexSet {
     ///
     /// # Safety
     ///
+    ///  * Ensure that [`UniqueIndexSet::init()`] was called once.
     ///  * It must be ensured that the index was acquired before and is not released twice.
     ///  * Shall be only used when the index was acquired with
     ///    [`UniqueIndexSet::acquire_raw_index()`]

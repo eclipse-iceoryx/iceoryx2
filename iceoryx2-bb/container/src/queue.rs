@@ -57,6 +57,7 @@
 //! ```
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::math::align_to;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 //! use core::mem::MaybeUninit;
 //!
@@ -68,11 +69,16 @@
 //!
 //! impl MyConstruct {
 //!     pub fn new() -> Self {
-//!         Self {
-//!             queue: unsafe { RelocatableQueue::new(QUEUE_CAPACITY,
-//!                             align_to::<MaybeUninit<u128>>(std::mem::size_of::<RelocatableQueue<u128>>()) as isize) },
+//!         let mut new_self = Self {
+//!             queue: unsafe { RelocatableQueue::new_uninit(QUEUE_CAPACITY) },
 //!             queue_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
-//!         }
+//!         };
+//!
+//!         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.queue_memory) as usize);
+//!         unsafe {
+//!             new_self.queue.init(&allocator).expect("Enough memory provided.")
+//!         };
+//!         new_self
 //!     }
 //! }
 //! ```
@@ -91,7 +97,7 @@
 //!
 //! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 //!
-//! let queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
+//! let mut queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
 //! unsafe { queue.init(&bump_allocator).expect("queue init failed") };
 //! ```
 //!

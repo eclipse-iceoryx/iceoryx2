@@ -282,8 +282,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     /// # Safety
     ///
-    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
-    ///     before calling this method
+    ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Use [`Container::remove()`] to release the acquired index again. Otherwise, the
     ///     element will leak.
     ///
@@ -314,8 +313,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     /// # Safety
     ///
-    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
-    ///     before calling this method
+    ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Ensure that no one else possesses the [`UniqueIndex`] and the index was unrecoverable
     ///     lost
     ///  * Ensure that the `handle` was acquired by the same [`Container`]
@@ -345,8 +343,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     /// # Safety
     ///
-    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
-    ///     before calling this method
+    ///  * Ensure that [`Container::init()`] was called before calling this method
     ///
     pub unsafe fn get_state(&self) -> ContainerState<T> {
         self.verify_memory_initialization("get_state");
@@ -361,8 +358,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     /// # Safety
     ///
-    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
-    ///     before calling this method
+    ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Ensure that the input argument `previous_state` was acquired by the same [`Container`]
     ///     with [`Container::get_state()`], otherwise the method will panic.
     ///

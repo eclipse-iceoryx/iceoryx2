@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Contains two vector variations that are similar to [`std::vec::Vec`].
+//! Contains vector variations that are similar to [`std::vec::Vec`].
 //!
+//!  * [`Vec`](crate::vec::Vec), run-time fixed-size vector that is not shared-memory compatible
+//!     since the memory resides in the heap.
 //!  * [`FixedSizeVec`](crate::vec::FixedSizeVec), compile-time fixed size vector that is
 //!     self-contained.
 //!  * [`RelocatableVec`](crate::vec::RelocatableVec), run-time fixed size vector that uses by default heap memory.
@@ -37,6 +39,7 @@
 //! ```
 //! use iceoryx2_bb_container::vec::RelocatableVec;
 //! use iceoryx2_bb_elementary::math::align_to;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 //! use core::mem::MaybeUninit;
 //!
@@ -48,11 +51,16 @@
 //!
 //! impl MyConstruct {
 //!     pub fn new() -> Self {
-//!         Self {
-//!             vec: unsafe { RelocatableVec::new(VEC_CAPACITY,
-//!                             align_to::<MaybeUninit<u128>>(std::mem::size_of::<Vec<u128>>()) as isize) },
+//!         let mut new_self = Self {
+//!             vec: unsafe { RelocatableVec::new_uninit(VEC_CAPACITY) },
 //!             vec_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
-//!         }
+//!         };
+//!
+//!         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.vec_memory) as usize);
+//!         unsafe {
+//!             new_self.vec.init(&allocator).expect("Enough memory provided.")
+//!         };
+//!         new_self
 //!     }
 //! }
 //! ```
@@ -71,7 +79,7 @@
 //!
 //! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 //!
-//! let vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
+//! let mut vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 

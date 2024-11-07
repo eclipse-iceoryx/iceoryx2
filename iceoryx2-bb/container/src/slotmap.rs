@@ -10,6 +10,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! A SlotMap is a container that has a static unique key for every stored value. Adding or
+//! removing values to the SlotMap do not change the unique key of the remaining values.
+//! Multiple variationes of that container are available.
+//!
+//!  * [`SlotMap`](crate::slotmap::SlotMap), run-time fixed-size slotmap that is not shared-memory
+//!    compatible since the memory resides in the heap.
+//!  * [`FixedSizeSlotMap`](crate::slotmap::FixedSizeSlotMap), compile-time fixed-size slotmap that
+//!    is self-contained and shared-memory compatible.
+//!  * [`RelocatableSlotMap`](crate::slotmap::RelocatableSlotMap), run-time fixed-size slotmap that
+//!    is shared-memory compatible.
+//!
+//! # User Examples
+//!
+//! ```
+//! use iceoryx2_bb_container::slotmap::FixedSizeSlotMap;
+//!
+//! const CAPACITY: usize = 123;
+//! let mut slotmap = FixedSizeSlotMap::<u64, CAPACITY>::new();
+//!
+//! let key = slotmap.insert(78181).unwrap();
+//!
+//! println!("value: {:?}", slotmap.get(key));
+//! ```
+
 use crate::queue::details::MetaQueue;
 use crate::vec::details::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
@@ -527,7 +551,7 @@ impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
         Self::default()
     }
 
-    /// Returns the [`Iter`]ator to iterate over all entries.
+    /// Returns the [`details::RelocatableIter`]ator to iterate over all entries.
     pub fn iter(&self) -> details::RelocatableIter<T> {
         unsafe { self.state.iter_impl() }
     }
