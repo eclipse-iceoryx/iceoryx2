@@ -29,7 +29,8 @@ namespace iox {
 template <typename T>
 class Slice {
   public:
-    using Iterator = std::conditional_t<std::is_const_v<T>, const T*, T*>;
+    using Iterator = T*;
+    using ConstIterator = const T*;
     using ValueType = std::remove_const_t<T>;
 
     /// @brief Constructs a Slice object.
@@ -49,7 +50,7 @@ class Slice {
     /// @param[in] n The index of the element to access.
     /// @return A const reference to the element at the specified index.
     /// @pre The index must be less than the number of elements in the slice.
-    auto operator[](uint64_t n) const -> std::conditional_t<std::is_const_v<T>, const ValueType&, ValueType&>;
+    auto operator[](uint64_t n) const -> const ValueType&;
 
     /// @brief Accesses the element at the specified index (non-const version).
     /// @param[in] n The index of the element to access.
@@ -59,7 +60,7 @@ class Slice {
 
     /// @brief Returns an iterator to the beginning of the slice (const version).
     /// @return An iterator pointing to the first element of the slice.
-    auto begin() const -> Iterator;
+    auto begin() const -> ConstIterator;
 
     /// @brief Returns an iterator to the beginning of the slice (non-const version).
     /// @return An iterator pointing to the first element of the slice.
@@ -67,7 +68,7 @@ class Slice {
 
     /// @brief Returns an iterator to the end of the slice (const version).
     /// @return An iterator pointing one past the last element of the slice.
-    auto end() const -> Iterator;
+    auto end() const -> ConstIterator;
 
     /// @brief Returns an iterator to the end of the slice (non-const version).
     /// @return An iterator pointing one past the last element of the slice.
@@ -75,7 +76,7 @@ class Slice {
 
     /// @brief Returns a pointer to the underlying data of the slice (const version).
     /// @return A pointer to the first element of the slice.
-    auto data() const -> Iterator;
+    auto data() const -> ConstIterator;
 
     /// @brief Returns a pointer to the underlying data of the slice (non-const version).
     /// @return A pointer to the first element of the slice.
@@ -110,8 +111,7 @@ auto Slice<T>::number_of_elements() const -> uint64_t {
 }
 
 template <typename T>
-auto Slice<T>::operator[](const uint64_t n) const
-    -> std::conditional_t<std::is_const_v<T>, const ValueType&, ValueType&> {
+auto Slice<T>::operator[](const uint64_t n) const -> const ValueType& {
     IOX_ASSERT(n < m_number_of_elements, "Index out of bounds");
     return *(m_data + n);
 }
@@ -128,7 +128,7 @@ auto Slice<T>::begin() -> Iterator {
 }
 
 template <typename T>
-auto Slice<T>::begin() const -> Iterator {
+auto Slice<T>::begin() const -> ConstIterator {
     return m_data;
 }
 
@@ -138,7 +138,7 @@ auto Slice<T>::end() -> Iterator {
 }
 
 template <typename T>
-auto Slice<T>::end() const -> Iterator {
+auto Slice<T>::end() const -> ConstIterator {
     return m_data + m_number_of_elements;
 }
 
@@ -148,7 +148,7 @@ auto Slice<T>::data() -> Iterator {
 }
 
 template <typename T>
-auto Slice<T>::data() const -> Iterator {
+auto Slice<T>::data() const -> ConstIterator {
     return m_data;
 }
 
