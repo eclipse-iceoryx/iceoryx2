@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_elementary::{
-    math::align_to,
+    bump_allocator::BumpAllocator,
     owning_pointer::OwningPointer,
     relocatable_container::RelocatableContainer,
     relocatable_ptr::{PointerTrait, RelocatablePointer},
@@ -107,14 +107,6 @@ pub mod details {
         fn memory_size(capacity: usize) -> usize {
             Self::const_memory_size(capacity)
         }
-
-        unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new(distance_to_data),
-                capacity,
-                is_memory_initialized: IoxAtomicBool::new(true),
-            }
-        }
     }
 
     impl<PointerType: PointerTrait<IoxAtomicBool> + Debug> UsedChunkList<PointerType> {
@@ -175,15 +167,19 @@ pub struct FixedSizeUsedChunkList<const CAPACITY: usize> {
 
 impl<const CAPACITY: usize> Default for FixedSizeUsedChunkList<CAPACITY> {
     fn default() -> Self {
-        Self {
-            list: unsafe {
-                RelocatableUsedChunkList::new(
-                    CAPACITY,
-                    align_to::<IoxAtomicBool>(std::mem::size_of::<RelocatableUsedChunkList>()) as _,
-                )
-            },
+        let mut new_self = Self {
+            list: unsafe { RelocatableUsedChunkList::new_uninit(CAPACITY) },
             data: core::array::from_fn(|_| IoxAtomicBool::new(false)),
-        }
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.data) as usize);
+        unsafe {
+            new_self
+                .list
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+        new_self
     }
 }
 

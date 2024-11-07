@@ -45,7 +45,7 @@
 use std::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::{
-    math::align_to, owning_pointer::OwningPointer, pointer_trait::PointerTrait,
+    bump_allocator::BumpAllocator, owning_pointer::OwningPointer, pointer_trait::PointerTrait,
     relocatable_container::RelocatableContainer, relocatable_ptr::RelocatablePointer,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -173,18 +173,6 @@ pub mod details {
 
             self.is_memory_initialized.store(true, Ordering::Relaxed);
             Ok(())
-        }
-
-        unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new(distance_to_data),
-                capacity,
-                write_position: IoxAtomicUsize::new(0),
-                read_position: IoxAtomicUsize::new(0),
-                has_producer: IoxAtomicBool::new(true),
-                has_consumer: IoxAtomicBool::new(true),
-                is_memory_initialized: IoxAtomicBool::new(true),
-            }
         }
 
         fn memory_size(capacity: usize) -> usize {
@@ -390,16 +378,20 @@ impl<const CAPACITY: usize> Default for FixedSizeIndexQueue<CAPACITY> {
 impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
     /// Creates a new empty [`FixedSizeIndexQueue`].
     pub fn new() -> Self {
-        Self {
-            state: unsafe {
-                RelocatableIndexQueue::new(
-                    CAPACITY,
-                    align_to::<UnsafeCell<u64>>(std::mem::size_of::<RelocatableIndexQueue>())
-                        as isize,
-                )
-            },
+        let mut new_self = Self {
+            state: unsafe { RelocatableIndexQueue::new_uninit(CAPACITY) },
             data: core::array::from_fn(|_| UnsafeCell::new(0)),
-        }
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.data) as usize);
+        unsafe {
+            new_self
+                .state
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+
+        new_self
     }
 
     /// See [`IndexQueue::acquire_producer()`]

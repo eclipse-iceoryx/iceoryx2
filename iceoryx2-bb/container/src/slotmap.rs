@@ -14,8 +14,8 @@ use crate::queue::details::MetaQueue;
 use crate::vec::details::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
@@ -211,32 +211,6 @@ pub mod details {
             RelocatablePointer<MaybeUninit<usize>>,
         >
     {
-        unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-            let mut new_self = Self {
-                idx_to_data: RelocatableVec::new(capacity, distance_to_data),
-                idx_to_data_next_free_index: RelocatableQueue::new(
-                    capacity,
-                    distance_to_data
-                        + RelocatableVec::<usize>::const_memory_size(capacity) as isize,
-                ),
-                data: RelocatableVec::new(
-                    capacity,
-                    distance_to_data
-                        + RelocatableVec::<usize>::const_memory_size(capacity) as isize
-                        + RelocatableQueue::<usize>::const_memory_size(capacity) as isize,
-                ),
-                data_next_free_index: RelocatableQueue::new(
-                    capacity,
-                    distance_to_data
-                        + RelocatableVec::<usize>::const_memory_size(capacity) as isize
-                        + RelocatableQueue::<usize>::const_memory_size(capacity) as isize
-                        + RelocatableVec::<Option<T>>::const_memory_size(capacity) as isize,
-                ),
-            };
-            new_self.initialize_data_structures();
-            new_self
-        }
-
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 idx_to_data: RelocatableVec::new_uninit(capacity),
@@ -409,6 +383,10 @@ pub struct FixedSizeSlotMap<T, const CAPACITY: usize> {
     _data_next_free_index: [usize; CAPACITY],
 }
 
+impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY> {
+    unsafe fn placement_default(ptr: *mut Self) {}
+}
+
 impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
@@ -416,7 +394,7 @@ impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
             _idx_to_data_next_free_index: core::array::from_fn(|_| 0),
             _data: core::array::from_fn(|_| None),
             _data_next_free_index: core::array::from_fn(|_| 0),
-            state: Self::initialize_state(),
+            state: unsafe { RelocatableSlotMap::new_uninit(CAPACITY) },
         };
 
         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self._idx_to_data) as usize);
@@ -432,10 +410,6 @@ impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
 }
 
 impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
-    fn initialize_state() -> RelocatableSlotMap<T> {
-        unsafe { RelocatableSlotMap::new_uninit(CAPACITY) }
-    }
-
     pub fn new() -> Self {
         Self::default()
     }

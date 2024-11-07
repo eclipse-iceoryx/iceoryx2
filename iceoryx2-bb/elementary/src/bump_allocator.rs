@@ -14,15 +14,14 @@ use crate::{allocator::BaseAllocator, math::align};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use std::sync::atomic::Ordering;
 
-/// Simple BumpAllocator for testing purposes. Do not use this in production. If you are looking
-/// for a production ready BumpAllocator use the one from iceoryx2_bb_memory::bump_allocator
-#[doc(hidden)]
+/// A minimalistic [`BumpAllocator`].
 pub struct BumpAllocator {
     start: usize,
     pos: IoxAtomicUsize,
 }
 
 impl BumpAllocator {
+    /// Creates a new [`BumpAllocator`] that manages the memory starting at `start`.
     pub fn new(start: usize) -> Self {
         Self {
             start,

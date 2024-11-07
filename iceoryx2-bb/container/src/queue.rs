@@ -96,7 +96,7 @@
 //! ```
 //!
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
-use iceoryx2_bb_elementary::math::align_to;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
@@ -207,17 +207,6 @@ pub mod details {
     }
 
     impl<T> RelocatableContainer for MetaQueue<T, RelocatablePointer<MaybeUninit<T>>> {
-        unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new(distance_to_data),
-                start: 0,
-                len: 0,
-                capacity,
-                is_initialized: IoxAtomicBool::new(true),
-                _phantom_data: PhantomData,
-            }
-        }
-
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
@@ -467,31 +456,38 @@ pub struct FixedSizeQueue<T, const CAPACITY: usize> {
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
-        state_ptr.write(Self::initialize_state());
+        state_ptr.write(RelocatableQueue::new_uninit(CAPACITY));
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!((*ptr)._data) as usize);
+        (*ptr)
+            .state
+            .init(&allocator)
+            .expect("All required memory is preallocated.");
     }
 }
 
 impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
     fn default() -> Self {
-        Self {
-            state: Self::initialize_state(),
+        let mut new_self = Self {
+            state: unsafe { RelocatableQueue::new_uninit(CAPACITY) },
             _data: unsafe { MaybeUninit::uninit().assume_init() },
-        }
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self._data) as usize);
+        unsafe {
+            new_self
+                .state
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+
+        new_self
     }
 }
 
 unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
-    fn initialize_state() -> RelocatableQueue<T> {
-        unsafe {
-            RelocatableQueue::new(
-                CAPACITY,
-                align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableQueue<T>>()) as isize,
-            )
-        }
-    }
-
     /// Creates a new queue.
     pub fn new() -> Self {
         Self::default()

@@ -47,6 +47,7 @@
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
 
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::relocatable_container::*;
@@ -315,13 +316,13 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
         let bucket_size = align(bucket_layout.size(), bucket_layout.align());
         let number_of_buckets = (ptr.as_ptr() as usize + size - adjusted_start) / bucket_size;
 
-        FixedSizePoolAllocator {
+        let mut new_self = FixedSizePoolAllocator {
             state: PoolAllocator {
                 buckets: unsafe {
-                    UniqueIndexSet::new(
-                        std::cmp::min(number_of_buckets, MAX_NUMBER_OF_BUCKETS),
-                        align_to::<UnsafeCell<u32>>(std::mem::size_of::<PoolAllocator>()) as isize,
-                    )
+                    UniqueIndexSet::new_uninit(std::cmp::min(
+                        number_of_buckets,
+                        MAX_NUMBER_OF_BUCKETS,
+                    ))
                 },
                 bucket_size: bucket_layout.size(),
                 bucket_alignment: bucket_layout.align(),
@@ -331,7 +332,17 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
             },
             next_free_index: std::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
             next_free_index_plus_one: UnsafeCell::new(MAX_NUMBER_OF_BUCKETS as u32 + 1),
-        }
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.next_free_index) as usize);
+        unsafe {
+            new_self
+                .state
+                .buckets
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+        new_self
     }
 }
 
