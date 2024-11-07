@@ -55,7 +55,7 @@ class Sample {
 
     /// Returns a reference to the payload of the [`Sample`]
     template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto payload() const -> const Payload&;
+    auto payload() const -> const ValueType&;
 
     /// Returns a slice to navigate the payload of the [`Sample`]
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
@@ -132,12 +132,12 @@ inline auto Sample<S, Payload, UserHeader>::operator->() const -> const Payload*
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto Sample<S, Payload, UserHeader>::payload() const -> const Payload& {
+inline auto Sample<S, Payload, UserHeader>::payload() const -> const ValueType& {
     const void* ptr = nullptr;
 
     iox2_sample_payload(&m_handle, &ptr, nullptr);
 
-    return *static_cast<const Payload*>(ptr);
+    return *static_cast<const ValueType*>(ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

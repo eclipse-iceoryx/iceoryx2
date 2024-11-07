@@ -59,11 +59,11 @@ class SampleMutUninit {
 
     /// Returns a reference to the const payload of the sample.
     template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto payload() const -> const Payload&;
+    auto payload() const -> const ValueType&;
 
     /// Returns a reference to the payload of the sample.
     template <typename T = Payload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto payload_mut() -> Payload&;
+    auto payload_mut() -> ValueType&;
 
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
@@ -143,13 +143,13 @@ inline auto SampleMutUninit<S, Payload, UserHeader>::user_header_mut() -> T& {
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMutUninit<S, Payload, UserHeader>::payload() const -> const Payload& {
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload() const -> const ValueType& {
     return m_sample.payload();
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> Payload& {
+inline auto SampleMutUninit<S, Payload, UserHeader>::payload_mut() -> ValueType& {
     return m_sample.payload_mut();
 }
 
