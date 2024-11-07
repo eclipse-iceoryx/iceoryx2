@@ -198,7 +198,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
     }
 
     unsafe fn init<Allocator: BaseAllocator>(
-        &self,
+        &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
         if self.is_memory_initialized.load(Ordering::Relaxed) {

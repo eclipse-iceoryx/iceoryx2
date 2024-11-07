@@ -76,7 +76,7 @@ pub trait ShmAllocator: Send + Sync + 'static {
     /// * must be called before any other method is called
     ///
     unsafe fn init<Allocator: BaseAllocator>(
-        &self,
+        &mut self,
         mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError>;
 

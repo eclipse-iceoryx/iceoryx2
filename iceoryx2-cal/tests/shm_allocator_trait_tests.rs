@@ -149,7 +149,7 @@ mod shm_allocator {
         let mut test = TestFixture::<Sut>::new();
         test.prepare();
 
-        let sut = unsafe {
+        let mut sut = unsafe {
             Sut::new_uninit(
                 1,
                 NonNull::new_unchecked(test.memory.as_mut_slice()),

@@ -152,7 +152,7 @@ pub mod details {
         }
 
         unsafe fn init<Allocator: iceoryx2_bb_elementary::allocator::BaseAllocator>(
-            &self,
+            &mut self,
             allocator: &Allocator,
         ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
             if self.is_initialized.load(Ordering::Relaxed) {

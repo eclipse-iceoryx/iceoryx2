@@ -39,7 +39,7 @@ mod event_id_tracker {
         const CAPACITY: usize = 5234;
         let mut memory = memory();
 
-        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        let mut sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
         assert_that!(sut.trigger_id_max().as_value(), lt CAPACITY);
     }
@@ -49,7 +49,7 @@ mod event_id_tracker {
         let mut memory = memory();
         const CAPACITY: usize = 1234;
 
-        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        let mut sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         assert_that!(unsafe { sut.acquire() }, eq None);
@@ -66,7 +66,7 @@ mod event_id_tracker {
         let mut memory = memory();
         const CAPACITY: usize = 1234;
 
-        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        let mut sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         for i in 0..CAPACITY {
@@ -89,7 +89,7 @@ mod event_id_tracker {
         let mut memory = memory();
         const CAPACITY: usize = 3234;
 
-        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        let mut sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         for i in 0..CAPACITY {
@@ -117,7 +117,7 @@ mod event_id_tracker {
         let mut memory = memory();
         const CAPACITY: usize = 234;
 
-        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        let mut sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         for i in 0..CAPACITY {
@@ -147,7 +147,7 @@ mod event_id_tracker {
         let mut memory = memory();
         const CAPACITY: usize = 1234;
 
-        let sut = unsafe { Sut::new_uninit(CAPACITY) };
+        let mut sut = unsafe { Sut::new_uninit(CAPACITY) };
         assert_that!(unsafe { sut.init(&allocator(&mut *memory)) }, is_ok);
 
         assert_that!(unsafe { sut.acquire() }, eq None);

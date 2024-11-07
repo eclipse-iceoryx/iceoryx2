@@ -165,7 +165,7 @@ pub mod details {
         }
 
         unsafe fn init<T: iceoryx2_bb_elementary::allocator::BaseAllocator>(
-            &self,
+            &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
             if self.is_memory_initialized.load(Ordering::Relaxed) {

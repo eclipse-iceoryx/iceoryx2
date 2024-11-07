@@ -230,7 +230,7 @@ pub mod details {
         }
 
         unsafe fn init<Allocator: BaseAllocator>(
-            &self,
+            &mut self,
             allocator: &Allocator,
         ) -> Result<(), AllocationError> {
             if self

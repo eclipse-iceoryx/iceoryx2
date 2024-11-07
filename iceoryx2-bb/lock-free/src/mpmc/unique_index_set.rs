@@ -277,7 +277,7 @@ impl RelocatableContainer for UniqueIndexSet {
         }
     }
 
-    unsafe fn init<T: BaseAllocator>(&self, allocator: &T) -> Result<(), AllocationError> {
+    unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError> {
         if self.is_memory_initialized.load(Ordering::Relaxed) {
             fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
         }

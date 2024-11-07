@@ -247,7 +247,7 @@ pub mod details {
         }
 
         unsafe fn init<Allocator: iceoryx2_bb_elementary::allocator::BaseAllocator>(
-            &self,
+            &mut self,
             allocator: &Allocator,
         ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
             let msg = "Unable to initialize RelocatableSlotMap";
@@ -264,6 +264,7 @@ pub mod details {
                   when self.data_next_free_index.init(allocator),
                   "{msg} since the underlying data_next_free_index queue could not be initialized.");
 
+            self.initialize_data_structures();
             Ok(())
         }
 
@@ -425,7 +426,6 @@ impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
                 .init(&allocator)
                 .expect("All required memory is preallocated.")
         };
-        unsafe { new_self.state.initialize_data_structures() };
 
         new_self
     }

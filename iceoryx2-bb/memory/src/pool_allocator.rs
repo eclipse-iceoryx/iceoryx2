@@ -125,7 +125,7 @@ impl PoolAllocator {
     ///  * must be called exactly once before any other method can be called
     ///
     pub unsafe fn init<Allocator: BaseAllocator>(
-        &self,
+        &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
         if self.is_memory_initialized.load(Ordering::Relaxed) {

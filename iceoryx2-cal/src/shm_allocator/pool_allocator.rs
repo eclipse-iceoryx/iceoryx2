@@ -88,7 +88,7 @@ impl ShmAllocator for PoolAllocator {
     }
 
     unsafe fn init<Allocator: BaseAllocator>(
-        &self,
+        &mut self,
         mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError> {
         let msg = "Unable to initialize allocator";
