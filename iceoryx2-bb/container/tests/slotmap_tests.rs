@@ -15,17 +15,29 @@ use iceoryx2_bb_testing::assert_that;
 
 mod slot_map {
 
+    use iceoryx2_bb_container::slotmap::FixedSizeSlotMap;
+
     use super::*;
 
     const SUT_CAPACITY: usize = 128;
     type Sut = SlotMap<usize>;
+    type FixedSizeSut = FixedSizeSlotMap<usize, SUT_CAPACITY>;
 
     #[test]
     fn new_slotmap_is_empty() {
         let sut = Sut::new(SUT_CAPACITY);
 
+        assert_that!(sut, len 0);
         assert_that!(sut, is_empty);
         assert_that!(sut.is_full(), eq false);
+    }
+
+    #[test]
+    fn new_fixed_size_slotmap_is_empty() {
+        let sut = FixedSizeSut::new();
+
         assert_that!(sut, len 0);
+        assert_that!(sut, is_empty);
+        assert_that!(sut.is_full(), eq false);
     }
 }

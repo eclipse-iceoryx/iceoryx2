@@ -13,6 +13,7 @@
 use crate::queue::details::MetaQueue;
 use crate::vec::details::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
@@ -107,6 +108,15 @@ pub mod details {
             None
         }
 
+        pub(crate) unsafe fn initialize_data_structures(&mut self) {
+            self.idx_to_data.fill(INVALID_KEY);
+            self.data.fill_with(|| None);
+            for n in 0..self.capacity_impl() {
+                self.idx_to_data_next_free_index.push_impl(n);
+                self.data_next_free_index.push_impl(n);
+            }
+        }
+
         pub(crate) unsafe fn iter_impl(&self) -> Iter<T, DataPtrType, IdxPtrType> {
             Iter {
                 slotmap: self,
@@ -178,7 +188,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn len_impl(&self) -> usize {
-            self.capacity_impl() - self.data_next_free_index.len()
+            self.capacity_impl() - self.idx_to_data_next_free_index.len()
         }
 
         pub(crate) unsafe fn capacity_impl(&self) -> usize {
@@ -202,7 +212,7 @@ pub mod details {
         >
     {
         unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-            Self {
+            let mut new_self = Self {
                 idx_to_data: RelocatableVec::new(capacity, distance_to_data),
                 idx_to_data_next_free_index: RelocatableQueue::new(
                     capacity,
@@ -222,7 +232,9 @@ pub mod details {
                         + RelocatableQueue::<usize>::const_memory_size(capacity) as isize
                         + RelocatableVec::<Option<T>>::const_memory_size(capacity) as isize,
                 ),
-            }
+            };
+            new_self.initialize_data_structures();
+            new_self
         }
 
         unsafe fn new_uninit(capacity: usize) -> Self {
@@ -283,13 +295,7 @@ pub mod details {
                 data: MetaVec::new(capacity),
                 data_next_free_index: MetaQueue::new(capacity),
             };
-
-            new_self.idx_to_data.fill(INVALID_KEY);
-            new_self.data.fill_with(|| None);
-            for n in 0..capacity {
-                new_self.idx_to_data_next_free_index.push(n);
-                new_self.data_next_free_index.push(n);
-            }
+            unsafe { new_self.initialize_data_structures() };
             new_self
         }
 
@@ -404,24 +410,30 @@ pub struct FixedSizeSlotMap<T, const CAPACITY: usize> {
 
 impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
     fn default() -> Self {
-        Self {
-            state: Self::initialize_state(),
+        let mut new_self = Self {
             _idx_to_data: core::array::from_fn(|_| INVALID_KEY),
-            _idx_to_data_next_free_index: core::array::from_fn(|i| i),
+            _idx_to_data_next_free_index: core::array::from_fn(|_| 0),
             _data: core::array::from_fn(|_| None),
-            _data_next_free_index: core::array::from_fn(|_| INVALID_KEY),
-        }
+            _data_next_free_index: core::array::from_fn(|_| 0),
+            state: Self::initialize_state(),
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self._idx_to_data) as usize);
+        unsafe {
+            new_self
+                .state
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+        unsafe { new_self.state.initialize_data_structures() };
+
+        new_self
     }
 }
 
 impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
     fn initialize_state() -> RelocatableSlotMap<T> {
-        unsafe {
-            RelocatableSlotMap::new(
-                CAPACITY,
-                align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableSlotMap<T>>()) as isize,
-            )
-        }
+        unsafe { RelocatableSlotMap::new_uninit(CAPACITY) }
     }
 
     pub fn new() -> Self {
