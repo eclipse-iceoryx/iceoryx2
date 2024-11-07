@@ -185,8 +185,9 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline void SampleMutUninit<S, Payload, UserHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value) {
     auto dest = payload_mut();
-    IOX_ASSERT(dest.size() >= value.size(), "Destination payload size is smaller than source slice size");
-    std::memcpy(dest.begin(), value.begin(), value.size());
+    IOX_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
+               "Destination payload size is smaller than source slice size");
+    std::memcpy(dest.begin(), value.begin(), value.number_of_bytes());
 }
 } // namespace iox2
 

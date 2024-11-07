@@ -96,6 +96,7 @@ template <typename T>
 Slice<T>::Slice(T* data, uint64_t number_of_elements)
     : m_data { data }
     , m_number_of_elements { number_of_elements } {
+    static_assert(!std::is_same_v<T, void>, "Slice<void> is not allowed");
 }
 
 template <typename T>
@@ -133,13 +134,11 @@ auto Slice<T>::begin() const -> Iterator {
 
 template <typename T>
 auto Slice<T>::end() -> Iterator {
-    static_assert(!std::is_same_v<T, void>, "Slice<void> is not allowed");
     return m_data + m_number_of_elements;
 }
 
 template <typename T>
 auto Slice<T>::end() const -> Iterator {
-    static_assert(!std::is_same_v<T, void>, "Slice<void> is not allowed");
     return m_data + m_number_of_elements;
 }
 

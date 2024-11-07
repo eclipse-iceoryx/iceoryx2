@@ -32,11 +32,11 @@ auto main() -> int {
                        .open_or_create()
                        .expect("successful service creation/opening");
 
-    const uint64_t worst_case_memory_size = 1024; // NOLINT
-    auto publisher = service.publisher_builder()
-                         .max_slice_len(worst_case_memory_size)
-                         .create()
-                         .expect("successful publisher creation");
+    // Since the payload type is uint8_t, this number is the same as the number of bytes in the payload.
+    // For other types, number of bytes used by the payload will be max_slice_len * sizeof(Payload::ValueType)
+    const uint64_t maximum_elements = 1024; // NOLINT
+    auto publisher =
+        service.publisher_builder().max_slice_len(maximum_elements).create().expect("successful publisher creation");
 
     auto counter = 0;
 

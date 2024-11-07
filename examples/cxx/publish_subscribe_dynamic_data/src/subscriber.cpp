@@ -37,7 +37,7 @@ auto main() -> int {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {
             auto payload = sample->payload();
-            std::cout << "received " << std::dec << static_cast<int>(payload.size()) << " bytes: ";
+            std::cout << "received " << std::dec << static_cast<int>(payload.number_of_bytes()) << " bytes: ";
             for (auto byte : payload) {
                 std::cout << std::setw(2) << std::setfill('0') << std::hex << static_cast<int>(byte) << " ";
             }
