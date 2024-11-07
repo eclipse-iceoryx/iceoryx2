@@ -110,9 +110,9 @@ use std::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
 
 /// Queue with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableQueue`] it is movable but is not shared memory compatible.
-pub type Queue<T> = details::Queue<T, OwningPointer<MaybeUninit<T>>>;
+pub type Queue<T> = details::MetaQueue<T, OwningPointer<MaybeUninit<T>>>;
 /// **Non-movable** relocatable queue with runtime fixed size capacity.
-pub type RelocatableQueue<T> = details::Queue<T, RelocatablePointer<MaybeUninit<T>>>;
+pub type RelocatableQueue<T> = details::MetaQueue<T, RelocatablePointer<MaybeUninit<T>>>;
 
 #[doc(hidden)]
 pub mod details {
@@ -120,7 +120,7 @@ pub mod details {
     /// **Non-movable** relocatable queue with runtime fixed size capacity.
     #[repr(C)]
     #[derive(Debug)]
-    pub struct Queue<T, PointerType: PointerTrait<MaybeUninit<T>>> {
+    pub struct MetaQueue<T, PointerType: PointerTrait<MaybeUninit<T>>> {
         data_ptr: PointerType,
         start: usize,
         len: usize,
@@ -129,9 +129,9 @@ pub mod details {
         _phantom_data: PhantomData<T>,
     }
 
-    unsafe impl<T: Send, PointerType: PointerTrait<MaybeUninit<T>>> Send for Queue<T, PointerType> {}
+    unsafe impl<T: Send, PointerType: PointerTrait<MaybeUninit<T>>> Send for MetaQueue<T, PointerType> {}
 
-    impl<T> Queue<T, OwningPointer<MaybeUninit<T>>> {
+    impl<T> MetaQueue<T, OwningPointer<MaybeUninit<T>>> {
         /// Creates a new [`Queue`] with the provided capacity
         pub fn new(capacity: usize) -> Self {
             Self {
@@ -178,7 +178,7 @@ pub mod details {
         }
     }
 
-    impl<T: Copy + Debug, PointerType: PointerTrait<MaybeUninit<T>> + Debug> Queue<T, PointerType> {
+    impl<T: Copy + Debug, PointerType: PointerTrait<MaybeUninit<T>> + Debug> MetaQueue<T, PointerType> {
         /// Returns a copy of the element stored at index. The index is starting by 0 for the first
         /// element until [`Queue::len()`].
         ///
@@ -206,7 +206,7 @@ pub mod details {
         }
     }
 
-    impl<T> RelocatableContainer for Queue<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> RelocatableContainer for MetaQueue<T, RelocatablePointer<MaybeUninit<T>>> {
         unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new(distance_to_data),
@@ -260,7 +260,7 @@ pub mod details {
         }
     }
 
-    impl<T> Queue<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> MetaQueue<T, RelocatablePointer<MaybeUninit<T>>> {
         /// Returns the required memory size for a queue with a specified capacity
         pub const fn const_memory_size(capacity: usize) -> usize {
             unaligned_mem_size::<T>(capacity)
@@ -330,7 +330,7 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Queue<T, PointerType> {
+    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> MetaQueue<T, PointerType> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(
@@ -443,9 +443,14 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Drop for Queue<T, PointerType> {
+    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Drop for MetaQueue<T, PointerType> {
         fn drop(&mut self) {
-            unsafe { self.clear_impl() }
+            if self
+                .is_initialized
+                .load(std::sync::atomic::Ordering::Relaxed)
+            {
+                unsafe { self.clear_impl() }
+            }
         }
     }
 }
@@ -476,7 +481,6 @@ impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
 }
 
 unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY> {}
-unsafe impl<T: Sync, const CAPACITY: usize> Sync for FixedSizeQueue<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     fn initialize_state() -> RelocatableQueue<T> {

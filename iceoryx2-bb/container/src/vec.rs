@@ -97,10 +97,10 @@ use serde::{de::Visitor, Deserialize, Serialize};
 
 /// Vector with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableVec`] it is movable but is not shared memory compatible.
-pub type Vec<T> = details::RelocatableVec<T, OwningPointer<MaybeUninit<T>>>;
+pub type Vec<T> = details::MetaVec<T, OwningPointer<MaybeUninit<T>>>;
 
 /// **Non-movable** relocatable vector with runtime fixed size capacity.
-pub type RelocatableVec<T> = details::RelocatableVec<T, RelocatablePointer<MaybeUninit<T>>>;
+pub type RelocatableVec<T> = details::MetaVec<T, RelocatablePointer<MaybeUninit<T>>>;
 
 #[doc(hidden)]
 pub mod details {
@@ -109,7 +109,7 @@ pub mod details {
     /// **Non-movable** relocatable vector with runtime fixed size capacity.
     #[repr(C)]
     #[derive(Debug)]
-    pub struct RelocatableVec<T, PointerType: PointerTrait<MaybeUninit<T>>> {
+    pub struct MetaVec<T, PointerType: PointerTrait<MaybeUninit<T>>> {
         data_ptr: PointerType,
         capacity: usize,
         len: usize,
@@ -117,18 +117,20 @@ pub mod details {
         _phantom_data: PhantomData<T>,
     }
 
-    unsafe impl<T: Send, PointerType: PointerTrait<MaybeUninit<T>>> Send
-        for RelocatableVec<T, PointerType>
-    {
-    }
+    unsafe impl<T: Send, PointerType: PointerTrait<MaybeUninit<T>>> Send for MetaVec<T, PointerType> {}
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Drop for RelocatableVec<T, PointerType> {
+    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Drop for MetaVec<T, PointerType> {
         fn drop(&mut self) {
-            self.clear_impl();
+            if self
+                .is_initialized
+                .load(std::sync::atomic::Ordering::Relaxed)
+            {
+                unsafe { self.clear_impl() };
+            }
         }
     }
 
-    impl<T> RelocatableContainer for RelocatableVec<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> RelocatableContainer for MetaVec<T, RelocatablePointer<MaybeUninit<T>>> {
         unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new(distance_to_data),
@@ -174,7 +176,7 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Deref for RelocatableVec<T, PointerType> {
+    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Deref for MetaVec<T, PointerType> {
         type Target = [T];
 
         fn deref(&self) -> &Self::Target {
@@ -183,7 +185,7 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> DerefMut for RelocatableVec<T, PointerType> {
+    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> DerefMut for MetaVec<T, PointerType> {
         fn deref_mut(&mut self) -> &mut Self::Target {
             self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
             unsafe {
@@ -196,7 +198,7 @@ pub mod details {
     }
 
     impl<T: PartialEq, PointerType: PointerTrait<MaybeUninit<T>>> PartialEq
-        for RelocatableVec<T, PointerType>
+        for MetaVec<T, PointerType>
     {
         fn eq(&self, other: &Self) -> bool {
             if other.len() != self.len() {
@@ -213,9 +215,9 @@ pub mod details {
         }
     }
 
-    impl<T: Eq, PointerType: PointerTrait<MaybeUninit<T>>> Eq for RelocatableVec<T, PointerType> {}
+    impl<T: Eq, PointerType: PointerTrait<MaybeUninit<T>>> Eq for MetaVec<T, PointerType> {}
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> RelocatableVec<T, PointerType> {
+    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> MetaVec<T, PointerType> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(
@@ -246,7 +248,7 @@ pub mod details {
             self.len == self.capacity
         }
 
-        fn push_impl(&mut self, value: T) -> bool {
+        unsafe fn push_impl(&mut self, value: T) -> bool {
             if self.is_full() {
                 return false;
             }
@@ -256,7 +258,7 @@ pub mod details {
             true
         }
 
-        fn fill_impl(&mut self, value: T)
+        unsafe fn fill_impl(&mut self, value: T)
         where
             T: Clone,
         {
@@ -265,7 +267,7 @@ pub mod details {
             }
         }
 
-        fn fill_with_impl<F: FnMut() -> T>(&mut self, mut f: F) {
+        unsafe fn fill_with_impl<F: FnMut() -> T>(&mut self, mut f: F) {
             for _ in self.len..self.capacity {
                 self.push_unchecked(f());
             }
@@ -282,7 +284,7 @@ pub mod details {
             self.len += 1;
         }
 
-        fn extend_from_slice_impl(&mut self, other: &[T]) -> bool
+        unsafe fn extend_from_slice_impl(&mut self, other: &[T]) -> bool
         where
             T: Clone,
         {
@@ -297,7 +299,7 @@ pub mod details {
             true
         }
 
-        fn pop_impl(&mut self) -> Option<T> {
+        unsafe fn pop_impl(&mut self) -> Option<T> {
             if self.is_empty() {
                 return None;
             }
@@ -306,7 +308,7 @@ pub mod details {
             Some(self.pop_unchecked())
         }
 
-        fn clear_impl(&mut self) {
+        unsafe fn clear_impl(&mut self) {
             for _ in 0..self.len {
                 self.pop_unchecked();
             }
@@ -322,16 +324,16 @@ pub mod details {
             unsafe { value.assume_init() }
         }
 
-        fn as_slice_impl(&self) -> &[T] {
+        unsafe fn as_slice_impl(&self) -> &[T] {
             unsafe { core::slice::from_raw_parts(self.data_ptr.as_ptr().cast(), self.len) }
         }
 
-        fn as_mut_slice_impl(&mut self) -> &mut [T] {
+        unsafe fn as_mut_slice_impl(&mut self) -> &mut [T] {
             unsafe { core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr().cast(), self.len) }
         }
     }
 
-    impl<T> RelocatableVec<T, OwningPointer<MaybeUninit<T>>> {
+    impl<T> MetaVec<T, OwningPointer<MaybeUninit<T>>> {
         /// Creates a new [`Queue`] with the provided capacity
         pub fn new(capacity: usize) -> Self {
             Self {
@@ -346,7 +348,7 @@ pub mod details {
         /// Adds an element at the end of the vector. If the vector is full and the element cannot be
         /// added it returns false, otherwise true.
         pub fn push(&mut self, value: T) -> bool {
-            self.push_impl(value)
+            unsafe { self.push_impl(value) }
         }
 
         /// Fill the remaining space of the vector with value.
@@ -354,12 +356,12 @@ pub mod details {
         where
             T: Clone,
         {
-            self.fill_impl(value)
+            unsafe { self.fill_impl(value) }
         }
 
         /// Fill the remaining space of the vector by calling the provided closure repeatedly
         pub fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
-            self.fill_with_impl(f)
+            unsafe { self.fill_with_impl(f) }
         }
 
         /// Append all elements from other via [`Clone`].
@@ -367,32 +369,32 @@ pub mod details {
         where
             T: Clone,
         {
-            self.extend_from_slice_impl(other)
+            unsafe { self.extend_from_slice_impl(other) }
         }
 
         /// Removes the last element of the vector and returns it to the user. If the vector is empty
         /// it returns [`None`].
         pub fn pop(&mut self) -> Option<T> {
-            self.pop_impl()
+            unsafe { self.pop_impl() }
         }
 
         /// Removes all elements from the vector
         pub fn clear(&mut self) {
-            self.clear_impl()
+            unsafe { self.clear_impl() }
         }
 
         /// Returns a slice to the contents of the vector
         pub fn as_slice(&self) -> &[T] {
-            self.as_slice_impl()
+            unsafe { self.as_slice_impl() }
         }
 
         /// Returns a mutable slice to the contents of the vector
         pub fn as_mut_slice(&mut self) -> &mut [T] {
-            self.as_mut_slice_impl()
+            unsafe { self.as_mut_slice_impl() }
         }
     }
 
-    impl<T> RelocatableVec<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> MetaVec<T, RelocatablePointer<MaybeUninit<T>>> {
         /// Returns the required memory size for a vec with a specified capacity
         pub const fn const_memory_size(capacity: usize) -> usize {
             unaligned_mem_size::<T>(capacity)
@@ -429,7 +431,7 @@ pub mod details {
         ///  * [`RelocatableVec::init()`] must be called once before
         ///
         pub unsafe fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
-            self.fill_with(f)
+            self.fill_with_impl(f)
         }
 
         /// Append all elements from other via [`Clone`].
