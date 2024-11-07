@@ -23,24 +23,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .publish_subscribe::<[u8]>()
         .open_or_create()?;
 
-    let worst_case_memory_size = 1024;
+    let maximum_elements = 1024;
     let publisher = service
         .publisher_builder()
-        .max_slice_len(worst_case_memory_size)
+        .max_slice_len(maximum_elements)
         .create()?;
 
-    let mut counter = 1;
+    let mut counter = 0;
 
     while node.wait(CYCLE_TIME).is_ok() {
-        counter += 1;
-
-        let required_memory_size = (8 + counter) % 16;
+        let required_memory_size = (counter % 16) + 1;
         let sample = publisher.loan_slice_uninit(required_memory_size)?;
         let sample = sample.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
 
         sample.send()?;
 
-        println!("Send sample {} ...", counter);
+        println!(
+            "Send sample {} with {} bytes...",
+            counter, required_memory_size
+        );
+
+        counter += 1;
     }
 
     println!("exit");
