@@ -22,14 +22,32 @@ use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_log::fail;
 use std::mem::MaybeUninit;
 
+/// A key of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`] that identifies a
+/// value.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct SlotMapKey(usize);
 
+impl SlotMapKey {
+    /// Creates a new [`SlotMapKey`] with the specified value.
+    pub fn new(value: usize) -> Self {
+        Self(value)
+    }
+
+    /// Returns the underlying value of the [`SlotMapKey`].
+    pub fn value(&self) -> usize {
+        self.0
+    }
+}
+
+/// A runtime fixed-size, non-shared memory compatible [`SlotMap`]. The [`SlotMap`]s memory resides
+/// in the heap.
 pub type SlotMap<T> = details::MetaSlotMap<
     T,
     OwningPointer<MaybeUninit<Option<T>>>,
     OwningPointer<MaybeUninit<usize>>,
 >;
+
+/// A runtime fixed-size, shared-memory compatible [`RelocatableSlotMap`].
 pub type RelocatableSlotMap<T> = details::MetaSlotMap<
     T,
     RelocatablePointer<MaybeUninit<Option<T>>>,
@@ -42,6 +60,7 @@ const INVALID_KEY: usize = usize::MAX;
 pub mod details {
     use super::*;
 
+    /// The iterator of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`].
     pub struct Iter<
         'slotmap,
         T,
@@ -52,6 +71,15 @@ pub mod details {
         key: SlotMapKey,
     }
 
+    pub type OwningIter<'slotmap, T> =
+        Iter<'slotmap, T, OwningPointer<MaybeUninit<Option<T>>>, OwningPointer<MaybeUninit<usize>>>;
+    pub type RelocatableIter<'slotmap, T> = Iter<
+        'slotmap,
+        T,
+        RelocatablePointer<MaybeUninit<Option<T>>>,
+        RelocatablePointer<MaybeUninit<usize>>,
+    >;
+
     impl<
             'slotmap,
             T,
@@ -61,7 +89,7 @@ pub mod details {
     {
         type Item = (SlotMapKey, &'slotmap T);
 
-        fn next<'this>(&'this mut self) -> Option<Self::Item> {
+        fn next(&mut self) -> Option<Self::Item> {
             if let Some((key, value)) = self.slotmap.next(self.key) {
                 self.key.0 = key.0 + 1;
                 Some((key, value))
@@ -109,9 +137,9 @@ pub mod details {
         }
 
         pub(crate) unsafe fn initialize_data_structures(&mut self) {
-            self.idx_to_data.fill(INVALID_KEY);
-            self.data.fill_with(|| None);
             for n in 0..self.capacity_impl() {
+                self.idx_to_data.push_impl(INVALID_KEY);
+                self.data.push_impl(None);
                 self.idx_to_data_next_free_index.push_impl(n);
                 self.data_next_free_index.push_impl(n);
             }
@@ -122,6 +150,10 @@ pub mod details {
                 slotmap: self,
                 key: SlotMapKey(0),
             }
+        }
+
+        pub(crate) unsafe fn contains_impl(&self, key: SlotMapKey) -> bool {
+            self.idx_to_data[key.0] != INVALID_KEY
         }
 
         pub(crate) unsafe fn get_impl(&self, key: SlotMapKey) -> Option<&T> {
@@ -161,13 +193,13 @@ pub mod details {
             let data_idx = self.idx_to_data[key.0];
             if data_idx != INVALID_KEY {
                 self.data[data_idx] = Some(value);
-                true
             } else {
                 let n = self.data_next_free_index.pop_impl().expect("data and idx_to_data correspond and there must be always a free index available.");
                 self.idx_to_data[key.0] = n;
                 self.data[n] = Some(value);
-                false
             }
+
+            true
         }
 
         pub(crate) unsafe fn remove_impl(&mut self, key: SlotMapKey) -> bool {
@@ -187,19 +219,19 @@ pub mod details {
             }
         }
 
-        pub(crate) unsafe fn len_impl(&self) -> usize {
+        pub(crate) fn len_impl(&self) -> usize {
             self.capacity_impl() - self.idx_to_data_next_free_index.len()
         }
 
-        pub(crate) unsafe fn capacity_impl(&self) -> usize {
+        pub(crate) fn capacity_impl(&self) -> usize {
             self.idx_to_data.capacity()
         }
 
-        pub(crate) unsafe fn is_empty_impl(&self) -> bool {
+        pub(crate) fn is_empty_impl(&self) -> bool {
             self.len_impl() == 0
         }
 
-        pub(crate) unsafe fn is_full_impl(&self) -> bool {
+        pub(crate) fn is_full_impl(&self) -> bool {
             self.len_impl() == self.capacity_impl()
         }
     }
@@ -254,6 +286,8 @@ pub mod details {
             RelocatablePointer<MaybeUninit<usize>>,
         >
     {
+        /// Returns how many memory the [`RelocatableSlotMap`] will allocate from the allocator
+        /// in [`RelocatableSlotMap::init()`].
         pub const fn const_memory_size(capacity: usize) -> usize {
             RelocatableVec::<usize>::const_memory_size(capacity)
                 + RelocatableQueue::<usize>::const_memory_size(capacity)
@@ -263,6 +297,7 @@ pub mod details {
     }
 
     impl<T> MetaSlotMap<T, OwningPointer<MaybeUninit<Option<T>>>, OwningPointer<MaybeUninit<usize>>> {
+        /// Creates a new runtime-fixed size [`SlotMap`] on the heap with the given capacity.
         pub fn new(capacity: usize) -> Self {
             let mut new_self = Self {
                 idx_to_data: MetaVec::new(capacity),
@@ -274,47 +309,65 @@ pub mod details {
             new_self
         }
 
-        pub fn iter(
-            &self,
-        ) -> Iter<T, OwningPointer<MaybeUninit<Option<T>>>, OwningPointer<MaybeUninit<usize>>>
-        {
+        /// Returns the [`Iter`]ator to iterate over all entries.
+        pub fn iter(&self) -> OwningIter<T> {
             unsafe { self.iter_impl() }
         }
 
+        /// Returns `true` if the provided `key` is contained, otherwise `false`.
+        pub fn contains(&self, key: SlotMapKey) -> bool {
+            unsafe { self.contains_impl(key) }
+        }
+
+        /// Returns a reference to the value stored under the given key. If there is no such key,
+        /// [`None`] is returned.
         pub fn get(&self, key: SlotMapKey) -> Option<&T> {
             unsafe { self.get_impl(key) }
         }
 
+        /// Returns a mutable reference to the value stored under the given key. If there is no
+        /// such key, [`None`] is returned.
         pub fn get_mut(&mut self, key: SlotMapKey) -> Option<&mut T> {
             unsafe { self.get_mut_impl(key) }
         }
 
+        /// Insert a value and returns the corresponding [`SlotMapKey`]. If the container is full
+        /// [`None`] is returned.
         pub fn insert(&mut self, value: T) -> Option<SlotMapKey> {
             unsafe { self.insert_impl(value) }
         }
 
+        /// Insert a value at the specified [`SlotMapKey`] and returns true.  If the provided key
+        /// is out-of-bounds it returns `false` and adds nothing. If there is already a value
+        /// stored at the `key`s index, the value is overridden with the provided value.
         pub fn insert_at(&mut self, key: SlotMapKey, value: T) -> bool {
             unsafe { self.insert_at_impl(key, value) }
         }
 
+        /// Removes a value at the specified [`SlotMapKey`]. If there was no value corresponding
+        /// to the [`SlotMapKey`] it returns false, otherwise true.
         pub fn remove(&mut self, key: SlotMapKey) -> bool {
             unsafe { self.remove_impl(key) }
         }
 
+        /// Returns the number of stored values.
         pub fn len(&self) -> usize {
-            unsafe { self.len_impl() }
+            self.len_impl()
         }
 
+        /// Returns the capacity.
         pub fn capacity(&self) -> usize {
-            unsafe { self.capacity_impl() }
+            self.capacity_impl()
         }
 
+        /// Returns true if the container is empty, otherwise false.
         pub fn is_empty(&self) -> bool {
-            unsafe { self.is_empty_impl() }
+            self.is_empty_impl()
         }
 
+        /// Returns true if the container is full, otherwise false.
         pub fn is_full(&self) -> bool {
-            unsafe { self.is_full_impl() }
+            self.is_full_impl()
         }
     }
 
@@ -325,54 +378,105 @@ pub mod details {
             RelocatablePointer<MaybeUninit<usize>>,
         >
     {
-        pub unsafe fn iter(
-            &self,
-        ) -> Iter<
-            T,
-            RelocatablePointer<MaybeUninit<Option<T>>>,
-            RelocatablePointer<MaybeUninit<usize>>,
-        > {
+        /// Returns the [`Iter`]ator to iterate over all entries.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableSlotMap::init()`] must be called once before
+        ///
+        pub unsafe fn iter(&self) -> RelocatableIter<T> {
             self.iter_impl()
         }
 
+        /// Returns `true` if the provided `key` is contained, otherwise `false`.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableSlotMap::init()`] must be called once before
+        ///
+        pub unsafe fn contains(&self, key: SlotMapKey) -> bool {
+            self.contains_impl(key)
+        }
+
+        /// Returns a reference to the value stored under the given key. If there is no such key,
+        /// [`None`] is returned.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableSlotMap::init()`] must be called once before
+        ///
         pub unsafe fn get(&self, key: SlotMapKey) -> Option<&T> {
             self.get_impl(key)
         }
 
+        /// Returns a mutable reference to the value stored under the given key. If there is no
+        /// such key, [`None`] is returned.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableSlotMap::init()`] must be called once before
+        ///
         pub unsafe fn get_mut(&mut self, key: SlotMapKey) -> Option<&mut T> {
             self.get_mut_impl(key)
         }
 
+        /// Insert a value and returns the corresponding [`SlotMapKey`]. If the container is full
+        /// [`None`] is returned.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableSlotMap::init()`] must be called once before
+        ///
         pub unsafe fn insert(&mut self, value: T) -> Option<SlotMapKey> {
             self.insert_impl(value)
         }
 
+        /// Insert a value at the specified [`SlotMapKey`] and returns true.  If the provided key
+        /// is out-of-bounds it returns `false` and adds nothing. If there is already a value
+        /// stored at the `key`s index, the value is overridden with the provided value.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableSlotMap::init()`] must be called once before
+        ///
         pub unsafe fn insert_at(&mut self, key: SlotMapKey, value: T) -> bool {
             self.insert_at_impl(key, value)
         }
 
+        /// Removes a value at the specified [`SlotMapKey`]. If there was no value corresponding
+        /// to the [`SlotMapKey`] it returns false, otherwise true.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableSlotMap::init()`] must be called once before
+        ///
         pub unsafe fn remove(&mut self, key: SlotMapKey) -> bool {
             self.remove_impl(key)
         }
 
-        pub unsafe fn len(&self) -> usize {
+        /// Returns the number of stored values.
+        pub fn len(&self) -> usize {
             self.len_impl()
         }
 
-        pub unsafe fn capacity(&self) -> usize {
+        /// Returns the capacity.
+        pub fn capacity(&self) -> usize {
             self.capacity_impl()
         }
 
-        pub unsafe fn is_empty(&self) -> bool {
+        /// Returns true if the container is empty, otherwise false.
+        pub fn is_empty(&self) -> bool {
             self.is_empty_impl()
         }
 
-        pub unsafe fn is_full(&self) -> bool {
+        /// Returns true if the container is full, otherwise false.
+        pub fn is_full(&self) -> bool {
             self.is_full_impl()
         }
     }
 }
 
+/// A compile-time fixed-size, shared memory compatible [`FixedSizeSlotMap`].
 #[repr(C)]
 #[derive(Debug)]
 pub struct FixedSizeSlotMap<T, const CAPACITY: usize> {
@@ -384,7 +488,15 @@ pub struct FixedSizeSlotMap<T, const CAPACITY: usize> {
 }
 
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY> {
-    unsafe fn placement_default(ptr: *mut Self) {}
+    unsafe fn placement_default(ptr: *mut Self) {
+        let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
+        state_ptr.write(unsafe { RelocatableSlotMap::new_uninit(CAPACITY) });
+        let allocator = BumpAllocator::new(core::ptr::addr_of!((*ptr)._data) as usize);
+        (*ptr)
+            .state
+            .init(&allocator)
+            .expect("All required memory is preallocated.");
+    }
 }
 
 impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
@@ -410,53 +522,69 @@ impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
 }
 
 impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
+    /// Creates a new empty [`FixedSizeSlotMap`].
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn iter(
-        &self,
-    ) -> details::Iter<
-        T,
-        RelocatablePointer<MaybeUninit<Option<T>>>,
-        RelocatablePointer<MaybeUninit<usize>>,
-    > {
+    /// Returns the [`Iter`]ator to iterate over all entries.
+    pub fn iter(&self) -> details::RelocatableIter<T> {
         unsafe { self.state.iter_impl() }
     }
 
+    /// Returns `true` if the provided `key` is contained, otherwise `false`.
+    pub fn contains(&self, key: SlotMapKey) -> bool {
+        unsafe { self.state.contains_impl(key) }
+    }
+
+    /// Returns a reference to the value stored under the given key. If there is no such key,
+    /// [`None`] is returned.
     pub fn get(&self, key: SlotMapKey) -> Option<&T> {
         unsafe { self.state.get_impl(key) }
     }
 
+    /// Returns a mutable reference to the value stored under the given key. If there is no
+    /// such key, [`None`] is returned.
     pub fn get_mut(&mut self, key: SlotMapKey) -> Option<&mut T> {
         unsafe { self.state.get_mut_impl(key) }
     }
 
+    /// Insert a value and returns the corresponding [`SlotMapKey`]. If the container is full
+    /// [`None`] is returned.
     pub fn insert(&mut self, value: T) -> Option<SlotMapKey> {
         unsafe { self.state.insert_impl(value) }
     }
 
+    /// Insert a value at the specified [`SlotMapKey`] and returns true.  If the provided key
+    /// is out-of-bounds it returns `false` and adds nothing. If there is already a value
+    /// stored at the `key`s index, the value is overridden with the provided value.
     pub fn insert_at(&mut self, key: SlotMapKey, value: T) -> bool {
         unsafe { self.state.insert_at_impl(key, value) }
     }
 
+    /// Removes a value at the specified [`SlotMapKey`]. If there was no value corresponding
+    /// to the [`SlotMapKey`] it returns false, otherwise true.
     pub fn remove(&mut self, key: SlotMapKey) -> bool {
         unsafe { self.state.remove_impl(key) }
     }
 
+    /// Returns the number of stored values.
     pub fn len(&self) -> usize {
-        unsafe { self.state.len_impl() }
+        self.state.len_impl()
     }
 
+    /// Returns the capacity.
     pub fn capacity(&self) -> usize {
-        unsafe { self.state.capacity_impl() }
+        self.state.capacity_impl()
     }
 
+    /// Returns true if the container is empty, otherwise false.
     pub fn is_empty(&self) -> bool {
-        unsafe { self.state.is_empty_impl() }
+        self.state.is_empty_impl()
     }
 
+    /// Returns true if the container is full, otherwise false.
     pub fn is_full(&self) -> bool {
-        unsafe { self.state.is_full_impl() }
+        self.state.is_full_impl()
     }
 }

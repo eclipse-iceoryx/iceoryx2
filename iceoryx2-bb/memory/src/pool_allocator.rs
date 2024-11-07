@@ -49,7 +49,6 @@
 
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::align;
-use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_elementary::relocatable_container::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 

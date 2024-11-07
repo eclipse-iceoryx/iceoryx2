@@ -236,7 +236,7 @@ pub mod details {
             self.len == self.capacity
         }
 
-        unsafe fn push_impl(&mut self, value: T) -> bool {
+        pub(crate) unsafe fn push_impl(&mut self, value: T) -> bool {
             if self.is_full() {
                 return false;
             }
