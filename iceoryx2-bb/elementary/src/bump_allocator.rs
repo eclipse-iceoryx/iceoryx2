@@ -16,7 +16,6 @@ use std::sync::atomic::Ordering;
 
 /// Simple BumpAllocator for testing purposes. Do not use this in production. If you are looking
 /// for a production ready BumpAllocator use the one from iceoryx2_bb_memory::bump_allocator
-#[doc(hidden)]
 pub struct BumpAllocator {
     start: usize,
     pos: IoxAtomicUsize,

@@ -33,6 +33,12 @@ rust_library(
     ],
 )
 
+# alias the library which enables the testing feature to avoid the cargo reports iceoryx2-bb-elementary is missed.
+alias(
+    name = "iceoryx2-bb-elementary",
+    actual = "//iceoryx2-bb/elementary:iceoryx2-bb-elementary-with-feature-testing",
+)
+
 rust_test_suite(
     name = "iceoryx2-bb-container-tests",
     srcs = glob(["tests/**/*.rs"]),
