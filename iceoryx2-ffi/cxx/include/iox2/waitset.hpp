@@ -15,6 +15,7 @@
 
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
+#include "iox2/callback_progression.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener.hpp"
@@ -75,7 +76,7 @@ class WaitSetAttachmentId {
   private:
     explicit WaitSetAttachmentId(iox2_waitset_attachment_id_h handle);
     template <ServiceType>
-    friend auto run_callback(iox2_waitset_attachment_id_h, void*);
+    friend auto run_callback(iox2_waitset_attachment_id_h, void*) -> iox2_callback_progression_e;
     template <ServiceType ST>
     friend auto operator==(const WaitSetAttachmentId<ST>&, const WaitSetAttachmentId<ST>&) -> bool;
     template <ServiceType ST>
@@ -110,24 +111,20 @@ class WaitSet {
     auto operator=(WaitSet&&) noexcept -> WaitSet&;
     ~WaitSet();
 
-    /// Can be called from within a callback during [`WaitSet::wait_and_process()`] to signal the [`WaitSet`]
-    /// to stop running after this iteration.
-    void stop();
-
     /// Waits in an infinite loop on the [`WaitSet`]. The provided callback is called for every
     /// attachment that was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to
     /// acquire the source.
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user via [`WaitSetRunResult`].
-    auto wait_and_process(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
+    auto wait_and_process(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
         -> iox::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
     /// was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to acquire the
     /// source.
     /// If nothing was triggered the [`WaitSet`] returns immediately.
-    auto try_wait_and_process(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
-        -> iox::expected<void, WaitSetRunError>;
+    auto wait_and_process_once(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+        -> iox::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Returns the capacity of the [`WaitSet`]
     auto capacity() const -> uint64_t;

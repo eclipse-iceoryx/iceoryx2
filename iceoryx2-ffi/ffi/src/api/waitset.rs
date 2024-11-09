@@ -554,8 +554,10 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
     callback_ctx: iox2_callback_context,
+    result: *mut iox2_waitset_run_result_e,
 ) -> c_int {
     handle.assert_non_null();
+    debug_assert!(!result.is_null());
 
     let waitset = &mut *handle.as_type();
 
@@ -595,7 +597,10 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
     };
 
     match run_once_result {
-        Ok(v) => v.into_c_int(),
+        Ok(v) => {
+            *result = v.into();
+            IOX2_OK
+        }
         Err(e) => e.into_c_int(),
     }
 }

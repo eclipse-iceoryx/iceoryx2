@@ -704,6 +704,8 @@ constexpr auto from<int, iox2::WaitSetRunResult>(const int value) noexcept -> io
         return iox2::WaitSetRunResult::TerminationRequest;
     case iox2_waitset_run_result_e_STOP_REQUEST:
         return iox2::WaitSetRunResult::StopRequest;
+    case iox2_waitset_run_result_e_ALL_EVENTS_HANDLED:
+        return iox2::WaitSetRunResult::AllEventsHandled;
     }
 
     IOX_UNREACHABLE();

@@ -29,7 +29,9 @@ enum class WaitSetRunResult : uint8_t {
     /// An interrupt signal `SIGINT` was received.
     Interrupt,
     /// The user explicitly called [`WaitSet::stop()`].
-    StopRequest
+    StopRequest,
+    /// All events were handled.
+    AllEventsHandled
 };
 
 /// Defines the failures that can occur when attaching something with
