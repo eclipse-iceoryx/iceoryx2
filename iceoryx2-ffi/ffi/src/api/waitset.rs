@@ -15,9 +15,9 @@
 use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
-    c_size_t, iox2_callback_context, iox2_file_descriptor_ptr, iox2_service_type_e,
-    iox2_waitset_attachment_id_h, iox2_waitset_attachment_id_t, iox2_waitset_guard_h,
-    iox2_waitset_guard_t, AttachmentIdUnion, GuardUnion, IOX2_OK,
+    c_size_t, iox2_callback_context, iox2_callback_progression_e, iox2_file_descriptor_ptr,
+    iox2_service_type_e, iox2_waitset_attachment_id_h, iox2_waitset_attachment_id_t,
+    iox2_waitset_guard_h, iox2_waitset_guard_t, AttachmentIdUnion, GuardUnion, IOX2_OK,
 };
 
 use super::{AssertNonNullHandle, HandleToType, IntoCInt};
@@ -50,8 +50,6 @@ impl IntoCInt for WaitSetRunError {
             }
             WaitSetRunError::InternalError => iox2_waitset_run_error_e::INTERNAL_ERROR,
             WaitSetRunError::NoAttachments => iox2_waitset_run_error_e::NO_ATTACHMENTS,
-            WaitSetRunError::TerminationRequest => iox2_waitset_run_error_e::TERMINATION_REQUEST,
-            WaitSetRunError::Interrupt => iox2_waitset_run_error_e::INTERRUPT,
         }) as c_int
     }
 }
@@ -62,6 +60,7 @@ pub enum iox2_waitset_run_result_e {
     TERMINATION_REQUEST = IOX2_OK as isize + 1,
     INTERRUPT,
     STOP_REQUEST,
+    ALL_EVENTS_HANDLED,
 }
 
 impl IntoCInt for WaitSetRunResult {
@@ -76,6 +75,7 @@ impl From<WaitSetRunResult> for iox2_waitset_run_result_e {
             WaitSetRunResult::TerminationRequest => iox2_waitset_run_result_e::TERMINATION_REQUEST,
             WaitSetRunResult::Interrupt => iox2_waitset_run_result_e::INTERRUPT,
             WaitSetRunResult::StopRequest => iox2_waitset_run_result_e::STOP_REQUEST,
+            WaitSetRunResult::AllEventsHandled => iox2_waitset_run_result_e::ALL_EVENTS_HANDLED,
         }
     }
 }
@@ -201,8 +201,10 @@ impl HandleToType for iox2_waitset_h_ref {
     }
 }
 
-pub type iox2_waitset_run_callback =
-    extern "C" fn(iox2_waitset_attachment_id_h, iox2_callback_context);
+pub type iox2_waitset_run_callback = extern "C" fn(
+    iox2_waitset_attachment_id_h,
+    iox2_callback_context,
+) -> iox2_callback_progression_e;
 // END type definition
 
 // BEGIN C API
@@ -280,26 +282,6 @@ pub unsafe extern "C" fn iox2_waitset_capacity(handle: iox2_waitset_h_ref) -> c_
     match waitset.service_type {
         iox2_service_type_e::IPC => waitset.value.as_ref().ipc.capacity(),
         iox2_service_type_e::LOCAL => waitset.value.as_ref().local.capacity(),
-    }
-}
-
-/// Stops the current [`iox2_waitset_wait_and_process()`] operation. Any [`iox2_waitset_wait_and_process()`]
-/// call after this call is not affected and the user needs to call
-/// [`iox2_waitset_stop()`] again.
-///
-/// # Safety
-///
-///  * `handle` must be valid and acquired with
-///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-#[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
-    handle.assert_non_null();
-
-    let waitset = &mut *handle.as_type();
-
-    match waitset.service_type {
-        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.stop(),
-        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.stop(),
     }
 }
 
@@ -568,7 +550,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 ///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
 ///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
 #[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
+pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
     callback_ctx: iox2_callback_context,
@@ -583,7 +565,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
                 .value
                 .as_ref()
                 .ipc
-                .try_wait_and_process(|attachment_id| {
+                .wait_and_process_once(|attachment_id| {
                     let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
                     (*attachment_id_ptr).init(
                         waitset.service_type,
@@ -591,7 +573,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
                         iox2_waitset_attachment_id_t::dealloc,
                     );
                     let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx);
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
                 })
         }
         iox2_service_type_e::LOCAL => {
@@ -599,7 +581,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
                 .value
                 .as_ref()
                 .local
-                .try_wait_and_process(|attachment_id| {
+                .wait_and_process_once(|attachment_id| {
                     let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
                     (*attachment_id_ptr).init(
                         waitset.service_type,
@@ -607,13 +589,13 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
                         iox2_waitset_attachment_id_t::dealloc,
                     );
                     let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx);
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
                 })
         }
     };
 
     match run_once_result {
-        Ok(()) => IOX2_OK,
+        Ok(v) => v.into_c_int(),
         Err(e) => e.into_c_int(),
     }
 }
@@ -667,7 +649,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process(
                     iox2_waitset_attachment_id_t::dealloc,
                 );
                 let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                callback(attachment_id_handle_ptr, callback_ctx);
+                callback(attachment_id_handle_ptr, callback_ctx).into()
             }),
         iox2_service_type_e::LOCAL => {
             waitset
@@ -682,7 +664,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process(
                         iox2_waitset_attachment_id_t::dealloc,
                     );
                     let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx);
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
                 })
         }
     };
