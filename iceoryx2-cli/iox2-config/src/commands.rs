@@ -16,6 +16,7 @@ use dialoguer::Confirm;
 use enum_iterator::all;
 use iceoryx2::config::Config;
 use iceoryx2_bb_posix::system_configuration::*;
+use iceoryx2_cal::config_path::config_dir;
 use std::fs::{self, File};
 use std::io::Write;
 use std::panic::catch_unwind;
@@ -106,14 +107,25 @@ pub fn print_system_configuration() {
     }
 }
 
-pub fn show() -> Result<()> {
+pub fn show_system_config() -> Result<()> {
     print_system_configuration();
 
     Ok(())
 }
 
+pub fn show_current_config() -> Result<()> {
+    let config = Config::global_config();
+    let json_config = serde_json::to_value(config).unwrap_or_else(|_| serde_json::json!({}));
+    let toml_config = toml::to_string_pretty(&json_config)
+        .unwrap_or_else(|_| "Failed to convert to TOML".to_string());
+
+    println!("{}", toml_config);
+
+    Ok(())
+}
+
 pub fn generate() -> Result<()> {
-    let config_dir = dirs::config_dir().unwrap().join("iceoryx2");
+    let config_dir = config_dir().unwrap().join("iceoryx2");
     fs::create_dir_all(&config_dir)?;
 
     let default_file_path = config_dir.join("config.toml");

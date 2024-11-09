@@ -41,6 +41,7 @@ iceoryx2-pal-posix = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
+iceoryx2-cal = { workspace = true }
 
 anyhow = { workspace = true }
 better-panic = { workspace = true }

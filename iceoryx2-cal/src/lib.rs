@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod communication_channel;
+pub mod config_path;
 pub mod dynamic_storage;
 pub mod event;
 pub mod hash;

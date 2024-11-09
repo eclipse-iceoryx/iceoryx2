@@ -69,19 +69,22 @@
 //! # }
 //! ```
 
-use dirs;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::lazy_singleton::*;
 use iceoryx2_bb_posix::{file::FileBuilder, shared_memory::AccessMode};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_cal::config_path::config_dir;
 use serde::{Deserialize, Serialize};
-use std::{os::unix::ffi::OsStrExt, time::Duration};
+use std::time::Duration;
 
 use iceoryx2_bb_log::{fail, trace, warn};
 
 use crate::service::port_factory::publisher::UnableToDeliverStrategy;
+
+/// Path to the default config file
+pub const DEFAULT_CONFIG_FILE: &[u8] = b"config/iceoryx2.toml";
 
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`] or
 /// [`Config::setup_global_config_from_file()`]
@@ -394,21 +397,21 @@ impl Config {
     /// config was already populated.
 
     pub fn global_config() -> &'static Config {
-        if !ICEORYX2_CONFIG.is_initialized()
-            && Config::setup_global_config_from_file(unsafe {
-                &FilePath::new_unchecked(
-                    dirs::config_dir()
-                        .unwrap()
-                        .join("iceoryx2")
-                        .join("config.toml")
-                        .as_os_str()
-                        .as_bytes(),
-                )
-            })
-            .is_err()
-        {
-            warn!(from "Config::global_config()", "Default config file found but unable to read data, populate config with default values.");
-            ICEORYX2_CONFIG.set_value(Config::default());
+        if !ICEORYX2_CONFIG.is_initialized() {
+            let config_path = config_dir().unwrap().join("iceoryx2").join("config.toml");
+
+            match FilePath::new(config_path.as_os_str().as_encoded_bytes()) {
+                Ok(path) => {
+                    if Config::setup_global_config_from_file(&path).is_err() {
+                        warn!(from "Config::global_config()", "Default config file found but unable to read data, populate config with default values.");
+                        ICEORYX2_CONFIG.set_value(Config::default());
+                    }
+                }
+                Err(e) => {
+                    warn!(from "Config::global_config()", "Error: {:?}", e);
+                    ICEORYX2_CONFIG.set_value(Config::default());
+                }
+            }
         }
 
         ICEORYX2_CONFIG.get()

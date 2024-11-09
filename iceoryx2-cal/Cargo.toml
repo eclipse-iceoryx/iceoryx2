@@ -22,6 +22,7 @@ iceoryx2-bb-threadsafe = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
+dirs = { workspace = true }
 once_cell = { workspace = true }
 lazy_static = { workspace = true }
 serde = { workspace = true }
