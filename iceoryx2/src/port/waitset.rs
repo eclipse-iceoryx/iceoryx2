@@ -187,6 +187,7 @@ use std::{
     sync::atomic::Ordering, time::Duration,
 };
 
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     deadline_queue::{DeadlineQueue, DeadlineQueueBuilder, DeadlineQueueGuard, DeadlineQueueIndex},
@@ -195,7 +196,7 @@ use iceoryx2_bb_posix::{
     signal::SignalHandler,
 };
 use iceoryx2_cal::reactor::*;
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 /// States why the [`WaitSet::wait_and_process()`] method returned.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -206,6 +207,8 @@ pub enum WaitSetRunResult {
     Interrupt,
     /// The user explicitly called [`WaitSet::stop()`].
     StopRequest,
+    /// All events were handled.
+    AllEventsHandled,
 }
 
 /// Defines the failures that can occur when attaching something with
@@ -237,10 +240,6 @@ pub enum WaitSetRunError {
     InternalError,
     /// Waiting on an empty [`WaitSet`] would lead to a deadlock therefore it causes an error.
     NoAttachments,
-    /// A termination signal `SIGTERM` was received.
-    TerminationRequest,
-    /// An interrupt signal `SIGINT` was received.
-    Interrupt,
 }
 
 impl std::fmt::Display for WaitSetRunError {
@@ -456,7 +455,6 @@ impl WaitSetBuilder {
                 attachment_to_deadline: RefCell::new(HashMap::new()),
                 deadline_to_attachment: RefCell::new(HashMap::new()),
                 attachment_counter: IoxAtomicUsize::new(0),
-                keep_running: IoxAtomicBool::new(true),
             }),
             Err(ReactorCreateError::UnknownError(e)) => {
                 fail!(from self, with WaitSetCreateError::InternalError,
@@ -483,7 +481,6 @@ pub struct WaitSet<Service: crate::service::Service> {
     attachment_to_deadline: RefCell<HashMap<i32, DeadlineQueueIndex>>,
     deadline_to_attachment: RefCell<HashMap<DeadlineQueueIndex, i32>>,
     attachment_counter: IoxAtomicUsize,
-    keep_running: IoxAtomicBool,
 }
 
 impl<Service: crate::service::Service> WaitSet<Service> {
@@ -526,18 +523,25 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         }
     }
 
-    fn handle_deadlines<F: FnMut(WaitSetAttachmentId<Service>)>(
+    fn handle_deadlines<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         fn_call: &mut F,
         error_msg: &str,
-    ) -> Result<(), WaitSetRunError> {
+    ) -> Result<WaitSetRunResult, WaitSetRunError> {
         let deadline_to_attachment = self.deadline_to_attachment.borrow();
-        let call = |idx: DeadlineQueueIndex| {
-            if let Some(reactor_idx) = deadline_to_attachment.get(&idx) {
-                fn_call(WaitSetAttachmentId::deadline(self, *reactor_idx, idx));
+        let mut result = WaitSetRunResult::AllEventsHandled;
+        let call = |idx: DeadlineQueueIndex| -> CallbackProgression {
+            let progression = if let Some(reactor_idx) = deadline_to_attachment.get(&idx) {
+                fn_call(WaitSetAttachmentId::deadline(self, *reactor_idx, idx))
             } else {
-                fn_call(WaitSetAttachmentId::tick(self, idx));
+                fn_call(WaitSetAttachmentId::tick(self, idx))
+            };
+
+            if let CallbackProgression::Stop = progression {
+                result = WaitSetRunResult::StopRequest;
             }
+
+            progression
         };
 
         fail!(from self,
@@ -545,15 +549,15 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                   with WaitSetRunError::InternalError,
                   "{error_msg} since the missed deadlines could not be acquired.");
 
-        Ok(())
+        Ok(result)
     }
 
-    fn handle_all_attachments<F: FnMut(WaitSetAttachmentId<Service>)>(
+    fn handle_all_attachments<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         triggered_file_descriptors: &Vec<i32>,
         fn_call: &mut F,
         error_msg: &str,
-    ) -> Result<(), WaitSetRunError> {
+    ) -> Result<WaitSetRunResult, WaitSetRunError> {
         // we need to reset the deadlines first, otherwise a long fn_call may extend the
         // deadline unintentionally
         let mut fd_and_deadline_queue_idx = Vec::with_capacity(triggered_file_descriptors.len());
@@ -564,13 +568,20 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
         // must be called after the deadlines have been reset, in the case that the
         // event has been received shortly before the deadline ended.
-        self.handle_deadlines(fn_call, error_msg)?;
+
+        match self.handle_deadlines(fn_call, error_msg)? {
+            WaitSetRunResult::AllEventsHandled => (),
+            v => return Ok(v),
+        };
 
         for fd in triggered_file_descriptors {
-            fn_call(WaitSetAttachmentId::notification(self, *fd));
+            if let CallbackProgression::Stop = fn_call(WaitSetAttachmentId::notification(self, *fd))
+            {
+                return Ok(WaitSetRunResult::StopRequest);
+            }
         }
 
-        Ok(())
+        Ok(WaitSetRunResult::AllEventsHandled)
     }
 
     /// Attaches an object as notification to the [`WaitSet`]. Whenever an event is received on the
@@ -635,51 +646,39 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         })
     }
 
-    /// Can be called from within a callback during [`WaitSet::wait_and_process()`] to signal the [`WaitSet`]
-    /// to stop running after this iteration.
-    pub fn stop(&self) {
-        self.keep_running.store(false, Ordering::Relaxed);
-    }
-
     /// Waits in an infinite loop on the [`WaitSet`]. The provided callback is called for every
     /// attachment that was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to
     /// acquire the source.
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user via [`WaitSetRunResult`].
-    pub fn wait_and_process<F: FnMut(WaitSetAttachmentId<Service>)>(
+    pub fn wait_and_process<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
-        while self.keep_running.load(Ordering::Relaxed) {
-            match self.try_wait_and_process(&mut fn_call) {
-                Ok(()) => (),
-                Err(WaitSetRunError::TerminationRequest) => {
-                    return Ok(WaitSetRunResult::TerminationRequest)
-                }
-                Err(WaitSetRunError::Interrupt) => return Ok(WaitSetRunResult::Interrupt),
+        loop {
+            match self.wait_and_process_once(&mut fn_call) {
+                Ok(WaitSetRunResult::AllEventsHandled) => (),
+                Ok(v) => return Ok(v),
                 Err(e) => {
                     fail!(from self, with e,
                             "Unable to run in WaitSet::wait_and_process() loop since ({:?}) has occurred.", e);
                 }
             }
         }
-
-        Ok(WaitSetRunResult::StopRequest)
     }
 
     /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
     /// was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to acquire the
     /// source.
     /// If nothing was triggered the [`WaitSet`] returns immediately.
-    pub fn try_wait_and_process<F: FnMut(WaitSetAttachmentId<Service>)>(
+    pub fn wait_and_process_once<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,
-    ) -> Result<(), WaitSetRunError> {
+    ) -> Result<WaitSetRunResult, WaitSetRunError> {
         let msg = "Unable to call WaitSet::try_wait_and_process()";
 
         if SignalHandler::termination_requested() {
-            fail!(from self, with WaitSetRunError::TerminationRequest,
-                "{msg} since a termination request was received.");
+            return Ok(WaitSetRunResult::TerminationRequest);
         }
 
         if self.is_empty() {
@@ -708,18 +707,9 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         };
 
         match reactor_wait_result {
-            Ok(0) => {
-                self.handle_deadlines(&mut fn_call, msg)?;
-                Ok(())
-            }
-            Ok(_) => {
-                self.handle_all_attachments(&triggered_file_descriptors, &mut fn_call, msg)?;
-                Ok(())
-            }
-            Err(ReactorWaitError::Interrupt) => {
-                fail!(from self, with WaitSetRunError::Interrupt,
-                    "{msg} since an interrupt signal was received.");
-            }
+            Ok(0) => self.handle_deadlines(&mut fn_call, msg),
+            Ok(_) => self.handle_all_attachments(&triggered_file_descriptors, &mut fn_call, msg),
+            Err(ReactorWaitError::Interrupt) => return Ok(WaitSetRunResult::Interrupt),
             Err(ReactorWaitError::InsufficientPermissions) => {
                 fail!(from self, with WaitSetRunError::InsufficientPermissions,
                     "{msg} due to insufficient permissions.");

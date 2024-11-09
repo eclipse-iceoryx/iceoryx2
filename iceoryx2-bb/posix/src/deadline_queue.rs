@@ -268,7 +268,7 @@ impl DeadlineQueue {
 
     /// Iterates over all missed deadlines and calls the provided callback for each of them
     /// and provide the [`DeadlineQueueIndex`] to identify them.
-    pub fn missed_deadlines<F: FnMut(DeadlineQueueIndex)>(
+    pub fn missed_deadlines<F: FnMut(DeadlineQueueIndex) -> CallbackProgression>(
         &self,
         mut call: F,
     ) -> Result<(), TimeError> {
@@ -276,10 +276,7 @@ impl DeadlineQueue {
                         "Unable to return next duration since the current time could not be acquired.");
 
         let now = now.as_duration().as_nanos();
-        self.handle_missed_deadlines(now, |idx| {
-            call(idx);
-            CallbackProgression::Continue
-        });
+        self.handle_missed_deadlines(now, |idx| -> CallbackProgression { call(idx) });
 
         Ok(())
     }

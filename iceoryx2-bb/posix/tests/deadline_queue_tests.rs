@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod deadline_queue {
+    use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_posix::deadline_queue::*;
     use iceoryx2_bb_testing::assert_that;
     use std::time::Duration;
@@ -85,8 +86,11 @@ mod deadline_queue {
             .unwrap();
 
         let mut missed_deadline_queues = vec![];
-        sut.missed_deadlines(|idx| missed_deadline_queues.push(idx))
-            .unwrap();
+        sut.missed_deadlines(|idx| {
+            missed_deadline_queues.push(idx);
+            CallbackProgression::Continue
+        })
+        .unwrap();
 
         assert_that!(missed_deadline_queues, len 0);
     }
@@ -104,8 +108,11 @@ mod deadline_queue {
         std::thread::sleep(Duration::from_millis(10));
 
         let mut missed_deadlines = vec![];
-        sut.missed_deadlines(|idx| missed_deadlines.push(idx))
-            .unwrap();
+        sut.missed_deadlines(|idx| {
+            missed_deadlines.push(idx);
+            CallbackProgression::Continue
+        })
+        .unwrap();
 
         assert_that!(missed_deadlines, len 1);
         assert_that!(missed_deadlines, contains _guard_1.index());
@@ -122,13 +129,36 @@ mod deadline_queue {
         std::thread::sleep(Duration::from_millis(10));
 
         let mut missed_deadlines = vec![];
-        sut.missed_deadlines(|idx| missed_deadlines.push(idx))
-            .unwrap();
+        sut.missed_deadlines(|idx| {
+            missed_deadlines.push(idx);
+            CallbackProgression::Continue
+        })
+        .unwrap();
 
         assert_that!(missed_deadlines, len 3);
         assert_that!(missed_deadlines, contains guard_1.index());
         assert_that!(missed_deadlines, contains guard_2.index());
         assert_that!(missed_deadlines, contains guard_3.index());
+    }
+
+    #[test]
+    fn missed_deadline_iteration_stops_when_requested() {
+        let sut = DeadlineQueueBuilder::new().create().unwrap();
+
+        let _guard_1 = sut.add_deadline_interval(Duration::from_nanos(1)).unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_nanos(10)).unwrap();
+        let _guard_3 = sut.add_deadline_interval(Duration::from_nanos(20)).unwrap();
+
+        std::thread::sleep(Duration::from_millis(10));
+
+        let mut missed_deadlines = vec![];
+        sut.missed_deadlines(|idx| {
+            missed_deadlines.push(idx);
+            CallbackProgression::Stop
+        })
+        .unwrap();
+
+        assert_that!(missed_deadlines, len 1);
     }
 
     #[test]
@@ -149,7 +179,8 @@ mod deadline_queue {
         let mut deadline_idx = None;
         sut.missed_deadlines(|idx| {
             missed_deadline_counter += 1;
-            deadline_idx = Some(idx)
+            deadline_idx = Some(idx);
+            CallbackProgression::Continue
         })
         .unwrap();
 
