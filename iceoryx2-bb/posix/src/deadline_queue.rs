@@ -30,14 +30,17 @@
 //! // contains all the deadlines where the deadline was hit
 //! let mut missed_deadlines = vec![];
 //! deadline_queue
-//!     .missed_deadlines(|deadline_queue_index| missed_deadlines.push(deadline_queue_index));
+//!     .missed_deadlines(|deadline_queue_index| {
+//!         missed_deadlines.push(deadline_queue_index);
+//!         CallbackProgression::Continue
+//!     });
 //! ```
 
-use std::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
+pub use iceoryx2_bb_elementary::CallbackProgression;
 
-use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
 
 use crate::{
     clock::ClockType,

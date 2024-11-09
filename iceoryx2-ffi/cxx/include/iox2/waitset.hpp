@@ -96,7 +96,8 @@ auto operator<(const WaitSetAttachmentId<S>& lhs, const WaitSetAttachmentId<S>& 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
 /// single call [`WaitSet::try_wait_and_process()`] until it wakes up or to run repeatedly with
 /// [`WaitSet::wait_and_process()`] until the a interrupt or termination signal was received or the user
-/// has explicitly requested to stop with [`WaitSet::stop()`].
+/// has explicitly requested to stop by returning [`CallbackProgression::Stop`] in the provided
+/// callback.
 ///
 /// The [`Listener`] can be attached as well as sockets or anything else that
 /// can be packed into a [`FileDescriptorView`].

@@ -614,7 +614,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
 /// owning [`iox2_waitset_attachment_id_h`] is provided as input argument, as well as the
 /// `callback_ctx`.
 /// The infinite loop is interrupted either by a `SIGINT` or `SIGTERM` signal or
-/// when the user has called [`iox2_waitset_stop()`].
+/// when the user callback returned [`iox2_callback_progression_e::STOP`].
 ///
 /// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding

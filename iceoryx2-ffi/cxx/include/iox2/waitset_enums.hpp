@@ -28,7 +28,7 @@ enum class WaitSetRunResult : uint8_t {
     TerminationRequest,
     /// An interrupt signal `SIGINT` was received.
     Interrupt,
-    /// The user explicitly called [`WaitSet::stop()`].
+    /// The users callback returned [`CallbackProgression::Stop`].
     StopRequest,
     /// All events were handled.
     AllEventsHandled

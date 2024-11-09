@@ -63,6 +63,7 @@
 //!             println!("received notification {:?}", event_id);
 //!         }
 //!     }
+//!     CallbackProgression::Continue
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
@@ -96,6 +97,7 @@
 //!     } else if attachment_id.has_missed_deadline(&guard) {
 //!         println!("Oh no, we hit the deadline without receiving any kind of event");
 //!     }
+//!     CallbackProgression::Continue
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
@@ -131,6 +133,7 @@
 //!     } else if attachment_id.has_event_from(&guard_2) {
 //!         publisher_2.send_copy(456);
 //!     }
+//!     CallbackProgression::Continue
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
@@ -173,6 +176,7 @@
 //!             println!("received notification {:?}", event_id);
 //!         }
 //!     }
+//!     CallbackProgression::Continue
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
@@ -205,7 +209,7 @@ pub enum WaitSetRunResult {
     TerminationRequest,
     /// An interrupt signal `SIGINT` was received.
     Interrupt,
-    /// The user explicitly called [`WaitSet::stop()`].
+    /// The users callback returned [`CallbackProgression::Stop`].
     StopRequest,
     /// All events were handled.
     AllEventsHandled,
@@ -465,9 +469,10 @@ impl WaitSetBuilder {
 }
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::try_wait_and_process()`] until it wakes up or to run repeatedly with
+/// single call [`WaitSet::wait_and_process_once()`] until it wakes up or to run repeatedly with
 /// [`WaitSet::wait_and_process()`] until the a interrupt or termination signal was received or the user
-/// has explicitly requested to stop with [`WaitSet::stop()`].
+/// has explicitly requested to stop by returning [`CallbackProgression::Stop`] in the provided
+/// callback.
 ///
 /// An struct must implement [`SynchronousMultiplexing`] to be attachable. The
 /// [`Listener`](crate::port::listener::Listener) can be attached as well as sockets or anything else that
@@ -659,6 +664,39 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
     /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
     /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use iceoryx2::prelude::*;
+    /// # use core::time::Duration;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
+    /// #     .event()
+    /// #     .open_or_create()?;
+    ///
+    /// # let mut listener = event.listener_builder().create()?;
+    ///
+    /// let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    /// # let guard = waitset.attach_notification(&listener)?;
+    ///
+    /// let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+    ///     if attachment_id.has_event_from(&guard) {
+    ///         // when a certain event arrives we stop the event processing
+    ///         // to terminate the process
+    ///         CallbackProgression::Stop
+    ///     } else {
+    ///         CallbackProgression::Continue
+    ///     }
+    /// };
+    ///
+    /// waitset.wait_and_process(on_event)?;
+    /// println!("goodbye");
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn wait_and_process<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,
@@ -690,6 +728,37 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ///
     /// When no signal was received and all events were handled, it will return
     /// [`WaitSetRunResult::AllEventsHandled`].
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use iceoryx2::prelude::*;
+    /// # use core::time::Duration;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
+    /// #     .event()
+    /// #     .open_or_create()?;
+    ///
+    /// let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    ///
+    /// let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+    ///     // do some event processing
+    ///     CallbackProgression::Continue
+    /// };
+    ///
+    /// // main event loop
+    /// loop {
+    ///     // blocks until an event arrives, handles all arrived events and then
+    ///     // returns.
+    ///     waitset.wait_and_process_once(on_event)?;
+    ///     // do some event post processing
+    ///     println!("handled events");
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn wait_and_process_once<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,
@@ -728,7 +797,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         match reactor_wait_result {
             Ok(0) => self.handle_deadlines(&mut fn_call, msg),
             Ok(_) => self.handle_all_attachments(&triggered_file_descriptors, &mut fn_call, msg),
-            Err(ReactorWaitError::Interrupt) => return Ok(WaitSetRunResult::Interrupt),
+            Err(ReactorWaitError::Interrupt) => Ok(WaitSetRunResult::Interrupt),
             Err(ReactorWaitError::InsufficientPermissions) => {
                 fail!(from self, with WaitSetRunError::InsufficientPermissions,
                     "{msg} due to insufficient permissions.");
