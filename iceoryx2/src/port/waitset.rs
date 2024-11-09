@@ -646,11 +646,19 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         })
     }
 
-    /// Waits in an infinite loop on the [`WaitSet`]. The provided callback is called for every
-    /// attachment that was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to
-    /// acquire the source.
+    /// Waits until an event arrives on the [`WaitSet`], then collects all events by calling the
+    /// provided `fn_call` callback with the corresponding [`WaitSetAttachmentId`]. In contrast
+    /// to [`WaitSet::wait_and_process_once()`] it will never return until the user explicitly
+    /// requests it by returning [`CallbackProgression::Stop`] or by receiving a signal.
+    ///
+    /// The provided callback must return [`CallbackProgression::Continue`] to continue the event
+    /// processing and handle the next event or [`CallbackProgression::Stop`] to return from this
+    /// call immediately. All unhandled events will be lost forever and the call will return
+    /// [`WaitSetRunResult::StopRequest`].
+    ///
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
-    /// the loop and inform the user via [`WaitSetRunResult`].
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
     pub fn wait_and_process<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,
@@ -667,10 +675,21 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         }
     }
 
-    /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
-    /// was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to acquire the
-    /// source.
-    /// If nothing was triggered the [`WaitSet`] returns immediately.
+    /// Waits until an event arrives on the [`WaitSet`], then collects all events by calling the
+    /// provided `fn_call` callback with the corresponding [`WaitSetAttachmentId`] and then
+    /// returns. This makes it ideal to be called in some kind of event-loop.
+    ///
+    /// The provided callback must return [`CallbackProgression::Continue`] to continue the event
+    /// processing and handle the next event or [`CallbackProgression::Stop`] to return from this
+    /// call immediately. All unhandled events will be lost forever and the call will return
+    /// [`WaitSetRunResult::StopRequest`].
+    ///
+    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// When no signal was received and all events were handled, it will return
+    /// [`WaitSetRunResult::AllEventsHandled`].
     pub fn wait_and_process_once<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,

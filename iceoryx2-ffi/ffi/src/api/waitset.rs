@@ -528,17 +528,21 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
     IOX2_OK
 }
 
-/// Checks the [`iox2_waitset_h`] for new events once. The provided `callback` is called
-/// for every events that was received and the corresponding owning [`iox2_waitset_attachment_id_h`]
-/// is provided as input argument, as well as the `callback_ctx`.
+/// Waits until an event arrives on the [`iox2_waitset_h`], then collects all events by calling the
+/// provided `fn_call` callback with the corresponding [`iox2_waitset_attachment_id_h`] and then
+/// returns. This makes it ideal to be called in some kind of event-loop.
 ///
-/// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
-/// the origin of the event can be determined from its corresponding
-/// [`iox2_waitset_guard_h`].
-/// If the deadline was hit the function
-/// [`iox2_waitset_attachment_id_has_missed_deadline()`](crate::iox2_waitset_attachment_id_has_missed_deadline())
-/// can be used to identify it.
+/// The provided callback must return [`iox2_callback_progression_e::CONTINUE`] to continue the event
+/// processing and handle the next event or [`iox2_callback_progression_e::STOP`] to return from this
+/// call immediately. All unhandled events will be lost forever and the call will return
+/// [`iox2_waitset_run_result_e::STOP_REQUEST`].
 ///
+/// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+/// the loop and inform the user with [`iox2_waitset_run_result_e::INTERRUPT`] or
+/// [`iox2_waitset_run_result_e::TERMINATION_REQUEST`].
+///
+/// When no signal was received and all events were handled, it will return
+/// [`iox2_waitset_run_result_e::ALL_EVENTS_HANDLED`].
 /// # Return
 ///
 /// `IOX2_OK` on success, otherwise [`iox2_waitset_run_error_e`].
