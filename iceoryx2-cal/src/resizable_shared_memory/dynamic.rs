@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::alloc::Layout;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::{fmt::Debug, marker::PhantomData};
@@ -22,6 +23,7 @@ use crate::shared_memory::{
 use crate::shm_allocator::ShmAllocationError;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
+use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -31,18 +33,25 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
     NamedConceptMgmt, NamedConceptRemoveError, ResizableSharedMemory, ResizableSharedMemoryBuilder,
-    ResizableSharedMemoryView, MAX_DATASEGMENTS,
+    ResizableSharedMemoryView, ResizableShmAllocationError, MAX_DATASEGMENTS,
 };
+
+#[derive(Debug)]
+struct BuilderConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
+    base_name: FileName,
+    shm: Shm::Configuration,
+    allocator_config_hint: Allocator::Configuration,
+    shm_builder_timeout: Duration,
+    max_number_of_chunks_hint: usize,
+}
 
 #[derive(Debug)]
 pub struct DynamicBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
 where
     Allocator: Debug,
 {
-    base_name: FileName,
     builder: Shm::Builder,
-    allocator_config_hint: Allocator::Configuration,
-    max_number_of_chunks_hint: usize,
+    config: BuilderConfig<Allocator, Shm>,
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
@@ -55,14 +64,18 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
             .expect("Adding __0 results in a valid file name");
         Self {
             builder: Shm::Builder::new(name),
-            allocator_config_hint: Allocator::Configuration::default(),
-            max_number_of_chunks_hint: 1,
-            base_name: *name,
+            config: BuilderConfig {
+                base_name: *name,
+                shm_builder_timeout: Duration::ZERO,
+                allocator_config_hint: Allocator::Configuration::default(),
+                shm: Shm::Configuration::default(),
+                max_number_of_chunks_hint: 1,
+            },
         }
     }
 
     fn config(mut self, config: &Shm::Configuration) -> Self {
-        self.builder = self.builder.config(config);
+        self.config.shm = config.clone();
         self
     }
 }
@@ -84,31 +97,31 @@ where
     }
 
     fn allocator_config_hint(mut self, value: Allocator::Configuration) -> Self {
-        self.allocator_config_hint = value;
+        self.config.allocator_config_hint = value;
         self
     }
 
     fn max_number_of_chunks_hint(mut self, value: usize) -> Self {
-        self.max_number_of_chunks_hint = value;
+        self.config.max_number_of_chunks_hint = value;
         self
     }
 
     fn timeout(mut self, value: Duration) -> Self {
-        self.builder = self.builder.timeout(value);
+        self.config.shm_builder_timeout = value;
         self
     }
 
     fn create(self) -> Result<DynamicMemory<Allocator, Shm>, SharedMemoryCreateError> {
         let initial_size = Allocator::payload_size_hint(
-            &self.allocator_config_hint,
-            self.max_number_of_chunks_hint,
+            &self.config.allocator_config_hint,
+            self.config.max_number_of_chunks_hint,
         );
 
         let origin = format!("{:?}", self);
         let shm = fail!(from origin, when self
             .builder
             .size(initial_size)
-            .create(&self.allocator_config_hint),
+            .create(&self.config.allocator_config_hint),
             "Unable to create ResizableSharedMemory since the underlying shared memory could not be created.");
 
         let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
@@ -117,7 +130,7 @@ where
             .expect("MAX_DATASEGMENTS is greater or equal 1");
 
         Ok(DynamicMemory {
-            base_name: self.base_name,
+            builder_config: self.config,
             shared_memory_map,
             current_idx,
             has_ownership: IoxAtomicBool::new(true),
@@ -138,7 +151,7 @@ where
             .expect("MAX_DATASEGMENTS is greater or equal 1");
 
         Ok(DynamicView {
-            base_name: self.base_name,
+            builder_config: self.config,
             shared_memory_map,
             current_idx,
             _data: PhantomData,
@@ -147,7 +160,7 @@ where
 }
 
 pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
-    base_name: FileName,
+    builder_config: BuilderConfig<Allocator, Shm>,
     shared_memory_map: SlotMap<Shm>,
     current_idx: SlotMapKey,
     _data: PhantomData<Allocator>,
@@ -179,7 +192,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
 
 #[derive(Debug)]
 pub struct DynamicMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
-    base_name: FileName,
+    builder_config: BuilderConfig<Allocator, Shm>,
     shared_memory_map: SlotMap<Shm>,
     current_idx: SlotMapKey,
     has_ownership: IoxAtomicBool,
@@ -190,7 +203,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConcept
     for DynamicMemory<Allocator, Shm>
 {
     fn name(&self) -> &FileName {
-        &self.base_name
+        &self.builder_config.base_name
     }
 }
 
@@ -222,6 +235,12 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConceptMgmt
     }
 }
 
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Allocator, Shm> {
+    fn create_new_segment(&self, layout: Layout) -> Result<(), SharedMemoryCreateError> {
+        todo!()
+    }
+}
+
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ResizableSharedMemory<Allocator, Shm>
     for DynamicMemory<Allocator, Shm>
 where
@@ -230,15 +249,23 @@ where
     type Builder = DynamicBuilder<Allocator, Shm>;
     type View = DynamicView<Allocator, Shm>;
 
-    fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
-        match self.shared_memory_map.get(self.current_idx) {
-            Some(shm) => shm.allocate(layout),
-            None => fatal_panic!(from self,
+    fn allocate(&self, layout: Layout) -> Result<ShmPointer, ResizableShmAllocationError> {
+        loop {
+            match self.shared_memory_map.get(self.current_idx) {
+                Some(shm) => match shm.allocate(layout) {
+                    Ok(ptr) => return Ok(ptr),
+                    Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
+                        self.create_new_segment(layout)?;
+                    }
+                    Err(e) => return Err(e.into()),
+                },
+                None => fatal_panic!(from self,
                         "This should never happen! Current shared memory segment is not available!"),
+            }
         }
     }
 
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
         match self.shared_memory_map.get(self.current_idx) {
             Some(shm) => shm.deallocate(offset, layout),
             None => fatal_panic!(from self,

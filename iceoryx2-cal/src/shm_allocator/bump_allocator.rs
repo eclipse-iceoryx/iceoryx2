@@ -28,6 +28,26 @@ pub struct BumpAllocator {
 impl ShmAllocator for BumpAllocator {
     type Configuration = Config;
 
+    fn resize_hint(
+        &self,
+        layout: Layout,
+        strategy: AllocationStrategy,
+    ) -> ResizeHint<Self::Configuration> {
+        let current_payload_size = self.allocator.total_space();
+
+        let payload_size = match strategy {
+            AllocationStrategy::BestFit => current_payload_size + layout.size(),
+            AllocationStrategy::PowerOfTwo => {
+                (current_payload_size + layout.size()).next_power_of_two()
+            }
+        };
+
+        ResizeHint {
+            payload_size,
+            config: Self::Configuration::default(),
+        }
+    }
+
     fn payload_size_hint(_config: &Self::Configuration, max_number_of_chunks: usize) -> usize {
         max_number_of_chunks
     }

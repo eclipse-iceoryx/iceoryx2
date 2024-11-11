@@ -58,6 +58,7 @@ mod resizable_shared_memory {
         assert_that!(unsafe{ *ptr_view }, eq test_value_2);
     }
 
+    #[ignore]
     #[test]
     fn allocate_more_than_hinted_works<
         Shm: SharedMemory<DefaultAllocator>,

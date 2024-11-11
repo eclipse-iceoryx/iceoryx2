@@ -16,7 +16,9 @@ use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::fail;
 
-use super::{PointerOffset, ShmAllocationError, ShmAllocatorInitError};
+use super::{
+    AllocationStrategy, PointerOffset, ResizeHint, ShmAllocationError, ShmAllocatorInitError,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Config {
@@ -55,6 +57,45 @@ impl PoolAllocator {
 
 impl ShmAllocator for PoolAllocator {
     type Configuration = Config;
+
+    fn resize_hint(
+        &self,
+        layout: Layout,
+        strategy: AllocationStrategy,
+    ) -> ResizeHint<Self::Configuration> {
+        let current_layout = unsafe {
+            Layout::from_size_align_unchecked(
+                self.allocator.bucket_size(),
+                self.allocator.max_alignment(),
+            )
+        };
+        let adjusted_alignment = current_layout.align().max(layout.align());
+        let adjusted_size = current_layout
+            .size()
+            .max(layout.size())
+            .next_multiple_of(adjusted_alignment);
+
+        let adjusted_layout =
+            unsafe { Layout::from_size_align_unchecked(adjusted_size, adjusted_alignment) };
+
+        let config = Self::Configuration {
+            bucket_layout: adjusted_layout,
+        };
+        let payload_size = match strategy {
+            AllocationStrategy::BestFit => {
+                Self::payload_size_hint(&config, (self.allocator.number_of_buckets() + 1) as usize)
+            }
+            AllocationStrategy::PowerOfTwo => {
+                Self::payload_size_hint(&config, (self.allocator.number_of_buckets() + 1) as usize)
+                    .next_power_of_two()
+            }
+        };
+
+        ResizeHint {
+            payload_size,
+            config,
+        }
+    }
 
     fn payload_size_hint(config: &Self::Configuration, max_number_of_chunks: usize) -> usize {
         config.bucket_layout.size() * max_number_of_chunks

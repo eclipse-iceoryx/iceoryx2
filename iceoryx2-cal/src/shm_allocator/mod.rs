@@ -46,9 +46,20 @@ enum_gen! { ShmAllocationError
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
+pub enum AllocationStrategy {
+    BestFit,
+    PowerOfTwo,
+}
+
+#[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub enum ShmAllocatorInitError {
     MaxSupportedMemoryAlignmentInsufficient,
     AllocationFailed,
+}
+
+pub struct ResizeHint<Config: ShmAllocatorConfig> {
+    payload_size: usize,
+    config: Config,
 }
 
 /// Every allocator implementation must be relocatable. The allocator itself must be stored either
@@ -56,6 +67,14 @@ pub enum ShmAllocatorInitError {
 /// but accessible by all participating processes.
 pub trait ShmAllocator: Debug + Send + Sync + 'static {
     type Configuration: ShmAllocatorConfig;
+    /// Suggest a new payload size by considering the current allocation state in combination with
+    /// a provided [`AllocationStrategy`] and a `layout` that shall be allocatable.
+    fn resize_hint(
+        &self,
+        layout: Layout,
+        strategy: AllocationStrategy,
+    ) -> ResizeHint<Self::Configuration>;
+
     /// Suggest a managed payload size under a provided configuration assuming that at most
     /// `max_number_of_chunks` of memory are in use in parallel.
     fn payload_size_hint(config: &Self::Configuration, max_number_of_chunks: usize) -> usize;

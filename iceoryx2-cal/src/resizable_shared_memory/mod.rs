@@ -15,6 +15,8 @@ pub mod dynamic;
 use std::fmt::Debug;
 use std::time::Duration;
 
+use iceoryx2_bb_elementary::enum_gen;
+
 use crate::named_concept::*;
 use crate::shared_memory::{
     SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
@@ -22,6 +24,12 @@ use crate::shared_memory::{
 use crate::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
 
 const MAX_DATASEGMENTS: usize = 256;
+
+enum_gen! { ResizableShmAllocationError
+  mapping:
+    ShmAllocationError,
+    SharedMemoryCreateError
+}
 
 pub trait ResizableSharedMemoryBuilder<
     Allocator: ShmAllocator,
@@ -62,7 +70,10 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     type Builder: ResizableSharedMemoryBuilder<Allocator, Shm, Self, Self::View>;
     type View: ResizableSharedMemoryView<Allocator, Shm>;
 
-    fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError>;
+    fn allocate(
+        &self,
+        layout: std::alloc::Layout,
+    ) -> Result<ShmPointer, ResizableShmAllocationError>;
 
     /// Release previously allocated memory
     ///
