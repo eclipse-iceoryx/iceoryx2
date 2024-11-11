@@ -13,23 +13,28 @@
 pub mod bump_allocator;
 pub mod pool_allocator;
 
-use std::{alloc::Layout, ptr::NonNull};
+use std::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 pub use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
 
-pub trait ShmAllocatorConfig: Copy + Default {}
+pub trait ShmAllocatorConfig: Copy + Default + Debug {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
-pub struct PointerOffset(usize);
+pub struct PointerOffset(u64);
 
 impl PointerOffset {
-    pub fn new(value: usize) -> PointerOffset {
-        Self(value)
+    pub fn new(offset: usize) -> PointerOffset {
+        let segment_id = 0;
+        Self((offset as u64) << 8 | segment_id as u64)
     }
 
-    pub fn value(&self) -> usize {
-        self.0
+    pub fn offset(&self) -> usize {
+        (self.0 >> 8) as usize
+    }
+
+    pub fn segment_id(&self) -> u8 {
+        (self.0 & 0x00000000000000ff) as u8
     }
 }
 
@@ -49,7 +54,7 @@ pub enum ShmAllocatorInitError {
 /// Every allocator implementation must be relocatable. The allocator itself must be stored either
 /// in the same shared memory segment or in a separate shared memory segment of a different type
 /// but accessible by all participating processes.
-pub trait ShmAllocator: Send + Sync + 'static {
+pub trait ShmAllocator: Debug + Send + Sync + 'static {
     type Configuration: ShmAllocatorConfig;
 
     /// Returns the required memory size of the additional dynamic part of the allocator that is

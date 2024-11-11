@@ -12,41 +12,22 @@
 
 use std::alloc::Layout;
 use std::fmt::Debug;
+use std::marker::PhantomData;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::shared_memory::{
     SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
 };
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
-use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocationError};
+use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-
-pub struct DynamicPointerOffset {
-    value: u64,
-}
-
-impl DynamicPointerOffset {
-    pub fn new(offset: usize, segment_id: u8) -> Self {
-        Self {
-            value: (offset as u64) << 8 | segment_id as u64,
-        }
-    }
-
-    pub fn offset(&self) -> PointerOffset {
-        PointerOffset::new((self.value >> 8) as usize)
-    }
-
-    pub fn segment_id(&self) -> u8 {
-        (self.value & 0x00000000000000ff) as u8
-    }
-}
 
 const MAX_DATASEGMENTS: usize = 256;
 
@@ -58,19 +39,23 @@ pub enum AllocationStrategy {
 }
 
 #[derive(Debug)]
-pub struct ResizableSharedMemoryBuilder<T: SharedMemory<PoolAllocator>>
+pub struct ResizableSharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
 where
-    T::Builder: Debug,
+    Allocator: Debug,
+    Shm::Builder: Debug,
 {
     base_name: FileName,
-    builder: T::Builder,
+    builder: Shm::Builder,
+    allocator_config_hint: Allocator::Configuration,
     bucket_layout_hint: Layout,
     number_of_buckets_hint: usize,
 }
 
-impl<T: SharedMemory<PoolAllocator>> ResizableSharedMemoryBuilder<T>
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+    ResizableSharedMemoryBuilder<Allocator, Shm>
 where
-    T::Builder: Debug,
+    Allocator: Debug,
+    Shm::Builder: Debug,
 {
     pub fn new(name: &FileName) -> Self {
         let mut first_shm_segment = *name;
@@ -78,14 +63,15 @@ where
             .push_bytes(b"__0")
             .expect("Adding __0 results in a valid file name");
         Self {
-            builder: T::Builder::new(name),
+            builder: Shm::Builder::new(name),
+            allocator_config_hint: Allocator::Configuration::default(),
             base_name: *name,
             bucket_layout_hint: Layout::new::<u8>(),
             number_of_buckets_hint: 1,
         }
     }
 
-    pub fn config(mut self, config: &T::Configuration) -> Self {
+    pub fn config(mut self, config: &Shm::Configuration) -> Self {
         self.builder = self.builder.config(config);
         self
     }
@@ -93,6 +79,11 @@ where
     /// Defines if a newly created [`SharedMemory`] owns the underlying resources
     pub fn has_ownership(mut self, value: bool) -> Self {
         self.builder = self.builder.has_ownership(value);
+        self
+    }
+
+    pub fn allocator_config_hint(mut self, value: Allocator::Configuration) -> Self {
+        self.allocator_config_hint = value;
         self
     }
 
@@ -117,17 +108,14 @@ where
     }
 
     /// Creates new [`SharedMemory`]. If it already exists the method will fail.
-    pub fn create(self) -> Result<ResizableSharedMemory<T>, SharedMemoryCreateError> {
-        let initial_size = self.number_of_buckets_hint * self.bucket_layout_hint.size();
-        let initial_allocator_config = iceoryx2_cal::shm_allocator::pool_allocator::Config {
-            bucket_layout: self.bucket_layout_hint,
-        };
+    pub fn create(self) -> Result<ResizableSharedMemory<Allocator, Shm>, SharedMemoryCreateError> {
+        let initial_size = 4096;
 
         let origin = format!("{:?}", self);
         let shm = fail!(from origin, when self
             .builder
             .size(initial_size)
-            .create(&initial_allocator_config),
+            .create(&self.allocator_config_hint),
             "Unable to create ResizableSharedMemory since the underlying shared memory could not be created.");
 
         let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
@@ -142,12 +130,13 @@ where
             number_of_buckets: self.number_of_buckets_hint,
             bucket_layout: self.bucket_layout_hint,
             has_ownership: IoxAtomicBool::new(true),
+            _data: PhantomData,
         })
     }
 
     /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
     /// yet finished the method will fail.
-    pub fn open(self) -> Result<ResizableSharedMemoryView<T>, SharedMemoryOpenError> {
+    pub fn open(self) -> Result<ResizableSharedMemoryView<Allocator, Shm>, SharedMemoryOpenError> {
         let origin = format!("{:?}", self);
         let shm = fail!(from origin, when self
             .builder
@@ -163,22 +152,26 @@ where
             base_name: self.base_name,
             shared_memory_map,
             current_idx,
+            _data: PhantomData,
         })
     }
 }
 
-pub struct ResizableSharedMemoryView<T: SharedMemory<PoolAllocator>> {
+pub struct ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     base_name: FileName,
-    shared_memory_map: SlotMap<T>,
+    shared_memory_map: SlotMap<Shm>,
     current_idx: SlotMapKey,
+    _data: PhantomData<Allocator>,
 }
 
-impl<T: SharedMemory<PoolAllocator>> ResizableSharedMemoryView<T> {
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+    ResizableSharedMemoryView<Allocator, Shm>
+{
     fn update_map_view(&mut self) {}
 
-    pub fn translate_offset(&mut self, offset: DynamicPointerOffset) -> usize {
+    pub fn translate_offset(&mut self, offset: PointerOffset) -> usize {
         let segment_id = offset.segment_id();
-        let offset = offset.offset().value();
+        let offset = offset.offset();
 
         match self
             .shared_memory_map
@@ -193,39 +186,45 @@ impl<T: SharedMemory<PoolAllocator>> ResizableSharedMemoryView<T> {
     }
 }
 
-pub struct ResizableSharedMemory<T: SharedMemory<PoolAllocator>> {
+#[derive(Debug)]
+pub struct ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     base_name: FileName,
-    shared_memory_map: SlotMap<T>,
+    shared_memory_map: SlotMap<Shm>,
     current_idx: SlotMapKey,
     number_of_buckets: usize,
     bucket_layout: Layout,
     has_ownership: IoxAtomicBool,
+    _data: PhantomData<Allocator>,
 }
 
-impl<T: SharedMemory<PoolAllocator>> ResizableSharedMemory<T> {
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ResizableSharedMemory<Allocator, Shm> {
     unsafe fn remove(
         name: &FileName,
-        config: &T::Configuration,
+        config: &Shm::Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
         todo!()
     }
 
     fn does_exist(
         name: &FileName,
-        config: &T::Configuration,
+        config: &Shm::Configuration,
     ) -> Result<bool, NamedConceptDoesExistError> {
         todo!()
     }
 
     fn list<F: FnMut(&FileName) -> CallbackProgression>(
-        config: &T::Configuration,
+        config: &Shm::Configuration,
         callback: F,
     ) -> Result<(), NamedConceptListError> {
         todo!()
     }
 
-    fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
-        todo!()
+    pub fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
+        match self.shared_memory_map.get(self.current_idx) {
+            Some(shm) => shm.allocate(layout),
+            None => fatal_panic!(from self,
+                        "This should never happen! Current shared memory segment is not available!"),
+        }
     }
 
     /// Release previously allocated memory
@@ -235,14 +234,18 @@ impl<T: SharedMemory<PoolAllocator>> ResizableSharedMemory<T> {
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
-        todo!()
+    pub unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
+        match self.shared_memory_map.get(self.current_idx) {
+            Some(shm) => shm.deallocate(offset, layout),
+            None => fatal_panic!(from self,
+                        "This should never happen! Current shared memory segment is not available!"),
+        }
     }
 
     /// Returns if the [`SharedMemory`] supports persistency, meaning that the underlying OS
     /// resource remain even when every [`SharedMemory`] instance in every process was removed.
     pub fn does_support_persistency() -> bool {
-        T::does_support_persistency()
+        Shm::does_support_persistency()
     }
 
     /// Returns true if the [`SharedMemory`] holds the ownership, otherwise false

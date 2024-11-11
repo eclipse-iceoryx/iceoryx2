@@ -306,7 +306,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 None => Ok(None),
                 Some(offset) => {
                     let absolute_address =
-                        offset.value() + connection.data_segment.payload_start_address();
+                        offset.offset() + connection.data_segment.payload_start_address();
 
                     let details = SampleDetails {
                         publisher_connection: connection.clone(),

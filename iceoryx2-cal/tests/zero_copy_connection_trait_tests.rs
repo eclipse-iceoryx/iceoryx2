@@ -350,12 +350,12 @@ mod zero_copy_connection {
         );
         let sample = sut_receiver.receive().unwrap();
         assert_that!(sample, is_some);
-        assert_that!(sample.as_ref().unwrap().value(), eq sample_offset);
+        assert_that!(sample.as_ref().unwrap().offset(), eq sample_offset);
 
         assert_that!(sut_receiver.release(sample.unwrap()), is_ok);
         let retrieval = sut_sender.reclaim().unwrap();
         assert_that!(retrieval, is_some);
-        assert_that!(retrieval.as_ref().unwrap().value(), eq sample_offset);
+        assert_that!(retrieval.as_ref().unwrap().offset(), eq sample_offset);
 
         let retrieval = sut_sender.reclaim().unwrap();
         assert_that!(retrieval, is_none);
@@ -440,7 +440,7 @@ mod zero_copy_connection {
             let sample_offset = SAMPLE_SIZE * (BUFFER_SIZE + i);
             let result = sut_sender.try_send(PointerOffset::new(sample_offset));
             assert_that!(result, is_ok);
-            assert_that!(result.ok().unwrap().unwrap().value(), eq overflow_sample_offset);
+            assert_that!(result.ok().unwrap().unwrap().offset(), eq overflow_sample_offset);
         }
     }
 
@@ -477,7 +477,7 @@ mod zero_copy_connection {
             let sample = receiver.receive();
             let sample_offset = SAMPLE_SIZE * i;
             assert_that!(sample, is_ok);
-            assert_that!(sample.ok().unwrap().unwrap().value(), eq sample_offset);
+            assert_that!(sample.ok().unwrap().unwrap().offset(), eq sample_offset);
         }
     }
 
@@ -590,8 +590,8 @@ mod zero_copy_connection {
                 std::thread::sleep(TIMEOUT);
                 let sample_2 = receive_sample();
 
-                assert_that!(sample_1.value(), eq sample_offset_1);
-                assert_that!(sample_2.value(), eq sample_offset_2);
+                assert_that!(sample_1.offset(), eq sample_offset_1);
+                assert_that!(sample_2.offset(), eq sample_offset_2);
             });
 
             barrier.wait();
@@ -642,7 +642,7 @@ mod zero_copy_connection {
         for _ in 0..BUFFER_SIZE {
             unsafe {
                 sut_sender.acquire_used_offsets(|offset| {
-                    assert_that!(offsets.remove(&offset.value()), eq true);
+                    assert_that!(offsets.remove(&offset.offset()), eq true);
                 })
             };
         }
@@ -692,7 +692,7 @@ mod zero_copy_connection {
         for _ in 0..BUFFER_SIZE {
             unsafe {
                 sut_sender.acquire_used_offsets(|offset| {
-                    assert_that!(offsets.remove(&offset.value()), eq true);
+                    assert_that!(offsets.remove(&offset.offset()), eq true);
                 })
             };
         }
@@ -785,7 +785,7 @@ mod zero_copy_connection {
         for _ in 0..BUFFER_SIZE {
             unsafe {
                 sut_sender.acquire_used_offsets(|offset| {
-                    assert_that!(offsets.remove(&offset.value()), eq true);
+                    assert_that!(offsets.remove(&offset.offset()), eq true);
                 })
             };
         }

@@ -265,7 +265,7 @@ impl<Service: service::Service> DataSegment<Service> {
 
         let msg = "Unable to allocate Sample";
         let ptr = self.memory.allocate(layout)?;
-        if self.sample_reference_counter[self.sample_index(ptr.offset.value())]
+        if self.sample_reference_counter[self.sample_index(ptr.offset.offset())]
             .fetch_add(1, Ordering::Relaxed)
             != 0
         {
@@ -282,7 +282,7 @@ impl<Service: service::Service> DataSegment<Service> {
     }
 
     fn release_sample(&self, distance_to_chunk: PointerOffset) {
-        if self.sample_reference_counter[self.sample_index(distance_to_chunk.value())]
+        if self.sample_reference_counter[self.sample_index(distance_to_chunk.offset())]
             .fetch_sub(1, Ordering::Relaxed)
             == 1
         {

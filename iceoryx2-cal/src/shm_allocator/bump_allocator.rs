@@ -13,7 +13,7 @@
 use crate::shm_allocator::*;
 use iceoryx2_bb_log::fail;
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct Config {}
 
 impl ShmAllocatorConfig for Config {}
@@ -90,7 +90,7 @@ impl ShmAllocator for BumpAllocator {
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
         self.allocator.deallocate(
-            NonNull::new_unchecked((offset.0 + self.base_address) as *mut u8),
+            NonNull::new_unchecked((offset.offset() + self.base_address) as *mut u8),
             layout,
         );
     }

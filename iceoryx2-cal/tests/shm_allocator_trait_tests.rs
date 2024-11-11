@@ -105,7 +105,7 @@ mod shm_allocator {
 
         let layout = unsafe { Layout::from_size_align_unchecked(CHUNK_SIZE, 1) };
         let distance = unsafe { test.sut().allocate(layout).unwrap() };
-        assert_that!(distance.value(), eq 0);
+        assert_that!(distance.offset(), eq 0);
 
         unsafe { test.sut().deallocate(distance, layout) };
     }

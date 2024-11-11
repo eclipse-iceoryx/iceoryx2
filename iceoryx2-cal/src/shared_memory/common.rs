@@ -418,7 +418,7 @@ pub mod details {
 
             Ok(ShmPointer {
                 offset,
-                data_ptr: (offset.value() + self.payload_start_address) as *mut u8,
+                data_ptr: (offset.offset() + self.payload_start_address) as *mut u8,
             })
         }
 

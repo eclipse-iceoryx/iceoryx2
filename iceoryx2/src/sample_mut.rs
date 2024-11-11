@@ -288,6 +288,6 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<usize, PublisherSendError> {
-        self.data_segment.send_sample(self.offset_to_chunk.value())
+        self.data_segment.send_sample(self.offset_to_chunk.offset())
     }
 }

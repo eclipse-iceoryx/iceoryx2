@@ -79,8 +79,8 @@ mod shm_allocator_pool_allocator {
             for _ in 0..test_context.sut.number_of_buckets() {
                 let memory = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
-                assert_that!(mem_set.insert(memory.value()), eq true);
+                assert_that!((memory.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!(mem_set.insert(memory.offset()), eq true);
             }
 
             assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
@@ -105,12 +105,12 @@ mod shm_allocator_pool_allocator {
             for _ in 0..(test_context.sut.number_of_buckets() - 1) {
                 let memory_1 = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory_1.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!((memory_1.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
 
                 let memory_2 = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory_2.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
-                assert_that!(mem_set.insert(memory_2.value()), eq true);
+                assert_that!((memory_2.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!(mem_set.insert(memory_2.offset()), eq true);
 
                 unsafe {
                     test_context.sut.deallocate(memory_1, BUCKET_CONFIG);
@@ -119,8 +119,8 @@ mod shm_allocator_pool_allocator {
 
             let memory = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
             // the returned offset must be a multiple of the bucket size
-            assert_that!((memory.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
-            assert_that!(mem_set.insert(memory.value()), eq true);
+            assert_that!((memory.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+            assert_that!(mem_set.insert(memory.offset()), eq true);
 
             assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
 
@@ -145,7 +145,7 @@ mod shm_allocator_pool_allocator {
                     Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
                 let mut counter = 0;
                 while let Ok(memory) = unsafe { test_context.sut.allocate(mem_layout) } {
-                    assert_that!(memory.value() % mem_layout.align(), eq 0 );
+                    assert_that!(memory.offset() % mem_layout.align(), eq 0 );
                     counter += 1;
                 }
 
@@ -169,7 +169,7 @@ mod shm_allocator_pool_allocator {
                         Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
 
                     if let Ok(memory) = unsafe { test_context.sut.allocate(mem_layout) } {
-                        assert_that!(memory.value() % mem_layout.align(), eq 0 );
+                        assert_that!(memory.offset() % mem_layout.align(), eq 0 );
                         counter += 1;
                     } else {
                         keep_running = false;

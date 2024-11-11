@@ -18,7 +18,7 @@ use iceoryx2_bb_log::fail;
 
 use super::{PointerOffset, ShmAllocationError, ShmAllocatorInitError};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Config {
     pub bucket_layout: Layout,
 }
@@ -124,7 +124,7 @@ impl ShmAllocator for PoolAllocator {
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
         self.allocator.deallocate(
-            NonNull::new_unchecked((offset.value() + self.allocator.start_address()) as *mut u8),
+            NonNull::new_unchecked((offset.offset() + self.allocator.start_address()) as *mut u8),
             layout,
         );
     }
