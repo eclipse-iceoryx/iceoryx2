@@ -19,7 +19,7 @@ use iceoryx2_bb_elementary::enum_gen;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
-    SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
+    AllocationStrategy, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
 };
 use crate::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
 
@@ -44,6 +44,8 @@ pub trait ResizableSharedMemoryBuilder<
     fn allocator_config_hint(self, value: Allocator::Configuration) -> Self;
 
     fn max_number_of_chunks_hint(self, value: usize) -> Self;
+
+    fn allocation_strategy(self, value: AllocationStrategy) -> Self;
 
     /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for
     /// [`SharedMemoryBuilder::create()`] to finialize

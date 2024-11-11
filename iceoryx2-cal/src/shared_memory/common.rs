@@ -384,6 +384,15 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        crate::shared_memory::details::SharedMemoryExpertAPI<Allocator>
+        for Memory<Allocator, Storage>
+    {
+        fn allocator(&self) -> &Allocator {
+            unsafe { self.storage.get().allocator.assume_init_ref() }
+        }
+    }
+
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
         crate::shared_memory::SharedMemory<Allocator> for Memory<Allocator, Storage>
     {
         type Builder = Builder<Allocator, Storage>;

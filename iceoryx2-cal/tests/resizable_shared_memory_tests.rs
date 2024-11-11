@@ -14,6 +14,7 @@
 mod resizable_shared_memory {
     use std::alloc::Layout;
 
+    use iceoryx2_bb_log::set_log_level;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::{self, *};
@@ -58,7 +59,6 @@ mod resizable_shared_memory {
         assert_that!(unsafe{ *ptr_view }, eq test_value_2);
     }
 
-    #[ignore]
     #[test]
     fn allocate_more_than_hinted_works<
         Shm: SharedMemory<DefaultAllocator>,

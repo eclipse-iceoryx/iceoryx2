@@ -45,9 +45,10 @@ enum_gen! { ShmAllocationError
     AllocationError
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
 pub enum AllocationStrategy {
     BestFit,
+    #[default]
     PowerOfTwo,
 }
 
@@ -58,8 +59,8 @@ pub enum ShmAllocatorInitError {
 }
 
 pub struct ResizeHint<Config: ShmAllocatorConfig> {
-    payload_size: usize,
-    config: Config,
+    pub(crate) payload_size: usize,
+    pub(crate) config: Config,
 }
 
 /// Every allocator implementation must be relocatable. The allocator itself must be stored either
