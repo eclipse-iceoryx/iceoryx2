@@ -56,6 +56,10 @@ impl PoolAllocator {
 impl ShmAllocator for PoolAllocator {
     type Configuration = Config;
 
+    fn payload_size_hint(config: &Self::Configuration, max_number_of_chunks: usize) -> usize {
+        config.bucket_layout.size() * max_number_of_chunks
+    }
+
     fn management_size(memory_size: usize, config: &Self::Configuration) -> usize {
         iceoryx2_bb_memory::pool_allocator::PoolAllocator::memory_size(
             config.bucket_layout,

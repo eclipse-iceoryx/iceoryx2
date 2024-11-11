@@ -28,6 +28,10 @@ pub struct BumpAllocator {
 impl ShmAllocator for BumpAllocator {
     type Configuration = Config;
 
+    fn payload_size_hint(_config: &Self::Configuration, max_number_of_chunks: usize) -> usize {
+        max_number_of_chunks
+    }
+
     fn management_size(_memory_size: usize, _config: &Self::Configuration) -> usize {
         0
     }
