@@ -55,18 +55,6 @@ struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     current_idx: SlotMapKey,
 }
 
-trait UpdateSegmentId {
-    fn update(&mut self, updated_value: Self);
-}
-
-impl UpdateSegmentId for SlotMapKey {
-    fn update(&mut self, updated_value: Self) {
-        if self.value() < updated_value.value() {
-            *self = updated_value;
-        }
-    }
-}
-
 #[derive(Debug)]
 struct ShmEntry<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     shm: Shm,
@@ -246,7 +234,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
                 let entry = ShmEntry::new(shm);
                 entry.register_offset();
                 self.shared_memory_map.insert_at(key, entry);
-                self.current_idx.update(key);
+                self.current_idx = key;
                 payload_start_address
             }
             Some(entry) => {
@@ -364,24 +352,31 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
         &self,
         shm: &Shm,
         layout: Layout,
-        segment_id: u8,
     ) -> Result<(), SharedMemoryCreateError> {
+        let msg = "Unable to create resized segment for";
         let state = self.state_mut();
         let adjusted_segment_setup = shm
             .allocator()
             .resize_hint(layout, state.builder_config.allocation_strategy);
-        let segment_id = segment_id + 1;
+        let segment_id = match state.shared_memory_map.next_free_key() {
+            Some(v) => v,
+            None => {
+                fail!(from self, with SharedMemoryCreateError::InternalError,
+                            "{msg} {:?} since the internal shared memory map cannot hold any more segments.", layout);
+            }
+        };
 
         state.builder_config.allocator_config_hint = adjusted_segment_setup.config;
         let shm = Self::create_segment(
             &state.builder_config,
-            segment_id,
+            segment_id.value() as u8,
             adjusted_segment_setup.payload_size,
         )?;
 
-        let key = SlotMapKey::new(segment_id as usize);
-        state.shared_memory_map.insert_at(key, ShmEntry::new(shm));
-        state.current_idx.update(key);
+        state
+            .shared_memory_map
+            .insert_at(segment_id, ShmEntry::new(shm));
+        state.current_idx = segment_id;
 
         Ok(())
     }
@@ -411,11 +406,7 @@ where
                         return Ok(ptr);
                     }
                     Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
-                        self.create_resized_segment(
-                            &entry.shm,
-                            layout,
-                            state.current_idx.value() as u8 + 1,
-                        )?;
+                        self.create_resized_segment(&entry.shm, layout)?;
                     }
                     Err(e) => return Err(e.into()),
                 },
