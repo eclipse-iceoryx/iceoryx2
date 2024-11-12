@@ -19,6 +19,7 @@ pub mod enum_gen;
 pub mod alignment;
 pub mod allocator;
 pub mod bump_allocator;
+pub mod generic_pointer;
 pub mod lazy_singleton;
 pub mod math;
 pub mod owning_pointer;

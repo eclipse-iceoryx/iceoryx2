@@ -16,7 +16,10 @@
 use std::alloc::Layout;
 use std::alloc::{alloc, dealloc};
 
+use crate::generic_pointer::GenericPointer;
 use crate::pointer_trait::PointerTrait;
+
+pub struct GenericOwningPointer;
 
 /// Representation of a pointer which owns its memory.
 #[repr(C)]
@@ -62,4 +65,8 @@ impl<T> PointerTrait<T> for OwningPointer<T> {
     unsafe fn as_mut_ptr(&mut self) -> *mut T {
         self.ptr
     }
+}
+
+impl GenericPointer for GenericOwningPointer {
+    type Type<T> = OwningPointer<T>;
 }
