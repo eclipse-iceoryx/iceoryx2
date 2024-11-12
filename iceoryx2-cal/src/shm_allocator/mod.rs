@@ -20,13 +20,17 @@ use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
 
 pub trait ShmAllocatorConfig: Copy + Default + Debug {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct PointerOffset(u64);
 
 impl PointerOffset {
     pub fn new(offset: usize) -> PointerOffset {
-        let segment_id = 0;
-        Self((offset as u64) << 8 | segment_id as u64)
+        const SEGMENT_ID: u64 = 0;
+        Self((offset as u64) << 8 | SEGMENT_ID as u64)
+    }
+
+    pub fn set_segment_id(&mut self, value: u8) {
+        self.0 = (self.offset() as u64) << 8 | value as u64;
     }
 
     pub fn offset(&self) -> usize {
@@ -35,6 +39,17 @@ impl PointerOffset {
 
     pub fn segment_id(&self) -> u8 {
         (self.0 & 0x00000000000000ff) as u8
+    }
+}
+
+impl Debug for PointerOffset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "PointerOffset {{ offset: {}, segment_id: {} }}",
+            self.offset(),
+            self.segment_id()
+        )
     }
 }
 

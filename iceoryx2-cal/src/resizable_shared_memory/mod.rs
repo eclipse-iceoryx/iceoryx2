@@ -63,7 +63,10 @@ pub trait ResizableSharedMemoryBuilder<
 }
 
 pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
-    fn translate_offset(&mut self, offset: PointerOffset) -> *const u8;
+    fn translate_offset(
+        &mut self,
+        offset: PointerOffset,
+    ) -> Result<*const u8, SharedMemoryOpenError>;
 }
 
 pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:

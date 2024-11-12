@@ -52,7 +52,7 @@ mod resizable_shared_memory {
 
         unsafe { (ptr_creator.data_ptr as *mut u64).write(test_value_1) };
 
-        let ptr_view = sut_viewer.translate_offset(ptr_creator.offset) as *const u64;
+        let ptr_view = sut_viewer.translate_offset(ptr_creator.offset).unwrap() as *const u64;
 
         assert_that!(unsafe{ *ptr_view }, eq test_value_1);
         unsafe { (ptr_creator.data_ptr as *mut u64).write(test_value_2) };
@@ -87,8 +87,8 @@ mod resizable_shared_memory {
         unsafe { (ptr_creator_1.data_ptr as *mut u64).write(test_value_1) };
         unsafe { (ptr_creator_2.data_ptr as *mut u64).write(test_value_2) };
 
-        let ptr_view_1 = sut_viewer.translate_offset(ptr_creator_1.offset) as *const u64;
-        let ptr_view_2 = sut_viewer.translate_offset(ptr_creator_2.offset) as *const u64;
+        let ptr_view_1 = sut_viewer.translate_offset(ptr_creator_1.offset).unwrap() as *const u64;
+        let ptr_view_2 = sut_viewer.translate_offset(ptr_creator_2.offset).unwrap() as *const u64;
 
         assert_that!(unsafe{ *ptr_view_1 }, eq test_value_1);
         assert_that!(unsafe{ *ptr_view_2 }, eq test_value_2);

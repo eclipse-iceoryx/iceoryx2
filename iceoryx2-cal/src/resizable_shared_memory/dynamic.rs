@@ -151,47 +151,50 @@ where
             "Unable to open ResizableSharedMemoryView since the underlying shared memory could not be opened.");
 
         let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
-        let current_idx = shared_memory_map
+        shared_memory_map
             .insert(shm)
             .expect("MAX_DATASEGMENTS is greater or equal 1");
 
         Ok(DynamicView {
             builder_config: self.config,
             shared_memory_map,
-            current_idx,
             _data: PhantomData,
         })
     }
 }
 
+#[derive(Debug)]
 pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     builder_config: BuilderConfig<Allocator, Shm>,
     shared_memory_map: SlotMap<Shm>,
-    current_idx: SlotMapKey,
     _data: PhantomData<Allocator>,
-}
-
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicView<Allocator, Shm> {
-    fn update_map_view(&mut self) {}
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
     ResizableSharedMemoryView<Allocator, Shm> for DynamicView<Allocator, Shm>
 {
-    fn translate_offset(&mut self, offset: PointerOffset) -> *const u8 {
+    fn translate_offset(
+        &mut self,
+        offset: PointerOffset,
+    ) -> Result<*const u8, SharedMemoryOpenError> {
+        let msg = "Unable to translate";
         let segment_id = offset.segment_id();
         let offset = offset.offset();
+        let key = SlotMapKey::new(segment_id as usize);
 
-        match self
-            .shared_memory_map
-            .get(SlotMapKey::new(segment_id as usize))
-        {
+        let payload_start_address = match self.shared_memory_map.get(key) {
             None => {
-                self.update_map_view();
-                todo!()
+                let shm = fail!(from self,
+                                when DynamicMemory::open_segment(&self.builder_config, segment_id),
+                                "{msg} {:?} since the corresponding shared memory segment could not be opened.", offset);
+                let payload_start_address = shm.payload_start_address();
+                self.shared_memory_map.insert_at(key, shm);
+                payload_start_address
             }
-            Some(shm) => (offset + shm.payload_start_address()) as *const u8,
-        }
+            Some(shm) => shm.payload_start_address(),
+        };
+
+        Ok((offset + payload_start_address) as *const u8)
     }
 }
 
@@ -319,7 +322,10 @@ where
         loop {
             match state.shared_memory_map.get(state.current_idx) {
                 Some(ref shm) => match shm.allocate(layout) {
-                    Ok(ptr) => return Ok(ptr),
+                    Ok(mut ptr) => {
+                        ptr.offset.set_segment_id(state.current_idx.value() as u8);
+                        return Ok(ptr);
+                    }
                     Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
                         self.create_resized_segment(
                             shm,
