@@ -225,7 +225,7 @@ inline auto SampleMut<S, Payload, UserHeader>::payload() const -> iox::Immutable
 
     iox2_sample_mut_payload(&m_handle, &ptr, &number_of_elements);
 
-    return iox::ImmutableSlice<ValueType>(static_cast<ValueType*>(ptr), number_of_elements);
+    return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
