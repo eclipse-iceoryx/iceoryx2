@@ -223,11 +223,6 @@ auto WaitSet<S>::is_empty() const -> bool {
 }
 
 template <ServiceType S>
-void WaitSet<S>::stop() {
-    iox2_waitset_stop(&m_handle);
-}
-
-template <ServiceType S>
 auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
     -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
@@ -290,13 +285,13 @@ auto WaitSet<S>::attach_notification(const Listener<S>& listener)
 }
 
 template <ServiceType S>
-auto run_callback(iox2_waitset_attachment_id_h attachment_id, void* context) {
-    auto* fn_call = internal::ctx_cast<iox::function<void(WaitSetAttachmentId<S>)>>(context);
-    fn_call->value()(WaitSetAttachmentId<S>(attachment_id));
+auto run_callback(iox2_waitset_attachment_id_h attachment_id, void* context) -> iox2_callback_progression_e {
+    auto* fn_call = internal::ctx_cast<iox::function<CallbackProgression(WaitSetAttachmentId<S>)>>(context);
+    return iox::into<iox2_callback_progression_e>(fn_call->value()(WaitSetAttachmentId<S>(attachment_id)));
 }
 
 template <ServiceType S>
-auto WaitSet<S>::wait_and_process(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
+auto WaitSet<S>::wait_and_process(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
     -> iox::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
@@ -310,13 +305,14 @@ auto WaitSet<S>::wait_and_process(const iox::function<void(WaitSetAttachmentId<S
 }
 
 template <ServiceType S>
-auto WaitSet<S>::try_wait_and_process(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
-    -> iox::expected<void, WaitSetRunError> {
+auto WaitSet<S>::wait_and_process_once(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+    -> iox::expected<WaitSetRunResult, WaitSetRunError> {
+    iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
-    auto result = iox2_waitset_try_wait_and_process(&m_handle, run_callback<S>, static_cast<void*>(&ctx));
+    auto result = iox2_waitset_wait_and_process_once(&m_handle, run_callback<S>, static_cast<void*>(&ctx), &run_result);
 
     if (result == IOX2_OK) {
-        return iox::ok();
+        return iox::ok(iox::into<WaitSetRunResult>(static_cast<int>(run_result)));
     }
 
     return iox::err(iox::into<WaitSetRunError>(result));

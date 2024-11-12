@@ -30,14 +30,17 @@
 //! // contains all the deadlines where the deadline was hit
 //! let mut missed_deadlines = vec![];
 //! deadline_queue
-//!     .missed_deadlines(|deadline_queue_index| missed_deadlines.push(deadline_queue_index));
+//!     .missed_deadlines(|deadline_queue_index| {
+//!         missed_deadlines.push(deadline_queue_index);
+//!         CallbackProgression::Continue
+//!     });
 //! ```
 
-use std::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
+pub use iceoryx2_bb_elementary::CallbackProgression;
 
-use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use std::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
 
 use crate::{
     clock::ClockType,
@@ -268,7 +271,7 @@ impl DeadlineQueue {
 
     /// Iterates over all missed deadlines and calls the provided callback for each of them
     /// and provide the [`DeadlineQueueIndex`] to identify them.
-    pub fn missed_deadlines<F: FnMut(DeadlineQueueIndex)>(
+    pub fn missed_deadlines<F: FnMut(DeadlineQueueIndex) -> CallbackProgression>(
         &self,
         mut call: F,
     ) -> Result<(), TimeError> {
@@ -276,10 +279,7 @@ impl DeadlineQueue {
                         "Unable to return next duration since the current time could not be acquired.");
 
         let now = now.as_duration().as_nanos();
-        self.handle_missed_deadlines(now, |idx| {
-            call(idx);
-            CallbackProgression::Continue
-        });
+        self.handle_missed_deadlines(now, |idx| -> CallbackProgression { call(idx) });
 
         Ok(())
     }

@@ -15,9 +15,9 @@
 use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
-    c_size_t, iox2_callback_context, iox2_file_descriptor_ptr, iox2_service_type_e,
-    iox2_waitset_attachment_id_h, iox2_waitset_attachment_id_t, iox2_waitset_guard_h,
-    iox2_waitset_guard_t, AttachmentIdUnion, GuardUnion, IOX2_OK,
+    c_size_t, iox2_callback_context, iox2_callback_progression_e, iox2_file_descriptor_ptr,
+    iox2_service_type_e, iox2_waitset_attachment_id_h, iox2_waitset_attachment_id_t,
+    iox2_waitset_guard_h, iox2_waitset_guard_t, AttachmentIdUnion, GuardUnion, IOX2_OK,
 };
 
 use super::{AssertNonNullHandle, HandleToType, IntoCInt};
@@ -50,8 +50,6 @@ impl IntoCInt for WaitSetRunError {
             }
             WaitSetRunError::InternalError => iox2_waitset_run_error_e::INTERNAL_ERROR,
             WaitSetRunError::NoAttachments => iox2_waitset_run_error_e::NO_ATTACHMENTS,
-            WaitSetRunError::TerminationRequest => iox2_waitset_run_error_e::TERMINATION_REQUEST,
-            WaitSetRunError::Interrupt => iox2_waitset_run_error_e::INTERRUPT,
         }) as c_int
     }
 }
@@ -62,6 +60,7 @@ pub enum iox2_waitset_run_result_e {
     TERMINATION_REQUEST = IOX2_OK as isize + 1,
     INTERRUPT,
     STOP_REQUEST,
+    ALL_EVENTS_HANDLED,
 }
 
 impl IntoCInt for WaitSetRunResult {
@@ -76,6 +75,7 @@ impl From<WaitSetRunResult> for iox2_waitset_run_result_e {
             WaitSetRunResult::TerminationRequest => iox2_waitset_run_result_e::TERMINATION_REQUEST,
             WaitSetRunResult::Interrupt => iox2_waitset_run_result_e::INTERRUPT,
             WaitSetRunResult::StopRequest => iox2_waitset_run_result_e::STOP_REQUEST,
+            WaitSetRunResult::AllEventsHandled => iox2_waitset_run_result_e::ALL_EVENTS_HANDLED,
         }
     }
 }
@@ -201,8 +201,10 @@ impl HandleToType for iox2_waitset_h_ref {
     }
 }
 
-pub type iox2_waitset_run_callback =
-    extern "C" fn(iox2_waitset_attachment_id_h, iox2_callback_context);
+pub type iox2_waitset_run_callback = extern "C" fn(
+    iox2_waitset_attachment_id_h,
+    iox2_callback_context,
+) -> iox2_callback_progression_e;
 // END type definition
 
 // BEGIN C API
@@ -280,26 +282,6 @@ pub unsafe extern "C" fn iox2_waitset_capacity(handle: iox2_waitset_h_ref) -> c_
     match waitset.service_type {
         iox2_service_type_e::IPC => waitset.value.as_ref().ipc.capacity(),
         iox2_service_type_e::LOCAL => waitset.value.as_ref().local.capacity(),
-    }
-}
-
-/// Stops the current [`iox2_waitset_wait_and_process()`] operation. Any [`iox2_waitset_wait_and_process()`]
-/// call after this call is not affected and the user needs to call
-/// [`iox2_waitset_stop()`] again.
-///
-/// # Safety
-///
-///  * `handle` must be valid and acquired with
-///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
-#[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_stop(handle: iox2_waitset_h_ref) {
-    handle.assert_non_null();
-
-    let waitset = &mut *handle.as_type();
-
-    match waitset.service_type {
-        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.stop(),
-        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.stop(),
     }
 }
 
@@ -546,17 +528,21 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
     IOX2_OK
 }
 
-/// Checks the [`iox2_waitset_h`] for new events once. The provided `callback` is called
-/// for every events that was received and the corresponding owning [`iox2_waitset_attachment_id_h`]
-/// is provided as input argument, as well as the `callback_ctx`.
+/// Waits until an event arrives on the [`iox2_waitset_h`], then collects all events by calling the
+/// provided `fn_call` callback with the corresponding [`iox2_waitset_attachment_id_h`] and then
+/// returns. This makes it ideal to be called in some kind of event-loop.
 ///
-/// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
-/// the origin of the event can be determined from its corresponding
-/// [`iox2_waitset_guard_h`].
-/// If the deadline was hit the function
-/// [`iox2_waitset_attachment_id_has_missed_deadline()`](crate::iox2_waitset_attachment_id_has_missed_deadline())
-/// can be used to identify it.
+/// The provided callback must return [`iox2_callback_progression_e::CONTINUE`] to continue the event
+/// processing and handle the next event or [`iox2_callback_progression_e::STOP`] to return from this
+/// call immediately. All unhandled events will be lost forever and the call will return
+/// [`iox2_waitset_run_result_e::STOP_REQUEST`].
 ///
+/// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+/// the loop and inform the user with [`iox2_waitset_run_result_e::INTERRUPT`] or
+/// [`iox2_waitset_run_result_e::TERMINATION_REQUEST`].
+///
+/// When no signal was received and all events were handled, it will return
+/// [`iox2_waitset_run_result_e::ALL_EVENTS_HANDLED`].
 /// # Return
 ///
 /// `IOX2_OK` on success, otherwise [`iox2_waitset_run_error_e`].
@@ -568,12 +554,14 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
 ///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
 ///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
 #[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
+pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
     callback_ctx: iox2_callback_context,
+    result: *mut iox2_waitset_run_result_e,
 ) -> c_int {
     handle.assert_non_null();
+    debug_assert!(!result.is_null());
 
     let waitset = &mut *handle.as_type();
 
@@ -583,7 +571,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
                 .value
                 .as_ref()
                 .ipc
-                .try_wait_and_process(|attachment_id| {
+                .wait_and_process_once(|attachment_id| {
                     let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
                     (*attachment_id_ptr).init(
                         waitset.service_type,
@@ -591,7 +579,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
                         iox2_waitset_attachment_id_t::dealloc,
                     );
                     let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx);
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
                 })
         }
         iox2_service_type_e::LOCAL => {
@@ -599,7 +587,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
                 .value
                 .as_ref()
                 .local
-                .try_wait_and_process(|attachment_id| {
+                .wait_and_process_once(|attachment_id| {
                     let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
                     (*attachment_id_ptr).init(
                         waitset.service_type,
@@ -607,13 +595,16 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
                         iox2_waitset_attachment_id_t::dealloc,
                     );
                     let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx);
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
                 })
         }
     };
 
     match run_once_result {
-        Ok(()) => IOX2_OK,
+        Ok(v) => {
+            *result = v.into();
+            IOX2_OK
+        }
         Err(e) => e.into_c_int(),
     }
 }
@@ -623,7 +614,7 @@ pub unsafe extern "C" fn iox2_waitset_try_wait_and_process(
 /// owning [`iox2_waitset_attachment_id_h`] is provided as input argument, as well as the
 /// `callback_ctx`.
 /// The infinite loop is interrupted either by a `SIGINT` or `SIGTERM` signal or
-/// when the user has called [`iox2_waitset_stop()`].
+/// when the user callback returned [`iox2_callback_progression_e::STOP`].
 ///
 /// With [`iox2_waitset_attachment_id_has_event_from()`](crate::iox2_waitset_attachment_id_has_event_from())
 /// the origin of the event can be determined from its corresponding
@@ -667,7 +658,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process(
                     iox2_waitset_attachment_id_t::dealloc,
                 );
                 let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                callback(attachment_id_handle_ptr, callback_ctx);
+                callback(attachment_id_handle_ptr, callback_ctx).into()
             }),
         iox2_service_type_e::LOCAL => {
             waitset
@@ -682,7 +673,7 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process(
                         iox2_waitset_attachment_id_t::dealloc,
                     );
                     let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                    callback(attachment_id_handle_ptr, callback_ctx);
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
                 })
         }
     };

@@ -69,6 +69,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             println!("");
         }
+
+        CallbackProgression::Continue
     };
 
     // loops until the user has pressed CTRL+c, the application has received a SIGTERM or SIGINT

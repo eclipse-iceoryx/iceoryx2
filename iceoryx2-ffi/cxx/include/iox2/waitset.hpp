@@ -15,6 +15,7 @@
 
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
+#include "iox2/callback_progression.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener.hpp"
@@ -78,7 +79,7 @@ class WaitSetAttachmentId {
   private:
     explicit WaitSetAttachmentId(iox2_waitset_attachment_id_h handle);
     template <ServiceType>
-    friend auto run_callback(iox2_waitset_attachment_id_h, void*);
+    friend auto run_callback(iox2_waitset_attachment_id_h, void*) -> iox2_callback_progression_e;
     template <ServiceType ST>
     friend auto operator==(const WaitSetAttachmentId<ST>&, const WaitSetAttachmentId<ST>&) -> bool;
     template <ServiceType ST>
@@ -103,7 +104,8 @@ auto operator<<(std::ostream& stream, const WaitSetAttachmentId<S>& self) -> std
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
 /// single call [`WaitSet::try_wait_and_process()`] until it wakes up or to run repeatedly with
 /// [`WaitSet::wait_and_process()`] until the a interrupt or termination signal was received or the user
-/// has explicitly requested to stop with [`WaitSet::stop()`].
+/// has explicitly requested to stop by returning [`CallbackProgression::Stop`] in the provided
+/// callback.
 ///
 /// The [`Listener`] can be attached as well as sockets or anything else that
 /// can be packed into a [`FileDescriptorView`].
@@ -118,24 +120,39 @@ class WaitSet {
     auto operator=(WaitSet&&) noexcept -> WaitSet&;
     ~WaitSet();
 
-    /// Can be called from within a callback during [`WaitSet::wait_and_process()`] to signal the [`WaitSet`]
-    /// to stop running after this iteration.
-    void stop();
-
-    /// Waits in an infinite loop on the [`WaitSet`]. The provided callback is called for every
-    /// attachment that was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to
-    /// acquire the source.
+    /// Waits until an event arrives on the [`WaitSet`], then collects all events by calling the
+    /// provided `fn_call` callback with the corresponding [`WaitSetAttachmentId`]. In contrast
+    /// to [`WaitSet::wait_and_process_once()`] it will never return until the user explicitly
+    /// requests it by returning [`CallbackProgression::Stop`] or by receiving a signal.
+    ///
+    /// The provided callback must return [`CallbackProgression::Continue`] to continue the event
+    /// processing and handle the next event or [`CallbackProgression::Stop`] to return from this
+    /// call immediately. All unhandled events will be lost forever and the call will return
+    /// [`WaitSetRunResult::StopRequest`].
+    ///
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
-    /// the loop and inform the user via [`WaitSetRunResult`].
-    auto wait_and_process(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
+    auto wait_and_process(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
         -> iox::expected<WaitSetRunResult, WaitSetRunError>;
 
-    /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
-    /// was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to acquire the
-    /// source.
-    /// If nothing was triggered the [`WaitSet`] returns immediately.
-    auto try_wait_and_process(const iox::function<void(WaitSetAttachmentId<S>)>& fn_call)
-        -> iox::expected<void, WaitSetRunError>;
+    /// Waits until an event arrives on the [`WaitSet`], then collects all events by calling the
+    /// provided `fn_call` callback with the corresponding [`WaitSetAttachmentId`] and then
+    /// returns. This makes it ideal to be called in some kind of event-loop.
+    ///
+    /// The provided callback must return [`CallbackProgression::Continue`] to continue the event
+    /// processing and handle the next event or [`CallbackProgression::Stop`] to return from this
+    /// call immediately. All unhandled events will be lost forever and the call will return
+    /// [`WaitSetRunResult::StopRequest`].
+    ///
+    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// When no signal was received and all events were handled, it will return
+    /// [`WaitSetRunResult::AllEventsHandled`].
+    auto wait_and_process_once(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
+        -> iox::expected<WaitSetRunResult, WaitSetRunError>;
 
     /// Returns the capacity of the [`WaitSet`]
     auto capacity() const -> uint64_t;

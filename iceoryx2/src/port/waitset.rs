@@ -63,6 +63,7 @@
 //!             println!("received notification {:?}", event_id);
 //!         }
 //!     }
+//!     CallbackProgression::Continue
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
@@ -96,6 +97,7 @@
 //!     } else if attachment_id.has_missed_deadline(&guard) {
 //!         println!("Oh no, we hit the deadline without receiving any kind of event");
 //!     }
+//!     CallbackProgression::Continue
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
@@ -131,6 +133,7 @@
 //!     } else if attachment_id.has_event_from(&guard_2) {
 //!         publisher_2.send_copy(456);
 //!     }
+//!     CallbackProgression::Continue
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
@@ -173,6 +176,7 @@
 //!             println!("received notification {:?}", event_id);
 //!         }
 //!     }
+//!     CallbackProgression::Continue
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
@@ -187,6 +191,7 @@ use std::{
     sync::atomic::Ordering, time::Duration,
 };
 
+use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     deadline_queue::{DeadlineQueue, DeadlineQueueBuilder, DeadlineQueueGuard, DeadlineQueueIndex},
@@ -195,7 +200,7 @@ use iceoryx2_bb_posix::{
     signal::SignalHandler,
 };
 use iceoryx2_cal::reactor::*;
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 /// States why the [`WaitSet::wait_and_process()`] method returned.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -204,8 +209,10 @@ pub enum WaitSetRunResult {
     TerminationRequest,
     /// An interrupt signal `SIGINT` was received.
     Interrupt,
-    /// The user explicitly called [`WaitSet::stop()`].
+    /// The users callback returned [`CallbackProgression::Stop`].
     StopRequest,
+    /// All events were handled.
+    AllEventsHandled,
 }
 
 /// Defines the failures that can occur when attaching something with
@@ -237,10 +244,6 @@ pub enum WaitSetRunError {
     InternalError,
     /// Waiting on an empty [`WaitSet`] would lead to a deadlock therefore it causes an error.
     NoAttachments,
-    /// A termination signal `SIGTERM` was received.
-    TerminationRequest,
-    /// An interrupt signal `SIGINT` was received.
-    Interrupt,
 }
 
 impl std::fmt::Display for WaitSetRunError {
@@ -467,7 +470,6 @@ impl WaitSetBuilder {
                 attachment_to_deadline: RefCell::new(HashMap::new()),
                 deadline_to_attachment: RefCell::new(HashMap::new()),
                 attachment_counter: IoxAtomicUsize::new(0),
-                keep_running: IoxAtomicBool::new(true),
             }),
             Err(ReactorCreateError::UnknownError(e)) => {
                 fail!(from self, with WaitSetCreateError::InternalError,
@@ -478,9 +480,10 @@ impl WaitSetBuilder {
 }
 
 /// The [`WaitSet`] implements a reactor pattern and allows to wait on multiple events in one
-/// single call [`WaitSet::try_wait_and_process()`] until it wakes up or to run repeatedly with
+/// single call [`WaitSet::wait_and_process_once()`] until it wakes up or to run repeatedly with
 /// [`WaitSet::wait_and_process()`] until the a interrupt or termination signal was received or the user
-/// has explicitly requested to stop with [`WaitSet::stop()`].
+/// has explicitly requested to stop by returning [`CallbackProgression::Stop`] in the provided
+/// callback.
 ///
 /// An struct must implement [`SynchronousMultiplexing`] to be attachable. The
 /// [`Listener`](crate::port::listener::Listener) can be attached as well as sockets or anything else that
@@ -494,7 +497,6 @@ pub struct WaitSet<Service: crate::service::Service> {
     attachment_to_deadline: RefCell<HashMap<i32, DeadlineQueueIndex>>,
     deadline_to_attachment: RefCell<HashMap<DeadlineQueueIndex, i32>>,
     attachment_counter: IoxAtomicUsize,
-    keep_running: IoxAtomicBool,
 }
 
 impl<Service: crate::service::Service> WaitSet<Service> {
@@ -537,18 +539,25 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         }
     }
 
-    fn handle_deadlines<F: FnMut(WaitSetAttachmentId<Service>)>(
+    fn handle_deadlines<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         fn_call: &mut F,
         error_msg: &str,
-    ) -> Result<(), WaitSetRunError> {
+    ) -> Result<WaitSetRunResult, WaitSetRunError> {
         let deadline_to_attachment = self.deadline_to_attachment.borrow();
-        let call = |idx: DeadlineQueueIndex| {
-            if let Some(reactor_idx) = deadline_to_attachment.get(&idx) {
-                fn_call(WaitSetAttachmentId::deadline(self, *reactor_idx, idx));
+        let mut result = WaitSetRunResult::AllEventsHandled;
+        let call = |idx: DeadlineQueueIndex| -> CallbackProgression {
+            let progression = if let Some(reactor_idx) = deadline_to_attachment.get(&idx) {
+                fn_call(WaitSetAttachmentId::deadline(self, *reactor_idx, idx))
             } else {
-                fn_call(WaitSetAttachmentId::tick(self, idx));
+                fn_call(WaitSetAttachmentId::tick(self, idx))
+            };
+
+            if let CallbackProgression::Stop = progression {
+                result = WaitSetRunResult::StopRequest;
             }
+
+            progression
         };
 
         fail!(from self,
@@ -556,15 +565,15 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                   with WaitSetRunError::InternalError,
                   "{error_msg} since the missed deadlines could not be acquired.");
 
-        Ok(())
+        Ok(result)
     }
 
-    fn handle_all_attachments<F: FnMut(WaitSetAttachmentId<Service>)>(
+    fn handle_all_attachments<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         triggered_file_descriptors: &Vec<i32>,
         fn_call: &mut F,
         error_msg: &str,
-    ) -> Result<(), WaitSetRunError> {
+    ) -> Result<WaitSetRunResult, WaitSetRunError> {
         // we need to reset the deadlines first, otherwise a long fn_call may extend the
         // deadline unintentionally
         let mut fd_and_deadline_queue_idx = Vec::with_capacity(triggered_file_descriptors.len());
@@ -575,13 +584,20 @@ impl<Service: crate::service::Service> WaitSet<Service> {
 
         // must be called after the deadlines have been reset, in the case that the
         // event has been received shortly before the deadline ended.
-        self.handle_deadlines(fn_call, error_msg)?;
+
+        match self.handle_deadlines(fn_call, error_msg)? {
+            WaitSetRunResult::AllEventsHandled => (),
+            v => return Ok(v),
+        };
 
         for fd in triggered_file_descriptors {
-            fn_call(WaitSetAttachmentId::notification(self, *fd));
+            if let CallbackProgression::Stop = fn_call(WaitSetAttachmentId::notification(self, *fd))
+            {
+                return Ok(WaitSetRunResult::StopRequest);
+            }
         }
 
-        Ok(())
+        Ok(WaitSetRunResult::AllEventsHandled)
     }
 
     /// Attaches an object as notification to the [`WaitSet`]. Whenever an event is received on the
@@ -646,51 +662,122 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         })
     }
 
-    /// Can be called from within a callback during [`WaitSet::wait_and_process()`] to signal the [`WaitSet`]
-    /// to stop running after this iteration.
-    pub fn stop(&self) {
-        self.keep_running.store(false, Ordering::Relaxed);
-    }
-
-    /// Waits in an infinite loop on the [`WaitSet`]. The provided callback is called for every
-    /// attachment that was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to
-    /// acquire the source.
+    /// Waits until an event arrives on the [`WaitSet`], then collects all events by calling the
+    /// provided `fn_call` callback with the corresponding [`WaitSetAttachmentId`]. In contrast
+    /// to [`WaitSet::wait_and_process_once()`] it will never return until the user explicitly
+    /// requests it by returning [`CallbackProgression::Stop`] or by receiving a signal.
+    ///
+    /// The provided callback must return [`CallbackProgression::Continue`] to continue the event
+    /// processing and handle the next event or [`CallbackProgression::Stop`] to return from this
+    /// call immediately. All unhandled events will be lost forever and the call will return
+    /// [`WaitSetRunResult::StopRequest`].
+    ///
     /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
-    /// the loop and inform the user via [`WaitSetRunResult`].
-    pub fn wait_and_process<F: FnMut(WaitSetAttachmentId<Service>)>(
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use iceoryx2::prelude::*;
+    /// # use core::time::Duration;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
+    /// #     .event()
+    /// #     .open_or_create()?;
+    ///
+    /// # let mut listener = event.listener_builder().create()?;
+    ///
+    /// let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    /// # let guard = waitset.attach_notification(&listener)?;
+    ///
+    /// let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+    ///     if attachment_id.has_event_from(&guard) {
+    ///         // when a certain event arrives we stop the event processing
+    ///         // to terminate the process
+    ///         CallbackProgression::Stop
+    ///     } else {
+    ///         CallbackProgression::Continue
+    ///     }
+    /// };
+    ///
+    /// waitset.wait_and_process(on_event)?;
+    /// println!("goodbye");
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn wait_and_process<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
-        while self.keep_running.load(Ordering::Relaxed) {
-            match self.try_wait_and_process(&mut fn_call) {
-                Ok(()) => (),
-                Err(WaitSetRunError::TerminationRequest) => {
-                    return Ok(WaitSetRunResult::TerminationRequest)
-                }
-                Err(WaitSetRunError::Interrupt) => return Ok(WaitSetRunResult::Interrupt),
+        loop {
+            match self.wait_and_process_once(&mut fn_call) {
+                Ok(WaitSetRunResult::AllEventsHandled) => (),
+                Ok(v) => return Ok(v),
                 Err(e) => {
                     fail!(from self, with e,
                             "Unable to run in WaitSet::wait_and_process() loop since ({:?}) has occurred.", e);
                 }
             }
         }
-
-        Ok(WaitSetRunResult::StopRequest)
     }
 
-    /// Tries to wait on the [`WaitSet`]. The provided callback is called for every attachment that
-    /// was triggered and the [`WaitSetAttachmentId`] is provided as an input argument to acquire the
-    /// source.
-    /// If nothing was triggered the [`WaitSet`] returns immediately.
-    pub fn try_wait_and_process<F: FnMut(WaitSetAttachmentId<Service>)>(
+    /// Waits until an event arrives on the [`WaitSet`], then collects all events by calling the
+    /// provided `fn_call` callback with the corresponding [`WaitSetAttachmentId`] and then
+    /// returns. This makes it ideal to be called in some kind of event-loop.
+    ///
+    /// The provided callback must return [`CallbackProgression::Continue`] to continue the event
+    /// processing and handle the next event or [`CallbackProgression::Stop`] to return from this
+    /// call immediately. All unhandled events will be lost forever and the call will return
+    /// [`WaitSetRunResult::StopRequest`].
+    ///
+    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// When no signal was received and all events were handled, it will return
+    /// [`WaitSetRunResult::AllEventsHandled`].
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use iceoryx2::prelude::*;
+    /// # use core::time::Duration;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
+    /// #     .event()
+    /// #     .open_or_create()?;
+    ///
+    /// let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    ///
+    /// let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+    ///     // do some event processing
+    ///     CallbackProgression::Continue
+    /// };
+    ///
+    /// // main event loop
+    /// loop {
+    ///     // blocks until an event arrives, handles all arrived events and then
+    ///     // returns.
+    ///     waitset.wait_and_process_once(on_event)?;
+    ///     // do some event post processing
+    ///     println!("handled events");
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn wait_and_process_once<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,
-    ) -> Result<(), WaitSetRunError> {
+    ) -> Result<WaitSetRunResult, WaitSetRunError> {
         let msg = "Unable to call WaitSet::try_wait_and_process()";
 
         if SignalHandler::termination_requested() {
-            fail!(from self, with WaitSetRunError::TerminationRequest,
-                "{msg} since a termination request was received.");
+            return Ok(WaitSetRunResult::TerminationRequest);
         }
 
         if self.is_empty() {
@@ -719,18 +806,9 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         };
 
         match reactor_wait_result {
-            Ok(0) => {
-                self.handle_deadlines(&mut fn_call, msg)?;
-                Ok(())
-            }
-            Ok(_) => {
-                self.handle_all_attachments(&triggered_file_descriptors, &mut fn_call, msg)?;
-                Ok(())
-            }
-            Err(ReactorWaitError::Interrupt) => {
-                fail!(from self, with WaitSetRunError::Interrupt,
-                    "{msg} since an interrupt signal was received.");
-            }
+            Ok(0) => self.handle_deadlines(&mut fn_call, msg),
+            Ok(_) => self.handle_all_attachments(&triggered_file_descriptors, &mut fn_call, msg),
+            Err(ReactorWaitError::Interrupt) => Ok(WaitSetRunResult::Interrupt),
             Err(ReactorWaitError::InsufficientPermissions) => {
                 fail!(from self, with WaitSetRunError::InsufficientPermissions,
                     "{msg} due to insufficient permissions.");

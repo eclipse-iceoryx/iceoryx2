@@ -86,6 +86,8 @@ auto main(int argc, char** argv) -> int {
             listener.try_wait_all([](auto event_id) { std::cout << " " << event_id; }).expect("");
             std::cout << std::endl;
         }
+
+        return iox2::CallbackProgression::Continue;
     };
 
     std::cout << "Waiting on the following services: " << service_name_1.to_string().c_str() << ", "
