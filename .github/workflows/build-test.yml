@@ -10,7 +10,20 @@ on:
   # RUSTFLAGS: "-C debug-assertions"
 
 jobs:
+  check_draft_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if PR is a draft
+        run: |
+          if [ "${{ github.event.pull_request.draft }}" == "true" ]; then
+            echo "PR is a draft. CI will not proceed."
+            exit 1  # Abort the CI job
+          else
+            echo "PR is not a draft. Proceeding with CI."
+          fi
+
   changes:
+    needs: check_draft_pr
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
