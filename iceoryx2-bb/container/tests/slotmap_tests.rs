@@ -116,6 +116,42 @@ mod slot_map {
     }
 
     #[test]
+    fn insert_at_and_remove_adjust_map_len_correctly() {
+        let mut sut = FixedSizeSut::new();
+
+        for n in 0..SUT_CAPACITY {
+            let key = SlotMapKey::new(n);
+            assert_that!(sut.len(), eq n);
+            assert_that!(sut.insert_at(key, 0), eq true);
+        }
+        assert_that!(sut.len(), eq SUT_CAPACITY);
+
+        for n in (0..SUT_CAPACITY).rev() {
+            let key = SlotMapKey::new(n);
+            assert_that!(sut.remove(key), eq true);
+            assert_that!(sut.remove(key), eq false);
+            assert_that!(sut.len(), eq n);
+        }
+        assert_that!(sut.len(), eq 0);
+    }
+
+    #[test]
+    fn insert_does_not_use_insert_at_indices() {
+        let mut sut = FixedSizeSut::new();
+
+        for n in 0..SUT_CAPACITY / 2 {
+            let key = SlotMapKey::new(2 * n + 1);
+            assert_that!(sut.insert_at(key, 0), eq true);
+        }
+
+        for _ in 0..SUT_CAPACITY / 2 {
+            let key = sut.insert(0);
+            assert_that!(key, is_some);
+            assert_that!(key.unwrap().value() % 2, eq 0);
+        }
+    }
+
+    #[test]
     fn insert_at_out_of_bounds_key_returns_false() {
         let mut sut = FixedSizeSut::new();
         let key = SlotMapKey::new(SUT_CAPACITY + 1);

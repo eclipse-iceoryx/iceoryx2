@@ -63,6 +63,11 @@ impl SlotMapKey {
     }
 }
 
+struct FreeListEntry {
+    previous: usize,
+    next: usize,
+}
+
 /// A runtime fixed-size, non-shared memory compatible [`SlotMap`]. The [`SlotMap`]s memory resides
 /// in the heap.
 pub type SlotMap<T> = details::MetaSlotMap<
@@ -131,9 +136,12 @@ pub mod details {
         IdxPtrType: PointerTrait<MaybeUninit<usize>>,
     > {
         idx_to_data: MetaVec<usize, IdxPtrType>,
-        idx_to_data_next_free_index: MetaQueue<usize, IdxPtrType>,
+        idx_to_data_free_list: MetaVec<usize, IdxPtrType>,
         data: MetaVec<Option<T>, DataPtrType>,
         data_next_free_index: MetaQueue<usize, IdxPtrType>,
+
+        idx_to_data_free_list_head: usize,
+        len: usize,
     }
 
     impl<
@@ -164,7 +172,7 @@ pub mod details {
             for n in 0..self.capacity_impl() {
                 self.idx_to_data.push_impl(INVALID_KEY);
                 self.data.push_impl(None);
-                self.idx_to_data_next_free_index.push_impl(n);
+                self.idx_to_data_free_list.push_impl(n + 1);
                 self.data_next_free_index.push_impl(n);
             }
         }
@@ -198,18 +206,42 @@ pub mod details {
             }
         }
 
+        unsafe fn acquire_next_free_index(&mut self) -> Option<usize> {
+            if self.idx_to_data_free_list_head == self.capacity_impl() {
+                return None;
+            }
+
+            let free_idx = self.idx_to_data_free_list_head;
+            self.idx_to_data_free_list_head =
+                self.idx_to_data_free_list[self.idx_to_data_free_list_head];
+            Some(free_idx)
+        }
+
+        unsafe fn reserve_index(&mut self) -> Option<usize> {
+            todo!()
+        }
+
+        unsafe fn release_free_index(&mut self, idx: usize) {
+            self.idx_to_data_free_list[idx] = self.idx_to_data_free_list_head;
+            self.idx_to_data_free_list_head = idx;
+        }
+
         pub(crate) unsafe fn insert_impl(&mut self, value: T) -> Option<SlotMapKey> {
-            match self.idx_to_data_next_free_index.pop_impl() {
+            match self.acquire_next_free_index() {
                 None => None,
                 Some(key) => {
                     let key = SlotMapKey(key);
-                    self.insert_at_impl(key, value);
+                    self.store_value(key, value);
                     Some(key)
                 }
             }
         }
 
         pub(crate) unsafe fn insert_at_impl(&mut self, key: SlotMapKey, value: T) -> bool {
+            self.store_value(key, value)
+        }
+
+        pub(crate) unsafe fn store_value(&mut self, key: SlotMapKey, value: T) -> bool {
             if key.0 > self.capacity_impl() {
                 return false;
             }
@@ -221,6 +253,7 @@ pub mod details {
                 let n = self.data_next_free_index.pop_impl().expect("data and idx_to_data correspond and there must be always a free index available.");
                 self.idx_to_data[key.0] = n;
                 self.data[n] = Some(value);
+                self.len += 1;
             }
 
             true
@@ -234,9 +267,10 @@ pub mod details {
             let data_idx = self.idx_to_data[key.0];
             if data_idx != INVALID_KEY {
                 self.data[data_idx].take();
-                self.data_next_free_index.push_impl(data_idx);
-                self.idx_to_data_next_free_index.push_impl(key.0);
+                debug_assert!(self.data_next_free_index.push_impl(data_idx));
+                self.release_free_index(key.0);
                 self.idx_to_data[key.0] = INVALID_KEY;
+                self.len -= 1;
                 true
             } else {
                 false
@@ -244,7 +278,7 @@ pub mod details {
         }
 
         pub(crate) fn len_impl(&self) -> usize {
-            self.capacity_impl() - self.idx_to_data_next_free_index.len()
+            self.len
         }
 
         pub(crate) fn capacity_impl(&self) -> usize {
@@ -269,8 +303,10 @@ pub mod details {
     {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
+                len: 0,
+                idx_to_data_free_list_head: 0,
                 idx_to_data: RelocatableVec::new_uninit(capacity),
-                idx_to_data_next_free_index: RelocatableQueue::new_uninit(capacity),
+                idx_to_data_free_list: RelocatableVec::new_uninit(capacity),
                 data: RelocatableVec::new_uninit(capacity),
                 data_next_free_index: RelocatableQueue::new_uninit(capacity),
             }
@@ -285,8 +321,8 @@ pub mod details {
                   when self.idx_to_data.init(allocator),
                   "{msg} since the underlying idx_to_data vector could not be initialized.");
             fail!(from "RelocatableSlotMap::init()",
-                  when self.idx_to_data_next_free_index.init(allocator),
-                  "{msg} since the underlying idx_to_data_next_free_index queue could not be initialized.");
+                  when self.idx_to_data_free_list.init(allocator),
+                  "{msg} since the underlying idx_to_data_free_list vec could not be initialized.");
             fail!(from "RelocatableSlotMap::init()",
                   when self.data.init(allocator),
                   "{msg} since the underlying data vector could not be initialized.");
@@ -314,7 +350,7 @@ pub mod details {
         /// in [`RelocatableSlotMap::init()`].
         pub const fn const_memory_size(capacity: usize) -> usize {
             RelocatableVec::<usize>::const_memory_size(capacity)
-                + RelocatableQueue::<usize>::const_memory_size(capacity)
+                + RelocatableVec::<usize>::const_memory_size(capacity)
                 + RelocatableVec::<Option<T>>::const_memory_size(capacity)
                 + RelocatableQueue::<usize>::const_memory_size(capacity)
         }
@@ -324,8 +360,10 @@ pub mod details {
         /// Creates a new runtime-fixed size [`SlotMap`] on the heap with the given capacity.
         pub fn new(capacity: usize) -> Self {
             let mut new_self = Self {
+                len: 0,
+                idx_to_data_free_list_head: 0,
                 idx_to_data: MetaVec::new(capacity),
-                idx_to_data_next_free_index: MetaQueue::new(capacity),
+                idx_to_data_free_list: MetaVec::new(capacity),
                 data: MetaVec::new(capacity),
                 data_next_free_index: MetaQueue::new(capacity),
             };
