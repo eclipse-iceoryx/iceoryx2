@@ -36,16 +36,17 @@ class PortFactoryPublisher {
     /// [`Publisher::loan()`] or [`Publisher::loan_uninit()`] in parallel.
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_samples);
 
-    /// Sets the maximum slice length that a user can allocate with
-    /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
-    IOX_BUILDER_OPTIONAL(uint64_t, max_slice_len);
-
   public:
     PortFactoryPublisher(const PortFactoryPublisher&) = delete;
     PortFactoryPublisher(PortFactoryPublisher&&) = default;
     auto operator=(const PortFactoryPublisher&) -> PortFactoryPublisher& = delete;
     auto operator=(PortFactoryPublisher&&) -> PortFactoryPublisher& = default;
     ~PortFactoryPublisher() = default;
+
+    /// Sets the maximum slice length that a user can allocate with
+    /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto max_slice_len(uint64_t value) && -> PortFactoryPublisher&&;
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     auto create() && -> iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
@@ -57,11 +58,19 @@ class PortFactoryPublisher {
     explicit PortFactoryPublisher(iox2_port_factory_publisher_builder_h handle);
 
     iox2_port_factory_publisher_builder_h m_handle;
+    iox::optional<uint64_t> m_max_slice_len;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline PortFactoryPublisher<S, Payload, UserHeader>::PortFactoryPublisher(iox2_port_factory_publisher_builder_h handle)
     : m_handle { handle } {
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::max_slice_len(uint64_t value) && -> PortFactoryPublisher&& {
+    m_max_slice_len.emplace(value);
+    return std::move(*this);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
