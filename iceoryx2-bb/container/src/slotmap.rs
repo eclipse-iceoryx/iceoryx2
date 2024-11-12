@@ -34,10 +34,13 @@
 //! println!("value: {:?}", slotmap.get(key));
 //! ```
 
+use std::mem::MaybeUninit;
+
 use crate::queue::details::MetaQueue;
 use crate::vec::details::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
@@ -61,6 +64,7 @@ impl SlotMapKey {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 struct FreeListEntry {
     previous: usize,
     next: usize,
@@ -73,15 +77,10 @@ pub type SlotMap<T> = details::MetaSlotMap<T, GenericOwningPointer>;
 /// A runtime fixed-size, shared-memory compatible [`RelocatableSlotMap`].
 pub type RelocatableSlotMap<T> = details::MetaSlotMap<T, GenericRelocatablePointer>;
 
-const INVALID_KEY: usize = usize::MAX;
+const INVALID: usize = usize::MAX;
 
 #[doc(hidden)]
 pub mod details {
-    use iceoryx2_bb_elementary::{
-        generic_pointer::GenericPointer, owning_pointer::GenericOwningPointer,
-        relocatable_ptr::GenericRelocatablePointer,
-    };
-
     use super::*;
 
     /// The iterator of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`].
@@ -110,10 +109,9 @@ pub mod details {
     #[derive(Debug)]
     pub struct MetaSlotMap<T, Ptr: GenericPointer> {
         idx_to_data: MetaVec<usize, Ptr>,
-        idx_to_data_free_list: MetaVec<usize, Ptr>,
+        idx_to_data_free_list: MetaVec<FreeListEntry, Ptr>,
         data: MetaVec<Option<T>, Ptr>,
         data_next_free_index: MetaQueue<usize, Ptr>,
-
         idx_to_data_free_list_head: usize,
         len: usize,
     }
@@ -124,7 +122,7 @@ pub mod details {
 
             for n in start.0..idx_to_data.len() {
                 let data_idx = self.idx_to_data[n];
-                if data_idx != INVALID_KEY {
+                if data_idx != INVALID {
                     return Some((
                         SlotMapKey(n),
                         self.data[data_idx].as_ref().expect(
@@ -138,11 +136,16 @@ pub mod details {
         }
 
         pub(crate) unsafe fn initialize_data_structures(&mut self) {
-            for n in 0..self.capacity_impl() {
-                self.idx_to_data.push_impl(INVALID_KEY);
+            let capacity = self.capacity_impl();
+            for n in 0..capacity {
+                self.idx_to_data.push_impl(INVALID);
                 self.data.push_impl(None);
-                self.idx_to_data_free_list.push_impl(n + 1);
                 self.data_next_free_index.push_impl(n);
+
+                let previous = if n == 0 { INVALID } else { n - 1 };
+                let next = if n < capacity - 1 { n + 1 } else { INVALID };
+                self.idx_to_data_free_list
+                    .push_impl(FreeListEntry { previous, next });
             }
         }
 
@@ -154,12 +157,12 @@ pub mod details {
         }
 
         pub(crate) unsafe fn contains_impl(&self, key: SlotMapKey) -> bool {
-            self.idx_to_data[key.0] != INVALID_KEY
+            self.idx_to_data[key.0] != INVALID
         }
 
         pub(crate) unsafe fn get_impl(&self, key: SlotMapKey) -> Option<&T> {
             match self.idx_to_data[key.0] {
-                INVALID_KEY => None,
+                INVALID => None,
                 n => Some(self.data[n].as_ref().expect(
                     "data and idx_to_data correspond and this value must be always available.",
                 )),
@@ -168,7 +171,7 @@ pub mod details {
 
         pub(crate) unsafe fn get_mut_impl(&mut self, key: SlotMapKey) -> Option<&mut T> {
             match self.idx_to_data[key.0] {
-                INVALID_KEY => None,
+                INVALID => None,
                 n => Some(self.data[n].as_mut().expect(
                     "data and idx_to_data correspond and this value must be always available.",
                 )),
@@ -176,22 +179,46 @@ pub mod details {
         }
 
         unsafe fn acquire_next_free_index(&mut self) -> Option<usize> {
-            if self.idx_to_data_free_list_head == self.capacity_impl() {
+            if self.idx_to_data_free_list_head == INVALID {
                 return None;
             }
 
             let free_idx = self.idx_to_data_free_list_head;
-            self.idx_to_data_free_list_head =
-                self.idx_to_data_free_list[self.idx_to_data_free_list_head];
+            let next = self.idx_to_data_free_list[free_idx].next;
+
+            if next != INVALID {
+                self.idx_to_data_free_list[next].previous = INVALID;
+            }
+            self.idx_to_data_free_list_head = next;
             Some(free_idx)
         }
 
-        unsafe fn reserve_index(&mut self) -> Option<usize> {
-            todo!()
+        unsafe fn reserve_index(&mut self, idx: usize) {
+            if idx >= self.capacity_impl() {
+                return;
+            }
+
+            let entry = self.idx_to_data_free_list[idx];
+            if entry.previous != INVALID {
+                self.idx_to_data_free_list[entry.previous].next = entry.next;
+            }
+            if entry.next != INVALID {
+                self.idx_to_data_free_list[entry.next].previous = entry.previous;
+            }
+            self.idx_to_data_free_list[idx].next = INVALID;
+            self.idx_to_data_free_list[idx].previous = INVALID;
         }
 
         unsafe fn release_free_index(&mut self, idx: usize) {
-            self.idx_to_data_free_list[idx] = self.idx_to_data_free_list_head;
+            if self.idx_to_data_free_list_head != INVALID {
+                self.idx_to_data_free_list[self.idx_to_data_free_list_head].previous = idx;
+            }
+
+            self.idx_to_data_free_list[idx] = FreeListEntry {
+                previous: INVALID,
+                next: self.idx_to_data_free_list_head,
+            };
+
             self.idx_to_data_free_list_head = idx;
         }
 
@@ -207,6 +234,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn insert_at_impl(&mut self, key: SlotMapKey, value: T) -> bool {
+            self.reserve_index(key.value());
             self.store_value(key, value)
         }
 
@@ -216,7 +244,7 @@ pub mod details {
             }
 
             let data_idx = self.idx_to_data[key.0];
-            if data_idx != INVALID_KEY {
+            if data_idx != INVALID {
                 self.data[data_idx] = Some(value);
             } else {
                 let n = self.data_next_free_index.pop_impl().expect("data and idx_to_data correspond and there must be always a free index available.");
@@ -234,11 +262,11 @@ pub mod details {
             }
 
             let data_idx = self.idx_to_data[key.0];
-            if data_idx != INVALID_KEY {
+            if data_idx != INVALID {
                 self.data[data_idx].take();
                 debug_assert!(self.data_next_free_index.push_impl(data_idx));
                 self.release_free_index(key.0);
-                self.idx_to_data[key.0] = INVALID_KEY;
+                self.idx_to_data[key.0] = INVALID;
                 self.len -= 1;
                 true
             } else {
@@ -384,7 +412,7 @@ pub mod details {
         /// in [`RelocatableSlotMap::init()`].
         pub const fn const_memory_size(capacity: usize) -> usize {
             RelocatableVec::<usize>::const_memory_size(capacity)
-                + RelocatableVec::<usize>::const_memory_size(capacity)
+                + RelocatableVec::<FreeListEntry>::const_memory_size(capacity)
                 + RelocatableVec::<Option<T>>::const_memory_size(capacity)
                 + RelocatableQueue::<usize>::const_memory_size(capacity)
         }
@@ -492,10 +520,10 @@ pub mod details {
 #[derive(Debug)]
 pub struct FixedSizeSlotMap<T, const CAPACITY: usize> {
     state: RelocatableSlotMap<T>,
-    _idx_to_data: [usize; CAPACITY],
-    _idx_to_data_next_free_index: [usize; CAPACITY],
-    _data: [Option<T>; CAPACITY],
-    _data_next_free_index: [usize; CAPACITY],
+    _idx_to_data: MaybeUninit<[usize; CAPACITY]>,
+    _idx_to_data_free_list: MaybeUninit<[FreeListEntry; CAPACITY]>,
+    _data: MaybeUninit<[Option<T>; CAPACITY]>,
+    _data_next_free_index: MaybeUninit<[usize; CAPACITY]>,
 }
 
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY> {
@@ -513,10 +541,10 @@ impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY
 impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
-            _idx_to_data: core::array::from_fn(|_| INVALID_KEY),
-            _idx_to_data_next_free_index: core::array::from_fn(|_| 0),
-            _data: core::array::from_fn(|_| None),
-            _data_next_free_index: core::array::from_fn(|_| 0),
+            _idx_to_data: MaybeUninit::uninit(),
+            _idx_to_data_free_list: MaybeUninit::uninit(),
+            _data: MaybeUninit::uninit(),
+            _data_next_free_index: MaybeUninit::uninit(),
             state: unsafe { RelocatableSlotMap::new_uninit(CAPACITY) },
         };
 
