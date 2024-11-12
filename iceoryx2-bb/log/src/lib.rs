@@ -160,7 +160,7 @@ static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
 static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 
 #[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
-pub static DEFAULT_LOGGER: Lazy<logger::console::Logger> = Lazy::new(logger::console::Logger::new);
+static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
 
 const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
 pub static ENV_LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
@@ -240,7 +240,7 @@ pub fn set_logger<T: Log + 'static>(value: &'static T) -> bool {
 /// Returns a reference to the [`Log`]ger.
 pub fn get_logger() -> &'static dyn Log {
     INIT_LOGGER.call_once(|| {
-        unsafe { LOGGER = Some(&*DEFAULT_LOGGER) };
+        unsafe { LOGGER = Some(&DEFAULT_LOGGER) };
     });
 
     // # From The Compiler
