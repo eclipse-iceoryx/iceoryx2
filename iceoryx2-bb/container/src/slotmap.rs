@@ -38,13 +38,11 @@ use crate::queue::details::MetaQueue;
 use crate::vec::details::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+use iceoryx2_bb_elementary::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_log::fail;
-use std::mem::MaybeUninit;
 
 /// A key of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`] that identifies a
 /// value.
@@ -70,52 +68,32 @@ struct FreeListEntry {
 
 /// A runtime fixed-size, non-shared memory compatible [`SlotMap`]. The [`SlotMap`]s memory resides
 /// in the heap.
-pub type SlotMap<T> = details::MetaSlotMap<
-    T,
-    OwningPointer<MaybeUninit<Option<T>>>,
-    OwningPointer<MaybeUninit<usize>>,
->;
+pub type SlotMap<T> = details::MetaSlotMap<T, GenericOwningPointer>;
 
 /// A runtime fixed-size, shared-memory compatible [`RelocatableSlotMap`].
-pub type RelocatableSlotMap<T> = details::MetaSlotMap<
-    T,
-    RelocatablePointer<MaybeUninit<Option<T>>>,
-    RelocatablePointer<MaybeUninit<usize>>,
->;
+pub type RelocatableSlotMap<T> = details::MetaSlotMap<T, GenericRelocatablePointer>;
 
 const INVALID_KEY: usize = usize::MAX;
 
 #[doc(hidden)]
 pub mod details {
+    use iceoryx2_bb_elementary::{
+        generic_pointer::GenericPointer, owning_pointer::GenericOwningPointer,
+        relocatable_ptr::GenericRelocatablePointer,
+    };
+
     use super::*;
 
     /// The iterator of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`].
-    pub struct Iter<
-        'slotmap,
-        T,
-        DataPtrType: PointerTrait<MaybeUninit<Option<T>>>,
-        IdxPtrType: PointerTrait<MaybeUninit<usize>>,
-    > {
-        slotmap: &'slotmap MetaSlotMap<T, DataPtrType, IdxPtrType>,
+    pub struct Iter<'slotmap, T, Ptr: GenericPointer> {
+        slotmap: &'slotmap MetaSlotMap<T, Ptr>,
         key: SlotMapKey,
     }
 
-    pub type OwningIter<'slotmap, T> =
-        Iter<'slotmap, T, OwningPointer<MaybeUninit<Option<T>>>, OwningPointer<MaybeUninit<usize>>>;
-    pub type RelocatableIter<'slotmap, T> = Iter<
-        'slotmap,
-        T,
-        RelocatablePointer<MaybeUninit<Option<T>>>,
-        RelocatablePointer<MaybeUninit<usize>>,
-    >;
+    pub type OwningIter<'slotmap, T> = Iter<'slotmap, T, GenericOwningPointer>;
+    pub type RelocatableIter<'slotmap, T> = Iter<'slotmap, T, GenericRelocatablePointer>;
 
-    impl<
-            'slotmap,
-            T,
-            DataPtrType: PointerTrait<MaybeUninit<Option<T>>>,
-            IdxPtrType: PointerTrait<MaybeUninit<usize>>,
-        > Iterator for Iter<'slotmap, T, DataPtrType, IdxPtrType>
-    {
+    impl<'slotmap, T, Ptr: GenericPointer> Iterator for Iter<'slotmap, T, Ptr> {
         type Item = (SlotMapKey, &'slotmap T);
 
         fn next(&mut self) -> Option<Self::Item> {
@@ -130,26 +108,17 @@ pub mod details {
 
     #[repr(C)]
     #[derive(Debug)]
-    pub struct MetaSlotMap<
-        T,
-        DataPtrType: PointerTrait<MaybeUninit<Option<T>>>,
-        IdxPtrType: PointerTrait<MaybeUninit<usize>>,
-    > {
-        idx_to_data: MetaVec<usize, IdxPtrType>,
-        idx_to_data_free_list: MetaVec<usize, IdxPtrType>,
-        data: MetaVec<Option<T>, DataPtrType>,
-        data_next_free_index: MetaQueue<usize, IdxPtrType>,
+    pub struct MetaSlotMap<T, Ptr: GenericPointer> {
+        idx_to_data: MetaVec<usize, Ptr>,
+        idx_to_data_free_list: MetaVec<usize, Ptr>,
+        data: MetaVec<Option<T>, Ptr>,
+        data_next_free_index: MetaQueue<usize, Ptr>,
 
         idx_to_data_free_list_head: usize,
         len: usize,
     }
 
-    impl<
-            T,
-            DataPtrType: PointerTrait<MaybeUninit<Option<T>>>,
-            IdxPtrType: PointerTrait<MaybeUninit<usize>>,
-        > MetaSlotMap<T, DataPtrType, IdxPtrType>
-    {
+    impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
         fn next(&self, start: SlotMapKey) -> Option<(SlotMapKey, &T)> {
             let idx_to_data = &self.idx_to_data;
 
@@ -177,7 +146,7 @@ pub mod details {
             }
         }
 
-        pub(crate) unsafe fn iter_impl(&self) -> Iter<T, DataPtrType, IdxPtrType> {
+        pub(crate) unsafe fn iter_impl(&self) -> Iter<T, Ptr> {
             Iter {
                 slotmap: self,
                 key: SlotMapKey(0),
@@ -294,13 +263,7 @@ pub mod details {
         }
     }
 
-    impl<T> RelocatableContainer
-        for MetaSlotMap<
-            T,
-            RelocatablePointer<MaybeUninit<Option<T>>>,
-            RelocatablePointer<MaybeUninit<usize>>,
-        >
-    {
+    impl<T> RelocatableContainer for MetaSlotMap<T, GenericRelocatablePointer> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 len: 0,
@@ -339,24 +302,7 @@ pub mod details {
         }
     }
 
-    impl<T>
-        MetaSlotMap<
-            T,
-            RelocatablePointer<MaybeUninit<Option<T>>>,
-            RelocatablePointer<MaybeUninit<usize>>,
-        >
-    {
-        /// Returns how many memory the [`RelocatableSlotMap`] will allocate from the allocator
-        /// in [`RelocatableSlotMap::init()`].
-        pub const fn const_memory_size(capacity: usize) -> usize {
-            RelocatableVec::<usize>::const_memory_size(capacity)
-                + RelocatableVec::<usize>::const_memory_size(capacity)
-                + RelocatableVec::<Option<T>>::const_memory_size(capacity)
-                + RelocatableQueue::<usize>::const_memory_size(capacity)
-        }
-    }
-
-    impl<T> MetaSlotMap<T, OwningPointer<MaybeUninit<Option<T>>>, OwningPointer<MaybeUninit<usize>>> {
+    impl<T> MetaSlotMap<T, GenericOwningPointer> {
         /// Creates a new runtime-fixed size [`SlotMap`] on the heap with the given capacity.
         pub fn new(capacity: usize) -> Self {
             let mut new_self = Self {
@@ -433,13 +379,16 @@ pub mod details {
         }
     }
 
-    impl<T>
-        MetaSlotMap<
-            T,
-            RelocatablePointer<MaybeUninit<Option<T>>>,
-            RelocatablePointer<MaybeUninit<usize>>,
-        >
-    {
+    impl<T> MetaSlotMap<T, GenericRelocatablePointer> {
+        /// Returns how many memory the [`RelocatableSlotMap`] will allocate from the allocator
+        /// in [`RelocatableSlotMap::init()`].
+        pub const fn const_memory_size(capacity: usize) -> usize {
+            RelocatableVec::<usize>::const_memory_size(capacity)
+                + RelocatableVec::<usize>::const_memory_size(capacity)
+                + RelocatableVec::<Option<T>>::const_memory_size(capacity)
+                + RelocatableQueue::<usize>::const_memory_size(capacity)
+        }
+
         /// Returns the [`Iter`]ator to iterate over all entries.
         ///
         /// # Safety

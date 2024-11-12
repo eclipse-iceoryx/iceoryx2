@@ -10,10 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::fmt::Debug;
+
 use crate::pointer_trait::PointerTrait;
 
 /// Trait that allows to use typed pointers as generic arguments for structs.
 pub trait GenericPointer {
     /// The underlying pointer type.
-    type Type<T>: PointerTrait<T>;
+    type Type<T: Debug>: PointerTrait<T> + Debug;
 }

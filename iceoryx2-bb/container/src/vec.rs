@@ -91,22 +91,27 @@ use std::{
     sync::atomic::Ordering,
 };
 
-use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
+use iceoryx2_bb_elementary::{
+    bump_allocator::BumpAllocator, owning_pointer::GenericOwningPointer,
+    relocatable_ptr::GenericRelocatablePointer,
+};
 use iceoryx2_bb_elementary::{
     math::unaligned_mem_size, owning_pointer::OwningPointer, placement_default::PlacementDefault,
     pointer_trait::PointerTrait, relocatable_container::RelocatableContainer,
     relocatable_ptr::RelocatablePointer,
 };
+
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 /// Vector with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableVec`] it is movable but is not shared memory compatible.
-pub type Vec<T> = details::MetaVec<T, OwningPointer<MaybeUninit<T>>>;
+pub type Vec<T> = details::MetaVec<T, GenericOwningPointer>;
 
 /// **Non-movable** relocatable vector with runtime fixed size capacity.
-pub type RelocatableVec<T> = details::MetaVec<T, RelocatablePointer<MaybeUninit<T>>>;
+pub type RelocatableVec<T> = details::MetaVec<T, GenericRelocatablePointer>;
 
 #[doc(hidden)]
 pub mod details {
@@ -115,17 +120,17 @@ pub mod details {
     /// **Non-movable** relocatable vector with runtime fixed size capacity.
     #[repr(C)]
     #[derive(Debug)]
-    pub struct MetaVec<T, PointerType: PointerTrait<MaybeUninit<T>>> {
-        data_ptr: PointerType,
+    pub struct MetaVec<T, Ptr: GenericPointer> {
+        data_ptr: Ptr::Type<MaybeUninit<T>>,
         capacity: usize,
         len: usize,
         is_initialized: IoxAtomicBool,
         _phantom_data: PhantomData<T>,
     }
 
-    unsafe impl<T: Send, PointerType: PointerTrait<MaybeUninit<T>>> Send for MetaVec<T, PointerType> {}
+    unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaVec<T, Ptr> {}
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Drop for MetaVec<T, PointerType> {
+    impl<T, Ptr: GenericPointer> Drop for MetaVec<T, Ptr> {
         fn drop(&mut self) {
             if self
                 .is_initialized
@@ -136,7 +141,7 @@ pub mod details {
         }
     }
 
-    impl<T> RelocatableContainer for MetaVec<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> RelocatableContainer for MetaVec<T, GenericRelocatablePointer> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
@@ -172,7 +177,7 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Deref for MetaVec<T, PointerType> {
+    impl<T, Ptr: GenericPointer> Deref for MetaVec<T, Ptr> {
         type Target = [T];
 
         fn deref(&self) -> &Self::Target {
@@ -181,7 +186,7 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> DerefMut for MetaVec<T, PointerType> {
+    impl<T, Ptr: GenericPointer> DerefMut for MetaVec<T, Ptr> {
         fn deref_mut(&mut self) -> &mut Self::Target {
             self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
             unsafe {
@@ -193,9 +198,7 @@ pub mod details {
         }
     }
 
-    impl<T: PartialEq, PointerType: PointerTrait<MaybeUninit<T>>> PartialEq
-        for MetaVec<T, PointerType>
-    {
+    impl<T: PartialEq, Ptr: GenericPointer> PartialEq for MetaVec<T, Ptr> {
         fn eq(&self, other: &Self) -> bool {
             if other.len() != self.len() {
                 return false;
@@ -211,9 +214,9 @@ pub mod details {
         }
     }
 
-    impl<T: Eq, PointerType: PointerTrait<MaybeUninit<T>>> Eq for MetaVec<T, PointerType> {}
+    impl<T: Eq, Ptr: GenericPointer> Eq for MetaVec<T, Ptr> {}
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> MetaVec<T, PointerType> {
+    impl<T, Ptr: GenericPointer> MetaVec<T, Ptr> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(
@@ -329,7 +332,7 @@ pub mod details {
         }
     }
 
-    impl<T> MetaVec<T, OwningPointer<MaybeUninit<T>>> {
+    impl<T> MetaVec<T, GenericOwningPointer> {
         /// Creates a new [`Queue`] with the provided capacity
         pub fn new(capacity: usize) -> Self {
             Self {
@@ -390,7 +393,7 @@ pub mod details {
         }
     }
 
-    impl<T> MetaVec<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> MetaVec<T, GenericRelocatablePointer> {
         /// Returns the required memory size for a vec with a specified capacity
         pub const fn const_memory_size(capacity: usize) -> usize {
             unaligned_mem_size::<T>(capacity)

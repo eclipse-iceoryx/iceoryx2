@@ -67,8 +67,9 @@
 use crate::generic_pointer::GenericPointer;
 pub use crate::pointer_trait::PointerTrait;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicIsize;
-use std::{marker::PhantomData, ptr::NonNull};
+use std::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 
+#[derive(Debug)]
 pub struct GenericRelocatablePointer;
 
 /// A [`RelocatablePointer`] stores only the distance from its memory starting position to the
@@ -143,5 +144,5 @@ impl<T> PointerTrait<T> for RelocatablePointer<T> {
 }
 
 impl GenericPointer for GenericRelocatablePointer {
-    type Type<T> = RelocatablePointer<T>;
+    type Type<T: Debug> = RelocatablePointer<T>;
 }

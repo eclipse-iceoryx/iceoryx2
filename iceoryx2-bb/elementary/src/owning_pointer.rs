@@ -15,10 +15,12 @@
 
 use std::alloc::Layout;
 use std::alloc::{alloc, dealloc};
+use std::fmt::Debug;
 
 use crate::generic_pointer::GenericPointer;
 use crate::pointer_trait::PointerTrait;
 
+#[derive(Debug)]
 pub struct GenericOwningPointer;
 
 /// Representation of a pointer which owns its memory.
@@ -68,5 +70,5 @@ impl<T> PointerTrait<T> for OwningPointer<T> {
 }
 
 impl GenericPointer for GenericOwningPointer {
-    type Type<T> = OwningPointer<T>;
+    type Type<T: Debug> = OwningPointer<T>;
 }

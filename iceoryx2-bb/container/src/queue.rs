@@ -104,11 +104,11 @@
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+use iceoryx2_bb_elementary::owning_pointer::{GenericOwningPointer, OwningPointer};
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::marker::PhantomData;
@@ -116,18 +116,20 @@ use std::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
 
 /// Queue with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableQueue`] it is movable but is not shared memory compatible.
-pub type Queue<T> = details::MetaQueue<T, OwningPointer<MaybeUninit<T>>>;
+pub type Queue<T> = details::MetaQueue<T, GenericOwningPointer>;
 /// **Non-movable** relocatable queue with runtime fixed size capacity.
-pub type RelocatableQueue<T> = details::MetaQueue<T, RelocatablePointer<MaybeUninit<T>>>;
+pub type RelocatableQueue<T> = details::MetaQueue<T, GenericRelocatablePointer>;
 
 #[doc(hidden)]
 pub mod details {
+    use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
+
     use super::*;
     /// **Non-movable** relocatable queue with runtime fixed size capacity.
     #[repr(C)]
     #[derive(Debug)]
-    pub struct MetaQueue<T, PointerType: PointerTrait<MaybeUninit<T>>> {
-        data_ptr: PointerType,
+    pub struct MetaQueue<T, Ptr: GenericPointer> {
+        data_ptr: Ptr::Type<MaybeUninit<T>>,
         start: usize,
         len: usize,
         capacity: usize,
@@ -135,9 +137,9 @@ pub mod details {
         _phantom_data: PhantomData<T>,
     }
 
-    unsafe impl<T: Send, PointerType: PointerTrait<MaybeUninit<T>>> Send for MetaQueue<T, PointerType> {}
+    unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaQueue<T, Ptr> {}
 
-    impl<T> MetaQueue<T, OwningPointer<MaybeUninit<T>>> {
+    impl<T> MetaQueue<T, GenericOwningPointer> {
         /// Creates a new [`Queue`] with the provided capacity
         pub fn new(capacity: usize) -> Self {
             Self {
@@ -184,7 +186,7 @@ pub mod details {
         }
     }
 
-    impl<T: Copy + Debug, PointerType: PointerTrait<MaybeUninit<T>> + Debug> MetaQueue<T, PointerType> {
+    impl<T: Copy + Debug, Ptr: GenericPointer + Debug> MetaQueue<T, Ptr> {
         /// Returns a copy of the element stored at index. The index is starting by 0 for the first
         /// element until [`Queue::len()`].
         ///
@@ -212,7 +214,7 @@ pub mod details {
         }
     }
 
-    impl<T> RelocatableContainer for MetaQueue<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> RelocatableContainer for MetaQueue<T, GenericRelocatablePointer> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
@@ -255,7 +257,7 @@ pub mod details {
         }
     }
 
-    impl<T> MetaQueue<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> MetaQueue<T, GenericRelocatablePointer> {
         /// Returns the required memory size for a queue with a specified capacity
         pub const fn const_memory_size(capacity: usize) -> usize {
             unaligned_mem_size::<T>(capacity)
@@ -325,7 +327,7 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> MetaQueue<T, PointerType> {
+    impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(
@@ -438,7 +440,7 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Drop for MetaQueue<T, PointerType> {
+    impl<T, Ptr: GenericPointer> Drop for MetaQueue<T, Ptr> {
         fn drop(&mut self) {
             if self
                 .is_initialized
