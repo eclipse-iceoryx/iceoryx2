@@ -63,10 +63,14 @@ pub trait ResizableSharedMemoryBuilder<
 }
 
 pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
-    fn translate_offset(
+    fn register_and_translate_offset(
         &mut self,
         offset: PointerOffset,
     ) -> Result<*const u8, SharedMemoryOpenError>;
+
+    fn unregister_offset(&mut self, offset: PointerOffset);
+
+    fn number_of_active_segments(&self) -> usize;
 }
 
 pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
@@ -74,6 +78,8 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
 {
     type Builder: ResizableSharedMemoryBuilder<Allocator, Shm, Self, Self::View>;
     type View: ResizableSharedMemoryView<Allocator, Shm>;
+
+    fn number_of_active_segments(&self) -> usize;
 
     fn allocate(
         &self,

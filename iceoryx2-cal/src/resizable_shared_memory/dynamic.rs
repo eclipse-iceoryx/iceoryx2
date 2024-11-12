@@ -25,11 +25,11 @@ use crate::shm_allocator::ShmAllocationError;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
 use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
@@ -46,6 +46,59 @@ struct BuilderConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     has_ownership: bool,
     shm_builder_timeout: Duration,
     max_number_of_chunks_hint: usize,
+}
+
+#[derive(Debug)]
+struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
+    builder_config: BuilderConfig<Allocator, Shm>,
+    shared_memory_map: SlotMap<ShmEntry<Allocator, Shm>>,
+    current_idx: SlotMapKey,
+}
+
+trait UpdateSegmentId {
+    fn update(&mut self, updated_value: Self);
+}
+
+impl UpdateSegmentId for SlotMapKey {
+    fn update(&mut self, updated_value: Self) {
+        if self.value() < updated_value.value() {
+            *self = updated_value;
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ShmEntry<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
+    shm: Shm,
+    chunk_count: IoxAtomicU64,
+    _data: PhantomData<Allocator>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ShmEntryState {
+    Empty,
+    NonEmpty,
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ShmEntry<Allocator, Shm> {
+    fn new(shm: Shm) -> Self {
+        Self {
+            shm,
+            chunk_count: IoxAtomicU64::new(0),
+            _data: PhantomData,
+        }
+    }
+
+    fn register_offset(&self) {
+        self.chunk_count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn unregister_offset(&self) -> ShmEntryState {
+        match self.chunk_count.fetch_sub(1, Ordering::Relaxed) {
+            1 => ShmEntryState::Empty,
+            _ => ShmEntryState::NonEmpty,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -131,7 +184,7 @@ where
 
         let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
         let current_idx = shared_memory_map
-            .insert(shm)
+            .insert(ShmEntry::new(shm))
             .expect("MAX_DATASEGMENTS is greater or equal 1");
 
         Ok(DynamicMemory {
@@ -151,13 +204,14 @@ where
             "Unable to open ResizableSharedMemoryView since the underlying shared memory could not be opened.");
 
         let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
-        shared_memory_map
-            .insert(shm)
+        let current_idx = shared_memory_map
+            .insert(ShmEntry::new(shm))
             .expect("MAX_DATASEGMENTS is greater or equal 1");
 
         Ok(DynamicView {
             builder_config: self.config,
             shared_memory_map,
+            current_idx,
             _data: PhantomData,
         })
     }
@@ -166,14 +220,15 @@ where
 #[derive(Debug)]
 pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     builder_config: BuilderConfig<Allocator, Shm>,
-    shared_memory_map: SlotMap<Shm>,
+    shared_memory_map: SlotMap<ShmEntry<Allocator, Shm>>,
+    current_idx: SlotMapKey,
     _data: PhantomData<Allocator>,
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
     ResizableSharedMemoryView<Allocator, Shm> for DynamicView<Allocator, Shm>
 {
-    fn translate_offset(
+    fn register_and_translate_offset(
         &mut self,
         offset: PointerOffset,
     ) -> Result<*const u8, SharedMemoryOpenError> {
@@ -188,21 +243,41 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
                                 when DynamicMemory::open_segment(&self.builder_config, segment_id),
                                 "{msg} {:?} since the corresponding shared memory segment could not be opened.", offset);
                 let payload_start_address = shm.payload_start_address();
-                self.shared_memory_map.insert_at(key, shm);
+                let entry = ShmEntry::new(shm);
+                entry.register_offset();
+                self.shared_memory_map.insert_at(key, entry);
+                self.current_idx.update(key);
                 payload_start_address
             }
-            Some(shm) => shm.payload_start_address(),
+            Some(entry) => {
+                entry.register_offset();
+                entry.shm.payload_start_address()
+            }
         };
 
         Ok((offset + payload_start_address) as *const u8)
     }
-}
 
-#[derive(Debug)]
-struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
-    builder_config: BuilderConfig<Allocator, Shm>,
-    shared_memory_map: SlotMap<Shm>,
-    current_idx: SlotMapKey,
+    fn unregister_offset(&mut self, offset: PointerOffset) {
+        let segment_id = offset.segment_id();
+        let key = SlotMapKey::new(segment_id as usize);
+
+        match self.shared_memory_map.get(key) {
+            Some(entry) => {
+                if entry.unregister_offset() == ShmEntryState::Empty && self.current_idx != key {
+                    self.shared_memory_map.remove(key);
+                }
+            }
+            None => {
+                warn!(from self,
+                      "Unable to unregister offset {:?} since the segment id is not mapped.", offset);
+            }
+        }
+    }
+
+    fn number_of_active_segments(&self) -> usize {
+        self.shared_memory_map.len()
+    }
 }
 
 #[derive(Debug)]
@@ -253,6 +328,10 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
         unsafe { &mut *self.state.get() }
     }
 
+    fn state(&self) -> &InternalState<Allocator, Shm> {
+        unsafe { &*self.state.get() }
+    }
+
     fn create_segment(
         config: &BuilderConfig<Allocator, Shm>,
         segment_id: u8,
@@ -301,8 +380,8 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
         )?;
 
         let key = SlotMapKey::new(segment_id as usize);
-        state.shared_memory_map.insert_at(key, shm);
-        state.current_idx = key;
+        state.shared_memory_map.insert_at(key, ShmEntry::new(shm));
+        state.current_idx.update(key);
 
         Ok(())
     }
@@ -316,19 +395,24 @@ where
     type Builder = DynamicBuilder<Allocator, Shm>;
     type View = DynamicView<Allocator, Shm>;
 
+    fn number_of_active_segments(&self) -> usize {
+        self.state().shared_memory_map.len()
+    }
+
     fn allocate(&self, layout: Layout) -> Result<ShmPointer, ResizableShmAllocationError> {
         let state = self.state_mut();
 
         loop {
             match state.shared_memory_map.get(state.current_idx) {
-                Some(ref shm) => match shm.allocate(layout) {
+                Some(ref entry) => match entry.shm.allocate(layout) {
                     Ok(mut ptr) => {
+                        entry.register_offset();
                         ptr.offset.set_segment_id(state.current_idx.value() as u8);
                         return Ok(ptr);
                     }
                     Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
                         self.create_resized_segment(
-                            shm,
+                            &entry.shm,
                             layout,
                             state.current_idx.value() as u8 + 1,
                         )?;
@@ -342,9 +426,17 @@ where
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
+        let segment_id = SlotMapKey::new(offset.segment_id() as usize);
         let state = self.state_mut();
-        match state.shared_memory_map.get(state.current_idx) {
-            Some(shm) => shm.deallocate(offset, layout),
+        match state.shared_memory_map.get(segment_id) {
+            Some(entry) => {
+                entry.shm.deallocate(offset, layout);
+                if entry.unregister_offset() == ShmEntryState::Empty
+                    && segment_id != state.current_idx
+                {
+                    state.shared_memory_map.remove(segment_id);
+                }
+            }
             None => fatal_panic!(from self,
                         "This should never happen! Current shared memory segment is not available!"),
         }
