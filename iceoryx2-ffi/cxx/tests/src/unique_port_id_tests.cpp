@@ -66,13 +66,13 @@ struct UniquePortIdTest : public ::testing::Test {
 TYPED_TEST_SUITE(UniquePortIdTest, iox2_testing::ServiceTypes);
 
 TYPED_TEST(UniquePortIdTest, unique_port_id_value) {
-    auto null_id = std::array<uint8_t, iox2::UNIQUE_PORT_ID_LENGTH> {};
+    auto null_id = iox::vector<uint8_t, iox2::UNIQUE_PORT_ID_LENGTH> { iox2::UNIQUE_PORT_ID_LENGTH, 0 };
 
     auto unique_publisher_id = this->publisher_1.id();
     ASSERT_TRUE(unique_publisher_id.bytes().has_value());
     ASSERT_NE(unique_publisher_id.bytes().value(), null_id);
 
-    auto unique_subscriber_id = this->publisher_1.id();
+    auto unique_subscriber_id = this->subscriber_1.id();
     ASSERT_TRUE(unique_subscriber_id.bytes().has_value());
     ASSERT_NE(unique_subscriber_id.bytes().value(), null_id);
 

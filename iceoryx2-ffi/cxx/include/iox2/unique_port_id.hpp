@@ -14,14 +14,13 @@
 #define IOX2_UNIQUE_PORT_ID_HPP
 
 #include "iox/optional.hpp"
+#include "iox/vector.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-
-#include <array>
 
 namespace iox2 {
 
 constexpr uint64_t UNIQUE_PORT_ID_LENGTH = 128;
-using RawIdType = std::array<uint8_t, UNIQUE_PORT_ID_LENGTH>;
+using RawIdType = iox::vector<uint8_t, UNIQUE_PORT_ID_LENGTH>;
 
 /// The system-wide unique id of a [`Publisher`].
 class UniquePublisherId {
