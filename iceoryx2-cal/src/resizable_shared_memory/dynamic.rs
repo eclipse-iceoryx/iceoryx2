@@ -16,7 +16,7 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::{fmt::Debug, marker::PhantomData};
 
-use crate::shared_memory::{AllocationStrategy, ShmPointer};
+use crate::shared_memory::{AllocationStrategy, SegmentId, ShmPointer};
 use crate::shared_memory::{
     PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
     SharedMemoryOpenError, ShmAllocator,
@@ -170,7 +170,7 @@ where
         self.config.allocator_config_hint = hint.config;
 
         let origin = format!("{:?}", self);
-        let shm = fail!(from origin, when DynamicMemory::create_segment(&self.config, 0, hint.payload_size),
+        let shm = fail!(from origin, when DynamicMemory::create_segment(&self.config, SegmentId::new(0), hint.payload_size),
             "Unable to create ResizableSharedMemory since the underlying shared memory could not be created.");
 
         let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
@@ -191,7 +191,7 @@ where
 
     fn open(self) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
         let origin = format!("{:?}", self);
-        let shm = fail!(from origin, when DynamicMemory::open_segment(&self.config, 0),
+        let shm = fail!(from origin, when DynamicMemory::open_segment(&self.config, SegmentId::new(0)),
             "Unable to open ResizableSharedMemoryView since the underlying shared memory could not be opened.");
 
         let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
@@ -226,7 +226,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
         let msg = "Unable to translate";
         let segment_id = offset.segment_id();
         let offset = offset.offset();
-        let key = SlotMapKey::new(segment_id as usize);
+        let key = SlotMapKey::new(segment_id.value() as usize);
 
         let payload_start_address = match self.shared_memory_map.get(key) {
             None => {
@@ -251,7 +251,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
 
     fn unregister_offset(&mut self, offset: PointerOffset) {
         let segment_id = offset.segment_id();
-        let key = SlotMapKey::new(segment_id as usize);
+        let key = SlotMapKey::new(segment_id.value() as usize);
 
         match self.shared_memory_map.get(key) {
             Some(entry) => {
@@ -325,7 +325,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
 
     fn create_segment(
         config: &BuilderConfig<Allocator, Shm>,
-        segment_id: u8,
+        segment_id: SegmentId,
         payload_size: usize,
     ) -> Result<Shm, SharedMemoryCreateError> {
         Self::segment_builder(config, segment_id)
@@ -335,16 +335,19 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
 
     fn open_segment(
         config: &BuilderConfig<Allocator, Shm>,
-        segment_id: u8,
+        segment_id: SegmentId,
     ) -> Result<Shm, SharedMemoryOpenError> {
         Self::segment_builder(config, segment_id).open()
     }
 
-    fn segment_builder(config: &BuilderConfig<Allocator, Shm>, segment_id: u8) -> Shm::Builder {
+    fn segment_builder(
+        config: &BuilderConfig<Allocator, Shm>,
+        segment_id: SegmentId,
+    ) -> Shm::Builder {
         let msg = "This should never happen! Unable to create additional shared memory segment since it would result in an invalid shared memory name.";
         let mut adjusted_name = config.base_name;
         fatal_panic!(from config, when adjusted_name.push_bytes(b"__"), "{msg}");
-        fatal_panic!(from config, when adjusted_name.push_bytes(segment_id.to_string().as_bytes()), "{msg}");
+        fatal_panic!(from config, when adjusted_name.push_bytes(segment_id.value().to_string().as_bytes()), "{msg}");
         Shm::Builder::new(&adjusted_name)
             .has_ownership(config.has_ownership)
             .timeout(config.shm_builder_timeout)
@@ -372,7 +375,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
         state.builder_config.allocator_config_hint = adjusted_segment_setup.config;
         let shm = Self::create_segment(
             &state.builder_config,
-            segment_id.value() as u8,
+            SegmentId::new(segment_id.value() as u16),
             adjusted_segment_setup.payload_size,
         )?;
 
@@ -416,7 +419,8 @@ where
                 Some(ref entry) => match entry.shm.allocate(layout) {
                     Ok(mut ptr) => {
                         entry.register_offset();
-                        ptr.offset.set_segment_id(state.current_idx.value() as u8);
+                        ptr.offset
+                            .set_segment_id(SegmentId::new(state.current_idx.value() as u16));
                         return Ok(ptr);
                     }
                     Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
@@ -432,7 +436,7 @@ where
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
-        let segment_id = SlotMapKey::new(offset.segment_id() as usize);
+        let segment_id = SlotMapKey::new(offset.segment_id().value() as usize);
         let state = self.state_mut();
         match state.shared_memory_map.get(segment_id) {
             Some(entry) => {

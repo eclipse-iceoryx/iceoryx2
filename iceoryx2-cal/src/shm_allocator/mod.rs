@@ -19,6 +19,18 @@ pub use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
 
 pub trait ShmAllocatorConfig: Copy + Default + Debug {}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SegmentId(u16);
+
+impl SegmentId {
+    pub fn new(value: u16) -> Self {
+        Self(value)
+    }
+
+    pub fn value(&self) -> u16 {
+        self.0
+    }
+}
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct PointerOffset(u64);
@@ -26,19 +38,19 @@ pub struct PointerOffset(u64);
 impl PointerOffset {
     pub fn new(offset: usize) -> PointerOffset {
         const SEGMENT_ID: u64 = 0;
-        Self((offset as u64) << 8 | SEGMENT_ID as u64)
+        Self((offset as u64) << core::mem::size_of::<SegmentId>() | SEGMENT_ID as u64)
     }
 
-    pub fn set_segment_id(&mut self, value: u8) {
-        self.0 = (self.offset() as u64) << 8 | value as u64;
+    pub fn set_segment_id(&mut self, value: SegmentId) {
+        self.0 = (self.offset() as u64) << core::mem::size_of::<SegmentId>() | value.0 as u64;
     }
 
     pub fn offset(&self) -> usize {
-        (self.0 >> 8) as usize
+        (self.0 >> core::mem::size_of::<SegmentId>()) as usize
     }
 
-    pub fn segment_id(&self) -> u8 {
-        (self.0 & 0x00000000000000ff) as u8
+    pub fn segment_id(&self) -> SegmentId {
+        SegmentId((self.0 & 0x000000000000ffff) as u16)
     }
 }
 
@@ -46,7 +58,7 @@ impl Debug for PointerOffset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "PointerOffset {{ offset: {}, segment_id: {} }}",
+            "PointerOffset {{ offset: {}, segment_id: {:?} }}",
             self.offset(),
             self.segment_id()
         )
