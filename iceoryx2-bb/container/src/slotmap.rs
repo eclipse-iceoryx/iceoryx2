@@ -21,6 +21,16 @@
 //!  * [`RelocatableSlotMap`](crate::slotmap::RelocatableSlotMap), run-time fixed-size slotmap that
 //!    is shared-memory compatible.
 //!
+//! The SlotMap shall satisfy the following requirements:
+//!
+//!  * A new element can be inserted with a max runtime of `O(1)`
+//!  * A new element can be inserted at a user-provided key with a max runtime of `O(1)`
+//!  * An element can be removed by providing the corresponding key with a max runtime of `O(1)`
+//!  * One can iterate over all elements of the SlotMap.
+//!
+//! The SlotMap is the perfect container when elements shall be added, removed and accesses quickly
+//! but iteration is allowed to be slow.
+//!
 //! # User Examples
 //!
 //! ```
