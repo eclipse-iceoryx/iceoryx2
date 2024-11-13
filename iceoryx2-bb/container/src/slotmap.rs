@@ -283,9 +283,11 @@ pub mod details {
         }
 
         pub(crate) unsafe fn next_free_key_impl(&self) -> Option<SlotMapKey> {
-            self.idx_to_data_next_free_index
-                .peek_impl()
-                .map(|v| SlotMapKey::new(*v))
+            if self.idx_to_data_free_list_head == INVALID {
+                return None;
+            }
+
+            Some(SlotMapKey::new(self.idx_to_data_free_list_head))
         }
 
         pub(crate) fn len_impl(&self) -> usize {

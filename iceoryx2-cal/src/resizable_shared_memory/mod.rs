@@ -12,6 +12,7 @@
 
 pub mod dynamic;
 
+use std::alloc::Layout;
 use std::fmt::Debug;
 use std::time::Duration;
 
@@ -41,7 +42,7 @@ pub trait ResizableSharedMemoryBuilder<
     /// Defines if a newly created [`SharedMemory`] owns the underlying resources
     fn has_ownership(self, value: bool) -> Self;
 
-    fn allocator_config_hint(self, value: Allocator::Configuration) -> Self;
+    fn max_chunk_layout_hint(self, value: Layout) -> Self;
 
     fn max_number_of_chunks_hint(self, value: usize) -> Self;
 

@@ -46,6 +46,7 @@ struct BuilderConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     has_ownership: bool,
     shm_builder_timeout: Duration,
     max_number_of_chunks_hint: usize,
+    max_chunk_layout_hint: Layout,
 }
 
 #[derive(Debug)]
@@ -114,6 +115,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
                 allocator_config_hint: Allocator::Configuration::default(),
                 shm: Shm::Configuration::default(),
                 max_number_of_chunks_hint: 1,
+                max_chunk_layout_hint: Layout::new::<u8>(),
             },
         }
     }
@@ -140,8 +142,8 @@ where
         self
     }
 
-    fn allocator_config_hint(mut self, value: Allocator::Configuration) -> Self {
-        self.config.allocator_config_hint = value;
+    fn max_chunk_layout_hint(mut self, value: Layout) -> Self {
+        self.config.max_chunk_layout_hint = value;
         self
     }
 
@@ -160,14 +162,15 @@ where
         self
     }
 
-    fn create(self) -> Result<DynamicMemory<Allocator, Shm>, SharedMemoryCreateError> {
-        let initial_size = Allocator::payload_size_hint(
-            &self.config.allocator_config_hint,
+    fn create(mut self) -> Result<DynamicMemory<Allocator, Shm>, SharedMemoryCreateError> {
+        let hint = Allocator::initial_setup_hint(
+            self.config.max_chunk_layout_hint,
             self.config.max_number_of_chunks_hint,
         );
+        self.config.allocator_config_hint = hint.config;
 
         let origin = format!("{:?}", self);
-        let shm = fail!(from origin, when DynamicMemory::create_segment(&self.config, 0, initial_size),
+        let shm = fail!(from origin, when DynamicMemory::create_segment(&self.config, 0, hint.payload_size),
             "Unable to create ResizableSharedMemory since the underlying shared memory could not be created.");
 
         let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
@@ -373,6 +376,17 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
             adjusted_segment_setup.payload_size,
         )?;
 
+        match state.shared_memory_map.get(state.current_idx) {
+            Some(ref segment) => {
+                if segment.chunk_count.load(Ordering::Relaxed) == 0 {
+                    state.shared_memory_map.remove(state.current_idx);
+                }
+            }
+            None => {
+                fatal_panic!(from self, "This should never happen! Current segment id is unavailable.")
+            }
+        }
+
         state
             .shared_memory_map
             .insert_at(segment_id, ShmEntry::new(shm));
@@ -405,13 +419,14 @@ where
                         ptr.offset.set_segment_id(state.current_idx.value() as u8);
                         return Ok(ptr);
                     }
-                    Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
+                    Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
+                    | Err(ShmAllocationError::ExceedsMaxSupportedAlignment) => {
                         self.create_resized_segment(&entry.shm, layout)?;
                     }
                     Err(e) => return Err(e.into()),
                 },
                 None => fatal_panic!(from self,
-                        "This should never happen! Current shared memory segment is not available!"),
+                        "This should never happen! Unable to allocate memory since the current shared memory segment is not available!"),
             }
         }
     }
@@ -429,7 +444,7 @@ where
                 }
             }
             None => fatal_panic!(from self,
-                        "This should never happen! Current shared memory segment is not available!"),
+                        "This should never happen! Unable to deallocate {:?} since the corresponding shared memory segment is not available!", offset),
         }
     }
 

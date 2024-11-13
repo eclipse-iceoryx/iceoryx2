@@ -73,7 +73,7 @@ pub enum ShmAllocatorInitError {
     AllocationFailed,
 }
 
-pub struct ResizeHint<Config: ShmAllocatorConfig> {
+pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
     pub(crate) payload_size: usize,
     pub(crate) config: Config,
 }
@@ -89,11 +89,14 @@ pub trait ShmAllocator: Debug + Send + Sync + 'static {
         &self,
         layout: Layout,
         strategy: AllocationStrategy,
-    ) -> ResizeHint<Self::Configuration>;
+    ) -> SharedMemorySetupHint<Self::Configuration>;
 
     /// Suggest a managed payload size under a provided configuration assuming that at most
     /// `max_number_of_chunks` of memory are in use in parallel.
-    fn payload_size_hint(config: &Self::Configuration, max_number_of_chunks: usize) -> usize;
+    fn initial_setup_hint(
+        max_chunk_layout: Layout,
+        max_number_of_chunks: usize,
+    ) -> SharedMemorySetupHint<Self::Configuration>;
 
     /// Returns the required memory size of the additional dynamic part of the allocator that is
     /// allocated in [`ShmAllocator::init()`].

@@ -32,7 +32,7 @@ impl ShmAllocator for BumpAllocator {
         &self,
         layout: Layout,
         strategy: AllocationStrategy,
-    ) -> ResizeHint<Self::Configuration> {
+    ) -> SharedMemorySetupHint<Self::Configuration> {
         let current_payload_size = self.allocator.total_space();
 
         let payload_size = match strategy {
@@ -42,14 +42,20 @@ impl ShmAllocator for BumpAllocator {
             }
         };
 
-        ResizeHint {
+        SharedMemorySetupHint {
             payload_size,
             config: Self::Configuration::default(),
         }
     }
 
-    fn payload_size_hint(_config: &Self::Configuration, max_number_of_chunks: usize) -> usize {
-        max_number_of_chunks
+    fn initial_setup_hint(
+        max_chunk_layout: Layout,
+        max_number_of_chunks: usize,
+    ) -> SharedMemorySetupHint<Self::Configuration> {
+        SharedMemorySetupHint {
+            config: Self::Configuration::default(),
+            payload_size: max_chunk_layout.size() * max_number_of_chunks,
+        }
     }
 
     fn management_size(_memory_size: usize, _config: &Self::Configuration) -> usize {

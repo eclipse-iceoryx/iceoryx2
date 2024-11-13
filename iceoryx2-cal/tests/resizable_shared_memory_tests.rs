@@ -41,7 +41,6 @@ mod resizable_shared_memory {
             .unwrap();
         let mut sut_viewer = Sut::Builder::new(&storage_name)
             .config(&config)
-            .max_number_of_chunks_hint(1)
             .open()
             .unwrap();
 
@@ -75,12 +74,13 @@ mod resizable_shared_memory {
             .unwrap();
         let mut sut_viewer = Sut::Builder::new(&storage_name)
             .config(&config)
-            .max_number_of_chunks_hint(1)
             .open()
             .unwrap();
 
         let ptr_creator_1 = sut_creator.allocate(Layout::new::<u64>()).unwrap();
+        assert_that!(sut_creator.number_of_active_segments(), eq 1);
         let ptr_creator_2 = sut_creator.allocate(Layout::new::<u64>()).unwrap();
+        assert_that!(sut_creator.number_of_active_segments(), eq 2);
 
         let test_value_1 = 109875896345234897;
         let test_value_2 = 412384034975234569;
@@ -146,6 +146,26 @@ mod resizable_shared_memory {
         unsafe { sut_creator.deallocate(ptr_creator_1.offset, Layout::new::<u64>()) };
         assert_that!(sut_creator.number_of_active_segments(), eq 1);
     }
+
+    // TODO:
+    //  * no more key suggestions, increment key
+    //    * make segment id u16
+    //  * increasing chunk size
+    //  * allocate/deallocate in random order
+    //  * allocate until new segment, old segment id is never used
+    //  * open with no more __0 segment
+    //  * open with many segments
+    //  * AllocationStrategy::PowerOfTwo -> doubling in size
+    //  * list/does_exist/remove
+    //  * has_ownership, acquire/release ownership
+    //  * timeout
+    //  * best fit, let reallocate until 256 exceeded, see if id is recycled
+    //  * exceed max alignment
+    //  * separate builder for view, without hints
+    //  * start with layout.size == 1 and max_number_of_chunks == 1
+    //    * allocate 1 byte
+    //    * allocate N byte, may lead to 2 allocations, one for chunk resize, one for bucket number
+    //      resize
 
     #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>, resizable_shared_memory::dynamic::DynamicMemory<DefaultAllocator, iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>>)]
     mod posix {}
