@@ -87,20 +87,24 @@ impl ShmAllocator for PoolAllocator {
             self.number_of_buckets()
         };
 
-        let adjusted_layout = if current_layout != layout {
-            match strategy {
-                AllocationStrategy::Static => current_layout,
-                AllocationStrategy::BestFit => layout,
-                AllocationStrategy::PowerOfTwo => unsafe {
-                    Layout::from_size_align_unchecked(
-                        layout.size().next_power_of_two(),
-                        layout.align().next_power_of_two(),
-                    )
-                },
-            }
-        } else {
-            layout
-        };
+        let adjusted_layout =
+            if current_layout.size() < layout.size() || current_layout.align() < layout.align() {
+                match strategy {
+                    AllocationStrategy::Static => current_layout,
+                    AllocationStrategy::BestFit => layout,
+                    AllocationStrategy::PowerOfTwo => unsafe {
+                        Layout::from_size_align_unchecked(
+                            layout.size().max(current_layout.size()).next_power_of_two(),
+                            layout
+                                .align()
+                                .max(current_layout.align())
+                                .next_power_of_two(),
+                        )
+                    },
+                }
+            } else {
+                current_layout
+            };
 
         Self::initial_setup_hint(adjusted_layout, adjusted_number_of_buckets as usize)
     }

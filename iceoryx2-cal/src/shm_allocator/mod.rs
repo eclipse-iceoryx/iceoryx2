@@ -100,8 +100,8 @@ pub enum ShmAllocatorInitError {
 }
 
 pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
-    pub(crate) payload_size: usize,
-    pub(crate) config: Config,
+    pub payload_size: usize,
+    pub config: Config,
 }
 
 /// Every allocator implementation must be relocatable. The allocator itself must be stored either

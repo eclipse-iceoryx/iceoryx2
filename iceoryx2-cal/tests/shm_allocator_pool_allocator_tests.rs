@@ -17,7 +17,7 @@ mod shm_allocator_pool_allocator {
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::{
-        shm_allocator::{pool_allocator::*, ShmAllocationError, ShmAllocator},
+        shm_allocator::{pool_allocator::*, AllocationStrategy, ShmAllocationError, ShmAllocator},
         zero_copy_connection::PointerOffset,
     };
 
@@ -67,6 +67,29 @@ mod shm_allocator_pool_allocator {
 
         assert_that!(test_context.sut.bucket_size(), eq BUCKET_CONFIG.size());
         assert_that!(test_context.sut.max_alignment(), eq BUCKET_CONFIG.align());
+    }
+
+    #[test]
+    fn initial_setup_hint_is_layout_times_number_of_chunks() {
+        let layout = Layout::from_size_align(64, 2).unwrap();
+        let max_number_of_chunks = 54;
+        let hint = PoolAllocator::initial_setup_hint(layout, max_number_of_chunks);
+
+        assert_that!(hint.config.bucket_layout, eq layout);
+        assert_that!(hint.payload_size, eq layout.size() * max_number_of_chunks);
+    }
+
+    #[test]
+    fn no_new_resize_hint_with_power_of_two_when_layout_is_smaller_and_buckets_are_available() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let test_context = TestContext::new(initial_layout);
+        let hint = test_context.sut.resize_hint(
+            Layout::from_size_align(8, 2).unwrap(),
+            AllocationStrategy::PowerOfTwo,
+        );
+
+        assert_that!(hint.config.bucket_layout, eq initial_layout);
+        assert_that!(hint.payload_size, eq initial_layout.size() * test_context.sut.number_of_buckets() as usize);
     }
 
     #[test]

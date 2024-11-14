@@ -282,7 +282,7 @@ mod resizable_shared_memory {
     }
 
     #[test]
-    fn static_allocation_strategy_does_not_increase_number_of_chunks<
+    fn deallocate_last_segment_does_not_release_it<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
@@ -324,9 +324,30 @@ mod resizable_shared_memory {
         assert_that!(result, is_err);
     }
 
+    #[test]
+    fn static_allocation_strategy_increase_available_chunks<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(1)
+            .create()
+            .unwrap();
+
+        let result = sut.allocate(Layout::new::<u8>());
+        assert_that!(result, is_ok);
+        let result = sut.allocate(Layout::new::<u8>());
+        assert_that!(result, is_err);
+    }
+
     // TODO:
-    //  * allocate/deallocate in random order
-    //  * allocate until new segment, old segment id is never used
+    //  * tests resize_hint and initial_setup of bump and pool alloctor
     //  * open with no more __0 segment
     //  * open with many segments
     //  * AllocationStrategy::PowerOfTwo -> doubling in size
