@@ -40,6 +40,7 @@ impl ShmAllocator for BumpAllocator {
             AllocationStrategy::PowerOfTwo => {
                 (current_payload_size + layout.size()).next_power_of_two()
             }
+            AllocationStrategy::Static => current_payload_size,
         };
 
         SharedMemorySetupHint {

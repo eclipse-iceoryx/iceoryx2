@@ -442,7 +442,8 @@ where
                         return Ok(ptr);
                     }
                     Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
-                    | Err(ShmAllocationError::ExceedsMaxSupportedAlignment) => {
+                    | Err(ShmAllocationError::ExceedsMaxSupportedAlignment)
+                    | Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge)) => {
                         self.create_resized_segment(&entry.shm, layout)?;
                     }
                     Err(e) => return Err(e.into()),

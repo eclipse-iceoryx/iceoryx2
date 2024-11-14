@@ -17,6 +17,7 @@ mod resizable_shared_memory {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::{self, *};
+    use iceoryx2_cal::shm_allocator::AllocationStrategy;
     use iceoryx2_cal::testing::*;
     use iceoryx2_cal::{
         shared_memory::SharedMemory,
@@ -147,8 +148,75 @@ mod resizable_shared_memory {
         assert_that!(sut_creator.number_of_active_segments(), eq 1);
     }
 
+    fn allocate_more_than_hinted_with_increasing_chunk_size_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >(
+        strategy: AllocationStrategy,
+    ) {
+        const NUMBER_OF_REALLOCATIONS: usize = 128;
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_creator = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(strategy)
+            .create()
+            .unwrap();
+
+        let mut sut_viewer = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        let mut ptrs = vec![];
+        for i in 0..NUMBER_OF_REALLOCATIONS {
+            let size = 2 + i;
+            let layout = unsafe { Layout::from_size_align_unchecked(size, 1) };
+            let ptr = sut_creator.allocate(layout).unwrap();
+
+            for n in 0..size {
+                unsafe { ptr.data_ptr.add(n).write(i as u8) };
+            }
+            ptrs.push(ptr);
+        }
+
+        for i in 0..NUMBER_OF_REALLOCATIONS {
+            let size = 2 + i;
+            let ptr_view = sut_viewer
+                .register_and_translate_offset(ptrs[i].offset)
+                .unwrap();
+
+            for n in 0..size {
+                assert_that!(unsafe{ *ptr_view.add(n) }, eq i as u8);
+            }
+        }
+    }
+
+    #[test]
+    fn allocate_more_than_hinted_with_increasing_chunk_size_and_best_fit_strategy_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        allocate_more_than_hinted_with_increasing_chunk_size_works::<Shm, Sut>(
+            AllocationStrategy::BestFit,
+        );
+    }
+
+    #[test]
+    fn allocate_more_than_hinted_with_increasing_chunk_size_and_power_of_two_strategy_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        allocate_more_than_hinted_with_increasing_chunk_size_works::<Shm, Sut>(
+            AllocationStrategy::PowerOfTwo,
+        );
+    }
+
     // TODO:
-    //  * increasing chunk size
+    //  * AllocationStrategy::Static is static
     //  * allocate/deallocate in random order
     //  * allocate until new segment, old segment id is never used
     //  * open with no more __0 segment
