@@ -34,8 +34,10 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
     NamedConceptMgmt, NamedConceptRemoveError, ResizableSharedMemory, ResizableSharedMemoryBuilder,
-    ResizableSharedMemoryView, ResizableShmAllocationError, MAX_DATASEGMENTS,
+    ResizableSharedMemoryView, ResizableShmAllocationError,
 };
+
+const MAX_DATASEGMENTS: usize = SegmentId::max_segment_id() as usize + 1;
 
 #[derive(Debug)]
 struct BuilderConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
@@ -218,6 +220,8 @@ pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
     ResizableSharedMemoryView<Allocator, Shm> for DynamicView<Allocator, Shm>
+where
+    Shm::Builder: Debug,
 {
     fn register_and_translate_offset(
         &mut self,
@@ -314,7 +318,10 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConceptMgmt
     }
 }
 
-impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Allocator, Shm> {
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
     fn state_mut(&self) -> &mut InternalState<Allocator, Shm> {
         unsafe { &mut *self.state.get() }
     }
@@ -364,12 +371,12 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
         let adjusted_segment_setup = shm
             .allocator()
             .resize_hint(layout, state.builder_config.allocation_strategy);
-        let segment_id = match state.shared_memory_map.next_free_key() {
-            Some(v) => v,
-            None => {
-                fail!(from self, with SharedMemoryCreateError::InternalError,
-                            "{msg} {:?} since the internal shared memory map cannot hold any more segments.", layout);
-            }
+        let segment_id = if state.current_idx.value() < SegmentId::max_segment_id() as usize {
+            SlotMapKey::new(state.current_idx.value() + 1)
+        } else {
+            fail!(from self, with SharedMemoryCreateError::InternalError,
+                "{msg} {:?} since it would exceed the maximum amount of reallocations of {}. With a better configuration hint, this issue can be avoided.",
+                layout, Self::max_number_of_reallocations());
         };
 
         state.builder_config.allocator_config_hint = adjusted_segment_setup.config;
@@ -386,7 +393,9 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
                 }
             }
             None => {
-                fatal_panic!(from self, "This should never happen! Current segment id is unavailable.")
+                fatal_panic!(from self,
+                        "This should never happen! {msg} {:?} since the current segment id is unavailable.",
+                        layout)
             }
         }
 
@@ -406,6 +415,10 @@ where
 {
     type Builder = DynamicBuilder<Allocator, Shm>;
     type View = DynamicView<Allocator, Shm>;
+
+    fn max_number_of_reallocations() -> usize {
+        SegmentId::max_segment_id() as usize + 1
+    }
 
     fn number_of_active_segments(&self) -> usize {
         self.state().shared_memory_map.len()

@@ -24,8 +24,6 @@ use crate::shared_memory::{
 };
 use crate::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
 
-const MAX_DATASEGMENTS: usize = 256;
-
 enum_gen! { ResizableShmAllocationError
   mapping:
     ShmAllocationError,
@@ -79,6 +77,8 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
 {
     type Builder: ResizableSharedMemoryBuilder<Allocator, Shm, Self, Self::View>;
     type View: ResizableSharedMemoryView<Allocator, Shm>;
+
+    fn max_number_of_reallocations() -> usize;
 
     fn number_of_active_segments(&self) -> usize;
 

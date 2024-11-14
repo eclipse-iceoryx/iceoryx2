@@ -13,7 +13,7 @@
 pub mod bump_allocator;
 pub mod pool_allocator;
 
-use std::{alloc::Layout, fmt::Debug, ptr::NonNull};
+use std::{alloc::Layout, fmt::Debug, ptr::NonNull, u16};
 
 pub use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
@@ -29,6 +29,10 @@ impl SegmentId {
 
     pub fn value(&self) -> u16 {
         self.0
+    }
+
+    pub const fn max_segment_id() -> u16 {
+        u16::MAX
     }
 }
 
@@ -50,7 +54,7 @@ impl PointerOffset {
     }
 
     pub fn segment_id(&self) -> SegmentId {
-        SegmentId((self.0 & 0x000000000000ffff) as u16)
+        SegmentId((self.0 & SegmentId::max_segment_id() as u64) as u16)
     }
 }
 
