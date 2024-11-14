@@ -148,8 +148,6 @@ mod resizable_shared_memory {
     }
 
     // TODO:
-    //  * no more key suggestions, increment key
-    //    * make segment id u16
     //  * increasing chunk size
     //  * allocate/deallocate in random order
     //  * allocate until new segment, old segment id is never used

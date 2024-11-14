@@ -13,28 +13,30 @@
 pub mod bump_allocator;
 pub mod pool_allocator;
 
-use std::{alloc::Layout, fmt::Debug, ptr::NonNull, u16};
+use std::{alloc::Layout, fmt::Debug, ptr::NonNull, u8};
 
 pub use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
 
 pub trait ShmAllocatorConfig: Copy + Default + Debug {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SegmentId(u16);
+pub struct SegmentId(u8);
 
 impl SegmentId {
-    pub fn new(value: u16) -> Self {
+    pub fn new(value: u8) -> Self {
         Self(value)
     }
 
-    pub fn value(&self) -> u16 {
+    pub fn value(&self) -> u8 {
         self.0
     }
 
-    pub const fn max_segment_id() -> u16 {
-        u16::MAX
+    pub const fn max_segment_id() -> u8 {
+        u8::MAX
     }
 }
+
+const NUMBER_OF_BITS_IN_BYTE: usize = 8;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct PointerOffset(u64);
@@ -42,19 +44,26 @@ pub struct PointerOffset(u64);
 impl PointerOffset {
     pub fn new(offset: usize) -> PointerOffset {
         const SEGMENT_ID: u64 = 0;
-        Self((offset as u64) << core::mem::size_of::<SegmentId>() | SEGMENT_ID as u64)
+        let new_self = Self(
+            (offset as u64) << (core::mem::size_of::<SegmentId>() * NUMBER_OF_BITS_IN_BYTE)
+                | SEGMENT_ID as u64,
+        );
+        new_self
     }
 
     pub fn set_segment_id(&mut self, value: SegmentId) {
-        self.0 = (self.offset() as u64) << core::mem::size_of::<SegmentId>() | value.0 as u64;
+        self.0 = self.0 | value.0 as u64;
     }
 
     pub fn offset(&self) -> usize {
-        (self.0 >> core::mem::size_of::<SegmentId>()) as usize
+        let offset =
+            (self.0 >> (core::mem::size_of::<SegmentId>() * NUMBER_OF_BITS_IN_BYTE)) as usize;
+        offset
     }
 
     pub fn segment_id(&self) -> SegmentId {
-        SegmentId((self.0 & SegmentId::max_segment_id() as u64) as u16)
+        let value = SegmentId((self.0 & SegmentId::max_segment_id() as u64) as u8);
+        value
     }
 }
 
@@ -81,6 +90,7 @@ pub enum AllocationStrategy {
     BestFit,
     #[default]
     PowerOfTwo,
+    Static,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]

@@ -37,7 +37,7 @@ use super::{
     ResizableSharedMemoryView, ResizableShmAllocationError,
 };
 
-const MAX_DATASEGMENTS: usize = SegmentId::max_segment_id() as usize + 1;
+const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
 
 #[derive(Debug)]
 struct BuilderConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
@@ -175,10 +175,10 @@ where
         let shm = fail!(from origin, when DynamicMemory::create_segment(&self.config, SegmentId::new(0), hint.payload_size),
             "Unable to create ResizableSharedMemory since the underlying shared memory could not be created.");
 
-        let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
+        let mut shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
         let current_idx = shared_memory_map
             .insert(ShmEntry::new(shm))
-            .expect("MAX_DATASEGMENTS is greater or equal 1");
+            .expect("MAX_NUMBER_OF_REALLOCATIONS is greater or equal 1");
 
         Ok(DynamicMemory {
             state: UnsafeCell::new(InternalState {
@@ -196,10 +196,10 @@ where
         let shm = fail!(from origin, when DynamicMemory::open_segment(&self.config, SegmentId::new(0)),
             "Unable to open ResizableSharedMemoryView since the underlying shared memory could not be opened.");
 
-        let mut shared_memory_map = SlotMap::new(MAX_DATASEGMENTS);
+        let mut shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
         let current_idx = shared_memory_map
             .insert(ShmEntry::new(shm))
-            .expect("MAX_DATASEGMENTS is greater or equal 1");
+            .expect("MAX_NUMBER_OF_REALLOCATIONS is greater or equal 1");
 
         Ok(DynamicView {
             builder_config: self.config,
@@ -249,6 +249,11 @@ where
                 entry.shm.payload_start_address()
             }
         };
+
+        println!(
+            "start address of segment {:?}: {}",
+            segment_id, payload_start_address
+        );
 
         Ok((offset + payload_start_address) as *const u8)
     }
@@ -371,7 +376,7 @@ where
         let adjusted_segment_setup = shm
             .allocator()
             .resize_hint(layout, state.builder_config.allocation_strategy);
-        let segment_id = if state.current_idx.value() < SegmentId::max_segment_id() as usize {
+        let segment_id = if state.current_idx.value() < MAX_NUMBER_OF_REALLOCATIONS {
             SlotMapKey::new(state.current_idx.value() + 1)
         } else {
             fail!(from self, with SharedMemoryCreateError::InternalError,
@@ -382,7 +387,7 @@ where
         state.builder_config.allocator_config_hint = adjusted_segment_setup.config;
         let shm = Self::create_segment(
             &state.builder_config,
-            SegmentId::new(segment_id.value() as u16),
+            SegmentId::new(segment_id.value() as u8),
             adjusted_segment_setup.payload_size,
         )?;
 
@@ -417,7 +422,7 @@ where
     type View = DynamicView<Allocator, Shm>;
 
     fn max_number_of_reallocations() -> usize {
-        SegmentId::max_segment_id() as usize + 1
+        MAX_NUMBER_OF_REALLOCATIONS
     }
 
     fn number_of_active_segments(&self) -> usize {
@@ -433,7 +438,7 @@ where
                     Ok(mut ptr) => {
                         entry.register_offset();
                         ptr.offset
-                            .set_segment_id(SegmentId::new(state.current_idx.value() as u16));
+                            .set_segment_id(SegmentId::new(state.current_idx.value() as u8));
                         return Ok(ptr);
                     }
                     Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
