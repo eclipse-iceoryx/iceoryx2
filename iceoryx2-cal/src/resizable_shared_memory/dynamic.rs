@@ -411,6 +411,31 @@ where
 
         Ok(())
     }
+
+    fn handle_reallocation(
+        &self,
+        e: ShmAllocationError,
+        state: &InternalState<Allocator, Shm>,
+        layout: Layout,
+        shm: &Shm,
+    ) -> Result<(), ResizableShmAllocationError> {
+        let msg = "Unable to allocate memory";
+        if e == ShmAllocationError::AllocationError(AllocationError::OutOfMemory)
+            || e == ShmAllocationError::ExceedsMaxSupportedAlignment
+            || e == ShmAllocationError::AllocationError(AllocationError::SizeTooLarge)
+        {
+            if state.builder_config.allocation_strategy == AllocationStrategy::Static {
+                fail!(from self, with e.into(),
+                                    "{msg} since there is not enough memory left ({:?}) and the allocation strategy {:?} forbids reallocation.",
+                                    e, state.builder_config.allocation_strategy);
+            } else {
+                self.create_resized_segment(shm, layout)?;
+                Ok(())
+            }
+        } else {
+            fail!(from self, with e.into(), "{msg} due to {:?}.", e);
+        }
+    }
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ResizableSharedMemory<Allocator, Shm>
@@ -430,6 +455,7 @@ where
     }
 
     fn allocate(&self, layout: Layout) -> Result<ShmPointer, ResizableShmAllocationError> {
+        let msg = "Unable to allocate memory";
         let state = self.state_mut();
 
         loop {
@@ -441,15 +467,10 @@ where
                             .set_segment_id(SegmentId::new(state.current_idx.value() as u8));
                         return Ok(ptr);
                     }
-                    Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory))
-                    | Err(ShmAllocationError::ExceedsMaxSupportedAlignment)
-                    | Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge)) => {
-                        self.create_resized_segment(&entry.shm, layout)?;
-                    }
-                    Err(e) => return Err(e.into()),
+                    Err(e) => self.handle_reallocation(e, state, layout, &entry.shm)?,
                 },
                 None => fatal_panic!(from self,
-                        "This should never happen! Unable to allocate memory since the current shared memory segment is not available!"),
+                        "This should never happen! {msg} since the current shared memory segment is not available!"),
             }
         }
     }

@@ -17,7 +17,7 @@ mod resizable_shared_memory {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::resizable_shared_memory::{self, *};
-    use iceoryx2_cal::shm_allocator::AllocationStrategy;
+    use iceoryx2_cal::shm_allocator::{AllocationError, AllocationStrategy, ShmAllocationError};
     use iceoryx2_cal::testing::*;
     use iceoryx2_cal::{
         shared_memory::SharedMemory,
@@ -25,7 +25,6 @@ mod resizable_shared_memory {
     };
 
     type DefaultAllocator = PoolAllocator;
-    type AllocatorConfig = <DefaultAllocator as ShmAllocator>::Configuration;
 
     #[test]
     fn create_and_open_works<
@@ -215,8 +214,117 @@ mod resizable_shared_memory {
         );
     }
 
+    fn allocate_with_sufficient_chunk_hint_and_increasing_size<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >(
+        strategy: AllocationStrategy,
+    ) {
+        const NUMBER_OF_REALLOCATIONS: usize = 128;
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_creator = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(NUMBER_OF_REALLOCATIONS)
+            .allocation_strategy(strategy)
+            .create()
+            .unwrap();
+
+        let mut sut_viewer = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        let mut ptrs = vec![];
+        for i in 0..NUMBER_OF_REALLOCATIONS {
+            let size = 2 + i;
+            let layout = unsafe { Layout::from_size_align_unchecked(size, 1) };
+            let ptr = sut_creator.allocate(layout).unwrap();
+
+            for n in 0..size {
+                unsafe { ptr.data_ptr.add(n).write(2 * i as u8) };
+            }
+            ptrs.push(ptr);
+        }
+
+        for i in 0..NUMBER_OF_REALLOCATIONS {
+            let size = 2 + i;
+            let ptr_view = sut_viewer
+                .register_and_translate_offset(ptrs[i].offset)
+                .unwrap();
+
+            for n in 0..size {
+                assert_that!(unsafe{ *ptr_view.add(n) }, eq 2*i as u8);
+            }
+        }
+    }
+
+    #[test]
+    fn allocate_with_sufficient_chunk_hint_and_increasing_size_strategy_power_of_two<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        allocate_with_sufficient_chunk_hint_and_increasing_size::<Shm, Sut>(
+            AllocationStrategy::PowerOfTwo,
+        )
+    }
+
+    #[test]
+    fn allocate_with_sufficient_chunk_hint_and_increasing_size_strategy_best_fit<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        allocate_with_sufficient_chunk_hint_and_increasing_size::<Shm, Sut>(
+            AllocationStrategy::BestFit,
+        )
+    }
+
+    #[test]
+    fn static_allocation_strategy_does_not_increase_number_of_chunks<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(1)
+            .create()
+            .unwrap();
+
+        assert_that!(sut.allocate(Layout::new::<u8>()), is_ok);
+
+        let result = sut.allocate(Layout::new::<u8>());
+        assert_that!(result, is_err);
+        assert_that!(result.err().unwrap(), eq ResizableShmAllocationError::ShmAllocationError(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
+    }
+
+    #[test]
+    fn static_allocation_strategy_does_not_resize_available_chunks<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .allocation_strategy(AllocationStrategy::Static)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(8)
+            .create()
+            .unwrap();
+
+        let result = sut.allocate(Layout::from_size_align(8, 1).unwrap());
+        assert_that!(result, is_err);
+    }
+
     // TODO:
-    //  * AllocationStrategy::Static is static
     //  * allocate/deallocate in random order
     //  * allocate until new segment, old segment id is never used
     //  * open with no more __0 segment
