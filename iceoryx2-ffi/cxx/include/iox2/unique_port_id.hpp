@@ -31,7 +31,7 @@ class UniquePublisherId {
     auto operator=(UniquePublisherId&& rhs) noexcept -> UniquePublisherId&;
     ~UniquePublisherId();
 
-    auto bytes() -> iox::optional<RawIdType>&;
+    auto bytes() -> const iox::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename, typename>
@@ -56,7 +56,7 @@ class UniqueSubscriberId {
     auto operator=(UniqueSubscriberId&& rhs) noexcept -> UniqueSubscriberId&;
     ~UniqueSubscriberId();
 
-    auto bytes() -> iox::optional<RawIdType>&;
+    auto bytes() -> const iox::optional<RawIdType>&;
 
   private:
     template <ServiceType, typename, typename>
@@ -80,7 +80,7 @@ class UniqueNotifierId {
     auto operator=(UniqueNotifierId&& rhs) noexcept -> UniqueNotifierId&;
     ~UniqueNotifierId();
 
-    auto bytes() -> iox::optional<RawIdType>&;
+    auto bytes() -> const iox::optional<RawIdType>&;
 
   private:
     template <ServiceType>
@@ -104,7 +104,7 @@ class UniqueListenerId {
     auto operator=(UniqueListenerId&& rhs) noexcept -> UniqueListenerId&;
     ~UniqueListenerId();
 
-    auto bytes() -> iox::optional<RawIdType>&;
+    auto bytes() -> const iox::optional<RawIdType>&;
 
   private:
     template <ServiceType>
