@@ -91,7 +91,12 @@ impl ShmAllocator for PoolAllocator {
             if current_layout.size() < layout.size() || current_layout.align() < layout.align() {
                 match strategy {
                     AllocationStrategy::Static => current_layout,
-                    AllocationStrategy::BestFit => layout,
+                    AllocationStrategy::BestFit => unsafe {
+                        Layout::from_size_align_unchecked(
+                            layout.size().max(current_layout.size()),
+                            layout.align().max(current_layout.align()),
+                        )
+                    },
                     AllocationStrategy::PowerOfTwo => unsafe {
                         Layout::from_size_align_unchecked(
                             layout.size().max(current_layout.size()).next_power_of_two(),

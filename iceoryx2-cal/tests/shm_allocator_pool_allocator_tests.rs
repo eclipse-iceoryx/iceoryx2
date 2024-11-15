@@ -79,17 +79,103 @@ mod shm_allocator_pool_allocator {
         assert_that!(hint.payload_size, eq layout.size() * max_number_of_chunks);
     }
 
-    #[test]
-    fn no_new_resize_hint_with_power_of_two_when_layout_is_smaller_and_buckets_are_available() {
+    fn no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(
+        strategy: AllocationStrategy,
+    ) {
         let initial_layout = Layout::from_size_align(12, 4).unwrap();
         let test_context = TestContext::new(initial_layout);
-        let hint = test_context.sut.resize_hint(
-            Layout::from_size_align(8, 2).unwrap(),
-            AllocationStrategy::PowerOfTwo,
-        );
+        let hint = test_context
+            .sut
+            .resize_hint(Layout::from_size_align(8, 2).unwrap(), strategy);
 
         assert_that!(hint.config.bucket_layout, eq initial_layout);
         assert_that!(hint.payload_size, eq initial_layout.size() * test_context.sut.number_of_buckets() as usize);
+    }
+
+    #[test]
+    fn no_new_resize_hint_with_power_of_two_when_layout_is_smaller_and_buckets_are_available() {
+        no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(
+            AllocationStrategy::PowerOfTwo,
+        )
+    }
+
+    #[test]
+    fn no_new_resize_hint_with_best_fit_when_layout_is_smaller_and_buckets_are_available() {
+        no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(
+            AllocationStrategy::BestFit,
+        )
+    }
+
+    #[test]
+    fn new_resize_hint_with_power_of_two_when_layout_is_greater() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let increased_layout = Layout::from_size_align(28, 2).unwrap();
+        let test_context = TestContext::new(initial_layout);
+        let hint = test_context
+            .sut
+            .resize_hint(increased_layout, AllocationStrategy::PowerOfTwo);
+        assert_that!(hint.config.bucket_layout.size(), eq increased_layout.size().next_power_of_two());
+        assert_that!(hint.config.bucket_layout.align(), eq initial_layout.align());
+        assert_that!(hint.payload_size, eq increased_layout.size().next_power_of_two() * test_context.sut.number_of_buckets() as usize);
+    }
+
+    #[test]
+    fn new_resize_hint_with_best_fit_when_layout_is_greater() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let increased_layout = Layout::from_size_align(28, 2).unwrap();
+        let test_context = TestContext::new(initial_layout);
+        let hint = test_context
+            .sut
+            .resize_hint(increased_layout, AllocationStrategy::BestFit);
+        assert_that!(hint.config.bucket_layout.size(), eq increased_layout.size());
+        assert_that!(hint.config.bucket_layout.align(), eq initial_layout.align());
+        assert_that!(hint.payload_size, eq increased_layout.size() * test_context.sut.number_of_buckets() as usize);
+    }
+
+    #[test]
+    fn new_resize_hint_with_power_of_two_when_buckets_are_exhausted() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let increased_layout = Layout::from_size_align(14, 8).unwrap();
+        let test_context = TestContext::new(initial_layout);
+
+        for _ in 0..test_context.sut.number_of_buckets() {
+            assert_that!(unsafe { test_context.sut.allocate(initial_layout) }, is_ok);
+        }
+
+        assert_that!(
+            unsafe { test_context.sut.allocate(increased_layout) },
+            is_err
+        );
+
+        let hint = test_context
+            .sut
+            .resize_hint(increased_layout, AllocationStrategy::PowerOfTwo);
+        assert_that!(hint.config.bucket_layout.size(), eq increased_layout.size().next_power_of_two());
+        assert_that!(hint.config.bucket_layout.align(), eq increased_layout.align());
+        assert_that!(hint.payload_size, eq increased_layout.size().next_power_of_two() * (test_context.sut.number_of_buckets() + 1).next_power_of_two() as usize);
+    }
+
+    #[test]
+    fn new_resize_hint_with_best_fit_when_buckets_are_exhausted() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let increased_layout = Layout::from_size_align(14, 8).unwrap();
+        let test_context = TestContext::new(initial_layout);
+
+        for _ in 0..test_context.sut.number_of_buckets() {
+            assert_that!(unsafe { test_context.sut.allocate(initial_layout) }, is_ok);
+        }
+
+        assert_that!(
+            unsafe { test_context.sut.allocate(increased_layout) },
+            is_err
+        );
+
+        let hint = test_context
+            .sut
+            .resize_hint(increased_layout, AllocationStrategy::BestFit);
+        assert_that!(hint.config.bucket_layout.size(), eq increased_layout.size());
+        assert_that!(hint.config.bucket_layout.align(), eq increased_layout.align());
+        assert_that!(hint.payload_size, eq increased_layout.size() * (test_context.sut.number_of_buckets() + 1) as usize);
     }
 
     #[test]
