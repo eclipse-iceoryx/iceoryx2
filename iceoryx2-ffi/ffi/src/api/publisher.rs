@@ -21,9 +21,9 @@ use crate::api::{
 use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
 use iceoryx2::port::update_connections::UpdateConnections;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_derive_macros::StaticStringRepresentation;
+use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStaticString;
+use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use super::{iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
@@ -34,7 +34,7 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone, StaticStringRepresentation)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_publisher_send_error_e {
     CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS = IOX2_OK as isize + 1,
     CONNECTION_CORRUPTED,
@@ -87,7 +87,7 @@ impl IntoCInt for PublisherLoanError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StaticStringRepresentation)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_publisher_loan_error_e {
     OUT_OF_MEMORY = IOX2_OK as isize + 1,
     EXCEEDS_MAX_LOANED_SAMPLES,
@@ -250,14 +250,14 @@ unsafe fn send_slice_copy<S: Service>(
 pub unsafe extern "C" fn iox2_publisher_send_error_string(
     error: iox2_publisher_send_error_e,
 ) -> *const c_char {
-    error.as_static_str().as_ptr() as *const c_char
+    error.as_str_literal().as_ptr() as *const c_char
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_loan_error_string(
     error: iox2_publisher_loan_error_e,
 ) -> *const c_char {
-    error.as_static_str().as_ptr() as *const c_char
+    error.as_str_literal().as_ptr() as *const c_char
 }
 
 /// Returns the strategy the publisher follows when a sample cannot be delivered

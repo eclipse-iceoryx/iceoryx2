@@ -100,23 +100,22 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(StaticStringRepresentation, attributes(StaticString))]
-pub fn as_static_string_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(StringLiteral, attributes(CustomString))]
+pub fn string_literal_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let static_string_impl = match input.data {
+    let string_literal_impl = match input.data {
         Data::Enum(ref data_enum) => {
             let match_arms = data_enum.variants.iter().map(|variant| {
                 let variant_ident = &variant.ident;
 
-                // Get the StaticString attribute if it exists
                 let static_string = variant
                     .attrs
                     .iter()
                     .find_map(|attr| {
-                        if !attr.path().is_ident("StaticString") {
+                        if !attr.path().is_ident("CustomString") {
                             return None;
                         }
 
@@ -152,40 +151,45 @@ pub fn as_static_string_derive(input: TokenStream) -> TokenStream {
                 match &variant.fields {
                     Fields::Unit => {
                         quote! {
-                            Self::#variant_ident => concat!(#static_string, "\0")
+                            Self::#variant_ident => concat!(#static_string, "\0").as_ptr()
                         }
                     }
                     Fields::Unnamed(_) => {
                         quote! {
-                            Self::#variant_ident(..) => concat!(#static_string, "\0")
+                            Self::#variant_ident(..) => concat!(#static_string, "\0").as_ptr()
                         }
                     }
                     Fields::Named(_) => {
                         quote! {
-                            Self::#variant_ident{..} => concat!(#static_string, "\0")
+                            Self::#variant_ident{..} => concat!(#static_string, "\0").as_ptr()
                         }
                     }
                 }
             });
 
             quote! {
-                fn as_static_str(&self) -> &'static str {
-                    match self {
-                        #(#match_arms,)*
+                fn as_str_literal(&self) -> &'static str {
+                    unsafe {
+                        std::str::from_utf8_unchecked(
+                            std::ffi::CStr::from_ptr(match self {
+                                #(#match_arms,)*
+                            } as *const i8)
+                            .to_bytes()
+                        )
                     }
                 }
             }
         }
         _ => {
             let err =
-                syn::Error::new_spanned(&input, "AsStaticString can only be derived for enums");
+                syn::Error::new_spanned(&input, "AsStringLiteral can only be derived for enums");
             return err.to_compile_error().into();
         }
     };
 
     let expanded = quote! {
-        impl #impl_generics AsStaticString for #name #ty_generics #where_clause {
-            #static_string_impl
+        impl #impl_generics AsStringLiteral for #name #ty_generics #where_clause {
+            #string_literal_impl
         }
     };
 

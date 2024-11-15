@@ -27,15 +27,15 @@ use iceoryx2::{
     },
     service::{ipc, local},
 };
-use iceoryx2_bb_derive_macros::StaticStringRepresentation;
+use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStaticString;
+use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone, StaticStringRepresentation)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_waitset_run_error_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
@@ -83,7 +83,7 @@ impl From<WaitSetRunResult> for iox2_waitset_run_result_e {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StaticStringRepresentation)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_waitset_attachment_error_e {
     INSUFFICIENT_CAPACITY = IOX2_OK as isize + 1,
     ALREADY_ATTACHED,
@@ -107,7 +107,7 @@ impl IntoCInt for WaitSetAttachmentError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StaticStringRepresentation)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_waitset_create_error_e {
     INTERNAL_ERROR = IOX2_OK as isize + 1,
 }
@@ -215,21 +215,21 @@ pub type iox2_waitset_run_callback = extern "C" fn(
 pub unsafe extern "C" fn iox2_waitset_create_error_string(
     error: iox2_waitset_create_error_e,
 ) -> *const c_char {
-    error.as_static_str().as_ptr() as *const c_char
+    error.as_str_literal().as_ptr() as *const c_char
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
     error: iox2_waitset_attachment_error_e,
 ) -> *const c_char {
-    error.as_static_str().as_ptr() as *const c_char
+    error.as_str_literal().as_ptr() as *const c_char
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_run_error_string(
     error: iox2_waitset_run_error_e,
 ) -> *const c_char {
-    error.as_static_str().as_ptr() as *const c_char
+    error.as_str_literal().as_ptr() as *const c_char
 }
 
 /// Drops a [`iox2_waitset_h`] and calls all corresponding cleanup functions.

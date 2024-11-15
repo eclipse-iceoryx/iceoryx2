@@ -20,9 +20,9 @@ use crate::api::{
 use iceoryx2::port::publisher::PublisherCreateError;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::publisher::PortFactoryPublisher;
-use iceoryx2_bb_derive_macros::StaticStringRepresentation;
+use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStaticString;
+use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
@@ -31,7 +31,7 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone, StaticStringRepresentation)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_publisher_create_error_e {
     EXCEEDS_MAX_SUPPORTED_PUBLISHERS = IOX2_OK as isize + 1,
     UNABLE_TO_CREATE_DATA_SEGMENT,
@@ -179,7 +179,7 @@ impl HandleToType for iox2_port_factory_publisher_builder_h_ref {
 pub unsafe extern "C" fn iox2_publisher_create_error_string(
     error: iox2_publisher_create_error_e,
 ) -> *const c_char {
-    error.as_static_str().as_ptr() as *const c_char
+    error.as_str_literal().as_ptr() as *const c_char
 }
 
 /// Sets the max slice length for the publisher

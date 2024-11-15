@@ -15,8 +15,8 @@
 #[macro_use]
 pub mod enum_gen;
 
-mod as_static_string;
-pub use as_static_string::*;
+mod as_string_literal;
+pub use as_string_literal::*;
 
 pub mod alignment;
 pub mod allocator;

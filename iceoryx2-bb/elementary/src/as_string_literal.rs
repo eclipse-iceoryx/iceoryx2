@@ -10,6 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub trait AsStaticString {
-    fn as_static_str(&self) -> &'static str;
+pub trait AsStringLiteral {
+    fn as_str_literal(&self) -> &'static str;
 }
