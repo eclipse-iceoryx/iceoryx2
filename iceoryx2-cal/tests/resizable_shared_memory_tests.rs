@@ -19,10 +19,7 @@ mod resizable_shared_memory {
     use iceoryx2_cal::resizable_shared_memory::{self, *};
     use iceoryx2_cal::shm_allocator::{AllocationError, AllocationStrategy, ShmAllocationError};
     use iceoryx2_cal::testing::*;
-    use iceoryx2_cal::{
-        shared_memory::SharedMemory,
-        shm_allocator::{pool_allocator::PoolAllocator, ShmAllocator},
-    };
+    use iceoryx2_cal::{shared_memory::SharedMemory, shm_allocator::pool_allocator::PoolAllocator};
 
     type DefaultAllocator = PoolAllocator;
 
@@ -347,7 +344,6 @@ mod resizable_shared_memory {
     }
 
     // TODO:
-    //  * tests resize_hint and initial_setup of bump and pool alloctor
     //  * open with no more __0 segment
     //  * open with many segments
     //  * AllocationStrategy::PowerOfTwo -> doubling in size

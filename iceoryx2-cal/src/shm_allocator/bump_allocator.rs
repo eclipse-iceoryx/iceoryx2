@@ -25,6 +25,12 @@ pub struct BumpAllocator {
     max_supported_alignment_by_memory: usize,
 }
 
+impl BumpAllocator {
+    pub fn total_space(&self) -> usize {
+        self.allocator.total_space()
+    }
+}
+
 impl ShmAllocator for BumpAllocator {
     type Configuration = Config;
 
@@ -34,6 +40,12 @@ impl ShmAllocator for BumpAllocator {
         strategy: AllocationStrategy,
     ) -> SharedMemorySetupHint<Self::Configuration> {
         let current_payload_size = self.allocator.total_space();
+        if layout.size() < self.allocator.free_space() {
+            return SharedMemorySetupHint {
+                payload_size: current_payload_size,
+                config: Self::Configuration::default(),
+            };
+        }
 
         let payload_size = match strategy {
             AllocationStrategy::BestFit => current_payload_size + layout.size(),
