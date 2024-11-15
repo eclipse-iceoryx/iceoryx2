@@ -299,6 +299,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::CreateHangsInCreation;
     case iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS:
         return iox2::EventOpenOrCreateError::CreateInsufficientPermissions;
+    case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
+        return iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive;
     }
 
     IOX_UNREACHABLE();
@@ -347,6 +349,8 @@ constexpr auto from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_erro
         return iox2_event_open_or_create_error_e_C_HANGS_IN_CREATION;
     case iox2::EventOpenOrCreateError::CreateInsufficientPermissions:
         return iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS;
+    case iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive:
+        return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
     default:
         IOX_UNREACHABLE();
     }
@@ -459,6 +463,8 @@ constexpr auto from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(
         return iox2_event_open_or_create_error_e_C_INTERNAL_FAILURE;
     case iox2::EventCreateError::ServiceInCorruptedState:
         return iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
+    case iox2::EventCreateError::OldConnectionsStillActive:
+        return iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
     default:
         IOX_UNREACHABLE();
     }
@@ -518,6 +524,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
         return iox2::PublishSubscribeOpenOrCreateError::CreateIsBeingCreatedByAnotherInstance;
     case iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION:
         return iox2::PublishSubscribeOpenOrCreateError::CreateHangsInCreation;
+    case iox2_pub_sub_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
+        return iox2::PublishSubscribeOpenOrCreateError::CreateOldConnectionsStillActive;
     }
 
     IOX_UNREACHABLE();
@@ -708,6 +716,8 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
         return iox2_pub_sub_open_or_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE;
     case iox2::PublishSubscribeOpenOrCreateError::CreateHangsInCreation:
         return iox2_pub_sub_open_or_create_error_e_C_HANGS_IN_CREATION;
+    case iox2::PublishSubscribeOpenOrCreateError::CreateOldConnectionsStillActive:
+        return iox2_pub_sub_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE;
     default:
         IOX_UNREACHABLE();
     }
@@ -1185,6 +1195,23 @@ constexpr auto from<int, iox2::WaitSetRunResult>(const int value) noexcept -> io
         return iox2::WaitSetRunResult::StopRequest;
     case iox2_waitset_run_result_e_ALL_EVENTS_HANDLED:
         return iox2::WaitSetRunResult::AllEventsHandled;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::WaitSetRunResult, iox2_waitset_run_result_e>(const iox2::WaitSetRunResult value) noexcept
+    -> iox2_waitset_run_result_e {
+    switch (value) {
+    case iox2::WaitSetRunResult::Interrupt:
+        return iox2_waitset_run_result_e_INTERRUPT;
+    case iox2::WaitSetRunResult::TerminationRequest:
+        return iox2_waitset_run_result_e_TERMINATION_REQUEST;
+    case iox2::WaitSetRunResult::StopRequest:
+        return iox2_waitset_run_result_e_STOP_REQUEST;
+    case iox2::WaitSetRunResult::AllEventsHandled:
+        return iox2_waitset_run_result_e_ALL_EVENTS_HANDLED;
     }
 
     IOX_UNREACHABLE();

@@ -57,7 +57,7 @@ impl IntoCInt for WaitSetRunError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_waitset_run_result_e {
     TERMINATION_REQUEST = IOX2_OK as isize + 1,
     INTERRUPT,
@@ -221,6 +221,13 @@ pub unsafe extern "C" fn iox2_waitset_create_error_string(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
     error: iox2_waitset_attachment_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_run_result_string(
+    error: iox2_waitset_run_result_e,
 ) -> *const c_char {
     error.as_str_literal().as_ptr() as *const c_char
 }
