@@ -116,7 +116,11 @@ unsafe extern "C" fn iox2_unique_publisher_id_value(
         debug_assert!(bytes.len() <= id_length, "id_length is too small");
 
         unsafe {
-            std::ptr::copy_nonoverlapping(bytes.as_ptr(), id_ptr, id_length);
+            std::ptr::copy_nonoverlapping(
+                bytes.as_ptr(),
+                id_ptr,
+                std::cmp::min(bytes.len(), id_length),
+            );
         }
     }
 }
