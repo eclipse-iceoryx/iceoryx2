@@ -326,6 +326,75 @@ mod resizable_shared_memory {
         )
     }
 
+    fn allocate_with_sufficient_chunk_hint_and_increasing_alignment<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >(
+        strategy: AllocationStrategy,
+    ) {
+        const NUMBER_OF_REALLOCATIONS: usize = 6;
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+        let size = 1024;
+
+        let sut_creator = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::from_size_align(size, 1).unwrap())
+            .max_number_of_chunks_hint(NUMBER_OF_REALLOCATIONS)
+            .allocation_strategy(strategy)
+            .create()
+            .unwrap();
+
+        let mut sut_viewer = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        let mut ptrs = vec![];
+        for i in 0..NUMBER_OF_REALLOCATIONS {
+            let layout = unsafe {
+                Layout::from_size_align_unchecked(size, 2_i32.pow(i as u32 + 1) as usize)
+            };
+            let ptr = sut_creator.allocate(layout).unwrap();
+
+            for n in 0..size {
+                unsafe { ptr.data_ptr.add(n).write(2 * i as u8) };
+            }
+            ptrs.push(ptr);
+        }
+
+        for i in 0..NUMBER_OF_REALLOCATIONS {
+            let size = 2 + i;
+            let ptr_view = sut_viewer
+                .register_and_translate_offset(ptrs[i].offset)
+                .unwrap();
+
+            for n in 0..size {
+                assert_that!(unsafe{ *ptr_view.add(n) }, eq 2*i as u8);
+            }
+        }
+    }
+
+    #[test]
+    fn allocate_with_sufficient_chunk_hint_and_increasing_alignment_strategy_power_of_two<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        allocate_with_sufficient_chunk_hint_and_increasing_alignment::<Shm, Sut>(
+            AllocationStrategy::PowerOfTwo,
+        )
+    }
+
+    #[test]
+    fn allocate_with_sufficient_chunk_hint_and_increasing_alignment_strategy_best_fit<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        allocate_with_sufficient_chunk_hint_and_increasing_alignment::<Shm, Sut>(
+            AllocationStrategy::BestFit,
+        )
+    }
+
     #[test]
     fn deallocate_last_segment_does_not_release_it<
         Shm: SharedMemory<DefaultAllocator>,
@@ -625,12 +694,11 @@ mod resizable_shared_memory {
     }
 
     // TODO:
+    //  * separate builder for view, without hints and ownership
     //  * has_ownership, acquire/release ownership
     //      * all segments must be updated
     //  * timeout
     //  * best fit, let reallocate until 256 exceeded, see if id is recycled
-    //  * exceed max alignment
-    //  * separate builder for view, without hints
     //  * start with layout.size == 1 and max_number_of_chunks == 1
     //    * allocate 1 byte
     //    * allocate N byte, may lead to 2 allocations, one for chunk resize, one for bucket number
