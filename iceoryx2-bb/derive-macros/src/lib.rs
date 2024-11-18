@@ -101,7 +101,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-/// Implements the [`AsStringLiteral`] trait for enums to provide a string representation of each enum variant.
+/// Implements the [`iceoryx2_bb_elementary::AsStringLiteral`] trait for enums to provide a string representation of each enum variant.
 ///
 /// The string representation can be customized using the `CustomString` attribute, otherwise it will
 /// convert the variant name to lowercase and replace underscores with spaces.
@@ -109,6 +109,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 /// # Example
 /// ```
 /// use iceoryx2_bb_derive_macros::StringLiteral;
+/// use iceoryx2_bb_elementary::AsStringLiteral;
 ///
 /// #[derive(StringLiteral)]
 /// enum MyEnum {
@@ -129,7 +130,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
     let name = &input.ident;
     let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
-    // generate implementation converting enums to a string representation
+    // Generate implementation converting enums to a string representation
     let as_string_literal_impl = match input.data {
         Data::Enum(ref data_enum) => {
             let enum_to_string_mapping = data_enum.variants.iter().map(|variant| {
@@ -141,7 +142,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                         if !attr.path().is_ident("CustomString") {
                             return None;
                         }
-                        // get the value of CustomString as a string literal
+                        // Get the value of CustomString as a string literal
                         match attr.meta.require_name_value() {
                             Ok(meta) => match &meta.value {
                                 Expr::Lit(ExprLit {
@@ -153,10 +154,18 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                         }
                     })
                     .unwrap_or_else(|| {
-                        // if no CustomString, generates default string literal in the form
+                        // If no CustomString, generates default string literal in the form
                         // MyEnum::MyVariantName => 'my variant name'
                         let enum_string_literal = enum_name
                             .to_string()
+                            .chars()
+                            .fold(String::new(), |mut acc, c| {
+                                if c.is_uppercase() && !acc.is_empty() {
+                                    acc.push('_');
+                                }
+                                acc.push(c);
+                                acc
+                            })
                             .chars()
                             .map(|c| match c {
                                 '_' => ' ',
@@ -166,7 +175,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                         Literal::string(&enum_string_literal)
                     });
 
-                // maps each enum variant to its string representation
+                // Maps each enum variant to its string representation
                 match &variant.fields {
                     Fields::Unit => {
                         quote! {
@@ -186,7 +195,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                 }
             });
 
-            // generate the mapping for the enum variant
+            // Generate the mapping for the enum variant
             quote! {
                 fn as_str_literal(&self) -> &'static str {
                     match self {
@@ -196,14 +205,14 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
             }
         }
         _ => {
-            // does not work for non-enum types
+            // Does not work for non-enum types
             let err =
                 syn::Error::new_spanned(&input, "AsStringLiteral can only be derived for enums");
             return err.to_compile_error().into();
         }
     };
 
-    // implement the trait with the generated implementation
+    // Implement the trait with the generated implementation
     let expanded = quote! {
         impl #impl_generics AsStringLiteral for #name #type_generics #where_clause {
             #as_string_literal_impl
