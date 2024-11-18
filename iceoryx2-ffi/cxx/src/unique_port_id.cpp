@@ -43,7 +43,7 @@ UniquePublisherId::UniquePublisherId(iox2_unique_publisher_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniquePublisherId::bytes() -> const iox::optional<RawIdType>& {
+auto UniquePublisherId::bytes() const -> const iox::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_publisher_id_value(m_handle, bytes.data(), bytes.size());
@@ -90,7 +90,7 @@ UniqueSubscriberId::UniqueSubscriberId(iox2_unique_subscriber_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueSubscriberId::bytes() -> const iox::optional<RawIdType>& {
+auto UniqueSubscriberId::bytes() const -> const iox::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_subscriber_id_value(m_handle, bytes.data(), bytes.size());
@@ -136,7 +136,7 @@ UniqueNotifierId::UniqueNotifierId(iox2_unique_notifier_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueNotifierId::bytes() -> const iox::optional<RawIdType>& {
+auto UniqueNotifierId::bytes() const -> const iox::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_notifier_id_value(m_handle, bytes.data(), bytes.size());
@@ -182,7 +182,7 @@ UniqueListenerId::UniqueListenerId(iox2_unique_listener_id_h handle)
     : m_handle { handle } {
 }
 
-auto UniqueListenerId::bytes() -> const iox::optional<RawIdType>& {
+auto UniqueListenerId::bytes() const -> const iox::optional<RawIdType>& {
     if (!m_raw_id.has_value() && m_handle != nullptr) {
         RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
         iox2_unique_listener_id_value(m_handle, bytes.data(), bytes.size());
