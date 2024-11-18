@@ -12,6 +12,7 @@
 
 use std::alloc::Layout;
 use std::cell::UnsafeCell;
+use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::{fmt::Debug, marker::PhantomData};
@@ -38,6 +39,7 @@ use super::{
 };
 
 const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
+const SEGMENT_ID_SEPARATOR: &[u8] = b"__";
 
 #[derive(Debug)]
 struct BuilderConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
@@ -102,12 +104,17 @@ where
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
     NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicBuilder<Allocator, Shm>
+where
+    Shm::Builder: Debug,
 {
     fn new(name: &FileName) -> Self {
         let mut first_shm_segment = *name;
         first_shm_segment
-            .push_bytes(b"__0")
-            .expect("Adding __0 results in a valid file name");
+            .push_bytes(SEGMENT_ID_SEPARATOR)
+            .expect("Adding the segment id separator results in a valid file name.");
+        first_shm_segment
+            .push_bytes(b"0")
+            .expect("Adding the segment id results in a valid file name");
         Self {
             config: BuilderConfig {
                 base_name: *name,
@@ -297,6 +304,8 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConcept
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConceptMgmt
     for DynamicMemory<Allocator, Shm>
+where
+    Shm::Builder: Debug,
 {
     type Configuration = Shm::Configuration;
 
@@ -304,18 +313,72 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConceptMgmt
         name: &FileName,
         config: &Shm::Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
-        todo!()
+        let origin = "resizable_shared_memory::Dynamic::remove_cfg()";
+        let msg = format!("Unable to remove ResizableSharedMemory {:?}", name);
+        let raw_names = match Shm::list_cfg(config) {
+            Ok(names) => names,
+            Err(NamedConceptListError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions while listing the underlying SharedMemories.");
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptRemoveError::InsufficientPermissions,
+                    "{msg} due to an internal error ({:?}) while listing the underlying SharedMemories.", e);
+            }
+        };
+
+        let mut shm_removed = false;
+        for raw_name in &raw_names {
+            if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name) {
+                if *name == extracted_name {
+                    fail!(from origin, when Shm::remove_cfg(raw_name, config),
+                        "{msg} since the underlying SharedMemory could not be removed.");
+                    shm_removed = true;
+                }
+            }
+        }
+
+        Ok(shm_removed)
     }
 
     fn does_exist_cfg(
         name: &FileName,
         config: &Shm::Configuration,
     ) -> Result<bool, NamedConceptDoesExistError> {
-        todo!()
+        let origin = "resizable_shared_memory::Dynamic::does_exist_cfg()";
+        let msg = format!(
+            "Unable to determine if ResizableSharedMemory {:?} exists",
+            name
+        );
+
+        let names = match Self::list_cfg(config) {
+            Ok(names) => names,
+            Err(NamedConceptListError::InsufficientPermissions) => {
+                fail!(from origin, with NamedConceptDoesExistError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions while acquiring a list of all ResizableSharedMemories.");
+            }
+            Err(e) => {
+                fail!(from origin, with NamedConceptDoesExistError::InternalError,
+                    "{msg} due to an internal error ({:?}) while acquiring a list of all ResizableSharedMemories.", e);
+            }
+        };
+
+        Ok(names.iter().find(|n| *n == name).is_some())
     }
 
     fn list_cfg(config: &Shm::Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
-        todo!()
+        let origin = "resizable_shared_memory::Dynamic::list_cfg()";
+        let mut names = HashSet::new();
+        let raw_names = fail!(from origin, when Shm::list_cfg(config),
+                            "Unable to list ResizableSharedMemories since the underlying SharedMemories could not be listed.");
+
+        for raw_name in &raw_names {
+            if let Some((name, _)) = Self::extract_name_and_segment_id(raw_name) {
+                names.insert(name);
+            }
+        }
+
+        Ok(Vec::from_iter(names.into_iter()))
     }
 
     fn remove_path_hint(value: &Path) -> Result<(), super::NamedConceptPathHintRemoveError> {
@@ -327,6 +390,49 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
 where
     Shm::Builder: Debug,
 {
+    fn extract_name_and_segment_id(name: &FileName) -> Option<(FileName, SegmentId)> {
+        if let Some(pos) = name.rfind(SEGMENT_ID_SEPARATOR) {
+            let segment_id_start_pos = pos + SEGMENT_ID_SEPARATOR.len();
+            if name.len() < segment_id_start_pos {
+                return None;
+            }
+
+            let number_of_segment_id_digits =
+                SegmentId::max_segment_id().checked_ilog10().unwrap_or(0) + 1;
+
+            if name.len() > segment_id_start_pos + number_of_segment_id_digits as usize {
+                return None;
+            }
+
+            let mut raw_segment_id = name.as_string().clone();
+            raw_segment_id.remove_range(0, segment_id_start_pos);
+
+            // check nymber of digits
+            for byte in raw_segment_id.as_bytes() {
+                let is_a_digit = b'0' < *byte && *byte < b'9';
+                if !is_a_digit {
+                    return None;
+                }
+            }
+
+            let segment_id_value = String::from_utf8_lossy(raw_segment_id.as_bytes())
+                .parse::<u64>()
+                .expect("Contains a valid u64 integer.");
+
+            if segment_id_value > SegmentId::max_segment_id() as u64 {
+                return None;
+            }
+
+            let mut name = name.clone();
+            name.remove_range(pos, name.len() - pos)
+                .expect("Is a valid file name without segment id suffix");
+
+            return Some((name, SegmentId::new(segment_id_value as u8)));
+        }
+
+        None
+    }
+
     fn state_mut(&self) -> &mut InternalState<Allocator, Shm> {
         unsafe { &mut *self.state.get() }
     }
@@ -358,7 +464,7 @@ where
     ) -> Shm::Builder {
         let msg = "This should never happen! Unable to create additional shared memory segment since it would result in an invalid shared memory name.";
         let mut adjusted_name = config.base_name;
-        fatal_panic!(from config, when adjusted_name.push_bytes(b"__"), "{msg}");
+        fatal_panic!(from config, when adjusted_name.push_bytes(SEGMENT_ID_SEPARATOR), "{msg}");
         fatal_panic!(from config, when adjusted_name.push_bytes(segment_id.value().to_string().as_bytes()), "{msg}");
         Shm::Builder::new(&adjusted_name)
             .has_ownership(config.has_ownership)
