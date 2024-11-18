@@ -106,9 +106,9 @@ pub mod details {
         type Item = (SlotMapKey, &'slotmap T);
 
         fn next(&mut self) -> Option<Self::Item> {
-            if let Some((key, value)) = self.slotmap.next(self.key) {
-                self.key.0 = key.0 + 1;
-                Some((key, value))
+            if let Some((next_key, value)) = self.slotmap.next_available_key_after(self.key) {
+                self.key.0 = next_key.0 + 1;
+                Some((next_key, value))
             } else {
                 None
             }
@@ -127,7 +127,7 @@ pub mod details {
     }
 
     impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
-        fn next(&self, start: SlotMapKey) -> Option<(SlotMapKey, &T)> {
+        fn next_available_key_after(&self, start: SlotMapKey) -> Option<(SlotMapKey, &T)> {
             let idx_to_data = &self.idx_to_data;
 
             for n in start.0..idx_to_data.len() {
@@ -203,7 +203,7 @@ pub mod details {
             Some(free_idx)
         }
 
-        unsafe fn reserve_index(&mut self, idx: usize) {
+        unsafe fn claim_index(&mut self, idx: usize) {
             if idx >= self.capacity_impl() {
                 return;
             }
@@ -233,18 +233,15 @@ pub mod details {
         }
 
         pub(crate) unsafe fn insert_impl(&mut self, value: T) -> Option<SlotMapKey> {
-            match self.acquire_next_free_index() {
-                None => None,
-                Some(key) => {
-                    let key = SlotMapKey(key);
-                    self.store_value(key, value);
-                    Some(key)
-                }
-            }
+            self.acquire_next_free_index()
+                .map(|key| SlotMapKey(key))
+                .inspect(|key| {
+                    self.store_value(*key, value);
+                })
         }
 
         pub(crate) unsafe fn insert_at_impl(&mut self, key: SlotMapKey, value: T) -> bool {
-            self.reserve_index(key.value());
+            self.claim_index(key.value());
             self.store_value(key, value)
         }
 

@@ -149,6 +149,8 @@ mod slot_map {
             assert_that!(key, is_some);
             assert_that!(key.unwrap().value() % 2, eq 0);
         }
+
+        assert_that!(sut.insert(0), is_none);
     }
 
     #[test]
@@ -169,6 +171,32 @@ mod slot_map {
 
         for (key, value) in sut.iter() {
             assert_that!(*value, eq 5 * key.value() + 3);
+        }
+    }
+
+    #[test]
+    fn insert_remove_and_insert_works() {
+        let mut sut = FixedSizeSut::new();
+
+        for _ in 0..SUT_CAPACITY {
+            assert_that!(sut.insert(3), is_some);
+        }
+
+        for n in 0..SUT_CAPACITY / 2 {
+            assert_that!(sut.remove(SlotMapKey::new(2 * n)), eq true);
+        }
+
+        for _ in 0..SUT_CAPACITY / 2 {
+            let key = sut.insert(2);
+            assert_that!(key, is_some);
+        }
+
+        for (key, value) in sut.iter() {
+            if key.value() % 2 == 0 {
+                assert_that!(*value, eq 2);
+            } else {
+                assert_that!(*value, eq 3);
+            }
         }
     }
 }
