@@ -1,5 +1,5 @@
 {
-  "checksum": "d7b1759c5d28cbeb3fff8b9da5ca81261aa8c593891b9eff7d3c554d07b4c8dd",
+  "checksum": "0e06dfd9a08fcb09e35b008c85e91abf975fe7a4846366aa3bc10c530cffc688",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -3938,61 +3938,10 @@
         "crate_features": {
           "common": [
             "default",
+            "extra_traits",
             "std"
           ],
-          "selects": {
-            "aarch64-apple-darwin": [
-              "extra_traits"
-            ],
-            "aarch64-apple-ios": [
-              "extra_traits"
-            ],
-            "aarch64-apple-ios-sim": [
-              "extra_traits"
-            ],
-            "aarch64-fuchsia": [
-              "extra_traits"
-            ],
-            "aarch64-linux-android": [
-              "extra_traits"
-            ],
-            "armv7-linux-androideabi": [
-              "extra_traits"
-            ],
-            "i686-apple-darwin": [
-              "extra_traits"
-            ],
-            "i686-linux-android": [
-              "extra_traits"
-            ],
-            "i686-unknown-freebsd": [
-              "extra_traits"
-            ],
-            "powerpc-unknown-linux-gnu": [
-              "extra_traits"
-            ],
-            "s390x-unknown-linux-gnu": [
-              "extra_traits"
-            ],
-            "wasm32-wasi": [
-              "extra_traits"
-            ],
-            "x86_64-apple-darwin": [
-              "extra_traits"
-            ],
-            "x86_64-apple-ios": [
-              "extra_traits"
-            ],
-            "x86_64-fuchsia": [
-              "extra_traits"
-            ],
-            "x86_64-linux-android": [
-              "extra_traits"
-            ],
-            "x86_64-unknown-freebsd": [
-              "extra_traits"
-            ]
-          }
+          "selects": {}
         },
         "deps": {
           "common": [
@@ -4087,13 +4036,32 @@
         ],
         "crate_features": {
           "common": [
-            "elf",
-            "errno",
             "general",
             "ioctl",
             "no_std"
           ],
-          "selects": {}
+          "selects": {
+            "aarch64-unknown-linux-gnu": [
+              "elf",
+              "errno"
+            ],
+            "arm-unknown-linux-gnueabi": [
+              "elf",
+              "errno"
+            ],
+            "armv7-unknown-linux-gnueabi": [
+              "elf",
+              "errno"
+            ],
+            "i686-unknown-linux-gnu": [
+              "elf",
+              "errno"
+            ],
+            "x86_64-unknown-linux-gnu": [
+              "elf",
+              "errno"
+            ]
+          }
         },
         "edition": "2021",
         "version": "0.4.14"
