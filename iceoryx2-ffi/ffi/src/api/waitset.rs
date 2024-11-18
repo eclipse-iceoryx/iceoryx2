@@ -211,6 +211,20 @@ pub type iox2_waitset_run_callback = extern "C" fn(
 
 // BEGIN C API
 
+/// Returns a string literal describing the provided [`iox2_waitset_create_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_create_error_string(
     error: iox2_waitset_create_error_e,
@@ -218,6 +232,20 @@ pub unsafe extern "C" fn iox2_waitset_create_error_string(
     error.as_str_literal().as_ptr() as *const c_char
 }
 
+/// Returns a string literal describing the provided [`iox2_waitset_attachment_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
     error: iox2_waitset_attachment_error_e,
@@ -225,13 +253,20 @@ pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
     error.as_str_literal().as_ptr() as *const c_char
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn iox2_waitset_run_result_string(
-    error: iox2_waitset_run_result_e,
-) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
-}
-
+/// Returns a string literal describing the provided [`iox2_waitset_run_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_waitset_run_error_string(
     error: iox2_waitset_run_error_e,

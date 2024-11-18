@@ -187,6 +187,17 @@ pub type iox2_node_list_callback = extern "C" fn(
 
 // BEGIN C API
 
+/// Returns a string representation of the [`iox2_node_list_failure_e`] error code.
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// Returns a pointer to a null-terminated string containing the error description.
+///
+/// # Safety
+///
+/// * The returned pointer is valid as long as the program runs and must not be modified or freed
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_list_failure_string(
     error: iox2_node_list_failure_e,
@@ -194,6 +205,20 @@ pub unsafe extern "C" fn iox2_node_list_failure_string(
     error.as_str_literal().as_ptr() as *const c_char
 }
 
+/// Returns a string representation of the [`iox2_node_wait_failure_e`] error code.
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// * The returned pointer is valid as long as the program runs and must not be modified or freed
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_wait_failure_string(
     error: iox2_node_wait_failure_e,

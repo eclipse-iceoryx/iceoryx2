@@ -132,8 +132,4 @@ auto error_string(const iox2::WaitSetRunError& error) -> const char* {
     return iox2_waitset_run_error_string(iox::into<iox2_waitset_run_error_e>(error));
 }
 
-auto error_string(const iox2::WaitSetRunResult& error) -> const char* {
-    return iox2_waitset_run_result_string(iox::into<iox2_waitset_run_result_e>(error));
-}
-
 } // namespace iox2

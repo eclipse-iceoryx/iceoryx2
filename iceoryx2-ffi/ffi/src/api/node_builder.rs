@@ -101,6 +101,20 @@ impl HandleToType for iox2_node_builder_h_ref {
 
 // BEGIN C API
 
+/// Returns a string literal describing the provided [`iox2_node_creation_failure_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_node_creation_failure_string(
     error: iox2_node_creation_failure_e,

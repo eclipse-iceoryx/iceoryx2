@@ -257,14 +257,6 @@ TEST(ErrorStringTest, waitset_create_error_string) {
     ASSERT_GT(strlen(error_string(Sut::InternalError)), 1U);
 }
 
-TEST(ErrorStringTest, waitset_run_result_string) {
-    using Sut = iox2::WaitSetRunResult;
-    ASSERT_GT(strlen(error_string(Sut::TerminationRequest)), 1U);
-    ASSERT_GT(strlen(error_string(Sut::Interrupt)), 1U);
-    ASSERT_GT(strlen(error_string(Sut::StopRequest)), 1U);
-    ASSERT_GT(strlen(error_string(Sut::AllEventsHandled)), 1U);
-}
-
 TEST(ErrorStringTest, waitset_attachment_error_string) {
     using Sut = iox2::WaitSetAttachmentError;
     ASSERT_GT(strlen(error_string(Sut::InsufficientCapacity)), 1U);

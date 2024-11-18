@@ -140,6 +140,20 @@ pub type iox2_listener_wait_all_callback =
 
 // BEGIN C API
 
+/// Returns a string representation of the provided [`iox2_listener_wait_error_e`] error code.
+///
+/// # Arguments
+///
+/// * `error` - The error code that should be converted into a string
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// * The returned pointer must not be modified or freed and is only valid as long as the program runs
 #[no_mangle]
 pub unsafe extern "C" fn iox2_listener_wait_error_string(
     error: iox2_listener_wait_error_e,
