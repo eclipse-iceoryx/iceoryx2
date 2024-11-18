@@ -271,7 +271,8 @@ pub mod details {
             let data_idx = self.idx_to_data[key.0];
             if data_idx != INVALID {
                 self.data[data_idx].take();
-                debug_assert!(self.data_next_free_index.push_impl(data_idx));
+                let push_result = self.data_next_free_index.push_impl(data_idx);
+                debug_assert!(push_result);
                 self.release_free_index(key.0);
                 self.idx_to_data[key.0] = INVALID;
                 self.len -= 1;
