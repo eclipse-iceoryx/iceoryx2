@@ -57,6 +57,54 @@ mod resizable_shared_memory {
     }
 
     #[test]
+    fn allocate_more_layout_than_hinted_when_no_other_chunks_are_in_use_releases_smaller_segment<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(128)
+            .create()
+            .unwrap();
+
+        sut.allocate(Layout::new::<u16>()).unwrap();
+        assert_that!(sut.number_of_active_segments(), eq 1);
+        sut.allocate(Layout::new::<u32>()).unwrap();
+        assert_that!(sut.number_of_active_segments(), eq 2);
+        sut.allocate(Layout::new::<u64>()).unwrap();
+        assert_that!(sut.number_of_active_segments(), eq 3);
+    }
+
+    #[test]
+    fn allocate_more_layout_than_hinted_when_other_chunks_are_in_use_does_not_releases_smaller_segment<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(128)
+            .create()
+            .unwrap();
+
+        sut.allocate(Layout::new::<u8>()).unwrap();
+        assert_that!(sut.number_of_active_segments(), eq 1);
+        sut.allocate(Layout::new::<u16>()).unwrap();
+        assert_that!(sut.number_of_active_segments(), eq 2);
+        sut.allocate(Layout::new::<u32>()).unwrap();
+        assert_that!(sut.number_of_active_segments(), eq 3);
+        sut.allocate(Layout::new::<u64>()).unwrap();
+        assert_that!(sut.number_of_active_segments(), eq 4);
+    }
+
+    #[test]
     fn allocate_more_than_hinted_works<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
@@ -343,11 +391,208 @@ mod resizable_shared_memory {
         assert_that!(result, is_err);
     }
 
+    #[test]
+    fn list_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        const NUMBER_OF_STORAGES: usize = 28;
+        let config = generate_isolated_config::<Sut>();
+
+        let mut suts = vec![];
+        let mut names = vec![];
+
+        for _ in 0..NUMBER_OF_STORAGES {
+            let storage_name = generate_name();
+            let sut = Sut::Builder::new(&storage_name)
+                .config(&config)
+                .create()
+                .unwrap();
+            names.push(storage_name);
+            suts.push(sut);
+        }
+
+        let list_suts = Sut::list_cfg(&config).unwrap();
+        assert_that!(list_suts, len names.len());
+        for name in names {
+            assert_that!(list_suts, contains name);
+        }
+    }
+
+    #[test]
+    fn list_works_when_the_start_segment_is_no_longer_used<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        const NUMBER_OF_STORAGES: usize = 33;
+        let config = generate_isolated_config::<Sut>();
+
+        let mut suts = vec![];
+        let mut names = vec![];
+
+        for _ in 0..NUMBER_OF_STORAGES {
+            let storage_name = generate_name();
+            let sut = Sut::Builder::new(&storage_name)
+                .config(&config)
+                .max_chunk_layout_hint(Layout::new::<u8>())
+                .allocation_strategy(AllocationStrategy::BestFit)
+                .create()
+                .unwrap();
+
+            // this allocates a new segment and release the original one
+            sut.allocate(Layout::new::<u16>()).unwrap();
+            assert_that!(sut.number_of_active_segments(), eq 1);
+
+            // this allocates a new segment
+            sut.allocate(Layout::new::<u64>()).unwrap();
+            assert_that!(sut.number_of_active_segments(), eq 2);
+
+            names.push(storage_name);
+            suts.push(sut);
+        }
+
+        let list_suts = Sut::list_cfg(&config).unwrap();
+        assert_that!(list_suts, len names.len());
+        for name in names {
+            assert_that!(list_suts, contains name);
+        }
+    }
+
+    #[test]
+    fn does_exist_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        const NUMBER_OF_STORAGES: usize = 25;
+        let config = generate_isolated_config::<Sut>();
+
+        let mut suts = vec![];
+        let mut names = vec![];
+
+        for _ in 0..NUMBER_OF_STORAGES {
+            let storage_name = generate_name();
+            let sut = Sut::Builder::new(&storage_name)
+                .config(&config)
+                .create()
+                .unwrap();
+            names.push(storage_name);
+            suts.push(sut);
+        }
+
+        for name in names {
+            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+        }
+    }
+
+    #[test]
+    fn does_exist_works_when_the_start_segment_is_no_longer_used<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        const NUMBER_OF_STORAGES: usize = 25;
+        let config = generate_isolated_config::<Sut>();
+
+        let mut suts = vec![];
+        let mut names = vec![];
+
+        for _ in 0..NUMBER_OF_STORAGES {
+            let storage_name = generate_name();
+            let sut = Sut::Builder::new(&storage_name)
+                .config(&config)
+                .max_chunk_layout_hint(Layout::new::<u8>())
+                .allocation_strategy(AllocationStrategy::BestFit)
+                .create()
+                .unwrap();
+
+            // this allocates a new segment and release the original one
+            sut.allocate(Layout::new::<u16>()).unwrap();
+            assert_that!(sut.number_of_active_segments(), eq 1);
+
+            // this allocates a new segment
+            sut.allocate(Layout::new::<u64>()).unwrap();
+            assert_that!(sut.number_of_active_segments(), eq 2);
+
+            names.push(storage_name);
+            suts.push(sut);
+        }
+
+        for name in names {
+            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+        }
+    }
+
+    #[test]
+    fn remove_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        const NUMBER_OF_STORAGES: usize = 26;
+        let config = generate_isolated_config::<Sut>();
+
+        let mut names = vec![];
+
+        for _ in 0..NUMBER_OF_STORAGES {
+            let storage_name = generate_name();
+            assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(false));
+            let sut = Sut::Builder::new(&storage_name)
+                .config(&config)
+                .create()
+                .unwrap();
+            core::mem::forget(sut);
+            names.push(storage_name);
+        }
+
+        for name in names {
+            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+            assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
+            assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(false));
+            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
+        }
+    }
+
+    #[test]
+    fn remove_with_multiple_segments_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        const NUMBER_OF_STORAGES: usize = 26;
+        let config = generate_isolated_config::<Sut>();
+
+        let mut names = vec![];
+
+        for _ in 0..NUMBER_OF_STORAGES {
+            let storage_name = generate_name();
+            assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(false));
+            let sut = Sut::Builder::new(&storage_name)
+                .config(&config)
+                .max_chunk_layout_hint(Layout::new::<u8>())
+                .max_number_of_chunks_hint(123)
+                .allocation_strategy(AllocationStrategy::BestFit)
+                .create()
+                .unwrap();
+
+            sut.allocate(Layout::new::<u8>()).unwrap();
+            sut.allocate(Layout::new::<u16>()).unwrap();
+            sut.allocate(Layout::new::<u32>()).unwrap();
+            sut.allocate(Layout::new::<u64>()).unwrap();
+            assert_that!(sut.number_of_active_segments(), eq 4);
+
+            core::mem::forget(sut);
+            names.push(storage_name);
+        }
+
+        for name in names {
+            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+            assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(true));
+            assert_that!(unsafe { Sut::remove_cfg(&name, &config) }, eq Ok(false));
+            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
+        }
+    }
+
     // TODO:
     //  * open with no more __0 segment
     //  * open with many segments
     //  * AllocationStrategy::PowerOfTwo -> doubling in size
-    //  * list/does_exist/remove
     //  * has_ownership, acquire/release ownership
     //  * timeout
     //  * best fit, let reallocate until 256 exceeded, see if id is recycled

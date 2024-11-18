@@ -409,7 +409,7 @@ where
 
             // check nymber of digits
             for byte in raw_segment_id.as_bytes() {
-                let is_a_digit = b'0' < *byte && *byte < b'9';
+                let is_a_digit = b'0' <= *byte && *byte <= b'9';
                 if !is_a_digit {
                     return None;
                 }
