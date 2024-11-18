@@ -233,11 +233,11 @@ pub mod details {
         }
 
         pub(crate) unsafe fn insert_impl(&mut self, value: T) -> Option<SlotMapKey> {
-            self.acquire_next_free_index()
-                .map(|key| SlotMapKey(key))
-                .inspect(|key| {
-                    self.store_value(*key, value);
-                })
+            self.acquire_next_free_index().map(|key| {
+                let key = SlotMapKey(key);
+                self.store_value(key, value);
+                key
+            })
         }
 
         pub(crate) unsafe fn insert_at_impl(&mut self, key: SlotMapKey, value: T) -> bool {
