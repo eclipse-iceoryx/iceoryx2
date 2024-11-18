@@ -41,21 +41,28 @@ use super::{
 const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
 const SEGMENT_ID_SEPARATOR: &[u8] = b"__";
 
+#[repr(C)]
+#[derive(Debug)]
+struct SharedState {
+    allocation_strategy: AllocationStrategy,
+    max_number_of_chunks_hint: IoxAtomicU64,
+    max_chunk_size_hint: IoxAtomicU64,
+    max_chunk_alignment_hint: IoxAtomicU64,
+}
+
 #[derive(Debug)]
 struct BuilderConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     base_name: FileName,
     shm: Shm::Configuration,
     allocator_config_hint: Allocator::Configuration,
-    allocation_strategy: AllocationStrategy,
-    has_ownership: bool,
     shm_builder_timeout: Duration,
-    max_number_of_chunks_hint: usize,
-    max_chunk_layout_hint: Layout,
+    has_ownership: bool,
 }
 
 #[derive(Debug)]
 struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     builder_config: BuilderConfig<Allocator, Shm>,
+    shared_state: SharedState,
     shared_memory_map: SlotMap<ShmEntry<Allocator, Shm>>,
     current_idx: SlotMapKey,
 }
@@ -100,6 +107,7 @@ where
     Allocator: Debug,
 {
     config: BuilderConfig<Allocator, Shm>,
+    shared_state: SharedState,
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
@@ -119,12 +127,15 @@ where
             config: BuilderConfig {
                 base_name: *name,
                 has_ownership: true,
-                allocation_strategy: AllocationStrategy::default(),
-                shm_builder_timeout: Duration::ZERO,
                 allocator_config_hint: Allocator::Configuration::default(),
                 shm: Shm::Configuration::default(),
-                max_number_of_chunks_hint: 1,
-                max_chunk_layout_hint: Layout::new::<u8>(),
+                shm_builder_timeout: Duration::ZERO,
+            },
+            shared_state: SharedState {
+                allocation_strategy: AllocationStrategy::default(),
+                max_number_of_chunks_hint: IoxAtomicU64::new(1),
+                max_chunk_size_hint: IoxAtomicU64::new(1),
+                max_chunk_alignment_hint: IoxAtomicU64::new(1),
             },
         }
     }
@@ -151,18 +162,25 @@ where
         self
     }
 
-    fn max_chunk_layout_hint(mut self, value: Layout) -> Self {
-        self.config.max_chunk_layout_hint = value;
+    fn max_chunk_layout_hint(self, value: Layout) -> Self {
+        self.shared_state
+            .max_chunk_size_hint
+            .store(value.size() as u64, Ordering::Relaxed);
+        self.shared_state
+            .max_chunk_alignment_hint
+            .store(value.align() as u64, Ordering::Relaxed);
         self
     }
 
-    fn max_number_of_chunks_hint(mut self, value: usize) -> Self {
-        self.config.max_number_of_chunks_hint = value;
+    fn max_number_of_chunks_hint(self, value: usize) -> Self {
+        self.shared_state
+            .max_number_of_chunks_hint
+            .store(value as u64, Ordering::Relaxed);
         self
     }
 
     fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
-        self.config.allocation_strategy = value;
+        self.shared_state.allocation_strategy = value;
         self
     }
 
@@ -172,15 +190,25 @@ where
     }
 
     fn create(mut self) -> Result<DynamicMemory<Allocator, Shm>, SharedMemoryCreateError> {
+        let msg = "Unable to create ResizableSharedMemory";
+        let origin = format!("{:?}", self);
+
         let hint = Allocator::initial_setup_hint(
-            self.config.max_chunk_layout_hint,
-            self.config.max_number_of_chunks_hint,
+            unsafe {
+                Layout::from_size_align_unchecked(
+                    self.shared_state
+                        .max_chunk_size_hint
+                        .load(Ordering::Relaxed) as usize,
+                    self.shared_state
+                        .max_chunk_alignment_hint
+                        .load(Ordering::Relaxed) as usize,
+                )
+            },
+            self.shared_state
+                .max_number_of_chunks_hint
+                .load(Ordering::Relaxed) as usize,
         );
         self.config.allocator_config_hint = hint.config;
-
-        let origin = format!("{:?}", self);
-        let shm = fail!(from origin, when DynamicMemory::create_segment(&self.config, SegmentId::new(0), hint.payload_size),
-            "Unable to create ResizableSharedMemory since the underlying shared memory could not be created.");
 
         let mut shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
         let current_idx = shared_memory_map
@@ -192,6 +220,7 @@ where
                 builder_config: self.config,
                 shared_memory_map,
                 current_idx,
+                shared_state: self.shared_state,
             }),
             has_ownership: IoxAtomicBool::new(true),
             _data: PhantomData,
@@ -532,7 +561,7 @@ where
         let state = self.state_mut();
         let adjusted_segment_setup = shm
             .allocator()
-            .resize_hint(layout, state.builder_config.allocation_strategy);
+            .resize_hint(layout, state.shared_state.allocation_strategy);
         let segment_id = if state.current_idx.value() < MAX_NUMBER_OF_REALLOCATIONS {
             SlotMapKey::new(state.current_idx.value() + 1)
         } else {
@@ -581,10 +610,10 @@ where
             || e == ShmAllocationError::ExceedsMaxSupportedAlignment
             || e == ShmAllocationError::AllocationError(AllocationError::SizeTooLarge)
         {
-            if state.builder_config.allocation_strategy == AllocationStrategy::Static {
+            if state.shared_state.allocation_strategy == AllocationStrategy::Static {
                 fail!(from self, with e.into(),
                                     "{msg} since there is not enough memory left ({:?}) and the allocation strategy {:?} forbids reallocation.",
-                                    e, state.builder_config.allocation_strategy);
+                                    e, state.shared_state.allocation_strategy);
             } else {
                 self.create_resized_segment(shm, layout)?;
                 Ok(())
