@@ -12,7 +12,6 @@
 
 use std::alloc::Layout;
 use std::cell::UnsafeCell;
-use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::{fmt::Debug, marker::PhantomData};
@@ -40,6 +39,7 @@ use super::{
 
 const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
 const SEGMENT_ID_SEPARATOR: &[u8] = b"__";
+const MANAGEMENT_SUFFIX: &[u8] = b"mgmt";
 
 #[repr(C)]
 #[derive(Debug)]
@@ -193,6 +193,16 @@ where
         let msg = "Unable to create ResizableSharedMemory";
         let origin = format!("{:?}", self);
 
+        let hint = Allocator::initial_setup_hint(Layout::new::<u8>(), 1);
+        let adjusted_name =
+            DynamicMemory::<Allocator, Shm>::managment_segment_name(&self.config.base_name);
+        let mgmt_segment = fail!(from origin, when Shm::Builder::new(&adjusted_name)
+                                                    .size(hint.payload_size)
+                                                    .config(&self.config.shm)
+                                                    .has_ownership(self.config.has_ownership)
+                                                    .create(&hint.config),
+                            "{msg} since the management segment could not be created.");
+
         let hint = Allocator::initial_setup_hint(
             unsafe {
                 Layout::from_size_align_unchecked(
@@ -210,6 +220,8 @@ where
         );
         self.config.allocator_config_hint = hint.config;
 
+        let shm = fail!(from origin, when DynamicMemory::create_segment(&self.config, SegmentId::new(0), hint.payload_size),
+            "Unable to create ResizableSharedMemory since the underlying shared memory could not be created.");
         let mut shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
         let current_idx = shared_memory_map
             .insert(ShmEntry::new(shm))
@@ -222,44 +234,32 @@ where
                 current_idx,
                 shared_state: self.shared_state,
             }),
+            _mgmt_segment: mgmt_segment,
             has_ownership: IoxAtomicBool::new(true),
             _data: PhantomData,
         })
     }
 
-    fn open(self) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
+    fn open(mut self) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
         let origin = format!("{:?}", self);
         let msg = "Unable to open ResizableSharedMemoryView";
-        let greatest_segment_id = match DynamicMemory::<Allocator, Shm>::greatest_segment_id(
-            &self.config.shm,
-            &self.config.base_name,
-        ) {
-            Ok(Some(segment_id)) => segment_id,
-            Ok(None) => {
-                fail!(from origin, with SharedMemoryOpenError::DoesNotExist,
-                                "{msg} since the underlying SharedMemory does not exist.");
-            }
-            Err(NamedConceptListError::InsufficientPermissions) => {
-                fail!(from origin, with SharedMemoryOpenError::InsufficientPermissions,
-                    "{msg} due to insufficient permissions while acquiring a list of existing SharedMemory segments.");
-            }
-            Err(e) => {
-                fail!(from origin, with SharedMemoryOpenError::InternalError,
-                    "{msg} due to an internal error while acquiring a list of existing SharedMemory segments ({:?}).", e);
-            }
-        };
-        let shm = fail!(from origin, when DynamicMemory::open_segment(&self.config, greatest_segment_id),
-            "{msg} since the underlying shared memory could not be opened.");
 
-        let mut shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
-        let current_idx = shared_memory_map
-            .insert(ShmEntry::new(shm))
-            .expect("MAX_NUMBER_OF_REALLOCATIONS is greater or equal 1");
+        self.config.has_ownership = false;
+        let adjusted_name =
+            DynamicMemory::<Allocator, Shm>::managment_segment_name(&self.config.base_name);
+        let mgmt_segment = fail!(from origin, when Shm::Builder::new(&adjusted_name)
+                                                        .config(&self.config.shm)
+                                                        .has_ownership(self.config.has_ownership)
+                                                        .open(),
+                                    "{msg} since the managment segment could not be opened.");
+
+        let shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
 
         Ok(DynamicView {
             builder_config: self.config,
+            _mgmt_segment: mgmt_segment,
             shared_memory_map,
-            current_idx,
+            current_idx: None,
             _data: PhantomData,
         })
     }
@@ -268,8 +268,9 @@ where
 #[derive(Debug)]
 pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     builder_config: BuilderConfig<Allocator, Shm>,
+    _mgmt_segment: Shm,
     shared_memory_map: SlotMap<ShmEntry<Allocator, Shm>>,
-    current_idx: SlotMapKey,
+    current_idx: Option<SlotMapKey>,
     _data: PhantomData<Allocator>,
 }
 
@@ -296,7 +297,7 @@ where
                 let entry = ShmEntry::new(shm);
                 entry.register_offset();
                 self.shared_memory_map.insert_at(key, entry);
-                self.current_idx = key;
+                self.current_idx = Some(key);
                 payload_start_address
             }
             Some(entry) => {
@@ -304,11 +305,6 @@ where
                 entry.shm.payload_start_address()
             }
         };
-
-        println!(
-            "start address of segment {:?}: {}",
-            segment_id, payload_start_address
-        );
 
         Ok((offset + payload_start_address) as *const u8)
     }
@@ -319,7 +315,9 @@ where
 
         match self.shared_memory_map.get(key) {
             Some(entry) => {
-                if entry.unregister_offset() == ShmEntryState::Empty && self.current_idx != key {
+                if entry.unregister_offset() == ShmEntryState::Empty
+                    && self.current_idx != Some(key)
+                {
                     self.shared_memory_map.remove(key);
                 }
             }
@@ -338,6 +336,7 @@ where
 #[derive(Debug)]
 pub struct DynamicMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     state: UnsafeCell<InternalState<Allocator, Shm>>,
+    _mgmt_segment: Shm,
     has_ownership: IoxAtomicBool,
     _data: PhantomData<Allocator>,
 }
@@ -363,6 +362,11 @@ where
     ) -> Result<bool, NamedConceptRemoveError> {
         let origin = "resizable_shared_memory::Dynamic::remove_cfg()";
         let msg = format!("Unable to remove ResizableSharedMemory {:?}", name);
+
+        let mgmt_name = Self::managment_segment_name(name);
+        let mut shm_removed = fail!(from origin, when Shm::remove_cfg(&mgmt_name, config),
+            "{msg} since the underlying managment segment could not be removed.");
+
         let raw_names = match Shm::list_cfg(config) {
             Ok(names) => names,
             Err(NamedConceptListError::InsufficientPermissions) => {
@@ -375,7 +379,6 @@ where
             }
         };
 
-        let mut shm_removed = false;
         for raw_name in &raw_names {
             if let Some((extracted_name, _)) = Self::extract_name_and_segment_id(raw_name) {
                 if *name == extracted_name {
@@ -399,34 +402,26 @@ where
             name
         );
 
-        let names = match Self::list_cfg(config) {
-            Ok(names) => names,
-            Err(NamedConceptListError::InsufficientPermissions) => {
-                fail!(from origin, with NamedConceptDoesExistError::InsufficientPermissions,
-                    "{msg} due to insufficient permissions while acquiring a list of all ResizableSharedMemories.");
-            }
-            Err(e) => {
-                fail!(from origin, with NamedConceptDoesExistError::InternalError,
-                    "{msg} due to an internal error ({:?}) while acquiring a list of all ResizableSharedMemories.", e);
-            }
-        };
-
-        Ok(names.iter().find(|n| *n == name).is_some())
+        let mgmt_name = Self::managment_segment_name(name);
+        Ok(
+            fail!(from origin, when Shm::does_exist_cfg(&mgmt_name, config),
+            "{msg} since the existance of the underlying managment segment could not be verified."),
+        )
     }
 
     fn list_cfg(config: &Shm::Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
         let origin = "resizable_shared_memory::Dynamic::list_cfg()";
-        let mut names = HashSet::new();
+        let mut names = vec![];
         let raw_names = fail!(from origin, when Shm::list_cfg(config),
                             "Unable to list ResizableSharedMemories since the underlying SharedMemories could not be listed.");
 
         for raw_name in &raw_names {
-            if let Some((name, _)) = Self::extract_name_and_segment_id(raw_name) {
-                names.insert(name);
+            if let Some(name) = Self::extract_name_from_management_segment(raw_name) {
+                names.push(name);
             }
         }
 
-        Ok(Vec::from_iter(names.into_iter()))
+        Ok(names)
     }
 
     fn remove_path_hint(value: &Path) -> Result<(), super::NamedConceptPathHintRemoveError> {
@@ -438,36 +433,26 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
 where
     Shm::Builder: Debug,
 {
-    fn greatest_segment_id(
-        config: &Shm::Configuration,
-        name: &FileName,
-    ) -> Result<Option<SegmentId>, NamedConceptListError> {
-        let origin = "resizable_shared_memory::Dynamic::greatest_segment_id()";
-        let mut segment_id = None;
-        let raw_names = fail!(from origin, when Shm::list_cfg(config),
-                            "Unable to determine greatest SegmentId of {:?} since the underlying shared memories could not be listed.",
-                            name);
+    fn managment_segment_name(base_name: &FileName) -> FileName {
+        let origin = "resizable_shared_memory::DynamicMemory::managment_segment_name()";
+        let msg = "Unable to construct management segment name";
+        let mut adjusted_name = base_name.clone();
+        fatal_panic!(from origin, when adjusted_name.push_bytes(SEGMENT_ID_SEPARATOR),
+                        "This should never happen! {msg} since it would result in an invalid file name.");
+        fatal_panic!(from origin, when adjusted_name.push_bytes(MANAGEMENT_SUFFIX),
+                        "This should never happen! {msg} since it would result in an invalid file name.");
+        adjusted_name
+    }
 
-        for raw_name in &raw_names {
-            if let Some((extracted_name, extracted_segment_id)) =
-                Self::extract_name_and_segment_id(raw_name)
-            {
-                if *name == extracted_name {
-                    segment_id = match segment_id {
-                        None => Some(extracted_segment_id),
-                        Some(v) => {
-                            if v.value() < extracted_segment_id.value() {
-                                Some(extracted_segment_id)
-                            } else {
-                                Some(v)
-                            }
-                        }
-                    };
-                }
+    fn extract_name_from_management_segment(name: &FileName) -> Option<FileName> {
+        let mut name = name.clone();
+        if let Ok(true) = name.strip_suffix(MANAGEMENT_SUFFIX) {
+            if let Ok(true) = name.strip_suffix(SEGMENT_ID_SEPARATOR) {
+                return Some(name);
             }
         }
 
-        Ok(segment_id)
+        None
     }
 
     fn extract_name_and_segment_id(name: &FileName) -> Option<(FileName, SegmentId)> {

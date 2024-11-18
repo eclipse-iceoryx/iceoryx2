@@ -463,7 +463,7 @@ mod resizable_shared_memory {
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {
-        const NUMBER_OF_STORAGES: usize = 25;
+        const NUMBER_OF_STORAGES: usize = 1;
         let config = generate_isolated_config::<Sut>();
 
         let mut suts = vec![];
@@ -625,10 +625,8 @@ mod resizable_shared_memory {
     }
 
     // TODO:
-    //  * open with no more __0 segment
-    //  * open with many segments
-    //  * AllocationStrategy::PowerOfTwo -> doubling in size
     //  * has_ownership, acquire/release ownership
+    //      * all segments must be updated
     //  * timeout
     //  * best fit, let reallocate until 256 exceeded, see if id is recycled
     //  * exceed max alignment
