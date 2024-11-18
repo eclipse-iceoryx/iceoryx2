@@ -200,8 +200,27 @@ where
 
     fn open(self) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
         let origin = format!("{:?}", self);
-        let shm = fail!(from origin, when DynamicMemory::open_segment(&self.config, SegmentId::new(0)),
-            "Unable to open ResizableSharedMemoryView since the underlying shared memory could not be opened.");
+        let msg = "Unable to open ResizableSharedMemoryView";
+        let greatest_segment_id = match DynamicMemory::<Allocator, Shm>::greatest_segment_id(
+            &self.config.shm,
+            &self.config.base_name,
+        ) {
+            Ok(Some(segment_id)) => segment_id,
+            Ok(None) => {
+                fail!(from origin, with SharedMemoryOpenError::DoesNotExist,
+                                "{msg} since the underlying SharedMemory does not exist.");
+            }
+            Err(NamedConceptListError::InsufficientPermissions) => {
+                fail!(from origin, with SharedMemoryOpenError::InsufficientPermissions,
+                    "{msg} due to insufficient permissions while acquiring a list of existing SharedMemory segments.");
+            }
+            Err(e) => {
+                fail!(from origin, with SharedMemoryOpenError::InternalError,
+                    "{msg} due to an internal error while acquiring a list of existing SharedMemory segments ({:?}).", e);
+            }
+        };
+        let shm = fail!(from origin, when DynamicMemory::open_segment(&self.config, greatest_segment_id),
+            "{msg} since the underlying shared memory could not be opened.");
 
         let mut shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
         let current_idx = shared_memory_map
@@ -390,6 +409,38 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicMemory<Alloca
 where
     Shm::Builder: Debug,
 {
+    fn greatest_segment_id(
+        config: &Shm::Configuration,
+        name: &FileName,
+    ) -> Result<Option<SegmentId>, NamedConceptListError> {
+        let origin = "resizable_shared_memory::Dynamic::greatest_segment_id()";
+        let mut segment_id = None;
+        let raw_names = fail!(from origin, when Shm::list_cfg(config),
+                            "Unable to determine greatest SegmentId of {:?} since the underlying shared memories could not be listed.",
+                            name);
+
+        for raw_name in &raw_names {
+            if let Some((extracted_name, extracted_segment_id)) =
+                Self::extract_name_and_segment_id(raw_name)
+            {
+                if *name == extracted_name {
+                    segment_id = match segment_id {
+                        None => Some(extracted_segment_id),
+                        Some(v) => {
+                            if v.value() < extracted_segment_id.value() {
+                                Some(extracted_segment_id)
+                            } else {
+                                Some(v)
+                            }
+                        }
+                    };
+                }
+            }
+        }
+
+        Ok(segment_id)
+    }
+
     fn extract_name_and_segment_id(name: &FileName) -> Option<(FileName, SegmentId)> {
         if let Some(pos) = name.rfind(SEGMENT_ID_SEPARATOR) {
             let segment_id_start_pos = pos + SEGMENT_ID_SEPARATOR.len();

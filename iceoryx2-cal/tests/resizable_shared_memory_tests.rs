@@ -589,6 +589,41 @@ mod resizable_shared_memory {
         }
     }
 
+    #[test]
+    fn open_when_zero_segment_not_available_works<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        const TEST_VALUE: u32 = 89123523;
+        let config = generate_isolated_config::<Sut>();
+        let storage_name = generate_name();
+
+        let sut_creator = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(123)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let chunk = sut_creator.allocate(Layout::new::<u16>()).unwrap();
+        unsafe { sut_creator.deallocate(chunk.offset, Layout::new::<u16>()) };
+        let chunk = sut_creator.allocate(Layout::new::<u32>()).unwrap();
+        sut_creator.allocate(Layout::new::<u64>()).unwrap();
+        unsafe { (chunk.data_ptr as *mut u32).write(TEST_VALUE) };
+        assert_that!(sut_creator.number_of_active_segments(), eq 2);
+
+        let mut sut_viewer = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        let translated_chunk = sut_viewer
+            .register_and_translate_offset(chunk.offset)
+            .unwrap();
+        assert_that!(unsafe { *(translated_chunk as *const u32) }, eq TEST_VALUE);
+    }
+
     // TODO:
     //  * open with no more __0 segment
     //  * open with many segments
