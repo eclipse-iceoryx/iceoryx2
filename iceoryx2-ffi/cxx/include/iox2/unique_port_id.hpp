@@ -19,7 +19,7 @@
 
 namespace iox2 {
 
-constexpr uint64_t UNIQUE_PORT_ID_LENGTH = 128;
+constexpr uint64_t UNIQUE_PORT_ID_LENGTH = 16;
 using RawIdType = iox::vector<uint8_t, UNIQUE_PORT_ID_LENGTH>;
 
 /// The system-wide unique id of a [`Publisher`].
