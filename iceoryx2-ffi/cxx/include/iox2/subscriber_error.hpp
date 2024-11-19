@@ -44,9 +44,6 @@ enum class SubscriberCreateError : uint8_t {
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
 };
 
-auto error_string(const iox2::SubscriberCreateError& error) -> const char*;
-auto error_string(const iox2::SubscriberReceiveError& error) -> const char*;
-
 } // namespace iox2
 
 #endif

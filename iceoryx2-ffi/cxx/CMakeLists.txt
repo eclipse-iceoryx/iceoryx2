@@ -37,7 +37,6 @@ target_include_directories(includes-only-cxx
 
 add_library(iceoryx2-cxx-object-lib OBJECT
     src/config.cpp
-    src/error_string.cpp
     src/event_id.cpp
     src/file_descriptor.cpp
     src/header_publish_subscribe.cpp

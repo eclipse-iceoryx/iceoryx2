@@ -26,8 +26,6 @@ enum class ConfigCreationError : uint8_t {
     UnableToDeserializeContents
 };
 
-auto error_string(const iox2::ConfigCreationError& error) -> const char*;
-
 } // namespace iox2
 
 #endif

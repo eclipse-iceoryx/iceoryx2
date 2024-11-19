@@ -83,10 +83,6 @@ enum class PublisherSendError : uint8_t {
     ConnectionError,
 };
 
-auto error_string(const iox2::PublisherCreateError& error) -> const char*;
-auto error_string(const iox2::PublisherLoanError& error) -> const char*;
-auto error_string(const iox2::PublisherSendError& error) -> const char*;
-
 } // namespace iox2
 
 #endif

@@ -26,9 +26,6 @@ enum class ConnectionFailure : uint8_t {
     UnableToMapPublishersDataSegment
 };
 
-
-auto error_string(const iox2::ConnectionFailure& error) -> const char*;
-
 } // namespace iox2
 
 #endif

@@ -25,9 +25,6 @@ enum class NodeWaitFailure : uint8_t {
     Interrupt,
 };
 
-
-auto error_string(const iox2::NodeWaitFailure& error) -> const char*;
-
 } // namespace iox2
 
 #endif
