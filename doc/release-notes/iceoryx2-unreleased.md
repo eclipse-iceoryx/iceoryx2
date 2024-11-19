@@ -18,6 +18,7 @@
 * Support for slices in the C++ bindings [#490](https://github.com/eclipse-iceoryx/iceoryx2/issues/490)
 * Add API to retrieve string description of error enums [$491](https://github.com/eclipse-iceoryx/iceoryx2/issues/491)
 * Add relocatable `SlotMap` [#504](https://github.com/eclipse-iceoryx/iceoryx2/issues/504)
+* Add `ResizableSharedMemory` [#497](https://github.com/eclipse-iceoryx/iceoryx2/issues/497)
 * Make signal handling optional in `WaitSet` and `Node` [#528](https://github.com/eclipse-iceoryx/iceoryx2/issues/528)
 
 ### Bugfixes
