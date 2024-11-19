@@ -86,6 +86,45 @@ impl HandleToType for iox2_unique_publisher_id_h_ref {
 
 // BEGIN C API
 
+/// Retrieves the value of a unique publisher ID.
+///
+/// # Arguments
+///
+/// * `handle` - A valid [`iox2_unique_publisher_id_h`]
+/// * `id_ptr` - Pointer to a buffer where the ID value will be written
+/// * `id_length` - The length of the buffer pointed to by `id_ptr`
+///
+/// # Safety
+///
+/// * `handle` must be a valid, non-null pointer
+/// * `id_ptr` must be a valid, non-null pointer to a buffer of at least `id_length` bytes
+/// * `id_length` must be large enough to hold the ID value
+#[no_mangle]
+unsafe extern "C" fn iox2_unique_publisher_id_value(
+    handle: iox2_unique_publisher_id_h,
+    id_ptr: *mut u8,
+    id_length: usize,
+) {
+    debug_assert!(!id_ptr.is_null());
+    handle.assert_non_null();
+
+    let h = &mut *handle.as_type();
+
+    if let Some(Some(id)) = (h.value.internal.as_ptr() as *const Option<UniquePublisherId>).as_ref()
+    {
+        let bytes = id.value().to_ne_bytes();
+        debug_assert!(bytes.len() <= id_length, "id_length is too small");
+
+        unsafe {
+            std::ptr::copy_nonoverlapping(
+                bytes.as_ptr(),
+                id_ptr,
+                std::cmp::min(bytes.len(), id_length),
+            );
+        }
+    }
+}
+
 /// This function needs to be called to destroy the unique publisher id!
 ///
 /// # Arguments

@@ -35,6 +35,11 @@ macro_rules! generate_id {
             pub fn new() -> Self {
                 Self::default()
             }
+
+            /// Returns the underlying raw value of the ID
+            pub fn value(&self) -> u128 {
+                self.0.value()
+            }
         }
     };
 }
