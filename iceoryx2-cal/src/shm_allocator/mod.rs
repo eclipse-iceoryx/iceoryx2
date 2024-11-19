@@ -18,19 +18,25 @@ use std::{alloc::Layout, fmt::Debug, ptr::NonNull};
 pub use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
 
+/// Trait that identifies a configuration of a [`ShmAllocator`].
 pub trait ShmAllocatorConfig: Copy + Default + Debug {}
+
+/// Defines the [`SegmentId`] of a [`SharedMemory`](crate::shared_memory::SharedMemory)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SegmentId(u8);
 
 impl SegmentId {
+    /// Creates a new [`SegmentId`] from a given value.
     pub fn new(value: u8) -> Self {
         Self(value)
     }
 
+    /// Returns the underlying value of the [`SegmentId`]
     pub fn value(&self) -> u8 {
         self.0
     }
 
+    /// Returns the maximum value the [`SegmentId`] supports.
     pub const fn max_segment_id() -> u8 {
         u8::MAX
     }
@@ -38,10 +44,17 @@ impl SegmentId {
 
 const NUMBER_OF_BITS_IN_BYTE: usize = 8;
 
+/// An offset to a [`SharedMemory`](crate::shared_memory::SharedMemory) address. It requires the
+/// [`SharedMemory::payload_start_address()`](crate::shared_memory::SharedMemory::payload_start_address())
+/// of the corresponding [`SharedMemory`](crate::shared_memory::SharedMemory) to be converted into
+/// an actual pointer.
+///
+/// Contains the offset and the corresponding [`SegmentId`].
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct PointerOffset(u64);
 
 impl PointerOffset {
+    /// Creates a new [`PointerOffset`] from the given offset value with the [`SegmentId`] == 0.
     pub fn new(offset: usize) -> PointerOffset {
         const SEGMENT_ID: u64 = 0;
         Self(
@@ -50,14 +63,17 @@ impl PointerOffset {
         )
     }
 
+    /// Sets the [`SegmentId`] of the [`PointerOffset`].
     pub fn set_segment_id(&mut self, value: SegmentId) {
         self.0 |= value.0 as u64;
     }
 
+    /// Returns the offset.
     pub fn offset(&self) -> usize {
         (self.0 >> (core::mem::size_of::<SegmentId>() * NUMBER_OF_BITS_IN_BYTE)) as usize
     }
 
+    /// Returns the [`SegmentId`].
     pub fn segment_id(&self) -> SegmentId {
         SegmentId((self.0 & SegmentId::max_segment_id() as u64) as u8)
     }
@@ -74,29 +90,48 @@ impl Debug for PointerOffset {
     }
 }
 
-enum_gen! { ShmAllocationError
+enum_gen! {
+/// Describes the errors that can occur when [`ShmAllocator::allocate()`] is called.
+    ShmAllocationError
   entry:
     ExceedsMaxSupportedAlignment
   mapping:
     AllocationError
 }
 
+/// Describes generically an [`AllocationStrategy`], meaning how the memory is increased when the
+/// available memory is insufficient.
 #[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
 pub enum AllocationStrategy {
+    /// Increases the memory so that it perfectly fits the new size requirements. This may lead
+    /// to a lot of reallocations but has the benefit that no byte is wasted.
     BestFit,
     #[default]
+    /// Increases the memory by rounding the increased memory size up to the next power of two.
+    /// Reduces reallocations a lot at the cost of increased memory usage.
     PowerOfTwo,
+    /// The memory is not increased. This may lead to an out-of-memory error when allocating.
     Static,
 }
 
+/// Describes error that may occur when a [`ShmAllocator`] is initialized.
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub enum ShmAllocatorInitError {
+    /// The [`SharedMemory`](crate::shared_memory::SharedMemory) max supported alignment does not
+    /// satisfy the required alignment of the [`ShmAllocator`].
     MaxSupportedMemoryAlignmentInsufficient,
+    /// The [`ShmAllocator`] requires more memory to initialize than available.
     AllocationFailed,
 }
 
+/// Returned by [`ShmAllocator::resize_hint()`] and [`ShmAllocator::initial_setup_hint()`].
+/// It contains a payload size and [`ShmAllocator`] configuration suggestion for the given
+/// parameters.
 pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
+    /// The payload size of the [`SharedMemory`](crate::shared_memory::SharedMemory)
     pub payload_size: usize,
+    /// The [`ShmAllocatorConfig`] that shall be used for the
+    /// [`SharedMemory`](crate::shared_memory::SharedMemory)
     pub config: Config,
 }
 
