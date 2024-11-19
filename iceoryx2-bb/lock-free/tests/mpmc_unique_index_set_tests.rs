@@ -137,7 +137,7 @@ fn mpmc_unique_index_set_borrowed_indices_works() {
 fn mpmc_unique_index_set_acquire_and_release_works_with_uninitialized_memory() {
     let mut memory = [0u8; UniqueIndexSet::const_memory_size(128)];
     let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
-    let sut = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
+    let mut sut = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
     unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
     let mut ids = vec![];

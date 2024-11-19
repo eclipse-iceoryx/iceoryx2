@@ -131,7 +131,7 @@ mod mpmc_container {
         // case - hack required since `T` cannot be used in const operations
         let mut memory = [0u8; Container::<crate::TestType>::const_memory_size(129_usize)];
         let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
-        let sut = unsafe { Container::<T>::new_uninit(CAPACITY) };
+        let mut sut = unsafe { Container::<T>::new_uninit(CAPACITY) };
         unsafe { assert_that!(sut.init(&allocator), is_ok) };
 
         let mut stored_indices = vec![];

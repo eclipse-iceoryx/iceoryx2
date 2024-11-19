@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2023 - 2024 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Contains two vector variations that are similar to [`std::vec::Vec`].
+//! Contains vector variations that are similar to [`std::vec::Vec`].
 //!
+//!  * [`Vec`](crate::vec::Vec), run-time fixed-size vector that is not shared-memory compatible
+//!     since the memory resides in the heap.
 //!  * [`FixedSizeVec`](crate::vec::FixedSizeVec), compile-time fixed size vector that is
 //!     self-contained.
 //!  * [`RelocatableVec`](crate::vec::RelocatableVec), run-time fixed size vector that uses by default heap memory.
@@ -37,6 +39,7 @@
 //! ```
 //! use iceoryx2_bb_container::vec::RelocatableVec;
 //! use iceoryx2_bb_elementary::math::align_to;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 //! use core::mem::MaybeUninit;
 //!
@@ -48,11 +51,16 @@
 //!
 //! impl MyConstruct {
 //!     pub fn new() -> Self {
-//!         Self {
-//!             vec: unsafe { RelocatableVec::new(VEC_CAPACITY,
-//!                             align_to::<MaybeUninit<u128>>(std::mem::size_of::<Vec<u128>>()) as isize) },
+//!         let mut new_self = Self {
+//!             vec: unsafe { RelocatableVec::new_uninit(VEC_CAPACITY) },
 //!             vec_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
-//!         }
+//!         };
+//!
+//!         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.vec_memory) as usize);
+//!         unsafe {
+//!             new_self.vec.init(&allocator).expect("Enough memory provided.")
+//!         };
+//!         new_self
 //!     }
 //! }
 //! ```
@@ -71,7 +79,7 @@
 //!
 //! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 //!
-//! let vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
+//! let mut vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 
@@ -83,269 +91,401 @@ use std::{
     sync::atomic::Ordering,
 };
 
+use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary::{
-    math::{align_to, unaligned_mem_size},
-    placement_default::PlacementDefault,
-    pointer_trait::PointerTrait,
-    relocatable_container::RelocatableContainer,
+    bump_allocator::BumpAllocator, owning_pointer::GenericOwningPointer,
+    relocatable_ptr::GenericRelocatablePointer,
+};
+use iceoryx2_bb_elementary::{
+    math::unaligned_mem_size, owning_pointer::OwningPointer, placement_default::PlacementDefault,
+    pointer_trait::PointerTrait, relocatable_container::RelocatableContainer,
     relocatable_ptr::RelocatablePointer,
 };
+
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use serde::{de::Visitor, Deserialize, Serialize};
 
+/// Vector with run-time fixed size capacity. In contrast to its counterpart the
+/// [`RelocatableVec`] it is movable but is not shared memory compatible.
+pub type Vec<T> = details::MetaVec<T, GenericOwningPointer>;
+
 /// **Non-movable** relocatable vector with runtime fixed size capacity.
-#[repr(C)]
-#[derive(Debug)]
-pub struct RelocatableVec<T> {
-    data_ptr: RelocatablePointer<MaybeUninit<T>>,
-    capacity: usize,
-    len: usize,
-    is_initialized: IoxAtomicBool,
-}
+pub type RelocatableVec<T> = details::MetaVec<T, GenericRelocatablePointer>;
 
-unsafe impl<T: Send> Send for RelocatableVec<T> {}
+#[doc(hidden)]
+pub mod details {
+    use super::*;
 
-impl<T> Drop for RelocatableVec<T> {
-    fn drop(&mut self) {
-        unsafe { self.clear() };
+    /// **Non-movable** relocatable vector with runtime fixed size capacity.
+    #[repr(C)]
+    #[derive(Debug)]
+    pub struct MetaVec<T, Ptr: GenericPointer> {
+        data_ptr: Ptr::Type<MaybeUninit<T>>,
+        capacity: usize,
+        len: usize,
+        is_initialized: IoxAtomicBool,
+        _phantom_data: PhantomData<T>,
     }
-}
 
-impl<T> RelocatableContainer for RelocatableVec<T> {
-    unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-        Self {
-            data_ptr: RelocatablePointer::new(distance_to_data),
-            capacity,
-            len: 0,
-            is_initialized: IoxAtomicBool::new(true),
+    unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaVec<T, Ptr> {}
+
+    impl<T, Ptr: GenericPointer> Drop for MetaVec<T, Ptr> {
+        fn drop(&mut self) {
+            if self
+                .is_initialized
+                .load(std::sync::atomic::Ordering::Relaxed)
+            {
+                unsafe { self.clear_impl() };
+            }
         }
     }
 
-    unsafe fn new_uninit(capacity: usize) -> Self {
-        Self {
-            data_ptr: RelocatablePointer::new_uninit(),
-            capacity,
-            len: 0,
-            is_initialized: IoxAtomicBool::new(false),
-        }
-    }
-
-    unsafe fn init<Allocator: iceoryx2_bb_elementary::allocator::BaseAllocator>(
-        &self,
-        allocator: &Allocator,
-    ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
-        if self.is_initialized.load(Ordering::Relaxed) {
-            fatal_panic!(from "Vec::init()", "Memory already initialized, Initializing it twice may lead to undefined behavior.");
-        }
-
-        self.data_ptr.init(fail!(from "Queue::init", when allocator
-             .allocate(Layout::from_size_align_unchecked(
-                 std::mem::size_of::<T>() * self.capacity,
-                 std::mem::align_of::<T>(),
-             )), "Failed to initialize queue since the allocation of the data memory failed."
-        ));
-        self.is_initialized
-            .store(true, std::sync::atomic::Ordering::Relaxed);
-
-        Ok(())
-    }
-
-    fn memory_size(capacity: usize) -> usize {
-        Self::const_memory_size(capacity)
-    }
-}
-
-impl<T> Deref for RelocatableVec<T> {
-    type Target = [T];
-
-    fn deref(&self) -> &Self::Target {
-        self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
-        unsafe { core::slice::from_raw_parts((*self.data_ptr.as_ptr()).as_ptr(), self.len) }
-    }
-}
-
-impl<T> DerefMut for RelocatableVec<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
-        unsafe {
-            core::slice::from_raw_parts_mut((*self.data_ptr.as_mut_ptr()).as_mut_ptr(), self.len)
-        }
-    }
-}
-
-impl<T: PartialEq> PartialEq for RelocatableVec<T> {
-    fn eq(&self, other: &Self) -> bool {
-        if other.len() != self.len() {
-            return false;
-        }
-
-        for i in 0..self.len() {
-            if other[i] != self[i] {
-                return false;
+    impl<T> RelocatableContainer for MetaVec<T, GenericRelocatablePointer> {
+        unsafe fn new_uninit(capacity: usize) -> Self {
+            Self {
+                data_ptr: RelocatablePointer::new_uninit(),
+                capacity,
+                len: 0,
+                is_initialized: IoxAtomicBool::new(false),
+                _phantom_data: PhantomData,
             }
         }
 
-        true
-    }
-}
+        unsafe fn init<Allocator: iceoryx2_bb_elementary::allocator::BaseAllocator>(
+            &mut self,
+            allocator: &Allocator,
+        ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
+            if self.is_initialized.load(Ordering::Relaxed) {
+                fatal_panic!(from "Vec::init()", "Memory already initialized, Initializing it twice may lead to undefined behavior.");
+            }
 
-impl<T: Eq> Eq for RelocatableVec<T> {}
-
-impl<T> RelocatableVec<T> {
-    #[inline(always)]
-    fn verify_init(&self, source: &str) {
-        debug_assert!(
+            self.data_ptr.init(fail!(from "Queue::init", when allocator
+                 .allocate(Layout::from_size_align_unchecked(
+                     std::mem::size_of::<T>() * self.capacity,
+                     std::mem::align_of::<T>(),
+                 )), "Failed to initialize queue since the allocation of the data memory failed."
+            ));
             self.is_initialized
-                .load(std::sync::atomic::Ordering::Relaxed),
-            "From: {}, Undefined behavior - the object was not initialized with 'init' before.",
-            source
-        );
-    }
+                .store(true, std::sync::atomic::Ordering::Relaxed);
 
-    /// Returns the required memory size for a vec with a specified capacity
-    pub const fn const_memory_size(capacity: usize) -> usize {
-        unaligned_mem_size::<T>(capacity)
-    }
-
-    /// Returns the capacity of the vector
-    pub fn capacity(&self) -> usize {
-        self.capacity
-    }
-
-    /// Returns the number of elements stored inside the vector
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
-    /// Returns true if the vector is empty, otherwise false
-    pub fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-
-    /// Returns true if the vector is full, otherwise false
-    pub fn is_full(&self) -> bool {
-        self.len == self.capacity
-    }
-
-    /// Adds an element at the end of the vector. If the vector is full and the element cannot be
-    /// added it returns false, otherwise true.
-    ///
-    /// # Safety
-    ///
-    ///  * [`RelocatableVec::init()`] must be called once before
-    ///
-    pub unsafe fn push(&mut self, value: T) -> bool {
-        if self.is_full() {
-            return false;
+            Ok(())
         }
 
-        self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
-        self.push_unchecked(value);
-        true
-    }
-
-    /// Fill the remaining space of the vector with value.
-    ///
-    /// # Safety
-    ///
-    ///  * [`RelocatableVec::init()`] must be called once before
-    ///
-    pub unsafe fn fill(&mut self, value: T)
-    where
-        T: Clone,
-    {
-        for _ in self.len..self.capacity {
-            self.push_unchecked(value.clone());
+        fn memory_size(capacity: usize) -> usize {
+            Self::const_memory_size(capacity)
         }
     }
 
-    unsafe fn push_unchecked(&mut self, value: T) {
-        self.data_ptr
-            .as_mut_ptr()
-            .add(self.len)
-            .write(MaybeUninit::new(value));
+    impl<T, Ptr: GenericPointer> Deref for MetaVec<T, Ptr> {
+        type Target = [T];
 
-        self.len += 1;
-    }
-
-    /// Append all elements from other via [`Clone`].
-    ///
-    /// # Safety
-    ///
-    ///  * [`RelocatableVec::init()`] must be called once before
-    ///
-    pub unsafe fn extend_from_slice(&mut self, other: &[T]) -> bool
-    where
-        T: Clone,
-    {
-        if self.capacity < self.len + other.len() {
-            return false;
-        }
-
-        for element in other {
-            self.push_unchecked(element.clone());
-        }
-
-        true
-    }
-
-    /// Removes the last element of the vector and returns it to the user. If the vector is empty
-    /// it returns [`None`].
-    ///
-    /// # Safety
-    ///
-    ///  * [`RelocatableVec::init()`] must be called once before
-    ///
-    pub unsafe fn pop(&mut self) -> Option<T> {
-        if self.is_empty() {
-            return None;
-        }
-
-        self.verify_init(&format!("Vec<{}>::pop()", std::any::type_name::<T>()));
-        Some(self.pop_unchecked())
-    }
-
-    /// Removes all elements from the vector
-    ///
-    /// # Safety
-    ///
-    ///  * [`RelocatableVec::init()`] must be called once before
-    ///
-    pub unsafe fn clear(&mut self) {
-        for _ in 0..self.len {
-            self.pop_unchecked();
+        fn deref(&self) -> &Self::Target {
+            self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
+            unsafe { core::slice::from_raw_parts((*self.data_ptr.as_ptr()).as_ptr(), self.len) }
         }
     }
 
-    unsafe fn pop_unchecked(&mut self) -> T {
-        let value = std::mem::replace(
-            &mut *self.data_ptr.as_mut_ptr().offset(self.len as isize - 1),
-            MaybeUninit::uninit(),
-        );
-        self.len -= 1;
-
-        value.assume_init()
+    impl<T, Ptr: GenericPointer> DerefMut for MetaVec<T, Ptr> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
+            unsafe {
+                core::slice::from_raw_parts_mut(
+                    (*self.data_ptr.as_mut_ptr()).as_mut_ptr(),
+                    self.len,
+                )
+            }
+        }
     }
 
-    /// Returns a slice to the contents of the vector
-    ///
-    /// # Safety
-    ///
-    ///  * [`RelocatableVec::init()`] must be called once before
-    ///
-    pub unsafe fn as_slice(&self) -> &[T] {
-        core::slice::from_raw_parts(self.data_ptr.as_ptr().cast(), self.len)
+    impl<T: PartialEq, Ptr: GenericPointer> PartialEq for MetaVec<T, Ptr> {
+        fn eq(&self, other: &Self) -> bool {
+            if other.len() != self.len() {
+                return false;
+            }
+
+            for i in 0..self.len() {
+                if other[i] != self[i] {
+                    return false;
+                }
+            }
+
+            true
+        }
     }
 
-    /// Returns a mutable slice to the contents of the vector
-    ///
-    /// # Safety
-    ///
-    ///  * [`RelocatableVec::init()`] must be called once before
-    ///
-    pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
-        core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr().cast(), self.len)
+    impl<T: Eq, Ptr: GenericPointer> Eq for MetaVec<T, Ptr> {}
+
+    impl<T, Ptr: GenericPointer> MetaVec<T, Ptr> {
+        #[inline(always)]
+        fn verify_init(&self, source: &str) {
+            debug_assert!(
+                self.is_initialized
+                    .load(std::sync::atomic::Ordering::Relaxed),
+                "From: {}, Undefined behavior - the object was not initialized with 'init' before.",
+                source
+            );
+        }
+
+        /// Returns the capacity of the vector
+        pub fn capacity(&self) -> usize {
+            self.capacity
+        }
+
+        /// Returns the number of elements stored inside the vector
+        pub fn len(&self) -> usize {
+            self.len
+        }
+
+        /// Returns true if the vector is empty, otherwise false
+        pub fn is_empty(&self) -> bool {
+            self.len == 0
+        }
+
+        /// Returns true if the vector is full, otherwise false
+        pub fn is_full(&self) -> bool {
+            self.len == self.capacity
+        }
+
+        pub(crate) unsafe fn push_impl(&mut self, value: T) -> bool {
+            if self.is_full() {
+                return false;
+            }
+
+            self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
+            self.push_unchecked(value);
+            true
+        }
+
+        unsafe fn fill_impl(&mut self, value: T)
+        where
+            T: Clone,
+        {
+            for _ in self.len..self.capacity {
+                self.push_unchecked(value.clone());
+            }
+        }
+
+        unsafe fn fill_with_impl<F: FnMut() -> T>(&mut self, mut f: F) {
+            for _ in self.len..self.capacity {
+                self.push_unchecked(f());
+            }
+        }
+
+        fn push_unchecked(&mut self, value: T) {
+            unsafe {
+                self.data_ptr
+                    .as_mut_ptr()
+                    .add(self.len)
+                    .write(MaybeUninit::new(value))
+            };
+
+            self.len += 1;
+        }
+
+        unsafe fn extend_from_slice_impl(&mut self, other: &[T]) -> bool
+        where
+            T: Clone,
+        {
+            if self.capacity < self.len + other.len() {
+                return false;
+            }
+
+            for element in other {
+                self.push_unchecked(element.clone());
+            }
+
+            true
+        }
+
+        unsafe fn pop_impl(&mut self) -> Option<T> {
+            if self.is_empty() {
+                return None;
+            }
+
+            self.verify_init(&format!("Vec<{}>::pop()", std::any::type_name::<T>()));
+            Some(self.pop_unchecked())
+        }
+
+        unsafe fn clear_impl(&mut self) {
+            for _ in 0..self.len {
+                self.pop_unchecked();
+            }
+        }
+
+        fn pop_unchecked(&mut self) -> T {
+            let value = std::mem::replace(
+                unsafe { &mut *self.data_ptr.as_mut_ptr().offset(self.len as isize - 1) },
+                MaybeUninit::uninit(),
+            );
+            self.len -= 1;
+
+            unsafe { value.assume_init() }
+        }
+
+        unsafe fn as_slice_impl(&self) -> &[T] {
+            unsafe { core::slice::from_raw_parts(self.data_ptr.as_ptr().cast(), self.len) }
+        }
+
+        unsafe fn as_mut_slice_impl(&mut self) -> &mut [T] {
+            unsafe { core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr().cast(), self.len) }
+        }
+    }
+
+    impl<T> MetaVec<T, GenericOwningPointer> {
+        /// Creates a new [`Queue`] with the provided capacity
+        pub fn new(capacity: usize) -> Self {
+            Self {
+                data_ptr: OwningPointer::<MaybeUninit<T>>::new_with_alloc(capacity),
+                capacity,
+                len: 0,
+                is_initialized: IoxAtomicBool::new(true),
+                _phantom_data: PhantomData,
+            }
+        }
+
+        /// Adds an element at the end of the vector. If the vector is full and the element cannot be
+        /// added it returns false, otherwise true.
+        pub fn push(&mut self, value: T) -> bool {
+            unsafe { self.push_impl(value) }
+        }
+
+        /// Fill the remaining space of the vector with value.
+        pub fn fill(&mut self, value: T)
+        where
+            T: Clone,
+        {
+            unsafe { self.fill_impl(value) }
+        }
+
+        /// Fill the remaining space of the vector by calling the provided closure repeatedly
+        pub fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
+            unsafe { self.fill_with_impl(f) }
+        }
+
+        /// Append all elements from other via [`Clone`].
+        pub fn extend_from_slice(&mut self, other: &[T]) -> bool
+        where
+            T: Clone,
+        {
+            unsafe { self.extend_from_slice_impl(other) }
+        }
+
+        /// Removes the last element of the vector and returns it to the user. If the vector is empty
+        /// it returns [`None`].
+        pub fn pop(&mut self) -> Option<T> {
+            unsafe { self.pop_impl() }
+        }
+
+        /// Removes all elements from the vector
+        pub fn clear(&mut self) {
+            unsafe { self.clear_impl() }
+        }
+
+        /// Returns a slice to the contents of the vector
+        pub fn as_slice(&self) -> &[T] {
+            unsafe { self.as_slice_impl() }
+        }
+
+        /// Returns a mutable slice to the contents of the vector
+        pub fn as_mut_slice(&mut self) -> &mut [T] {
+            unsafe { self.as_mut_slice_impl() }
+        }
+    }
+
+    impl<T> MetaVec<T, GenericRelocatablePointer> {
+        /// Returns the required memory size for a vec with a specified capacity
+        pub const fn const_memory_size(capacity: usize) -> usize {
+            unaligned_mem_size::<T>(capacity)
+        }
+
+        /// Adds an element at the end of the vector. If the vector is full and the element cannot be
+        /// added it returns false, otherwise true.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn push(&mut self, value: T) -> bool {
+            self.push_impl(value)
+        }
+
+        /// Fill the remaining space of the vector with value.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn fill(&mut self, value: T)
+        where
+            T: Clone,
+        {
+            self.fill_impl(value)
+        }
+
+        /// Fill the remaining space of the vector by calling the provided closure repeatedly
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
+            self.fill_with_impl(f)
+        }
+
+        /// Append all elements from other via [`Clone`].
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn extend_from_slice(&mut self, other: &[T]) -> bool
+        where
+            T: Clone,
+        {
+            self.extend_from_slice_impl(other)
+        }
+
+        /// Removes the last element of the vector and returns it to the user. If the vector is empty
+        /// it returns [`None`].
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn pop(&mut self) -> Option<T> {
+            self.pop_impl()
+        }
+
+        /// Removes all elements from the vector
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn clear(&mut self) {
+            self.clear_impl()
+        }
+
+        /// Returns a slice to the contents of the vector
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn as_slice(&self) -> &[T] {
+            self.as_slice_impl()
+        }
+
+        /// Returns a mutable slice to the contents of the vector
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
+            self.as_mut_slice_impl()
+        }
     }
 }
 
@@ -422,16 +562,31 @@ impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Deserialize<'de>
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
-        state_ptr.write(Self::initialize_state())
+        state_ptr.write(unsafe { RelocatableVec::new_uninit(CAPACITY) });
+        let allocator = BumpAllocator::new(core::ptr::addr_of!((*ptr)._data) as usize);
+        (*ptr)
+            .state
+            .init(&allocator)
+            .expect("All required memory is preallocated.");
     }
 }
 
 impl<T, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
     fn default() -> Self {
-        Self {
-            state: Self::initialize_state(),
+        let mut new_self = Self {
+            state: unsafe { RelocatableVec::new_uninit(CAPACITY) },
             _data: core::array::from_fn(|_| MaybeUninit::uninit()),
-        }
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self._data) as usize);
+        unsafe {
+            new_self
+                .state
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+
+        new_self
     }
 }
 
@@ -468,15 +623,6 @@ impl<T: Clone, const CAPACITY: usize> Clone for FixedSizeVec<T, CAPACITY> {
 unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeVec<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
-    fn initialize_state() -> RelocatableVec<T> {
-        unsafe {
-            RelocatableVec::new(
-                CAPACITY,
-                align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableVec<T>>()) as isize,
-            )
-        }
-    }
-
     /// Creates a new vector.
     pub fn new() -> Self {
         Self::default()
@@ -514,6 +660,11 @@ impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
         T: Clone,
     {
         unsafe { self.state.fill(value) }
+    }
+
+    /// Fill the remaining space of the vector with value.
+    pub fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
+        unsafe { self.state.fill_with(f) }
     }
 
     /// Append all elements from other via [`Clone`].

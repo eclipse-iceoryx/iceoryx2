@@ -47,7 +47,7 @@ mod relocatable_container {
             let mut memory = memory();
             let allocator = allocator(&mut *memory);
 
-            let sut = unsafe { T::new_uninit(capacity) };
+            let mut sut = unsafe { T::new_uninit(capacity) };
             let require_memory_size = T::memory_size(capacity);
 
             assert_that!(unsafe { sut.init(&allocator) }, is_ok);
@@ -66,7 +66,7 @@ mod relocatable_container {
 
         let mut current_size = 0;
         for capacity in 1..MAX_CAPACITY {
-            let sut = unsafe { T::new_uninit(capacity) };
+            let mut sut = unsafe { T::new_uninit(capacity) };
             let require_memory_size = T::memory_size(capacity);
 
             assert_that!(unsafe { sut.init(&allocator) }, is_ok);
@@ -83,7 +83,7 @@ mod relocatable_container {
         let mut memory = memory();
         let allocator = allocator(&mut *memory);
 
-        let sut = unsafe { T::new_uninit(MAX_CAPACITY) };
+        let mut sut = unsafe { T::new_uninit(MAX_CAPACITY) };
 
         assert_that!(unsafe { sut.init(&allocator) }, is_ok);
 

@@ -37,7 +37,7 @@
 //!  ```
 
 use iceoryx2_bb_elementary::{
-    math::align_to,
+    bump_allocator::BumpAllocator,
     math::unaligned_mem_size,
     owning_pointer::OwningPointer,
     relocatable_container::RelocatableContainer,
@@ -125,7 +125,7 @@ pub mod details {
         }
 
         unsafe fn init<T: iceoryx2_bb_elementary::allocator::BaseAllocator>(
-            &self,
+            &mut self,
             allocator: &T,
         ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
             if self.is_memory_initialized.load(Ordering::Relaxed) {
@@ -159,16 +159,6 @@ pub mod details {
 
         fn memory_size(capacity: usize) -> usize {
             Self::const_memory_size(capacity)
-        }
-
-        unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new(distance_to_data),
-                capacity,
-                array_capacity: Self::array_capacity(capacity),
-                is_memory_initialized: IoxAtomicBool::new(true),
-                reset_position: IoxAtomicUsize::new(0),
-            }
         }
     }
 
@@ -313,16 +303,20 @@ unsafe impl<const CAPACITY: usize> Sync for FixedSizeBitSet<CAPACITY> {}
 
 impl<const CAPACITY: usize> Default for FixedSizeBitSet<CAPACITY> {
     fn default() -> Self {
-        Self {
-            bitset: unsafe {
-                RelocatableBitSet::new(
-                    CAPACITY,
-                    align_to::<details::BitsetElement>(std::mem::size_of::<RelocatableBitSet>())
-                        as _,
-                )
-            },
+        let mut new_self = Self {
+            bitset: unsafe { RelocatableBitSet::new_uninit(CAPACITY) },
             data: core::array::from_fn(|_| details::BitsetElement::new(0)),
-        }
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.data) as usize);
+        unsafe {
+            new_self
+                .bitset
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+
+        new_self
     }
 }
 

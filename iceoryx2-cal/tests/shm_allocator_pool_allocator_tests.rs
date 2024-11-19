@@ -42,7 +42,7 @@ mod shm_allocator_pool_allocator {
                 MEM_SIZE,
             );
             let config = &Config { bucket_layout };
-            let sut = Box::new(unsafe {
+            let mut sut = Box::new(unsafe {
                 PoolAllocator::new_uninit(MAX_SUPPORTED_ALIGNMENT, base_address, config)
             });
 

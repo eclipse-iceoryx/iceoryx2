@@ -54,6 +54,7 @@
 //! ```
 
 pub use crate::mpmc::unique_index_set::ReleaseMode;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
 use iceoryx2_bb_elementary::allocator::AllocationError;
@@ -198,7 +199,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
     }
 
     unsafe fn init<Allocator: BaseAllocator>(
-        &self,
+        &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
         if self.is_memory_initialized.load(Ordering::Relaxed) {
@@ -232,30 +233,6 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
         self.is_memory_initialized.store(true, Ordering::Relaxed);
 
         Ok(())
-    }
-
-    unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-        let unique_index_set_distance = distance_to_data
-            - align_to::<u32>(std::mem::size_of::<Container<T>>()) as isize
-            + align_to::<u32>(std::mem::size_of::<UniqueIndexSet>()) as isize;
-
-        let distance_to_active_index = align_to::<IoxAtomicU64>(
-            distance_to_data as usize + (std::mem::size_of::<u32>() * (capacity + 1)),
-        ) as isize;
-        let distance_to_container_data = align_to::<UnsafeCell<MaybeUninit<T>>>(
-            distance_to_active_index as usize + (std::mem::size_of::<IoxAtomicU64>() * capacity),
-        ) as isize
-            - std::mem::size_of::<RelocatablePointer<IoxAtomicU64>>() as isize;
-
-        Self {
-            container_id: UniqueId::new(),
-            active_index_ptr: RelocatablePointer::new(distance_to_active_index),
-            data_ptr: RelocatablePointer::new(distance_to_container_data),
-            capacity,
-            change_counter: IoxAtomicU64::new(0),
-            index_set: UniqueIndexSet::new(capacity, unique_index_set_distance),
-            is_memory_initialized: IoxAtomicBool::new(true),
-        }
     }
 
     fn memory_size(capacity: usize) -> usize {
@@ -305,8 +282,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     /// # Safety
     ///
-    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
-    ///     before calling this method
+    ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Use [`Container::remove()`] to release the acquired index again. Otherwise, the
     ///     element will leak.
     ///
@@ -337,8 +313,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     /// # Safety
     ///
-    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
-    ///     before calling this method
+    ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Ensure that no one else possesses the [`UniqueIndex`] and the index was unrecoverable
     ///     lost
     ///  * Ensure that the `handle` was acquired by the same [`Container`]
@@ -368,8 +343,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     /// # Safety
     ///
-    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
-    ///     before calling this method
+    ///  * Ensure that [`Container::init()`] was called before calling this method
     ///
     pub unsafe fn get_state(&self) -> ContainerState<T> {
         self.verify_memory_initialization("get_state");
@@ -384,8 +358,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     /// # Safety
     ///
-    ///  * Ensure that the either [`Container::new()`] was used or [`Container::init()`] was used
-    ///     before calling this method
+    ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Ensure that the input argument `previous_state` was acquired by the same [`Container`]
     ///     with [`Container::get_state()`], otherwise the method will panic.
     ///
@@ -472,18 +445,23 @@ pub struct FixedSizeContainer<T: Copy + Debug, const CAPACITY: usize> {
 
 impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, CAPACITY> {
     fn default() -> Self {
-        Self {
-            container: unsafe {
-                Container::new(
-                    CAPACITY,
-                    align_to::<u32>(std::mem::size_of::<Container<T>>()) as isize,
-                )
-            },
+        let mut new_self = Self {
+            container: unsafe { Container::new_uninit(CAPACITY) },
             next_free_index: core::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
             next_free_index_plus_one: UnsafeCell::new(CAPACITY as u32 + 1),
             active_index: core::array::from_fn(|_| IoxAtomicU64::new(0)),
             data: core::array::from_fn(|_| UnsafeCell::new(MaybeUninit::uninit())),
-        }
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.next_free_index) as usize);
+        unsafe {
+            new_self
+                .container
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+
+        new_self
     }
 }
 

@@ -75,7 +75,7 @@ impl DynamicConfig {
         }
     }
 
-    pub(crate) unsafe fn init(&self, allocator: &BumpAllocator) {
+    pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
         fatal_panic!(from self,
             when self.subscribers.init(allocator),
             "This should never happen! Unable to initialize subscriber port id container.");

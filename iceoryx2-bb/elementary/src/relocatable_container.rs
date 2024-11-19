@@ -18,19 +18,6 @@ use crate::{allocator::AllocationError, allocator::BaseAllocator};
 /// mapped at a different virtual memory position the underlying constructs must be relocatable in
 /// the sense that they should not rely on absolut memory positions.
 pub trait RelocatableContainer {
-    /// Creates a new RelocatableContainer. It assumes that the memory of size
-    /// [`RelocatableContainer::memory_size()`] has the position self + distance_to_data.
-    /// This approach requires that the object itself and the data of the object are placed in
-    /// the same shared memory object.
-    ///
-    /// # Safety
-    ///
-    ///  * `distance_to_data` is the offset to the data. The offset refers to the pointer value of
-    ///     the [`RelocatableContainer`] - memory position.
-    ///  * the provided memory must have the size of [`RelocatableContainer::memory_size()`]
-    ///
-    unsafe fn new(capacity: usize, distance_to_data: isize) -> Self;
-
     /// Creates a new uninitialized RelocatableContainer. Before the container can be used the method
     /// [`RelocatableContainer::init()`] must be called.
     ///
@@ -51,7 +38,7 @@ pub trait RelocatableContainer {
     ///  * Shall be only used when the [`RelocatableContainer`] was created with
     ///    [`RelocatableContainer::new_uninit()`]
     ///
-    unsafe fn init<T: BaseAllocator>(&self, allocator: &T) -> Result<(), AllocationError>;
+    unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError>;
 
     /// Returns the amount of memory the object requires. The whole memory consumption is
     /// `std::mem::size_of::<RelocatableContainer>() + RelocatableContainer::memory_size()`.

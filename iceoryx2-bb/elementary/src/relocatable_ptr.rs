@@ -64,9 +64,13 @@
 //! }
 //! ```
 
+use crate::generic_pointer::GenericPointer;
 pub use crate::pointer_trait::PointerTrait;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicIsize;
-use std::{marker::PhantomData, ptr::NonNull};
+use std::{fmt::Debug, marker::PhantomData, ptr::NonNull};
+
+#[derive(Debug)]
+pub struct GenericRelocatablePointer;
 
 /// A [`RelocatablePointer`] stores only the distance from its memory starting position to the
 /// memory location it is pointing to. When the [`RelocatablePointer`] is now shared between
@@ -137,4 +141,8 @@ impl<T> PointerTrait<T> for RelocatablePointer<T> {
     unsafe fn as_mut_ptr(&mut self) -> *mut T {
         self.as_ptr() as *mut T
     }
+}
+
+impl GenericPointer for GenericRelocatablePointer {
+    type Type<T: Debug> = RelocatablePointer<T>;
 }

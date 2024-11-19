@@ -89,6 +89,8 @@
 pub mod byte_string;
 /// A queue similar to [`std::collections::VecDeque`]
 pub mod queue;
+/// A container with persistent unique keys to access values.
+pub mod slotmap;
 /// Extends the [ByteString](crate::byte_string) so that custom string types with a semantic
 /// ruleset on their content can be realized.
 #[macro_use]

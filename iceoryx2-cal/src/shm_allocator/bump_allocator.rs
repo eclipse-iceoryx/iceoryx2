@@ -56,7 +56,7 @@ impl ShmAllocator for BumpAllocator {
     }
 
     unsafe fn init<Allocator: BaseAllocator>(
-        &self,
+        &mut self,
         _mgmt_allocator: &Allocator,
     ) -> Result<(), ShmAllocatorInitError> {
         let msg = "Unable to initialize allocator";

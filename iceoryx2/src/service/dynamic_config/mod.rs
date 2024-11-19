@@ -92,12 +92,12 @@ impl DynamicConfig {
         Container::<NodeId>::memory_size(max_number_of_nodes)
     }
 
-    pub(crate) unsafe fn init(&self, allocator: &BumpAllocator) {
+    pub(crate) unsafe fn init(&mut self, allocator: &BumpAllocator) {
         fatal_panic!(from self, when self.nodes.init(allocator),
             "This should never happen! Unable to initialize NodeId container.");
-        match &self.messaging_pattern {
-            MessagingPattern::PublishSubscribe(ref v) => v.init(allocator),
-            MessagingPattern::Event(ref v) => v.init(allocator),
+        match &mut self.messaging_pattern {
+            MessagingPattern::PublishSubscribe(ref mut v) => v.init(allocator),
+            MessagingPattern::Event(ref mut v) => v.init(allocator),
         }
     }
 

@@ -57,6 +57,7 @@
 //! ```
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::math::align_to;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 //! use core::mem::MaybeUninit;
 //!
@@ -68,11 +69,16 @@
 //!
 //! impl MyConstruct {
 //!     pub fn new() -> Self {
-//!         Self {
-//!             queue: unsafe { RelocatableQueue::new(QUEUE_CAPACITY,
-//!                             align_to::<MaybeUninit<u128>>(std::mem::size_of::<RelocatableQueue<u128>>()) as isize) },
+//!         let mut new_self = Self {
+//!             queue: unsafe { RelocatableQueue::new_uninit(QUEUE_CAPACITY) },
 //!             queue_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
-//!         }
+//!         };
+//!
+//!         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.queue_memory) as usize);
+//!         unsafe {
+//!             new_self.queue.init(&allocator).expect("Enough memory provided.")
+//!         };
+//!         new_self
 //!     }
 //! }
 //! ```
@@ -91,18 +97,18 @@
 //!
 //! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
 //!
-//! let queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
+//! let mut queue = unsafe { RelocatableQueue::<u128>::new_uninit(QUEUE_CAPACITY) };
 //! unsafe { queue.init(&bump_allocator).expect("queue init failed") };
 //! ```
 //!
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
-use iceoryx2_bb_elementary::math::align_to;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::owning_pointer::OwningPointer;
+use iceoryx2_bb_elementary::owning_pointer::{GenericOwningPointer, OwningPointer};
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::marker::PhantomData;
@@ -110,18 +116,20 @@ use std::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
 
 /// Queue with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableQueue`] it is movable but is not shared memory compatible.
-pub type Queue<T> = details::Queue<T, OwningPointer<MaybeUninit<T>>>;
+pub type Queue<T> = details::MetaQueue<T, GenericOwningPointer>;
 /// **Non-movable** relocatable queue with runtime fixed size capacity.
-pub type RelocatableQueue<T> = details::Queue<T, RelocatablePointer<MaybeUninit<T>>>;
+pub type RelocatableQueue<T> = details::MetaQueue<T, GenericRelocatablePointer>;
 
 #[doc(hidden)]
 pub mod details {
+    use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
+
     use super::*;
     /// **Non-movable** relocatable queue with runtime fixed size capacity.
     #[repr(C)]
     #[derive(Debug)]
-    pub struct Queue<T, PointerType: PointerTrait<MaybeUninit<T>>> {
-        data_ptr: PointerType,
+    pub struct MetaQueue<T, Ptr: GenericPointer> {
+        data_ptr: Ptr::Type<MaybeUninit<T>>,
         start: usize,
         len: usize,
         capacity: usize,
@@ -129,9 +137,9 @@ pub mod details {
         _phantom_data: PhantomData<T>,
     }
 
-    unsafe impl<T: Send, PointerType: PointerTrait<MaybeUninit<T>>> Send for Queue<T, PointerType> {}
+    unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaQueue<T, Ptr> {}
 
-    impl<T> Queue<T, OwningPointer<MaybeUninit<T>>> {
+    impl<T> MetaQueue<T, GenericOwningPointer> {
         /// Creates a new [`Queue`] with the provided capacity
         pub fn new(capacity: usize) -> Self {
             Self {
@@ -178,7 +186,7 @@ pub mod details {
         }
     }
 
-    impl<T: Copy + Debug, PointerType: PointerTrait<MaybeUninit<T>> + Debug> Queue<T, PointerType> {
+    impl<T: Copy + Debug, Ptr: GenericPointer + Debug> MetaQueue<T, Ptr> {
         /// Returns a copy of the element stored at index. The index is starting by 0 for the first
         /// element until [`Queue::len()`].
         ///
@@ -206,18 +214,7 @@ pub mod details {
         }
     }
 
-    impl<T> RelocatableContainer for Queue<T, RelocatablePointer<MaybeUninit<T>>> {
-        unsafe fn new(capacity: usize, distance_to_data: isize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new(distance_to_data),
-                start: 0,
-                len: 0,
-                capacity,
-                is_initialized: IoxAtomicBool::new(true),
-                _phantom_data: PhantomData,
-            }
-        }
-
+    impl<T> RelocatableContainer for MetaQueue<T, GenericRelocatablePointer> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
@@ -230,7 +227,7 @@ pub mod details {
         }
 
         unsafe fn init<Allocator: BaseAllocator>(
-            &self,
+            &mut self,
             allocator: &Allocator,
         ) -> Result<(), AllocationError> {
             if self
@@ -260,7 +257,12 @@ pub mod details {
         }
     }
 
-    impl<T> Queue<T, RelocatablePointer<MaybeUninit<T>>> {
+    impl<T> MetaQueue<T, GenericRelocatablePointer> {
+        /// Returns the required memory size for a queue with a specified capacity
+        pub const fn const_memory_size(capacity: usize) -> usize {
+            unaligned_mem_size::<T>(capacity)
+        }
+
         /// Removes all elements from the queue
         ///
         /// # Safety
@@ -325,7 +327,7 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Queue<T, PointerType> {
+    impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(
@@ -334,11 +336,6 @@ pub mod details {
                 "From: {}, Undefined behavior - the object was not initialized with 'init' before.",
                 source
             );
-        }
-
-        /// Returns the required memory size for a queue with a specified capacity
-        pub const fn const_memory_size(capacity: usize) -> usize {
-            unaligned_mem_size::<T>(capacity)
         }
 
         /// Returns true if the queue is empty, otherwise false
@@ -443,9 +440,14 @@ pub mod details {
         }
     }
 
-    impl<T, PointerType: PointerTrait<MaybeUninit<T>>> Drop for Queue<T, PointerType> {
+    impl<T, Ptr: GenericPointer> Drop for MetaQueue<T, Ptr> {
         fn drop(&mut self) {
-            unsafe { self.clear_impl() }
+            if self
+                .is_initialized
+                .load(std::sync::atomic::Ordering::Relaxed)
+            {
+                unsafe { self.clear_impl() }
+            }
         }
     }
 }
@@ -462,32 +464,38 @@ pub struct FixedSizeQueue<T, const CAPACITY: usize> {
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
-        state_ptr.write(Self::initialize_state());
+        state_ptr.write(RelocatableQueue::new_uninit(CAPACITY));
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!((*ptr)._data) as usize);
+        (*ptr)
+            .state
+            .init(&allocator)
+            .expect("All required memory is preallocated.");
     }
 }
 
 impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
     fn default() -> Self {
-        Self {
-            state: Self::initialize_state(),
+        let mut new_self = Self {
+            state: unsafe { RelocatableQueue::new_uninit(CAPACITY) },
             _data: unsafe { MaybeUninit::uninit().assume_init() },
-        }
+        };
+
+        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self._data) as usize);
+        unsafe {
+            new_self
+                .state
+                .init(&allocator)
+                .expect("All required memory is preallocated.")
+        };
+
+        new_self
     }
 }
 
 unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY> {}
-unsafe impl<T: Sync, const CAPACITY: usize> Sync for FixedSizeQueue<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
-    fn initialize_state() -> RelocatableQueue<T> {
-        unsafe {
-            RelocatableQueue::new(
-                CAPACITY,
-                align_to::<MaybeUninit<T>>(std::mem::size_of::<RelocatableQueue<T>>()) as isize,
-            )
-        }
-    }
-
     /// Creates a new queue.
     pub fn new() -> Self {
         Self::default()

@@ -16,6 +16,7 @@
 * Developer permissions for resources [#460](https://github.com/eclipse-iceoryx/iceoryx2/issues/460)
 * Add `--send-copy` flag to Benchmark to consider mem operations [#483](https://github.com/eclipse-iceoryx/iceoryx2/issues/483)
 * Support for slices in the C++ bindings [#490](https://github.com/eclipse-iceoryx/iceoryx2/issues/490)
+* Add relocatable `SlotMap` [#504](https://github.com/eclipse-iceoryx/iceoryx2/issues/504)
 
 ### Bugfixes
 

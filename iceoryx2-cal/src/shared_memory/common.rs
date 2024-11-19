@@ -187,7 +187,7 @@ pub mod details {
                 Allocator::new_uninit(SystemInfo::PageSize.value(), memory, allocator_config)
             });
 
-            if let Err(e) = unsafe { details.allocator.assume_init_ref().init(init_allocator) } {
+            if let Err(e) = unsafe { details.allocator.assume_init_mut().init(init_allocator) } {
                 debug!(from self, "{} since the management memory for the allocator could not be initialized ({:?}).", msg, e);
                 false
             } else {
