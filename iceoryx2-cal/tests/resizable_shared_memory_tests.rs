@@ -787,8 +787,157 @@ mod resizable_shared_memory {
         );
     }
 
-    // TODO:
-    //  * test that unregister_offset releases unused segment
+    #[test]
+    fn register_offset_in_view_maps_required_segments<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let config = generate_isolated_config::<Sut>();
+        let storage_name = generate_name();
+        let value_1 = 123;
+        let value_2 = 2345;
+        let value_3 = 345678;
+        let value_4 = 456789012345;
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let chunk_1 = sut.allocate(Layout::new::<u8>()).unwrap();
+        let chunk_2 = sut.allocate(Layout::new::<u16>()).unwrap();
+        let chunk_3 = sut.allocate(Layout::new::<u32>()).unwrap();
+        let chunk_4 = sut.allocate(Layout::new::<u64>()).unwrap();
+
+        unsafe { (chunk_1.data_ptr as *mut u8).write(value_1) };
+        unsafe { (chunk_2.data_ptr as *mut u16).write(value_2) };
+        unsafe { (chunk_3.data_ptr as *mut u32).write(value_3) };
+        unsafe { (chunk_4.data_ptr as *mut u64).write(value_4) };
+
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        let tr_chunk_1 = unsafe {
+            sut_viewer
+                .register_and_translate_offset(chunk_1.offset)
+                .unwrap()
+        };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 1);
+        let tr_chunk_2 = unsafe {
+            sut_viewer
+                .register_and_translate_offset(chunk_2.offset)
+                .unwrap()
+        };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 2);
+        let tr_chunk_3 = unsafe {
+            sut_viewer
+                .register_and_translate_offset(chunk_3.offset)
+                .unwrap()
+        };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 3);
+        let tr_chunk_4 = unsafe {
+            sut_viewer
+                .register_and_translate_offset(chunk_4.offset)
+                .unwrap()
+        };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 4);
+
+        assert_that!(unsafe { *(tr_chunk_1 as *mut u8) }, eq value_1);
+        assert_that!(unsafe { *(tr_chunk_2 as *mut u16) }, eq value_2);
+        assert_that!(unsafe { *(tr_chunk_3 as *mut u32) }, eq value_3);
+        assert_that!(unsafe { *(tr_chunk_4 as *mut u64) }, eq value_4);
+    }
+
+    #[test]
+    fn unregister_offset_in_view_releases_unused_segments<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let config = generate_isolated_config::<Sut>();
+        let storage_name = generate_name();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let chunk_1 = sut.allocate(Layout::new::<u8>()).unwrap().offset;
+        let chunk_2 = sut.allocate(Layout::new::<u16>()).unwrap().offset;
+        let chunk_3 = sut.allocate(Layout::new::<u32>()).unwrap().offset;
+        let chunk_4 = sut.allocate(Layout::new::<u64>()).unwrap().offset;
+
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        unsafe { sut_viewer.register_and_translate_offset(chunk_1).unwrap() };
+        unsafe { sut_viewer.register_and_translate_offset(chunk_2).unwrap() };
+        unsafe { sut_viewer.register_and_translate_offset(chunk_3).unwrap() };
+        unsafe { sut_viewer.register_and_translate_offset(chunk_4).unwrap() };
+
+        assert_that!(sut_viewer.number_of_active_segments(), eq 4);
+
+        unsafe { sut_viewer.unregister_offset(chunk_1) };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 3);
+        unsafe { sut_viewer.unregister_offset(chunk_2) };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 2);
+        unsafe { sut_viewer.unregister_offset(chunk_3) };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 1);
+        unsafe { sut_viewer.unregister_offset(chunk_4) };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 1);
+    }
+
+    #[test]
+    fn unregister_offset_in_reverse_order_in_view_releases_unused_segments<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let config = generate_isolated_config::<Sut>();
+        let storage_name = generate_name();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let chunk_1 = sut.allocate(Layout::new::<u8>()).unwrap().offset;
+        let chunk_2 = sut.allocate(Layout::new::<u16>()).unwrap().offset;
+        let chunk_3 = sut.allocate(Layout::new::<u32>()).unwrap().offset;
+        let chunk_4 = sut.allocate(Layout::new::<u64>()).unwrap().offset;
+
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        unsafe { sut_viewer.register_and_translate_offset(chunk_1).unwrap() };
+        unsafe { sut_viewer.register_and_translate_offset(chunk_2).unwrap() };
+        unsafe { sut_viewer.register_and_translate_offset(chunk_3).unwrap() };
+        unsafe { sut_viewer.register_and_translate_offset(chunk_4).unwrap() };
+
+        assert_that!(sut_viewer.number_of_active_segments(), eq 4);
+
+        unsafe { sut_viewer.unregister_offset(chunk_4) };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 4);
+        unsafe { sut_viewer.unregister_offset(chunk_3) };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 3);
+        unsafe { sut_viewer.unregister_offset(chunk_2) };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 2);
+        unsafe { sut_viewer.unregister_offset(chunk_1) };
+        assert_that!(sut_viewer.number_of_active_segments(), eq 1);
+    }
 
     #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>, resizable_shared_memory::dynamic::DynamicMemory<DefaultAllocator, iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>>)]
     mod posix {}
