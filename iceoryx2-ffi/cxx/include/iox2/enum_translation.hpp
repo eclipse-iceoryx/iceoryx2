@@ -64,7 +64,7 @@ constexpr auto from<iox2::SemanticStringError, iox2_semantic_string_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::SemanticStringError, const char*>(const iox2::SemanticStringError value) noexcept -> const
+inline auto from<iox2::SemanticStringError, const char*>(const iox2::SemanticStringError value) noexcept -> const
     char* {
     return iox2_semantic_string_error_string(iox::into<iox2_semantic_string_error_e>(value));
 }
@@ -122,7 +122,7 @@ constexpr auto from<iox2::NodeCreationFailure, iox2_node_creation_failure_e>(
 }
 
 template <>
-constexpr auto from<iox2::NodeCreationFailure, const char*>(const iox2::NodeCreationFailure value) noexcept -> const
+inline auto from<iox2::NodeCreationFailure, const char*>(const iox2::NodeCreationFailure value) noexcept -> const
     char* {
     return iox2_node_creation_failure_string(iox::into<iox2_node_creation_failure_e>(value));
 }
@@ -184,7 +184,7 @@ constexpr auto from<iox2::NodeListFailure, iox2_node_list_failure_e>(const iox2:
 }
 
 template <>
-constexpr auto from<iox2::NodeListFailure, const char*>(const iox2::NodeListFailure value) noexcept -> const char* {
+inline auto from<iox2::NodeListFailure, const char*>(const iox2::NodeListFailure value) noexcept -> const char* {
     return iox2_node_list_failure_string(iox::into<iox2_node_list_failure_e>(value));
 }
 
@@ -215,7 +215,7 @@ constexpr auto from<iox2::NodeWaitFailure, iox2_node_wait_failure_e>(const iox2:
 }
 
 template <>
-constexpr auto from<iox2::NodeWaitFailure, const char*>(const iox2::NodeWaitFailure value) noexcept -> const char* {
+inline auto from<iox2::NodeWaitFailure, const char*>(const iox2::NodeWaitFailure value) noexcept -> const char* {
     return iox2_node_wait_failure_string(iox::into<iox2_node_wait_failure_e>(value));
 }
 
@@ -279,7 +279,7 @@ constexpr auto from<iox2::ServiceDetailsError, iox2_service_details_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::ServiceDetailsError, const char*>(const iox2::ServiceDetailsError value) noexcept -> const
+inline auto from<iox2::ServiceDetailsError, const char*>(const iox2::ServiceDetailsError value) noexcept -> const
     char* {
     return iox2_service_details_error_string(iox::into<iox2_service_details_error_e>(value));
 }
@@ -385,8 +385,8 @@ constexpr auto from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_erro
 }
 
 template <>
-constexpr auto
-from<iox2::EventOpenOrCreateError, const char*>(const iox2::EventOpenOrCreateError value) noexcept -> const char* {
+inline auto from<iox2::EventOpenOrCreateError, const char*>(const iox2::EventOpenOrCreateError value) noexcept -> const
+    char* {
     return iox2_event_open_or_create_error_string(iox::into<iox2_event_open_or_create_error_e>(value));
 }
 
@@ -461,7 +461,7 @@ constexpr auto from<iox2::EventOpenError, iox2_event_open_or_create_error_e>(con
 }
 
 template <>
-constexpr auto from<iox2::EventOpenError, const char*>(const iox2::EventOpenError value) noexcept -> const char* {
+inline auto from<iox2::EventOpenError, const char*>(const iox2::EventOpenError value) noexcept -> const char* {
     return iox2_event_open_or_create_error_string(iox::into<iox2_event_open_or_create_error_e>(value));
 }
 
@@ -510,7 +510,7 @@ constexpr auto from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::EventCreateError, const char*>(const iox2::EventCreateError value) noexcept -> const char* {
+inline auto from<iox2::EventCreateError, const char*>(const iox2::EventCreateError value) noexcept -> const char* {
     return iox2_event_open_or_create_error_string(iox::into<iox2_event_open_or_create_error_e>(value));
 }
 
@@ -662,7 +662,7 @@ constexpr auto from<iox2::PublishSubscribeOpenError, iox2_pub_sub_open_or_create
 }
 
 template <>
-constexpr auto
+inline auto
 from<iox2::PublishSubscribeOpenError, const char*>(const iox2::PublishSubscribeOpenError value) noexcept -> const
     char* {
     return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
@@ -716,7 +716,7 @@ constexpr auto from<iox2::PublishSubscribeCreateError, iox2_pub_sub_open_or_crea
 }
 
 template <>
-constexpr auto
+inline auto
 from<iox2::PublishSubscribeCreateError, const char*>(const iox2::PublishSubscribeCreateError value) noexcept -> const
     char* {
     return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
@@ -782,7 +782,7 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
 }
 
 template <>
-constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, const char*>(
+inline auto from<iox2::PublishSubscribeOpenOrCreateError, const char*>(
     const iox2::PublishSubscribeOpenOrCreateError value) noexcept -> const char* {
     return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
 }
@@ -810,7 +810,7 @@ constexpr auto from<iox2::NotifierCreateError, iox2_notifier_create_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::NotifierCreateError, const char*>(const iox2::NotifierCreateError value) noexcept -> const
+inline auto from<iox2::NotifierCreateError, const char*>(const iox2::NotifierCreateError value) noexcept -> const
     char* {
     return iox2_notifier_create_error_string(iox::into<iox2_notifier_create_error_e>(value));
 }
@@ -842,7 +842,7 @@ constexpr auto from<iox2::ListenerCreateError, iox2_listener_create_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::ListenerCreateError, const char*>(const iox2::ListenerCreateError value) noexcept -> const
+inline auto from<iox2::ListenerCreateError, const char*>(const iox2::ListenerCreateError value) noexcept -> const
     char* {
     return iox2_listener_create_error_string(iox::into<iox2_listener_create_error_e>(value));
 }
@@ -870,7 +870,7 @@ constexpr auto from<iox2::NotifierNotifyError, iox2_notifier_notify_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::NotifierNotifyError, const char*>(const iox2::NotifierNotifyError value) noexcept -> const
+inline auto from<iox2::NotifierNotifyError, const char*>(const iox2::NotifierNotifyError value) noexcept -> const
     char* {
     return iox2_notifier_notify_error_string(iox::into<iox2_notifier_notify_error_e>(value));
 }
@@ -906,7 +906,7 @@ constexpr auto from<iox2::ListenerWaitError, iox2_listener_wait_error_e>(const i
 }
 
 template <>
-constexpr auto from<iox2::ListenerWaitError, const char*>(const iox2::ListenerWaitError value) noexcept -> const char* {
+inline auto from<iox2::ListenerWaitError, const char*>(const iox2::ListenerWaitError value) noexcept -> const char* {
     return iox2_listener_wait_error_string(iox::into<iox2_listener_wait_error_e>(value));
 }
 
@@ -937,7 +937,7 @@ constexpr auto from<iox2::PublisherCreateError, iox2_publisher_create_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::PublisherCreateError, const char*>(const iox2::PublisherCreateError value) noexcept -> const
+inline auto from<iox2::PublisherCreateError, const char*>(const iox2::PublisherCreateError value) noexcept -> const
     char* {
     return iox2_publisher_create_error_string(iox::into<iox2_publisher_create_error_e>(value));
 }
@@ -969,7 +969,7 @@ constexpr auto from<iox2::SubscriberCreateError, iox2_subscriber_create_error_e>
 }
 
 template <>
-constexpr auto from<iox2::SubscriberCreateError, const char*>(const iox2::SubscriberCreateError value) noexcept -> const
+inline auto from<iox2::SubscriberCreateError, const char*>(const iox2::SubscriberCreateError value) noexcept -> const
     char* {
     return iox2_subscriber_create_error_string(iox::into<iox2_subscriber_create_error_e>(value));
 }
@@ -1021,8 +1021,7 @@ constexpr auto from<iox2::PublisherSendError, iox2_publisher_send_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::PublisherSendError, const char*>(const iox2::PublisherSendError value) noexcept -> const
-    char* {
+inline auto from<iox2::PublisherSendError, const char*>(const iox2::PublisherSendError value) noexcept -> const char* {
     return iox2_publisher_send_error_string(iox::into<iox2_publisher_send_error_e>(value));
 }
 
@@ -1057,8 +1056,8 @@ constexpr auto from<iox2::SubscriberReceiveError, iox2_subscriber_receive_error_
 }
 
 template <>
-constexpr auto
-from<iox2::SubscriberReceiveError, const char*>(const iox2::SubscriberReceiveError value) noexcept -> const char* {
+inline auto from<iox2::SubscriberReceiveError, const char*>(const iox2::SubscriberReceiveError value) noexcept -> const
+    char* {
     return iox2_subscriber_receive_error_string(iox::into<iox2_subscriber_receive_error_e>(value));
 }
 
@@ -1097,8 +1096,7 @@ constexpr auto from<iox2::PublisherLoanError, iox2_publisher_loan_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::PublisherLoanError, const char*>(const iox2::PublisherLoanError value) noexcept -> const
-    char* {
+inline auto from<iox2::PublisherLoanError, const char*>(const iox2::PublisherLoanError value) noexcept -> const char* {
     return iox2_publisher_loan_error_string(iox::into<iox2_publisher_loan_error_e>(value));
 }
 
@@ -1142,7 +1140,7 @@ constexpr auto from<iox2::ServiceListError, iox2_service_list_error_e>(const iox
 }
 
 template <>
-constexpr auto from<iox2::ServiceListError, const char*>(const iox2::ServiceListError value) noexcept -> const char* {
+inline auto from<iox2::ServiceListError, const char*>(const iox2::ServiceListError value) noexcept -> const char* {
     return iox2_service_list_error_string(iox::into<iox2_service_list_error_e>(value));
 }
 
@@ -1211,7 +1209,7 @@ constexpr auto from<iox2::ConnectionFailure, iox2_connection_failure_e>(const io
 }
 
 template <>
-constexpr auto from<iox2::ConnectionFailure, const char*>(const iox2::ConnectionFailure value) noexcept -> const char* {
+inline auto from<iox2::ConnectionFailure, const char*>(const iox2::ConnectionFailure value) noexcept -> const char* {
     return iox2_connection_failure_string(iox::into<iox2_connection_failure_e>(value));
 }
 
@@ -1249,7 +1247,7 @@ constexpr auto from<iox2::ConfigCreationError, iox2_config_creation_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::ConfigCreationError, const char*>(const iox2::ConfigCreationError value) noexcept -> const
+inline auto from<iox2::ConfigCreationError, const char*>(const iox2::ConfigCreationError value) noexcept -> const
     char* {
     return iox2_config_creation_error_string(iox::into<iox2_config_creation_error_e>(value));
 }
@@ -1317,8 +1315,7 @@ constexpr auto from<iox2::WaitSetCreateError, iox2_waitset_create_error_e>(
 }
 
 template <>
-constexpr auto from<iox2::WaitSetCreateError, const char*>(const iox2::WaitSetCreateError value) noexcept -> const
-    char* {
+inline auto from<iox2::WaitSetCreateError, const char*>(const iox2::WaitSetCreateError value) noexcept -> const char* {
     return iox2_waitset_create_error_string(iox::into<iox2_waitset_create_error_e>(value));
 }
 
@@ -1387,8 +1384,8 @@ constexpr auto from<iox2::WaitSetAttachmentError, iox2_waitset_attachment_error_
 }
 
 template <>
-constexpr auto
-from<iox2::WaitSetAttachmentError, const char*>(const iox2::WaitSetAttachmentError value) noexcept -> const char* {
+inline auto from<iox2::WaitSetAttachmentError, const char*>(const iox2::WaitSetAttachmentError value) noexcept -> const
+    char* {
     return iox2_waitset_attachment_error_string(iox::into<iox2_waitset_attachment_error_e>(value));
 }
 
@@ -1431,7 +1428,7 @@ constexpr auto from<iox2::WaitSetRunError, iox2_waitset_run_error_e>(const iox2:
 }
 
 template <>
-constexpr auto from<iox2::WaitSetRunError, const char*>(const iox2::WaitSetRunError value) noexcept -> const char* {
+inline auto from<iox2::WaitSetRunError, const char*>(const iox2::WaitSetRunError value) noexcept -> const char* {
     return iox2_waitset_run_error_string(iox::into<iox2_waitset_run_error_e>(value));
 }
 
