@@ -47,9 +47,11 @@ mod resizable_shared_memory {
 
         unsafe { (ptr_creator.data_ptr as *mut u64).write(test_value_1) };
 
-        let ptr_view = sut_viewer
-            .register_and_translate_offset(ptr_creator.offset)
-            .unwrap() as *const u64;
+        let ptr_view = unsafe {
+            sut_viewer
+                .register_and_translate_offset(ptr_creator.offset)
+                .unwrap() as *const u64
+        };
 
         assert_that!(unsafe{ *ptr_view }, eq test_value_1);
         unsafe { (ptr_creator.data_ptr as *mut u64).write(test_value_2) };
@@ -133,12 +135,16 @@ mod resizable_shared_memory {
         unsafe { (ptr_creator_1.data_ptr as *mut u64).write(test_value_1) };
         unsafe { (ptr_creator_2.data_ptr as *mut u64).write(test_value_2) };
 
-        let ptr_view_1 = sut_viewer
-            .register_and_translate_offset(ptr_creator_1.offset)
-            .unwrap() as *const u64;
-        let ptr_view_2 = sut_viewer
-            .register_and_translate_offset(ptr_creator_2.offset)
-            .unwrap() as *const u64;
+        let ptr_view_1 = unsafe {
+            sut_viewer
+                .register_and_translate_offset(ptr_creator_1.offset)
+                .unwrap() as *const u64
+        };
+        let ptr_view_2 = unsafe {
+            sut_viewer
+                .register_and_translate_offset(ptr_creator_2.offset)
+                .unwrap() as *const u64
+        };
 
         assert_that!(unsafe{ *ptr_view_1 }, eq test_value_1);
         assert_that!(unsafe{ *ptr_view_2 }, eq test_value_2);
@@ -229,9 +235,11 @@ mod resizable_shared_memory {
 
         for i in 0..NUMBER_OF_REALLOCATIONS {
             let size = 2 + i;
-            let ptr_view = sut_viewer
-                .register_and_translate_offset(ptrs[i].offset)
-                .unwrap();
+            let ptr_view = unsafe {
+                sut_viewer
+                    .register_and_translate_offset(ptrs[i].offset)
+                    .unwrap()
+            };
 
             for n in 0..size {
                 assert_that!(unsafe{ *ptr_view.add(n) }, eq i as u8);
@@ -296,9 +304,11 @@ mod resizable_shared_memory {
 
         for i in 0..NUMBER_OF_REALLOCATIONS {
             let size = 2 + i;
-            let ptr_view = sut_viewer
-                .register_and_translate_offset(ptrs[i].offset)
-                .unwrap();
+            let ptr_view = unsafe {
+                sut_viewer
+                    .register_and_translate_offset(ptrs[i].offset)
+                    .unwrap()
+            };
 
             for n in 0..size {
                 assert_that!(unsafe{ *ptr_view.add(n) }, eq 2*i as u8);
@@ -365,9 +375,11 @@ mod resizable_shared_memory {
 
         for i in 0..NUMBER_OF_REALLOCATIONS {
             let size = 2 + i;
-            let ptr_view = sut_viewer
-                .register_and_translate_offset(ptrs[i].offset)
-                .unwrap();
+            let ptr_view = unsafe {
+                sut_viewer
+                    .register_and_translate_offset(ptrs[i].offset)
+                    .unwrap()
+            };
 
             for n in 0..size {
                 assert_that!(unsafe{ *ptr_view.add(n) }, eq 2*i as u8);
@@ -687,22 +699,96 @@ mod resizable_shared_memory {
             .open()
             .unwrap();
 
-        let translated_chunk = sut_viewer
-            .register_and_translate_offset(chunk.offset)
-            .unwrap();
+        let translated_chunk = unsafe {
+            sut_viewer
+                .register_and_translate_offset(chunk.offset)
+                .unwrap()
+        };
         assert_that!(unsafe { *(translated_chunk as *const u32) }, eq TEST_VALUE);
     }
 
+    #[test]
+    fn creator_releases_resizable_shared_memory_when_it_goes_out_of_scope<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let config = generate_isolated_config::<Sut>();
+        let storage_name = generate_name();
+
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(123)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+        drop(sut_creator);
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
+    }
+
+    #[test]
+    fn view_does_not_releases_resizable_shared_memory_when_it_goes_out_of_scope<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let config = generate_isolated_config::<Sut>();
+        let storage_name = generate_name();
+
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(123)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let sut_view = Sut::ViewBuilder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+        drop(sut_view);
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+        drop(sut_creator);
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(false));
+    }
+
+    #[test]
+    fn when_max_number_of_reallocations_is_exceeded_another_allocation_fails<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let config = generate_isolated_config::<Sut>();
+        let storage_name = generate_name();
+
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        for n in 0..Sut::max_number_of_reallocations() {
+            assert_that!(
+                sut_creator.allocate(Layout::from_size_align(n + 1, 1).unwrap()),
+                is_ok
+            );
+            assert_that!(sut_creator.number_of_active_segments(), eq n + 1);
+        }
+        let result = sut_creator.allocate(Layout::from_size_align(1024, 1).unwrap());
+        assert_that!(result, is_err);
+        assert_that!(
+            result.err().unwrap(), eq
+            ResizableShmAllocationError::MaxReallocationsReached
+        );
+    }
+
     // TODO:
-    //  * has_ownership, acquire/release ownership
-    //      * all segments must be updated
-    //  * timeout
-    //  * best fit, let reallocate until 256 exceeded, see if id is recycled
-    //  * start with layout.size == 1 and max_number_of_chunks == 1
-    //    * allocate 1 byte
-    //    * allocate N byte, may lead to 2 allocations, one for chunk resize, one for bucket number
-    //      resize
-    //  * cal documentation
+    //  * test that unregister_offset releases unused segment
 
     #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>, resizable_shared_memory::dynamic::DynamicMemory<DefaultAllocator, iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>>)]
     mod posix {}

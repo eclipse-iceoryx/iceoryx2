@@ -29,7 +29,7 @@ use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
@@ -55,7 +55,6 @@ struct MemoryConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     base_name: FileName,
     shm: Shm::Configuration,
     allocator_config_hint: Allocator::Configuration,
-    has_ownership: IoxAtomicBool,
 }
 
 #[derive(Debug)]
@@ -192,7 +191,6 @@ where
         Self {
             config: MemoryConfig {
                 base_name: *name,
-                has_ownership: IoxAtomicBool::new(true),
                 allocator_config_hint: Allocator::Configuration::default(),
                 shm: Shm::Configuration::default(),
             },
@@ -218,11 +216,6 @@ where
     Allocator: Debug,
     Shm::Builder: Debug,
 {
-    fn has_ownership(self, value: bool) -> Self {
-        self.config.has_ownership.store(value, Ordering::Relaxed);
-        self
-    }
-
     fn max_chunk_layout_hint(self, value: Layout) -> Self {
         self.shared_state
             .max_chunk_size_hint
@@ -255,7 +248,7 @@ where
         let mgmt_segment = fail!(from origin, when Shm::Builder::new(&adjusted_name)
                                                     .size(hint.payload_size)
                                                     .config(&self.config.shm)
-                                                    .has_ownership(self.config.has_ownership.load(Ordering::Relaxed))
+                                                    .has_ownership(true)
                                                     .create(&hint.config),
                             "{msg} since the management segment could not be created.");
 
@@ -289,7 +282,7 @@ where
                 current_idx,
                 shared_state: self.shared_state,
             }),
-            mgmt_segment,
+            _mgmt_segment: mgmt_segment,
             _data: PhantomData,
         })
     }
@@ -309,7 +302,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
 where
     Shm::Builder: Debug,
 {
-    fn register_and_translate_offset(
+    unsafe fn register_and_translate_offset(
         &mut self,
         offset: PointerOffset,
     ) -> Result<*const u8, SharedMemoryOpenError> {
@@ -339,7 +332,7 @@ where
         Ok((offset + payload_start_address) as *const u8)
     }
 
-    fn unregister_offset(&mut self, offset: PointerOffset) {
+    unsafe fn unregister_offset(&mut self, offset: PointerOffset) {
         let segment_id = offset.segment_id();
         let key = SlotMapKey::new(segment_id.value() as usize);
 
@@ -366,7 +359,7 @@ where
 #[derive(Debug)]
 pub struct DynamicMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     state: UnsafeCell<InternalState<Allocator, Shm>>,
-    mgmt_segment: Shm,
+    _mgmt_segment: Shm,
     _data: PhantomData<Allocator>,
 }
 
@@ -544,7 +537,7 @@ where
         payload_size: usize,
     ) -> Result<Shm, SharedMemoryCreateError> {
         Self::segment_builder(&config.base_name, &config.shm, segment_id)
-            .has_ownership(config.has_ownership.load(Ordering::Relaxed))
+            .has_ownership(true)
             .size(payload_size)
             .create(&config.allocator_config_hint)
     }
@@ -554,6 +547,7 @@ where
         segment_id: SegmentId,
     ) -> Result<Shm, SharedMemoryOpenError> {
         Self::segment_builder(&config.base_name, &config.shm, segment_id)
+            .has_ownership(false)
             .timeout(config.shm_builder_timeout)
             .open()
     }
@@ -574,16 +568,16 @@ where
         &self,
         shm: &Shm,
         layout: Layout,
-    ) -> Result<(), SharedMemoryCreateError> {
+    ) -> Result<(), ResizableShmAllocationError> {
         let msg = "Unable to create resized segment for";
         let state = self.state_mut();
         let adjusted_segment_setup = shm
             .allocator()
             .resize_hint(layout, state.shared_state.allocation_strategy);
-        let segment_id = if state.current_idx.value() < MAX_NUMBER_OF_REALLOCATIONS {
+        let segment_id = if state.current_idx.value() + 1 < MAX_NUMBER_OF_REALLOCATIONS {
             SlotMapKey::new(state.current_idx.value() + 1)
         } else {
-            fail!(from self, with SharedMemoryCreateError::InternalError,
+            fail!(from self, with ResizableShmAllocationError::MaxReallocationsReached,
                 "{msg} {:?} since it would exceed the maximum amount of reallocations of {}. With a better configuration hint, this issue can be avoided.",
                 layout, Self::max_number_of_reallocations());
         };
@@ -695,38 +689,5 @@ where
             None => fatal_panic!(from self,
                         "This should never happen! Unable to deallocate {:?} since the corresponding shared memory segment is not available!", offset),
         }
-    }
-
-    fn does_support_persistency() -> bool {
-        Shm::does_support_persistency()
-    }
-
-    fn has_ownership(&self) -> bool {
-        self.state()
-            .builder_config
-            .has_ownership
-            .load(Ordering::Relaxed)
-    }
-
-    fn acquire_ownership(&self) {
-        self.mgmt_segment.acquire_ownership();
-        for (_, entry) in self.state().shared_memory_map.iter() {
-            entry.shm.acquire_ownership();
-        }
-        self.state()
-            .builder_config
-            .has_ownership
-            .store(true, Ordering::Relaxed);
-    }
-
-    fn release_ownership(&self) {
-        self.mgmt_segment.release_ownership();
-        for (_, entry) in self.state().shared_memory_map.iter() {
-            entry.shm.release_ownership();
-        }
-        self.state()
-            .builder_config
-            .has_ownership
-            .store(false, Ordering::Relaxed);
     }
 }
