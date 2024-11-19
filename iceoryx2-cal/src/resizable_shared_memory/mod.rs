@@ -30,11 +30,29 @@ enum_gen! { ResizableShmAllocationError
     SharedMemoryCreateError
 }
 
-pub trait ResizableSharedMemoryBuilder<
+pub trait ResizableSharedMemoryViewBuilder<
     Allocator: ShmAllocator,
     Shm: SharedMemory<Allocator>,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
     ResizableShmView: ResizableSharedMemoryView<Allocator, Shm>,
+>: NamedConceptBuilder<ResizableShm>
+{
+    /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for
+    /// [`SharedMemoryBuilder::create()`] to finialize
+    /// the initialization. This is required when the [`SharedMemory`] is created and initialized
+    /// concurrently from another process. By default it is set to [`Duration::ZERO`] for no
+    /// timeout.
+    fn timeout(self, value: Duration) -> Self;
+
+    /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
+    /// yet finished the method will fail.
+    fn open(self) -> Result<ResizableShmView, SharedMemoryOpenError>;
+}
+
+pub trait ResizableSharedMemoryBuilder<
+    Allocator: ShmAllocator,
+    Shm: SharedMemory<Allocator>,
+    ResizableShm: ResizableSharedMemory<Allocator, Shm>,
 >: NamedConceptBuilder<ResizableShm>
 {
     /// Defines if a newly created [`SharedMemory`] owns the underlying resources
@@ -46,19 +64,8 @@ pub trait ResizableSharedMemoryBuilder<
 
     fn allocation_strategy(self, value: AllocationStrategy) -> Self;
 
-    /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for
-    /// [`SharedMemoryBuilder::create()`] to finialize
-    /// the initialization. This is required when the [`SharedMemory`] is created and initialized
-    /// concurrently from another process. By default it is set to [`Duration::ZERO`] for no
-    /// timeout.
-    fn timeout(self, value: Duration) -> Self;
-
     /// Creates new [`SharedMemory`]. If it already exists the method will fail.
     fn create(self) -> Result<ResizableShm, SharedMemoryCreateError>;
-
-    /// Opens already existing [`SharedMemory`]. If it does not exist or the initialization is not
-    /// yet finished the method will fail.
-    fn open(self) -> Result<ResizableShmView, SharedMemoryOpenError>;
 }
 
 pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
@@ -75,7 +82,8 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
 pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
     Sized + NamedConcept + NamedConceptMgmt + Debug
 {
-    type Builder: ResizableSharedMemoryBuilder<Allocator, Shm, Self, Self::View>;
+    type ViewBuilder: ResizableSharedMemoryViewBuilder<Allocator, Shm, Self, Self::View>;
+    type MemoryBuilder: ResizableSharedMemoryBuilder<Allocator, Shm, Self>;
     type View: ResizableSharedMemoryView<Allocator, Shm>;
 
     fn max_number_of_reallocations() -> usize;

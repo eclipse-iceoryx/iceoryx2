@@ -34,7 +34,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
     NamedConceptMgmt, NamedConceptRemoveError, ResizableSharedMemory, ResizableSharedMemoryBuilder,
-    ResizableSharedMemoryView, ResizableShmAllocationError,
+    ResizableSharedMemoryView, ResizableSharedMemoryViewBuilder, ResizableShmAllocationError,
 };
 
 const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
@@ -51,17 +51,24 @@ struct SharedState {
 }
 
 #[derive(Debug)]
-struct BuilderConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
+struct MemoryConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     base_name: FileName,
     shm: Shm::Configuration,
     allocator_config_hint: Allocator::Configuration,
+    has_ownership: IoxAtomicBool,
+}
+
+#[derive(Debug)]
+struct ViewConfig<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
+    base_name: FileName,
+    shm: Shm::Configuration,
     shm_builder_timeout: Duration,
-    has_ownership: bool,
+    _data: PhantomData<Allocator>,
 }
 
 #[derive(Debug)]
 struct InternalState<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
-    builder_config: BuilderConfig<Allocator, Shm>,
+    builder_config: MemoryConfig<Allocator, Shm>,
     shared_state: SharedState,
     shared_memory_map: SlotMap<ShmEntry<Allocator, Shm>>,
     current_idx: SlotMapKey,
@@ -102,34 +109,92 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ShmEntry<Allocator, 
 }
 
 #[derive(Debug)]
-pub struct DynamicBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
-where
-    Allocator: Debug,
-{
-    config: BuilderConfig<Allocator, Shm>,
-    shared_state: SharedState,
+pub struct DynamicViewBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
+    config: ViewConfig<Allocator, Shm>,
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
-    NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicBuilder<Allocator, Shm>
+    NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicViewBuilder<Allocator, Shm>
 where
     Shm::Builder: Debug,
 {
     fn new(name: &FileName) -> Self {
-        let mut first_shm_segment = *name;
-        first_shm_segment
-            .push_bytes(SEGMENT_ID_SEPARATOR)
-            .expect("Adding the segment id separator results in a valid file name.");
-        first_shm_segment
-            .push_bytes(b"0")
-            .expect("Adding the segment id results in a valid file name");
         Self {
-            config: BuilderConfig {
+            config: ViewConfig {
                 base_name: *name,
-                has_ownership: true,
-                allocator_config_hint: Allocator::Configuration::default(),
                 shm: Shm::Configuration::default(),
                 shm_builder_timeout: Duration::ZERO,
+                _data: PhantomData,
+            },
+        }
+    }
+
+    fn config(mut self, config: &Shm::Configuration) -> Self {
+        self.config.shm = config.clone();
+        self
+    }
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+    ResizableSharedMemoryViewBuilder<
+        Allocator,
+        Shm,
+        DynamicMemory<Allocator, Shm>,
+        DynamicView<Allocator, Shm>,
+    > for DynamicViewBuilder<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
+    fn timeout(mut self, value: Duration) -> Self {
+        self.config.shm_builder_timeout = value;
+        self
+    }
+
+    fn open(self) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
+        let origin = format!("{:?}", self);
+        let msg = "Unable to open ResizableSharedMemoryView";
+
+        let adjusted_name =
+            DynamicMemory::<Allocator, Shm>::managment_segment_name(&self.config.base_name);
+        let mgmt_segment = fail!(from origin, when Shm::Builder::new(&adjusted_name)
+                                                        .config(&self.config.shm)
+                                                        .has_ownership(false)
+                                                        .open(),
+                                    "{msg} since the managment segment could not be opened.");
+
+        let shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
+
+        Ok(DynamicView {
+            view_config: self.config,
+            _mgmt_segment: mgmt_segment,
+            shared_memory_map,
+            current_idx: None,
+            _data: PhantomData,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct DynamicMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+where
+    Allocator: Debug,
+{
+    config: MemoryConfig<Allocator, Shm>,
+    shared_state: SharedState,
+}
+
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
+    NamedConceptBuilder<DynamicMemory<Allocator, Shm>> for DynamicMemoryBuilder<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
+    fn new(name: &FileName) -> Self {
+        Self {
+            config: MemoryConfig {
+                base_name: *name,
+                has_ownership: IoxAtomicBool::new(true),
+                allocator_config_hint: Allocator::Configuration::default(),
+                shm: Shm::Configuration::default(),
             },
             shared_state: SharedState {
                 allocation_strategy: AllocationStrategy::default(),
@@ -147,18 +212,14 @@ where
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
-    ResizableSharedMemoryBuilder<
-        Allocator,
-        Shm,
-        DynamicMemory<Allocator, Shm>,
-        DynamicView<Allocator, Shm>,
-    > for DynamicBuilder<Allocator, Shm>
+    ResizableSharedMemoryBuilder<Allocator, Shm, DynamicMemory<Allocator, Shm>>
+    for DynamicMemoryBuilder<Allocator, Shm>
 where
     Allocator: Debug,
     Shm::Builder: Debug,
 {
-    fn has_ownership(mut self, value: bool) -> Self {
-        self.config.has_ownership = value;
+    fn has_ownership(self, value: bool) -> Self {
+        self.config.has_ownership.store(value, Ordering::Relaxed);
         self
     }
 
@@ -184,11 +245,6 @@ where
         self
     }
 
-    fn timeout(mut self, value: Duration) -> Self {
-        self.config.shm_builder_timeout = value;
-        self
-    }
-
     fn create(mut self) -> Result<DynamicMemory<Allocator, Shm>, SharedMemoryCreateError> {
         let msg = "Unable to create ResizableSharedMemory";
         let origin = format!("{:?}", self);
@@ -199,7 +255,7 @@ where
         let mgmt_segment = fail!(from origin, when Shm::Builder::new(&adjusted_name)
                                                     .size(hint.payload_size)
                                                     .config(&self.config.shm)
-                                                    .has_ownership(self.config.has_ownership)
+                                                    .has_ownership(self.config.has_ownership.load(Ordering::Relaxed))
                                                     .create(&hint.config),
                             "{msg} since the management segment could not be created.");
 
@@ -223,9 +279,8 @@ where
         let shm = fail!(from origin, when DynamicMemory::create_segment(&self.config, SegmentId::new(0), hint.payload_size),
             "Unable to create ResizableSharedMemory since the underlying shared memory could not be created.");
         let mut shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
-        let current_idx = shared_memory_map
-            .insert(ShmEntry::new(shm))
-            .expect("MAX_NUMBER_OF_REALLOCATIONS is greater or equal 1");
+        let current_idx = fatal_panic!(from origin, when shared_memory_map.insert(ShmEntry::new(shm)).ok_or(""),
+                "This should never happen! {msg} since the newly constructed SlotMap does not have space for one insert.");
 
         Ok(DynamicMemory {
             state: UnsafeCell::new(InternalState {
@@ -234,32 +289,7 @@ where
                 current_idx,
                 shared_state: self.shared_state,
             }),
-            _mgmt_segment: mgmt_segment,
-            has_ownership: IoxAtomicBool::new(true),
-            _data: PhantomData,
-        })
-    }
-
-    fn open(mut self) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
-        let origin = format!("{:?}", self);
-        let msg = "Unable to open ResizableSharedMemoryView";
-
-        self.config.has_ownership = false;
-        let adjusted_name =
-            DynamicMemory::<Allocator, Shm>::managment_segment_name(&self.config.base_name);
-        let mgmt_segment = fail!(from origin, when Shm::Builder::new(&adjusted_name)
-                                                        .config(&self.config.shm)
-                                                        .has_ownership(self.config.has_ownership)
-                                                        .open(),
-                                    "{msg} since the managment segment could not be opened.");
-
-        let shared_memory_map = SlotMap::new(MAX_NUMBER_OF_REALLOCATIONS);
-
-        Ok(DynamicView {
-            builder_config: self.config,
-            _mgmt_segment: mgmt_segment,
-            shared_memory_map,
-            current_idx: None,
+            mgmt_segment,
             _data: PhantomData,
         })
     }
@@ -267,7 +297,7 @@ where
 
 #[derive(Debug)]
 pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
-    builder_config: BuilderConfig<Allocator, Shm>,
+    view_config: ViewConfig<Allocator, Shm>,
     _mgmt_segment: Shm,
     shared_memory_map: SlotMap<ShmEntry<Allocator, Shm>>,
     current_idx: Option<SlotMapKey>,
@@ -291,7 +321,7 @@ where
         let payload_start_address = match self.shared_memory_map.get(key) {
             None => {
                 let shm = fail!(from self,
-                                when DynamicMemory::open_segment(&self.builder_config, segment_id),
+                                when DynamicMemory::open_segment(&self.view_config, segment_id),
                                 "{msg} {:?} since the corresponding shared memory segment could not be opened.", offset);
                 let payload_start_address = shm.payload_start_address();
                 let entry = ShmEntry::new(shm);
@@ -336,8 +366,7 @@ where
 #[derive(Debug)]
 pub struct DynamicMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     state: UnsafeCell<InternalState<Allocator, Shm>>,
-    _mgmt_segment: Shm,
-    has_ownership: IoxAtomicBool,
+    mgmt_segment: Shm,
     _data: PhantomData<Allocator>,
 }
 
@@ -456,6 +485,8 @@ where
     }
 
     fn extract_name_and_segment_id(name: &FileName) -> Option<(FileName, SegmentId)> {
+        let origin = "resizable_shared_memory::DynamicMemory::extract_name_and_segment_id()";
+        let msg = "Unable to extract name and segment id";
         if let Some(pos) = name.rfind(SEGMENT_ID_SEPARATOR) {
             let segment_id_start_pos = pos + SEGMENT_ID_SEPARATOR.len();
             if name.len() < segment_id_start_pos {
@@ -480,17 +511,18 @@ where
                 }
             }
 
-            let segment_id_value = String::from_utf8_lossy(raw_segment_id.as_bytes())
-                .parse::<u64>()
-                .expect("Contains a valid u64 integer.");
+            let segment_id_value = fatal_panic!(from origin,
+                    when String::from_utf8_lossy(raw_segment_id.as_bytes()).parse::<u64>(),
+                    "This should never happen! {msg} since the segment_id raw value is not an unsigned integer.");
 
             if segment_id_value > SegmentId::max_segment_id() as u64 {
                 return None;
             }
 
             let mut name = name.clone();
-            name.remove_range(pos, name.len() - pos)
-                .expect("Is a valid file name without segment id suffix");
+            fatal_panic!(from origin,
+                when name.remove_range(pos, name.len() - pos),
+                "This should never happen! {msg} since the shared memory segment is an invalid file name without the segment id suffix.");
 
             return Some((name, SegmentId::new(segment_id_value as u8)));
         }
@@ -507,34 +539,35 @@ where
     }
 
     fn create_segment(
-        config: &BuilderConfig<Allocator, Shm>,
+        config: &MemoryConfig<Allocator, Shm>,
         segment_id: SegmentId,
         payload_size: usize,
     ) -> Result<Shm, SharedMemoryCreateError> {
-        Self::segment_builder(config, segment_id)
+        Self::segment_builder(&config.base_name, &config.shm, segment_id)
+            .has_ownership(config.has_ownership.load(Ordering::Relaxed))
             .size(payload_size)
             .create(&config.allocator_config_hint)
     }
 
     fn open_segment(
-        config: &BuilderConfig<Allocator, Shm>,
+        config: &ViewConfig<Allocator, Shm>,
         segment_id: SegmentId,
     ) -> Result<Shm, SharedMemoryOpenError> {
-        Self::segment_builder(config, segment_id).open()
+        Self::segment_builder(&config.base_name, &config.shm, segment_id)
+            .timeout(config.shm_builder_timeout)
+            .open()
     }
 
     fn segment_builder(
-        config: &BuilderConfig<Allocator, Shm>,
+        base_name: &FileName,
+        config: &Shm::Configuration,
         segment_id: SegmentId,
     ) -> Shm::Builder {
         let msg = "This should never happen! Unable to create additional shared memory segment since it would result in an invalid shared memory name.";
-        let mut adjusted_name = config.base_name;
+        let mut adjusted_name = base_name.clone();
         fatal_panic!(from config, when adjusted_name.push_bytes(SEGMENT_ID_SEPARATOR), "{msg}");
         fatal_panic!(from config, when adjusted_name.push_bytes(segment_id.value().to_string().as_bytes()), "{msg}");
-        Shm::Builder::new(&adjusted_name)
-            .has_ownership(config.has_ownership)
-            .timeout(config.shm_builder_timeout)
-            .config(&config.shm)
+        Shm::Builder::new(&adjusted_name).config(&config)
     }
 
     fn create_resized_segment(
@@ -614,7 +647,8 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ResizableSharedMemor
 where
     Shm::Builder: Debug,
 {
-    type Builder = DynamicBuilder<Allocator, Shm>;
+    type ViewBuilder = DynamicViewBuilder<Allocator, Shm>;
+    type MemoryBuilder = DynamicMemoryBuilder<Allocator, Shm>;
     type View = DynamicView<Allocator, Shm>;
 
     fn max_number_of_reallocations() -> usize {
@@ -668,14 +702,31 @@ where
     }
 
     fn has_ownership(&self) -> bool {
-        self.has_ownership.load(Ordering::Relaxed)
+        self.state()
+            .builder_config
+            .has_ownership
+            .load(Ordering::Relaxed)
     }
 
     fn acquire_ownership(&self) {
-        self.has_ownership.store(true, Ordering::Relaxed);
+        self.mgmt_segment.acquire_ownership();
+        for (_, entry) in self.state().shared_memory_map.iter() {
+            entry.shm.acquire_ownership();
+        }
+        self.state()
+            .builder_config
+            .has_ownership
+            .store(true, Ordering::Relaxed);
     }
 
     fn release_ownership(&self) {
-        self.has_ownership.store(false, Ordering::Relaxed);
+        self.mgmt_segment.release_ownership();
+        for (_, entry) in self.state().shared_memory_map.iter() {
+            entry.shm.release_ownership();
+        }
+        self.state()
+            .builder_config
+            .has_ownership
+            .store(false, Ordering::Relaxed);
     }
 }

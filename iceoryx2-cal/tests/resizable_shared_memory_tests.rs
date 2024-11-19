@@ -31,12 +31,12 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_creator = Sut::Builder::new(&storage_name)
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_number_of_chunks_hint(1)
             .create()
             .unwrap();
-        let mut sut_viewer = Sut::Builder::new(&storage_name)
+        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -64,7 +64,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut = Sut::Builder::new(&storage_name)
+        let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_chunk_layout_hint(Layout::new::<u8>())
             .max_number_of_chunks_hint(128)
@@ -87,7 +87,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut = Sut::Builder::new(&storage_name)
+        let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_chunk_layout_hint(Layout::new::<u8>())
             .max_number_of_chunks_hint(128)
@@ -112,12 +112,12 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_creator = Sut::Builder::new(&storage_name)
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_number_of_chunks_hint(1)
             .create()
             .unwrap();
-        let mut sut_viewer = Sut::Builder::new(&storage_name)
+        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -152,7 +152,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_creator = Sut::Builder::new(&storage_name)
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_number_of_chunks_hint(1)
             .create()
@@ -176,7 +176,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_creator = Sut::Builder::new(&storage_name)
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_number_of_chunks_hint(1)
             .create()
@@ -202,7 +202,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_creator = Sut::Builder::new(&storage_name)
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_chunk_layout_hint(Layout::new::<u8>())
             .max_number_of_chunks_hint(1)
@@ -210,7 +210,7 @@ mod resizable_shared_memory {
             .create()
             .unwrap();
 
-        let mut sut_viewer = Sut::Builder::new(&storage_name)
+        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -269,7 +269,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_creator = Sut::Builder::new(&storage_name)
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_chunk_layout_hint(Layout::new::<u8>())
             .max_number_of_chunks_hint(NUMBER_OF_REALLOCATIONS)
@@ -277,7 +277,7 @@ mod resizable_shared_memory {
             .create()
             .unwrap();
 
-        let mut sut_viewer = Sut::Builder::new(&storage_name)
+        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -337,7 +337,7 @@ mod resizable_shared_memory {
         let config = generate_isolated_config::<Sut>();
         let size = 1024;
 
-        let sut_creator = Sut::Builder::new(&storage_name)
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_chunk_layout_hint(Layout::from_size_align(size, 1).unwrap())
             .max_number_of_chunks_hint(NUMBER_OF_REALLOCATIONS)
@@ -345,7 +345,7 @@ mod resizable_shared_memory {
             .create()
             .unwrap();
 
-        let mut sut_viewer = Sut::Builder::new(&storage_name)
+        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -403,7 +403,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut = Sut::Builder::new(&storage_name)
+        let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .allocation_strategy(AllocationStrategy::Static)
             .max_chunk_layout_hint(Layout::new::<u8>())
@@ -426,7 +426,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut = Sut::Builder::new(&storage_name)
+        let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .allocation_strategy(AllocationStrategy::Static)
             .max_chunk_layout_hint(Layout::new::<u8>())
@@ -446,7 +446,7 @@ mod resizable_shared_memory {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut = Sut::Builder::new(&storage_name)
+        let sut = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .allocation_strategy(AllocationStrategy::Static)
             .max_chunk_layout_hint(Layout::new::<u8>())
@@ -473,7 +473,7 @@ mod resizable_shared_memory {
 
         for _ in 0..NUMBER_OF_STORAGES {
             let storage_name = generate_name();
-            let sut = Sut::Builder::new(&storage_name)
+            let sut = Sut::MemoryBuilder::new(&storage_name)
                 .config(&config)
                 .create()
                 .unwrap();
@@ -501,7 +501,7 @@ mod resizable_shared_memory {
 
         for _ in 0..NUMBER_OF_STORAGES {
             let storage_name = generate_name();
-            let sut = Sut::Builder::new(&storage_name)
+            let sut = Sut::MemoryBuilder::new(&storage_name)
                 .config(&config)
                 .max_chunk_layout_hint(Layout::new::<u8>())
                 .allocation_strategy(AllocationStrategy::BestFit)
@@ -540,7 +540,7 @@ mod resizable_shared_memory {
 
         for _ in 0..NUMBER_OF_STORAGES {
             let storage_name = generate_name();
-            let sut = Sut::Builder::new(&storage_name)
+            let sut = Sut::MemoryBuilder::new(&storage_name)
                 .config(&config)
                 .create()
                 .unwrap();
@@ -566,7 +566,7 @@ mod resizable_shared_memory {
 
         for _ in 0..NUMBER_OF_STORAGES {
             let storage_name = generate_name();
-            let sut = Sut::Builder::new(&storage_name)
+            let sut = Sut::MemoryBuilder::new(&storage_name)
                 .config(&config)
                 .max_chunk_layout_hint(Layout::new::<u8>())
                 .allocation_strategy(AllocationStrategy::BestFit)
@@ -603,7 +603,7 @@ mod resizable_shared_memory {
         for _ in 0..NUMBER_OF_STORAGES {
             let storage_name = generate_name();
             assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(false));
-            let sut = Sut::Builder::new(&storage_name)
+            let sut = Sut::MemoryBuilder::new(&storage_name)
                 .config(&config)
                 .create()
                 .unwrap();
@@ -632,7 +632,7 @@ mod resizable_shared_memory {
         for _ in 0..NUMBER_OF_STORAGES {
             let storage_name = generate_name();
             assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(false));
-            let sut = Sut::Builder::new(&storage_name)
+            let sut = Sut::MemoryBuilder::new(&storage_name)
                 .config(&config)
                 .max_chunk_layout_hint(Layout::new::<u8>())
                 .max_number_of_chunks_hint(123)
@@ -667,7 +667,7 @@ mod resizable_shared_memory {
         let config = generate_isolated_config::<Sut>();
         let storage_name = generate_name();
 
-        let sut_creator = Sut::Builder::new(&storage_name)
+        let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_chunk_layout_hint(Layout::new::<u8>())
             .max_number_of_chunks_hint(123)
@@ -682,7 +682,7 @@ mod resizable_shared_memory {
         unsafe { (chunk.data_ptr as *mut u32).write(TEST_VALUE) };
         assert_that!(sut_creator.number_of_active_segments(), eq 2);
 
-        let mut sut_viewer = Sut::Builder::new(&storage_name)
+        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -694,7 +694,6 @@ mod resizable_shared_memory {
     }
 
     // TODO:
-    //  * separate builder for view, without hints and ownership
     //  * has_ownership, acquire/release ownership
     //      * all segments must be updated
     //  * timeout
@@ -703,6 +702,7 @@ mod resizable_shared_memory {
     //    * allocate 1 byte
     //    * allocate N byte, may lead to 2 allocations, one for chunk resize, one for bucket number
     //      resize
+    //  * cal documentation
 
     #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>, resizable_shared_memory::dynamic::DynamicMemory<DefaultAllocator, iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>>)]
     mod posix {}
