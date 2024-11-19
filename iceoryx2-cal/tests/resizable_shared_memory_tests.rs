@@ -36,7 +36,7 @@ mod resizable_shared_memory {
             .max_number_of_chunks_hint(1)
             .create()
             .unwrap();
-        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -119,7 +119,7 @@ mod resizable_shared_memory {
             .max_number_of_chunks_hint(1)
             .create()
             .unwrap();
-        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -216,7 +216,7 @@ mod resizable_shared_memory {
             .create()
             .unwrap();
 
-        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -285,7 +285,7 @@ mod resizable_shared_memory {
             .create()
             .unwrap();
 
-        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -355,7 +355,7 @@ mod resizable_shared_memory {
             .create()
             .unwrap();
 
-        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();
@@ -694,7 +694,7 @@ mod resizable_shared_memory {
         unsafe { (chunk.data_ptr as *mut u32).write(TEST_VALUE) };
         assert_that!(sut_creator.number_of_active_segments(), eq 2);
 
-        let mut sut_viewer = Sut::ViewBuilder::new(&storage_name)
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
             .config(&config)
             .open()
             .unwrap();

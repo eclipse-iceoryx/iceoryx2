@@ -177,7 +177,7 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
     ///
     ///   * This function shall be called exactly once for a received [`PointerOffset`]
     unsafe fn register_and_translate_offset(
-        &mut self,
+        &self,
         offset: PointerOffset,
     ) -> Result<*const u8, SharedMemoryOpenError>;
 
@@ -189,7 +189,7 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
     ///    with the same [`PointerOffset`] before calling this function.
     ///  * This function must be called before a registered [`PointerOffset`] goes out-of-scope.
     ///  * This function must be called at most once for any received [`PointerOffset`]
-    unsafe fn unregister_offset(&mut self, offset: PointerOffset);
+    unsafe fn unregister_offset(&self, offset: PointerOffset);
 
     /// Returns the number of active [`SharedMemory`] segments.
     fn number_of_active_segments(&self) -> usize;

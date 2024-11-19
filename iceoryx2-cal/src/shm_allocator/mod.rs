@@ -13,7 +13,7 @@
 pub mod bump_allocator;
 pub mod pool_allocator;
 
-use std::{alloc::Layout, fmt::Debug, ptr::NonNull, u8};
+use std::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 pub use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
@@ -44,26 +44,22 @@ pub struct PointerOffset(u64);
 impl PointerOffset {
     pub fn new(offset: usize) -> PointerOffset {
         const SEGMENT_ID: u64 = 0;
-        let new_self = Self(
+        Self(
             (offset as u64) << (core::mem::size_of::<SegmentId>() * NUMBER_OF_BITS_IN_BYTE)
-                | SEGMENT_ID as u64,
-        );
-        new_self
+                | SEGMENT_ID,
+        )
     }
 
     pub fn set_segment_id(&mut self, value: SegmentId) {
-        self.0 = self.0 | value.0 as u64;
+        self.0 |= value.0 as u64;
     }
 
     pub fn offset(&self) -> usize {
-        let offset =
-            (self.0 >> (core::mem::size_of::<SegmentId>() * NUMBER_OF_BITS_IN_BYTE)) as usize;
-        offset
+        (self.0 >> (core::mem::size_of::<SegmentId>() * NUMBER_OF_BITS_IN_BYTE)) as usize
     }
 
     pub fn segment_id(&self) -> SegmentId {
-        let value = SegmentId((self.0 & SegmentId::max_segment_id() as u64) as u8);
-        value
+        SegmentId((self.0 & SegmentId::max_segment_id() as u64) as u8)
     }
 }
 

@@ -29,7 +29,7 @@ use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicUsize};
 
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
@@ -40,6 +40,7 @@ use super::{
 const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
 const SEGMENT_ID_SEPARATOR: &[u8] = b"__";
 const MANAGEMENT_SUFFIX: &[u8] = b"mgmt";
+const INVALID_KEY: usize = usize::MAX;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -166,8 +167,8 @@ where
         Ok(DynamicView {
             view_config: self.config,
             _mgmt_segment: mgmt_segment,
-            shared_memory_map,
-            current_idx: None,
+            shared_memory_map: UnsafeCell::new(shared_memory_map),
+            current_idx: IoxAtomicUsize::new(INVALID_KEY),
             _data: PhantomData,
         })
     }
@@ -292,8 +293,8 @@ where
 pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     view_config: ViewConfig<Allocator, Shm>,
     _mgmt_segment: Shm,
-    shared_memory_map: SlotMap<ShmEntry<Allocator, Shm>>,
-    current_idx: Option<SlotMapKey>,
+    shared_memory_map: UnsafeCell<SlotMap<ShmEntry<Allocator, Shm>>>,
+    current_idx: IoxAtomicUsize,
     _data: PhantomData<Allocator>,
 }
 
@@ -303,15 +304,16 @@ where
     Shm::Builder: Debug,
 {
     unsafe fn register_and_translate_offset(
-        &mut self,
+        &self,
         offset: PointerOffset,
     ) -> Result<*const u8, SharedMemoryOpenError> {
         let msg = "Unable to translate";
         let segment_id = offset.segment_id();
         let offset = offset.offset();
         let key = SlotMapKey::new(segment_id.value() as usize);
+        let shared_memory_map = unsafe { &mut *self.shared_memory_map.get() };
 
-        let payload_start_address = match self.shared_memory_map.get(key) {
+        let payload_start_address = match shared_memory_map.get(key) {
             None => {
                 let shm = fail!(from self,
                                 when DynamicMemory::open_segment(&self.view_config, segment_id),
@@ -319,8 +321,8 @@ where
                 let payload_start_address = shm.payload_start_address();
                 let entry = ShmEntry::new(shm);
                 entry.register_offset();
-                self.shared_memory_map.insert_at(key, entry);
-                self.current_idx = Some(key);
+                shared_memory_map.insert_at(key, entry);
+                self.current_idx.store(key.value(), Ordering::Relaxed);
                 payload_start_address
             }
             Some(entry) => {
@@ -332,16 +334,17 @@ where
         Ok((offset + payload_start_address) as *const u8)
     }
 
-    unsafe fn unregister_offset(&mut self, offset: PointerOffset) {
+    unsafe fn unregister_offset(&self, offset: PointerOffset) {
         let segment_id = offset.segment_id();
         let key = SlotMapKey::new(segment_id.value() as usize);
+        let shared_memory_map = unsafe { &mut *self.shared_memory_map.get() };
 
-        match self.shared_memory_map.get(key) {
+        match shared_memory_map.get(key) {
             Some(entry) => {
                 if entry.unregister_offset() == ShmEntryState::Empty
-                    && self.current_idx != Some(key)
+                    && self.current_idx.load(Ordering::Relaxed) != key.value()
                 {
-                    self.shared_memory_map.remove(key);
+                    shared_memory_map.remove(key);
                 }
             }
             None => {
@@ -352,7 +355,8 @@ where
     }
 
     fn number_of_active_segments(&self) -> usize {
-        self.shared_memory_map.len()
+        let shared_memory_map = unsafe { &mut *self.shared_memory_map.get() };
+        shared_memory_map.len()
     }
 }
 
@@ -367,7 +371,7 @@ impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> NamedConcept
     for DynamicMemory<Allocator, Shm>
 {
     fn name(&self) -> &FileName {
-        unsafe { &(&*self.state.get()).builder_config.base_name }
+        unsafe { &(*self.state.get()).builder_config.base_name }
     }
 }
 
@@ -458,7 +462,7 @@ where
     fn managment_segment_name(base_name: &FileName) -> FileName {
         let origin = "resizable_shared_memory::DynamicMemory::managment_segment_name()";
         let msg = "Unable to construct management segment name";
-        let mut adjusted_name = base_name.clone();
+        let mut adjusted_name = *base_name;
         fatal_panic!(from origin, when adjusted_name.push_bytes(SEGMENT_ID_SEPARATOR),
                         "This should never happen! {msg} since it would result in an invalid file name.");
         fatal_panic!(from origin, when adjusted_name.push_bytes(MANAGEMENT_SUFFIX),
@@ -467,7 +471,7 @@ where
     }
 
     fn extract_name_from_management_segment(name: &FileName) -> Option<FileName> {
-        let mut name = name.clone();
+        let mut name = *name;
         if let Ok(true) = name.strip_suffix(MANAGEMENT_SUFFIX) {
             if let Ok(true) = name.strip_suffix(SEGMENT_ID_SEPARATOR) {
                 return Some(name);
@@ -493,7 +497,7 @@ where
                 return None;
             }
 
-            let mut raw_segment_id = name.as_string().clone();
+            let mut raw_segment_id = *name.as_string();
             raw_segment_id.remove_range(0, segment_id_start_pos);
 
             // check nymber of digits
@@ -512,7 +516,7 @@ where
                 return None;
             }
 
-            let mut name = name.clone();
+            let mut name = *name;
             fatal_panic!(from origin,
                 when name.remove_range(pos, name.len() - pos),
                 "This should never happen! {msg} since the shared memory segment is an invalid file name without the segment id suffix.");
@@ -523,6 +527,7 @@ where
         None
     }
 
+    #[allow(clippy::mut_from_ref)] // internal convenience function
     fn state_mut(&self) -> &mut InternalState<Allocator, Shm> {
         unsafe { &mut *self.state.get() }
     }
@@ -558,10 +563,10 @@ where
         segment_id: SegmentId,
     ) -> Shm::Builder {
         let msg = "This should never happen! Unable to create additional shared memory segment since it would result in an invalid shared memory name.";
-        let mut adjusted_name = base_name.clone();
+        let mut adjusted_name = *base_name;
         fatal_panic!(from config, when adjusted_name.push_bytes(SEGMENT_ID_SEPARATOR), "{msg}");
         fatal_panic!(from config, when adjusted_name.push_bytes(segment_id.value().to_string().as_bytes()), "{msg}");
-        Shm::Builder::new(&adjusted_name).config(&config)
+        Shm::Builder::new(&adjusted_name).config(config)
     }
 
     fn create_resized_segment(
@@ -590,7 +595,7 @@ where
         )?;
 
         match state.shared_memory_map.get(state.current_idx) {
-            Some(ref segment) => {
+            Some(segment) => {
                 if segment.chunk_count.load(Ordering::Relaxed) == 0 {
                     state.shared_memory_map.remove(state.current_idx);
                 }
@@ -659,7 +664,7 @@ where
 
         loop {
             match state.shared_memory_map.get(state.current_idx) {
-                Some(ref entry) => match entry.shm.allocate(layout) {
+                Some(entry) => match entry.shm.allocate(layout) {
                     Ok(mut ptr) => {
                         entry.register_offset();
                         ptr.offset
