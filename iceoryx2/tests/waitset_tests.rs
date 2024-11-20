@@ -506,6 +506,26 @@ mod waitset {
         assert_that!(received_event, eq true);
     }
 
+    #[test]
+    fn after_missed_deadline_is_reported_the_waitset_waits_again<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let _interval_guard = sut.attach_interval(TIMEOUT).unwrap();
+        let now = Instant::now();
+
+        std::thread::sleep(TIMEOUT + TIMEOUT / 10);
+
+        sut.wait_and_process_once(|_| CallbackProgression::Continue)
+            .unwrap();
+        sut.wait_and_process_once(|_| CallbackProgression::Continue)
+            .unwrap();
+
+        assert_that!(now.elapsed(), ge 2 * TIMEOUT);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

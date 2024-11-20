@@ -187,4 +187,25 @@ mod deadline_queue {
         assert_that!(missed_deadline_counter, eq 1);
         assert_that!(deadline_idx, eq Some(guard_1.index()));
     }
+
+    #[test]
+    fn duration_until_next_deadline_is_not_zero_if_missed_deadline_have_been_handled() {
+        let sut = DeadlineQueueBuilder::new().create().unwrap();
+
+        let _guard_1 = sut
+            .add_deadline_interval(Duration::from_millis(100))
+            .unwrap();
+        let _guard_2 = sut.add_deadline_interval(Duration::from_secs(1)).unwrap();
+
+        std::thread::sleep(Duration::from_millis(110));
+
+        let next_deadline = sut.duration_until_next_deadline().unwrap();
+        assert_that!(next_deadline, eq Duration::ZERO);
+
+        sut.missed_deadlines(|_| CallbackProgression::Continue)
+            .unwrap();
+
+        let next_deadline = sut.duration_until_next_deadline().unwrap();
+        assert_that!(next_deadline, ne Duration::ZERO);
+    }
 }
