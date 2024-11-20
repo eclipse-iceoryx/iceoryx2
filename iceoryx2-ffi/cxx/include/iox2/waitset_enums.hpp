@@ -58,6 +58,7 @@ enum class WaitSetRunError : uint8_t {
     /// An interrupt signal `SIGINT` was received.
     Interrupt
 };
+
 } // namespace iox2
 
 #endif

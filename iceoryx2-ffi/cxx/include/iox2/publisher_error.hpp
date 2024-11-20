@@ -82,6 +82,7 @@ enum class PublisherSendError : uint8_t {
     /// [`Subscriber`]
     ConnectionError,
 };
+
 } // namespace iox2
 
 #endif

@@ -157,6 +157,7 @@ enum class EventOpenOrCreateError : uint8_t {
     /// [`SampleMut`] in use.
     CreateOldConnectionsStillActive,
 };
+
 } // namespace iox2
 
 #endif

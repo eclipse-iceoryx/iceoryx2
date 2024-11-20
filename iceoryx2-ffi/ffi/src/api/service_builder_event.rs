@@ -23,34 +23,56 @@ use iceoryx2::service::builder::event::{
     Builder, EventCreateError, EventOpenError, EventOpenOrCreateError,
 };
 use iceoryx2::service::port_factory::event::PortFactory;
+use iceoryx2_bb_derive_macros::StringLiteral;
+use iceoryx2_bb_elementary::AsStringLiteral;
 
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_event_open_or_create_error_e {
+    #[CustomString = "does not exist"]
     O_DOES_NOT_EXIST = IOX2_OK as isize + 1,
+    #[CustomString = "insufficient permissions"]
     O_INSUFFICIENT_PERMISSIONS,
+    #[CustomString = "service in corrupted state"]
     O_SERVICE_IN_CORRUPTED_STATE,
+    #[CustomString = "incompatible messaging pattern"]
     O_INCOMPATIBLE_MESSAGING_PATTERN,
+    #[CustomString = "incompatible attributes"]
     O_INCOMPATIBLE_ATTRIBUTES,
+    #[CustomString = "internal failure"]
     O_INTERNAL_FAILURE,
+    #[CustomString = "hangs in creation"]
     O_HANGS_IN_CREATION,
+    #[CustomString = "does not support requested amount of notifiers"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NOTIFIERS,
+    #[CustomString = "does not support requested amount of listeners"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_LISTENERS,
+    #[CustomString = "does not support requested max event id"]
     O_DOES_NOT_SUPPORT_REQUESTED_MAX_EVENT_ID,
+    #[CustomString = "does not support requested amount of nodes"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES,
+    #[CustomString = "exceeds max number of nodes"]
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
+    #[CustomString = "is marked for destruction"]
     O_IS_MARKED_FOR_DESTRUCTION,
+    #[CustomString = "service in corrupted state"]
     C_SERVICE_IN_CORRUPTED_STATE,
+    #[CustomString = "internal failure"]
     C_INTERNAL_FAILURE,
+    #[CustomString = "is being created by another instance"]
     C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE,
+    #[CustomString = "already exists"]
     C_ALREADY_EXISTS,
+    #[CustomString = "hangs in creation"]
     C_HANGS_IN_CREATION,
+    #[CustomString = "insufficient permissions"]
     C_INSUFFICIENT_PERMISSIONS,
+    #[CustomString = "old connection still active"]
     C_OLD_CONNECTION_STILL_ACTIVE,
 }
 
@@ -134,6 +156,27 @@ impl IntoCInt for EventOpenOrCreateError {
 // END type definition
 
 // BEGIN C API
+
+/// Returns a string literal describing the provided [`iox2_event_open_or_create_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_event_open_or_create_error_string(
+    error: iox2_event_open_or_create_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
+}
 
 /// Sets the max notifiers for the builder
 ///

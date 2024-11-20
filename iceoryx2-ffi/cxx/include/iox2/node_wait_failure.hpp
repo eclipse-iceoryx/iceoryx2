@@ -16,6 +16,7 @@
 #include <cstdint>
 
 namespace iox2 {
+
 /// Defines all possible errors that can occur during [`Node::wait()`].
 enum class NodeWaitFailure : uint8_t {
     /// SIGTERM signal was received
@@ -23,6 +24,7 @@ enum class NodeWaitFailure : uint8_t {
     /// SIGINT signal was received
     Interrupt,
 };
+
 } // namespace iox2
 
 #endif

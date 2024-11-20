@@ -19,16 +19,18 @@ use crate::api::{
 
 use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
 use iceoryx2::prelude::*;
+use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_notifier_notify_error_e {
     EVENT_ID_OUT_OF_BOUNDS = IOX2_OK as isize + 1,
 }
@@ -128,6 +130,27 @@ impl HandleToType for iox2_notifier_h_ref {
 // END type definition
 
 // BEGIN C API
+
+/// Returns a string literal describing the provided [`iox2_notifier_notify_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_notifier_notify_error_string(
+    error: iox2_notifier_notify_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
+}
 
 /// Returns the unique port id of the notifier.
 ///

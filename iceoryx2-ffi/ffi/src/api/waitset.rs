@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use std::{ffi::c_int, mem::ManuallyDrop, time::Duration};
+use std::{ffi::c_char, ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
     c_size_t, iox2_callback_context, iox2_callback_progression_e, iox2_file_descriptor_ptr,
@@ -27,13 +27,15 @@ use iceoryx2::{
     },
     service::{ipc, local},
 };
+use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
+use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_waitset_run_error_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
@@ -55,7 +57,7 @@ impl IntoCInt for WaitSetRunError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_waitset_run_result_e {
     TERMINATION_REQUEST = IOX2_OK as isize + 1,
     INTERRUPT,
@@ -81,7 +83,7 @@ impl From<WaitSetRunResult> for iox2_waitset_run_result_e {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_waitset_attachment_error_e {
     INSUFFICIENT_CAPACITY = IOX2_OK as isize + 1,
     ALREADY_ATTACHED,
@@ -105,7 +107,7 @@ impl IntoCInt for WaitSetAttachmentError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_waitset_create_error_e {
     INTERNAL_ERROR = IOX2_OK as isize + 1,
 }
@@ -208,6 +210,70 @@ pub type iox2_waitset_run_callback = extern "C" fn(
 // END type definition
 
 // BEGIN C API
+
+/// Returns a string literal describing the provided [`iox2_waitset_create_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_create_error_string(
+    error: iox2_waitset_create_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
+}
+
+/// Returns a string literal describing the provided [`iox2_waitset_attachment_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
+    error: iox2_waitset_attachment_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
+}
+
+/// Returns a string literal describing the provided [`iox2_waitset_run_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_run_error_string(
+    error: iox2_waitset_run_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
+}
+
 /// Drops a [`iox2_waitset_h`] and calls all corresponding cleanup functions.
 ///
 /// # Safety

@@ -35,6 +35,7 @@ enum class NotifierNotifyError : uint8_t {
     /// [`Service`]
     EventIdOutOfBounds,
 };
+
 } // namespace iox2
 
 #endif

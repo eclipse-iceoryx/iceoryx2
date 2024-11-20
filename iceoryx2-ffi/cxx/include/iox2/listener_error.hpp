@@ -41,6 +41,7 @@ enum class ListenerWaitError : uint8_t {
     /// configured system.
     InternalFailure,
 };
+
 } // namespace iox2
 
 #endif

@@ -14,8 +14,10 @@
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
+use iceoryx2_bb_derive_macros::StringLiteral;
+use iceoryx2_bb_elementary::AsStringLiteral;
 
-use core::ffi::{c_int, c_void};
+use core::ffi::{c_char, c_int, c_void};
 
 mod config;
 mod event_id;
@@ -119,7 +121,7 @@ impl From<iox2_callback_progression_e> for CallbackProgression {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_semantic_string_error_e {
     INVALID_CONTENT = IOX2_OK as isize + 1,
     EXCEEDS_MAXIMUM_LENGTH,
@@ -185,4 +187,25 @@ trait HandleToType {
 
 trait AssertNonNullHandle {
     fn assert_non_null(self);
+}
+
+/// Returns a string literal describing the provided [`iox2_semantic_string_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_semantic_string_error_string(
+    error: iox2_semantic_string_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
 }

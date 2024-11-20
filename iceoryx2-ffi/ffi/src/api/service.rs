@@ -15,12 +15,14 @@
 
 // BEGIN type definition
 
-use std::ffi::c_int;
+use core::ffi::{c_char, c_int};
 
 use iceoryx2::service::{
     ipc, local, messaging_pattern::MessagingPattern, Service, ServiceDetails, ServiceDetailsError,
     ServiceListError,
 };
+use iceoryx2_bb_derive_macros::StringLiteral;
+use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_bb_elementary::CallbackProgression;
 
 use crate::{
@@ -70,7 +72,7 @@ impl From<&iceoryx2::service::static_config::messaging_pattern::MessagingPattern
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_service_details_error_e {
     FAILED_TO_OPEN_STATIC_SERVICE_INFO = IOX2_OK as isize + 1,
     FAILED_TO_READ_STATIC_SERVICE_INFO,
@@ -106,7 +108,7 @@ impl IntoCInt for ServiceDetailsError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_service_list_error_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
@@ -129,6 +131,50 @@ pub type iox2_service_list_callback = extern "C" fn(
 ) -> iox2_callback_progression_e;
 
 // END type definition
+
+// BEGIN C API
+
+/// Returns a string literal describing the provided [`iox2_service_details_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_details_error_string(
+    error: iox2_service_details_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
+}
+
+/// Returns a string literal describing the provided [`iox2_service_list_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_list_error_string(
+    error: iox2_service_list_error_e,
+) -> *const c_char {
+    error.as_str_literal().as_ptr() as *const c_char
+}
 
 /// Checks if a specified service exists. If the service exists `does_exist` will contain
 /// true, otherwise false after the call. On error it returns `iox2_service_details_error_e`, on
@@ -236,3 +282,5 @@ pub unsafe extern "C" fn iox2_service_list(
         Err(e) => e.into_c_int(),
     }
 }
+
+// END C API

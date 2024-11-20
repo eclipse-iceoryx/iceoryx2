@@ -16,6 +16,7 @@
 * Developer permissions for resources [#460](https://github.com/eclipse-iceoryx/iceoryx2/issues/460)
 * Add `--send-copy` flag to Benchmark to consider mem operations [#483](https://github.com/eclipse-iceoryx/iceoryx2/issues/483)
 * Support for slices in the C++ bindings [#490](https://github.com/eclipse-iceoryx/iceoryx2/issues/490)
+* Add API to retrieve string description of error enums [$491](https://github.com/eclipse-iceoryx/iceoryx2/issues/491)
 * Add relocatable `SlotMap` [#504](https://github.com/eclipse-iceoryx/iceoryx2/issues/504)
 
 ### Bugfixes
@@ -59,10 +60,13 @@
     conflicts when merging.
 -->
 
-* APIs to support slices in the C++ bindings [#490](https://github.com/eclipse-iceoryx/iceoryx2/issues/490)
+* APIs to support slices in the C/C++ bindings [#490](https://github.com/eclipse-iceoryx/iceoryx2/issues/490)
 * Rename `iox2_publisher_loan` to `iox2_publisher_loan_slice_uninit` [#490](https://github.com/eclipse-iceoryx/iceoryx2/issues/490)
     1. C always loans slices, for a single element, specify the
        `number_of_elements` to be 1
+* Add APIs to C/C++ bindings to get string representation of error enum [#491](https://github.com/eclipse-iceoryx/iceoryx2/issues/491)
+    1. C API: `iox2_{error_enum_name}_string(enum_value)`
+    2. C++ API: `iox::into<const char*>(enum_value)`
 * APIs to retrieve the value of `UniquePortIds` from the C/C++ bindings [#500](https://github.com/eclipse-iceoryx/iceoryx2/issues/500)
 
 ### API Breaking Changes

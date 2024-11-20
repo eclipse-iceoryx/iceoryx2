@@ -43,6 +43,7 @@ enum class SubscriberCreateError : uint8_t {
     /// [`Service`] offers the creation will fail.
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
 };
+
 } // namespace iox2
 
 #endif

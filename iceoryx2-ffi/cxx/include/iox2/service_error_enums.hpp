@@ -43,6 +43,7 @@ enum class ServiceListError : uint8_t {
     /// configured system.
     InternalError,
 };
+
 } // namespace iox2
 
 #endif
