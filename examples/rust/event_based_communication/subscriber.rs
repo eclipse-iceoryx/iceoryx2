@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::time::Duration;
+
 use examples_common::{PubSubEvent, TransmissionData};
 use iceoryx2::{
     port::{listener::Listener, notifier::Notifier, subscriber::Subscriber},
@@ -18,6 +20,7 @@ use iceoryx2::{
 };
 
 const HISTORY_SIZE: usize = 20;
+const DEADLINE: Duration = Duration::from_secs(2);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -25,18 +28,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subscriber = EventBasedSubscriber::new(&node, &"My/Funk/ServiceName".try_into()?)?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-    let _guard = waitset.attach(&subscriber)?;
+    let subscriber_guard = waitset.attach_deadline(&subscriber, DEADLINE)?;
 
-    loop {
-        match waitset.blocking_wait(|attachment_id| {
-            if attachment_id.originates_from(&subscriber) {
-                subscriber.handle_event().unwrap();
-            }
-        })? {
-            WaitEvent::TerminationRequest | WaitEvent::Interrupt => break,
-            _ => (),
+    let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+        if attachment_id.has_event_from(&subscriber_guard) {
+            subscriber.handle_event().unwrap();
+        } else if attachment_id.has_missed_deadline(&subscriber_guard) {
+            println!(
+                "Contract violation! The subscriber did not receive a message for {:?}.",
+                DEADLINE
+            );
         }
-    }
+
+        CallbackProgression::Continue
+    };
+
+    waitset.wait_and_process(on_event)?;
 
     println!("exit");
 

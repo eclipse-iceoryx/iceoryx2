@@ -18,7 +18,7 @@ use iceoryx2::{
     },
     prelude::*,
 };
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 const HISTORY_SIZE: usize = 20;
@@ -28,34 +28,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let publisher = EventBasedPublisher::new(&node, &"My/Funk/ServiceName".try_into()?)?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-    let _guard = waitset.attach(&publisher)?;
+    let publisher_guard = waitset.attach_notification(&publisher)?;
+    let cyclic_trigger_guard = waitset.attach_interval(CYCLE_TIME)?;
 
     let mut counter: u64 = 0;
-    let mut current_wait_time = CYCLE_TIME;
-    let mut runtime = Instant::now();
 
-    loop {
-        match waitset.timed_wait(
-            |attachment_id| {
-                if attachment_id.originates_from(&publisher) {
-                    publisher.handle_event().unwrap();
-                }
-            },
-            current_wait_time,
-        )? {
-            WaitEvent::TerminationRequest | WaitEvent::Interrupt => break,
-            WaitEvent::Tick => {
-                println!("send message: {}", counter);
-                publisher.send(counter)?;
-                counter += 1;
-                current_wait_time = CYCLE_TIME;
-                runtime = Instant::now();
-            }
-            WaitEvent::Notification => {
-                current_wait_time = CYCLE_TIME - runtime.elapsed();
-            }
+    let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+        if attachment_id.has_event_from(&cyclic_trigger_guard) {
+            println!("send message: {}", counter);
+            publisher.send(counter).unwrap();
+            counter += 1;
+        } else if attachment_id.has_event_from(&publisher_guard) {
+            publisher.handle_event().unwrap();
         }
-    }
+        CallbackProgression::Continue
+    };
+
+    waitset.wait_and_process(on_event)?;
 
     Ok(())
 }
