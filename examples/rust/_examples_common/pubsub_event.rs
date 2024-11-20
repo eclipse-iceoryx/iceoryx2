@@ -23,15 +23,15 @@ pub enum PubSubEvent {
     Undefined,
 }
 
-impl Into<EventId> for PubSubEvent {
-    fn into(self) -> EventId {
-        EventId::new(self as usize)
+impl From<PubSubEvent> for EventId {
+    fn from(value: PubSubEvent) -> Self {
+        EventId::new(value as usize)
     }
 }
 
-impl Into<PubSubEvent> for EventId {
-    fn into(self) -> PubSubEvent {
-        match self.as_value() {
+impl From<EventId> for PubSubEvent {
+    fn from(value: EventId) -> Self {
+        match value.as_value() {
             0 => PubSubEvent::PublisherConnected,
             1 => PubSubEvent::PublisherDisconnected,
             2 => PubSubEvent::SubscriberConnected,
