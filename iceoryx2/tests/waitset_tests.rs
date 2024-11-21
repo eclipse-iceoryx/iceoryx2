@@ -516,10 +516,11 @@ mod waitset {
         let _interval_guard = sut.attach_interval(TIMEOUT).unwrap();
         let now = Instant::now();
 
-        std::thread::sleep(TIMEOUT + TIMEOUT / 10);
-
         sut.wait_and_process_once(|_| CallbackProgression::Continue)
             .unwrap();
+
+        assert_that!(now.elapsed(), ge TIMEOUT);
+
         sut.wait_and_process_once(|_| CallbackProgression::Continue)
             .unwrap();
 

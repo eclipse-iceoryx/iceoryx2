@@ -20,7 +20,7 @@ pub enum PubSubEvent {
     SentSample = 4,
     ReceivedSample = 5,
     SentHistory = 6,
-    Undefined,
+    Unknown,
 }
 
 impl From<PubSubEvent> for EventId {
@@ -39,7 +39,7 @@ impl From<EventId> for PubSubEvent {
             4 => PubSubEvent::SentSample,
             5 => PubSubEvent::ReceivedSample,
             6 => PubSubEvent::SentHistory,
-            _ => PubSubEvent::Undefined,
+            _ => PubSubEvent::Unknown,
         }
     }
 }
