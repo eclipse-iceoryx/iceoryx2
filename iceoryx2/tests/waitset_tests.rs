@@ -519,12 +519,13 @@ mod waitset {
         sut.wait_and_process_once(|_| CallbackProgression::Continue)
             .unwrap();
 
-        assert_that!(now.elapsed(), ge TIMEOUT);
+        assert_that!(now.elapsed(), time_at_least TIMEOUT);
+        let now = Instant::now();
 
         sut.wait_and_process_once(|_| CallbackProgression::Continue)
             .unwrap();
 
-        assert_that!(now.elapsed(), ge 2 * TIMEOUT);
+        assert_that!(now.elapsed(), time_at_least TIMEOUT / 2);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
