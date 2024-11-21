@@ -30,7 +30,10 @@
   [#436](https://github.com/eclipse-iceoryx/iceoryx2/issues/436)
 * Fix misleading warning related to default config file
   [#437](https://github.com/eclipse-iceoryx/iceoryx2/issues/437)
-* Fix infinite loop triggering in `WaitSet` [#518](https://github.com/eclipse-iceoryx/iceoryx2/issues/518)
+* Fix infinite loop triggering in `WaitSet`
+  [#518](https://github.com/eclipse-iceoryx/iceoryx2/issues/518)
+* Fix cmake build with iceoryx2 as submodule
+  [#521](https://github.com/eclipse-iceoryx/iceoryx2/issues/521)
 
 ### Refactoring
 
