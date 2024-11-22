@@ -280,6 +280,7 @@ impl DeadlineQueue {
 
         let now = now.as_duration().as_nanos();
         self.handle_missed_deadlines(now, |idx| -> CallbackProgression { call(idx) });
+        *self.previous_iteration.borrow_mut() = now;
 
         Ok(())
     }

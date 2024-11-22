@@ -26,3 +26,5 @@ pub use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 pub use iceoryx2_bb_log::set_log_level;
 pub use iceoryx2_bb_log::LogLevel;
+pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
+pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;

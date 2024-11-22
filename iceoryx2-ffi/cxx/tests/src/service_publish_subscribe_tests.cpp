@@ -348,7 +348,6 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t PAYLOAD_ALIGNMENT = 8;
-    constexpr auto SLICE_MAX_LENGTH = 10;
 
     const auto service_name = iox2_testing::generate_service_name();
 

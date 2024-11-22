@@ -53,6 +53,16 @@ path = "rust/event_multiplexing/notifier.rs"
 name = "event_multiplexing_wait"
 path = "rust/event_multiplexing/wait.rs"
 
+# event based communication
+
+[[example]]
+name = "event_based_comm_publisher"
+path = "rust/event_based_communication/publisher.rs"
+
+[[example]]
+name = "event_based_comm_subscriber"
+path = "rust/event_based_communication/subscriber.rs"
+
 # publish_subscribe
 
 [[example]]

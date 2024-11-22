@@ -10,12 +10,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-package(default_visibility = ["//visibility:public"])
+load("@rules_rust//rust:defs.bzl", "rust_binary")
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+rust_binary(
+    name = "notifier",
+    srcs = [
+        "notifier.rs",
+    ],
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//examples/rust:examples-common",
+        "@crate_index//:clap",
+    ],
+)
 
-rust_library(
-    name = "examples-common",
-    srcs = glob(["_examples_common/**/*.rs"]),
-    deps = ["//iceoryx2:iceoryx2"],
+rust_binary(
+    name = "wait",
+    srcs = [
+        "wait.rs",
+    ],
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//examples/rust:examples-common",
+        "@crate_index//:clap",
+    ],
 )
