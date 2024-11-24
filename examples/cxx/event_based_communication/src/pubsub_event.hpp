@@ -31,12 +31,12 @@ enum class PubSubEvent : uint8_t {
 
 namespace iox {
 template <>
-inline constexpr auto from<PubSubEvent, size_t>(const PubSubEvent value) noexcept -> size_t {
+constexpr auto from<PubSubEvent, size_t>(const PubSubEvent value) noexcept -> size_t {
     return static_cast<uint8_t>(value);
 }
 
 template <>
-inline constexpr auto from<size_t, PubSubEvent>(const size_t value) noexcept -> PubSubEvent {
+constexpr auto from<size_t, PubSubEvent>(const size_t value) noexcept -> PubSubEvent {
     switch (value) {
     case from<PubSubEvent, size_t>(PubSubEvent::PublisherConnected):
         return PubSubEvent::PublisherConnected;

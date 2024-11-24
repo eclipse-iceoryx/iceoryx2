@@ -164,4 +164,3 @@ auto EventBasedSubscriber::receive() -> iox::optional<Sample<ServiceType::Ipc, T
 
     return sample;
 }
-
