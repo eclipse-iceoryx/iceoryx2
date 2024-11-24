@@ -18,6 +18,7 @@
 #include "iox/function.hpp"
 #include "iox/optional.hpp"
 #include "iox2/event_id.hpp"
+#include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/service_type.hpp"
@@ -34,6 +35,9 @@ class Listener {
 
     Listener(const Listener&) = delete;
     auto operator=(const Listener&) -> Listener& = delete;
+
+    /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`] of the [`Listener`].
+    auto file_descriptor() const -> FileDescriptorView;
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]
     auto id() const -> UniqueListenerId;

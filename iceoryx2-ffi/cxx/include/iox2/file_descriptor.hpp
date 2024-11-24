@@ -23,6 +23,8 @@ class FileDescriptorView {
     template <ServiceType>
     friend class WaitSet;
     friend class FileDescriptor;
+    template <ServiceType>
+    friend class Listener;
 
     explicit FileDescriptorView(iox2_file_descriptor_ptr handle);
 
