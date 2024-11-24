@@ -17,8 +17,24 @@
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
+class FileDescriptorView;
+
+/// Abstract class that can be implemented by a class that is based on a [`FileDescriptor`]
+class FileDescriptorBased {
+  public:
+    FileDescriptorBased() = default;
+    FileDescriptorBased(const FileDescriptorBased&) = default;
+    FileDescriptorBased(FileDescriptorBased&&) = default;
+    auto operator=(const FileDescriptorBased&) -> FileDescriptorBased& = default;
+    auto operator=(FileDescriptorBased&&) -> FileDescriptorBased& = default;
+    virtual ~FileDescriptorBased() = default;
+
+    /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`].
+    virtual auto file_descriptor() const -> FileDescriptorView = 0;
+};
+
 /// A view to a [`FileDescriptor`].
-class FileDescriptorView {
+class FileDescriptorView : public FileDescriptorBased {
   private:
     template <ServiceType>
     friend class WaitSet;
@@ -27,6 +43,9 @@ class FileDescriptorView {
     friend class Listener;
 
     explicit FileDescriptorView(iox2_file_descriptor_ptr handle);
+
+    /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`].
+    auto file_descriptor() const -> FileDescriptorView override;
 
     iox2_file_descriptor_ptr m_handle = nullptr;
 };

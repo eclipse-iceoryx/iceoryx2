@@ -12,6 +12,7 @@
 
 #include "iox2/publisher.hpp"
 #include "iox/duration.hpp"
+#include "iox2/file_descriptor.hpp"
 #include "iox2/listener.hpp"
 #include "iox2/node.hpp"
 #include "iox2/notifier.hpp"
@@ -30,11 +31,11 @@ using namespace iox2;
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 constexpr uint64_t HISTORY_SIZE = 20;
 
-class EventBasedPublisher {
+class EventBasedPublisher : public FileDescriptorBased {
   public:
     EventBasedPublisher(const EventBasedPublisher&) = delete;
     EventBasedPublisher(EventBasedPublisher&&) = default;
-    ~EventBasedPublisher();
+    ~EventBasedPublisher() override;
 
     auto operator=(const EventBasedPublisher&) -> EventBasedPublisher& = delete;
     auto operator=(EventBasedPublisher&&) -> EventBasedPublisher& = default;
@@ -42,7 +43,7 @@ class EventBasedPublisher {
     static auto create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> EventBasedPublisher;
     void handle_event();
     void send(uint64_t counter);
-    auto file_descriptor() -> FileDescriptorView;
+    auto file_descriptor() const -> FileDescriptorView override;
 
   private:
     EventBasedPublisher(Publisher<ServiceType::Ipc, TransmissionData, void>&& publisher,
@@ -59,7 +60,7 @@ auto main() -> int {
     auto publisher = EventBasedPublisher::create(node, ServiceName::create("My/Funk/ServiceName").expect(""));
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
-    auto publisher_guard = waitset.attach_notification(publisher.file_descriptor()).expect("");
+    auto publisher_guard = waitset.attach_notification(publisher).expect("");
     auto cyclic_trigger_guard = waitset.attach_interval(CYCLE_TIME).expect("");
 
     uint64_t counter = 0;
@@ -111,7 +112,7 @@ auto EventBasedPublisher::create(Node<ServiceType::Ipc>& node, const ServiceName
     return EventBasedPublisher { std::move(publisher), std::move(listener), std::move(notifier) };
 }
 
-auto EventBasedPublisher::file_descriptor() -> FileDescriptorView {
+auto EventBasedPublisher::file_descriptor() const -> FileDescriptorView {
     return m_listener.file_descriptor();
 }
 

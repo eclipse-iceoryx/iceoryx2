@@ -27,17 +27,17 @@
 namespace iox2 {
 /// Represents the receiving endpoint of an event based communication.
 template <ServiceType>
-class Listener {
+class Listener : public FileDescriptorBased {
   public:
     Listener(Listener&&) noexcept;
     auto operator=(Listener&&) noexcept -> Listener&;
-    ~Listener();
+    ~Listener() override;
 
     Listener(const Listener&) = delete;
     auto operator=(const Listener&) -> Listener& = delete;
 
     /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`] of the [`Listener`].
-    auto file_descriptor() const -> FileDescriptorView;
+    auto file_descriptor() const -> FileDescriptorView override;
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]
     auto id() const -> UniqueListenerId;
