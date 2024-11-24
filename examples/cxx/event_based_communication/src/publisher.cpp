@@ -31,6 +31,9 @@ using namespace iox2;
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 constexpr uint64_t HISTORY_SIZE = 20;
 
+// High-level publisher class that contains besides a publisher also a notifier and a listener.
+// The notifier is used to send events like `PubSubEvent::SentSample` or `PubSubEvent::SentHistory`
+// and the listener to wait for new subscribers.
 class EventBasedPublisher : public FileDescriptorBased {
   public:
     EventBasedPublisher(const EventBasedPublisher&) = delete;
@@ -60,22 +63,29 @@ auto main() -> int {
     auto publisher = EventBasedPublisher::create(node, ServiceName::create("My/Funk/ServiceName").expect(""));
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
+    // Whenever our publisher receives an event we get notified.
     auto publisher_guard = waitset.attach_notification(publisher).expect("");
+    // Attach an interval so that we wake up and can publish a new message
     auto cyclic_trigger_guard = waitset.attach_interval(CYCLE_TIME).expect("");
 
     uint64_t counter = 0;
 
+    // Event callback that is called whenever the WaitSet received an event.
     auto on_event = [&](WaitSetAttachmentId<ServiceType::Ipc> attachment_id) -> CallbackProgression {
+        // when the cyclic trigger guard gets notified we send out a new message
         if (attachment_id.has_event_from(cyclic_trigger_guard)) {
             std::cout << "send message: " << counter << std::endl;
             publisher.send(counter);
             counter += 1;
+            // when something else happens on the publisher we handle the events
         } else if (attachment_id.has_event_from(publisher_guard)) {
             publisher.handle_event();
         }
         return CallbackProgression::Continue;
     };
 
+    // Start the event loop. It will run until `CallbackProgression::Stop` is returned by the
+    // event callback or an interrupt/termination signal was received.
     waitset.wait_and_process(on_event).expect("");
 
     std::cout << "exit ..." << std::endl;
@@ -108,6 +118,9 @@ auto EventBasedPublisher::create(Node<ServiceType::Ipc>& node, const ServiceName
     auto notifier = event_service.notifier_builder().create().expect("");
     auto listener = event_service.listener_builder().create().expect("");
     auto publisher = pubsub_service.publisher_builder().create().expect("");
+
+    notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::PublisherConnected)))
+        .expect("");
 
     return EventBasedPublisher { std::move(publisher), std::move(listener), std::move(notifier) };
 }

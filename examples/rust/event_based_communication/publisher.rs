@@ -28,22 +28,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let publisher = EventBasedPublisher::new(&node, &"My/Funk/ServiceName".try_into()?)?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+
+    // Whenever our publisher receives an event we get notified.
     let publisher_guard = waitset.attach_notification(&publisher)?;
+    // Attach an interval so that we wake up and can publish a new message
     let cyclic_trigger_guard = waitset.attach_interval(CYCLE_TIME)?;
 
     let mut counter: u64 = 0;
 
+    // Event callback that is called whenever the WaitSet received an event.
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+        // when the cyclic trigger guard gets notified we send out a new message
         if attachment_id.has_event_from(&cyclic_trigger_guard) {
             println!("send message: {}", counter);
             publisher.send(counter).unwrap();
             counter += 1;
+            // when something else happens on the publisher we handle the events
         } else if attachment_id.has_event_from(&publisher_guard) {
             publisher.handle_event().unwrap();
         }
         CallbackProgression::Continue
     };
 
+    // Start the event loop. It will run until `CallbackProgression::Stop` is returned by the
+    // event callback or an interrupt/termination signal was received.
     waitset.wait_and_process(on_event)?;
 
     println!("exit ...");
@@ -51,6 +59,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// High-level publisher class that contains besides a publisher also a notifier and a listener.
+/// The notifier is used to send events like `PubSubEvent::SentSample` or `PubSubEvent::SentHistory`
+/// and the listener to wait for new subscribers.
 #[derive(Debug)]
 struct EventBasedPublisher {
     publisher: Publisher<ipc::Service, TransmissionData, ()>,

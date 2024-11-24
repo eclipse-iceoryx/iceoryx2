@@ -28,11 +28,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subscriber = EventBasedSubscriber::new(&node, &"My/Funk/ServiceName".try_into()?)?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+
+    // The subscriber is attached as a deadline, meaning that we expect some activity
+    // latest after the deadline has passed.
     let subscriber_guard = waitset.attach_deadline(&subscriber, DEADLINE)?;
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+        // If we have received a new event on the subscriber we handle it.
         if attachment_id.has_event_from(&subscriber_guard) {
             subscriber.handle_event().unwrap();
+            // If the subscriber did not receive an event until DEADLINE has
+            // passed, we print out a warning.
         } else if attachment_id.has_missed_deadline(&subscriber_guard) {
             println!(
                 "Contract violation! The subscriber did not receive a message for {:?}.",
@@ -65,6 +71,12 @@ impl FileDescriptorBased for EventBasedSubscriber {
 
 impl SynchronousMultiplexing for EventBasedSubscriber {}
 
+// High-level subscriber class that contains besides a subscriber also a notifier
+// and a listener. The notifier is used to send events like
+// `PubSubEvent::ReceivedSample` or to notify the publisher that a new subscriber
+// connected.
+// The listener waits for events originating from the publisher like
+// `PubSubEvent::SentSample`.
 impl EventBasedSubscriber {
     fn new(
         node: &Node<ipc::Service>,
