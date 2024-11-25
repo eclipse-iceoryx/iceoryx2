@@ -158,7 +158,7 @@ pub mod details {
         used_chunk_list: RelocatableVec<RelocatableUsedChunkList>,
         max_borrowed_samples: usize,
         sample_size: usize,
-        number_of_samples: usize,
+        number_of_samples_per_segment: usize,
         number_of_segments: u8,
         state: IoxAtomicU8,
         init_state: IoxAtomicU64,
@@ -172,7 +172,7 @@ pub mod details {
             enable_safe_overflow: bool,
             max_borrowed_samples: usize,
             sample_size: usize,
-            number_of_samples: usize,
+            number_of_samples_per_segment: usize,
             number_of_segments: u8,
         ) -> Self {
             Self {
@@ -190,7 +190,7 @@ pub mod details {
                 enable_safe_overflow,
                 sample_size,
                 max_borrowed_samples,
-                number_of_samples,
+                number_of_samples_per_segment,
                 number_of_segments,
             }
         }
@@ -219,7 +219,7 @@ pub mod details {
         enable_safe_overflow: bool,
         max_borrowed_samples: usize,
         sample_size: usize,
-        number_of_samples: usize,
+        number_of_samples_per_segment: usize,
         number_of_segments: u8,
         timeout: Duration,
         config: Configuration<Storage>,
@@ -238,7 +238,7 @@ pub mod details {
             let supplementary_size = SharedManagementData::const_memory_size(
                 self.submission_channel_size(),
                 self.completion_channel_size(),
-                self.number_of_samples,
+                self.number_of_samples_per_segment,
                 self.number_of_segments,
             );
 
@@ -259,7 +259,7 @@ pub mod details {
 
             for _ in 0..self.number_of_segments {
                 if !unsafe {
-                    data.used_chunk_list.push(RelocatableUsedChunkList::new_uninit(self.number_of_samples))
+                    data.used_chunk_list.push(RelocatableUsedChunkList::new_uninit(self.number_of_samples_per_segment))
                 } {
                     fatal_panic!(from self,
                         "{} since the used chunk list could not be added. - This is an implementation bug!", msg);
@@ -281,7 +281,7 @@ pub mod details {
                                     self.enable_safe_overflow,
                                     self.max_borrowed_samples,
                                     self.sample_size,
-                                    self.number_of_samples,
+                                    self.number_of_samples_per_segment,
                                     self.number_of_segments
                                 )
             );
@@ -341,10 +341,11 @@ pub mod details {
                         msg, self.sample_size, storage.get().sample_size);
                 }
 
-                if storage.get().number_of_samples != self.number_of_samples {
+                if storage.get().number_of_samples_per_segment != self.number_of_samples_per_segment
+                {
                     fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSamples,
                         "{} since the requested number of samples is set to {} but should be set to {}.",
-                        msg, self.number_of_samples, storage.get().number_of_samples);
+                        msg, self.number_of_samples_per_segment, storage.get().number_of_samples_per_segment);
                 }
 
                 if storage.get().number_of_segments != self.number_of_segments {
@@ -400,7 +401,7 @@ pub mod details {
                 enable_safe_overflow: DEFAULT_ENABLE_SAFE_OVERFLOW,
                 max_borrowed_samples: DEFAULT_MAX_BORROWED_SAMPLES,
                 sample_size: 0,
-                number_of_samples: 0,
+                number_of_samples_per_segment: 0,
                 number_of_segments: DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS,
                 config: Configuration::default(),
                 timeout: Duration::ZERO,
@@ -436,8 +437,8 @@ pub mod details {
             self
         }
 
-        fn number_of_samples(mut self, value: usize) -> Self {
-            self.number_of_samples = value;
+        fn number_of_samples_per_segment(mut self, value: usize) -> Self {
+            self.number_of_samples_per_segment = value;
             self
         }
 
@@ -543,19 +544,17 @@ pub mod details {
 
             debug_assert!(segment_id < storage.number_of_segments as usize);
 
-            if !storage.used_chunk_list[segment_id].insert(index) {
-                fail!(from self, with ZeroCopySendError::UsedChunkListFull,
-                    "{} since the used chunk list is full.", msg);
-            }
+            let did_not_send_same_offset_twice = storage.used_chunk_list[segment_id].insert(index);
+            debug_assert!(did_not_send_same_offset_twice);
 
             match unsafe { storage.submission_channel.push(ptr.as_value()) } {
                 Some(v) => {
-                    let pointer_offset = PointerOffset::from_value(v as u64);
-                    if !storage.used_chunk_list[segment_id]
+                    let pointer_offset = PointerOffset::from_value(v);
+                    if !storage.used_chunk_list[pointer_offset.segment_id().value() as usize]
                         .remove(pointer_offset.offset() / sample_size)
                     {
                         fail!(from self, with ZeroCopySendError::ConnectionCorrupted,
-                        "{} since an invalid offset was returned on overflow.", msg);
+                        "{} since the invalid offset {:?} was returned on overflow.", msg, pointer_offset);
                     }
 
                     Ok(Some(pointer_offset))
@@ -586,7 +585,7 @@ pub mod details {
             match unsafe { storage.completion_channel.pop() } {
                 None => Ok(None),
                 Some(v) => {
-                    let pointer_offset = PointerOffset::from_value(v as u64);
+                    let pointer_offset = PointerOffset::from_value(v);
                     let segment_id = pointer_offset.segment_id().value() as usize;
 
                     debug_assert!(segment_id < storage.number_of_segments as usize);
@@ -691,7 +690,7 @@ pub mod details {
                 None => Ok(None),
                 Some(v) => {
                     *self.borrow_counter() += 1;
-                    Ok(Some(PointerOffset::from_value(v as u64)))
+                    Ok(Some(PointerOffset::from_value(v)))
                 }
             }
         }
