@@ -993,7 +993,6 @@ mod zero_copy_connection {
     #[cfg(not(debug_assertions))]
     #[test]
     fn receive_pointer_offset_with_out_of_bounds_segment_id_fails<Sut: ZeroCopyConnection>() {
-        set_log_level(LogLevel::Trace);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 123;
         let name = generate_name();
@@ -1054,7 +1053,6 @@ mod zero_copy_connection {
     fn receiver_cannot_borrow_more_samples_then_set_up_for_multiple_segments<
         Sut: ZeroCopyConnection,
     >() {
-        iceoryx2_bb_log::set_log_level(iceoryx2_bb_log::LogLevel::Trace);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_name();
@@ -1108,7 +1106,6 @@ mod zero_copy_connection {
 
     #[test]
     fn receive_with_multiple_segments_works<Sut: ZeroCopyConnection>() {
-        iceoryx2_bb_log::set_log_level(iceoryx2_bb_log::LogLevel::Trace);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_name();
@@ -1159,7 +1156,6 @@ mod zero_copy_connection {
 
     #[test]
     fn reclaim_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
-        iceoryx2_bb_log::set_log_level(iceoryx2_bb_log::LogLevel::Trace);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_name();
@@ -1216,7 +1212,6 @@ mod zero_copy_connection {
 
     #[test]
     fn acquire_used_offsets_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
-        iceoryx2_bb_log::set_log_level(iceoryx2_bb_log::LogLevel::Trace);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_name();
@@ -1265,7 +1260,6 @@ mod zero_copy_connection {
     #[should_panic]
     #[test]
     fn panic_when_same_offset_is_sent_twice<Sut: ZeroCopyConnection>() {
-        iceoryx2_bb_log::set_log_level(iceoryx2_bb_log::LogLevel::Trace);
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
         let name = generate_name();
@@ -1302,7 +1296,6 @@ mod zero_copy_connection {
 
     #[test]
     fn overflow_works_with_multiple_segments<Sut: ZeroCopyConnection>() {
-        iceoryx2_bb_log::set_log_level(iceoryx2_bb_log::LogLevel::Trace);
         const NUMBER_OF_SEGMENTS: u8 = 98;
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
