@@ -541,12 +541,7 @@ pub mod details {
                     "{} since the used chunk list is full.", msg);
             }
 
-            match unsafe {
-                self.storage
-                    .get()
-                    .submission_channel
-                    .push(ptr.as_value() as usize)
-            } {
+            match unsafe { self.storage.get().submission_channel.push(ptr.as_value()) } {
                 Some(v) => {
                     let pointer_offset = PointerOffset::from_value(v as u64);
                     if !self.storage.get().used_chunk_list[segment_id]

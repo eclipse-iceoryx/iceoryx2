@@ -30,7 +30,7 @@ fn spsc_safely_overflowing_index_queue_push_works_until_full() {
 
     for i in 0..CAPACITY {
         assert_that!(sut, len i);
-        assert_that!(sut_producer.push(i), is_none);
+        assert_that!(sut_producer.push(i as u64), is_none);
     }
     let oldest = sut_producer.push(1234);
     assert_that!(oldest, is_some);
@@ -48,7 +48,7 @@ fn spsc_safely_overflowing_index_queue_pop_works_until_empty() {
     let sut = FixedSizeSafelyOverflowingIndexQueue::<CAPACITY>::new();
     let mut sut_producer = sut.acquire_producer().unwrap();
     for i in 0..CAPACITY {
-        assert_that!(sut_producer.push(i), is_none);
+        assert_that!(sut_producer.push(i as u64), is_none);
     }
 
     assert_that!(sut.capacity(), eq CAPACITY);
@@ -61,7 +61,7 @@ fn spsc_safely_overflowing_index_queue_pop_works_until_empty() {
         assert_that!(sut, len CAPACITY - i);
         let result = sut_consumer.pop();
         assert_that!(result, is_some);
-        assert_that!(result.unwrap(), eq i);
+        assert_that!(result.unwrap(), eq i as u64);
     }
     assert_that!(sut_consumer.pop(), is_none);
 
@@ -79,10 +79,10 @@ fn spsc_safely_overflowing_index_queue_push_pop_alteration_works() {
     let mut sut_consumer = sut.acquire_consumer().unwrap();
 
     for i in 0..CAPACITY - 1 {
-        assert_that!(sut_producer.push(i), is_none);
-        assert_that!(sut_producer.push(i), is_none);
+        assert_that!(sut_producer.push(i as u64), is_none);
+        assert_that!(sut_producer.push(i as u64), is_none);
 
-        assert_that!(sut_consumer.pop(), eq Some(i / 2))
+        assert_that!(sut_consumer.pop(), eq Some(i as u64 / 2))
     }
 }
 
@@ -120,16 +120,16 @@ fn spsc_safely_overflowing_index_queue_get_producer_after_release_succeeds() {
 
 #[test]
 fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
-    const LIMIT: usize = 1000000;
+    const LIMIT: u64 = 1000000;
     const CAPACITY: usize = 1024;
 
     let sut = FixedSizeSafelyOverflowingIndexQueue::<CAPACITY>::new();
     let mut sut_producer = sut.acquire_producer().unwrap();
     let mut sut_consumer = sut.acquire_consumer().unwrap();
 
-    let producer_storage = Arc::new(Mutex::<Vec<usize>>::new(vec![]));
+    let producer_storage = Arc::new(Mutex::<Vec<u64>>::new(vec![]));
     let producer_storage_push = Arc::clone(&producer_storage);
-    let consumer_storage = Arc::new(Mutex::<Vec<usize>>::new(vec![]));
+    let consumer_storage = Arc::new(Mutex::<Vec<u64>>::new(vec![]));
     let consumer_storage_pop = Arc::clone(&consumer_storage);
 
     let handle = BarrierHandle::new();
@@ -141,7 +141,7 @@ fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
     thread::scope(|s| {
         s.spawn(|| {
             let mut guard = producer_storage_push.lock().unwrap();
-            let mut counter: usize = 0;
+            let mut counter: u64 = 0;
 
             barrier.wait();
             while counter <= LIMIT {
@@ -171,15 +171,15 @@ fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
     });
 
     let mut element_counter = vec![];
-    element_counter.resize(LIMIT + 1, 0);
+    element_counter.resize(LIMIT as usize + 1, 0);
 
     let guard = producer_storage.lock().unwrap();
     for i in &*guard {
-        element_counter[*i] += 1;
+        element_counter[*i as usize] += 1;
     }
     let guard = consumer_storage.lock().unwrap();
     for i in &*guard {
-        element_counter[*i] += 1;
+        element_counter[*i as usize] += 1;
     }
 
     for element in element_counter {
@@ -189,16 +189,16 @@ fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
 
 #[test]
 fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full_queue() {
-    const LIMIT: usize = 1000000;
+    const LIMIT: u64 = 1000000;
     const CAPACITY: usize = 1024;
 
     let sut = FixedSizeSafelyOverflowingIndexQueue::<CAPACITY>::new();
     let mut sut_producer = sut.acquire_producer().unwrap();
     let mut sut_consumer = sut.acquire_consumer().unwrap();
 
-    let producer_storage = Arc::new(Mutex::<Vec<usize>>::new(vec![]));
+    let producer_storage = Arc::new(Mutex::<Vec<u64>>::new(vec![]));
     let producer_storage_push = Arc::clone(&producer_storage);
-    let consumer_storage = Arc::new(Mutex::<Vec<usize>>::new(vec![]));
+    let consumer_storage = Arc::new(Mutex::<Vec<u64>>::new(vec![]));
     let consumer_storage_pop = Arc::clone(&consumer_storage);
 
     let handle = BarrierHandle::new();
@@ -208,13 +208,13 @@ fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full_que
         .unwrap();
 
     for i in 0..CAPACITY {
-        assert_that!(sut_producer.push(i), is_none);
+        assert_that!(sut_producer.push(i as u64), is_none);
     }
 
     thread::scope(|s| {
         s.spawn(|| {
             let mut guard = producer_storage_push.lock().unwrap();
-            let mut counter: usize = 1024;
+            let mut counter: u64 = 1024;
 
             barrier.wait();
             while counter <= LIMIT {
@@ -244,15 +244,15 @@ fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full_que
     });
 
     let mut element_counter = vec![];
-    element_counter.resize(LIMIT + 1, 0);
+    element_counter.resize(LIMIT as usize + 1, 0);
 
     let guard = producer_storage.lock().unwrap();
     for i in &*guard {
-        element_counter[*i] += 1;
+        element_counter[*i as usize] += 1;
     }
     let guard = consumer_storage.lock().unwrap();
     for i in &*guard {
-        element_counter[*i] += 1;
+        element_counter[*i as usize] += 1;
     }
 
     for element in element_counter {

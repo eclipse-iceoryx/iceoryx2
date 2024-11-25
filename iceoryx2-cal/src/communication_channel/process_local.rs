@@ -129,7 +129,7 @@ impl NamedConceptBuilder<Channel> for Creator {
     }
 }
 
-impl CommunicationChannelCreator<usize, Channel> for Creator {
+impl CommunicationChannelCreator<u64, Channel> for Creator {
     fn enable_safe_overflow(mut self) -> Self {
         self.enable_safe_overflow = true;
         self
@@ -190,7 +190,7 @@ impl NamedConceptBuilder<Channel> for Connector {
     }
 }
 
-impl CommunicationChannelConnector<usize, Channel> for Connector {
+impl CommunicationChannelConnector<u64, Channel> for Connector {
     fn open_sender(self) -> Result<Duplex, CommunicationChannelOpenError> {
         let msg = "Failed to open sender";
         let origin = format!("{:?}", self);
@@ -292,8 +292,8 @@ impl NamedConcept for Duplex {
     }
 }
 
-impl CommunicationChannelSender<usize> for Duplex {
-    fn send(&self, data: &usize) -> Result<Option<usize>, CommunicationChannelSendError> {
+impl CommunicationChannelSender<u64> for Duplex {
+    fn send(&self, data: &u64) -> Result<Option<u64>, CommunicationChannelSendError> {
         let msg = "Unable to send data";
         match self.try_send(data) {
             Err(CommunicationChannelSendError::ReceiverCacheIsFull) => {
@@ -308,7 +308,7 @@ impl CommunicationChannelSender<usize> for Duplex {
         }
     }
 
-    fn try_send(&self, data: &usize) -> Result<Option<usize>, CommunicationChannelSendError> {
+    fn try_send(&self, data: &u64) -> Result<Option<u64>, CommunicationChannelSendError> {
         if !self.management.enable_safe_overflow && self.management.queue.is_full() {
             return Err(CommunicationChannelSendError::ReceiverCacheIsFull);
         }
@@ -330,12 +330,12 @@ impl CommunicationChannelParticipant for Duplex {
     }
 }
 
-impl CommunicationChannelReceiver<usize> for Duplex {
+impl CommunicationChannelReceiver<u64> for Duplex {
     fn buffer_size(&self) -> usize {
         self.management.queue.capacity()
     }
 
-    fn receive(&self) -> Result<Option<usize>, CommunicationChannelReceiveError> {
+    fn receive(&self) -> Result<Option<u64>, CommunicationChannelReceiveError> {
         Ok(self.management.queue.acquire_consumer().unwrap().pop())
     }
 }
@@ -407,7 +407,7 @@ impl NamedConceptMgmt for Channel {
     }
 }
 
-impl CommunicationChannel<usize> for Channel {
+impl CommunicationChannel<u64> for Channel {
     type Sender = Duplex;
     type Connector = Connector;
     type Creator = Creator;
