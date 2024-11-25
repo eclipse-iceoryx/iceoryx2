@@ -161,7 +161,7 @@ void EventBasedPublisher::send(const uint64_t counter) {
     sample.write_payload(TransmissionData {
         static_cast<int32_t>(counter), static_cast<int32_t>(counter), static_cast<double>(counter) * SOME_NUMBER });
     auto initialized_sample = assume_init(std::move(sample));
-    ::send(std::move(initialized_sample)).expect("");
+    ::iox2::send(std::move(initialized_sample)).expect("");
 
     m_notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SentSample))).expect("");
 }
