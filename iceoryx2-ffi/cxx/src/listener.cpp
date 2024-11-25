@@ -159,6 +159,22 @@ auto Listener<S>::blocking_wait_one() -> iox::expected<iox::optional<EventId>, L
     return iox::err(iox::into<ListenerWaitError>(result));
 }
 
+template <ServiceType S>
+auto Listener<S>::unsafe() -> Unsafe {
+    return Unsafe(*this);
+}
+
+template <ServiceType S>
+Listener<S>::Unsafe::Unsafe(Listener& listener)
+    : m_self { listener } {
+}
+
+template <ServiceType S>
+auto Listener<S>::Unsafe::file_descriptor() && -> iox::optional<iox2::FileDescriptor> {
+    auto fd = iox2_listener_get_file_descriptor(&m_self.m_handle);
+    return FileDescriptor::create_non_owning(fd->value);
+}
+
 template class Listener<ServiceType::Ipc>;
 template class Listener<ServiceType::Local>;
 } // namespace iox2

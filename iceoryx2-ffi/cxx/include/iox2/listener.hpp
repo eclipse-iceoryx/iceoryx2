@@ -18,6 +18,7 @@
 #include "iox/function.hpp"
 #include "iox/optional.hpp"
 #include "iox2/event_id.hpp"
+#include "iox2/file_descriptor.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener_error.hpp"
 #include "iox2/service_type.hpp"
@@ -79,6 +80,33 @@ class Listener {
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
     auto blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
+
+  private:
+    class Unsafe {
+      public:
+        Unsafe(const Unsafe&) noexcept = delete;
+        Unsafe(Unsafe&&) noexcept = delete;
+        Unsafe& operator=(const Unsafe&) noexcept = delete;
+        Unsafe& operator=(Unsafe&&) noexcept = delete;
+
+        ~Unsafe() noexcept = default;
+
+        /// Returns a file descriptor to the underlying Listener. The file descriptor must not be closed and only be
+        /// used for event multiplexing!
+        auto file_descriptor() && -> iox::optional<FileDescriptor>;
+
+      private:
+        friend class Listener;
+        Unsafe(Listener& listener);
+
+      private:
+        const Listener& m_self;
+    };
+
+  public:
+    /// This function gives access to unsafe operations on the Listener. The returned object must never be stored but
+    /// just used to access the unsafe functions.
+    auto unsafe() -> Unsafe;
 
   private:
     template <ServiceType>
