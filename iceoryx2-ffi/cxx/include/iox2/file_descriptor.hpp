@@ -47,6 +47,9 @@ class FileDescriptorView : public FileDescriptorBased {
     /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`].
     auto file_descriptor() const -> FileDescriptorView override;
 
+    /// Returns the underlying [`FileDescriptor`] value.
+    auto native_handle() const -> int32_t;
+
     iox2_file_descriptor_ptr m_handle = nullptr;
 };
 

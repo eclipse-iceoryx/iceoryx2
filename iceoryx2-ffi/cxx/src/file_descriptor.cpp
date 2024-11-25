@@ -21,6 +21,10 @@ auto FileDescriptorView::file_descriptor() const -> FileDescriptorView {
     return *this;
 }
 
+auto FileDescriptorView::native_handle() const -> int32_t {
+    return iox2_file_descriptor_native_handle(m_handle);
+}
+
 auto FileDescriptor::create_owning(int32_t file_descriptor) -> iox::optional<FileDescriptor> {
     iox2_file_descriptor_h handle = nullptr;
     if (iox2_file_descriptor_new(file_descriptor, true, nullptr, &handle)) {
@@ -69,7 +73,7 @@ void FileDescriptor::drop() {
 }
 
 auto FileDescriptor::native_handle() const -> int32_t {
-    return iox2_file_descriptor_native_handle(&m_handle);
+    return iox2_file_descriptor_native_handle(iox2_cast_file_descriptor_ptr(m_handle));
 }
 
 auto FileDescriptor::as_view() const -> FileDescriptorView {
