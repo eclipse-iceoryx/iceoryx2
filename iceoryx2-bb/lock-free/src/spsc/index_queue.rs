@@ -53,14 +53,14 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 /// The [`Producer`] of the [`IndexQueue`]/[`FixedSizeIndexQueue`] which can add values to it
 /// via [`Producer::push()`].
-pub struct Producer<'a, PointerType: PointerTrait<UnsafeCell<usize>> + Debug> {
+pub struct Producer<'a, PointerType: PointerTrait<UnsafeCell<u64>> + Debug> {
     queue: &'a details::IndexQueue<PointerType>,
 }
 
 impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Producer<'_, PointerType> {
     /// Adds a new value to the [`IndexQueue`]/[`FixedSizeIndexQueue`]. If the queue is full
     /// it returns false, otherwise true.
-    pub fn push(&mut self, t: usize) -> bool {
+    pub fn push(&mut self, t: u64) -> bool {
         unsafe { self.queue.push(t) }
     }
 }
@@ -73,14 +73,14 @@ impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Drop for Producer<'_,
 
 /// The [`Consumer`] of the [`IndexQueue`]/[`FixedSizeIndexQueue`] which can acquire values from it
 /// via [`Consumer::pop()`].
-pub struct Consumer<'a, PointerType: PointerTrait<UnsafeCell<usize>> + Debug> {
+pub struct Consumer<'a, PointerType: PointerTrait<UnsafeCell<u64>> + Debug> {
     queue: &'a details::IndexQueue<PointerType>,
 }
 
 impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Consumer<'_, PointerType> {
     /// Acquires a value from the [`IndexQueue`]/[`FixedSizeIndexQueue`]. If the queue is empty
     /// it returns [`None`] otherwise the value.
-    pub fn pop(&mut self) -> Option<usize> {
+    pub fn pop(&mut self) -> Option<u64> {
         unsafe { self.queue.pop() }
     }
 }
@@ -91,8 +91,8 @@ impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Drop for Consumer<'_,
     }
 }
 
-pub type IndexQueue = details::IndexQueue<OwningPointer<UnsafeCell<usize>>>;
-pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCell<usize>>>;
+pub type IndexQueue = details::IndexQueue<OwningPointer<UnsafeCell<u64>>>;
+pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
     use std::fmt::Debug;
@@ -105,7 +105,7 @@ pub mod details {
     /// queue is created.
     #[repr(C)]
     #[derive(Debug)]
-    pub struct IndexQueue<PointerType: PointerTrait<UnsafeCell<usize>>> {
+    pub struct IndexQueue<PointerType: PointerTrait<UnsafeCell<u64>>> {
         data_ptr: PointerType,
         capacity: usize,
         write_position: IoxAtomicUsize,
@@ -115,12 +115,12 @@ pub mod details {
         is_memory_initialized: IoxAtomicBool,
     }
 
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<usize>>> Sync for IndexQueue<PointerType> {}
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<usize>>> Send for IndexQueue<PointerType> {}
+    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Sync for IndexQueue<PointerType> {}
+    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Send for IndexQueue<PointerType> {}
 
-    impl IndexQueue<OwningPointer<UnsafeCell<usize>>> {
+    impl IndexQueue<OwningPointer<UnsafeCell<u64>>> {
         pub fn new(capacity: usize) -> Self {
-            let mut data_ptr = OwningPointer::<UnsafeCell<usize>>::new_with_alloc(capacity);
+            let mut data_ptr = OwningPointer::<UnsafeCell<u64>>::new_with_alloc(capacity);
 
             for i in 0..capacity {
                 unsafe { data_ptr.as_mut_ptr().add(i).write(UnsafeCell::new(0)) };
@@ -138,7 +138,7 @@ pub mod details {
         }
     }
 
-    impl RelocatableContainer for IndexQueue<RelocatablePointer<UnsafeCell<usize>>> {
+    impl RelocatableContainer for IndexQueue<RelocatablePointer<UnsafeCell<u64>>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
@@ -180,7 +180,7 @@ pub mod details {
         }
     }
 
-    impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> IndexQueue<PointerType> {
+    impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> IndexQueue<PointerType> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(
@@ -196,7 +196,7 @@ pub mod details {
             unaligned_mem_size::<UnsafeCell<u64>>(capacity)
         }
 
-        unsafe fn at(&self, position: usize) -> *mut usize {
+        unsafe fn at(&self, position: usize) -> *mut u64 {
             (*self.data_ptr.as_ptr().add(position % self.capacity)).get()
         }
 
@@ -269,7 +269,7 @@ pub mod details {
         ///
         ///   * Ensure that no concurrent push occurres. Only one thread at a time is allowed to call
         ///     push.
-        pub unsafe fn push(&self, value: usize) -> bool {
+        pub unsafe fn push(&self, value: u64) -> bool {
             let write_position = self.write_position.load(Ordering::Relaxed);
             let is_full =
                 write_position == self.read_position.load(Ordering::Relaxed) + self.capacity;
@@ -293,7 +293,7 @@ pub mod details {
         /// # Safety
         ///
         ///   * Ensure that no concurrent pop occurres. Only one thread at a time is allowed to call pop.
-        pub unsafe fn pop(&self) -> Option<usize> {
+        pub unsafe fn pop(&self) -> Option<u64> {
             let read_position = self.read_position.load(Ordering::Relaxed);
             ////////////////
             // SYNC POINT
@@ -395,12 +395,12 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
     }
 
     /// See [`IndexQueue::acquire_producer()`]
-    pub fn acquire_producer(&self) -> Option<Producer<'_, RelocatablePointer<UnsafeCell<usize>>>> {
+    pub fn acquire_producer(&self) -> Option<Producer<'_, RelocatablePointer<UnsafeCell<u64>>>> {
         self.state.acquire_producer()
     }
 
     /// See [`IndexQueue::acquire_consumer()`]
-    pub fn acquire_consumer(&self) -> Option<Consumer<'_, RelocatablePointer<UnsafeCell<usize>>>> {
+    pub fn acquire_consumer(&self) -> Option<Consumer<'_, RelocatablePointer<UnsafeCell<u64>>>> {
         self.state.acquire_consumer()
     }
 
@@ -430,7 +430,7 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
     ///
     ///   * Ensure that no concurrent push occurres. Only one thread at a time is allowed to call
     ///     push.
-    pub unsafe fn push(&self, value: usize) -> bool {
+    pub unsafe fn push(&self, value: u64) -> bool {
         self.state.push(value)
     }
 
@@ -439,7 +439,7 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
     /// # Safety
     ///
     ///   * Ensure that no concurrent pop occurres. Only one thread at a time is allowed to call pop.
-    pub unsafe fn pop(&self) -> Option<usize> {
+    pub unsafe fn pop(&self) -> Option<u64> {
         self.state.pop()
     }
 }

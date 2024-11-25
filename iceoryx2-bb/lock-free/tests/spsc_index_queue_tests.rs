@@ -30,7 +30,7 @@ fn spsc_index_queue_push_works_until_full() {
 
     for i in 0..CAPACITY {
         assert_that!(sut, len i);
-        assert_that!(sut_producer.push(i), eq true);
+        assert_that!(sut_producer.push(i as u64), eq true);
     }
     assert_that!(sut_producer.push(1234), eq false);
 
@@ -46,7 +46,7 @@ fn spsc_index_queue_pop_works_until_empty() {
     let sut = FixedSizeIndexQueue::<CAPACITY>::new();
     let mut sut_producer = sut.acquire_producer().unwrap();
     for i in 0..CAPACITY {
-        assert_that!(sut_producer.push(i), eq true);
+        assert_that!(sut_producer.push(i as u64), eq true);
     }
 
     assert_that!(sut.capacity(), eq CAPACITY);
@@ -59,7 +59,7 @@ fn spsc_index_queue_pop_works_until_empty() {
         assert_that!(sut, len CAPACITY - i);
         let result = sut_consumer.pop();
         assert_that!(result, is_some);
-        assert_that!(result.unwrap(), eq i);
+        assert_that!(result.unwrap(), eq i as u64);
     }
     assert_that!(sut_consumer.pop(), is_none);
 
@@ -77,10 +77,10 @@ fn spsc_index_queue_push_pop_alteration_works() {
     let mut sut_consumer = sut.acquire_consumer().unwrap();
 
     for i in 0..CAPACITY - 1 {
-        assert_that!(sut_producer.push(i), eq true);
-        assert_that!(sut_producer.push(i), eq true);
+        assert_that!(sut_producer.push(i as u64), eq true);
+        assert_that!(sut_producer.push(i as u64), eq true);
 
-        assert_that!(sut_consumer.pop(), eq Some(i / 2))
+        assert_that!(sut_consumer.pop(), eq Some(i as u64 / 2))
     }
 }
 
@@ -138,7 +138,7 @@ fn spsc_index_queue_push_pop_works_concurrently() {
             let mut counter: usize = 0;
             barrier.wait();
             while counter <= LIMIT {
-                if sut_producer.push(counter) {
+                if sut_producer.push(counter as u64) {
                     counter += 1;
                 }
             }
@@ -150,8 +150,8 @@ fn spsc_index_queue_push_pop_works_concurrently() {
             loop {
                 match sut_consumer.pop() {
                     Some(v) => {
-                        guard.push(v);
-                        if v == LIMIT {
+                        guard.push(v as usize);
+                        if v as usize == LIMIT {
                             return;
                         }
                     }

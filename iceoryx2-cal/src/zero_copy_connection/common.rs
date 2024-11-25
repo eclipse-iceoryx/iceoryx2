@@ -691,12 +691,7 @@ pub mod details {
         }
 
         fn release(&self, ptr: PointerOffset) -> Result<(), ZeroCopyReleaseError> {
-            match unsafe {
-                self.storage
-                    .get()
-                    .completion_channel
-                    .push(ptr.as_value() as usize)
-            } {
+            match unsafe { self.storage.get().completion_channel.push(ptr.as_value()) } {
                 true => {
                     *self.borrow_counter() -= 1;
                     Ok(())
