@@ -109,7 +109,8 @@ pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     /// Defines if a newly created [`DynamicStorage`] owns the underlying resources
     fn has_ownership(self, value: bool) -> Self;
 
-    /// Sets the size of the supplementary data
+    /// Sets the size of the supplementary data. Only relevant when it is newly created otherwise
+    /// the already initialized [`DynamicStorage`] with the full size is used.
     fn supplementary_size(self, value: usize) -> Self;
 
     /// The timeout defines how long the [`DynamicStorageBuilder`] should wait for

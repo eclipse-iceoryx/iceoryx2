@@ -37,6 +37,7 @@ pub enum ZeroCopyCreationError {
     IncompatibleOverflowSetting,
     IncompatibleSampleSize,
     IncompatibleNumberOfSamples,
+    IncompatibleNumberOfSegments,
 }
 
 impl std::fmt::Display for ZeroCopyCreationError {
@@ -77,7 +78,7 @@ impl std::error::Error for ZeroCopyReceiveError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopyReclaimError {
-    ReceiverReturnedCorruptedOffset,
+    ReceiverReturnedCorruptedPointerOffset,
 }
 
 impl std::fmt::Display for ZeroCopyReclaimError {

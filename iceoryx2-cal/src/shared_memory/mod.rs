@@ -111,7 +111,9 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
     /// Defines if a newly created [`SharedMemory`] owns the underlying resources
     fn has_ownership(self, value: bool) -> Self;
 
-    /// Sets the size of the [`SharedMemory`]
+    /// Sets the size of the [`SharedMemory`]. Only relevant when the [`SharedMemory`] is created
+    /// otherwise the already initialized [`SharedMemory`] is completely mapped into the process
+    /// space.
     fn size(self, value: usize) -> Self;
 
     /// The timeout defines how long the [`SharedMemoryBuilder`] should wait for

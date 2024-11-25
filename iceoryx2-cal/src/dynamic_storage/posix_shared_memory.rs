@@ -175,7 +175,7 @@ impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'_, T> 
 
 impl<T: Send + Sync + Debug> Builder<'_, T> {
     fn open_impl(&self) -> Result<Storage<T>, DynamicStorageOpenError> {
-        let msg = "Failed to open ";
+        let msg = "Failed to open posix_shared_memory::DynamicStorage";
 
         let full_name = self.config.path_for(&self.storage_name).file_name();
         let mut wait_for_read_write_access = fail!(from self, when AdaptiveWaitBuilder::new().create(),
@@ -206,12 +206,6 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
                                     with DynamicStorageOpenError::InternalError,
                                     "{} since the adaptive wait call failed.", msg);
         };
-
-        let required_size = std::mem::size_of::<Data<T>>() + self.supplementary_size;
-        if shm.size() < required_size {
-            fail!(from self, with DynamicStorageOpenError::InternalError,
-                "{} since the actual size {} does not match the required size of {}.", msg, shm.size(), required_size);
-        }
 
         let init_state = shm.base_address().as_ptr() as *const Data<T>;
 

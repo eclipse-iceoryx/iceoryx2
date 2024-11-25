@@ -346,6 +346,12 @@ pub mod details {
                         "{} since the requested number of samples is set to {} but should be set to {}.",
                         msg, self.number_of_samples, storage.get().number_of_samples);
                 }
+
+                if storage.get().number_of_segments != self.number_of_segments {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSegments,
+                        "{} since the requested number of segments is set to {} but should be set to {}.",
+                        msg, self.number_of_segments, storage.get().number_of_segments);
+                }
             }
 
             Ok(storage)
@@ -524,27 +530,28 @@ pub mod details {
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopySender for Sender<Storage> {
         fn try_send(&self, ptr: PointerOffset) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to send sample";
+            let storage = self.storage.get();
 
-            if !self.storage.get().enable_safe_overflow
-                && self.storage.get().submission_channel.is_full()
-            {
+            if !storage.enable_safe_overflow && storage.submission_channel.is_full() {
                 fail!(from self, with ZeroCopySendError::ReceiveBufferFull,
                              "{} since the receive buffer is full.", msg);
             }
 
             let segment_id = ptr.segment_id().value() as usize;
-            let sample_size = self.storage.get().sample_size;
+            let sample_size = storage.sample_size;
             let index = ptr.offset() / sample_size;
 
-            if !self.storage.get().used_chunk_list[segment_id].insert(index) {
+            debug_assert!(segment_id < storage.number_of_segments as usize);
+
+            if !storage.used_chunk_list[segment_id].insert(index) {
                 fail!(from self, with ZeroCopySendError::UsedChunkListFull,
                     "{} since the used chunk list is full.", msg);
             }
 
-            match unsafe { self.storage.get().submission_channel.push(ptr.as_value()) } {
+            match unsafe { storage.submission_channel.push(ptr.as_value()) } {
                 Some(v) => {
                     let pointer_offset = PointerOffset::from_value(v as u64);
-                    if !self.storage.get().used_chunk_list[segment_id]
+                    if !storage.used_chunk_list[segment_id]
                         .remove(pointer_offset.offset() / sample_size)
                     {
                         fail!(from self, with ZeroCopySendError::ConnectionCorrupted,
@@ -574,22 +581,26 @@ pub mod details {
 
         fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
             let msg = "Unable to reclaim sample";
-            match unsafe { self.storage.get().completion_channel.pop() } {
+
+            let storage = self.storage.get();
+            match unsafe { storage.completion_channel.pop() } {
                 None => Ok(None),
                 Some(v) => {
                     let pointer_offset = PointerOffset::from_value(v as u64);
                     let segment_id = pointer_offset.segment_id().value() as usize;
 
-                    if segment_id >= self.storage.get().used_chunk_list.len() {
-                        fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedOffset,
+                    debug_assert!(segment_id < storage.number_of_segments as usize);
+
+                    if segment_id >= storage.used_chunk_list.len() {
+                        fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset,
                             "{} since the receiver returned a non-existing segment id {:?}.",
                             msg, pointer_offset);
                     }
 
-                    if !self.storage.get().used_chunk_list[segment_id]
-                        .remove(pointer_offset.offset() / self.storage.get().sample_size)
+                    if !storage.used_chunk_list[segment_id]
+                        .remove(pointer_offset.offset() / storage.sample_size)
                     {
-                        fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedOffset,
+                        fail!(from self, with ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset,
                             "{} since the receiver returned a corrupted offset {:?}.",
                             msg, pointer_offset);
                     }
