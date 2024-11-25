@@ -48,7 +48,14 @@ class FileDescriptorView : public FileDescriptorBased {
     auto file_descriptor() const -> FileDescriptorView override;
 
     /// Returns the underlying [`FileDescriptor`] value.
-    auto native_handle() const -> int32_t;
+    ///
+    /// # Safety
+    ///
+    ///  * the user shall not store the value in a variable otherwise lifetime issues may be
+    ///    encountered
+    ///  * do not manually close the file descriptor with a sys call
+    ///
+    auto unsafe_native_handle() const -> int32_t;
 
     iox2_file_descriptor_ptr m_handle = nullptr;
 };
@@ -73,7 +80,14 @@ class FileDescriptor {
     ~FileDescriptor();
 
     /// Returns the underlying [`FileDescriptor`] value.
-    auto native_handle() const -> int32_t;
+    ///
+    /// # Safety
+    ///
+    ///  * the user shall not store the value in a variable otherwise lifetime issues may be
+    ///    encountered
+    ///  * do not manually close the file descriptor with a sys call
+    ///
+    auto unsafe_native_handle() const -> int32_t;
 
     /// Creates a [`FileDescriptorView`] out of the [`FileDescriptor`]. The view is only valid as
     /// long as the [`FileDescriptor`] is living - otherwise it will be a dangling view.
