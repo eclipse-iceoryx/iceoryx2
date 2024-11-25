@@ -29,6 +29,10 @@ constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromSeconds(2);
 
 using namespace iox2;
 
+///////////////////////////////////////////////
+/// START: EventBasedSubscriber declaration
+///////////////////////////////////////////////
+
 // High-level subscriber class that contains besides a subscriber also a notifier
 // and a listener. The notifier is used to send events like
 // `PubSubEvent::ReceivedSample` or to notify the publisher that a new subscriber
@@ -57,6 +61,10 @@ class EventBasedSubscriber : public FileDescriptorBased {
     Notifier<ServiceType::Ipc> m_notifier;
     Listener<ServiceType::Ipc> m_listener;
 };
+
+///////////////////////////////////////////////
+/// START: main
+///////////////////////////////////////////////
 
 auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
@@ -88,6 +96,10 @@ auto main() -> int {
 
     return 0;
 }
+
+///////////////////////////////////////////////
+/// START: EventBasedSubscriber implementation
+///////////////////////////////////////////////
 
 EventBasedSubscriber::EventBasedSubscriber(Subscriber<ServiceType::Ipc, TransmissionData, void>&& subscriber,
                                            Notifier<ServiceType::Ipc>&& notifier,

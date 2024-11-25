@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // event callback or an interrupt/termination signal was received.
     waitset.wait_and_process(on_event)?;
 
-    println!("exit ...");
+    println!("exit");
 
     Ok(())
 }

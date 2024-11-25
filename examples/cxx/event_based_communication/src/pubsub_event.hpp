@@ -38,19 +38,19 @@ constexpr auto from<PubSubEvent, size_t>(const PubSubEvent value) noexcept -> si
 template <>
 constexpr auto from<size_t, PubSubEvent>(const size_t value) noexcept -> PubSubEvent {
     switch (value) {
-    case from<PubSubEvent, size_t>(PubSubEvent::PublisherConnected):
+    case into<size_t>(PubSubEvent::PublisherConnected):
         return PubSubEvent::PublisherConnected;
-    case from<PubSubEvent, size_t>(PubSubEvent::PublisherDisconnected):
+    case into<size_t>(PubSubEvent::PublisherDisconnected):
         return PubSubEvent::PublisherDisconnected;
-    case from<PubSubEvent, size_t>(PubSubEvent::SubscriberConnected):
+    case into<size_t>(PubSubEvent::SubscriberConnected):
         return PubSubEvent::SubscriberConnected;
-    case from<PubSubEvent, size_t>(PubSubEvent::SubscriberDisconnected):
+    case into<size_t>(PubSubEvent::SubscriberDisconnected):
         return PubSubEvent::SubscriberDisconnected;
-    case from<PubSubEvent, size_t>(PubSubEvent::SentSample):
+    case into<size_t>(PubSubEvent::SentSample):
         return PubSubEvent::SentSample;
-    case from<PubSubEvent, size_t>(PubSubEvent::ReceivedSample):
+    case into<size_t>(PubSubEvent::ReceivedSample):
         return PubSubEvent::ReceivedSample;
-    case from<PubSubEvent, size_t>(PubSubEvent::SentHistory):
+    case into<size_t>(PubSubEvent::SentHistory):
         return PubSubEvent::SentHistory;
     default:
         return PubSubEvent::Unknown;

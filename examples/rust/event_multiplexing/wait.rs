@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // didn't add this to the example so feel free to play around with it.
     waitset.wait_and_process(on_event)?;
 
-    println!("Exit");
+    println!("exit");
 
     Ok(())
 }

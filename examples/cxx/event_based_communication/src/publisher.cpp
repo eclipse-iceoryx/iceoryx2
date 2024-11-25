@@ -31,6 +31,10 @@ using namespace iox2;
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 constexpr uint64_t HISTORY_SIZE = 20;
 
+///////////////////////////////////////////////
+/// START: EventBasedPublisher declaration
+///////////////////////////////////////////////
+
 // High-level publisher class that contains besides a publisher also a notifier and a listener.
 // The notifier is used to send events like `PubSubEvent::SentSample` or `PubSubEvent::SentHistory`
 // and the listener to wait for new subscribers.
@@ -57,6 +61,10 @@ class EventBasedPublisher : public FileDescriptorBased {
     Listener<ServiceType::Ipc> m_listener;
     Notifier<ServiceType::Ipc> m_notifier;
 };
+
+///////////////////////////////////////////////
+/// START: main
+///////////////////////////////////////////////
 
 auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
@@ -88,10 +96,14 @@ auto main() -> int {
     // event callback or an interrupt/termination signal was received.
     waitset.wait_and_process(on_event).expect("");
 
-    std::cout << "exit ..." << std::endl;
+    std::cout << "exit" << std::endl;
 
     return 0;
 }
+
+///////////////////////////////////////////////
+/// START: EventBasedPublisher implementation
+///////////////////////////////////////////////
 
 EventBasedPublisher::EventBasedPublisher(Publisher<ServiceType::Ipc, TransmissionData, void>&& publisher,
                                          Listener<ServiceType::Ipc>&& listener,
