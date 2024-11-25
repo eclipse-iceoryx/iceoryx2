@@ -353,6 +353,12 @@ pub mod details {
                         "{} since the requested number of segments is set to {} but should be set to {}.",
                         msg, self.number_of_segments, storage.get().number_of_segments);
                 }
+
+                if storage.get().number_of_segments != self.number_of_segments {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSegments,
+                        "{} since the requested number of segments is set to {} but should be set to {}.",
+                        msg, self.number_of_segments, storage.get().number_of_segments);
+                }
             }
 
             Ok(storage)
