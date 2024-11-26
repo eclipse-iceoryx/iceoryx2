@@ -81,7 +81,7 @@
 //! # }
 //! ```
 //!
-//! ## Simple Event Loop With Disabled Signal Handling
+//! ## Simple Event Loop With Disabled [`Signal`](iceoryx2_bb_posix::signal::Signal) Handling
 //!
 //! This example demonstrates how the [`Node`] can be used when another instance is handling
 //! system signals. The builder parameter [`NodeBuilder::signal_handling_mode()`] can be used
