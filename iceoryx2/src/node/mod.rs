@@ -83,10 +83,10 @@
 //!
 //! ## Simple Event Loop With Disabled [`Signal`](iceoryx2_bb_posix::signal::Signal) Handling
 //!
-//! This example demonstrates how the [`Node`](crate::node::Node) can be used when another instance is handling
-//! system signals. The builder parameter
-//! [`NodeBuilder::signal_handling_mode()`](crate::node::NodeBuilder::signal_handling_mode()) can be used
-//! to disable signal handling in all [`Node`](crate::node::Node) calls like
+//! This example demonstrates how the [`Node`](crate::node::Node) can be used when system signals
+//! are being handled elsewhere. The builder parameter
+//! [`NodeBuilder::signal_handling_mode()`](crate::node::NodeBuilder::signal_handling_mode())
+//! can be used to disable signal handling in all [`Node`](crate::node::Node) calls like
 //! [`Node::wait()`](crate::node::Node::wait()).
 //!
 //! ```no_run

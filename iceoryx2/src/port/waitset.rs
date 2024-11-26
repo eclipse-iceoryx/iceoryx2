@@ -188,7 +188,7 @@
 //! ## Using [`WaitSet`](crate::port::waitset::WaitSet) Without [`Signal`](iceoryx2_bb_posix::signal::Signal) Handling
 //!
 //! This example demonstrates how the [`WaitSet`](crate::port::waitset::WaitSet) can be used when
-//! another instance is handling system signals. The builder parameter
+//! system signals are being handled elsewhere. The builder parameter
 //! [`WaitSetBuilder::signal_handling_mode()`](crate::port::waitset::WaitSetBuilder::signal_handling_mode())
 //! can be used to disable signal handling in all [`WaitSet`](crate::port::waitset::WaitSet) calls
 //! like [`WaitSet::wait_and_process()`](crate::port::waitset::WaitSet::wait_and_process()) or
