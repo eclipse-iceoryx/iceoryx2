@@ -1025,7 +1025,7 @@ mod zero_copy_connection {
             ))
             .unwrap();
 
-        assert_that!(sut_sender.reclaim().err(), eq Some(ZeroCopyReclaimError:ReceiverReturnedCorruptedPointerOffset));
+        assert_that!(sut_sender.reclaim().err(), eq Some(ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset));
     }
 
     #[test]

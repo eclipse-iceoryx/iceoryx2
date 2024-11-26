@@ -174,8 +174,8 @@ pub mod details {
 
             self.data_ptr.init(fail!(from self, when allocator
             .allocate( Layout::from_size_align_unchecked(
-                    std::mem::size_of::<usize>() * (self.capacity + 1),
-                    std::mem::align_of::<usize>())),
+                    std::mem::size_of::<u64>() * (self.capacity + 1),
+                    std::mem::align_of::<u64>())),
             "Failed to initialize since the allocation of the data memory failed."));
 
             for i in 0..self.capacity + 1 {
@@ -206,7 +206,7 @@ pub mod details {
         /// Returns the amount of memory required to create a [`SafelyOverflowingIndexQueue`] with
         /// the provided capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
-            unaligned_mem_size::<UnsafeCell<usize>>(capacity + 1)
+            unaligned_mem_size::<UnsafeCell<u64>>(capacity + 1)
         }
 
         fn at(&self, position: usize) -> *mut u64 {
