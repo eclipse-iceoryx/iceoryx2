@@ -224,7 +224,7 @@ use iceoryx2_bb_posix::{
 use iceoryx2_cal::reactor::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
-use crate::prelude::SignalHandlingMode;
+use crate::signal_handling_mode::SignalHandlingMode;
 
 /// States why the [`WaitSet::wait_and_process()`] method returned.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]

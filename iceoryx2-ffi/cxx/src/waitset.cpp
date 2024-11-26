@@ -151,10 +151,6 @@ WaitSetBuilder::WaitSetBuilder()
     }()) {
 }
 
-WaitSetBuilder::~WaitSetBuilder() {
-    iox2_waitset_builder_drop(m_handle);
-}
-
 template <ServiceType S>
 auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<S>, WaitSetCreateError> {
     iox2_waitset_h waitset_handle {};

@@ -232,7 +232,7 @@ class WaitSet {
 class WaitSetBuilder {
   public:
     WaitSetBuilder();
-    ~WaitSetBuilder();
+    ~WaitSetBuilder() = default;
 
     WaitSetBuilder(const WaitSetBuilder&) = delete;
     WaitSetBuilder(WaitSetBuilder&&) = delete;

@@ -12,23 +12,19 @@
 
 #![allow(non_camel_case_types)]
 
-use std::{ffi::c_int, mem::ManuallyDrop};
+use std::ffi::c_int;
 
 use crate::{
     api::IntoCInt, iox2_service_type_e, iox2_waitset_h, iox2_waitset_t, WaitSetUnion, IOX2_OK,
 };
 
-use super::{AssertNonNullHandle, HandleToType};
+use super::{iox2_signal_handling_mode_e, AssertNonNullHandle, HandleToType};
 use iceoryx2::{
     prelude::WaitSetBuilder,
     service::{ipc, local},
 };
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
-
-struct WaitSetBuilderInternal {
-    value: ManuallyDrop<WaitSetBuilder>,
-}
 
 #[repr(C)]
 #[repr(align(1))] // alignment of Option<WaitSetBuilder>
@@ -37,7 +33,7 @@ pub struct iox2_waitset_builder_storage_t {
 }
 
 #[repr(C)]
-#[iceoryx2_ffi(WaitSetBuilderInternal)]
+#[iceoryx2_ffi(WaitSetBuilder)]
 pub struct iox2_waitset_builder_t {
     pub value: iox2_waitset_builder_storage_t,
     deleter: fn(*mut iox2_waitset_builder_t),
@@ -117,9 +113,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_new(
     debug_assert!(!struct_ptr.is_null());
 
     (*struct_ptr).deleter = deleter;
-    (*struct_ptr).value.init(WaitSetBuilderInternal {
-        value: ManuallyDrop::new(WaitSetBuilder::new()),
-    });
+    (*struct_ptr).value.init(WaitSetBuilder::new());
 
     *handle_ptr = (*struct_ptr).as_handle();
 }
@@ -161,8 +155,9 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
 ) -> c_int {
     debug_assert!(!handle.is_null());
 
-    let handle = unsafe { &mut *handle.as_type() };
-    let waitset_builder = ManuallyDrop::take(&mut handle.value.as_mut().value);
+    let waitset_builder_struct = unsafe { &mut *handle.as_type() };
+    let waitset_builder = waitset_builder_struct.take().unwrap();
+    iox2_waitset_builder_drop(handle);
 
     fn no_op(_: *mut iox2_waitset_t) {}
     let mut deleter: fn(*mut iox2_waitset_t) = no_op;
@@ -204,6 +199,29 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
 
     *handle_ptr = (*struct_ptr).as_handle();
     IOX2_OK
+}
+
+/// Sets the [`iox2_signal_handling_mode_e`] for the [`iox2_waitset_h`].
+///
+/// # Arguments
+///
+/// * `waitset_builder_handle` - Must be a valid [`iox2_waitset_builder_h_ref`] obtained by [`iox2_waitset_builder_new`].
+///
+/// # Safety
+///
+/// * `waitset_builder_handle` must be a valid handle
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_builder_set_signal_handling_mode(
+    waitset_builder_handle: iox2_waitset_builder_h_ref,
+    signal_handling_mode: iox2_signal_handling_mode_e,
+) {
+    waitset_builder_handle.assert_non_null();
+
+    let waitset_builder_struct = &mut *waitset_builder_handle.as_type();
+
+    let waitset_builder = waitset_builder_struct.take().unwrap();
+    let waitset_builder = waitset_builder.signal_handling_mode(signal_handling_mode.into());
+    waitset_builder_struct.set(waitset_builder);
 }
 
 // END C API
