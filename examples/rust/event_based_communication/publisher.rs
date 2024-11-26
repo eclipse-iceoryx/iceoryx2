@@ -25,7 +25,7 @@ const HISTORY_SIZE: usize = 20;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
-    let publisher = EventBasedPublisher::new(&node, &"My/Funk/ServiceName".try_into()?)?;
+    let publisher = CustomPublisher::new(&node, &"My/Funk/ServiceName".try_into()?)?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 
@@ -63,21 +63,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// The notifier is used to send events like `PubSubEvent::SentSample` or `PubSubEvent::SentHistory`
 /// and the listener to wait for new subscribers.
 #[derive(Debug)]
-struct EventBasedPublisher {
+struct CustomPublisher {
     publisher: Publisher<ipc::Service, TransmissionData, ()>,
     listener: Listener<ipc::Service>,
     notifier: Notifier<ipc::Service>,
 }
 
-impl FileDescriptorBased for EventBasedPublisher {
+impl FileDescriptorBased for CustomPublisher {
     fn file_descriptor(&self) -> &FileDescriptor {
         self.listener.file_descriptor()
     }
 }
 
-impl SynchronousMultiplexing for EventBasedPublisher {}
+impl SynchronousMultiplexing for CustomPublisher {}
 
-impl EventBasedPublisher {
+impl CustomPublisher {
     fn new(
         node: &Node<ipc::Service>,
         service_name: &ServiceName,
@@ -147,7 +147,7 @@ impl EventBasedPublisher {
     }
 }
 
-impl Drop for EventBasedPublisher {
+impl Drop for CustomPublisher {
     fn drop(&mut self) {
         let _ = self
             .notifier

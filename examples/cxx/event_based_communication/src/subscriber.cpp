@@ -30,7 +30,7 @@ constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromSeconds(2);
 using namespace iox2;
 
 ///////////////////////////////////////////////
-/// START: EventBasedSubscriber declaration
+/// START: CustomSubscriber declaration
 ///////////////////////////////////////////////
 
 // High-level subscriber class that contains besides a subscriber also a notifier
@@ -39,23 +39,23 @@ using namespace iox2;
 // connected.
 // The listener waits for events originating from the publisher like
 // `PubSubEvent::SentSample`.
-class EventBasedSubscriber : public FileDescriptorBased {
+class CustomSubscriber : public FileDescriptorBased {
   public:
-    EventBasedSubscriber(const EventBasedSubscriber&) = delete;
-    EventBasedSubscriber(EventBasedSubscriber&&) = default;
-    ~EventBasedSubscriber() override;
-    auto operator=(const EventBasedSubscriber&) -> EventBasedSubscriber& = delete;
-    auto operator=(EventBasedSubscriber&&) -> EventBasedSubscriber& = default;
+    CustomSubscriber(const CustomSubscriber&) = delete;
+    CustomSubscriber(CustomSubscriber&&) = default;
+    ~CustomSubscriber() override;
+    auto operator=(const CustomSubscriber&) -> CustomSubscriber& = delete;
+    auto operator=(CustomSubscriber&&) -> CustomSubscriber& = default;
 
-    static auto create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> EventBasedSubscriber;
+    static auto create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> CustomSubscriber;
     auto file_descriptor() const -> FileDescriptorView override;
     void handle_event();
     auto receive() -> iox::optional<Sample<ServiceType::Ipc, TransmissionData, void>>;
 
   private:
-    EventBasedSubscriber(Subscriber<ServiceType::Ipc, TransmissionData, void>&& subscriber,
-                         Notifier<ServiceType::Ipc>&& notifier,
-                         Listener<ServiceType::Ipc>&& listener);
+    CustomSubscriber(Subscriber<ServiceType::Ipc, TransmissionData, void>&& subscriber,
+                     Notifier<ServiceType::Ipc>&& notifier,
+                     Listener<ServiceType::Ipc>&& listener);
 
     Subscriber<ServiceType::Ipc, TransmissionData, void> m_subscriber;
     Notifier<ServiceType::Ipc> m_notifier;
@@ -69,7 +69,7 @@ class EventBasedSubscriber : public FileDescriptorBased {
 auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
-    auto subscriber = EventBasedSubscriber::create(node, ServiceName::create("My/Funk/ServiceName").expect(""));
+    auto subscriber = CustomSubscriber::create(node, ServiceName::create("My/Funk/ServiceName").expect(""));
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
 
@@ -98,25 +98,24 @@ auto main() -> int {
 }
 
 ///////////////////////////////////////////////
-/// START: EventBasedSubscriber implementation
+/// START: CustomSubscriber implementation
 ///////////////////////////////////////////////
 
-EventBasedSubscriber::EventBasedSubscriber(Subscriber<ServiceType::Ipc, TransmissionData, void>&& subscriber,
-                                           Notifier<ServiceType::Ipc>&& notifier,
-                                           Listener<ServiceType::Ipc>&& listener)
+CustomSubscriber::CustomSubscriber(Subscriber<ServiceType::Ipc, TransmissionData, void>&& subscriber,
+                                   Notifier<ServiceType::Ipc>&& notifier,
+                                   Listener<ServiceType::Ipc>&& listener)
     : m_subscriber { std::move(subscriber) }
     , m_notifier { std::move(notifier) }
     , m_listener { std::move(listener) } {
 }
 
-EventBasedSubscriber::~EventBasedSubscriber() {
+CustomSubscriber::~CustomSubscriber() {
     m_notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SubscriberDisconnected)))
         .expect("");
 }
 
 
-auto EventBasedSubscriber::create(Node<ServiceType::Ipc>& node,
-                                  const ServiceName& service_name) -> EventBasedSubscriber {
+auto CustomSubscriber::create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> CustomSubscriber {
     auto pubsub_service =
         node.service_builder(service_name).publish_subscribe<TransmissionData>().open_or_create().expect("");
     auto event_service = node.service_builder(service_name).event().open_or_create().expect("");
@@ -128,14 +127,14 @@ auto EventBasedSubscriber::create(Node<ServiceType::Ipc>& node,
     notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SubscriberConnected)))
         .expect("");
 
-    return EventBasedSubscriber { std::move(subscriber), std::move(notifier), std::move(listener) };
+    return CustomSubscriber { std::move(subscriber), std::move(notifier), std::move(listener) };
 }
 
-auto EventBasedSubscriber::file_descriptor() const -> FileDescriptorView {
+auto CustomSubscriber::file_descriptor() const -> FileDescriptorView {
     return m_listener.file_descriptor();
 }
 
-void EventBasedSubscriber::handle_event() {
+void CustomSubscriber::handle_event() {
     for (auto event = m_listener.try_wait_one(); event.has_value() && event->has_value();
          event = m_listener.try_wait_one()) {
         switch (iox::from<size_t, PubSubEvent>(event.value()->as_value())) {
@@ -167,7 +166,7 @@ void EventBasedSubscriber::handle_event() {
     }
 }
 
-auto EventBasedSubscriber::receive() -> iox::optional<Sample<ServiceType::Ipc, TransmissionData, void>> {
+auto CustomSubscriber::receive() -> iox::optional<Sample<ServiceType::Ipc, TransmissionData, void>> {
     auto sample = m_subscriber.receive().expect("");
     if (sample.has_value()) {
         m_notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::ReceivedSample)))

@@ -32,30 +32,30 @@ constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1)
 constexpr uint64_t HISTORY_SIZE = 20;
 
 ///////////////////////////////////////////////
-/// START: EventBasedPublisher declaration
+/// START: CustomPublisher declaration
 ///////////////////////////////////////////////
 
 // High-level publisher class that contains besides a publisher also a notifier and a listener.
 // The notifier is used to send events like `PubSubEvent::SentSample` or `PubSubEvent::SentHistory`
 // and the listener to wait for new subscribers.
-class EventBasedPublisher : public FileDescriptorBased {
+class CustomPublisher : public FileDescriptorBased {
   public:
-    EventBasedPublisher(const EventBasedPublisher&) = delete;
-    EventBasedPublisher(EventBasedPublisher&&) = default;
-    ~EventBasedPublisher() override;
+    CustomPublisher(const CustomPublisher&) = delete;
+    CustomPublisher(CustomPublisher&&) = default;
+    ~CustomPublisher() override;
 
-    auto operator=(const EventBasedPublisher&) -> EventBasedPublisher& = delete;
-    auto operator=(EventBasedPublisher&&) -> EventBasedPublisher& = default;
+    auto operator=(const CustomPublisher&) -> CustomPublisher& = delete;
+    auto operator=(CustomPublisher&&) -> CustomPublisher& = default;
 
-    static auto create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> EventBasedPublisher;
+    static auto create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> CustomPublisher;
     void handle_event();
     void send(uint64_t counter);
     auto file_descriptor() const -> FileDescriptorView override;
 
   private:
-    EventBasedPublisher(Publisher<ServiceType::Ipc, TransmissionData, void>&& publisher,
-                        Listener<ServiceType::Ipc>&& listener,
-                        Notifier<ServiceType::Ipc>&& notifier);
+    CustomPublisher(Publisher<ServiceType::Ipc, TransmissionData, void>&& publisher,
+                    Listener<ServiceType::Ipc>&& listener,
+                    Notifier<ServiceType::Ipc>&& notifier);
 
     Publisher<ServiceType::Ipc, TransmissionData, void> m_publisher;
     Listener<ServiceType::Ipc> m_listener;
@@ -68,7 +68,7 @@ class EventBasedPublisher : public FileDescriptorBased {
 
 auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
-    auto publisher = EventBasedPublisher::create(node, ServiceName::create("My/Funk/ServiceName").expect(""));
+    auto publisher = CustomPublisher::create(node, ServiceName::create("My/Funk/ServiceName").expect(""));
 
     auto waitset = WaitSetBuilder().create<ServiceType::Ipc>().expect("");
     // Whenever our publisher receives an event we get notified.
@@ -102,23 +102,23 @@ auto main() -> int {
 }
 
 ///////////////////////////////////////////////
-/// START: EventBasedPublisher implementation
+/// START: CustomPublisher implementation
 ///////////////////////////////////////////////
 
-EventBasedPublisher::EventBasedPublisher(Publisher<ServiceType::Ipc, TransmissionData, void>&& publisher,
-                                         Listener<ServiceType::Ipc>&& listener,
-                                         Notifier<ServiceType::Ipc>&& notifier)
+CustomPublisher::CustomPublisher(Publisher<ServiceType::Ipc, TransmissionData, void>&& publisher,
+                                 Listener<ServiceType::Ipc>&& listener,
+                                 Notifier<ServiceType::Ipc>&& notifier)
     : m_publisher { std::move(publisher) }
     , m_listener { std::move(listener) }
     , m_notifier { std::move(notifier) } {
 }
 
-EventBasedPublisher::~EventBasedPublisher() {
+CustomPublisher::~CustomPublisher() {
     m_notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::PublisherDisconnected)))
         .expect("");
 }
 
-auto EventBasedPublisher::create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> EventBasedPublisher {
+auto CustomPublisher::create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> CustomPublisher {
     auto pubsub_service = node.service_builder(service_name)
                               .publish_subscribe<TransmissionData>()
                               .history_size(HISTORY_SIZE)
@@ -134,14 +134,14 @@ auto EventBasedPublisher::create(Node<ServiceType::Ipc>& node, const ServiceName
     notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::PublisherConnected)))
         .expect("");
 
-    return EventBasedPublisher { std::move(publisher), std::move(listener), std::move(notifier) };
+    return CustomPublisher { std::move(publisher), std::move(listener), std::move(notifier) };
 }
 
-auto EventBasedPublisher::file_descriptor() const -> FileDescriptorView {
+auto CustomPublisher::file_descriptor() const -> FileDescriptorView {
     return m_listener.file_descriptor();
 }
 
-void EventBasedPublisher::handle_event() {
+void CustomPublisher::handle_event() {
     for (auto event = m_listener.try_wait_one(); event.has_value() && event->has_value();
          event = m_listener.try_wait_one()) {
         switch (iox::from<size_t, PubSubEvent>(event.value()->as_value())) {
@@ -167,7 +167,7 @@ void EventBasedPublisher::handle_event() {
     }
 }
 
-void EventBasedPublisher::send(const uint64_t counter) {
+void CustomPublisher::send(const uint64_t counter) {
     constexpr double SOME_NUMBER = 812.12;
     auto sample = m_publisher.loan_uninit().expect("");
     sample.write_payload(TransmissionData {
