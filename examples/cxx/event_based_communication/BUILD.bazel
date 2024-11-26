@@ -18,6 +18,7 @@ cc_binary(
         "src/publisher.cpp",
         "src/transmission_data.hpp",
         "src/pubsub_event.hpp",
+        "src/custom_publisher.hpp",
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",
@@ -31,6 +32,7 @@ cc_binary(
         "src/subscriber.cpp",
         "src/transmission_data.hpp",
         "src/pubsub_event.hpp",
+        "src/custom_subscriber.hpp",
     ],
     deps = [
         "@iceoryx//:iceoryx_hoofs",

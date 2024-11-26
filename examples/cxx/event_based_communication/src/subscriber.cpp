@@ -12,59 +12,15 @@
 
 #include <iostream>
 
+#include "custom_subscriber.hpp"
 #include "iox/duration.hpp"
-#include "iox/into.hpp"
-#include "iox2/file_descriptor.hpp"
-#include "iox2/listener.hpp"
 #include "iox2/node.hpp"
-#include "iox2/notifier.hpp"
-#include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
-#include "iox2/subscriber.hpp"
 #include "iox2/waitset.hpp"
-#include "pubsub_event.hpp"
-#include "transmission_data.hpp"
 
 constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromSeconds(2);
 
 using namespace iox2;
-
-///////////////////////////////////////////////
-/// START: CustomSubscriber declaration
-///////////////////////////////////////////////
-
-// High-level subscriber class that contains besides a subscriber also a notifier
-// and a listener. The notifier is used to send events like
-// `PubSubEvent::ReceivedSample` or to notify the publisher that a new subscriber
-// connected.
-// The listener waits for events originating from the publisher like
-// `PubSubEvent::SentSample`.
-class CustomSubscriber : public FileDescriptorBased {
-  public:
-    CustomSubscriber(const CustomSubscriber&) = delete;
-    CustomSubscriber(CustomSubscriber&&) = default;
-    ~CustomSubscriber() override;
-    auto operator=(const CustomSubscriber&) -> CustomSubscriber& = delete;
-    auto operator=(CustomSubscriber&&) -> CustomSubscriber& = default;
-
-    static auto create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> CustomSubscriber;
-    auto file_descriptor() const -> FileDescriptorView override;
-    void handle_event();
-    auto receive() -> iox::optional<Sample<ServiceType::Ipc, TransmissionData, void>>;
-
-  private:
-    CustomSubscriber(Subscriber<ServiceType::Ipc, TransmissionData, void>&& subscriber,
-                     Notifier<ServiceType::Ipc>&& notifier,
-                     Listener<ServiceType::Ipc>&& listener);
-
-    Subscriber<ServiceType::Ipc, TransmissionData, void> m_subscriber;
-    Notifier<ServiceType::Ipc> m_notifier;
-    Listener<ServiceType::Ipc> m_listener;
-};
-
-///////////////////////////////////////////////
-/// START: main
-///////////////////////////////////////////////
 
 auto main() -> int {
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
@@ -95,83 +51,4 @@ auto main() -> int {
     std::cout << "exit" << std::endl;
 
     return 0;
-}
-
-///////////////////////////////////////////////
-/// START: CustomSubscriber implementation
-///////////////////////////////////////////////
-
-CustomSubscriber::CustomSubscriber(Subscriber<ServiceType::Ipc, TransmissionData, void>&& subscriber,
-                                   Notifier<ServiceType::Ipc>&& notifier,
-                                   Listener<ServiceType::Ipc>&& listener)
-    : m_subscriber { std::move(subscriber) }
-    , m_notifier { std::move(notifier) }
-    , m_listener { std::move(listener) } {
-}
-
-CustomSubscriber::~CustomSubscriber() {
-    m_notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SubscriberDisconnected)))
-        .expect("");
-}
-
-
-auto CustomSubscriber::create(Node<ServiceType::Ipc>& node, const ServiceName& service_name) -> CustomSubscriber {
-    auto pubsub_service =
-        node.service_builder(service_name).publish_subscribe<TransmissionData>().open_or_create().expect("");
-    auto event_service = node.service_builder(service_name).event().open_or_create().expect("");
-
-    auto listener = event_service.listener_builder().create().expect("");
-    auto notifier = event_service.notifier_builder().create().expect("");
-    auto subscriber = pubsub_service.subscriber_builder().create().expect("");
-
-    notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::SubscriberConnected)))
-        .expect("");
-
-    return CustomSubscriber { std::move(subscriber), std::move(notifier), std::move(listener) };
-}
-
-auto CustomSubscriber::file_descriptor() const -> FileDescriptorView {
-    return m_listener.file_descriptor();
-}
-
-void CustomSubscriber::handle_event() {
-    for (auto event = m_listener.try_wait_one(); event.has_value() && event->has_value();
-         event = m_listener.try_wait_one()) {
-        switch (iox::from<size_t, PubSubEvent>(event.value()->as_value())) {
-        case PubSubEvent::SentHistory: {
-            std::cout << "History delivered" << std::endl;
-            for (auto sample = receive(); sample.has_value(); sample = receive()) {
-                std::cout << "  history: " << sample->payload().x << std::endl;
-            }
-            break;
-        }
-        case PubSubEvent::SentSample: {
-            for (auto sample = receive(); sample.has_value(); sample = receive()) {
-                std::cout << "received: " << sample->payload().x << std::endl;
-            }
-            break;
-        }
-        case PubSubEvent::PublisherConnected: {
-            std::cout << "new publisher connected" << std::endl;
-            break;
-        }
-        case PubSubEvent::PublisherDisconnected: {
-            std::cout << "publisher disconnected" << std::endl;
-            break;
-        }
-        default: {
-            break;
-        }
-        }
-    }
-}
-
-auto CustomSubscriber::receive() -> iox::optional<Sample<ServiceType::Ipc, TransmissionData, void>> {
-    auto sample = m_subscriber.receive().expect("");
-    if (sample.has_value()) {
-        m_notifier.notify_with_custom_event_id(EventId(iox::from<PubSubEvent, size_t>(PubSubEvent::ReceivedSample)))
-            .expect("");
-    }
-
-    return sample;
 }
