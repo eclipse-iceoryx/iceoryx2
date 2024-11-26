@@ -528,6 +528,29 @@ mod waitset {
         assert_that!(now.elapsed(), time_at_least TIMEOUT / 2);
     }
 
+    #[test]
+    fn signal_handling_mechanism_can_be_configured<S: Service>() {
+        let sut_1 = WaitSetBuilder::new()
+            .signal_handling_mode(SignalHandlingMode::Disabled)
+            .create::<S>()
+            .unwrap();
+
+        let sut_2 = WaitSetBuilder::new()
+            .signal_handling_mode(SignalHandlingMode::HandleTerminationRequests)
+            .create::<S>()
+            .unwrap();
+
+        assert_that!(sut_1.signal_handling_mode(), eq SignalHandlingMode::Disabled);
+        assert_that!(sut_2.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
+    }
+
+    #[test]
+    fn by_default_termination_signals_are_handled<S: Service>() {
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        assert_that!(sut.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
