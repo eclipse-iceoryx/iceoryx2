@@ -1434,7 +1434,7 @@ inline auto from<iox2::WaitSetRunError, const char*>(const iox2::WaitSetRunError
 }
 
 template <>
-inline constexpr auto from<iox2::SignalHandlingMode, iox2_signal_handling_mode_e>(
+constexpr auto from<iox2::SignalHandlingMode, iox2_signal_handling_mode_e>(
     const iox2::SignalHandlingMode value) noexcept -> iox2_signal_handling_mode_e {
     switch (value) {
     case iox2::SignalHandlingMode::Disabled:
@@ -1447,7 +1447,7 @@ inline constexpr auto from<iox2::SignalHandlingMode, iox2_signal_handling_mode_e
 }
 
 template <>
-inline constexpr auto from<int, iox2::SignalHandlingMode>(const int value) noexcept -> iox2::SignalHandlingMode {
+constexpr auto from<int, iox2::SignalHandlingMode>(const int value) noexcept -> iox2::SignalHandlingMode {
     const auto variant = static_cast<iox2_signal_handling_mode_e>(value);
 
     switch (variant) {
