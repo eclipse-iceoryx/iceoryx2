@@ -29,6 +29,8 @@ use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use std::time::Duration;
 
+use super::iox2_signal_handling_mode_e;
+
 // BEGIN type definition
 
 #[repr(C)]
@@ -286,6 +288,25 @@ pub unsafe extern "C" fn iox2_node_config(node_handle: iox2_node_h_ref) -> iox2_
     match node.service_type {
         iox2_service_type_e::IPC => node.value.as_ref().ipc.config(),
         iox2_service_type_e::LOCAL => node.value.as_ref().local.config(),
+    }
+}
+
+/// Returns the [`iox2_signal_handling_mode_e`] with which the node was created.
+///
+/// # Safety
+///
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_node_signal_handling_mode(
+    node_handle: iox2_node_h_ref,
+) -> iox2_signal_handling_mode_e {
+    node_handle.assert_non_null();
+
+    let node = &mut *node_handle.as_type();
+
+    match node.service_type {
+        iox2_service_type_e::IPC => node.value.as_ref().ipc.signal_handling_mode().into(),
+        iox2_service_type_e::LOCAL => node.value.as_ref().local.signal_handling_mode().into(),
     }
 }
 

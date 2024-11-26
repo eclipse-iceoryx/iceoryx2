@@ -65,6 +65,9 @@ class Node {
     static auto list(ConfigView config, const iox::function<CallbackProgression(NodeState<T>)>& callback)
         -> iox::expected<void, NodeListFailure>;
 
+    /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.
+    auto signal_handling_mode() const -> SignalHandlingMode;
+
   private:
     explicit Node(iox2_node_h handle);
     void drop();

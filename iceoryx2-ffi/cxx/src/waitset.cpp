@@ -211,6 +211,11 @@ void WaitSet<S>::drop() {
 }
 
 template <ServiceType S>
+auto WaitSet<S>::signal_handling_mode() const -> SignalHandlingMode {
+    return iox::into<SignalHandlingMode>(static_cast<int>(iox2_waitset_signal_handling_mode(&m_handle)));
+}
+
+template <ServiceType S>
 auto WaitSet<S>::capacity() const -> uint64_t {
     return iox2_waitset_capacity(&m_handle);
 }

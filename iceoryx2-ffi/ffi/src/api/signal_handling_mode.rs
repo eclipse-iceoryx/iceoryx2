@@ -49,3 +49,14 @@ impl From<iox2_signal_handling_mode_e> for SignalHandlingMode {
         }
     }
 }
+
+impl From<SignalHandlingMode> for iox2_signal_handling_mode_e {
+    fn from(value: SignalHandlingMode) -> Self {
+        match value {
+            SignalHandlingMode::Disabled => iox2_signal_handling_mode_e::DISABLED,
+            SignalHandlingMode::HandleTerminationRequests => {
+                iox2_signal_handling_mode_e::HANDLE_TERMINATION_REQUESTS
+            }
+        }
+    }
+}

@@ -222,6 +222,9 @@ class WaitSet {
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
     auto attach_interval(iox::units::Duration deadline) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
+    /// Returns the [`SignalHandlingMode`] with which the [`WaitSet`] was created.
+    auto signal_handling_mode() const -> SignalHandlingMode;
+
   private:
     friend class WaitSetBuilder;
     explicit WaitSet(iox2_waitset_h handle);

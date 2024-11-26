@@ -20,7 +20,7 @@ use crate::{
     iox2_waitset_guard_h, iox2_waitset_guard_t, AttachmentIdUnion, GuardUnion, IOX2_OK,
 };
 
-use super::{AssertNonNullHandle, HandleToType, IntoCInt};
+use super::{iox2_signal_handling_mode_e, AssertNonNullHandle, HandleToType, IntoCInt};
 use iceoryx2::{
     port::waitset::{
         WaitSet, WaitSetAttachmentError, WaitSetCreateError, WaitSetRunError, WaitSetRunResult,
@@ -312,6 +312,24 @@ pub unsafe extern "C" fn iox2_waitset_is_empty(handle: iox2_waitset_h_ref) -> bo
     match waitset.service_type {
         iox2_service_type_e::IPC => waitset.value.as_ref().ipc.is_empty(),
         iox2_service_type_e::LOCAL => waitset.value.as_ref().local.is_empty(),
+    }
+}
+
+/// Returns the [`iox2_signal_handling_mode_e`] with which the waitset was created.
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_signal_handling_mode(
+    handle: iox2_waitset_h_ref,
+) -> iox2_signal_handling_mode_e {
+    let waitset = &mut *handle.as_type();
+
+    match waitset.service_type {
+        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.signal_handling_mode().into(),
+        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.signal_handling_mode().into(),
     }
 }
 

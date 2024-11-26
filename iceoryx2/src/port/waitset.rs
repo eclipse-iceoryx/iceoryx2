@@ -868,6 +868,11 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         self.len() == 0
     }
 
+    /// Returns the [`SignalHandlingMode`] with which the [`WaitSet`] was created.
+    pub fn signal_handling_mode(&self) -> SignalHandlingMode {
+        self.signal_handling_mode
+    }
+
     fn attach_to_reactor<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(
         &'waitset self,
         attachment: &'attachment T,

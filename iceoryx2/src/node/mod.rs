@@ -865,6 +865,11 @@ impl<Service: service::Service> Node<Service> {
         }
     }
 
+    /// Returns the [`SignalHandlingMode`] with which the [`Node`] was created.
+    pub fn signal_handling_mode(&self) -> SignalHandlingMode {
+        self.shared.signal_handling_mode
+    }
+
     /// Removes the stale system resources of all dead [`Node`]s. The dead [`Node`]s are also
     /// removed from all registered [`Service`](crate::service::Service)s.
     ///
