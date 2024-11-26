@@ -81,6 +81,31 @@
 //! # }
 //! ```
 //!
+//! ## Simple Event Loop With Disabled Signal Handling
+//!
+//! This example demonstrates how the [`Node`] can be used when another instance is handling
+//! system signals. The builder parameter [`NodeBuilder::signal_handling_mode()`] can be used
+//! to disable signal handling in all [`Node`] calls like [`Node::wait()`].
+//!
+//! ```no_run
+//! use core::time::Duration;
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//! let node = NodeBuilder::new()
+//!                 .name(&"my_little_node".try_into()?)
+//!                 // disable signal handling
+//!                 .signal_handling_mode(SignalHandlingMode::Disabled)
+//!                 .create::<ipc::Service>()?;
+//!
+//! while node.wait(CYCLE_TIME).is_ok() {
+//!     // your algorithm in here
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! ## Advanced Event Loop
 //!
 //! ```no_run
@@ -126,6 +151,7 @@ use crate::service::config_scheme::{
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, remove_service_tag};
+use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -683,6 +709,7 @@ pub(crate) struct SharedNode<Service: service::Service> {
     details: NodeDetails,
     monitoring_token: UnsafeCell<Option<<Service::Monitoring as Monitoring>::Token>>,
     registered_services: RegisteredServices,
+    signal_handling_mode: SignalHandlingMode,
     _details_storage: Service::StaticStorage,
 }
 
@@ -803,24 +830,28 @@ impl<Service: service::Service> Node<Service> {
         (*self.shared.monitoring_token.get()).take().unwrap()
     }
 
+    fn handle_termination_request(&self, error_msg: &str) -> Result<(), NodeWaitFailure> {
+        if self.shared.signal_handling_mode == SignalHandlingMode::HandleTerminationRequests
+            && SignalHandler::termination_requested()
+        {
+            fail!(from self, with NodeWaitFailure::TerminationRequest,
+                "{error_msg} since a termination request was received.");
+        }
+
+        Ok(())
+    }
+
     /// Waits until the cycle time has passed. It returns [`NodeWaitFailure::TerminationRequest`]
     /// when a `SIGTERM` signal was received or [`NodeWaitFailure::Interrupt`] when a `SIGINT`
     /// signal was received.
     pub fn wait(&self, cycle_time: Duration) -> Result<(), NodeWaitFailure> {
         let msg = "Unable to wait on node";
-        if SignalHandler::termination_requested() {
-            fail!(from self, with NodeWaitFailure::TerminationRequest,
-                "{msg} since a termination request was received.");
-        }
+        self.handle_termination_request(msg)?;
 
         match nanosleep(cycle_time) {
             Ok(()) => {
-                if SignalHandler::termination_requested() {
-                    fail!(from self, with NodeWaitFailure::TerminationRequest,
-                        "{msg} since a termination request was received.");
-                } else {
-                    Ok(())
-                }
+                self.handle_termination_request(msg)?;
+                Ok(())
             }
             Err(NanosleepError::InterruptedBySignal(_)) => {
                 fail!(from self, with NodeWaitFailure::Interrupt,
@@ -1081,6 +1112,7 @@ impl<Service: service::Service> Node<Service> {
 #[derive(Debug, Default)]
 pub struct NodeBuilder {
     name: Option<NodeName>,
+    signal_handling_mode: SignalHandlingMode,
     config: Option<Config>,
 }
 
@@ -1093,6 +1125,14 @@ impl NodeBuilder {
     /// Sets the [`NodeName`] of the to be created [`Node`].
     pub fn name(mut self, value: &NodeName) -> Self {
         self.name = Some(value.clone());
+        self
+    }
+
+    /// Defines the [`SignalHandlingMode`] for the [`Node`]. It affects the [`Node::wait()`] call
+    /// that returns any received [`Signal`](iceoryx2_bb_posix::signal::Signal) via its
+    /// [`NodeWaitFailure`]
+    pub fn signal_handling_mode(mut self, value: SignalHandlingMode) -> Self {
+        self.signal_handling_mode = value;
         self
     }
 
@@ -1143,6 +1183,7 @@ impl NodeBuilder {
                     data: Mutex::new(HashMap::new()),
                 },
                 _details_storage: details_storage,
+                signal_handling_mode: self.signal_handling_mode,
                 details,
             }),
         })
