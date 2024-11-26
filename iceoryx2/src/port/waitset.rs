@@ -185,12 +185,14 @@
 //! # }
 //! ```
 //!
-//! ## Using [`WaitSet`] Without [`Signal`](iceoryx2_bb_posix::signal::Signal) Handling
+//! ## Using [`WaitSet`](crate::port::waitset::WaitSet) Without [`Signal`](iceoryx2_bb_posix::signal::Signal) Handling
 //!
-//! This example demonstrates how the [`WaitSet`] can be used when another instance is handling
-//! system signals. The builder parameter [`WaitSetBuilder::signal_handling_mode()`] can be used
-//! to disable signal handling in all [`WaitSet`] calls like [`WaitSet::wait_and_process()`] or
-//! [`WaitSet::wait_and_process_once()`].
+//! This example demonstrates how the [`WaitSet`](crate::port::waitset::WaitSet) can be used when
+//! another instance is handling system signals. The builder parameter
+//! [`WaitSetBuilder::signal_handling_mode()`](crate::port::waitset::WaitSetBuilder::signal_handling_mode())
+//! can be used to disable signal handling in all [`WaitSet`](crate::port::waitset::WaitSet) calls
+//! like [`WaitSet::wait_and_process()`](crate::port::waitset::WaitSet::wait_and_process()) or
+//! [`WaitSet::wait_and_process_once()`](crate::port::waitset::WaitSet::wait_and_process_once()).
 //!
 //! ```no_run
 //! use iceoryx2::prelude::*;
@@ -198,7 +200,7 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!
 //! let waitset = WaitSetBuilder::new()
-//!                 .signal_handling_mode(SignalHandlingMode::Dsiabled)
+//!                 .signal_handling_mode(SignalHandlingMode::Disabled)
 //!                 .create::<ipc::Service>()?;
 //!
 //! let on_event = |_| {
@@ -207,6 +209,9 @@
 //! };
 //!
 //! waitset.wait_and_process(on_event)?;
+//!
+//! # Ok(())
+//! # }
 
 use std::{
     cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, marker::PhantomData,
