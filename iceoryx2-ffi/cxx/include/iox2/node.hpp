@@ -28,6 +28,7 @@
 #include "iox2/service_builder.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/signal_handling_mode.hpp"
 
 namespace iox2 {
 /// The central entry point of iceoryx2. Represents a node of the iceoryx2
@@ -83,6 +84,10 @@ class NodeBuilder {
     /// The [`Config`] that shall be used for the [`Node`]. If no [`Config`]
     /// is specified the [`Config::global_config()`] is used.
     IOX_BUILDER_OPTIONAL(Config, config);
+
+    /// Defines the [`SignalHandlingMode`] for the [`Node`]. It affects the [`Node::wait()`] call
+    /// that returns any received signal via its [`NodeWaitFailure`]
+    IOX_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
 
   public:
     NodeBuilder();

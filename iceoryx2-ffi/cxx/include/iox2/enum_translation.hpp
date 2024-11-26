@@ -31,6 +31,7 @@
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_error_enums.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/signal_handling_mode.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/type_variant.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
@@ -1432,6 +1433,32 @@ inline auto from<iox2::WaitSetRunError, const char*>(const iox2::WaitSetRunError
     return iox2_waitset_run_error_string(iox::into<iox2_waitset_run_error_e>(value));
 }
 
+template <>
+inline constexpr auto from<iox2::SignalHandlingMode, iox2_signal_handling_mode_e>(
+    const iox2::SignalHandlingMode value) noexcept -> iox2_signal_handling_mode_e {
+    switch (value) {
+    case iox2::SignalHandlingMode::Disabled:
+        return iox2_signal_handling_mode_e_DISABLED;
+    case iox2::SignalHandlingMode::HandleTerminationRequests:
+        return iox2_signal_handling_mode_e_HANDLE_TERMINATION_REQUESTS;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+inline constexpr auto from<int, iox2::SignalHandlingMode>(const int value) noexcept -> iox2::SignalHandlingMode {
+    const auto variant = static_cast<iox2_signal_handling_mode_e>(value);
+
+    switch (variant) {
+    case iox2_signal_handling_mode_e_DISABLED:
+        return iox2::SignalHandlingMode::Disabled;
+    case iox2_signal_handling_mode_e_HANDLE_TERMINATION_REQUESTS:
+        return iox2::SignalHandlingMode::HandleTerminationRequests;
+    }
+
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif

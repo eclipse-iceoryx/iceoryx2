@@ -142,6 +142,11 @@ auto NodeBuilder::create() const&& -> iox::expected<Node<T>, NodeCreationFailure
         iox2_node_builder_set_config(&m_handle, &m_config.value().m_handle);
     }
 
+    if (m_signal_handling_mode.has_value()) {
+        iox2_node_builder_set_signal_handling_mode(
+            &m_handle, iox::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
+    }
+
     iox2_node_h node_handle {};
     const auto ret_val = iox2_node_builder_create(m_handle, nullptr, iox::into<iox2_service_type_e>(T), &node_handle);
 

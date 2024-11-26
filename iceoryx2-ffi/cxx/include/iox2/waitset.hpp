@@ -13,6 +13,7 @@
 #ifndef IOX2_WAITSET_HPP
 #define IOX2_WAITSET_HPP
 
+#include "iox/builder_addendum.hpp"
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
 #include "iox2/callback_progression.hpp"
@@ -20,6 +21,7 @@
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/listener.hpp"
 #include "iox2/service_type.hpp"
+#include "iox2/signal_handling_mode.hpp"
 #include "iox2/waitset_enums.hpp"
 
 namespace iox2 {
@@ -230,6 +232,11 @@ class WaitSet {
 
 /// The builder for the [`WaitSet`].
 class WaitSetBuilder {
+    /// Defines the [`SignalHandlingMode`] for the [`WaitSet`]. It affects the
+    /// [`WaitSet::wait_and_process()`] and [`WaitSet::wait_and_process_once()`] calls
+    /// that returns any received [`Signal`] via its [`WaitSetRunResult`] return value.
+    IOX_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
+
   public:
     WaitSetBuilder();
     ~WaitSetBuilder() = default;
