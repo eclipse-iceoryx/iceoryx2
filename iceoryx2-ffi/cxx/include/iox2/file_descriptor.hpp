@@ -35,15 +35,7 @@ class FileDescriptorBased {
 
 /// A view to a [`FileDescriptor`].
 class FileDescriptorView : public FileDescriptorBased {
-  private:
-    template <ServiceType>
-    friend class WaitSet;
-    friend class FileDescriptor;
-    template <ServiceType>
-    friend class Listener;
-
-    explicit FileDescriptorView(iox2_file_descriptor_ptr handle);
-
+  public:
     /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`].
     auto file_descriptor() const -> FileDescriptorView override;
 
@@ -56,6 +48,15 @@ class FileDescriptorView : public FileDescriptorBased {
     ///  * do not manually close the file descriptor with a sys call
     ///
     auto unsafe_native_handle() const -> int32_t;
+
+  private:
+    template <ServiceType>
+    friend class WaitSet;
+    friend class FileDescriptor;
+    template <ServiceType>
+    friend class Listener;
+
+    explicit FileDescriptorView(iox2_file_descriptor_ptr handle);
 
     iox2_file_descriptor_ptr m_handle = nullptr;
 };
