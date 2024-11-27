@@ -25,14 +25,20 @@ const DEADLINE: Duration = Duration::from_secs(2);
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
-    let subscriber = EventBasedSubscriber::new(&node, &"My/Funk/ServiceName".try_into()?)?;
+    let subscriber = CustomSubscriber::new(&node, &"My/Funk/ServiceName".try_into()?)?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+
+    // The subscriber is attached as a deadline, meaning that we expect some activity
+    // latest after the deadline has passed.
     let subscriber_guard = waitset.attach_deadline(&subscriber, DEADLINE)?;
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+        // If we have received a new event on the subscriber we handle it.
         if attachment_id.has_event_from(&subscriber_guard) {
             subscriber.handle_event().unwrap();
+            // If the subscriber did not receive an event until DEADLINE has
+            // passed, we print out a warning.
         } else if attachment_id.has_missed_deadline(&subscriber_guard) {
             println!(
                 "Contract violation! The subscriber did not receive a message for {:?}.",
@@ -51,21 +57,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[derive(Debug)]
-struct EventBasedSubscriber {
+struct CustomSubscriber {
     subscriber: Subscriber<ipc::Service, TransmissionData, ()>,
     notifier: Notifier<ipc::Service>,
     listener: Listener<ipc::Service>,
 }
 
-impl FileDescriptorBased for EventBasedSubscriber {
+impl FileDescriptorBased for CustomSubscriber {
     fn file_descriptor(&self) -> &FileDescriptor {
         self.listener.file_descriptor()
     }
 }
 
-impl SynchronousMultiplexing for EventBasedSubscriber {}
+impl SynchronousMultiplexing for CustomSubscriber {}
 
-impl EventBasedSubscriber {
+// High-level subscriber class that contains besides a subscriber also a notifier
+// and a listener. The notifier is used to send events like
+// `PubSubEvent::ReceivedSample` or to notify the publisher that a new subscriber
+// connected.
+// The listener waits for events originating from the publisher like
+// `PubSubEvent::SentSample`.
+impl CustomSubscriber {
     fn new(
         node: &Node<ipc::Service>,
         service_name: &ServiceName,
@@ -133,7 +145,7 @@ impl EventBasedSubscriber {
     }
 }
 
-impl Drop for EventBasedSubscriber {
+impl Drop for CustomSubscriber {
     fn drop(&mut self) {
         self.notifier
             .notify_with_custom_event_id(PubSubEvent::SubscriberDisconnected.into())

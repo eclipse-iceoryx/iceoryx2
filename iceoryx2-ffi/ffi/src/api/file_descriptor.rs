@@ -147,15 +147,10 @@ pub unsafe extern "C" fn iox2_file_descriptor_drop(handle: iox2_file_descriptor_
 /// * `handle` must be valid and acquired with [`iox2_file_descriptor_new()`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_file_descriptor_native_handle(
-    handle: iox2_file_descriptor_h_ref,
+    handle: iox2_file_descriptor_ptr,
 ) -> i32 {
-    handle.assert_non_null();
-
-    (*handle.as_type())
-        .value
-        .as_ref()
-        .file_descriptor()
-        .native_handle()
+    debug_assert!(!handle.is_null());
+    (*handle).file_descriptor().native_handle()
 }
 
 /// Creates a new [`iox2_file_descriptor_t`].

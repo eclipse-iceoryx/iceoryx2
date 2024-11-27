@@ -17,14 +17,45 @@
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
+class FileDescriptorView;
+
+/// Abstract class that can be implemented by a class that is based on a [`FileDescriptor`]
+class FileDescriptorBased {
+  public:
+    FileDescriptorBased() = default;
+    FileDescriptorBased(const FileDescriptorBased&) = default;
+    FileDescriptorBased(FileDescriptorBased&&) = default;
+    auto operator=(const FileDescriptorBased&) -> FileDescriptorBased& = default;
+    auto operator=(FileDescriptorBased&&) -> FileDescriptorBased& = default;
+    virtual ~FileDescriptorBased() = default;
+
+    /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`].
+    virtual auto file_descriptor() const -> FileDescriptorView = 0;
+};
+
 /// A view to a [`FileDescriptor`].
-class FileDescriptorView {
+class FileDescriptorView : public FileDescriptorBased {
   private:
     template <ServiceType>
     friend class WaitSet;
     friend class FileDescriptor;
+    template <ServiceType>
+    friend class Listener;
 
     explicit FileDescriptorView(iox2_file_descriptor_ptr handle);
+
+    /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`].
+    auto file_descriptor() const -> FileDescriptorView override;
+
+    /// Returns the underlying [`FileDescriptor`] value.
+    ///
+    /// # Safety
+    ///
+    ///  * the user shall not store the value in a variable otherwise lifetime issues may be
+    ///    encountered
+    ///  * do not manually close the file descriptor with a sys call
+    ///
+    auto unsafe_native_handle() const -> int32_t;
 
     iox2_file_descriptor_ptr m_handle = nullptr;
 };
@@ -49,7 +80,14 @@ class FileDescriptor {
     ~FileDescriptor();
 
     /// Returns the underlying [`FileDescriptor`] value.
-    auto native_handle() const -> int32_t;
+    ///
+    /// # Safety
+    ///
+    ///  * the user shall not store the value in a variable otherwise lifetime issues may be
+    ///    encountered
+    ///  * do not manually close the file descriptor with a sys call
+    ///
+    auto unsafe_native_handle() const -> int32_t;
 
     /// Creates a [`FileDescriptorView`] out of the [`FileDescriptor`]. The view is only valid as
     /// long as the [`FileDescriptor`] is living - otherwise it will be a dangling view.

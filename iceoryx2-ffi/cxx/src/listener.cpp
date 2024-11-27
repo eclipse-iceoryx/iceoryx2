@@ -50,6 +50,11 @@ void Listener<S>::drop() {
 }
 
 template <ServiceType S>
+auto Listener<S>::file_descriptor() const -> FileDescriptorView {
+    return FileDescriptorView(iox2_listener_get_file_descriptor(&m_handle));
+}
+
+template <ServiceType S>
 auto Listener<S>::id() const -> UniqueListenerId {
     iox2_unique_listener_id_h id_handle = nullptr;
 

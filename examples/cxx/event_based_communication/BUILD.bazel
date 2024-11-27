@@ -1,0 +1,41 @@
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+cc_binary(
+    name = "example_cxx_event_based_communication_publisher",
+    srcs = [
+        "src/publisher.cpp",
+        "src/transmission_data.hpp",
+        "src/pubsub_event.hpp",
+        "src/custom_publisher.hpp",
+    ],
+    deps = [
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
+    ],
+)
+
+cc_binary(
+    name = "example_cxx_event_based_communication_subscriber",
+    srcs = [
+        "src/subscriber.cpp",
+        "src/transmission_data.hpp",
+        "src/pubsub_event.hpp",
+        "src/custom_subscriber.hpp",
+    ],
+    deps = [
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
+    ],
+)

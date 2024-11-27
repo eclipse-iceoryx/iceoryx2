@@ -241,11 +241,11 @@ auto WaitSet<S>::attach_interval(const iox::units::Duration deadline)
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_deadline(FileDescriptorView file_descriptor, const iox::units::Duration deadline)
+auto WaitSet<S>::attach_deadline(const FileDescriptorBased& attachment, const iox::units::Duration deadline)
     -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
     auto result = iox2_waitset_attach_deadline(&m_handle,
-                                               file_descriptor.m_handle,
+                                               attachment.file_descriptor().m_handle,
                                                deadline.toSeconds(),
                                                deadline.toNanoseconds()
                                                    - deadline.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC,
@@ -266,10 +266,11 @@ auto WaitSet<S>::attach_deadline(const Listener<S>& listener, const iox::units::
 }
 
 template <ServiceType S>
-auto WaitSet<S>::attach_notification(const FileDescriptorView file_descriptor)
+auto WaitSet<S>::attach_notification(const FileDescriptorBased& attachment)
     -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError> {
     iox2_waitset_guard_h guard_handle {};
-    auto result = iox2_waitset_attach_notification(&m_handle, file_descriptor.m_handle, nullptr, &guard_handle);
+    auto result =
+        iox2_waitset_attach_notification(&m_handle, attachment.file_descriptor().m_handle, nullptr, &guard_handle);
 
     if (result == IOX2_OK) {
         return iox::ok(WaitSetGuard<S>(guard_handle));

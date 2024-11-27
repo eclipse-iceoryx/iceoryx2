@@ -174,17 +174,17 @@ class WaitSet {
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
     auto attach_notification(const Listener<S>& listener) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
-    /// Attaches a [`FileDescriptorView`] as notification to the [`WaitSet`]. Whenever an event is received on the
-    /// object the [`WaitSet`] informs the user in [`WaitSet::wait_and_process()`] to handle the event.
-    /// The object cannot be attached twice and the
+    /// Attaches a [`FileDescriptorBased`] object as notification to the [`WaitSet`]. Whenever an event is received on
+    /// the object the [`WaitSet`] informs the user in [`WaitSet::wait_and_process()`] to handle the event. The object
+    /// cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
     ///
     /// # Safety
     ///
     /// * The corresponding [`FileDescriptor`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto
-    attach_notification(FileDescriptorView file_descriptor) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+    auto attach_notification(const FileDescriptorBased& attachment)
+        -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`Listener`] as deadline to the [`WaitSet`]. Whenever the event is received or the
     /// deadline is hit, the user is informed in [`WaitSet::wait_and_process()`].
@@ -199,7 +199,7 @@ class WaitSet {
     auto attach_deadline(const Listener<S>& listener,
                          iox::units::Duration deadline) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
-    /// Attaches a [`FileDescriptorView`] as deadline to the [`WaitSet`]. Whenever the event is received or the
+    /// Attaches a [`FileDescriptorBased`] object as deadline to the [`WaitSet`]. Whenever the event is received or the
     /// deadline is hit, the user is informed in [`WaitSet::wait_and_process()`].
     /// The object cannot be attached twice and the
     /// [`WaitSet::capacity()`] is limited by the underlying implementation.
@@ -209,7 +209,7 @@ class WaitSet {
     ///
     /// * The corresponding [`FileDescriptor`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_deadline(FileDescriptorView file_descriptor,
+    auto attach_deadline(const FileDescriptorBased& attachment,
                          iox::units::Duration deadline) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
