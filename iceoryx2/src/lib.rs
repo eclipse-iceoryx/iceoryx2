@@ -308,6 +308,10 @@ pub mod sample_mut_uninit;
 /// [`MessagingPattern`](crate::service::messaging_pattern::MessagingPattern)
 pub mod service;
 
+/// Defines how constructs like the [`Node`](crate::node::Node) or the
+/// [`WaitSet`](crate::port::waitset::WaitSet) shall handle system signals.
+pub mod signal_handling_mode;
+
 /// Loads a meaninful subset to cover 90% of the iceoryx2 communication use cases.
 pub mod prelude;
 

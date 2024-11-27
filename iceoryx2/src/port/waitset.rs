@@ -185,6 +185,33 @@
 //! # }
 //! ```
 //!
+//! ## Using [`WaitSet`](crate::port::waitset::WaitSet) Without [`Signal`](iceoryx2_bb_posix::signal::Signal) Handling
+//!
+//! This example demonstrates how the [`WaitSet`](crate::port::waitset::WaitSet) can be used when
+//! system signals are being handled elsewhere. The builder parameter
+//! [`WaitSetBuilder::signal_handling_mode()`](crate::port::waitset::WaitSetBuilder::signal_handling_mode())
+//! can be used to disable signal handling in all [`WaitSet`](crate::port::waitset::WaitSet) calls
+//! like [`WaitSet::wait_and_process()`](crate::port::waitset::WaitSet::wait_and_process()) or
+//! [`WaitSet::wait_and_process_once()`](crate::port::waitset::WaitSet::wait_and_process_once()).
+//!
+//! ```no_run
+//! use iceoryx2::prelude::*;
+//! # use core::time::Duration;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!
+//! let waitset = WaitSetBuilder::new()
+//!                 .signal_handling_mode(SignalHandlingMode::Disabled)
+//!                 .create::<ipc::Service>()?;
+//!
+//! let on_event = |_| {
+//!     // your event handling
+//!     CallbackProgression::Continue
+//! };
+//!
+//! waitset.wait_and_process(on_event)?;
+//!
+//! # Ok(())
+//! # }
 
 use std::{
     cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, marker::PhantomData,
@@ -201,6 +228,8 @@ use iceoryx2_bb_posix::{
 };
 use iceoryx2_cal::reactor::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
+
+use crate::signal_handling_mode::SignalHandlingMode;
 
 /// States why the [`WaitSet::wait_and_process()`] method returned.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -439,19 +468,24 @@ impl<'waitset, 'attachment, Service: crate::service::Service> Drop
 }
 
 /// The builder for the [`WaitSet`].
-#[derive(Debug)]
-pub struct WaitSetBuilder {}
-
-impl Default for WaitSetBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
+#[derive(Default, Debug)]
+pub struct WaitSetBuilder {
+    signal_handling_mode: SignalHandlingMode,
 }
 
 impl WaitSetBuilder {
     /// Creates a new [`WaitSetBuilder`].
     pub fn new() -> Self {
-        Self {}
+        Self::default()
+    }
+
+    /// Defines the [`SignalHandlingMode`] for the [`WaitSet`]. It affects the
+    /// [`WaitSet::wait_and_process()`] and [`WaitSet::wait_and_process_once()`] calls
+    /// that returns any received [`Signal`](iceoryx2_bb_posix::signal::Signal) via its
+    /// [`WaitSetRunResult`] return value.
+    pub fn signal_handling_mode(mut self, value: SignalHandlingMode) -> Self {
+        self.signal_handling_mode = value;
+        self
     }
 
     /// Creates the [`WaitSet`].
@@ -470,6 +504,7 @@ impl WaitSetBuilder {
                 attachment_to_deadline: RefCell::new(HashMap::new()),
                 deadline_to_attachment: RefCell::new(HashMap::new()),
                 attachment_counter: IoxAtomicUsize::new(0),
+                signal_handling_mode: self.signal_handling_mode,
             }),
             Err(ReactorCreateError::UnknownError(e)) => {
                 fail!(from self, with WaitSetCreateError::InternalError,
@@ -497,6 +532,7 @@ pub struct WaitSet<Service: crate::service::Service> {
     attachment_to_deadline: RefCell<HashMap<i32, DeadlineQueueIndex>>,
     deadline_to_attachment: RefCell<HashMap<DeadlineQueueIndex, i32>>,
     attachment_counter: IoxAtomicUsize,
+    signal_handling_mode: SignalHandlingMode,
 }
 
 impl<Service: crate::service::Service> WaitSet<Service> {
@@ -776,7 +812,9 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
         let msg = "Unable to call WaitSet::try_wait_and_process()";
 
-        if SignalHandler::termination_requested() {
+        if self.signal_handling_mode == SignalHandlingMode::HandleTerminationRequests
+            && SignalHandler::termination_requested()
+        {
             return Ok(WaitSetRunResult::TerminationRequest);
         }
 
@@ -833,6 +871,11 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// Returns true if the [`WaitSet`] has no attachments, otherwise false.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Returns the [`SignalHandlingMode`] with which the [`WaitSet`] was created.
+    pub fn signal_handling_mode(&self) -> SignalHandlingMode {
+        self.signal_handling_mode
     }
 
     fn attach_to_reactor<'waitset, 'attachment, T: SynchronousMultiplexing + Debug>(

@@ -43,6 +43,11 @@ Node<T>::~Node() {
 }
 
 template <ServiceType T>
+auto Node<T>::signal_handling_mode() const -> SignalHandlingMode {
+    return iox::into<SignalHandlingMode>(static_cast<int>(iox2_node_signal_handling_mode(&m_handle)));
+}
+
+template <ServiceType T>
 auto Node<T>::name() const -> NodeNameView {
     const auto* node_name_ptr = iox2_node_name(&m_handle);
     return NodeNameView { node_name_ptr };
@@ -140,6 +145,11 @@ auto NodeBuilder::create() const&& -> iox::expected<Node<T>, NodeCreationFailure
 
     if (m_config.has_value()) {
         iox2_node_builder_set_config(&m_handle, &m_config.value().m_handle);
+    }
+
+    if (m_signal_handling_mode.has_value()) {
+        iox2_node_builder_set_signal_handling_mode(
+            &m_handle, iox::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
     }
 
     iox2_node_h node_handle {};

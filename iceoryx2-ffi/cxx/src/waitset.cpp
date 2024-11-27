@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/waitset.hpp"
+#include "iox/into.hpp"
+#include "iox2/enum_translation.hpp"
 #include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
@@ -151,12 +153,13 @@ WaitSetBuilder::WaitSetBuilder()
     }()) {
 }
 
-WaitSetBuilder::~WaitSetBuilder() {
-    iox2_waitset_builder_drop(m_handle);
-}
-
 template <ServiceType S>
 auto WaitSetBuilder::create() const&& -> iox::expected<WaitSet<S>, WaitSetCreateError> {
+    if (m_signal_handling_mode.has_value()) {
+        iox2_waitset_builder_set_signal_handling_mode(
+            &m_handle, iox::into<iox2_signal_handling_mode_e>(m_signal_handling_mode.value()));
+    }
+
     iox2_waitset_h waitset_handle {};
     auto result = iox2_waitset_builder_create(m_handle, iox::into<iox2_service_type_e>(S), nullptr, &waitset_handle);
 
@@ -205,6 +208,11 @@ void WaitSet<S>::drop() {
         iox2_waitset_drop(m_handle);
         m_handle = nullptr;
     }
+}
+
+template <ServiceType S>
+auto WaitSet<S>::signal_handling_mode() const -> SignalHandlingMode {
+    return iox::into<SignalHandlingMode>(static_cast<int>(iox2_waitset_signal_handling_mode(&m_handle)));
 }
 
 template <ServiceType S>

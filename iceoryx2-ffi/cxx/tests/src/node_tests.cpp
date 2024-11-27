@@ -77,4 +77,17 @@ TYPED_TEST(NodeTest, created_nodes_can_be_listed) {
     ASSERT_TRUE(result.has_value());
     ASSERT_THAT(counter, Eq(0));
 }
+
+TYPED_TEST(NodeTest, signal_handling_mode_can_be_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    auto sut_1 = NodeBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<SERVICE_TYPE>().expect("");
+    auto sut_2 = NodeBuilder()
+                     .signal_handling_mode(SignalHandlingMode::HandleTerminationRequests)
+                     .create<SERVICE_TYPE>()
+                     .expect("");
+
+    ASSERT_THAT(sut_1.signal_handling_mode(), Eq(SignalHandlingMode::Disabled));
+    ASSERT_THAT(sut_2.signal_handling_mode(), Eq(SignalHandlingMode::HandleTerminationRequests));
+}
 } // namespace

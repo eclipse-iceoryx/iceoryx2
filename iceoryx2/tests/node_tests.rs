@@ -368,6 +368,33 @@ mod node {
         }
     }
 
+    #[test]
+    fn signal_handling_mechanism_can_be_configured<S: Service>() {
+        let config = generate_isolated_config();
+        let node_1 = NodeBuilder::new()
+            .signal_handling_mode(SignalHandlingMode::Disabled)
+            .config(&config)
+            .create::<S>()
+            .unwrap();
+
+        let node_2 = NodeBuilder::new()
+            .signal_handling_mode(SignalHandlingMode::HandleTerminationRequests)
+            .config(&config)
+            .create::<S>()
+            .unwrap();
+
+        assert_that!(node_1.signal_handling_mode(), eq SignalHandlingMode::Disabled);
+        assert_that!(node_2.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
+    }
+
+    #[test]
+    fn by_default_termination_signals_are_handled<S: Service>() {
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        assert_that!(node.signal_handling_mode(), eq SignalHandlingMode::HandleTerminationRequests);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

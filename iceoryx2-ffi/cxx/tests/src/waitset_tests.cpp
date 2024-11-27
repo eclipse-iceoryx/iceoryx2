@@ -283,4 +283,17 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
         ASSERT_THAT(triggered, Eq(true));
     }
 }
+
+TYPED_TEST(WaitSetTest, signal_handling_mode_can_be_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    auto sut_1 = WaitSetBuilder().signal_handling_mode(SignalHandlingMode::Disabled).create<SERVICE_TYPE>().expect("");
+    auto sut_2 = WaitSetBuilder()
+                     .signal_handling_mode(SignalHandlingMode::HandleTerminationRequests)
+                     .create<SERVICE_TYPE>()
+                     .expect("");
+
+    ASSERT_THAT(sut_1.signal_handling_mode(), Eq(SignalHandlingMode::Disabled));
+    ASSERT_THAT(sut_2.signal_handling_mode(), Eq(SignalHandlingMode::HandleTerminationRequests));
+}
 } // namespace
