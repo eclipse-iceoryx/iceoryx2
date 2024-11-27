@@ -57,6 +57,7 @@
 use std::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 use super::publish_subscribe::PortFactory;
@@ -130,7 +131,8 @@ pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
-    pub(crate) max_slice_len: usize,
+    pub(crate) initial_max_slice_len: usize,
+    pub(crate) allocation_strategy: AllocationStrategy,
 }
 
 /// Factory to create a new [`Publisher`] port/endpoint for
@@ -153,8 +155,9 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
     pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, UserHeader>) -> Self {
         Self {
             config: LocalPublisherConfig {
+                allocation_strategy: AllocationStrategy::Static,
                 degration_callback: None,
-                max_slice_len: 1,
+                initial_max_slice_len: 1,
                 max_loaned_samples: factory
                     .service
                     .__internal_state()
@@ -227,8 +230,17 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
-    pub fn max_slice_len(mut self, value: usize) -> Self {
-        self.config.max_slice_len = value;
+    pub fn initial_max_slice_len(mut self, value: usize) -> Self {
+        self.config.initial_max_slice_len = value;
+        self
+    }
+
+    /// Defines the allocation strategy that is used when the provided
+    /// [`PortFactoryPublisher::initial_max_slice_len()`] is exhausted. This happens when the user
+    /// acquires a more than max slice len in [`Publisher::loan_slice()`] or
+    /// [`Publisher::loan_slice_uninit()`].
+    pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
+        self.config.allocation_strategy = value;
         self
     }
 }

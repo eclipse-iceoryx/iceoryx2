@@ -2474,7 +2474,7 @@ mod service_publish_subscribe {
 
         let publisher = sut
             .publisher_builder()
-            .max_slice_len(MAX_ELEMENTS)
+            .initial_max_slice_len(MAX_ELEMENTS)
             .create()
             .unwrap();
         let subscriber = sut.subscriber_builder().create().unwrap();
@@ -2517,7 +2517,7 @@ mod service_publish_subscribe {
 
         let publisher = service_pub
             .publisher_builder()
-            .max_slice_len(MAX_ELEMENTS)
+            .initial_max_slice_len(MAX_ELEMENTS)
             .create()
             .unwrap();
         let subscriber = service_sub.subscriber_builder().create().unwrap();
@@ -2958,7 +2958,7 @@ mod service_publish_subscribe {
 
         let publisher = sut
             .publisher_builder()
-            .max_slice_len(NUMBER_OF_ELEMENTS)
+            .initial_max_slice_len(NUMBER_OF_ELEMENTS)
             .create()
             .unwrap();
         let subscriber = sut.subscriber_builder().create().unwrap();

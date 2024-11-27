@@ -239,7 +239,7 @@ TYPED_TEST(ServicePublishSubscribeTest, slice_copy_send_receive_works) {
     auto service =
         node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().expect("");
 
-    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
     iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
@@ -279,7 +279,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
                        .create()
                        .expect("");
 
-    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
     auto send_sample = sut_publisher.loan_slice(SLICE_MAX_LENGTH).expect("");
@@ -316,7 +316,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
                        .create()
                        .expect("");
 
-    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
     auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
@@ -358,7 +358,7 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_with_bytes_send_receiv
                        .create()
                        .expect("");
 
-    auto sut_publisher = service.publisher_builder().max_slice_len(sizeof(DummyData)).create().expect("");
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(sizeof(DummyData)).create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
     auto send_sample = sut_publisher.loan_slice_uninit(sizeof(DummyData)).expect("");
@@ -388,7 +388,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
     auto service =
         node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().expect("");
 
-    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
     auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
@@ -422,7 +422,7 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
     auto service =
         node.service_builder(service_name).template publish_subscribe<iox::Slice<DummyData>>().create().expect("");
 
-    auto sut_publisher = service.publisher_builder().max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
     iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
@@ -606,9 +606,9 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_applies_max_slice_len) {
     auto service =
         node.service_builder(service_name).template publish_subscribe<iox::Slice<ValueType>>().create().expect("");
 
-    auto sut = service.publisher_builder().max_slice_len(DESIRED_MAX_SLICE_LEN).create().expect("");
+    auto sut = service.publisher_builder().initial_max_slice_len(DESIRED_MAX_SLICE_LEN).create().expect("");
 
-    ASSERT_THAT(sut.max_slice_len(), Eq(DESIRED_MAX_SLICE_LEN));
+    ASSERT_THAT(sut.initial_max_slice_len(), Eq(DESIRED_MAX_SLICE_LEN));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {

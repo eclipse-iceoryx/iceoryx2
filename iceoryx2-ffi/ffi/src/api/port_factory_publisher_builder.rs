@@ -208,7 +208,7 @@ pub unsafe extern "C" fn iox2_publisher_create_error_string(
 ///
 /// * `port_factory_handle` must be valid handles
 #[no_mangle]
-pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_slice_len(
+pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_initial_max_slice_len(
     port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
     value: c_size_t,
 ) {
@@ -220,14 +220,14 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_max_slice_len(
             let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
 
             port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
-                port_factory.max_slice_len(value),
+                port_factory.initial_max_slice_len(value),
             ));
         }
         iox2_service_type_e::LOCAL => {
             let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
 
             port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
-                port_factory.max_slice_len(value),
+                port_factory.initial_max_slice_len(value),
             ));
         }
     }

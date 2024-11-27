@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let maximum_elements = 1024;
     let publisher = service
         .publisher_builder()
-        .max_slice_len(maximum_elements)
+        .initial_max_slice_len(maximum_elements)
         .create()?;
 
     let mut counter = 0;

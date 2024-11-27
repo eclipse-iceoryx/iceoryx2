@@ -337,15 +337,17 @@ pub unsafe extern "C" fn iox2_publisher_unable_to_deliver_strategy(
 ///
 /// * `publisher_handle` is valid and non-null
 #[no_mangle]
-pub unsafe extern "C" fn iox2_publisher_max_slice_len(
+pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
     publisher_handle: iox2_publisher_h_ref,
 ) -> c_int {
     publisher_handle.assert_non_null();
 
     let publisher = &mut *publisher_handle.as_type();
     match publisher.service_type {
-        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.max_slice_len() as c_int,
-        iox2_service_type_e::LOCAL => publisher.value.as_mut().local.max_slice_len() as c_int,
+        iox2_service_type_e::IPC => publisher.value.as_mut().ipc.initial_max_slice_len() as c_int,
+        iox2_service_type_e::LOCAL => {
+            publisher.value.as_mut().local.initial_max_slice_len() as c_int
+        }
     }
 }
 

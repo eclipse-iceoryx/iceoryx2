@@ -437,7 +437,7 @@ impl<Service: service::Service> DataSegment<Service> {
                         match self.subscriber_connections.create(
                             i,
                             *subscriber_details,
-                            self.config.max_slice_len,
+                            self.config.initial_max_slice_len,
                         ) {
                             Ok(()) => match &self.subscriber_connections.get(i) {
                                 Some(connection) => self.deliver_sample_history(connection),
@@ -587,17 +587,17 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
-        let max_slice_len = config.max_slice_len;
+        let max_slice_len = config.initial_max_slice_len;
         let data_segment = Arc::new(DataSegment {
             is_active: IoxAtomicBool::new(true),
             memory: data_segment,
             payload_size: static_config
                 .message_type_details()
-                .sample_layout(config.max_slice_len)
+                .sample_layout(config.initial_max_slice_len)
                 .size(),
             payload_type_layout: static_config
                 .message_type_details()
-                .payload_layout(config.max_slice_len),
+                .payload_layout(config.initial_max_slice_len),
             sample_reference_counter: {
                 let mut v = Vec::with_capacity(number_of_samples);
                 for _ in 0..number_of_samples {
@@ -680,7 +680,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
         let l = static_config
             .message_type_details
-            .sample_layout(config.max_slice_len);
+            .sample_layout(config.initial_max_slice_len);
         let allocator_config = shm_allocator::pool_allocator::Config { bucket_layout: l };
 
         Ok(fail!(from "Publisher::create_data_segment()",
@@ -705,8 +705,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     }
 
     /// Returns the maximum slice length configured for this [`Publisher`].
-    pub fn max_slice_len(&self) -> usize {
-        self.data_segment.config.max_slice_len
+    pub fn initial_max_slice_len(&self) -> usize {
+        self.data_segment.config.initial_max_slice_len
     }
 
     fn allocate(&self, layout: Layout) -> Result<ShmPointer, PublisherLoanError> {
@@ -995,7 +995,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         underlying_number_of_slice_elements: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError>
     {
-        let max_slice_len = self.data_segment.config.max_slice_len;
+        let max_slice_len = self.data_segment.config.initial_max_slice_len;
         if max_slice_len < slice_len {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
