@@ -110,7 +110,9 @@ use crate::raw_sample::RawSampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
 use crate::service::builder::publish_subscribe::CustomPayloadMarker;
 use crate::service::config_scheme::{connection_config, data_segment_config};
-use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
+use crate::service::dynamic_config::publish_subscribe::{
+    DataSegmentType, PublisherDetails, SubscriberDetails,
+};
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::{
     data_segment_name, extract_publisher_id_from_connection, extract_subscriber_id_from_connection,
@@ -135,7 +137,7 @@ use iceoryx2_cal::shared_memory::{
     SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, ShmPointer,
 };
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
-use iceoryx2_cal::shm_allocator::{self, PointerOffset, ShmAllocationError};
+use iceoryx2_cal::shm_allocator::{self, AllocationStrategy, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
@@ -582,6 +584,12 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .messaging_pattern
             .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
+        let data_segment_type = if config.allocation_strategy == AllocationStrategy::Static {
+            DataSegmentType::Static
+        } else {
+            DataSegmentType::Dynamic
+        };
+
         let data_segment = fail!(from origin,
                 when Self::create_data_segment(&port_id, service.__internal_state().shared_node.config(), number_of_samples, static_config, &config),
                 with PublisherCreateError::UnableToCreateDataSegment,
@@ -653,6 +661,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .get()
             .publish_subscribe()
             .add_publisher_id(PublisherDetails {
+                data_segment_type,
                 publisher_id: port_id,
                 number_of_samples,
                 max_slice_len,

@@ -38,6 +38,7 @@ use crate::{
 
 use super::PortCleanupAction;
 
+#[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DynamicConfigSettings {
     pub number_of_listeners: usize,
@@ -46,18 +47,21 @@ pub(crate) struct DynamicConfigSettings {
 
 /// The dynamic configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
 /// based service. Contains dynamic parameters like the connected endpoints etc..
+#[repr(C)]
 #[derive(Debug)]
 pub struct DynamicConfig {
     pub(crate) listeners: Container<ListenerDetails>,
     pub(crate) notifiers: Container<NotifierDetails>,
 }
 
+#[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ListenerDetails {
     pub(crate) listener_id: UniqueListenerId,
     pub(crate) node_id: NodeId,
 }
 
+#[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct NotifierDetails {
     pub(crate) notifier_id: UniqueNotifierId,

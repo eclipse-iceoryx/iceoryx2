@@ -38,20 +38,31 @@ use crate::{
 
 use super::PortCleanupAction;
 
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) enum DataSegmentType {
+    Dynamic,
+    Static,
+}
+
+#[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DynamicConfigSettings {
     pub number_of_subscribers: usize,
     pub number_of_publishers: usize,
 }
 
+#[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct PublisherDetails {
     pub(crate) publisher_id: UniquePublisherId,
     pub(crate) node_id: NodeId,
     pub(crate) number_of_samples: usize,
     pub(crate) max_slice_len: usize,
+    pub(crate) data_segment_type: DataSegmentType,
 }
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct SubscriberDetails {
     pub(crate) subscriber_id: UniqueSubscriberId,
@@ -61,6 +72,7 @@ pub(crate) struct SubscriberDetails {
 
 /// The dynamic configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
 /// based service. Contains dynamic parameters like the connected endpoints etc..
+#[repr(C)]
 #[derive(Debug)]
 pub struct DynamicConfig {
     pub(crate) subscribers: Container<SubscriberDetails>,
