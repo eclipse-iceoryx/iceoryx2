@@ -64,7 +64,7 @@
 //! ```
 
 use crate::{
-    port::publisher::{DataSegment, PublisherSendError},
+    port::publisher::{PublisherBackend, PublisherSendError},
     raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
@@ -87,7 +87,7 @@ use std::{
 /// Does not implement [`Send`] since it releases unsent samples in the [`crate::port::publisher::Publisher`] and the
 /// [`crate::port::publisher::Publisher`] is not thread-safe!
 pub struct SampleMut<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> {
-    pub(crate) data_segment: Arc<DataSegment<Service>>,
+    pub(crate) publisher_backend: Arc<PublisherBackend<Service>>,
     pub(crate) ptr: RawSampleMut<Header, UserHeader, Payload>,
     pub(crate) offset_to_chunk: PointerOffset,
 }
@@ -98,11 +98,11 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debu
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "SampleMut<{}, {}, {}> {{ data_segment: {:?}, offset_to_chunk: {:?} }}",
+            "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?} }}",
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
             core::any::type_name::<Service>(),
-            self.data_segment,
+            self.publisher_backend,
             self.offset_to_chunk
         )
     }
@@ -112,7 +112,8 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
     for SampleMut<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        self.data_segment.return_loaned_sample(self.offset_to_chunk);
+        self.publisher_backend
+            .return_loaned_sample(self.offset_to_chunk);
     }
 }
 
@@ -288,6 +289,7 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<usize, PublisherSendError> {
-        self.data_segment.send_sample(self.offset_to_chunk.offset())
+        self.publisher_backend
+            .send_sample(self.offset_to_chunk.offset())
     }
 }

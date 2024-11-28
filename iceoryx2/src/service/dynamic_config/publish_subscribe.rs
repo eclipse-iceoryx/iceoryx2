@@ -33,17 +33,13 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
 use crate::{
     node::NodeId,
-    port::port_identifiers::{UniquePortId, UniquePublisherId, UniqueSubscriberId},
+    port::{
+        details::data_segment::DataSegmentType,
+        port_identifiers::{UniquePortId, UniquePublisherId, UniqueSubscriberId},
+    },
 };
 
 use super::PortCleanupAction;
-
-#[repr(C)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(crate) enum DataSegmentType {
-    Dynamic,
-    Static,
-}
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
