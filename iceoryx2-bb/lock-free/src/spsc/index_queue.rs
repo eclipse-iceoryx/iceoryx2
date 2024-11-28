@@ -185,7 +185,7 @@ pub mod details {
         fn verify_init(&self, source: &str) {
             debug_assert!(
                 self.is_memory_initialized.load(Ordering::Relaxed),
-                "Undefined behavior when calling \"{}\" and the object is not initialized.",
+                "Undefined behavior when calling IndexQueue::{} and the object is not initialized.",
                 source
             );
         }
@@ -219,7 +219,7 @@ pub mod details {
         /// }
         /// ```
         pub fn acquire_producer(&self) -> Option<Producer<'_, PointerType>> {
-            self.verify_init("acquire_producer");
+            self.verify_init("acquire_producer()");
             match self.has_producer.compare_exchange(
                 true,
                 false,
@@ -251,7 +251,7 @@ pub mod details {
         /// }
         /// ```
         pub fn acquire_consumer(&self) -> Option<Consumer<'_, PointerType>> {
-            self.verify_init("acquire_consumer");
+            self.verify_init("acquire_consumer()");
             match self.has_consumer.compare_exchange(
                 true,
                 false,

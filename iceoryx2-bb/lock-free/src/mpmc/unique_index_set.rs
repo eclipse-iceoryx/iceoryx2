@@ -311,7 +311,7 @@ impl UniqueIndexSet {
     fn verify_init(&self, source: &str) {
         debug_assert!(
             self.is_memory_initialized.load(Ordering::Relaxed),
-            "Undefined behavior when calling \"{}\" and the object is not initialized.",
+            "Undefined behavior when calling UniqueIndexSet::{} and the object is not initialized.",
             source
         );
     }
@@ -329,7 +329,7 @@ impl UniqueIndexSet {
     /// * Ensure that [`UniqueIndexSet::init()`] was called once.
     ///
     pub unsafe fn acquire(&self) -> Result<UniqueIndex<'_>, UniqueIndexSetAcquireFailure> {
-        self.verify_init("acquire");
+        self.verify_init("acquire()");
         unsafe { self.acquire_raw_index() }.map(|v| UniqueIndex {
             value: v,
             index_set: self,
@@ -388,7 +388,7 @@ impl UniqueIndexSet {
     ///  * The index must be manually released with [`UniqueIndexSet::release_raw_index()`]
     ///    otherwise the index is leaked.
     pub unsafe fn acquire_raw_index(&self) -> Result<u32, UniqueIndexSetAcquireFailure> {
-        self.verify_init("acquire_raw_index");
+        self.verify_init("acquire_raw_index()");
         let mut old_value = self.head.load(Ordering::Acquire);
         let mut old = HeadDetails::from(old_value);
 
@@ -442,7 +442,7 @@ impl UniqueIndexSet {
     ///  * Shall be only used when the index was acquired with
     ///    [`UniqueIndexSet::acquire_raw_index()`]
     pub unsafe fn release_raw_index(&self, index: u32, mode: ReleaseMode) -> ReleaseState {
-        self.verify_init("release_raw_index");
+        self.verify_init("release_raw_index()");
         fence(Ordering::Release);
 
         let mut release_state;
