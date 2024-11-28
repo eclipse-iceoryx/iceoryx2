@@ -125,6 +125,15 @@ impl<Service: service::Service> DataSegment<Service> {
             MemoryType::Dynamic(memory) => memory.deallocate(offset, layout),
         }
     }
+
+    pub(crate) fn max_number_of_segments(data_segment_type: DataSegmentType) -> u8 {
+        match data_segment_type {
+            DataSegmentType::Static => 1,
+            DataSegmentType::Dynamic => {
+                (Service::ResizableSharedMemory::max_number_of_reallocations() - 1) as u8
+            }
+        }
+    }
 }
 
 #[derive(Debug)]

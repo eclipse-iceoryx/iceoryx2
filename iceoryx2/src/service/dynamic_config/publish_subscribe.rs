@@ -56,6 +56,7 @@ pub(crate) struct PublisherDetails {
     pub(crate) number_of_samples: usize,
     pub(crate) max_slice_len: usize,
     pub(crate) data_segment_type: DataSegmentType,
+    pub(crate) max_number_of_segments: u8,
 }
 
 #[repr(C)]

@@ -28,13 +28,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let publisher = service
         .publisher_builder()
         .initial_max_slice_len(1)
-        .allocation_strategy(AllocationStrategy::PowerOfTwo)
+        .allocation_strategy(AllocationStrategy::BestFit)
         .create()?;
 
     let mut counter = 0;
 
     while node.wait(CYCLE_TIME).is_ok() {
-        let required_memory_size = (counter % 16) + 1;
+        let required_memory_size = (counter + 1) * (counter + 1);
         let sample = publisher.loan_slice_uninit(required_memory_size)?;
         let sample = sample.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
 

@@ -58,6 +58,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                 .number_of_samples_per_segment(number_of_samples)
+                                .max_supported_shared_memory_segments(this.max_number_of_segments)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
                                 .create_sender(this.static_config.message_type_details().sample_layout(max_slice_len).size()),
                         "{}.", msg);
@@ -76,6 +77,7 @@ pub(crate) struct SubscriberConnections<Service: service::Service> {
     shared_node: Arc<SharedNode<Service>>,
     pub(crate) static_config: StaticConfig,
     number_of_samples: usize,
+    max_number_of_segments: u8,
 }
 
 impl<Service: service::Service> SubscriberConnections<Service> {
@@ -85,6 +87,7 @@ impl<Service: service::Service> SubscriberConnections<Service> {
         port_id: UniquePublisherId,
         static_config: &StaticConfig,
         number_of_samples: usize,
+        max_number_of_segments: u8,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
@@ -92,6 +95,7 @@ impl<Service: service::Service> SubscriberConnections<Service> {
             port_id,
             static_config: static_config.clone(),
             number_of_samples,
+            max_number_of_segments,
         }
     }
 

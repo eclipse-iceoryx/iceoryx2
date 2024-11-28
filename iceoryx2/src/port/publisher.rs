@@ -131,7 +131,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError};
 use iceoryx2_cal::shared_memory::ShmPointer;
-use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocationError};
+use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
@@ -235,7 +235,7 @@ pub(crate) enum RemovePubSubPortFromAllConnectionsError {
 
 #[derive(Debug)]
 pub(crate) struct PublisherBackend<Service: service::Service> {
-    sample_reference_counter: Vec<IoxAtomicU64>,
+    sample_reference_counter: Vec<Vec<IoxAtomicU64>>,
     data_segment: DataSegment<Service>,
     payload_size: usize,
     payload_type_layout: Layout,
@@ -245,7 +245,7 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
 
     subscriber_connections: SubscriberConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
-    history: Option<UnsafeCell<Queue<usize>>>,
+    history: Option<UnsafeCell<Queue<u64>>>,
     static_config: crate::service::static_config::StaticConfig,
     loan_counter: IoxAtomicUsize,
     is_active: IoxAtomicBool,
@@ -261,10 +261,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
 
         let msg = "Unable to allocate Sample";
         let ptr = self.data_segment.allocate(layout)?;
-        if self.sample_reference_counter[self.sample_index(ptr.offset.offset())]
-            .fetch_add(1, Ordering::Relaxed)
-            != 0
-        {
+        if self.borrow_sample(ptr.offset) != 0 {
             fatal_panic!(from self,
                 "{} since the allocated sample is already in use! This should never happen!", msg);
         }
@@ -272,19 +269,21 @@ impl<Service: service::Service> PublisherBackend<Service> {
         Ok(ptr)
     }
 
-    fn borrow_sample(&self, distance_to_chunk: usize) {
-        self.sample_reference_counter[self.sample_index(distance_to_chunk)]
-            .fetch_add(1, Ordering::Relaxed);
+    fn borrow_sample(&self, offset: PointerOffset) -> u64 {
+        self.sample_reference_counter[offset.segment_id().value() as usize]
+            [self.sample_index(offset.offset())]
+        .fetch_add(1, Ordering::Relaxed)
     }
 
-    fn release_sample(&self, distance_to_chunk: PointerOffset) {
-        if self.sample_reference_counter[self.sample_index(distance_to_chunk.offset())]
-            .fetch_sub(1, Ordering::Relaxed)
+    fn release_sample(&self, offset: PointerOffset) {
+        if self.sample_reference_counter[offset.segment_id().value() as usize]
+            [self.sample_index(offset.offset())]
+        .fetch_sub(1, Ordering::Relaxed)
             == 1
         {
             unsafe {
                 self.data_segment
-                    .deallocate(distance_to_chunk, self.payload_type_layout);
+                    .deallocate(offset, self.payload_type_layout);
             }
         }
     }
@@ -326,21 +325,21 @@ impl<Service: service::Service> PublisherBackend<Service> {
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 
-    fn add_sample_to_history(&self, address_to_chunk: usize) {
+    fn add_sample_to_history(&self, offset: PointerOffset) {
         match &self.history {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
-                self.borrow_sample(address_to_chunk);
-                match history.push_with_overflow(address_to_chunk) {
+                self.borrow_sample(offset);
+                match history.push_with_overflow(offset.as_value()) {
                     None => (),
-                    Some(old) => self.release_sample(PointerOffset::new(old)),
+                    Some(old) => self.release_sample(PointerOffset::from_value(old)),
                 }
             }
         }
     }
 
-    fn deliver_sample(&self, address_to_chunk: usize) -> Result<usize, PublisherSendError> {
+    fn deliver_sample(&self, offset: PointerOffset) -> Result<usize, PublisherSendError> {
         self.retrieve_returned_samples();
 
         let deliver_call = match self.config.unable_to_deliver_strategy {
@@ -355,7 +354,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
         let mut number_of_recipients = 0;
         for i in 0..self.subscriber_connections.len() {
             if let Some(ref connection) = self.subscriber_connections.get(i) {
-                match deliver_call(&connection.sender, PointerOffset::new(address_to_chunk)) {
+                match deliver_call(&connection.sender, offset) {
                     Err(ZeroCopySendError::ReceiveBufferFull)
                     | Err(ZeroCopySendError::UsedChunkListFull) => {
                         /* causes no problem
@@ -374,23 +373,23 @@ impl<Service: service::Service> PublisherBackend<Service> {
                                 DegrationAction::Warn => {
                                     error!(from self,
                                         "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                        address_to_chunk, connection.subscriber_id);
+                                        offset, connection.subscriber_id);
                                 }
                                 DegrationAction::Fail => {
                                     fail!(from self, with PublisherSendError::ConnectionCorrupted,
                                         "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                        address_to_chunk, connection.subscriber_id);
+                                        offset, connection.subscriber_id);
                                 }
                             },
                             None => {
                                 error!(from self,
                                     "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                    address_to_chunk, connection.subscriber_id);
+                                    offset, connection.subscriber_id);
                             }
                         }
                     }
                     Ok(overflow) => {
-                        self.borrow_sample(address_to_chunk);
+                        self.borrow_sample(offset);
                         number_of_recipients += 1;
 
                         if let Some(old) = overflow {
@@ -497,10 +496,13 @@ impl<Service: service::Service> PublisherBackend<Service> {
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
                 for i in 0..history.len() {
-                    let ptr_distance = unsafe { history.get_unchecked(i) };
+                    let offset_value = unsafe { history.get_unchecked(i) };
 
-                    match connection.sender.try_send(PointerOffset::new(ptr_distance)) {
-                        Ok(_) => self.borrow_sample(ptr_distance),
+                    let offset = PointerOffset::from_value(offset_value);
+                    match connection.sender.try_send(offset) {
+                        Ok(_) => {
+                            self.borrow_sample(offset);
+                        }
                         Err(e) => {
                             warn!(from self, "Failed to deliver history to new subscriber via {:?} due to {:?}", connection, e);
                         }
@@ -510,7 +512,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
         }
     }
 
-    pub(crate) fn send_sample(&self, address_to_chunk: usize) -> Result<usize, PublisherSendError> {
+    pub(crate) fn send_sample(&self, offset: PointerOffset) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send sample";
         if !self.is_active.load(Ordering::Relaxed) {
             fail!(from self, with PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists,
@@ -520,8 +522,8 @@ impl<Service: service::Service> PublisherBackend<Service> {
         fail!(from self, when self.update_connections(),
             "{} since the connections could not be updated.", msg);
 
-        self.add_sample_to_history(address_to_chunk);
-        self.deliver_sample(address_to_chunk)
+        self.add_sample_to_history(offset);
+        self.deliver_sample(offset)
     }
 }
 
@@ -586,12 +588,15 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .sample_layout(config.initial_max_slice_len);
 
         let max_slice_len = config.initial_max_slice_len;
+        let max_number_of_segments =
+            DataSegment::<Service>::max_number_of_segments(data_segment_type);
         let publisher_details = PublisherDetails {
             data_segment_type,
             publisher_id: port_id,
             number_of_samples,
             max_slice_len,
             node_id: *service.__internal_state().shared_node.id(),
+            max_number_of_segments,
         };
         let global_config = service.__internal_state().shared_node.config();
 
@@ -611,9 +616,13 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 .message_type_details()
                 .payload_layout(max_slice_len),
             sample_reference_counter: {
-                let mut v = Vec::with_capacity(number_of_samples);
-                for _ in 0..number_of_samples {
-                    v.push(IoxAtomicU64::new(0));
+                let mut v: Vec<Vec<IoxAtomicU64>> =
+                    Vec::with_capacity(max_number_of_segments as usize);
+                for segment in 0..max_number_of_segments {
+                    v.push(Vec::with_capacity(number_of_samples));
+                    for _ in 0..number_of_samples {
+                        v[segment as usize].push(IoxAtomicU64::new(0));
+                    }
                 }
                 v
             },
@@ -625,6 +634,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 port_id,
                 static_config,
                 number_of_samples,
+                max_number_of_segments,
             ),
             config,
             subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
@@ -980,7 +990,9 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError>
     {
         let max_slice_len = self.backend.config.initial_max_slice_len;
-        if max_slice_len < slice_len {
+        if self.backend.config.allocation_strategy == AllocationStrategy::Static
+            && max_slice_len < slice_len
+        {
             fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
                 slice_len, max_slice_len);
