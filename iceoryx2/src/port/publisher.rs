@@ -101,7 +101,7 @@
 //! # }
 //! ```
 
-use super::details::data_segment::DataSegmentType;
+use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::port_identifiers::UniquePublisherId;
 use super::UniqueSubscriberId;
 use crate::port::details::subscriber_connections::*;
@@ -129,14 +129,9 @@ use iceoryx2_bb_log::{debug, error, fail, fatal_panic, warn};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
-use iceoryx2_cal::named_concept::{
-    NamedConceptBuilder, NamedConceptListError, NamedConceptRemoveError,
-};
-use iceoryx2_cal::shared_memory::{
-    SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, ShmPointer,
-};
-use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
-use iceoryx2_cal::shm_allocator::{self, AllocationStrategy, PointerOffset, ShmAllocationError};
+use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError};
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
 };
@@ -241,7 +236,7 @@ pub(crate) enum RemovePubSubPortFromAllConnectionsError {
 #[derive(Debug)]
 pub(crate) struct PublisherBackend<Service: service::Service> {
     sample_reference_counter: Vec<IoxAtomicU64>,
-    data_segment: Service::SharedMemory,
+    data_segment: DataSegment<Service>,
     payload_size: usize,
     payload_type_layout: Layout,
     port_id: UniquePublisherId,
@@ -601,7 +596,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let global_config = service.__internal_state().shared_node.config();
 
         let data_segment = fail!(from origin,
-                when Self::create_data_segment(&publisher_details, &global_config, sample_layout),
+                when DataSegment::create(&publisher_details, &global_config, sample_layout),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
@@ -682,25 +677,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         new_self.dynamic_publisher_handle = Some(dynamic_publisher_handle);
 
         Ok(new_self)
-    }
-
-    fn create_data_segment(
-        details: &PublisherDetails,
-        global_config: &config::Config,
-        sample_layout: Layout,
-    ) -> Result<Service::SharedMemory, SharedMemoryCreateError> {
-        let allocator_config = shm_allocator::pool_allocator::Config {
-            bucket_layout: sample_layout,
-        };
-
-        Ok(fail!(from "Publisher::create_data_segment()",
-            when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
-            Service::SharedMemory,
-                >>::new(&data_segment_name(&details.publisher_id))
-                .config(&data_segment_config::<Service>(global_config))
-                .size(sample_layout.size() * details.number_of_samples + sample_layout.align() - 1)
-                .create(&allocator_config),
-            "Unable to create the data segment."))
     }
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]
