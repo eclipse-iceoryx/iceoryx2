@@ -43,7 +43,7 @@ use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::{shared_memory::*, zero_copy_connection::*};
+use iceoryx2_cal::zero_copy_connection::*;
 
 use crate::port::DegrationAction;
 use crate::sample::SampleDetails;
@@ -305,16 +305,18 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             Ok(data) => match data {
                 None => Ok(None),
                 Some(offset) => {
-                    let absolute_address =
-                        offset.offset() + connection.data_segment.payload_start_address();
-
                     let details = SampleDetails {
                         publisher_connection: connection.clone(),
                         offset,
                         origin: connection.publisher_id,
                     };
 
-                    Ok(Some((details, absolute_address)))
+                    Ok(Some((
+                        details,
+                        connection
+                            .data_segment
+                            .register_and_translate_offset(offset),
+                    )))
                 }
             },
             Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {

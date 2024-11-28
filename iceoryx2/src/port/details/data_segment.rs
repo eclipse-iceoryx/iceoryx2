@@ -15,7 +15,10 @@ use std::alloc::Layout;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
-    shared_memory::{SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, ShmPointer},
+    shared_memory::{
+        SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, SharedMemoryOpenError,
+        ShmPointer,
+    },
     shm_allocator::{
         self, pool_allocator::PoolAllocator, AllocationStrategy, PointerOffset, ShmAllocationError,
     },
@@ -60,14 +63,14 @@ impl<Service: service::Service> DataSegment<Service> {
             bucket_layout: sample_layout,
         };
 
-        let memory = fail!(from "Publisher::create_data_segment()",
+        let memory = fail!(from "DataSegment::create()",
             when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
             Service::SharedMemory,
                 >>::new(&data_segment_name(&details.publisher_id))
                 .config(&data_segment_config::<Service>(global_config))
                 .size(sample_layout.size() * details.number_of_samples + sample_layout.align() - 1)
                 .create(&allocator_config),
-            "Unable to create the data segment.");
+            "Unable to create the data segment since the underlying shared memory could not be created.");
 
         Ok(Self { memory })
     }
@@ -80,4 +83,32 @@ impl<Service: service::Service> DataSegment<Service> {
     pub(crate) unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
         self.memory.deallocate(offset, layout)
     }
+}
+
+#[derive(Debug)]
+pub(crate) struct DataSegmentView<Service: service::Service> {
+    memory: Service::SharedMemory,
+}
+
+impl<Service: service::Service> DataSegmentView<Service> {
+    pub(crate) fn open(
+        details: &PublisherDetails,
+        global_config: &config::Config,
+    ) -> Result<Self, SharedMemoryOpenError> {
+        let memory = fail!(from "DataSegment::open()",
+                            when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
+                                Builder::new(&data_segment_name(&details.publisher_id))
+                                .config(&data_segment_config::<Service>(global_config))
+                                .timeout(global_config.global.service.creation_timeout)
+                                .open(),
+                            "Unable to open data segment since the underlying shared memory could not be opened.");
+
+        Ok(Self { memory })
+    }
+
+    pub(crate) fn register_and_translate_offset(&self, offset: PointerOffset) -> usize {
+        offset.offset() + self.memory.payload_start_address()
+    }
+
+    pub(crate) unsafe fn unregister_offset(&self, _offset: PointerOffset) {}
 }

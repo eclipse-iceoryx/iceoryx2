@@ -15,27 +15,23 @@ use std::{cell::UnsafeCell, sync::Arc};
 use crate::{
     port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},
     service::{
-        self,
-        config_scheme::{connection_config, data_segment_config},
-        dynamic_config::publish_subscribe::PublisherDetails,
-        naming_scheme::{connection_name, data_segment_name},
-        static_config::publish_subscribe::StaticConfig,
-        ServiceState,
+        self, config_scheme::connection_config,
+        dynamic_config::publish_subscribe::PublisherDetails, naming_scheme::connection_name,
+        static_config::publish_subscribe::StaticConfig, ServiceState,
     },
 };
 
 use crate::port::update_connections::ConnectionFailure;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
-use iceoryx2_cal::{
-    shared_memory::SharedMemory, shared_memory::SharedMemoryBuilder,
-    shm_allocator::pool_allocator::PoolAllocator, zero_copy_connection::*,
-};
+use iceoryx2_cal::zero_copy_connection::*;
+
+use super::data_segment::DataSegmentView;
 
 #[derive(Debug)]
 pub(crate) struct Connection<Service: service::Service> {
     pub(crate) receiver: <Service::Connection as ZeroCopyConnection>::Receiver,
-    pub(crate) data_segment: Service::SharedMemory,
+    pub(crate) data_segment: DataSegmentView<Service>,
     pub(crate) publisher_id: UniquePublisherId,
 }
 
@@ -49,24 +45,21 @@ impl<Service: service::Service> Connection<Service> {
             details.publisher_id, this.subscriber_id
         );
 
+        let global_config = this.service_state.shared_node.config();
         let receiver = fail!(from this,
                         when <Service::Connection as ZeroCopyConnection>::
                             Builder::new( &connection_name(details.publisher_id, this.subscriber_id))
-                                    .config(&connection_config::<Service>(this.service_state.shared_node.config()))
+                                    .config(&connection_config::<Service>(global_config))
                                     .buffer_size(this.buffer_size)
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                     .number_of_samples_per_segment(details.number_of_samples)
-                                    .timeout(this.service_state.shared_node.config().global.service.creation_timeout)
+                                    .timeout(global_config.global.service.creation_timeout)
                                     .create_receiver(this.static_config.message_type_details().sample_layout(details.max_slice_len).size()),
                         "{} since the zero copy connection could not be established.", msg);
 
         let data_segment = fail!(from this,
-                            when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
-                                Builder::new(&data_segment_name(&details.publisher_id))
-                                .config(&data_segment_config::<Service>(this.service_state.shared_node.config()))
-                                .timeout(this.service_state.shared_node.config().global.service.creation_timeout)
-                                .open(),
+                            when DataSegmentView::open(details, global_config),
                             "{} since the publishers data segment could not be opened.", msg);
 
         Ok(Self {
