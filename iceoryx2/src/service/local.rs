@@ -52,6 +52,8 @@ impl crate::service::Service for Service {
     type DynamicStorage = dynamic_storage::process_local::Storage<DynamicConfig>;
     type ServiceNameHasher = hash::sha1::Sha1;
     type SharedMemory = shared_memory::process_local::Memory<PoolAllocator>;
+    type ResizableSharedMemory =
+        resizable_shared_memory::dynamic::DynamicMemory<PoolAllocator, Self::SharedMemory>;
     type Connection = zero_copy_connection::process_local::Connection;
     //type Event = event::process_local::EventImpl;
     type Event = event::unix_datagram_socket::EventImpl;
