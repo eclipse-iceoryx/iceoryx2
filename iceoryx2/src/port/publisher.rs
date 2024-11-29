@@ -282,6 +282,12 @@ struct OffsetAndSize {
 }
 
 #[derive(Debug)]
+struct AllocationPair {
+    shm_pointer: ShmPointer,
+    sample_size: usize,
+}
+
+#[derive(Debug)]
 pub(crate) struct PublisherBackend<Service: service::Service> {
     segment_states: Vec<SegmentState>,
     data_segment: DataSegment<Service>,
@@ -298,26 +304,32 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
 }
 
 impl<Service: service::Service> PublisherBackend<Service> {
-    fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError> {
+    fn allocate(&self, layout: Layout) -> Result<AllocationPair, ShmAllocationError> {
         self.retrieve_returned_samples();
 
         let msg = "Unable to allocate Sample";
-        let ptr = self.data_segment.allocate(layout)?;
-        if self.borrow_sample(ptr.offset) != 0 {
+        let shm_pointer = self.data_segment.allocate(layout)?;
+        let (ref_count, sample_size) = self.borrow_sample(shm_pointer.offset);
+        if ref_count != 0 {
             fatal_panic!(from self,
                 "{} since the allocated sample is already in use! This should never happen!", msg);
         }
 
-        Ok(ptr)
+        Ok(AllocationPair {
+            shm_pointer,
+            sample_size,
+        })
     }
 
-    fn borrow_sample(&self, offset: PointerOffset) -> u64 {
+    fn borrow_sample(&self, offset: PointerOffset) -> (u64, usize) {
         let segment_id = offset.segment_id();
         let segment_state = &self.segment_states[segment_id.value() as usize];
+        let mut payload_size = segment_state.payload_size();
         if segment_state.payload_size() == 0 {
-            segment_state.set_payload_size(self.data_segment.bucket_size(segment_id));
+            payload_size = self.data_segment.bucket_size(segment_id);
+            segment_state.set_payload_size(payload_size);
         }
-        segment_state.borrow_sample(offset.offset())
+        (segment_state.borrow_sample(offset.offset()), payload_size)
     }
 
     fn release_sample(&self, offset: PointerOffset) {
@@ -743,7 +755,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         self.backend.config.initial_max_slice_len
     }
 
-    fn allocate(&self, layout: Layout) -> Result<ShmPointer, PublisherLoanError> {
+    fn allocate(&self, layout: Layout) -> Result<AllocationPair, PublisherLoanError> {
         let msg = "Unable to allocate Sample with";
 
         if self.backend.loan_counter.load(Ordering::Relaxed)
@@ -878,14 +890,9 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, PublisherLoanError>
     {
         let chunk = self.allocate(self.sample_layout(1))?;
-        let header_ptr = chunk.data_ptr as *mut Header;
+        let header_ptr = chunk.shm_pointer.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
-        let sample_size = self
-            .backend
-            .data_segment
-            .bucket_size(chunk.offset.segment_id());
-
         unsafe { header_ptr.write(Header::new(self.backend.port_id, 1)) };
 
         let sample =
@@ -894,8 +901,8 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
             SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
                 &self.backend,
                 sample,
-                chunk.offset,
-                sample_size,
+                chunk.shm_pointer.offset,
+                chunk.sample_size,
             ),
         )
     }
@@ -1043,14 +1050,9 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
 
         let sample_layout = self.sample_layout(slice_len);
         let chunk = self.allocate(sample_layout)?;
-        let header_ptr = chunk.data_ptr as *mut Header;
+        let header_ptr = chunk.shm_pointer.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
-        let sample_size = self
-            .backend
-            .data_segment
-            .bucket_size(chunk.offset.segment_id());
-
         unsafe { header_ptr.write(Header::new(self.backend.port_id, slice_len as _)) };
 
         let sample = unsafe {
@@ -1065,8 +1067,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
             SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
                 &self.backend,
                 sample,
-                chunk.offset,
-                sample_size,
+                chunk.shm_pointer.offset,
+                chunk.sample_size,
             ),
         )
     }
