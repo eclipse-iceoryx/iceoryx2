@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let publisher = service
         .publisher_builder()
         .initial_max_slice_len(1)
-        .allocation_strategy(AllocationStrategy::BestFit)
+        .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
     let mut counter = 0;

@@ -234,11 +234,51 @@ pub(crate) enum RemovePubSubPortFromAllConnectionsError {
 }
 
 #[derive(Debug)]
+struct SegmentState {
+    sample_reference_counter: Vec<IoxAtomicU64>,
+    payload_size: IoxAtomicUsize,
+}
+
+impl SegmentState {
+    fn new(number_of_samples: usize) -> Self {
+        let mut sample_reference_counter = Vec::with_capacity(number_of_samples);
+        for _ in 0..number_of_samples {
+            sample_reference_counter.push(IoxAtomicU64::new(0));
+        }
+
+        Self {
+            sample_reference_counter,
+            payload_size: IoxAtomicUsize::new(0),
+        }
+    }
+
+    fn set_payload_size(&self, value: usize) {
+        self.payload_size.store(value, Ordering::Relaxed);
+    }
+
+    fn payload_size(&self) -> usize {
+        self.payload_size.load(Ordering::Relaxed)
+    }
+
+    fn sample_index(&self, distance_to_chunk: usize) -> usize {
+        distance_to_chunk / self.payload_size()
+    }
+
+    fn borrow_sample(&self, distance_to_chunk: usize) -> u64 {
+        self.sample_reference_counter[self.sample_index(distance_to_chunk)]
+            .fetch_add(1, Ordering::Relaxed)
+    }
+
+    fn release_sample(&self, distance_to_chunk: usize) -> u64 {
+        self.sample_reference_counter[self.sample_index(distance_to_chunk)]
+            .fetch_sub(1, Ordering::Relaxed)
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct PublisherBackend<Service: service::Service> {
-    sample_reference_counter: Vec<Vec<IoxAtomicU64>>,
+    segment_states: Vec<SegmentState>,
     data_segment: DataSegment<Service>,
-    payload_size: usize,
-    payload_type_layout: Layout,
     port_id: UniquePublisherId,
     config: LocalPublisherConfig,
     service_state: Arc<ServiceState<Service>>,
@@ -252,10 +292,6 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
 }
 
 impl<Service: service::Service> PublisherBackend<Service> {
-    fn sample_index(&self, distance_to_chunk: usize) -> usize {
-        distance_to_chunk / self.payload_size
-    }
-
     fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError> {
         self.retrieve_returned_samples();
 
@@ -270,20 +306,20 @@ impl<Service: service::Service> PublisherBackend<Service> {
     }
 
     fn borrow_sample(&self, offset: PointerOffset) -> u64 {
-        self.sample_reference_counter[offset.segment_id().value() as usize]
-            [self.sample_index(offset.offset())]
-        .fetch_add(1, Ordering::Relaxed)
+        let segment_id = offset.segment_id();
+        let segment_state = &self.segment_states[segment_id.value() as usize];
+        if segment_state.payload_size() == 0 {
+            segment_state.set_payload_size(self.data_segment.bucket_size(segment_id));
+        }
+        segment_state.borrow_sample(offset.offset())
     }
 
     fn release_sample(&self, offset: PointerOffset) {
-        if self.sample_reference_counter[offset.segment_id().value() as usize]
-            [self.sample_index(offset.offset())]
-        .fetch_sub(1, Ordering::Relaxed)
+        if self.segment_states[offset.segment_id().value() as usize].release_sample(offset.offset())
             == 1
         {
             unsafe {
-                self.data_segment
-                    .deallocate(offset, self.payload_type_layout);
+                self.data_segment.deallocate_bucket(offset);
             }
         }
     }
@@ -608,21 +644,10 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let backend = Arc::new(PublisherBackend {
             is_active: IoxAtomicBool::new(true),
             data_segment,
-            payload_size: static_config
-                .message_type_details()
-                .sample_layout(max_slice_len)
-                .size(),
-            payload_type_layout: static_config
-                .message_type_details()
-                .payload_layout(max_slice_len),
-            sample_reference_counter: {
-                let mut v: Vec<Vec<IoxAtomicU64>> =
-                    Vec::with_capacity(max_number_of_segments as usize);
-                for segment in 0..max_number_of_segments {
-                    v.push(Vec::with_capacity(number_of_samples));
-                    for _ in 0..number_of_samples {
-                        v[segment as usize].push(IoxAtomicU64::new(0));
-                    }
+            segment_states: {
+                let mut v: Vec<SegmentState> = Vec::with_capacity(max_number_of_segments as usize);
+                for _ in 0..max_number_of_segments {
+                    v.push(SegmentState::new(number_of_samples))
                 }
                 v
             },

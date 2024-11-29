@@ -56,6 +56,13 @@ impl PoolAllocator {
     pub fn number_of_buckets(&self) -> u32 {
         self.allocator.number_of_buckets()
     }
+
+    pub unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
+        self.number_of_used_buckets.fetch_sub(1, Ordering::Relaxed);
+        self.allocator.deallocate_bucket(NonNull::new_unchecked(
+            (offset.offset() + self.allocator.start_address()) as *mut u8,
+        ));
+    }
 }
 
 impl ShmAllocator for PoolAllocator {
@@ -199,11 +206,7 @@ impl ShmAllocator for PoolAllocator {
         ))
     }
 
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
-        self.number_of_used_buckets.fetch_sub(1, Ordering::Relaxed);
-        self.allocator.deallocate(
-            NonNull::new_unchecked((offset.offset() + self.allocator.start_address()) as *mut u8),
-            layout,
-        );
+    unsafe fn deallocate(&self, offset: PointerOffset, _layout: Layout) {
+        self.deallocate_bucket(offset);
     }
 }

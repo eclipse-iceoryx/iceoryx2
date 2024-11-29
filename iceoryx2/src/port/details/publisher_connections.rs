@@ -54,6 +54,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
                                     .number_of_samples_per_segment(details.number_of_samples)
+                                    .max_supported_shared_memory_segments(details.max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
                                     .create_receiver(this.static_config.message_type_details().sample_layout(details.max_slice_len).size()),
                         "{} since the zero copy connection could not be established.", msg);

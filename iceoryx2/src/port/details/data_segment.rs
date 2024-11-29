@@ -15,13 +15,14 @@ use std::alloc::Layout;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
-    resizable_shared_memory::{self, *},
+    resizable_shared_memory::*,
     shared_memory::{
-        SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, SharedMemoryOpenError,
-        ShmPointer,
+        SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError, SharedMemoryForPoolAllocator,
+        SharedMemoryOpenError, ShmPointer,
     },
     shm_allocator::{
-        self, pool_allocator::PoolAllocator, AllocationStrategy, PointerOffset, ShmAllocationError,
+        self, pool_allocator::PoolAllocator, AllocationStrategy, PointerOffset, SegmentId,
+        ShmAllocationError,
     },
 };
 
@@ -119,10 +120,17 @@ impl<Service: service::Service> DataSegment<Service> {
         }
     }
 
-    pub(crate) unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
+    pub(crate) unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
         match &self.memory {
-            MemoryType::Static(memory) => memory.deallocate(offset, layout),
-            MemoryType::Dynamic(memory) => memory.deallocate(offset, layout),
+            MemoryType::Static(memory) => memory.deallocate_bucket(offset),
+            MemoryType::Dynamic(memory) => memory.deallocate_bucket(offset),
+        }
+    }
+
+    pub(crate) fn bucket_size(&self, segment_id: SegmentId) -> usize {
+        match &self.memory {
+            MemoryType::Static(memory) => memory.bucket_size(),
+            MemoryType::Dynamic(memory) => memory.bucket_size(segment_id),
         }
     }
 
@@ -137,8 +145,19 @@ impl<Service: service::Service> DataSegment<Service> {
 }
 
 #[derive(Debug)]
+enum MemoryViewType<Service: service::Service> {
+    Static(Service::SharedMemory),
+    Dynamic(
+        <Service::ResizableSharedMemory as ResizableSharedMemory<
+            PoolAllocator,
+            Service::SharedMemory,
+        >>::View,
+    ),
+}
+
+#[derive(Debug)]
 pub(crate) struct DataSegmentView<Service: service::Service> {
-    memory: MemoryType<Service>,
+    memory: MemoryViewType<Service>,
 }
 
 impl<Service: service::Service> DataSegmentView<Service> {
@@ -146,18 +165,37 @@ impl<Service: service::Service> DataSegmentView<Service> {
         details: &PublisherDetails,
         global_config: &config::Config,
     ) -> Result<Self, SharedMemoryOpenError> {
+        let segment_name = data_segment_name(&details.publisher_id);
+        let origin = "DataSegment::open()";
+        let msg =
+            "Unable to open data segment since the underlying shared memory could not be opened.";
+
         let memory = match details.data_segment_type {
             DataSegmentType::Static => {
-                let memory = fail!(from "DataSegment::open()",
+                let segment_config = data_segment_config::<Service>(global_config);
+                let memory = fail!(from origin,
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
-                                Builder::new(&data_segment_name(&details.publisher_id))
-                                .config(&data_segment_config::<Service>(global_config))
+                                Builder::new(&segment_name)
+                                .config(&segment_config)
                                 .timeout(global_config.global.service.creation_timeout)
                                 .open(),
-                            "Unable to open data segment since the underlying shared memory could not be opened.");
-                MemoryType::Static(memory)
+                            "{msg}");
+                MemoryViewType::Static(memory)
             }
-            DataSegmentType::Dynamic => todo!(),
+            DataSegmentType::Dynamic => {
+                let segment_config = resizable_data_segment_config::<Service>(global_config);
+                let memory = fail!(from origin,
+                    when <<Service::ResizableSharedMemory as ResizableSharedMemory<
+                        PoolAllocator,
+                        Service::SharedMemory,
+                    >>::ViewBuilder as NamedConceptBuilder<Service::ResizableSharedMemory>>::new(
+                        &segment_name,
+                    )
+                    .config(&segment_config)
+                    .open(),
+                    "{msg}");
+                MemoryViewType::Dynamic(memory)
+            }
         };
 
         Ok(Self { memory })
@@ -165,14 +203,16 @@ impl<Service: service::Service> DataSegmentView<Service> {
 
     pub(crate) fn register_and_translate_offset(&self, offset: PointerOffset) -> usize {
         match &self.memory {
-            MemoryType::Static(memory) => offset.offset() + memory.payload_start_address(),
-            MemoryType::Dynamic(memory) => todo!(),
+            MemoryViewType::Static(memory) => offset.offset() + memory.payload_start_address(),
+            MemoryViewType::Dynamic(memory) => unsafe {
+                memory.register_and_translate_offset(offset).unwrap() as usize
+            },
         }
     }
 
-    pub(crate) unsafe fn unregister_offset(&self, _offset: PointerOffset) {
-        if let MemoryType::Dynamic(memory) = &self.memory {
-            todo!()
+    pub(crate) unsafe fn unregister_offset(&self, offset: PointerOffset) {
+        if let MemoryViewType::Dynamic(memory) = &self.memory {
+            memory.unregister_offset(offset);
         }
     }
 }

@@ -186,10 +186,9 @@ use iceoryx2_cal::monitoring::Monitoring;
 use iceoryx2_cal::named_concept::NamedConceptListError;
 use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::reactor::Reactor;
-use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemory;
+use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemoryForPoolAllocator;
 use iceoryx2_cal::serialize::Serialize;
-use iceoryx2_cal::shared_memory::SharedMemory;
-use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
+use iceoryx2_cal::shared_memory::SharedMemoryForPoolAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use service_id::ServiceId;
@@ -469,10 +468,10 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     type DynamicStorage: DynamicStorage<DynamicConfig>;
 
     /// The memory used to store the payload.
-    type SharedMemory: SharedMemory<PoolAllocator>;
+    type SharedMemory: SharedMemoryForPoolAllocator;
 
     /// The dynamic memory used to store dynamic payload
-    type ResizableSharedMemory: ResizableSharedMemory<PoolAllocator, Self::SharedMemory>;
+    type ResizableSharedMemory: ResizableSharedMemoryForPoolAllocator<Self::SharedMemory>;
 
     /// The connection used to exchange pointers to the payload
     type Connection: ZeroCopyConnection;

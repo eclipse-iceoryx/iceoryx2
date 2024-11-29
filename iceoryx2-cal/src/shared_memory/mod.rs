@@ -63,6 +63,7 @@ use std::{fmt::Debug, time::Duration};
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 use iceoryx2_bb_system_types::file_name::*;
+use pool_allocator::PoolAllocator;
 
 /// Failure returned by [`SharedMemoryBuilder::create()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -183,4 +184,17 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".shm") }
     }
+}
+
+pub trait SharedMemoryForPoolAllocator: SharedMemory<PoolAllocator> {
+    /// Release previously allocated memory
+    ///
+    /// # Safety
+    ///
+    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
+    ///    [`ShmPointer`]
+    unsafe fn deallocate_bucket(&self, offset: PointerOffset);
+
+    /// Returns the bucket size of the [`PoolAllocator`]
+    fn bucket_size(&self) -> usize;
 }

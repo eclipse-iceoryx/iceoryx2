@@ -100,6 +100,13 @@ impl PoolAllocator {
         self.bucket_alignment
     }
 
+    pub unsafe fn deallocate_bucket(&self, ptr: NonNull<u8>) {
+        self.verify_init("deallocate");
+
+        self.buckets
+            .release_raw_index(self.get_index(ptr), ReleaseMode::Default);
+    }
+
     /// # Safety
     ///
     ///  * `ptr` must point to a piece of memory of length `size`
@@ -204,10 +211,7 @@ impl BaseAllocator for PoolAllocator {
     }
 
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _layout: Layout) {
-        self.verify_init("deallocate");
-
-        self.buckets
-            .release_raw_index(self.get_index(ptr), ReleaseMode::Default);
+        self.deallocate_bucket(ptr);
     }
 }
 

@@ -16,11 +16,14 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::{fmt::Debug, marker::PhantomData};
 
-use crate::shared_memory::{AllocationStrategy, SegmentId, ShmPointer};
+use crate::shared_memory::{
+    AllocationStrategy, SegmentId, SharedMemoryForPoolAllocator, ShmPointer,
+};
 use crate::shared_memory::{
     PointerOffset, SharedMemory, SharedMemoryBuilder, SharedMemoryCreateError,
     SharedMemoryOpenError, ShmAllocator,
 };
+use crate::shm_allocator::pool_allocator::PoolAllocator;
 use crate::shm_allocator::ShmAllocationError;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
@@ -34,7 +37,8 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicUsize};
 use super::{
     NamedConcept, NamedConceptBuilder, NamedConceptDoesExistError, NamedConceptListError,
     NamedConceptMgmt, NamedConceptRemoveError, ResizableSharedMemory, ResizableSharedMemoryBuilder,
-    ResizableSharedMemoryView, ResizableSharedMemoryViewBuilder, ResizableShmAllocationError,
+    ResizableSharedMemoryForPoolAllocator, ResizableSharedMemoryView,
+    ResizableSharedMemoryViewBuilder, ResizableShmAllocationError,
 };
 
 const MAX_NUMBER_OF_REALLOCATIONS: usize = SegmentId::max_segment_id() as usize + 1;
@@ -639,6 +643,48 @@ where
             fail!(from self, with e.into(), "{msg} due to {:?}.", e);
         }
     }
+
+    unsafe fn perform_deallocation<F: FnMut(&ShmEntry<Allocator, Shm>)>(
+        &self,
+        offset: PointerOffset,
+        mut deallocation_call: F,
+    ) {
+        let segment_id = SlotMapKey::new(offset.segment_id().value() as usize);
+        let state = self.state_mut();
+        match state.shared_memory_map.get(segment_id) {
+            Some(entry) => {
+                deallocation_call(entry);
+                //entry.shm.deallocate_bucket(offset);
+                if entry.unregister_offset() == ShmEntryState::Empty
+                    && segment_id != state.current_idx
+                {
+                    state.shared_memory_map.remove(segment_id);
+                }
+            }
+            None => fatal_panic!(from self,
+                        "This should never happen! Unable to deallocate {:?} since the corresponding shared memory segment is not available!", offset),
+        }
+    }
+}
+
+impl<Shm: SharedMemoryForPoolAllocator> ResizableSharedMemoryForPoolAllocator<Shm>
+    for DynamicMemory<PoolAllocator, Shm>
+where
+    Shm::Builder: Debug,
+{
+    unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
+        self.perform_deallocation(offset, |entry| entry.shm.deallocate_bucket(offset));
+    }
+
+    fn bucket_size(&self, segment_id: SegmentId) -> usize {
+        let segment_id_key = SlotMapKey::new(segment_id.value() as usize);
+        match self.state_mut().shared_memory_map.get(segment_id_key) {
+            Some(entry) => entry.shm.bucket_size(),
+            None => fatal_panic!(from self,
+                        "This should never happen! Unable to acquire bucket size since the segment {:?} does not exist.",
+                        segment_id),
+        }
+    }
 }
 
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> ResizableSharedMemory<Allocator, Shm>
@@ -680,19 +726,6 @@ where
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
-        let segment_id = SlotMapKey::new(offset.segment_id().value() as usize);
-        let state = self.state_mut();
-        match state.shared_memory_map.get(segment_id) {
-            Some(entry) => {
-                entry.shm.deallocate(offset, layout);
-                if entry.unregister_offset() == ShmEntryState::Empty
-                    && segment_id != state.current_idx
-                {
-                    state.shared_memory_map.remove(segment_id);
-                }
-            }
-            None => fatal_panic!(from self,
-                        "This should never happen! Unable to deallocate {:?} since the corresponding shared memory segment is not available!", offset),
-        }
+        self.perform_deallocation(offset, |entry| entry.shm.deallocate(offset, layout));
     }
 }
