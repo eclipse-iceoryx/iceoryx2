@@ -56,7 +56,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .number_of_samples_per_segment(details.number_of_samples)
                                     .max_supported_shared_memory_segments(details.max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
-                                    .create_receiver(this.static_config.message_type_details().sample_layout(details.max_slice_len).size()),
+                                    .create_receiver(),
                         "{} since the zero copy connection could not be established.", msg);
 
         let data_segment = fail!(from this,

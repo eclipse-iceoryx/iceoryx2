@@ -264,12 +264,14 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
         publisher_backend: &Arc<PublisherBackend<Service>>,
         ptr: RawSampleMut<Header, UserHeader, MaybeUninit<Payload>>,
         offset_to_chunk: PointerOffset,
+        sample_size: usize,
     ) -> Self {
         Self {
             sample: SampleMut {
                 publisher_backend: Arc::clone(publisher_backend),
                 ptr,
                 offset_to_chunk,
+                sample_size,
             },
         }
     }
@@ -344,12 +346,14 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
         publisher_backend: &Arc<PublisherBackend<Service>>,
         ptr: RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]>,
         offset_to_chunk: PointerOffset,
+        sample_size: usize,
     ) -> Self {
         Self {
             sample: SampleMut {
                 publisher_backend: Arc::clone(publisher_backend),
                 ptr,
                 offset_to_chunk,
+                sample_size,
             },
         }
     }

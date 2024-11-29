@@ -90,6 +90,7 @@ pub struct SampleMut<Service: crate::service::Service, Payload: Debug + ?Sized, 
     pub(crate) publisher_backend: Arc<PublisherBackend<Service>>,
     pub(crate) ptr: RawSampleMut<Header, UserHeader, Payload>,
     pub(crate) offset_to_chunk: PointerOffset,
+    pub(crate) sample_size: usize,
 }
 
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debug
@@ -98,12 +99,13 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debu
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?} }}",
+            "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
             core::any::type_name::<Service>(),
             self.publisher_backend,
-            self.offset_to_chunk
+            self.offset_to_chunk,
+            self.sample_size
         )
     }
 }
@@ -289,6 +291,7 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<usize, PublisherSendError> {
-        self.publisher_backend.send_sample(self.offset_to_chunk)
+        self.publisher_backend
+            .send_sample(self.offset_to_chunk, self.sample_size)
     }
 }

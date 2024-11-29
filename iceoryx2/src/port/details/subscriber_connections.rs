@@ -39,7 +39,6 @@ impl<Service: service::Service> Connection<Service> {
         this: &SubscriberConnections<Service>,
         subscriber_details: SubscriberDetails,
         number_of_samples: usize,
-        max_slice_len: usize,
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
             "Unable to establish connection to subscriber {:?} from publisher {:?}",
@@ -60,7 +59,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
-                                .create_sender(this.static_config.message_type_details().sample_layout(max_slice_len).size()),
+                                .create_sender(),
                         "{}.", msg);
 
         Ok(Self {
@@ -120,13 +119,11 @@ impl<Service: service::Service> SubscriberConnections<Service> {
         &self,
         index: usize,
         subscriber_details: SubscriberDetails,
-        max_slice_len: usize,
     ) -> Result<(), ZeroCopyCreationError> {
         *self.get_mut(index) = Some(Connection::new(
             self,
             subscriber_details,
             self.number_of_samples,
-            max_slice_len,
         )?);
 
         Ok(())

@@ -275,6 +275,12 @@ impl SegmentState {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+struct OffsetAndSize {
+    offset: u64,
+    size: usize,
+}
+
 #[derive(Debug)]
 pub(crate) struct PublisherBackend<Service: service::Service> {
     segment_states: Vec<SegmentState>,
@@ -285,7 +291,7 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
 
     subscriber_connections: SubscriberConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
-    history: Option<UnsafeCell<Queue<u64>>>,
+    history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
     static_config: crate::service::static_config::StaticConfig,
     loan_counter: IoxAtomicUsize,
     is_active: IoxAtomicBool,
@@ -361,21 +367,28 @@ impl<Service: service::Service> PublisherBackend<Service> {
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 
-    fn add_sample_to_history(&self, offset: PointerOffset) {
+    fn add_sample_to_history(&self, offset: PointerOffset, sample_size: usize) {
         match &self.history {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
                 self.borrow_sample(offset);
-                match history.push_with_overflow(offset.as_value()) {
+                match history.push_with_overflow(OffsetAndSize {
+                    offset: offset.as_value(),
+                    size: sample_size,
+                }) {
                     None => (),
-                    Some(old) => self.release_sample(PointerOffset::from_value(old)),
+                    Some(old) => self.release_sample(PointerOffset::from_value(old.offset)),
                 }
             }
         }
     }
 
-    fn deliver_sample(&self, offset: PointerOffset) -> Result<usize, PublisherSendError> {
+    fn deliver_sample(
+        &self,
+        offset: PointerOffset,
+        sample_size: usize,
+    ) -> Result<usize, PublisherSendError> {
         self.retrieve_returned_samples();
 
         let deliver_call = match self.config.unable_to_deliver_strategy {
@@ -390,7 +403,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
         let mut number_of_recipients = 0;
         for i in 0..self.subscriber_connections.len() {
             if let Some(ref connection) = self.subscriber_connections.get(i) {
-                match deliver_call(&connection.sender, offset) {
+                match deliver_call(&connection.sender, offset, sample_size) {
                     Err(ZeroCopySendError::ReceiveBufferFull)
                     | Err(ZeroCopySendError::UsedChunkListFull) => {
                         /* causes no problem
@@ -465,11 +478,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
                     };
 
                     if create_connection {
-                        match self.subscriber_connections.create(
-                            i,
-                            *subscriber_details,
-                            self.config.initial_max_slice_len,
-                        ) {
+                        match self.subscriber_connections.create(i, *subscriber_details) {
                             Ok(()) => match &self.subscriber_connections.get(i) {
                                 Some(connection) => self.deliver_sample_history(connection),
                                 None => {
@@ -532,10 +541,10 @@ impl<Service: service::Service> PublisherBackend<Service> {
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
                 for i in 0..history.len() {
-                    let offset_value = unsafe { history.get_unchecked(i) };
+                    let old_sample = unsafe { history.get_unchecked(i) };
 
-                    let offset = PointerOffset::from_value(offset_value);
-                    match connection.sender.try_send(offset) {
+                    let offset = PointerOffset::from_value(old_sample.offset);
+                    match connection.sender.try_send(offset, old_sample.size) {
                         Ok(_) => {
                             self.borrow_sample(offset);
                         }
@@ -548,7 +557,11 @@ impl<Service: service::Service> PublisherBackend<Service> {
         }
     }
 
-    pub(crate) fn send_sample(&self, offset: PointerOffset) -> Result<usize, PublisherSendError> {
+    pub(crate) fn send_sample(
+        &self,
+        offset: PointerOffset,
+        sample_size: usize,
+    ) -> Result<usize, PublisherSendError> {
         let msg = "Unable to send sample";
         if !self.is_active.load(Ordering::Relaxed) {
             fail!(from self, with PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists,
@@ -558,8 +571,8 @@ impl<Service: service::Service> PublisherBackend<Service> {
         fail!(from self, when self.update_connections(),
             "{} since the connections could not be updated.", msg);
 
-        self.add_sample_to_history(offset);
-        self.deliver_sample(offset)
+        self.add_sample_to_history(offset, sample_size);
+        self.deliver_sample(offset, sample_size)
     }
 }
 
@@ -868,6 +881,10 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
         let header_ptr = chunk.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
+        let sample_size = self
+            .backend
+            .data_segment
+            .bucket_size(chunk.offset.segment_id());
 
         unsafe { header_ptr.write(Header::new(self.backend.port_id, 1)) };
 
@@ -878,6 +895,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
                 &self.backend,
                 sample,
                 chunk.offset,
+                sample_size,
             ),
         )
     }
@@ -1028,6 +1046,10 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         let header_ptr = chunk.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
+        let sample_size = self
+            .backend
+            .data_segment
+            .bucket_size(chunk.offset.segment_id());
 
         unsafe { header_ptr.write(Header::new(self.backend.port_id, slice_len as _)) };
 
@@ -1044,6 +1066,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                 &self.backend,
                 sample,
                 chunk.offset,
+                sample_size,
             ),
         )
     }
