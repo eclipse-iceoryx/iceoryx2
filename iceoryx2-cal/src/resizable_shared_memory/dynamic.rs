@@ -302,6 +302,27 @@ pub struct DynamicView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
     _data: PhantomData<Allocator>,
 }
 
+impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> DynamicView<Allocator, Shm>
+where
+    Shm::Builder: Debug,
+{
+    fn release_old_unused_segments(
+        shared_memory_map: &mut SlotMap<ShmEntry<Allocator, Shm>>,
+        old_idx: usize,
+    ) {
+        if old_idx == INVALID_KEY {
+            return;
+        }
+
+        let old_key = SlotMapKey::new(old_idx);
+        if let Some(ref shm) = shared_memory_map.get(old_key) {
+            if shm.chunk_count.load(Ordering::Relaxed) == 0 {
+                shared_memory_map.remove(old_key);
+            }
+        }
+    }
+}
+
 impl<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>
     ResizableSharedMemoryView<Allocator, Shm> for DynamicView<Allocator, Shm>
 where
@@ -326,7 +347,11 @@ where
                 let entry = ShmEntry::new(shm);
                 entry.register_offset();
                 shared_memory_map.insert_at(key, entry);
-                self.current_idx.store(key.value(), Ordering::Relaxed);
+                Self::release_old_unused_segments(
+                    shared_memory_map,
+                    self.current_idx.swap(key.value(), Ordering::Relaxed),
+                );
+
                 payload_start_address
             }
             Some(entry) => {
@@ -345,7 +370,8 @@ where
 
         match shared_memory_map.get(key) {
             Some(entry) => {
-                if entry.unregister_offset() == ShmEntryState::Empty
+                let state = entry.unregister_offset();
+                if state == ShmEntryState::Empty
                     && self.current_idx.load(Ordering::Relaxed) != key.value()
                 {
                     shared_memory_map.remove(key);
