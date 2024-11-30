@@ -140,7 +140,8 @@ TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
 
 TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run_once) {
     auto sut = this->create_sut();
-    auto result = sut.wait_and_process_once([](auto) { return CallbackProgression::Continue; });
+    auto result =
+        sut.wait_and_process_once([](auto) { return CallbackProgression::Continue; }, iox::units::Duration::max());
 
     ASSERT_THAT(result.has_error(), Eq(true));
     ASSERT_THAT(result.get_error(), Eq(WaitSetRunError::NoAttachments));
@@ -266,16 +267,18 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
     std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.toMilliseconds()));
     std::vector<bool> was_triggered(guards.size(), false);
 
-    auto result = sut.wait_and_process_once([&](auto attachment_id) -> CallbackProgression {
-        for (uint64_t idx = 0; idx < guards.size(); ++idx) {
-            if (attachment_id.has_event_from(guards[idx])) {
-                was_triggered[idx] = true;
-                break;
+    auto result = sut.wait_and_process_once(
+        [&](auto attachment_id) -> CallbackProgression {
+            for (uint64_t idx = 0; idx < guards.size(); ++idx) {
+                if (attachment_id.has_event_from(guards[idx])) {
+                    was_triggered[idx] = true;
+                    break;
+                }
             }
-        }
 
-        return CallbackProgression::Continue;
-    });
+            return CallbackProgression::Continue;
+        },
+        iox::units::Duration::max());
 
     ASSERT_THAT(result.has_error(), Eq(false));
 

@@ -749,7 +749,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         mut fn_call: F,
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
         loop {
-            match self.wait_and_process_once(&mut fn_call) {
+            match self.wait_and_process_once(&mut fn_call, Duration::MAX) {
                 Ok(WaitSetRunResult::AllEventsHandled) => (),
                 Ok(v) => return Ok(v),
                 Err(e) => {
@@ -760,9 +760,10 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         }
     }
 
-    /// Waits until an event arrives on the [`WaitSet`], then collects all events by calling the
-    /// provided `fn_call` callback with the corresponding [`WaitSetAttachmentId`] and then
-    /// returns. This makes it ideal to be called in some kind of event-loop.
+    /// Waits until an event arrives on the [`WaitSet`] or the provided timeout has passed, then
+    /// collects all events by calling the provided `fn_call` callback with the corresponding
+    /// [`WaitSetAttachmentId`] and then returns. This makes it ideal to be called in some kind of
+    /// event-loop.
     ///
     /// The provided callback must return [`CallbackProgression::Continue`] to continue the event
     /// processing and handle the next event or [`CallbackProgression::Stop`] to return from this
@@ -794,6 +795,8 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ///     CallbackProgression::Continue
     /// };
     ///
+    /// const PROCESS_TIMEOUT: Duration = Duration::MAX;
+    ///
     /// // main event loop
     /// loop {
     ///     // blocks until an event arrives, handles all arrived events and then
@@ -809,6 +812,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     pub fn wait_and_process_once<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
         &self,
         mut fn_call: F,
+        timeout: Duration,
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
         let msg = "Unable to call WaitSet::try_wait_and_process()";
 
@@ -827,6 +831,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                                  when self.deadline_queue.duration_until_next_deadline(),
                                  with WaitSetRunError::InternalError,
                                  "{msg} since the next timeout could not be acquired.");
+        let next_timeout = next_timeout.min(timeout);
 
         let mut triggered_file_descriptors = vec![];
         let collect_triggered_fds = |fd: &FileDescriptor| {
@@ -837,7 +842,8 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         // Collect all triggered file descriptors. We need to collect them first, then reset
         // the deadline and then call the callback, otherwise a long callback may destroy the
         // deadline contract.
-        let reactor_wait_result = if self.deadline_queue.is_empty() {
+        let reactor_wait_result = if self.deadline_queue.is_empty() || next_timeout == Duration::MAX
+        {
             self.reactor.blocking_wait(collect_triggered_fds)
         } else {
             self.reactor.timed_wait(collect_triggered_fds, next_timeout)

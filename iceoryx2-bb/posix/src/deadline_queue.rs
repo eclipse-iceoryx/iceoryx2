@@ -225,6 +225,10 @@ impl DeadlineQueue {
     /// Returns the waiting duration until the next deadline is reached. If there have been
     /// already deadlines missed it returns a duration of zero.
     pub fn duration_until_next_deadline(&self) -> Result<Duration, TimeError> {
+        if self.is_empty() {
+            return Ok(Duration::MAX);
+        }
+
         let now = fail!(from self, when Time::now_with_clock(self.clock_type),
                         "Unable to return next duration since the current time could not be acquired.");
         let now = now.as_duration().as_nanos();
