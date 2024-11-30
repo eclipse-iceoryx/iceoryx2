@@ -83,7 +83,7 @@ impl std::ops::Deref for ServiceName {
 
 struct ServiceNameVisitor;
 
-impl<'de> Visitor<'de> for ServiceNameVisitor {
+impl Visitor<'_> for ServiceNameVisitor {
     type Value = ServiceName;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

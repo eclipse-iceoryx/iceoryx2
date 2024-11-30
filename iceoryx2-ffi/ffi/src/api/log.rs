@@ -189,6 +189,7 @@ pub unsafe extern "C" fn iox2_set_logger(logger: iox2_log_callback) -> bool {
         LOGGER = Some(CLogger::new(logger));
     });
 
+    #[allow(static_mut_refs)] // internally used and the logger is never changed once it was set
     set_logger(LOGGER.as_ref().unwrap())
 }
 

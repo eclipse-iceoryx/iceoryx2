@@ -95,7 +95,7 @@ impl<const CAPACITY: usize> Serialize for FixedSizeByteString<CAPACITY> {
 
 struct FixedSizeByteStringVisitor<const CAPACITY: usize>;
 
-impl<'de, const CAPACITY: usize> Visitor<'de> for FixedSizeByteStringVisitor<CAPACITY> {
+impl<const CAPACITY: usize> Visitor<'_> for FixedSizeByteStringVisitor<CAPACITY> {
     type Value = FixedSizeByteString<CAPACITY>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

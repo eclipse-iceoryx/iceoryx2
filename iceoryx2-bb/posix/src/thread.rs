@@ -754,7 +754,7 @@ pub struct Thread<'thread> {
     _stack: Option<&'thread mut [u8]>,
 }
 
-impl<'thread> Debug for Thread<'thread> {
+impl Debug for Thread<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Thread {{ handle: {:?} }}", self.handle)
     }
@@ -800,7 +800,7 @@ impl<'thread> Thread<'thread> {
     }
 }
 
-impl<'thread> ThreadProperties for Thread<'thread> {
+impl ThreadProperties for Thread<'_> {
     fn get_name(&self) -> Result<&ThreadName, ThreadGetNameError> {
         self.handle.get_name()
     }

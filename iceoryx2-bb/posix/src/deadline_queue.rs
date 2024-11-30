@@ -61,9 +61,9 @@ pub struct DeadlineQueueGuard<'deadline_queue> {
     index: DeadlineQueueIndex,
 }
 
-impl<'deadline_queue> DeadlineQueueGuardable for DeadlineQueueGuard<'deadline_queue> {}
+impl DeadlineQueueGuardable for DeadlineQueueGuard<'_> {}
 
-impl<'deadline_queue> DeadlineQueueGuard<'deadline_queue> {
+impl DeadlineQueueGuard<'_> {
     /// Returns the underlying [`DeadlineQueueIndex`] of the attachment.
     pub fn index(&self) -> DeadlineQueueIndex {
         self.index
@@ -75,7 +75,7 @@ impl<'deadline_queue> DeadlineQueueGuard<'deadline_queue> {
     }
 }
 
-impl<'deadline_queue> Drop for DeadlineQueueGuard<'deadline_queue> {
+impl Drop for DeadlineQueueGuard<'_> {
     fn drop(&mut self) {
         self.deadline_queue.remove(self.index.0);
     }
@@ -225,6 +225,10 @@ impl DeadlineQueue {
     /// Returns the waiting duration until the next deadline is reached. If there have been
     /// already deadlines missed it returns a duration of zero.
     pub fn duration_until_next_deadline(&self) -> Result<Duration, TimeError> {
+        if self.is_empty() {
+            return Ok(Duration::MAX);
+        }
+
         let now = fail!(from self, when Time::now_with_clock(self.clock_type),
                         "Unable to return next duration since the current time could not be acquired.");
         let now = now.as_duration().as_nanos();

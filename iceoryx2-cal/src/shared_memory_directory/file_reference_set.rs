@@ -219,7 +219,6 @@ impl FileReferenceSet {
             )
         }
     }
-    #[deny(clippy::mut_from_ref)]
 
     // if entry exists it acquires read-only ownership and returns the id
     fn find_entry(&self, name: &FileName) -> Option<FileReferenceSetId> {

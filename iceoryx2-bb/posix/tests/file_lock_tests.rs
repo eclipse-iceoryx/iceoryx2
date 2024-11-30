@@ -49,7 +49,7 @@ struct TestFixture<'a> {
 }
 
 impl<'a> TestFixture<'a> {
-    fn new(handle: &'a ReadWriteMutexHandle<File>) -> TestFixture {
+    fn new(handle: &'a ReadWriteMutexHandle<File>) -> TestFixture<'a> {
         create_test_directory();
         let file_name = generate_file_name();
         let file = FileBuilder::new(&file_name)

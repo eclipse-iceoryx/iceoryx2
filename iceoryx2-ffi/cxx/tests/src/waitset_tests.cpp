@@ -140,7 +140,8 @@ TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run) {
 
 TYPED_TEST(WaitSetTest, empty_waitset_returns_error_on_run_once) {
     auto sut = this->create_sut();
-    auto result = sut.wait_and_process_once([](auto) { return CallbackProgression::Continue; });
+    auto result =
+        sut.wait_and_process_once([](auto) { return CallbackProgression::Continue; }, iox::units::Duration::max());
 
     ASSERT_THAT(result.has_error(), Eq(true));
     ASSERT_THAT(result.get_error(), Eq(WaitSetRunError::NoAttachments));
@@ -188,6 +189,49 @@ TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
     ASSERT_THAT(callback_called, Eq(true));
     ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
 }
+
+TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
+    auto sut = this->create_sut();
+
+    auto begin = std::chrono::steady_clock::now();
+    auto guard = sut.attach_interval(Duration::max()).expect("");
+
+    auto callback_called = false;
+    auto result = sut.wait_and_process_once(
+        [&](auto attachment_id) -> CallbackProgression {
+            callback_called = true;
+            return CallbackProgression::Stop;
+        },
+        TIMEOUT);
+
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+
+    ASSERT_THAT(callback_called, Eq(false));
+    ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
+}
+
+TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
+    auto sut = this->create_sut();
+
+    auto begin = std::chrono::steady_clock::now();
+    auto guard = sut.attach_interval(TIMEOUT).expect("");
+
+    auto callback_called = false;
+    auto result = sut.wait_and_process_once(
+        [&](auto attachment_id) -> CallbackProgression {
+            callback_called = true;
+            return CallbackProgression::Stop;
+        },
+        Duration::max());
+
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+
+    ASSERT_THAT(callback_called, Eq(true));
+    ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
+}
+
 
 TYPED_TEST(WaitSetTest, deadline_attachment_wakes_up_when_notified) {
     auto sut = this->create_sut();
@@ -266,16 +310,18 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
     std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT.toMilliseconds()));
     std::vector<bool> was_triggered(guards.size(), false);
 
-    auto result = sut.wait_and_process_once([&](auto attachment_id) -> CallbackProgression {
-        for (uint64_t idx = 0; idx < guards.size(); ++idx) {
-            if (attachment_id.has_event_from(guards[idx])) {
-                was_triggered[idx] = true;
-                break;
+    auto result = sut.wait_and_process_once(
+        [&](auto attachment_id) -> CallbackProgression {
+            for (uint64_t idx = 0; idx < guards.size(); ++idx) {
+                if (attachment_id.has_event_from(guards[idx])) {
+                    was_triggered[idx] = true;
+                    break;
+                }
             }
-        }
 
-        return CallbackProgression::Continue;
-    });
+            return CallbackProgression::Continue;
+        },
+        iox::units::Duration::max());
 
     ASSERT_THAT(result.has_error(), Eq(false));
 

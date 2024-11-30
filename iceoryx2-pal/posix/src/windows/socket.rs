@@ -45,6 +45,7 @@ impl GlobalWsaInitializer {
         static mut WSA_INSTANCE: OnceCell<GlobalWsaInitializer> = OnceCell::new();
         static mut INITIALIZATION_STATE: IoxAtomicU8 = IoxAtomicU8::new(0);
 
+        #[allow(static_mut_refs)] // only written here once when it is not initialized
         match INITIALIZATION_STATE.compare_exchange(0, 1, Ordering::Relaxed, Ordering::Relaxed) {
             Ok(_) => {
                 WSA_INSTANCE.get_or_init(||{

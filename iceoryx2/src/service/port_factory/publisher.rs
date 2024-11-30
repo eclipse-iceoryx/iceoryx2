@@ -94,7 +94,7 @@ impl Serialize for UnableToDeliverStrategy {
 
 struct UnableToDeliverStrategyVisitor;
 
-impl<'de> Visitor<'de> for UnableToDeliverStrategyVisitor {
+impl Visitor<'_> for UnableToDeliverStrategyVisitor {
     type Value = UnableToDeliverStrategy;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -222,8 +222,8 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
     }
 }
 
-impl<'factory, Service: service::Service, Payload: Debug, UserHeader: Debug>
-    PortFactoryPublisher<'factory, Service, [Payload], UserHeader>
+impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
+    PortFactoryPublisher<'_, Service, [Payload], UserHeader>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].

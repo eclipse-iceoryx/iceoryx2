@@ -145,7 +145,6 @@ impl ThreadStates {
         self.unlock();
         state
     }
-    #[deny(clippy::mut_from_ref)]
 
     fn remove(&self, index: usize) {
         self.lock();

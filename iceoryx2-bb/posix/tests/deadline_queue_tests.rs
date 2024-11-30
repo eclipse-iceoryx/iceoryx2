@@ -36,6 +36,13 @@ mod deadline_queue {
     }
 
     #[test]
+    fn duration_until_next_deadline_is_max_for_empty_queue() {
+        let sut = DeadlineQueueBuilder::new().create().unwrap();
+
+        assert_that!(sut.duration_until_next_deadline().unwrap(), eq Duration::MAX);
+    }
+
+    #[test]
     fn next_iteration_works_smallest_deadline_added_first() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 

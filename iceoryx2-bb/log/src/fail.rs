@@ -51,7 +51,6 @@
 ///     }
 /// }
 /// ```
-
 #[macro_export(local_inner_macros)]
 macro_rules! fail {
     (with $error_value:expr, $($message:expr),*) => {
