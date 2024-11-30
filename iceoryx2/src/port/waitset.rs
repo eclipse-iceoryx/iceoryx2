@@ -795,13 +795,13 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     ///     CallbackProgression::Continue
     /// };
     ///
-    /// const PROCESS_TIMEOUT: Duration = Duration::MAX;
+    /// const TIMEOUT: Duration = Duration::MAX;
     ///
     /// // main event loop
     /// loop {
-    ///     // blocks until an event arrives, handles all arrived events and then
-    ///     // returns.
-    ///     waitset.wait_and_process_once(on_event)?;
+    ///     // blocks until an event arrives or TIMEOUT was reached, handles all arrived events
+    ///     // and then returns.
+    ///     waitset.wait_and_process_once(on_event, TIMEOUT)?;
     ///     // do some event post processing
     ///     println!("handled events");
     /// }

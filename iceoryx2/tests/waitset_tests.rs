@@ -284,6 +284,56 @@ mod waitset {
     }
 
     #[test]
+    fn run_does_not_block_longer_than_provided_timeout<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let _watchdog = Watchdog::new();
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let _tick_guard = sut.attach_interval(Duration::MAX).unwrap();
+
+        let mut callback_called = false;
+        let start = Instant::now();
+        sut.wait_and_process_once(
+            |_| {
+                callback_called = true;
+                CallbackProgression::Continue
+            },
+            TIMEOUT,
+        )
+        .unwrap();
+
+        assert_that!(callback_called, eq false);
+        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    }
+
+    #[test]
+    fn run_does_block_until_interval_when_user_timeout_is_larger<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let _watchdog = Watchdog::new();
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let _tick_guard = sut.attach_interval(TIMEOUT).unwrap();
+
+        let mut callback_called = false;
+        let start = Instant::now();
+        sut.wait_and_process_once(
+            |_| {
+                callback_called = true;
+                CallbackProgression::Continue
+            },
+            Duration::MAX,
+        )
+        .unwrap();
+
+        assert_that!(callback_called, eq true);
+        assert_that!(start.elapsed(), time_at_least TIMEOUT);
+    }
+
+    #[test]
     fn run_lists_all_deadlines<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,

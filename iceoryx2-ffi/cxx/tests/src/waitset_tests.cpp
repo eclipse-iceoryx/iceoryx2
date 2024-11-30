@@ -190,6 +190,49 @@ TYPED_TEST(WaitSetTest, deadline_attachment_blocks_for_at_least_timeout) {
     ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
 }
 
+TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
+    auto sut = this->create_sut();
+
+    auto begin = std::chrono::steady_clock::now();
+    auto guard = sut.attach_interval(Duration::max()).expect("");
+
+    auto callback_called = false;
+    auto result = sut.wait_and_process_once(
+        [&](auto attachment_id) -> CallbackProgression {
+            callback_called = true;
+            return CallbackProgression::Stop;
+        },
+        TIMEOUT);
+
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+
+    ASSERT_THAT(callback_called, Eq(false));
+    ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
+}
+
+TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
+    auto sut = this->create_sut();
+
+    auto begin = std::chrono::steady_clock::now();
+    auto guard = sut.attach_interval(TIMEOUT).expect("");
+
+    auto callback_called = false;
+    auto result = sut.wait_and_process_once(
+        [&](auto attachment_id) -> CallbackProgression {
+            callback_called = true;
+            return CallbackProgression::Stop;
+        },
+        Duration::max());
+
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+
+    ASSERT_THAT(callback_called, Eq(true));
+    ASSERT_THAT(elapsed, Ge(TIMEOUT.toMilliseconds()));
+}
+
+
 TYPED_TEST(WaitSetTest, deadline_attachment_wakes_up_when_notified) {
     auto sut = this->create_sut();
     auto listener = this->create_listener();
