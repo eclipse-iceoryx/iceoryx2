@@ -92,19 +92,24 @@ impl ShmAllocator for PoolAllocator {
                 match strategy {
                     AllocationStrategy::Static => current_layout,
                     AllocationStrategy::BestFit => unsafe {
-                        Layout::from_size_align_unchecked(
-                            layout.size().max(current_layout.size()),
-                            layout.align().max(current_layout.align()),
-                        )
+                        let align = layout.align().max(current_layout.align());
+                        let size = layout
+                            .size()
+                            .max(current_layout.size())
+                            .next_multiple_of(align);
+                        Layout::from_size_align_unchecked(size, align)
                     },
                     AllocationStrategy::PowerOfTwo => unsafe {
-                        Layout::from_size_align_unchecked(
-                            layout.size().max(current_layout.size()).next_power_of_two(),
-                            layout
-                                .align()
-                                .max(current_layout.align())
-                                .next_power_of_two(),
-                        )
+                        let align = layout
+                            .align()
+                            .max(current_layout.align())
+                            .next_power_of_two();
+                        let size = layout
+                            .size()
+                            .max(current_layout.size())
+                            .next_power_of_two()
+                            .next_multiple_of(align);
+                        Layout::from_size_align_unchecked(size, align)
                     },
                 }
             } else {

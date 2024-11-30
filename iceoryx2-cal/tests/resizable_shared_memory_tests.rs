@@ -34,6 +34,7 @@ mod resizable_shared_memory {
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
             .create()
             .unwrap();
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
@@ -70,6 +71,7 @@ mod resizable_shared_memory {
             .config(&config)
             .max_chunk_layout_hint(Layout::new::<u8>())
             .max_number_of_chunks_hint(128)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
             .create()
             .unwrap();
 
@@ -93,6 +95,7 @@ mod resizable_shared_memory {
             .config(&config)
             .max_chunk_layout_hint(Layout::new::<u8>())
             .max_number_of_chunks_hint(128)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
             .create()
             .unwrap();
 
@@ -117,6 +120,7 @@ mod resizable_shared_memory {
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
             .create()
             .unwrap();
         let sut_viewer = Sut::ViewBuilder::new(&storage_name)
@@ -161,6 +165,7 @@ mod resizable_shared_memory {
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
             .create()
             .unwrap();
 
@@ -185,6 +190,7 @@ mod resizable_shared_memory {
         let sut_creator = Sut::MemoryBuilder::new(&storage_name)
             .config(&config)
             .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
             .create()
             .unwrap();
 
@@ -779,6 +785,7 @@ mod resizable_shared_memory {
             );
             assert_that!(sut_creator.number_of_active_segments(), eq n + 1);
         }
+
         let result = sut_creator.allocate(Layout::from_size_align(1024, 1).unwrap());
         assert_that!(result, is_err);
         assert_that!(

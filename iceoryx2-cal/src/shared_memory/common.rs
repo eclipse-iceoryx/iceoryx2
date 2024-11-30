@@ -384,7 +384,7 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
-        crate::shared_memory::details::SharedMemoryExpertAPI<Allocator>
+        crate::shared_memory::details::SharedMemoryLowLevelAPI<Allocator>
         for Memory<Allocator, Storage>
     {
         fn allocator(&self) -> &Allocator {

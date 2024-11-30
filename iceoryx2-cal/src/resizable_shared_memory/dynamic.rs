@@ -502,8 +502,7 @@ where
 
             // check nymber of digits
             for byte in raw_segment_id.as_bytes() {
-                let is_a_digit = b'0' <= *byte && *byte <= b'9';
-                if !is_a_digit {
+                if byte.is_ascii_digit() {
                     return None;
                 }
             }
@@ -579,8 +578,9 @@ where
         let adjusted_segment_setup = shm
             .allocator()
             .resize_hint(layout, state.shared_state.allocation_strategy);
-        let segment_id = if state.current_idx.value() + 1 < MAX_NUMBER_OF_REALLOCATIONS {
-            SlotMapKey::new(state.current_idx.value() + 1)
+        let new_number_of_reallocations = state.current_idx.value() + 1;
+        let segment_id = if new_number_of_reallocations < MAX_NUMBER_OF_REALLOCATIONS {
+            SlotMapKey::new(new_number_of_reallocations)
         } else {
             fail!(from self, with ResizableShmAllocationError::MaxReallocationsReached,
                 "{msg} {:?} since it would exceed the maximum amount of reallocations of {}. With a better configuration hint, this issue can be avoided.",

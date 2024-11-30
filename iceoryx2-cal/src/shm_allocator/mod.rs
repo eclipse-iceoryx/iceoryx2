@@ -21,28 +21,28 @@ use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
 /// Trait that identifies a configuration of a [`ShmAllocator`].
 pub trait ShmAllocatorConfig: Copy + Default + Debug {}
 
+pub type SegmentIdUnderlyingType = u8;
+
 /// Defines the [`SegmentId`] of a [`SharedMemory`](crate::shared_memory::SharedMemory)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SegmentId(u8);
+pub struct SegmentId(SegmentIdUnderlyingType);
 
 impl SegmentId {
     /// Creates a new [`SegmentId`] from a given value.
-    pub fn new(value: u8) -> Self {
+    pub fn new(value: SegmentIdUnderlyingType) -> Self {
         Self(value)
     }
 
     /// Returns the underlying value of the [`SegmentId`]
-    pub fn value(&self) -> u8 {
+    pub fn value(&self) -> SegmentIdUnderlyingType {
         self.0
     }
 
     /// Returns the maximum value the [`SegmentId`] supports.
-    pub const fn max_segment_id() -> u8 {
-        u8::MAX
+    pub const fn max_segment_id() -> SegmentIdUnderlyingType {
+        SegmentIdUnderlyingType::MAX
     }
 }
-
-const NUMBER_OF_BITS_IN_BYTE: usize = 8;
 
 /// An offset to a [`SharedMemory`](crate::shared_memory::SharedMemory) address. It requires the
 /// [`SharedMemory::payload_start_address()`](crate::shared_memory::SharedMemory::payload_start_address())
@@ -57,10 +57,7 @@ impl PointerOffset {
     /// Creates a new [`PointerOffset`] from the given offset value with the [`SegmentId`] == 0.
     pub fn new(offset: usize) -> PointerOffset {
         const SEGMENT_ID: u64 = 0;
-        Self(
-            (offset as u64) << (core::mem::size_of::<SegmentId>() * NUMBER_OF_BITS_IN_BYTE)
-                | SEGMENT_ID,
-        )
+        Self((offset as u64) << (SegmentIdUnderlyingType::BITS) | SEGMENT_ID)
     }
 
     /// Sets the [`SegmentId`] of the [`PointerOffset`].
@@ -70,12 +67,12 @@ impl PointerOffset {
 
     /// Returns the offset.
     pub fn offset(&self) -> usize {
-        (self.0 >> (core::mem::size_of::<SegmentId>() * NUMBER_OF_BITS_IN_BYTE)) as usize
+        (self.0 >> (SegmentIdUnderlyingType::BITS)) as usize
     }
 
     /// Returns the [`SegmentId`].
     pub fn segment_id(&self) -> SegmentId {
-        SegmentId((self.0 & SegmentId::max_segment_id() as u64) as u8)
+        SegmentId((self.0 & ((1u64 << SegmentIdUnderlyingType::BITS) - 1)) as u8)
     }
 }
 
@@ -106,11 +103,11 @@ pub enum AllocationStrategy {
     /// Increases the memory so that it perfectly fits the new size requirements. This may lead
     /// to a lot of reallocations but has the benefit that no byte is wasted.
     BestFit,
-    #[default]
     /// Increases the memory by rounding the increased memory size up to the next power of two.
     /// Reduces reallocations a lot at the cost of increased memory usage.
     PowerOfTwo,
     /// The memory is not increased. This may lead to an out-of-memory error when allocating.
+    #[default]
     Static,
 }
 
