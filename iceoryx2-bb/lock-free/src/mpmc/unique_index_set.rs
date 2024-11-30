@@ -145,7 +145,7 @@ pub struct UniqueIndex<'a> {
     index_set: &'a UniqueIndexSet,
 }
 
-impl<'a> Debug for UniqueIndex<'a> {
+impl Debug for UniqueIndex<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

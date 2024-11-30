@@ -46,21 +46,21 @@ pub struct Producer<'a, T: Copy> {
     atomic: &'a UnrestrictedAtomic<T>,
 }
 
-impl<'a, T: Copy> Producer<'a, T> {
+impl<T: Copy> Producer<'_, T> {
     /// Stores a `new_value` inside the atomic.
     pub fn store(&self, new_value: T) {
         self.atomic.store(new_value);
     }
 }
 
-impl<'a, T: Copy> Drop for Producer<'a, T> {
+impl<T: Copy> Drop for Producer<'_, T> {
     fn drop(&mut self) {
         self.atomic.has_producer.store(true, Ordering::Relaxed);
     }
 }
 
-unsafe impl<'a, T: Copy> Send for Producer<'a, T> {}
-unsafe impl<'a, T: Copy> Sync for Producer<'a, T> {}
+unsafe impl<T: Copy> Send for Producer<'_, T> {}
+unsafe impl<T: Copy> Sync for Producer<'_, T> {}
 
 /// An atomic implementation where the underlying type has to by copyable but is otherwise
 /// unrestricted.

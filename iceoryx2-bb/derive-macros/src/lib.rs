@@ -42,7 +42,6 @@ use syn::{parse_macro_input, Data, DeriveInput, Expr, ExprLit, Fields, Lit};
 ///
 /// unsafe { core::ptr::drop_in_place(raw_memory) };
 /// unsafe { dealloc(raw_memory.cast(), layout) };
-
 /// ```
 #[proc_macro_derive(PlacementDefault)]
 pub fn placement_default_derive(input: TokenStream) -> TokenStream {

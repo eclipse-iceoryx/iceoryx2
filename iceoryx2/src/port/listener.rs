@@ -187,8 +187,9 @@ impl<Service: service::Service> Listener<Service> {
     /// calls the provided callback is with the [`EventId`] as input argument.
     pub fn try_wait_all<F: FnMut(EventId)>(&self, callback: F) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        Ok(fail!(from self, when self.listener.try_wait_all(callback),
-            "Failed to while calling try_wait on underlying event::Listener"))
+        fail!(from self, when self.listener.try_wait_all(callback),
+            "Failed to while calling try_wait on underlying event::Listener");
+        Ok(())
     }
 
     /// Blocking wait for new [`EventId`]s until the provided timeout has passed. Unblocks as soon
@@ -200,10 +201,9 @@ impl<Service: service::Service> Listener<Service> {
         timeout: Duration,
     ) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        Ok(
-            fail!(from self, when self.listener.timed_wait_all(callback, timeout),
-            "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout),
-        )
+        fail!(from self, when self.listener.timed_wait_all(callback, timeout),
+            "Failed to while calling timed_wait({:?}) on underlying event::Listener", timeout);
+        Ok(())
     }
 
     /// Blocking wait for new [`EventId`]s. Unblocks as soon
@@ -214,10 +214,9 @@ impl<Service: service::Service> Listener<Service> {
         callback: F,
     ) -> Result<(), ListenerWaitError> {
         use iceoryx2_cal::event::Listener;
-        Ok(
-            fail!(from self, when self.listener.blocking_wait_all(callback),
-            "Failed to while calling blocking_wait on underlying event::Listener"),
-        )
+        fail!(from self, when self.listener.blocking_wait_all(callback),
+            "Failed to while calling blocking_wait on underlying event::Listener");
+        Ok(())
     }
 
     /// Non-blocking wait for a new [`EventId`]. If no [`EventId`] was notified it returns [`None`].

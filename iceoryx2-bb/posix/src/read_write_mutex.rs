@@ -390,8 +390,8 @@ pub struct ReadWriteMutex<'a, T: Sized + Debug> {
     handle: &'a ReadWriteMutexHandle<T>,
 }
 
-unsafe impl<'a, T: Send + Debug> Send for ReadWriteMutex<'a, T> {}
-unsafe impl<'a, T: Sync + Debug> Sync for ReadWriteMutex<'a, T> {}
+unsafe impl<T: Send + Debug> Send for ReadWriteMutex<'_, T> {}
+unsafe impl<T: Sync + Debug> Sync for ReadWriteMutex<'_, T> {}
 
 impl<'a, T: Sized + Debug> IpcConstructible<'a, ReadWriteMutexHandle<T>> for ReadWriteMutex<'a, T> {
     fn new(handle: &'a ReadWriteMutexHandle<T>) -> Self {

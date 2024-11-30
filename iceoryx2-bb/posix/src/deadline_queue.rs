@@ -61,9 +61,9 @@ pub struct DeadlineQueueGuard<'deadline_queue> {
     index: DeadlineQueueIndex,
 }
 
-impl<'deadline_queue> DeadlineQueueGuardable for DeadlineQueueGuard<'deadline_queue> {}
+impl DeadlineQueueGuardable for DeadlineQueueGuard<'_> {}
 
-impl<'deadline_queue> DeadlineQueueGuard<'deadline_queue> {
+impl DeadlineQueueGuard<'_> {
     /// Returns the underlying [`DeadlineQueueIndex`] of the attachment.
     pub fn index(&self) -> DeadlineQueueIndex {
         self.index
@@ -75,7 +75,7 @@ impl<'deadline_queue> DeadlineQueueGuard<'deadline_queue> {
     }
 }
 
-impl<'deadline_queue> Drop for DeadlineQueueGuard<'deadline_queue> {
+impl Drop for DeadlineQueueGuard<'_> {
     fn drop(&mut self) {
         self.deadline_queue.remove(self.index.0);
     }

@@ -56,7 +56,7 @@ tiny_fn! {
     pub struct DegrationCallback = Fn(service: service::static_config::StaticConfig, publisher_id: UniquePublisherId, subscriber_id: UniqueSubscriberId) -> DegrationAction;
 }
 
-impl<'a> Debug for DegrationCallback<'a> {
+impl Debug for DegrationCallback<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "")
     }

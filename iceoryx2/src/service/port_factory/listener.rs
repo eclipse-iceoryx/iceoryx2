@@ -42,7 +42,7 @@ pub struct PortFactoryListener<'factory, Service: service::Service> {
     pub(crate) factory: &'factory PortFactory<Service>,
 }
 
-impl<'factory, Service: service::Service> PortFactoryListener<'factory, Service> {
+impl<Service: service::Service> PortFactoryListener<'_, Service> {
     /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
     pub fn create(self) -> Result<Listener<Service>, ListenerCreateError> {
         Ok(fail!(from self, when Listener::new(&self.factory.service),

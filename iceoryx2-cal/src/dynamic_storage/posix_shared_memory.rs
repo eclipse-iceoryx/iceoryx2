@@ -154,7 +154,7 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     }
 }
 
-impl<'builder, T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'builder, T> {
+impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'_, T> {
     fn new(storage_name: &FileName) -> Self {
         Self {
             has_ownership: true,
@@ -173,7 +173,7 @@ impl<'builder, T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Build
     }
 }
 
-impl<'builder, T: Send + Sync + Debug> Builder<'builder, T> {
+impl<T: Send + Sync + Debug> Builder<'_, T> {
     fn open_impl(&self) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open ";
 

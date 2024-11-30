@@ -323,9 +323,7 @@ pub struct Builder<'builder, T: Send + Sync + Debug> {
     _phantom_data: PhantomData<T>,
 }
 
-impl<'builder, T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>>
-    for Builder<'builder, T>
-{
+impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Builder<'_, T> {
     fn new(storage_name: &FileName) -> Self {
         Self {
             name: *storage_name,
@@ -343,7 +341,7 @@ impl<'builder, T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>>
     }
 }
 
-impl<'builder, T: Send + Sync + Debug + 'static> Builder<'builder, T> {
+impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
     fn open_impl(
         &self,
         guard: &mut MutexGuard<'static, 'static, HashMap<FilePath, StorageEntry>>,

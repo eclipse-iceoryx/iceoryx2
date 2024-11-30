@@ -114,21 +114,19 @@ pub enum MutexTimedLockError<'mutex, 'handle, T: Sized + Debug> {
     FailureInInternalClockWhileWait(TimeError),
 }
 
-impl<'mutex, 'handle, T: Debug> From<TimeError> for MutexTimedLockError<'mutex, 'handle, T> {
+impl<T: Debug> From<TimeError> for MutexTimedLockError<'_, '_, T> {
     fn from(v: TimeError) -> Self {
         MutexTimedLockError::FailureInInternalClockWhileWait(v)
     }
 }
 
-impl<'mutex, 'handle, T: Debug> From<NanosleepError> for MutexTimedLockError<'mutex, 'handle, T> {
+impl<T: Debug> From<NanosleepError> for MutexTimedLockError<'_, '_, T> {
     fn from(v: NanosleepError) -> Self {
         MutexTimedLockError::NanosleepError(v)
     }
 }
 
-impl<'mutex, 'handle, T: Debug> From<AdaptiveWaitError>
-    for MutexTimedLockError<'mutex, 'handle, T>
-{
+impl<T: Debug> From<AdaptiveWaitError> for MutexTimedLockError<'_, '_, T> {
     fn from(v: AdaptiveWaitError) -> Self {
         MutexTimedLockError::AdaptiveWaitError(v)
     }
@@ -570,7 +568,7 @@ impl<'a, T: Debug> IpcCapable<'a, MutexHandle<T>> for Mutex<'a, T> {
     }
 }
 
-impl<'a, T: Debug> Mutex<'a, T> {
+impl<T: Debug> Mutex<'_, T> {
     /// Blocks until the ownership of the lock could be acquired. If it was successful it returns a
     /// [`MutexGuard`] to allow access to the underlying value.
     /// If the previously owning thread has died and

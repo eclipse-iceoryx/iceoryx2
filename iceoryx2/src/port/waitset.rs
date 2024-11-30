@@ -455,9 +455,7 @@ where
     guard_type: GuardType<'waitset, 'attachment, Service>,
 }
 
-impl<'waitset, 'attachment, Service: crate::service::Service> Drop
-    for WaitSetGuard<'waitset, 'attachment, Service>
-{
+impl<Service: crate::service::Service> Drop for WaitSetGuard<'_, '_, Service> {
     fn drop(&mut self) {
         if let GuardType::Deadline(r, t) = &self.guard_type {
             self.waitset

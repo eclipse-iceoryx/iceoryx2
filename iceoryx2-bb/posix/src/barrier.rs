@@ -201,7 +201,7 @@ pub struct Barrier<'a> {
 unsafe impl Sync for Barrier<'_> {}
 unsafe impl Send for Barrier<'_> {}
 
-impl<'a> Barrier<'a> {
+impl Barrier<'_> {
     pub fn wait(&self) {
         match unsafe { posix::pthread_barrier_wait(self.handle.handle.get()) } {
             0 | posix::PTHREAD_BARRIER_SERIAL_THREAD => (),

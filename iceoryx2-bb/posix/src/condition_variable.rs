@@ -77,9 +77,7 @@ pub enum ConditionVariableError {
     TriggerOrLockFailed,
 }
 
-impl<'mutex, 'handle, T: Debug> From<TimeError>
-    for ConditionVariableTimedWaitError<'mutex, 'handle, T>
-{
+impl<T: Debug> From<TimeError> for ConditionVariableTimedWaitError<'_, '_, T> {
     fn from(v: TimeError) -> Self {
         ConditionVariableTimedWaitError::UnableToGetCurrentTime(v)
     }

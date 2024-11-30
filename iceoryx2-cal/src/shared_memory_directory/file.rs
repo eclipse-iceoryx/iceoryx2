@@ -37,7 +37,7 @@ impl Debug for File<'_> {
     }
 }
 
-impl<'a> File<'a> {
+impl File<'_> {
     pub fn name(&self) -> FileName {
         self.set.get_name(self.id)
     }
@@ -55,7 +55,7 @@ impl<'a> File<'a> {
     }
 }
 
-impl<'a> Drop for File<'a> {
+impl Drop for File<'_> {
     fn drop(&mut self) {
         self.set.release(self.id)
     }

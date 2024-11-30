@@ -120,9 +120,7 @@ pub(crate) mod visitor_type {
     pub(crate) struct RestrictedFileName<const CAPACITY: usize>;
 }
 
-impl<'de, const CAPACITY: usize> serde::de::Visitor<'de>
-    for visitor_type::RestrictedFileName<CAPACITY>
-{
+impl<const CAPACITY: usize> serde::de::Visitor<'_> for visitor_type::RestrictedFileName<CAPACITY> {
     type Value = RestrictedFileName<CAPACITY>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

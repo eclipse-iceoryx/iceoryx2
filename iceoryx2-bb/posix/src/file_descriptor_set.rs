@@ -90,7 +90,7 @@ pub struct FileDescriptorSetGuard<'set, 'fd> {
     fd: &'fd FileDescriptor,
 }
 
-impl<'set, 'fd> FileDescriptorSetGuard<'set, 'fd> {
+impl<'fd> FileDescriptorSetGuard<'_, 'fd> {
     pub fn file_descriptor(&self) -> &'fd FileDescriptor {
         self.fd
     }
@@ -150,7 +150,6 @@ impl FileDescriptorSet {
     fn internals_mut(&self) -> &mut Internals {
         unsafe { &mut *self.internals.get() }
     }
-    #[deny(clippy::mut_from_ref)]
 
     pub fn new() -> FileDescriptorSet {
         FileDescriptorSet::default()

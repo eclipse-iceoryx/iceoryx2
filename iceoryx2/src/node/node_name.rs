@@ -70,7 +70,7 @@ impl std::ops::Deref for NodeName {
 
 struct NodeNameVisitor;
 
-impl<'de> Visitor<'de> for NodeNameVisitor {
+impl Visitor<'_> for NodeNameVisitor {
     type Value = NodeName;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
