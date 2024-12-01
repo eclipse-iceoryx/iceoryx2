@@ -23,7 +23,7 @@ rust_binary(
     name = "benchmark-queue",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "//iceoryx2-bb/log:iceoryx2-bb-lock-free",
+        "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "@crate_index//:clap",
     ],

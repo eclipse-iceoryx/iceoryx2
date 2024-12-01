@@ -175,6 +175,7 @@ filegroup(
     ]) + [
         "//benchmarks/event:all_srcs",
         "//benchmarks/publish-subscribe:all_srcs",
+        "//benchmarks/queue:all_srcs",
         "//iceoryx2:all_srcs",
         "//iceoryx2-bb/container:all_srcs",
         "//iceoryx2-bb/derive-macros:all_srcs",

@@ -1,5 +1,5 @@
 {
-  "checksum": "46742e0fc551c6c5f5a18c5c1133ef74c5793be6c3c7280002b0e33b1cdaf206",
+  "checksum": "d4a54d3dd02b5784e5ec834d19cb1bc1a0b2d895449d7f5c93ba0c7afaec9927",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -663,6 +663,30 @@
     },
     "benchmark-publish-subscribe 0.4.1": {
       "name": "benchmark-publish-subscribe",
+      "version": "0.4.1",
+      "repository": null,
+      "targets": [],
+      "library_target_name": null,
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "clap 4.5.19",
+              "target": "clap"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.4.1"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
+    "benchmark-queue 0.4.1": {
+      "name": "benchmark-queue",
       "version": "0.4.1",
       "repository": null,
       "targets": [],
@@ -8193,6 +8217,7 @@
   "workspace_members": {
     "benchmark-event 0.4.1": "benchmarks/event",
     "benchmark-publish-subscribe 0.4.1": "benchmarks/publish-subscribe",
+    "benchmark-queue 0.4.1": "benchmarks/queue",
     "example 0.4.1": "examples",
     "iceoryx2 0.4.1": "iceoryx2",
     "iceoryx2-bb-container 0.4.1": "iceoryx2-bb/container",
