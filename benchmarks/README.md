@@ -39,3 +39,20 @@ cargo run --bin benchmark-event --release -- --help
 ```
 
 ## Queue
+
+The queue quantifies the latency between pushing an element into a queue and
+acquiring the element in another thread. In the setup, a bidirectional connection is
+established from process `a` to `b` (queue name `queue_a2b`) and back (queue name
+`queue_b2a`). The thread that acquires the queue's element employs a multithreaded
+busy waiting and promptly respond upon data retrieval. This process repeats `n`
+times, and the average latency is subsequently computed.
+
+```sh
+cargo run --bin benchmark-queue --release
+```
+
+For more benchmark configuration details, see
+
+```sh
+cargo run --bin benchmark-queue --release -- --help
+```

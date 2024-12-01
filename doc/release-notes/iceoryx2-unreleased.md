@@ -19,6 +19,7 @@
 * Add API to retrieve string description of error enums [$491](https://github.com/eclipse-iceoryx/iceoryx2/issues/491)
 * Add relocatable `SlotMap` [#504](https://github.com/eclipse-iceoryx/iceoryx2/issues/504)
 * Make signal handling optional in `WaitSet` and `Node` [#528](https://github.com/eclipse-iceoryx/iceoryx2/issues/528)
+* Add benchmark for iceoryx2 queues [#535](https://github.com/eclipse-iceoryx/iceoryx2/issues/535)
 
 ### Bugfixes
 
