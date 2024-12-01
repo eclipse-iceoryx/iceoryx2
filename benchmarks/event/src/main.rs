@@ -40,8 +40,14 @@ fn perform_benchmark<T: Service>(args: &Args) {
         .create()
         .unwrap();
 
-    let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
+    let start_benchmark_barrier_handle = BarrierHandle::new();
+    let startup_barrier_handle = BarrierHandle::new();
+    let startup_barrier = BarrierBuilder::new(3)
+        .create(&startup_barrier_handle)
+        .unwrap();
+    let start_benchmark_barrier = BarrierBuilder::new(3)
+        .create(&start_benchmark_barrier_handle)
+        .unwrap();
 
     let t1 = ThreadBuilder::new()
         .affinity(args.cpu_core_participant_1)
@@ -50,7 +56,9 @@ fn perform_benchmark<T: Service>(args: &Args) {
             let notifier_a2b = service_a2b.notifier_builder().create().unwrap();
             let listener_b2a = service_b2a.listener_builder().create().unwrap();
 
-            barrier.wait();
+            startup_barrier.wait();
+            start_benchmark_barrier.wait();
+
             notifier_a2b.notify().expect("failed to notify");
 
             for _ in 0..args.iterations {
@@ -66,23 +74,25 @@ fn perform_benchmark<T: Service>(args: &Args) {
             let notifier_b2a = service_b2a.notifier_builder().create().unwrap();
             let listener_a2b = service_a2b.listener_builder().create().unwrap();
 
-            barrier.wait();
+            startup_barrier.wait();
+            start_benchmark_barrier.wait();
+
             for _ in 0..args.iterations {
                 while listener_a2b.blocking_wait_one().unwrap().is_none() {}
                 notifier_b2a.notify().expect("failed to notify");
             }
         });
 
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    startup_barrier.wait();
     let start = Time::now().expect("failed to acquire time");
-    barrier.wait();
+    start_benchmark_barrier.wait();
 
     drop(t1);
     drop(t2);
 
     let stop = start.elapsed().expect("failed to measure time");
     println!(
-        "{} ::: MaxEventId: {}, Iterations: {}, Time: {}, Latency: {} ns",
+        "{} ::: MaxEventId: {}, Iterations: {}, Time: {} s, Latency: {} ns",
         std::any::type_name::<T>(),
         args.max_event_id,
         args.iterations,
