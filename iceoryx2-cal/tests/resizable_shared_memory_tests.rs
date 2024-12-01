@@ -210,7 +210,7 @@ mod resizable_shared_memory {
     >(
         strategy: AllocationStrategy,
     ) {
-        const NUMBER_OF_REALLOCATIONS: usize = 128;
+        const NUMBER_OF_ITERATIONS: usize = 128;
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -228,7 +228,7 @@ mod resizable_shared_memory {
             .unwrap();
 
         let mut ptrs = vec![];
-        for i in 0..NUMBER_OF_REALLOCATIONS {
+        for i in 0..NUMBER_OF_ITERATIONS {
             let size = 2 + i;
             let layout = unsafe { Layout::from_size_align_unchecked(size, 1) };
             let ptr = sut_creator.allocate(layout).unwrap();
@@ -239,7 +239,7 @@ mod resizable_shared_memory {
             ptrs.push(ptr);
         }
 
-        for i in 0..NUMBER_OF_REALLOCATIONS {
+        for i in 0..NUMBER_OF_ITERATIONS {
             let size = 2 + i;
             let ptr_view = unsafe {
                 sut_viewer
@@ -457,7 +457,7 @@ mod resizable_shared_memory {
     }
 
     #[test]
-    fn static_allocation_strategy_increase_available_chunks<
+    fn static_allocation_strategy_does_not_increase_available_chunks<
         Shm: SharedMemory<DefaultAllocator>,
         Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
     >() {

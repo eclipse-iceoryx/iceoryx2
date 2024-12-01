@@ -53,7 +53,7 @@ impl PointerOffset {
     }
 
     /// Sets the [`SegmentId`] of the [`PointerOffset`].
-    pub const fn set_segment_id(&mut self, value: SegmentId) {
+    pub fn set_segment_id(&mut self, value: SegmentId) {
         self.0 &= !((1u64 << SegmentIdUnderlyingType::BITS) - 1);
         self.0 |= value.0 as u64;
     }
