@@ -158,7 +158,7 @@ mod shm_allocator_pool_allocator {
     #[test]
     fn new_resize_hint_with_best_fit_when_buckets_are_exhausted() {
         let initial_layout = Layout::from_size_align(12, 4).unwrap();
-        let increased_layout = Layout::from_size_align(14, 8).unwrap();
+        let increased_layout = Layout::from_size_align(16, 8).unwrap();
         let test_context = TestContext::new(initial_layout);
 
         for _ in 0..test_context.sut.number_of_buckets() {
