@@ -27,7 +27,8 @@ members = [
     "examples",
 
     "benchmarks/publish-subscribe",
-    "benchmarks/event"
+    "benchmarks/event", 
+    "benchmarks/queue"
 ]
 
 [workspace.package]
