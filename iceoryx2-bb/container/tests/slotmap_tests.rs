@@ -199,4 +199,31 @@ mod slot_map {
             }
         }
     }
+
+    #[test]
+    fn next_free_key_returns_key_used_for_insert() {
+        let mut sut = FixedSizeSut::new();
+        let mut keys = vec![];
+
+        for _ in 0..SUT_CAPACITY / 2 {
+            keys.push(sut.insert(0).unwrap());
+        }
+
+        let next_key = sut.next_free_key();
+        assert_that!(next_key, is_some);
+        assert_that!(sut.insert(0), eq next_key);
+    }
+
+    #[test]
+    fn next_free_key_returns_none_when_full() {
+        let mut sut = FixedSizeSut::new();
+        let mut keys = vec![];
+
+        for _ in 0..SUT_CAPACITY {
+            keys.push(sut.insert(0).unwrap());
+        }
+
+        let next_key = sut.next_free_key();
+        assert_that!(next_key, is_none);
+    }
 }

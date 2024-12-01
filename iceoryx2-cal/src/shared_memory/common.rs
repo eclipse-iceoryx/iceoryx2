@@ -384,6 +384,15 @@ pub mod details {
     }
 
     impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
+        crate::shared_memory::details::SharedMemoryLowLevelAPI<Allocator>
+        for Memory<Allocator, Storage>
+    {
+        fn allocator(&self) -> &Allocator {
+            unsafe { self.storage.get().allocator.assume_init_ref() }
+        }
+    }
+
+    impl<Allocator: ShmAllocator + Debug, Storage: DynamicStorage<AllocatorDetails<Allocator>>>
         crate::shared_memory::SharedMemory<Allocator> for Memory<Allocator, Storage>
     {
         type Builder = Builder<Allocator, Storage>;
@@ -418,7 +427,7 @@ pub mod details {
 
             Ok(ShmPointer {
                 offset,
-                data_ptr: (offset.value() + self.payload_start_address) as *mut u8,
+                data_ptr: (offset.offset() + self.payload_start_address) as *mut u8,
             })
         }
 

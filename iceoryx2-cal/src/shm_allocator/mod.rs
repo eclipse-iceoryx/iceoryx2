@@ -11,46 +11,82 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod bump_allocator;
+pub mod pointer_offset;
 pub mod pool_allocator;
 
-use std::{alloc::Layout, ptr::NonNull};
+use std::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 pub use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
+pub use pointer_offset::*;
 
-pub trait ShmAllocatorConfig: Copy + Default {}
+/// Trait that identifies a configuration of a [`ShmAllocator`].
+pub trait ShmAllocatorConfig: Copy + Default + Debug {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Debug)]
-pub struct PointerOffset(usize);
-
-impl PointerOffset {
-    pub fn new(value: usize) -> PointerOffset {
-        Self(value)
-    }
-
-    pub fn value(&self) -> usize {
-        self.0
-    }
-}
-
-enum_gen! { ShmAllocationError
+enum_gen! {
+/// Describes the errors that can occur when [`ShmAllocator::allocate()`] is called.
+    ShmAllocationError
   entry:
     ExceedsMaxSupportedAlignment
   mapping:
     AllocationError
 }
 
+/// Describes generically an [`AllocationStrategy`], meaning how the memory is increased when the
+/// available memory is insufficient.
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Default)]
+pub enum AllocationStrategy {
+    /// Increases the memory so that it perfectly fits the new size requirements. This may lead
+    /// to a lot of reallocations but has the benefit that no byte is wasted.
+    BestFit,
+    /// Increases the memory by rounding the increased memory size up to the next power of two.
+    /// Reduces reallocations a lot at the cost of increased memory usage.
+    PowerOfTwo,
+    /// The memory is not increased. This may lead to an out-of-memory error when allocating.
+    #[default]
+    Static,
+}
+
+/// Describes error that may occur when a [`ShmAllocator`] is initialized.
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub enum ShmAllocatorInitError {
+    /// The [`SharedMemory`](crate::shared_memory::SharedMemory) max supported alignment does not
+    /// satisfy the required alignment of the [`ShmAllocator`].
     MaxSupportedMemoryAlignmentInsufficient,
+    /// The [`ShmAllocator`] requires more memory to initialize than available.
     AllocationFailed,
+}
+
+/// Returned by [`ShmAllocator::resize_hint()`] and [`ShmAllocator::initial_setup_hint()`].
+/// It contains a payload size and [`ShmAllocator`] configuration suggestion for the given
+/// parameters.
+pub struct SharedMemorySetupHint<Config: ShmAllocatorConfig> {
+    /// The payload size of the [`SharedMemory`](crate::shared_memory::SharedMemory)
+    pub payload_size: usize,
+    /// The [`ShmAllocatorConfig`] that shall be used for the
+    /// [`SharedMemory`](crate::shared_memory::SharedMemory)
+    pub config: Config,
 }
 
 /// Every allocator implementation must be relocatable. The allocator itself must be stored either
 /// in the same shared memory segment or in a separate shared memory segment of a different type
 /// but accessible by all participating processes.
-pub trait ShmAllocator: Send + Sync + 'static {
+pub trait ShmAllocator: Debug + Send + Sync + 'static {
     type Configuration: ShmAllocatorConfig;
+    /// Suggest a new payload size by considering the current allocation state in combination with
+    /// a provided [`AllocationStrategy`] and a `layout` that shall be allocatable.
+    fn resize_hint(
+        &self,
+        layout: Layout,
+        strategy: AllocationStrategy,
+    ) -> SharedMemorySetupHint<Self::Configuration>;
+
+    /// Suggest a managed payload size under a provided configuration assuming that at most
+    /// `max_number_of_chunks` of memory are in use in parallel.
+    fn initial_setup_hint(
+        max_chunk_layout: Layout,
+        max_number_of_chunks: usize,
+    ) -> SharedMemorySetupHint<Self::Configuration>;
 
     /// Returns the required memory size of the additional dynamic part of the allocator that is
     /// allocated in [`ShmAllocator::init()`].

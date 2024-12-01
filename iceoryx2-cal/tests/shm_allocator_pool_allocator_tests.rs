@@ -17,7 +17,7 @@ mod shm_allocator_pool_allocator {
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::{
-        shm_allocator::{pool_allocator::*, ShmAllocationError, ShmAllocator},
+        shm_allocator::{pool_allocator::*, AllocationStrategy, ShmAllocationError, ShmAllocator},
         zero_copy_connection::PointerOffset,
     };
 
@@ -70,6 +70,115 @@ mod shm_allocator_pool_allocator {
     }
 
     #[test]
+    fn initial_setup_hint_is_layout_times_number_of_chunks() {
+        let layout = Layout::from_size_align(64, 2).unwrap();
+        let max_number_of_chunks = 54;
+        let hint = PoolAllocator::initial_setup_hint(layout, max_number_of_chunks);
+
+        assert_that!(hint.config.bucket_layout, eq layout);
+        assert_that!(hint.payload_size, eq layout.size() * max_number_of_chunks);
+    }
+
+    fn no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(
+        strategy: AllocationStrategy,
+    ) {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let test_context = TestContext::new(initial_layout);
+        let hint = test_context
+            .sut
+            .resize_hint(Layout::from_size_align(8, 2).unwrap(), strategy);
+
+        assert_that!(hint.config.bucket_layout, eq initial_layout);
+        assert_that!(hint.payload_size, eq initial_layout.size() * test_context.sut.number_of_buckets() as usize);
+    }
+
+    #[test]
+    fn no_new_resize_hint_with_power_of_two_when_layout_is_smaller_and_buckets_are_available() {
+        no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(
+            AllocationStrategy::PowerOfTwo,
+        )
+    }
+
+    #[test]
+    fn no_new_resize_hint_with_best_fit_when_layout_is_smaller_and_buckets_are_available() {
+        no_new_resize_hint_when_layout_is_smaller_and_buckets_are_available(
+            AllocationStrategy::BestFit,
+        )
+    }
+
+    #[test]
+    fn new_resize_hint_with_power_of_two_when_layout_is_greater() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let increased_layout = Layout::from_size_align(28, 2).unwrap();
+        let test_context = TestContext::new(initial_layout);
+        let hint = test_context
+            .sut
+            .resize_hint(increased_layout, AllocationStrategy::PowerOfTwo);
+        assert_that!(hint.config.bucket_layout.size(), eq increased_layout.size().next_power_of_two());
+        assert_that!(hint.config.bucket_layout.align(), eq initial_layout.align());
+        assert_that!(hint.payload_size, eq increased_layout.size().next_power_of_two() * test_context.sut.number_of_buckets() as usize);
+    }
+
+    #[test]
+    fn new_resize_hint_with_best_fit_when_layout_is_greater() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let increased_layout = Layout::from_size_align(28, 2).unwrap();
+        let test_context = TestContext::new(initial_layout);
+        let hint = test_context
+            .sut
+            .resize_hint(increased_layout, AllocationStrategy::BestFit);
+        assert_that!(hint.config.bucket_layout.size(), eq increased_layout.size());
+        assert_that!(hint.config.bucket_layout.align(), eq initial_layout.align());
+        assert_that!(hint.payload_size, eq increased_layout.size() * test_context.sut.number_of_buckets() as usize);
+    }
+
+    #[test]
+    fn new_resize_hint_with_power_of_two_when_buckets_are_exhausted() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let increased_layout = Layout::from_size_align(14, 8).unwrap();
+        let test_context = TestContext::new(initial_layout);
+
+        for _ in 0..test_context.sut.number_of_buckets() {
+            assert_that!(unsafe { test_context.sut.allocate(initial_layout) }, is_ok);
+        }
+
+        assert_that!(
+            unsafe { test_context.sut.allocate(increased_layout) },
+            is_err
+        );
+
+        let hint = test_context
+            .sut
+            .resize_hint(increased_layout, AllocationStrategy::PowerOfTwo);
+        assert_that!(hint.config.bucket_layout.size(), eq increased_layout.size().next_power_of_two());
+        assert_that!(hint.config.bucket_layout.align(), eq increased_layout.align());
+        assert_that!(hint.payload_size, eq increased_layout.size().next_power_of_two() * (test_context.sut.number_of_buckets() + 1).next_power_of_two() as usize);
+    }
+
+    #[test]
+    fn new_resize_hint_with_best_fit_when_buckets_are_exhausted() {
+        let initial_layout = Layout::from_size_align(12, 4).unwrap();
+        let increased_layout = Layout::from_size_align(16, 8).unwrap();
+        let test_context = TestContext::new(initial_layout);
+
+        for _ in 0..test_context.sut.number_of_buckets() {
+            assert_that!(unsafe { test_context.sut.allocate(initial_layout) }, is_ok);
+        }
+
+        assert_that!(
+            unsafe { test_context.sut.allocate(increased_layout) },
+            is_err
+        );
+
+        let hint = test_context
+            .sut
+            .resize_hint(increased_layout, AllocationStrategy::BestFit);
+        assert_that!(hint.config.bucket_layout.size(), eq increased_layout.size());
+        assert_that!(hint.config.bucket_layout.align(), eq increased_layout.align());
+        assert_that!(hint.payload_size, eq increased_layout.size() * (test_context.sut.number_of_buckets() + 1) as usize);
+    }
+
+    #[test]
     fn allocate_and_release_all_buckets_works() {
         const REPETITIONS: usize = 10;
         let test_context = TestContext::new(BUCKET_CONFIG);
@@ -79,8 +188,8 @@ mod shm_allocator_pool_allocator {
             for _ in 0..test_context.sut.number_of_buckets() {
                 let memory = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
-                assert_that!(mem_set.insert(memory.value()), eq true);
+                assert_that!((memory.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!(mem_set.insert(memory.offset()), eq true);
             }
 
             assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
@@ -105,12 +214,12 @@ mod shm_allocator_pool_allocator {
             for _ in 0..(test_context.sut.number_of_buckets() - 1) {
                 let memory_1 = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory_1.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!((memory_1.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
 
                 let memory_2 = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
                 // the returned offset must be a multiple of the bucket size
-                assert_that!((memory_2.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
-                assert_that!(mem_set.insert(memory_2.value()), eq true);
+                assert_that!((memory_2.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+                assert_that!(mem_set.insert(memory_2.offset()), eq true);
 
                 unsafe {
                     test_context.sut.deallocate(memory_1, BUCKET_CONFIG);
@@ -119,8 +228,8 @@ mod shm_allocator_pool_allocator {
 
             let memory = unsafe { test_context.sut.allocate(BUCKET_CONFIG).unwrap() };
             // the returned offset must be a multiple of the bucket size
-            assert_that!((memory.value() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
-            assert_that!(mem_set.insert(memory.value()), eq true);
+            assert_that!((memory.offset() - test_context.sut.relative_start_address()) % BUCKET_CONFIG.size(), eq 0);
+            assert_that!(mem_set.insert(memory.offset()), eq true);
 
             assert_that!(unsafe { test_context.sut.allocate(BUCKET_CONFIG) }, eq Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)));
 
@@ -145,7 +254,7 @@ mod shm_allocator_pool_allocator {
                     Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
                 let mut counter = 0;
                 while let Ok(memory) = unsafe { test_context.sut.allocate(mem_layout) } {
-                    assert_that!(memory.value() % mem_layout.align(), eq 0 );
+                    assert_that!(memory.offset() % mem_layout.align(), eq 0 );
                     counter += 1;
                 }
 
@@ -169,7 +278,7 @@ mod shm_allocator_pool_allocator {
                         Layout::from_size_align(128.min(2_usize.pow(i)), 2_usize.pow(n)).unwrap();
 
                     if let Ok(memory) = unsafe { test_context.sut.allocate(mem_layout) } {
-                        assert_that!(memory.value() % mem_layout.align(), eq 0 );
+                        assert_that!(memory.offset() % mem_layout.align(), eq 0 );
                         counter += 1;
                     } else {
                         keep_running = false;

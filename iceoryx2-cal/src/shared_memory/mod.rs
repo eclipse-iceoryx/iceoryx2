@@ -95,6 +95,15 @@ pub struct ShmPointer {
     pub data_ptr: *mut u8,
 }
 
+#[doc(hidden)]
+pub(crate) mod details {
+    use super::*;
+
+    pub trait SharedMemoryLowLevelAPI<Allocator: ShmAllocator> {
+        fn allocator(&self) -> &Allocator;
+    }
+}
+
 /// Creates [`SharedMemory`].
 pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
     NamedConceptBuilder<Shm>
@@ -126,7 +135,7 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
 /// Abstract concept of a memory shared between multiple processes. Can be created with the
 /// [`SharedMemoryBuilder`].
 pub trait SharedMemory<Allocator: ShmAllocator>:
-    Sized + Debug + NamedConcept + NamedConceptMgmt
+    Sized + Debug + NamedConcept + NamedConceptMgmt + details::SharedMemoryLowLevelAPI<Allocator>
 {
     type Builder: SharedMemoryBuilder<Allocator, Self>;
 

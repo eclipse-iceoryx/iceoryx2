@@ -13,7 +13,7 @@
 use crate::shm_allocator::*;
 use iceoryx2_bb_log::fail;
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct Config {}
 
 impl ShmAllocatorConfig for Config {}
@@ -25,8 +25,51 @@ pub struct BumpAllocator {
     max_supported_alignment_by_memory: usize,
 }
 
+impl BumpAllocator {
+    pub fn total_space(&self) -> usize {
+        self.allocator.total_space()
+    }
+}
+
 impl ShmAllocator for BumpAllocator {
     type Configuration = Config;
+
+    fn resize_hint(
+        &self,
+        layout: Layout,
+        strategy: AllocationStrategy,
+    ) -> SharedMemorySetupHint<Self::Configuration> {
+        let current_payload_size = self.allocator.total_space();
+        if layout.size() < self.allocator.free_space() {
+            return SharedMemorySetupHint {
+                payload_size: current_payload_size,
+                config: Self::Configuration::default(),
+            };
+        }
+
+        let payload_size = match strategy {
+            AllocationStrategy::BestFit => current_payload_size + layout.size(),
+            AllocationStrategy::PowerOfTwo => {
+                (current_payload_size + layout.size()).next_power_of_two()
+            }
+            AllocationStrategy::Static => current_payload_size,
+        };
+
+        SharedMemorySetupHint {
+            payload_size,
+            config: Self::Configuration::default(),
+        }
+    }
+
+    fn initial_setup_hint(
+        max_chunk_layout: Layout,
+        max_number_of_chunks: usize,
+    ) -> SharedMemorySetupHint<Self::Configuration> {
+        SharedMemorySetupHint {
+            config: Self::Configuration::default(),
+            payload_size: max_chunk_layout.size() * max_number_of_chunks,
+        }
+    }
 
     fn management_size(_memory_size: usize, _config: &Self::Configuration) -> usize {
         0
@@ -90,7 +133,7 @@ impl ShmAllocator for BumpAllocator {
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
         self.allocator.deallocate(
-            NonNull::new_unchecked((offset.0 + self.base_address) as *mut u8),
+            NonNull::new_unchecked((offset.offset() + self.base_address) as *mut u8),
             layout,
         );
     }

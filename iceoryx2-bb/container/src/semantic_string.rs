@@ -173,6 +173,18 @@ pub trait SemanticString<const CAPACITY: usize>:
         self.as_string().capacity()
     }
 
+    /// Finds the first occurrence of a  byte string in the given string. If the byte string was
+    /// found the start position of the byte string is returned, otherwise [`None`].
+    fn find(&self, bytes: &[u8]) -> Option<usize> {
+        self.as_string().find(bytes)
+    }
+
+    /// Finds the last occurrence of a byte string in the given string. If the byte string was
+    /// found the start position of the byte string is returned, otherwise [`None`].
+    fn rfind(&self, bytes: &[u8]) -> Option<usize> {
+        self.as_string().find(bytes)
+    }
+
     /// Returns true when the string is full, otherwise false
     fn is_full(&self) -> bool {
         self.as_string().is_full()

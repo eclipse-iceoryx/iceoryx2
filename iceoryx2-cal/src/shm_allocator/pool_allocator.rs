@@ -10,15 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{alloc::Layout, ptr::NonNull};
+use std::{alloc::Layout, ptr::NonNull, sync::atomic::Ordering};
 
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::fail;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
-use super::{PointerOffset, ShmAllocationError, ShmAllocatorInitError};
+use super::{
+    AllocationStrategy, PointerOffset, SharedMemorySetupHint, ShmAllocationError,
+    ShmAllocatorInitError,
+};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Config {
     pub bucket_layout: Layout,
 }
@@ -41,6 +45,7 @@ pub struct PoolAllocator {
     // the allocator only manages a range of numbers
     base_address: usize,
     max_supported_alignment_by_memory: usize,
+    number_of_used_buckets: IoxAtomicUsize,
 }
 
 impl PoolAllocator {
@@ -55,6 +60,76 @@ impl PoolAllocator {
 
 impl ShmAllocator for PoolAllocator {
     type Configuration = Config;
+
+    fn resize_hint(
+        &self,
+        layout: Layout,
+        strategy: AllocationStrategy,
+    ) -> SharedMemorySetupHint<Self::Configuration> {
+        let current_layout = unsafe {
+            Layout::from_size_align_unchecked(
+                self.allocator.bucket_size(),
+                self.allocator.max_alignment(),
+            )
+        };
+
+        let adjusted_number_of_buckets = if self.number_of_used_buckets.load(Ordering::Relaxed)
+            == self.number_of_buckets() as usize
+        {
+            match strategy {
+                AllocationStrategy::BestFit => self.allocator.number_of_buckets() + 1,
+                AllocationStrategy::PowerOfTwo => {
+                    (self.allocator.number_of_buckets() + 1).next_power_of_two()
+                }
+                AllocationStrategy::Static => self.allocator.number_of_buckets(),
+            }
+        } else {
+            self.number_of_buckets()
+        };
+
+        let adjusted_layout =
+            if current_layout.size() < layout.size() || current_layout.align() < layout.align() {
+                match strategy {
+                    AllocationStrategy::Static => current_layout,
+                    AllocationStrategy::BestFit => unsafe {
+                        let align = layout.align().max(current_layout.align());
+                        let size = layout
+                            .size()
+                            .max(current_layout.size())
+                            .next_multiple_of(align);
+                        Layout::from_size_align_unchecked(size, align)
+                    },
+                    AllocationStrategy::PowerOfTwo => unsafe {
+                        let align = layout
+                            .align()
+                            .max(current_layout.align())
+                            .next_power_of_two();
+                        let size = layout
+                            .size()
+                            .max(current_layout.size())
+                            .next_power_of_two()
+                            .next_multiple_of(align);
+                        Layout::from_size_align_unchecked(size, align)
+                    },
+                }
+            } else {
+                current_layout
+            };
+
+        Self::initial_setup_hint(adjusted_layout, adjusted_number_of_buckets as usize)
+    }
+
+    fn initial_setup_hint(
+        max_chunk_layout: Layout,
+        max_number_of_chunks: usize,
+    ) -> SharedMemorySetupHint<Self::Configuration> {
+        SharedMemorySetupHint {
+            payload_size: max_chunk_layout.size() * max_number_of_chunks,
+            config: Self::Configuration {
+                bucket_layout: max_chunk_layout,
+            },
+        }
+    }
 
     fn management_size(memory_size: usize, config: &Self::Configuration) -> usize {
         iceoryx2_bb_memory::pool_allocator::PoolAllocator::memory_size(
@@ -80,6 +155,7 @@ impl ShmAllocator for PoolAllocator {
             ),
             base_address: (managed_memory.as_ptr() as *mut u8) as usize,
             max_supported_alignment_by_memory,
+            number_of_used_buckets: IoxAtomicUsize::new(0),
         }
     }
 
@@ -117,14 +193,16 @@ impl ShmAllocator for PoolAllocator {
         }
 
         let chunk = fail!(from self, when self.allocator.allocate(layout), "{}.", msg);
+        self.number_of_used_buckets.fetch_add(1, Ordering::Relaxed);
         Ok(PointerOffset::new(
             (chunk.as_ptr() as *const u8) as usize - self.allocator.start_address(),
         ))
     }
 
     unsafe fn deallocate(&self, offset: PointerOffset, layout: Layout) {
+        self.number_of_used_buckets.fetch_sub(1, Ordering::Relaxed);
         self.allocator.deallocate(
-            NonNull::new_unchecked((offset.value() + self.allocator.start_address()) as *mut u8),
+            NonNull::new_unchecked((offset.offset() + self.allocator.start_address()) as *mut u8),
             layout,
         );
     }

@@ -98,7 +98,7 @@ impl<'a> FileCreator<'a> {
     ) -> Result<File<'a>, SharedMemoryDirectoryCreateFileError> {
         let id = fail!(from self, when self.set.insert(
                                         name,
-                                        self.memory.offset.value(),
+                                        self.memory.offset.offset(),
                                         self.layout.size(),
                                         self.is_persistent,
                                     ),

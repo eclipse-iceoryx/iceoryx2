@@ -499,13 +499,13 @@ pub mod details {
                 .storage
                 .get()
                 .used_chunk_list
-                .insert(ptr.value() / self.storage.get().sample_size)
+                .insert(ptr.offset() / self.storage.get().sample_size)
             {
                 fail!(from self, with ZeroCopySendError::UsedChunkListFull,
                     "{} since the used chunk list is full.", msg);
             }
 
-            match unsafe { self.storage.get().submission_channel.push(ptr.value()) } {
+            match unsafe { self.storage.get().submission_channel.push(ptr.offset()) } {
                 Some(v) => {
                     if !self
                         .storage
@@ -636,7 +636,7 @@ pub mod details {
         }
 
         fn release(&self, ptr: PointerOffset) -> Result<(), ZeroCopyReleaseError> {
-            match unsafe { self.storage.get().completion_channel.push(ptr.value()) } {
+            match unsafe { self.storage.get().completion_channel.push(ptr.offset()) } {
                 true => {
                     *self.borrow_counter() -= 1;
                     Ok(())

@@ -282,6 +282,14 @@ pub mod details {
             }
         }
 
+        pub(crate) unsafe fn next_free_key_impl(&self) -> Option<SlotMapKey> {
+            if self.idx_to_data_free_list_head == INVALID {
+                return None;
+            }
+
+            Some(SlotMapKey::new(self.idx_to_data_free_list_head))
+        }
+
         pub(crate) fn len_impl(&self) -> usize {
             self.len
         }
@@ -394,6 +402,12 @@ pub mod details {
             unsafe { self.remove_impl(key) }
         }
 
+        /// Returns the [`SlotMapKey`] that will be used when the user calls
+        /// [`SlotMap::insert()`]. If the [`SlotMap`] is full it returns [`None`].
+        pub fn next_free_key(&self) -> Option<SlotMapKey> {
+            unsafe { self.next_free_key_impl() }
+        }
+
         /// Returns the number of stored values.
         pub fn len(&self) -> usize {
             self.len_impl()
@@ -499,6 +513,17 @@ pub mod details {
         ///
         pub unsafe fn remove(&mut self, key: SlotMapKey) -> bool {
             self.remove_impl(key)
+        }
+
+        /// Returns the [`SlotMapKey`] that will be used when the user calls
+        /// [`SlotMap::insert()`]. If the [`SlotMap`] is full it returns [`None`].
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableSlotMap::init()`] must be called once before
+        ///
+        pub unsafe fn next_free_key(&self) -> Option<SlotMapKey> {
+            self.next_free_key_impl()
         }
 
         /// Returns the number of stored values.
@@ -613,6 +638,12 @@ impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
     /// to the [`SlotMapKey`] it returns false, otherwise true.
     pub fn remove(&mut self, key: SlotMapKey) -> bool {
         unsafe { self.state.remove_impl(key) }
+    }
+
+    /// Returns the [`SlotMapKey`] that will be used when the user calls
+    /// [`SlotMap::insert()`]. If the [`SlotMap`] is full it returns [`None`].
+    pub fn next_free_key(&self) -> Option<SlotMapKey> {
+        unsafe { self.state.next_free_key_impl() }
     }
 
     /// Returns the number of stored values.
