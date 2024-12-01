@@ -46,8 +46,14 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
         .enable_safe_overflow(true)
         .create()?;
 
-    let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
+    let start_benchmark_barrier_handle = BarrierHandle::new();
+    let startup_barrier_handle = BarrierHandle::new();
+    let startup_barrier = BarrierBuilder::new(3)
+        .create(&startup_barrier_handle)
+        .unwrap();
+    let start_benchmark_barrier = BarrierBuilder::new(3)
+        .create(&start_benchmark_barrier_handle)
+        .unwrap();
 
     let t1 = ThreadBuilder::new()
         .affinity(args.cpu_core_participant_1)
@@ -60,7 +66,8 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
                 .unwrap();
             let receiver_b2a = service_b2a.subscriber_builder().create().unwrap();
 
-            barrier.wait();
+            startup_barrier.wait();
+            start_benchmark_barrier.wait();
 
             let mut sample = if args.send_copy {
                 let mut sample = sender_a2b.loan_slice_uninit(args.payload_size).unwrap();
@@ -98,7 +105,8 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
                 .unwrap();
             let receiver_a2b = service_a2b.subscriber_builder().create().unwrap();
 
-            barrier.wait();
+            startup_barrier.wait();
+            start_benchmark_barrier.wait();
 
             for _ in 0..args.iterations {
                 let sample = if args.send_copy {
@@ -120,16 +128,16 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
             }
         });
 
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    startup_barrier.wait();
     let start = Time::now().expect("failed to acquire time");
-    barrier.wait();
+    start_benchmark_barrier.wait();
 
     drop(t1);
     drop(t2);
 
     let stop = start.elapsed().expect("failed to measure time");
     println!(
-        "{} ::: Iterations: {}, Time: {}, Latency: {} ns, Sample Size: {}",
+        "{} ::: Iterations: {}, Time: {} s, Latency: {} ns, Sample Size: {}",
         std::any::type_name::<T>(),
         args.iterations,
         stop.as_secs_f64(),

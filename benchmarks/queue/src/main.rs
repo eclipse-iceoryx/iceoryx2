@@ -18,7 +18,7 @@ use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_bb_posix::thread::ThreadBuilder;
 
-const ITERATIONS: u64 = 100000000;
+const ITERATIONS: u64 = 10000000;
 
 trait PushPop: Send + Sync {
     fn push(&self, value: usize);
@@ -60,14 +60,21 @@ fn perform_benchmark<Q: PushPop>(
     queue_a2b: Q,
     queue_b2a: Q,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let barrier_handle = BarrierHandle::new();
-    let barrier = BarrierBuilder::new(3).create(&barrier_handle).unwrap();
+    let start_benchmark_barrier_handle = BarrierHandle::new();
+    let startup_barrier_handle = BarrierHandle::new();
+    let startup_barrier = BarrierBuilder::new(3)
+        .create(&startup_barrier_handle)
+        .unwrap();
+    let start_benchmark_barrier = BarrierBuilder::new(3)
+        .create(&start_benchmark_barrier_handle)
+        .unwrap();
 
     let t1 = ThreadBuilder::new()
         .affinity(args.cpu_core_participant_1)
         .priority(255)
         .spawn(|| {
-            barrier.wait();
+            startup_barrier.wait();
+            start_benchmark_barrier.wait();
 
             for _ in 0..args.iterations {
                 queue_a2b.push(0);
@@ -79,7 +86,8 @@ fn perform_benchmark<Q: PushPop>(
         .affinity(args.cpu_core_participant_2)
         .priority(255)
         .spawn(|| {
-            barrier.wait();
+            startup_barrier.wait();
+            start_benchmark_barrier.wait();
 
             for _ in 0..args.iterations {
                 while queue_a2b.pop().is_none() {}
@@ -88,16 +96,16 @@ fn perform_benchmark<Q: PushPop>(
             }
         });
 
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    startup_barrier.wait();
     let start = Time::now().expect("failed to acquire time");
-    barrier.wait();
+    start_benchmark_barrier.wait();
 
     drop(t1);
     drop(t2);
 
     let stop = start.elapsed().expect("failed to measure time");
     println!(
-        "{} ::: Iterations: {}, Time: {}, Latency: {} ns",
+        "{} ::: Iterations: {}, Time: {} s, Latency: {} ns",
         core::any::type_name::<Q>(),
         args.iterations,
         stop.as_secs_f64(),
