@@ -57,7 +57,7 @@ pub struct Producer<'a, PointerType: PointerTrait<UnsafeCell<u64>> + Debug> {
     queue: &'a details::IndexQueue<PointerType>,
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Producer<'_, PointerType> {
+impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
     /// Adds a new value to the [`IndexQueue`]/[`FixedSizeIndexQueue`]. If the queue is full
     /// it returns false, otherwise true.
     pub fn push(&mut self, t: u64) -> bool {
@@ -65,7 +65,7 @@ impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Producer<'_, PointerT
     }
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Drop for Producer<'_, PointerType> {
+impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Drop for Producer<'_, PointerType> {
     fn drop(&mut self) {
         self.queue.has_producer.store(true, Ordering::Relaxed);
     }
@@ -77,7 +77,7 @@ pub struct Consumer<'a, PointerType: PointerTrait<UnsafeCell<u64>> + Debug> {
     queue: &'a details::IndexQueue<PointerType>,
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Consumer<'_, PointerType> {
+impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerType> {
     /// Acquires a value from the [`IndexQueue`]/[`FixedSizeIndexQueue`]. If the queue is empty
     /// it returns [`None`] otherwise the value.
     pub fn pop(&mut self) -> Option<u64> {
@@ -85,7 +85,7 @@ impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Consumer<'_, PointerT
     }
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Drop for Consumer<'_, PointerType> {
+impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Drop for Consumer<'_, PointerType> {
     fn drop(&mut self) {
         self.queue.has_consumer.store(true, Ordering::Relaxed);
     }
