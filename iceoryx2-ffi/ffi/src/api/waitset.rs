@@ -612,7 +612,7 @@ pub unsafe extern "C" fn iox2_waitset_attach_interval(
     IOX2_OK
 }
 
-/// Waits until an event arrives on the [`iox2_waitset_h`] or the provided timeout has passed, then
+/// Waits until an event arrives on the [`iox2_waitset_h`], then
 /// collects all events by calling the provided `fn_call` callback with the corresponding
 /// [`iox2_waitset_attachment_id_h`] and then returns. This makes it ideal to be called in some kind
 /// of event-loop.
@@ -643,6 +643,88 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
     handle: iox2_waitset_h_ref,
     callback: iox2_waitset_run_callback,
     callback_ctx: iox2_callback_context,
+    result: *mut iox2_waitset_run_result_e,
+) -> c_int {
+    handle.assert_non_null();
+    debug_assert!(!result.is_null());
+
+    let waitset = &mut *handle.as_type();
+
+    let run_once_result = match waitset.service_type {
+        iox2_service_type_e::IPC => {
+            waitset
+                .value
+                .as_ref()
+                .ipc
+                .wait_and_process_once(|attachment_id| {
+                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                    (*attachment_id_ptr).init(
+                        waitset.service_type,
+                        AttachmentIdUnion::new_ipc(attachment_id),
+                        iox2_waitset_attachment_id_t::dealloc,
+                    );
+                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
+                })
+        }
+        iox2_service_type_e::LOCAL => {
+            waitset
+                .value
+                .as_ref()
+                .local
+                .wait_and_process_once(|attachment_id| {
+                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                    (*attachment_id_ptr).init(
+                        waitset.service_type,
+                        AttachmentIdUnion::new_local(attachment_id),
+                        iox2_waitset_attachment_id_t::dealloc,
+                    );
+                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
+                })
+        }
+    };
+
+    match run_once_result {
+        Ok(v) => {
+            *result = v.into();
+            IOX2_OK
+        }
+        Err(e) => e.into_c_int(),
+    }
+}
+
+/// Waits until an event arrives on the [`iox2_waitset_h`] or the provided timeout has passed, then
+/// collects all events by calling the provided `fn_call` callback with the corresponding
+/// [`iox2_waitset_attachment_id_h`] and then returns. This makes it ideal to be called in some kind
+/// of event-loop.
+///
+/// The provided callback must return [`iox2_callback_progression_e::CONTINUE`] to continue the event
+/// processing and handle the next event or [`iox2_callback_progression_e::STOP`] to return from this
+/// call immediately. All unhandled events will be lost forever and the call will return
+/// [`iox2_waitset_run_result_e::STOP_REQUEST`].
+///
+/// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+/// the loop and inform the user with [`iox2_waitset_run_result_e::INTERRUPT`] or
+/// [`iox2_waitset_run_result_e::TERMINATION_REQUEST`].
+///
+/// When no signal was received and all events were handled, it will return
+/// [`iox2_waitset_run_result_e::ALL_EVENTS_HANDLED`].
+/// # Return
+///
+/// `IOX2_OK` on success, otherwise [`iox2_waitset_run_error_e`].
+///
+/// # Safety
+///
+///  * `handle` must be valid and acquired with
+///    [`iox2_waitset_builder_create()`](crate::iox2_waitset_builder_create())
+///  * the provided [`iox2_waitset_attachment_id_h`] in the callback must be released via
+///    [`iox2_waitset_attachment_id_drop()`](crate::iox2_waitset_attachment_id_drop())
+#[no_mangle]
+pub unsafe extern "C" fn iox2_waitset_wait_and_process_once_with_timeout(
+    handle: iox2_waitset_h_ref,
+    callback: iox2_waitset_run_callback,
+    callback_ctx: iox2_callback_context,
     seconds: u64,
     nanoseconds: u32,
     result: *mut iox2_waitset_run_result_e,
@@ -654,32 +736,40 @@ pub unsafe extern "C" fn iox2_waitset_wait_and_process_once(
     let timeout = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
 
     let run_once_result = match waitset.service_type {
-        iox2_service_type_e::IPC => waitset.value.as_ref().ipc.wait_and_process_once(
-            |attachment_id| {
-                let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                (*attachment_id_ptr).init(
-                    waitset.service_type,
-                    AttachmentIdUnion::new_ipc(attachment_id),
-                    iox2_waitset_attachment_id_t::dealloc,
-                );
-                let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                callback(attachment_id_handle_ptr, callback_ctx).into()
-            },
-            timeout,
-        ),
-        iox2_service_type_e::LOCAL => waitset.value.as_ref().local.wait_and_process_once(
-            |attachment_id| {
-                let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
-                (*attachment_id_ptr).init(
-                    waitset.service_type,
-                    AttachmentIdUnion::new_local(attachment_id),
-                    iox2_waitset_attachment_id_t::dealloc,
-                );
-                let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
-                callback(attachment_id_handle_ptr, callback_ctx).into()
-            },
-            timeout,
-        ),
+        iox2_service_type_e::IPC => waitset
+            .value
+            .as_ref()
+            .ipc
+            .wait_and_process_once_with_timeout(
+                |attachment_id| {
+                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                    (*attachment_id_ptr).init(
+                        waitset.service_type,
+                        AttachmentIdUnion::new_ipc(attachment_id),
+                        iox2_waitset_attachment_id_t::dealloc,
+                    );
+                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
+                },
+                timeout,
+            ),
+        iox2_service_type_e::LOCAL => waitset
+            .value
+            .as_ref()
+            .local
+            .wait_and_process_once_with_timeout(
+                |attachment_id| {
+                    let attachment_id_ptr = iox2_waitset_attachment_id_t::alloc();
+                    (*attachment_id_ptr).init(
+                        waitset.service_type,
+                        AttachmentIdUnion::new_local(attachment_id),
+                        iox2_waitset_attachment_id_t::dealloc,
+                    );
+                    let attachment_id_handle_ptr = (*attachment_id_ptr).as_handle();
+                    callback(attachment_id_handle_ptr, callback_ctx).into()
+                },
+                timeout,
+            ),
     };
 
     match run_once_result {

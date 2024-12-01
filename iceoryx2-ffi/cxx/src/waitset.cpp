@@ -314,14 +314,28 @@ auto WaitSet<S>::wait_and_process(const iox::function<CallbackProgression(WaitSe
 }
 
 template <ServiceType S>
-auto WaitSet<S>::wait_and_process_once(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
-                                       const iox::units::Duration timeout)
+auto WaitSet<S>::wait_and_process_once(const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call)
     -> iox::expected<WaitSetRunResult, WaitSetRunError> {
+    iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
+    auto ctx = internal::ctx(fn_call);
+    auto result = iox2_waitset_wait_and_process_once(&m_handle, run_callback<S>, static_cast<void*>(&ctx), &run_result);
+
+    if (result == IOX2_OK) {
+        return iox::ok(iox::into<WaitSetRunResult>(static_cast<int>(run_result)));
+    }
+
+    return iox::err(iox::into<WaitSetRunError>(result));
+}
+
+template <ServiceType S>
+auto WaitSet<S>::wait_and_process_once_with_timeout(
+    const iox::function<CallbackProgression(WaitSetAttachmentId<S>)>& fn_call,
+    const iox::units::Duration timeout) -> iox::expected<WaitSetRunResult, WaitSetRunError> {
     iox2_waitset_run_result_e run_result = iox2_waitset_run_result_e_STOP_REQUEST;
     auto ctx = internal::ctx(fn_call);
     auto timeout_secs = timeout.toSeconds();
     auto timeout_nsecs = timeout.toNanoseconds() - timeout.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC;
-    auto result = iox2_waitset_wait_and_process_once(
+    auto result = iox2_waitset_wait_and_process_once_with_timeout(
         &m_handle, run_callback<S>, static_cast<void*>(&ctx), timeout_secs, timeout_nsecs, &run_result);
 
     if (result == IOX2_OK) {

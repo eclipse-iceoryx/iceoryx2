@@ -747,7 +747,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         mut fn_call: F,
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
         loop {
-            match self.wait_and_process_once(&mut fn_call, Duration::MAX) {
+            match self.wait_and_process_once(&mut fn_call) {
                 Ok(WaitSetRunResult::AllEventsHandled) => (),
                 Ok(v) => return Ok(v),
                 Err(e) => {
@@ -756,6 +756,60 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                 }
             }
         }
+    }
+
+    /// Waits until an event arrives on the [`WaitSet`], then
+    /// collects all events by calling the provided `fn_call` callback with the corresponding
+    /// [`WaitSetAttachmentId`] and then returns. This makes it ideal to be called in some kind of
+    /// event-loop.
+    ///
+    /// The provided callback must return [`CallbackProgression::Continue`] to continue the event
+    /// processing and handle the next event or [`CallbackProgression::Stop`] to return from this
+    /// call immediately. All unhandled events will be lost forever and the call will return
+    /// [`WaitSetRunResult::StopRequest`].
+    ///
+    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
+    ///
+    /// When no signal was received and all events were handled, it will return
+    /// [`WaitSetRunResult::AllEventsHandled`].
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use iceoryx2::prelude::*;
+    /// # use core::time::Duration;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
+    /// #     .event()
+    /// #     .open_or_create()?;
+    ///
+    /// let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    ///
+    /// let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+    ///     // do some event processing
+    ///     CallbackProgression::Continue
+    /// };
+    ///
+    /// // main event loop
+    /// loop {
+    ///     // blocks until an event arrives, handles all arrived events
+    ///     // and then returns.
+    ///     waitset.wait_and_process_once(on_event)?;
+    ///     // do some event post processing
+    ///     println!("handled events");
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn wait_and_process_once<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
+        &self,
+        fn_call: F,
+    ) -> Result<WaitSetRunResult, WaitSetRunError> {
+        self.wait_and_process_once_with_timeout(fn_call, Duration::MAX)
     }
 
     /// Waits until an event arrives on the [`WaitSet`] or the provided timeout has passed, then
@@ -799,7 +853,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// loop {
     ///     // blocks until an event arrives or TIMEOUT was reached, handles all arrived events
     ///     // and then returns.
-    ///     waitset.wait_and_process_once(on_event, TIMEOUT)?;
+    ///     waitset.wait_and_process_once_with_timeout(on_event, TIMEOUT)?;
     ///     // do some event post processing
     ///     println!("handled events");
     /// }
@@ -807,7 +861,9 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn wait_and_process_once<F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression>(
+    pub fn wait_and_process_once_with_timeout<
+        F: FnMut(WaitSetAttachmentId<Service>) -> CallbackProgression,
+    >(
         &self,
         mut fn_call: F,
         timeout: Duration,
