@@ -18,12 +18,16 @@
 
 This example demonstrates a robust publisher-subscriber communication pattern
 between two separate processes. A service with the payload type of an `u8` slice
-is created, and every publisher can define the largest slice length they support
-for communication with `max_slice_len`. The publisher sends a message every
-second containing a piece of dynamic data. On the receiving end, the subscriber
-checks for new data every second.
+is created, and every publisher can define a slice length hint they support
+for communication with `initial_max_slice_len`. The publisher sends a message with
+increasing size every second containing a piece of dynamic data. On the receiving
+end, the subscriber checks for new data every second.
 
 The subscriber is printing the sample on the console whenever new data arrives.
+
+The `initial_max_slice_len` hint and the `AllocationStrategy` set by the
+publisher will define how memory is reallocated when [`Publisher::loan_slice()`]
+or [`Publisher::loan_slice_uninit()`] request more memory than it is available.
 
 To observe this dynamic communication in action, open two separate terminals and
 execute the following commands:

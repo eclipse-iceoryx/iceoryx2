@@ -16,7 +16,6 @@ use iceoryx2::prelude::*;
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    set_log_level(LogLevel::Trace);
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
@@ -28,11 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            print!("received {} bytes: ", sample.payload().len());
-            for byte in sample.payload() {
-                print!("{:02x} ", byte);
-            }
-            println!("");
+            println!("received {} bytes", sample.payload().len());
         }
     }
 
