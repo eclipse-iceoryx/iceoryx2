@@ -21,8 +21,8 @@ use iceoryx2_cal::{
         SharedMemoryOpenError, ShmPointer,
     },
     shm_allocator::{
-        self, pool_allocator::PoolAllocator, AllocationStrategy, PointerOffset, SegmentId,
-        ShmAllocationError,
+        self, pool_allocator::PoolAllocator, AllocationError, AllocationStrategy, PointerOffset,
+        SegmentId, ShmAllocationError,
     },
 };
 
@@ -113,10 +113,27 @@ impl<Service: service::Service> DataSegment<Service> {
     }
 
     pub(crate) fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError> {
+        let msg = "Unable to allocate memory from the data segment";
         match &self.memory {
             MemoryType::Static(memory) => Ok(fail!(from self, when memory.allocate(layout),
-                                            "Unable to allocate memory from the data segment.")),
-            MemoryType::Dynamic(memory) => Ok(memory.allocate(layout).unwrap()),
+                                            "{msg}.")),
+            MemoryType::Dynamic(memory) => match memory.allocate(layout) {
+                Ok(ptr) => Ok(ptr),
+                Err(ResizableShmAllocationError::ShmAllocationError(e)) => {
+                    fail!(from self, with e,
+                        "{msg} caused by {:?}.", e);
+                }
+                Err(ResizableShmAllocationError::MaxReallocationsReached) => {
+                    fail!(from self,
+                        with ShmAllocationError::AllocationError(AllocationError::OutOfMemory),
+                        "{msg} since the maxmimum number of reallocations was reached. Try to provide initial_max_slice_len({}) as hint when creating the publisher to have a more fitting initial setup.", layout.size());
+                }
+                Err(ResizableShmAllocationError::SharedMemoryCreateError(e)) => {
+                    fail!(from self,
+                        with ShmAllocationError::AllocationError(AllocationError::InternalError),
+                        "{msg} since the shared memory segment creation failed while resizing the memory due to ({:?}).", e);
+                }
+            },
         }
     }
 
@@ -201,11 +218,21 @@ impl<Service: service::Service> DataSegmentView<Service> {
         Ok(Self { memory })
     }
 
-    pub(crate) fn register_and_translate_offset(&self, offset: PointerOffset) -> usize {
+    pub(crate) fn register_and_translate_offset(
+        &self,
+        offset: PointerOffset,
+    ) -> Result<usize, SharedMemoryOpenError> {
         match &self.memory {
-            MemoryViewType::Static(memory) => offset.offset() + memory.payload_start_address(),
+            MemoryViewType::Static(memory) => Ok(offset.offset() + memory.payload_start_address()),
             MemoryViewType::Dynamic(memory) => unsafe {
-                memory.register_and_translate_offset(offset).unwrap() as usize
+                match memory.register_and_translate_offset(offset) {
+                    Ok(ptr) => Ok(ptr as usize),
+                    Err(e) => {
+                        fail!(from self, with e,
+                            "Failed to register and translate pointer due to a failure while opening the corresponding shared memory segment ({:?}).",
+                            e);
+                    }
+                }
             },
         }
     }

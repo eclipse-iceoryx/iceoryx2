@@ -311,12 +311,19 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                         origin: connection.publisher_id,
                     };
 
-                    Ok(Some((
-                        details,
-                        connection
-                            .data_segment
-                            .register_and_translate_offset(offset),
-                    )))
+                    let offset = match connection
+                        .data_segment
+                        .register_and_translate_offset(offset)
+                    {
+                        Ok(offset) => offset,
+                        Err(e) => {
+                            fail!(from self, with SubscriberReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapPublishersDataSegment(e)),
+                                "Unable to register and translate offset from publisher {:?} since the received offset {:?} could not be registered and translated.",
+                                connection.publisher_id, offset);
+                        }
+                    };
+
+                    Ok(Some((details, offset)))
                 }
             },
             Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
