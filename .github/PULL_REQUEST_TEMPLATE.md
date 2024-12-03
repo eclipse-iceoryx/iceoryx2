@@ -3,6 +3,10 @@
 
 ## Pre-Review Checklist for the PR Author
 
+To prevent CI from running on each commit while the work is still in progress:
+- Set the PR to a draft status, e.g. by the `Convert to draft` link, to indicate that the work is not yet ready for review
+- Once the PR is ready for review, press the `Ready for Review` button and push a final commit to trigger the CI
+
 1. [ ] Add sensible notes for the reviewer
 1. [ ] PR title is short, expressive and meaningful
 1. [ ] Relevant issues are linked in the [References](#references) section
