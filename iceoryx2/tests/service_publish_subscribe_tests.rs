@@ -20,7 +20,7 @@ mod service_publish_subscribe {
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
-    use iceoryx2::prelude::*;
+    use iceoryx2::prelude::{AllocationStrategy, *};
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
@@ -2974,6 +2974,230 @@ mod service_publish_subscribe {
         assert_that!(sample.payload(), len type_details.size * NUMBER_OF_ELEMENTS);
         assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+    }
+
+    #[test]
+    fn send_increasing_samples_with_static_allocation_strategy_fails<Sut: Service>() {
+        const SLICE_SIZE: usize = 1024;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let service_pub = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .create()
+            .unwrap();
+
+        let publisher = service_pub
+            .publisher_builder()
+            .initial_max_slice_len(SLICE_SIZE)
+            .allocation_strategy(AllocationStrategy::Static)
+            .create()
+            .unwrap();
+
+        let sample = publisher.loan_slice(SLICE_SIZE - 1);
+        assert_that!(sample, is_ok);
+
+        let sample = publisher.loan_slice(SLICE_SIZE);
+        assert_that!(sample, is_ok);
+
+        let sample = publisher.loan_slice(SLICE_SIZE + 1);
+        assert_that!(sample, is_err);
+        assert_that!(sample.err(), eq Some(PublisherLoanError::ExceedsMaxLoanSize));
+    }
+
+    fn send_and_receives_increasing_samples_works<Sut: Service>(
+        allocation_strategy: AllocationStrategy,
+    ) {
+        const ITERATIONS: usize = 128;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let service_pub = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .create()
+            .unwrap();
+
+        let service_sub = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .open()
+            .unwrap();
+
+        let publisher = service_pub
+            .publisher_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(allocation_strategy)
+            .create()
+            .unwrap();
+
+        let subscriber = service_sub.subscriber_builder().create().unwrap();
+
+        for n in 0..ITERATIONS {
+            let sample_size = (n + 1) * 32;
+            let mut sample = publisher.loan_slice(sample_size).unwrap();
+            for byte in sample.payload_mut() {
+                *byte = n as u8;
+            }
+
+            sample.send().unwrap();
+
+            let sample = subscriber.receive().unwrap().unwrap();
+            assert_that!(sample.payload(), len sample_size);
+            for byte in sample.payload() {
+                assert_that!(*byte, eq n as u8);
+            }
+        }
+    }
+
+    #[test]
+    fn send_and_receives_increasing_samples_works_for_best_fit_allocation_strategy<Sut: Service>() {
+        send_and_receives_increasing_samples_works::<Sut>(AllocationStrategy::BestFit);
+    }
+
+    #[test]
+    fn send_and_receives_increasing_samples_works_for_power_of_two_allocation_strategy<
+        Sut: Service,
+    >() {
+        send_and_receives_increasing_samples_works::<Sut>(AllocationStrategy::PowerOfTwo);
+    }
+
+    fn send_and_receives_increasing_samples_with_overflow_works<Sut: Service>(
+        allocation_strategy: AllocationStrategy,
+    ) {
+        const SUBSCRIBER_MAX_BUFFER_SIZE: usize = 5;
+        const ITERATIONS: usize = 128;
+        const REPETITIONS: usize = 13;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let service_pub = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .subscriber_max_buffer_size(SUBSCRIBER_MAX_BUFFER_SIZE)
+            .create()
+            .unwrap();
+
+        let service_sub = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .open()
+            .unwrap();
+
+        let publisher = service_pub
+            .publisher_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(allocation_strategy)
+            .create()
+            .unwrap();
+
+        let subscriber = service_sub.subscriber_builder().create().unwrap();
+
+        for n in 0..ITERATIONS {
+            let sample_size = (n + 1) * 32;
+            for _ in 0..REPETITIONS {
+                let mut sample = publisher.loan_slice(sample_size).unwrap();
+                for byte in sample.payload_mut() {
+                    *byte = n as u8;
+                }
+
+                sample.send().unwrap();
+            }
+
+            let sample = subscriber.receive().unwrap().unwrap();
+            assert_that!(sample.payload(), len sample_size);
+            for byte in sample.payload() {
+                assert_that!(*byte, eq n as u8);
+            }
+        }
+    }
+
+    #[test]
+    fn send_and_receives_increasing_samples_with_overflow_for_best_fit_allocation_strategy<
+        Sut: Service,
+    >() {
+        send_and_receives_increasing_samples_with_overflow_works::<Sut>(
+            AllocationStrategy::BestFit,
+        );
+    }
+
+    #[test]
+    fn send_and_receives_increasing_samples_with_overflow_for_power_of_two_allocation_strategy<
+        Sut: Service,
+    >() {
+        send_and_receives_increasing_samples_with_overflow_works::<Sut>(
+            AllocationStrategy::PowerOfTwo,
+        );
+    }
+
+    fn deliver_history_with_increasing_samples_works<Sut: Service>(
+        allocation_strategy: AllocationStrategy,
+    ) {
+        const SUBSCRIBER_MAX_BUFFER_SIZE: usize = 12;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let service_pub = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .subscriber_max_buffer_size(SUBSCRIBER_MAX_BUFFER_SIZE)
+            .history_size(SUBSCRIBER_MAX_BUFFER_SIZE)
+            .create()
+            .unwrap();
+
+        let service_sub = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .open()
+            .unwrap();
+
+        let publisher = service_pub
+            .publisher_builder()
+            .initial_max_slice_len(1)
+            .allocation_strategy(allocation_strategy)
+            .create()
+            .unwrap();
+
+        for n in 0..SUBSCRIBER_MAX_BUFFER_SIZE {
+            let sample_size = (n + 1) * 32;
+            let mut sample = publisher.loan_slice(sample_size).unwrap();
+            for byte in sample.payload_mut() {
+                *byte = n as u8;
+            }
+
+            sample.send().unwrap();
+        }
+
+        let subscriber = service_sub.subscriber_builder().create().unwrap();
+        publisher.update_connections().unwrap();
+
+        for n in 0..SUBSCRIBER_MAX_BUFFER_SIZE {
+            let sample_size = (n + 1) * 32;
+            let sample = subscriber.receive().unwrap().unwrap();
+            assert_that!(sample.payload(), len sample_size);
+            for byte in sample.payload() {
+                assert_that!(*byte, eq n as u8);
+            }
+        }
+    }
+
+    #[test]
+    fn deliver_history_with_increasing_samples_works_for_best_fit_allocation_strategy<
+        Sut: Service,
+    >() {
+        deliver_history_with_increasing_samples_works::<Sut>(AllocationStrategy::BestFit);
+    }
+
+    #[test]
+    fn deliver_history_with_increasing_samples_works_for_power_of_two_allocation_strategy<
+        Sut: Service,
+    >() {
+        deliver_history_with_increasing_samples_works::<Sut>(AllocationStrategy::PowerOfTwo);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
