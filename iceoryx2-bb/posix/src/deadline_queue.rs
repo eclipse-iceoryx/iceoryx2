@@ -265,10 +265,28 @@ impl DeadlineQueue {
         for attachment in &*self.attachments.borrow() {
             let duration_until_last = last.max(attachment.start_time) - attachment.start_time;
             let duration_until_now = now - attachment.start_time;
-            if (duration_until_last / attachment.period) < (duration_until_now / attachment.period)
-                && call(DeadlineQueueIndex(attachment.index)) == CallbackProgression::Stop
-            {
-                return;
+            match attachment.period {
+                0 => {
+                    if matches!(
+                        call(DeadlineQueueIndex(attachment.index)),
+                        CallbackProgression::Stop
+                    ) {
+                        return;
+                    }
+                }
+                _ => {
+                    let last = duration_until_last / attachment.period;
+                    let current = duration_until_now / attachment.period;
+
+                    if last < current
+                        && matches!(
+                            call(DeadlineQueueIndex(attachment.index)),
+                            CallbackProgression::Stop
+                        )
+                    {
+                        return;
+                    }
+                }
             }
         }
     }

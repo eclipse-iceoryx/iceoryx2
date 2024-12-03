@@ -868,7 +868,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         mut fn_call: F,
         timeout: Duration,
     ) -> Result<WaitSetRunResult, WaitSetRunError> {
-        let msg = "Unable to call WaitSet::try_wait_and_process()";
+        let msg = "Unable to call WaitSet::wait_and_process_once_with_timeout()";
 
         if self.signal_handling_mode == SignalHandlingMode::HandleTerminationRequests
             && SignalHandler::termination_requested()
