@@ -680,7 +680,6 @@ where
         match state.shared_memory_map.get(segment_id) {
             Some(entry) => {
                 deallocation_call(entry);
-                //entry.shm.deallocate_bucket(offset);
                 if entry.unregister_offset() == ShmEntryState::Empty
                     && segment_id != state.current_idx
                 {

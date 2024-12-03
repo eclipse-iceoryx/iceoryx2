@@ -946,6 +946,44 @@ mod resizable_shared_memory {
         assert_that!(sut_viewer.number_of_active_segments(), eq 1);
     }
 
+    #[test]
+    fn register_segment_that_was_resized_on_the_first_allocation_leads_to_a_unmap_of_the_old_segment_on_viewer_side<
+        Shm: SharedMemory<DefaultAllocator>,
+        Sut: ResizableSharedMemory<DefaultAllocator, Shm>,
+    >() {
+        let config = generate_isolated_config::<Sut>();
+        let storage_name = generate_name();
+
+        let sut = Sut::MemoryBuilder::new(&storage_name)
+            .config(&config)
+            .max_chunk_layout_hint(Layout::new::<u8>())
+            .max_number_of_chunks_hint(1)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let sut_viewer = Sut::ViewBuilder::new(&storage_name)
+            .config(&config)
+            .open()
+            .unwrap();
+
+        let chunk_small = sut.allocate(Layout::new::<u8>()).unwrap().offset;
+        unsafe {
+            sut_viewer
+                .register_and_translate_offset(chunk_small)
+                .unwrap()
+        };
+        unsafe { sut_viewer.unregister_offset(chunk_small) };
+
+        let chunk = sut.allocate(Layout::new::<u64>()).unwrap().offset;
+
+        // this shall release the old `u8` segment and map the new `u64` segment, therefore
+        // leading to 1 active segment
+        unsafe { sut_viewer.register_and_translate_offset(chunk).unwrap() };
+
+        assert_that!(sut_viewer.number_of_active_segments(), eq 1);
+    }
+
     #[instantiate_tests(<iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>, resizable_shared_memory::dynamic::DynamicMemory<DefaultAllocator, iceoryx2_cal::shared_memory::posix::Memory<DefaultAllocator>>>)]
     mod posix {}
 
