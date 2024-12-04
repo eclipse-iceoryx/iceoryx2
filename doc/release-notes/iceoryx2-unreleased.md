@@ -50,6 +50,7 @@
 * Remove ACL dependency [#457](https://github.com/eclipse-iceoryx/iceoryx2/issues/457)
 * Remove `max_slice_len` publisher builder option for non-slice types [#496](https://github.com/eclipse-iceoryx/iceoryx2/issues/496)
 * Publish Subscribe Header contains number of elements contained in a `Sample` [#498](https://github.com/eclipse-iceoryx/iceoryx2/issues/498)
+* Read LogLevel from environment variable [#396](https://github.com/eclipse-iceoryx/iceoryx2/issues/396)
 
 ### Workflow
 

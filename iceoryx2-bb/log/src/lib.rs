@@ -150,6 +150,9 @@ use std::{
     sync::{atomic::Ordering, Once},
 };
 
+use once_cell::sync::Lazy;
+use std::env;
+
 #[cfg(feature = "logger_tracing")]
 static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
 
@@ -159,11 +162,17 @@ static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 #[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
 static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
 
-const DEFAULT_LOG_LEVEL: u8 = LogLevel::Info as u8;
+const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
+pub static ENV_LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
+    env::var("IOX2_LOG_LEVEL")
+        .map(|log_level| LogLevel::from_str_fuzzy(&log_level))
+        .unwrap_or(LogLevel::Info)
+});
 
 static mut LOGGER: Option<&'static dyn Log> = None;
-static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL);
-static INIT: Once = Once::new();
+static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
+static INIT_LOGGER: Once = Once::new();
+static INIT_LOG_LEVEL: Once = Once::new();
 
 pub trait Log: Send + Sync {
     /// logs a message
@@ -182,14 +191,38 @@ pub enum LogLevel {
     Fatal = 5,
 }
 
+impl LogLevel {
+    fn from_str_fuzzy(s: &str) -> LogLevel {
+        match s.to_lowercase().as_str() {
+            "trace" => LogLevel::Trace,
+            "debug" => LogLevel::Debug,
+            "info" => LogLevel::Info,
+            "warn" => LogLevel::Warn,
+            "error" => LogLevel::Error,
+            "fatal" => LogLevel::Fatal,
+            _ => {
+                println!("Error: you are using unknown logging level {:?}", s);
+                println!("Warning: setting log level as : Info");
+                DEFAULT_LOG_LEVEL
+            }
+        }
+    }
+}
+
 /// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
 /// Here you have to use the log-level settings of that framework.
 pub fn set_log_level(v: LogLevel) {
+    INIT_LOG_LEVEL.call_once(|| {
+        LOG_LEVEL.store(*ENV_LOG_LEVEL as u8, Ordering::Relaxed);
+    });
     LOG_LEVEL.store(v as u8, Ordering::Relaxed);
 }
 
 /// Returns the current log level
 pub fn get_log_level() -> u8 {
+    INIT_LOG_LEVEL.call_once(|| {
+        LOG_LEVEL.store(*ENV_LOG_LEVEL as u8, Ordering::Relaxed);
+    });
     LOG_LEVEL.load(Ordering::Relaxed)
 }
 
@@ -197,17 +230,16 @@ pub fn get_log_level() -> u8 {
 /// [`Log`]ger is already set it returns false and does not update it.
 pub fn set_logger<T: Log + 'static>(value: &'static T) -> bool {
     let mut set_logger_success = false;
-    INIT.call_once(|| {
+    INIT_LOGGER.call_once(|| {
         unsafe { LOGGER = Some(value) };
         set_logger_success = true;
     });
-
     set_logger_success
 }
 
 /// Returns a reference to the [`Log`]ger.
 pub fn get_logger() -> &'static dyn Log {
-    INIT.call_once(|| {
+    INIT_LOGGER.call_once(|| {
         unsafe { LOGGER = Some(&DEFAULT_LOGGER) };
     });
 
