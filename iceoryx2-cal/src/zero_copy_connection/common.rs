@@ -555,11 +555,11 @@ pub mod details {
 
             let segment_id = ptr.segment_id().value() as usize;
             let segment_details = &storage.segment_details[segment_id];
-            debug_assert!(ptr.offset() % segment_details.sample_size.load(Ordering::Relaxed) == 0);
             segment_details
                 .sample_size
                 .store(sample_size, Ordering::Relaxed);
-            let index = ptr.offset() / segment_details.sample_size.load(Ordering::Relaxed);
+            debug_assert!(ptr.offset() % sample_size == 0);
+            let index = ptr.offset() / sample_size;
 
             debug_assert!(segment_id < storage.number_of_segments as usize);
 
@@ -569,13 +569,14 @@ pub mod details {
             match unsafe { storage.submission_channel.push(ptr.as_value()) } {
                 Some(v) => {
                     let pointer_offset = PointerOffset::from_value(v);
+                    let segment_id = pointer_offset.segment_id().value() as usize;
+
+                    let segment_details = &storage.segment_details[segment_id];
                     debug_assert!(
                         pointer_offset.offset()
                             % segment_details.sample_size.load(Ordering::Relaxed)
                             == 0
                     );
-                    let segment_id = pointer_offset.segment_id().value() as usize;
-                    let segment_details = &storage.segment_details[segment_id];
                     let index = pointer_offset.offset()
                         / segment_details.sample_size.load(Ordering::Relaxed);
 

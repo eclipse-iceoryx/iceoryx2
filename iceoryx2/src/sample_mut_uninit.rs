@@ -49,7 +49,7 @@
 //! #     .publish_subscribe::<[usize]>()
 //! #     .create()?;
 //! #
-//! # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+//! # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
 //!
 //! let slice_length = 12;
 //! let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -76,7 +76,7 @@
 //! #     .publish_subscribe::<[usize]>()
 //! #     .create()?;
 //! #
-//! # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+//! # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
 //!
 //! let slice_length = 4;
 //! let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -378,7 +378,7 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher_builder().max_slice_len(32).create()?;
+    /// # let publisher = service.publisher_builder().initial_max_slice_len(32).create()?;
     ///
     /// let slice_length = 10;
     /// let mut sample = publisher.loan_slice_uninit(slice_length)?;
@@ -412,7 +412,7 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+    /// # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
     ///
     /// let slice_length = 12;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -452,7 +452,7 @@ impl<Service: crate::service::Service, Payload: Debug + Copy, UserHeader>
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+    /// # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
     ///
     /// let slice_length = 3;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;

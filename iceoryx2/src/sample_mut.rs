@@ -48,7 +48,7 @@
 //! #     .publish_subscribe::<[usize]>()
 //! #     .create()?;
 //! #
-//! # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+//! # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
 //!
 //! let slice_length = 12;
 //! // initializes every element of the slice with `Default::default()`

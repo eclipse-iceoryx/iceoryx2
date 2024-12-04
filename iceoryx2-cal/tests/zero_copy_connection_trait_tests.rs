@@ -531,7 +531,7 @@ mod zero_copy_connection {
 
     #[test]
     fn blocking_send_blocks<Sut: ZeroCopyConnection>() {
-        let watchdog = Watchdog::new();
+        let _watchdog = Watchdog::new();
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
 

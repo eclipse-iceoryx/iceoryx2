@@ -69,7 +69,7 @@
 //! let publisher = service
 //!     .publisher_builder()
 //!     // defines the maximum length of a slice
-//!     .max_slice_len(128)
+//!     .initial_max_slice_len(128)
 //!     // defines how many samples can be loaned in parallel
 //!     .max_loaned_samples(5)
 //!     // defines behavior when subscriber queue is full in an non-overflowing service
@@ -176,7 +176,7 @@ pub enum PublisherLoanError {
     ExceedsMaxLoanedSamples,
     /// The provided slice size exceeds the configured max slice size of the [`Publisher`].
     /// To send a [`SampleMut`] with this size a new [`Publisher`] has to be created with
-    /// a [`crate::service::port_factory::publisher::PortFactoryPublisher::max_slice_len()`]
+    /// a [`crate::service::port_factory::publisher::PortFactoryPublisher::initial_max_slice_len()`]
     /// greater or equal to the required len.
     ExceedsMaxLoanSize,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -971,7 +971,7 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .max_slice_len(120)
+    ///                          .initial_max_slice_len(120)
     ///                          .create()?;
     ///
     /// let slice_length = 5;
@@ -1012,7 +1012,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .max_slice_len(120)
+    ///                          .initial_max_slice_len(120)
     ///                          .create()?;
     ///
     /// let slice_length = 5;

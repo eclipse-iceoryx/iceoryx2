@@ -45,7 +45,7 @@
 //!
 //! let publisher = pubsub.publisher_builder()
 //!                     // allows to call Publisher::loan_slice() with up to 128 elements
-//!                     .max_slice_len(128)
+//!                     .initial_max_slice_len(128)
 //!                     .create()?;
 //!
 //! let sample = publisher.loan_slice(50)?;
