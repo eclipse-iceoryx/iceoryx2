@@ -20,6 +20,7 @@ mod zero_copy_connection {
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
@@ -530,6 +531,7 @@ mod zero_copy_connection {
 
     #[test]
     fn blocking_send_blocks<Sut: ZeroCopyConnection>() {
+        let watchdog = Watchdog::new();
         let name = generate_name();
         let config = Mutex::new(generate_isolated_config::<Sut>());
 

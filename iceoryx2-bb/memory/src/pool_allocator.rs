@@ -100,6 +100,13 @@ impl PoolAllocator {
         self.bucket_alignment
     }
 
+    /// Releases an previously allocated bucket of memory.
+    ///
+    /// # Safety
+    ///
+    ///  * `ptr` must be allocated previously with [`PoolAllocator::allocate()`] or
+    ///    [`PoolAllocator::allocate_zeroed()`]
+    ///
     pub unsafe fn deallocate_bucket(&self, ptr: NonNull<u8>) {
         self.verify_init("deallocate");
 
