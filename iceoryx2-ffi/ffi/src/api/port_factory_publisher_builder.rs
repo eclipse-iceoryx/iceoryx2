@@ -30,6 +30,31 @@ use core::mem::ManuallyDrop;
 
 // BEGIN types definition
 
+/// Describes generically an allocation strategy, meaning how the memory is increased when the
+/// available memory is insufficient.
+#[repr(C)]
+#[derive(Copy, Clone, StringLiteral)]
+pub enum iox2_allocation_strategy_e {
+    /// Increases the memory so that it perfectly fits the new size requirements. This may lead
+    /// to a lot of reallocations but has the benefit that no byte is wasted.
+    BEST_FIT,
+    /// Increases the memory by rounding the increased memory size up to the next power of two.
+    /// Reduces reallocations a lot at the cost of increased memory usage.
+    POWER_OF_TWO,
+    /// The memory is not increased. This may lead to an out-of-memory error when allocating.
+    STATIC,
+}
+
+impl From<iox2_allocation_strategy_e> for AllocationStrategy {
+    fn from(value: iox2_allocation_strategy_e) -> Self {
+        match value {
+            iox2_allocation_strategy_e::STATIC => AllocationStrategy::Static,
+            iox2_allocation_strategy_e::BEST_FIT => AllocationStrategy::BestFit,
+            iox2_allocation_strategy_e::POWER_OF_TWO => AllocationStrategy::PowerOfTwo,
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_publisher_create_error_e {
@@ -194,6 +219,43 @@ pub unsafe extern "C" fn iox2_publisher_create_error_string(
     error: iox2_publisher_create_error_e,
 ) -> *const c_char {
     error.as_str_literal().as_ptr() as *const c_char
+}
+
+/// Sets the [`iox2_allocation_strategy_e`] for the publisher
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_publisher_builder_h_ref`]
+///   obtained by [`iox2_port_factory_pub_sub_publisher_builder`](crate::iox2_port_factory_pub_sub_publisher_builder).
+/// * `value` - The value to set max slice length to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_publisher_builder_set_allocation_strategy(
+    port_factory_handle: iox2_port_factory_publisher_builder_h_ref,
+    value: iox2_allocation_strategy_e,
+) {
+    port_factory_handle.assert_non_null();
+
+    let port_factory_struct = unsafe { &mut *port_factory_handle.as_type() };
+    match port_factory_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().ipc);
+
+            port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_ipc(
+                port_factory.allocation_strategy(value.into()),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let port_factory = ManuallyDrop::take(&mut port_factory_struct.value.as_mut().local);
+
+            port_factory_struct.set(PortFactoryPublisherBuilderUnion::new_local(
+                port_factory.allocation_strategy(value.into()),
+            ));
+        }
+    }
 }
 
 /// Sets the max slice length for the publisher

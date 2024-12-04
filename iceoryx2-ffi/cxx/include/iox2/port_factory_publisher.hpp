@@ -13,11 +13,10 @@
 #ifndef IOX2_PORTFACTORY_PUBLISHER_HPP
 #define IOX2_PORTFACTORY_PUBLISHER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
+#include "iox2/allocation_strategy.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/payload_info.hpp"
 #include "iox2/publisher.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
@@ -48,6 +47,13 @@ class PortFactoryPublisher {
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto initial_max_slice_len(uint64_t value) && -> PortFactoryPublisher&&;
 
+    /// Defines the allocation strategy that is used when the provided
+    /// [`PortFactoryPublisher::initial_max_slice_len()`] is exhausted. This happens when the user
+    /// acquires a more than max slice len in [`Publisher::loan_slice()`] or
+    /// [`Publisher::loan_slice_uninit()`].
+    template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto allocation_strategy(AllocationStrategy value) && -> PortFactoryPublisher&&;
+
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     auto create() && -> iox::expected<Publisher<S, Payload, UserHeader>, PublisherCreateError>;
 
@@ -59,6 +65,7 @@ class PortFactoryPublisher {
 
     iox2_port_factory_publisher_builder_h m_handle;
     iox::optional<uint64_t> m_max_slice_len;
+    iox::optional<AllocationStrategy> m_allocation_strategy;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -75,6 +82,14 @@ PortFactoryPublisher<S, Payload, UserHeader>::initial_max_slice_len(uint64_t val
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
+template <typename T, typename>
+inline auto PortFactoryPublisher<S, Payload, UserHeader>::allocation_strategy(
+    AllocationStrategy value) && -> PortFactoryPublisher&& {
+    m_allocation_strategy.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType S, typename Payload, typename UserHeader>
 inline auto
 PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publisher<S, Payload, UserHeader>,
                                                                            PublisherCreateError> {
@@ -87,6 +102,10 @@ PortFactoryPublisher<S, Payload, UserHeader>::create() && -> iox::expected<Publi
         .or_else([&]() { iox2_port_factory_publisher_builder_set_initial_max_slice_len(&m_handle, 1); });
     m_max_loaned_samples.and_then(
         [&](auto value) { iox2_port_factory_publisher_builder_set_max_loaned_samples(&m_handle, value); });
+    m_allocation_strategy.and_then([&](auto value) {
+        iox2_port_factory_publisher_builder_set_allocation_strategy(&m_handle,
+                                                                    iox::into<iox2_allocation_strategy_e>(value));
+    });
 
     iox2_publisher_h pub_handle {};
 

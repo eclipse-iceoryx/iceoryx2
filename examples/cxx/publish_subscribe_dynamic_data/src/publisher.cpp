@@ -34,16 +34,24 @@ auto main() -> int {
 
     // Since the payload type is uint8_t, this number is the same as the number of bytes in the payload.
     // For other types, number of bytes used by the payload will be max_slice_len * sizeof(Payload::ValueType)
-    const uint64_t maximum_elements = 1024; // NOLINT
-    auto publisher = service.publisher_builder()
-                         .initial_max_slice_len(maximum_elements)
+    constexpr uint64_t INITIAL_SIZE_HINT = 16;
+    auto publisher = service
+                         .publisher_builder()
+                         // We guess that the samples are at most 16 bytes in size.
+                         // This is just a hint to the underlying allocator and is purely optional
+                         // The better the guess is the less reallocations will be performed
+                         .initial_max_slice_len(INITIAL_SIZE_HINT)
+                         // The underlying sample size will be increased with a power of two strategy
+                         // when [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`] require more
+                         // memory than available.
+                         .allocation_strategy(AllocationStrategy::PowerOfTwo)
                          .create()
                          .expect("successful publisher creation");
 
     auto counter = 0;
 
     while (node.wait(CYCLE_TIME).has_value()) {
-        const auto required_memory_size = (counter % 16) + 1; // NOLINT
+        const auto required_memory_size = (counter + 1) * (counter + 1); // NOLINT
         auto sample = publisher.loan_slice_uninit(required_memory_size).expect("acquire sample");
         sample.write_from_fn([&](auto byte_idx) { return (byte_idx + counter) % 255; }); // NOLINT
 

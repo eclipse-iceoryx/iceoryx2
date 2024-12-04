@@ -34,19 +34,26 @@ The `initial_max_slice_len` hint and the `AllocationStrategy` set by the
 publisher will define how memory is reallocated when [`Publisher::loan_slice()`]
 or [`Publisher::loan_slice_uninit()`] request more memory than it is available.
 
+First you have to build the C++ examples:
+
+```sh
+cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/build
+```
+
 To observe this dynamic communication in action, open two separate terminals and
 execute the following commands:
 
 ### Terminal 1
 
 ```sh
-cargo run --example publish_subscribe_dyn_subscriber
+./target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-cargo run --example publish_subscribe_dyn_publisher
+./target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes

@@ -15,6 +15,7 @@
 
 #include "iox/assertions.hpp"
 #include "iox/into.hpp"
+#include "iox2/allocation_strategy.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/connection_failure.hpp"
@@ -1455,6 +1456,21 @@ constexpr auto from<int, iox2::SignalHandlingMode>(const int value) noexcept -> 
         return iox2::SignalHandlingMode::Disabled;
     case iox2_signal_handling_mode_e_HANDLE_TERMINATION_REQUESTS:
         return iox2::SignalHandlingMode::HandleTerminationRequests;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::AllocationStrategy, iox2_allocation_strategy_e>(const iox2::AllocationStrategy value) noexcept
+    -> iox2_allocation_strategy_e {
+    switch (value) {
+    case iox2::AllocationStrategy::BestFit:
+        return iox2_allocation_strategy_e_BEST_FIT;
+    case iox2::AllocationStrategy::PowerOfTwo:
+        return iox2_allocation_strategy_e_POWER_OF_TWO;
+    case iox2::AllocationStrategy::Static:
+        return iox2_allocation_strategy_e_STATIC;
     }
 
     IOX_UNREACHABLE();
