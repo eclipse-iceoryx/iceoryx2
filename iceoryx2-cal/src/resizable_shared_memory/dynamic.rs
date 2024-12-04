@@ -315,7 +315,7 @@ where
         }
 
         let old_key = SlotMapKey::new(old_idx);
-        if let Some(ref shm) = shared_memory_map.get(old_key) {
+        if let Some(shm) = shared_memory_map.get(old_key) {
             if shm.chunk_count.load(Ordering::Relaxed) == 0 {
                 shared_memory_map.remove(old_key);
             }

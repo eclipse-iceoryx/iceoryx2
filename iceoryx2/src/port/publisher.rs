@@ -662,7 +662,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let global_config = service.__internal_state().shared_node.config();
 
         let data_segment = fail!(from origin,
-                when DataSegment::create(&publisher_details, &global_config, sample_layout, config.allocation_strategy),
+                when DataSegment::create(&publisher_details, global_config, sample_layout, config.allocation_strategy),
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 

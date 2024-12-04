@@ -57,6 +57,9 @@ impl PoolAllocator {
         self.allocator.number_of_buckets()
     }
 
+    /// # Safety
+    ///
+    ///  * provided [`PointerOffset`] must be allocated with [`PoolAllocator::allocate()`]
     pub unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
         self.number_of_used_buckets.fetch_sub(1, Ordering::Relaxed);
         self.allocator.deallocate_bucket(NonNull::new_unchecked(
