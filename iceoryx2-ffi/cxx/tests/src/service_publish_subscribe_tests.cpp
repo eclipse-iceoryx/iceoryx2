@@ -758,4 +758,63 @@ TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_su
     }
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, publisher_reallocates_memory_when_allocation_strategy_is_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    using ValueType = uint8_t;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<ValueType>>().create().expect("");
+
+    auto publisher = service.publisher_builder()
+                         .initial_max_slice_len(INITIAL_SIZE)
+                         .allocation_strategy(AllocationStrategy::BestFit)
+                         .create()
+                         .expect("");
+
+    {
+        auto sample = publisher.loan_slice(INITIAL_SIZE);
+        ASSERT_THAT(sample.has_value(), Eq(true));
+    }
+
+    {
+        auto sample = publisher.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+        ASSERT_THAT(sample.has_value(), Eq(true));
+    }
+
+    {
+        auto sample = publisher.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+        ASSERT_THAT(sample.has_value(), Eq(true));
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, publisher_does_not_reallocate_when_allocation_strategy_is_static) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    using ValueType = uint8_t;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<ValueType>>().create().expect("");
+
+    auto publisher = service.publisher_builder()
+                         .initial_max_slice_len(INITIAL_SIZE)
+                         .allocation_strategy(AllocationStrategy::Static)
+                         .create()
+                         .expect("");
+
+    auto sample_1 = publisher.loan_slice(INITIAL_SIZE);
+    ASSERT_THAT(sample_1.has_value(), Eq(true));
+
+    auto sample_2 = publisher.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_THAT(sample_2.has_value(), Eq(false));
+    ASSERT_THAT(sample_2.error(), Eq(PublisherLoanError::ExceedsMaxLoanSize));
+
+    auto sample_3 = publisher.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_THAT(sample_3.has_value(), Eq(false));
+    ASSERT_THAT(sample_3.error(), Eq(PublisherLoanError::ExceedsMaxLoanSize));
+}
 } // namespace
