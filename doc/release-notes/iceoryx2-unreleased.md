@@ -20,6 +20,7 @@
 * Add relocatable `SlotMap` [#504](https://github.com/eclipse-iceoryx/iceoryx2/issues/504)
 * Add `ResizableSharedMemory` [#497](https://github.com/eclipse-iceoryx/iceoryx2/issues/497)
 * Make signal handling optional in `WaitSet` and `Node` [#528](https://github.com/eclipse-iceoryx/iceoryx2/issues/528)
+* Support dynamic data with reallocation for publish-subscribe communication [#532](https://github.com/eclipse-iceoryx/iceoryx2/issues/532)
 * Add benchmark for iceoryx2 queues [#535](https://github.com/eclipse-iceoryx/iceoryx2/issues/535)
 
 ### Bugfixes
