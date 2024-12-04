@@ -1,29 +1,23 @@
-<!-- markdownlint-disable MD041 first-line-heading/first-line-h1 -->
+<!-- markdownlint-disable MD013 Line breaks on the bullet list lines are also present on the github renderer, therefore no line length limitation -->
+<!-- markdownlint-disable MD041 On the github PR template we want to start with '## Headline' -->
 
 ## Notes for Reviewer
 <!-- Items in addition to the checklist below that the reviewer should look for -->
-
-## Prevent CI from running on each commit while the work is still in progress
-
-* Set the PR to a draft status, e.g. by the `Convert to draft` link, to indicate
-that the work is not yet ready for review
-* Once the PR is ready for review, press the `Ready for Review` button to
-trigger the CI
 
 ## Pre-Review Checklist for the PR Author
 
 * [ ] Add sensible notes for the reviewer
 * [ ] PR title is short, expressive and meaningful
+* [ ] Consider switching the PR to a draft (`Convert to draft`)
+    * as draft PR, the CI will be skipped for pushes
 * [ ] Relevant issues are linked in the [References](#references) section
-* [ ] Every source code file has a copyright header with
-`SPDX-License-Identifier: Apache-2.0 OR MIT`
+* [ ] Every source code file has a copyright header with `SPDX-License-Identifier: Apache-2.0 OR MIT`
 * [ ] Branch follows the naming format (`iox2-123-introduce-posix-ipc-example`)
 * [ ] Commits messages are according to this [guideline][commit-guidelines]
     * [ ] Commit messages have the issue ID (`[#123] Add posix ipc example`)
     * [ ] Commit author matches [Eclipse Contributor Agreement][eca](and ECA is signed)
 * [ ] Tests follow the [best practice for testing][testing]
-* [ ] Changelog updated [in the unreleased section][changelog] including API
-breaking changes
+* [ ] Changelog updated [in the unreleased section][changelog] including API breaking changes
 * [ ] Assign PR to reviewer
 * [ ] All checks have passed (except `task-list-completed`)
 
@@ -45,9 +39,9 @@ breaking changes
 
 ## References
 
-<!-- Use either 'Closes #123' or 'Relates to #123' to reference the corresponding
-issue. -->
+<!-- Use either 'Closes #123' or 'Relates to #123' to reference the corresponding issue. -->
 
 Closes # <!-- Add issue number after '#' -->
 
 <!-- markdownlint-enable MD041 -->
+<!-- markdownlint-enable MD013 -->
