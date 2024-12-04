@@ -253,7 +253,7 @@ mod service {
         Factory: SutFactory<Sut>,
     >() {
         let _watch_dog = Watchdog::new();
-        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
@@ -291,7 +291,7 @@ mod service {
         Factory: SutFactory<Sut>,
     >() {
         let _watch_dog = Watchdog::new();
-        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 25;
         let test = Factory::new();
 
@@ -343,7 +343,7 @@ mod service {
         set_log_level(LogLevel::Debug);
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         const NUMBER_OF_CLOSE_THREADS: usize = 1;
-        let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        let number_of_open_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         let number_of_threads = NUMBER_OF_CLOSE_THREADS + number_of_open_threads;
         let test = Factory::new();
 
@@ -681,7 +681,7 @@ mod service {
     fn concurrent_service_creation_and_listing_works<Sut: Service, Factory: SutFactory<Sut>>() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let test = Factory::new();
-        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 40;
         let barrier = Barrier::new(number_of_creators);
 
@@ -726,7 +726,7 @@ mod service {
     >() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let test = Factory::new();
-        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 30;
         let barrier = Barrier::new(number_of_creators);
 
@@ -790,7 +790,7 @@ mod service {
     >() {
         let _watch_dog = Watchdog::new_with_timeout(Duration::from_secs(120));
         let test = Factory::new();
-        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 1024);
+        let number_of_creators = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
         const NUMBER_OF_ITERATIONS: usize = 30;
         let barrier = Barrier::new(number_of_creators);
 

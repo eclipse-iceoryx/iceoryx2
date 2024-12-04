@@ -540,6 +540,7 @@ pub mod details {
 
             let segment_id = ptr.segment_id().value() as usize;
             let sample_size = storage.sample_size;
+            debug_assert!(ptr.offset() % sample_size == 0);
             let index = ptr.offset() / sample_size;
 
             debug_assert!(segment_id < storage.number_of_segments as usize);
@@ -550,6 +551,7 @@ pub mod details {
             match unsafe { storage.submission_channel.push(ptr.as_value()) } {
                 Some(v) => {
                     let pointer_offset = PointerOffset::from_value(v);
+                    debug_assert!(pointer_offset.offset() % sample_size == 0);
                     if !storage.used_chunk_list[pointer_offset.segment_id().value() as usize]
                         .remove(pointer_offset.offset() / sample_size)
                     {
@@ -596,6 +598,7 @@ pub mod details {
                             msg, pointer_offset);
                     }
 
+                    debug_assert!(pointer_offset.offset() % storage.sample_size == 0);
                     if !storage.used_chunk_list[segment_id]
                         .remove(pointer_offset.offset() / storage.sample_size)
                     {
