@@ -7,8 +7,8 @@
 
 * Set the PR to a draft status, e.g. by the `Convert to draft` link, to indicate
 that the work is not yet ready for review
-* Once the PR is ready for review, press the `Ready for Review` button and push
-a final commit to trigger the CI
+* Once the PR is ready for review, press the `Ready for Review` button to
+trigger the CI
 
 ## Pre-Review Checklist for the PR Author
 

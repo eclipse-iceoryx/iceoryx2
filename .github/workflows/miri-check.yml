@@ -5,10 +5,12 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main, release* ]
+    types: [ opened, ready_for_review, reopened, synchronize ]
 
 jobs:
   miri:
     name: "Miri"
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
