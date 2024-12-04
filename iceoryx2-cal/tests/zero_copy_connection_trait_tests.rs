@@ -987,7 +987,7 @@ mod zero_copy_connection {
             .receiver_max_borrowed_samples(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
-            .create_sender(SAMPLE_SIZE)
+            .create_sender()
             .unwrap();
 
         let sut_receiver = Sut::Builder::new(&name)
@@ -997,7 +997,7 @@ mod zero_copy_connection {
             .receiver_max_borrowed_samples(BUFFER_SIZE)
             .enable_safe_overflow(true)
             .config(&config)
-            .create_receiver(SAMPLE_SIZE)
+            .create_receiver()
             .unwrap();
 
         sut_receiver
