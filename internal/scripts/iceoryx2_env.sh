@@ -49,7 +49,7 @@ setup_docker_image() {
     # ubuntu/debian and derivatives
     if command -v apt &>/dev/null; then
         apt update
-        apt -y install sudo git fish curl vim lsb-release software-properties-common gcc libacl1-dev libclang-dev
+        apt -y install sudo git fish curl vim lsb-release software-properties-common gcc libacl1-dev libclang-dev zlib1g-dev clang
     elif command -v pacman &>/dev/null; then
         pacman -Syu --noconfirm fish curl git vim clang
     else
@@ -221,7 +221,7 @@ if [[ -z $OS_VERSION ]]; then
     OS_VERSION=$DEFAULT_OS_VERSION
 fi
 
-CONTAINER_NAME=${CONTAINER_NAME_PREFIX}$(echo ${OS_VERSION} | tr : .)
+CONTAINER_NAME=${CONTAINER_NAME_PREFIX}$(echo ${OS_VERSION} | tr : . | tr \/ .)
 
 if [[ $ACTION == "start" ]]; then
     start_docker

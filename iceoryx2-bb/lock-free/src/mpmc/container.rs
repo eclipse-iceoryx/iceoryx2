@@ -171,7 +171,7 @@ pub struct Container<T: Copy + Debug> {
     data_ptr: RelocatablePointer<UnsafeCell<MaybeUninit<T>>>,
     capacity: usize,
     change_counter: IoxAtomicU64,
-    is_memory_initialized: IoxAtomicBool,
+    is_initialized: IoxAtomicBool,
     container_id: UniqueId,
     // must be the last member, since it is a relocatable container as well and then the offset
     // calculations would again fail
@@ -194,7 +194,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             capacity,
             change_counter: IoxAtomicU64::new(0),
             index_set: UniqueIndexSet::new_uninit(capacity),
-            is_memory_initialized: IoxAtomicBool::new(false),
+            is_initialized: IoxAtomicBool::new(false),
         }
     }
 
@@ -202,7 +202,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), AllocationError> {
-        if self.is_memory_initialized.load(Ordering::Relaxed) {
+        if self.is_initialized.load(Ordering::Relaxed) {
             fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
         }
         let msg = "Unable to initialize";
@@ -230,7 +230,7 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
                 .add(i)
                 .write(UnsafeCell::new(MaybeUninit::uninit()));
         }
-        self.is_memory_initialized.store(true, Ordering::Relaxed);
+        self.is_initialized.store(true, Ordering::Relaxed);
 
         Ok(())
     }
@@ -242,9 +242,10 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
 
 impl<T: Copy + Debug> Container<T> {
     #[inline(always)]
-    fn verify_memory_initialization(&self, source: &str) {
-        debug_assert!(self.is_memory_initialized.load(Ordering::Relaxed),
-            "Undefined behavior when calling \"{}\" and the object is not initialized with 'initialize_memory'.", source);
+    fn verify_init(&self, source: &str) {
+        debug_assert!(self.is_initialized.load(Ordering::Relaxed),
+            "Undefined behavior when calling Container<{}>::{} and the object is not initialized with 'init'.",
+            std::any::type_name::<T>(), source);
     }
 
     /// Returns the required memory size of the data segment of the [`Container`].
@@ -287,7 +288,7 @@ impl<T: Copy + Debug> Container<T> {
     ///     element will leak.
     ///
     pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
-        self.verify_memory_initialization("add");
+        self.verify_init("add()");
 
         let index = self.index_set.acquire_raw_index()?;
         core::ptr::copy_nonoverlapping(
@@ -323,7 +324,7 @@ impl<T: Copy + Debug> Container<T> {
     /// which was allocated afterwards
     ///
     pub unsafe fn remove(&self, handle: ContainerHandle, mode: ReleaseMode) -> ReleaseState {
-        self.verify_memory_initialization("remove_with_handle");
+        self.verify_init("remove()");
         debug_assert!(
             handle.container_id == self.container_id.value(),
             "The ContainerHandle used as handle was not created by this Container instance."
@@ -346,7 +347,7 @@ impl<T: Copy + Debug> Container<T> {
     ///  * Ensure that [`Container::init()`] was called before calling this method
     ///
     pub unsafe fn get_state(&self) -> ContainerState<T> {
-        self.verify_memory_initialization("get_state");
+        self.verify_init("get_state()");
 
         let mut state = ContainerState::new(self.container_id.value(), self.capacity);
         self.update_state(&mut state);

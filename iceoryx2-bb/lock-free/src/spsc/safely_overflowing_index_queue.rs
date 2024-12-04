@@ -55,19 +55,19 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 /// The [`Producer`] of the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`]
 /// which can add values to it via [`Producer::push()`].
 #[derive(Debug)]
-pub struct Producer<'a, PointerType: PointerTrait<UnsafeCell<usize>>> {
+pub struct Producer<'a, PointerType: PointerTrait<UnsafeCell<u64>>> {
     queue: &'a details::SafelyOverflowingIndexQueue<PointerType>,
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Producer<'_, PointerType> {
+impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Producer<'_, PointerType> {
     /// Adds a new value to the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`].
     /// If the queue is full it returns false, otherwise true.
-    pub fn push(&mut self, t: usize) -> Option<usize> {
+    pub fn push(&mut self, t: u64) -> Option<u64> {
         unsafe { self.queue.push(t) }
     }
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<usize>>> Drop for Producer<'_, PointerType> {
+impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Producer<'_, PointerType> {
     fn drop(&mut self) {
         self.queue.has_producer.store(true, Ordering::Relaxed);
     }
@@ -76,19 +76,19 @@ impl<PointerType: PointerTrait<UnsafeCell<usize>>> Drop for Producer<'_, Pointer
 /// The [`Consumer`] of the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`]
 /// which can acquire values from it via [`Consumer::pop()`].
 #[derive(Debug)]
-pub struct Consumer<'a, PointerType: PointerTrait<UnsafeCell<usize>>> {
+pub struct Consumer<'a, PointerType: PointerTrait<UnsafeCell<u64>>> {
     queue: &'a details::SafelyOverflowingIndexQueue<PointerType>,
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug> Consumer<'_, PointerType> {
+impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> Consumer<'_, PointerType> {
     /// Acquires a value from the [`SafelyOverflowingIndexQueue`]/[`FixedSizeSafelyOverflowingIndexQueue`].
     /// If the queue is empty it returns [`None`] otherwise the value.
-    pub fn pop(&mut self) -> Option<usize> {
+    pub fn pop(&mut self) -> Option<u64> {
         unsafe { self.queue.pop() }
     }
 }
 
-impl<PointerType: PointerTrait<UnsafeCell<usize>>> Drop for Consumer<'_, PointerType> {
+impl<PointerType: PointerTrait<UnsafeCell<u64>>> Drop for Consumer<'_, PointerType> {
     fn drop(&mut self) {
         self.queue.has_consumer.store(true, Ordering::Relaxed);
     }
@@ -96,11 +96,11 @@ impl<PointerType: PointerTrait<UnsafeCell<usize>>> Drop for Consumer<'_, Pointer
 
 /// Non-relocatable version of the safely overflowing index queue
 pub type SafelyOverflowingIndexQueue =
-    details::SafelyOverflowingIndexQueue<OwningPointer<UnsafeCell<usize>>>;
+    details::SafelyOverflowingIndexQueue<OwningPointer<UnsafeCell<u64>>>;
 
 /// Relocatable version of the safely overflowing index queue
 pub type RelocatableSafelyOverflowingIndexQueue =
-    details::SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<usize>>>;
+    details::SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
     use iceoryx2_bb_elementary::math::unaligned_mem_size;
@@ -112,7 +112,7 @@ pub mod details {
     /// and overridden with the newest element.
     #[derive(Debug)]
     #[repr(C)]
-    pub struct SafelyOverflowingIndexQueue<PointerType: PointerTrait<UnsafeCell<usize>>> {
+    pub struct SafelyOverflowingIndexQueue<PointerType: PointerTrait<UnsafeCell<u64>>> {
         data_ptr: PointerType,
         capacity: usize,
         write_position: IoxAtomicUsize,
@@ -122,18 +122,18 @@ pub mod details {
         is_memory_initialized: IoxAtomicBool,
     }
 
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<usize>>> Sync
+    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Sync
         for SafelyOverflowingIndexQueue<PointerType>
     {
     }
-    unsafe impl<PointerType: PointerTrait<UnsafeCell<usize>>> Send
+    unsafe impl<PointerType: PointerTrait<UnsafeCell<u64>>> Send
         for SafelyOverflowingIndexQueue<PointerType>
     {
     }
 
-    impl SafelyOverflowingIndexQueue<OwningPointer<UnsafeCell<usize>>> {
+    impl SafelyOverflowingIndexQueue<OwningPointer<UnsafeCell<u64>>> {
         pub fn new(capacity: usize) -> Self {
-            let mut data_ptr = OwningPointer::<UnsafeCell<usize>>::new_with_alloc(capacity + 1);
+            let mut data_ptr = OwningPointer::<UnsafeCell<u64>>::new_with_alloc(capacity + 1);
 
             for i in 0..capacity + 1 {
                 unsafe { data_ptr.as_mut_ptr().add(i).write(UnsafeCell::new(0)) };
@@ -151,7 +151,7 @@ pub mod details {
         }
     }
 
-    impl RelocatableContainer for SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<usize>>> {
+    impl RelocatableContainer for SafelyOverflowingIndexQueue<RelocatablePointer<UnsafeCell<u64>>> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
@@ -174,8 +174,8 @@ pub mod details {
 
             self.data_ptr.init(fail!(from self, when allocator
             .allocate( Layout::from_size_align_unchecked(
-                    std::mem::size_of::<usize>() * (self.capacity + 1),
-                    std::mem::align_of::<usize>())),
+                    std::mem::size_of::<u64>() * (self.capacity + 1),
+                    std::mem::align_of::<u64>())),
             "Failed to initialize since the allocation of the data memory failed."));
 
             for i in 0..self.capacity + 1 {
@@ -193,14 +193,12 @@ pub mod details {
         }
     }
 
-    impl<PointerType: PointerTrait<UnsafeCell<usize>> + Debug>
-        SafelyOverflowingIndexQueue<PointerType>
-    {
+    impl<PointerType: PointerTrait<UnsafeCell<u64>> + Debug> SafelyOverflowingIndexQueue<PointerType> {
         #[inline(always)]
         fn verify_init(&self, source: &str) {
             debug_assert!(
                 self.is_memory_initialized.load(Ordering::Relaxed),
-                "Undefined behavior when calling \"{}\" and the object is not initialized.",
+                "Undefined behavior when calling SafelyOverflowingIndexQueue::{} and the object is not initialized.",
                 source
             );
         }
@@ -208,10 +206,10 @@ pub mod details {
         /// Returns the amount of memory required to create a [`SafelyOverflowingIndexQueue`] with
         /// the provided capacity.
         pub const fn const_memory_size(capacity: usize) -> usize {
-            unaligned_mem_size::<UnsafeCell<usize>>(capacity + 1)
+            unaligned_mem_size::<UnsafeCell<u64>>(capacity + 1)
         }
 
-        fn at(&self, position: usize) -> *mut usize {
+        fn at(&self, position: usize) -> *mut u64 {
             unsafe { (*self.data_ptr.as_ptr().add(position % (self.capacity + 1))).get() }
         }
         /// Acquires the [`Producer`] of the [`SafelyOverflowingIndexQueue`]. This is threadsafe and
@@ -235,7 +233,7 @@ pub mod details {
         /// }
         /// ```
         pub fn acquire_producer(&self) -> Option<Producer<'_, PointerType>> {
-            self.verify_init("acquire_producer");
+            self.verify_init("acquire_producer()");
             match self.has_producer.compare_exchange(
                 true,
                 false,
@@ -267,7 +265,7 @@ pub mod details {
         /// }
         /// ```
         pub fn acquire_consumer(&self) -> Option<Consumer<'_, PointerType>> {
-            self.verify_init("acquire_consumer");
+            self.verify_init("acquire_consumer()");
             match self.has_consumer.compare_exchange(
                 true,
                 false,
@@ -288,7 +286,7 @@ pub mod details {
         ///    to ensure that at most one thread access this method.
         ///  * It has to be ensured that the memory is initialized with
         ///    [`SafelyOverflowingIndexQueue::init()`].
-        pub unsafe fn push(&self, value: usize) -> Option<usize> {
+        pub unsafe fn push(&self, value: u64) -> Option<u64> {
             ////////////////
             // SYNC POINT R
             ////////////////
@@ -336,7 +334,7 @@ pub mod details {
         ///    to ensure that at most one thread access this method.
         ///  * It has to be ensured that the memory is initialized with
         ///    [`SafelyOverflowingIndexQueue::init()`].
-        pub unsafe fn pop(&self) -> Option<usize> {
+        pub unsafe fn pop(&self) -> Option<u64> {
             let mut read_position = self.read_position.load(Ordering::Relaxed);
             ////////////////
             // SYNC POINT W
@@ -417,8 +415,8 @@ pub mod details {
 #[repr(C)]
 pub struct FixedSizeSafelyOverflowingIndexQueue<const CAPACITY: usize> {
     state: RelocatableSafelyOverflowingIndexQueue,
-    data: [UnsafeCell<usize>; CAPACITY],
-    data_plus_one: UnsafeCell<usize>,
+    data: [UnsafeCell<u64>; CAPACITY],
+    data_plus_one: UnsafeCell<u64>,
 }
 
 unsafe impl<const CAPACITY: usize> Sync for FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {}
@@ -451,12 +449,12 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     }
 
     /// See [`SafelyOverflowingIndexQueue::acquire_producer()`]
-    pub fn acquire_producer(&self) -> Option<Producer<'_, RelocatablePointer<UnsafeCell<usize>>>> {
+    pub fn acquire_producer(&self) -> Option<Producer<'_, RelocatablePointer<UnsafeCell<u64>>>> {
         self.state.acquire_producer()
     }
 
     /// See [`SafelyOverflowingIndexQueue::acquire_consumer()`]
-    pub fn acquire_consumer(&self) -> Option<Consumer<'_, RelocatablePointer<UnsafeCell<usize>>>> {
+    pub fn acquire_consumer(&self) -> Option<Consumer<'_, RelocatablePointer<UnsafeCell<u64>>>> {
         self.state.acquire_consumer()
     }
 
@@ -476,7 +474,7 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     ///
     /// * It must be ensured that no other thread/process calls this method concurrently
     ///
-    pub unsafe fn push(&self, value: usize) -> Option<usize> {
+    pub unsafe fn push(&self, value: u64) -> Option<u64> {
         self.state.push(value)
     }
 
@@ -486,7 +484,7 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     ///
     /// * It must be ensured that no other thread/process calls this method concurrently
     ///
-    pub unsafe fn pop(&self) -> Option<usize> {
+    pub unsafe fn pop(&self) -> Option<u64> {
         self.state.pop()
     }
 

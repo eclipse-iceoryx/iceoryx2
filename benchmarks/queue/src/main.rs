@@ -22,7 +22,7 @@ const ITERATIONS: u64 = 10000000;
 
 trait PushPop: Send + Sync {
     fn push(&self, value: usize);
-    fn pop(&self) -> Option<usize>;
+    fn pop(&self) -> bool;
 }
 
 impl<const CAPACITY: usize> PushPop for Queue<usize, CAPACITY> {
@@ -30,28 +30,28 @@ impl<const CAPACITY: usize> PushPop for Queue<usize, CAPACITY> {
         unsafe { self.push(&value) };
     }
 
-    fn pop(&self) -> Option<usize> {
-        unsafe { self.pop() }
+    fn pop(&self) -> bool {
+        unsafe { self.pop().is_some() }
     }
 }
 
 impl<const CAPACITY: usize> PushPop for FixedSizeIndexQueue<CAPACITY> {
     fn push(&self, value: usize) {
-        unsafe { self.push(value) };
+        unsafe { self.push(value as u64) };
     }
 
-    fn pop(&self) -> Option<usize> {
-        unsafe { self.pop() }
+    fn pop(&self) -> bool {
+        unsafe { self.pop().is_some() }
     }
 }
 
 impl<const CAPACITY: usize> PushPop for FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
     fn push(&self, value: usize) {
-        unsafe { self.push(value) };
+        unsafe { self.push(value as u64) };
     }
 
-    fn pop(&self) -> Option<usize> {
-        unsafe { self.pop() }
+    fn pop(&self) -> bool {
+        unsafe { self.pop().is_some() }
     }
 }
 
@@ -78,7 +78,7 @@ fn perform_benchmark<Q: PushPop>(
 
             for _ in 0..args.iterations {
                 queue_a2b.push(0);
-                while queue_b2a.pop().is_none() {}
+                while !queue_b2a.pop() {}
             }
         });
 
@@ -90,7 +90,7 @@ fn perform_benchmark<Q: PushPop>(
             start_benchmark_barrier.wait();
 
             for _ in 0..args.iterations {
-                while queue_a2b.pop().is_none() {}
+                while !queue_a2b.pop() {}
 
                 queue_b2a.push(0);
             }

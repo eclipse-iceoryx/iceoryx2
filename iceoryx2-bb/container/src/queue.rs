@@ -333,8 +333,8 @@ pub mod details {
             debug_assert!(
                 self.is_initialized
                     .load(std::sync::atomic::Ordering::Relaxed),
-                "From: {}, Undefined behavior - the object was not initialized with 'init' before.",
-                source
+                "From: MetaQueue<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+                std::any::type_name::<T>(), source
             );
         }
 
@@ -363,7 +363,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn peek_mut_impl(&mut self) -> Option<&mut T> {
-            self.verify_init(&format!("Queue<{}>::pop()", std::any::type_name::<T>()));
+            self.verify_init("peek_mut()");
 
             if self.is_empty() {
                 return None;
@@ -375,7 +375,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn peek_impl(&self) -> Option<&T> {
-            self.verify_init(&format!("Queue<{}>::pop()", std::any::type_name::<T>()));
+            self.verify_init("peek()");
 
             if self.is_empty() {
                 return None;
@@ -387,7 +387,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn pop_impl(&mut self) -> Option<T> {
-            self.verify_init(&format!("Queue<{}>::pop()", std::any::type_name::<T>()));
+            self.verify_init("pop()");
 
             if self.is_empty() {
                 return None;
@@ -403,7 +403,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn push_impl(&mut self, value: T) -> bool {
-            self.verify_init(&format!("Queue<{}>::push()", std::any::type_name::<T>()));
+            self.verify_init("push()");
 
             if self.len == self.capacity {
                 return false;
@@ -414,10 +414,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn push_with_overflow_impl(&mut self, value: T) -> Option<T> {
-            self.verify_init(&format!(
-                "Queue<{}>::push_with_overflow()",
-                std::any::type_name::<T>()
-            ));
+            self.verify_init("push_with_overflow()");
 
             let overridden_value = if self.len() == self.capacity() {
                 self.pop_impl()

@@ -59,7 +59,7 @@ impl NamedConceptMgmt for Channel {
     }
 }
 
-impl CommunicationChannel<usize> for Channel {
+impl CommunicationChannel<u64> for Channel {
     type Sender = Sender;
     type Receiver = Receiver;
     type Creator = Creator;
@@ -153,7 +153,7 @@ impl NamedConceptBuilder<Channel> for Creator {
     }
 }
 
-impl CommunicationChannelCreator<usize, Channel> for Creator {
+impl CommunicationChannelCreator<u64, Channel> for Creator {
     fn enable_safe_overflow(mut self) -> Self {
         self.enable_safe_overflow = true;
         self
@@ -213,7 +213,7 @@ impl NamedConceptBuilder<Channel> for Connector {
     }
 }
 
-impl CommunicationChannelConnector<usize, Channel> for Connector {
+impl CommunicationChannelConnector<u64, Channel> for Connector {
     fn try_open_sender(self) -> Result<Sender, CommunicationChannelOpenError> {
         let msg = "Unable to try open communication channel";
 
@@ -276,12 +276,12 @@ impl CommunicationChannelParticipant for Receiver {
     }
 }
 
-impl CommunicationChannelReceiver<usize> for Receiver {
+impl CommunicationChannelReceiver<u64> for Receiver {
     fn buffer_size(&self) -> usize {
         self.management().index_queue.capacity()
     }
 
-    fn receive(&self) -> Result<Option<usize>, CommunicationChannelReceiveError> {
+    fn receive(&self) -> Result<Option<u64>, CommunicationChannelReceiveError> {
         Ok(unsafe { self.management().index_queue.pop() })
     }
 }
@@ -309,8 +309,8 @@ impl NamedConcept for Sender {
     }
 }
 
-impl CommunicationChannelSender<usize> for Sender {
-    fn send(&self, value: &usize) -> Result<Option<usize>, CommunicationChannelSendError> {
+impl CommunicationChannelSender<u64> for Sender {
+    fn send(&self, value: &u64) -> Result<Option<u64>, CommunicationChannelSendError> {
         match self.try_send(value) {
             Err(CommunicationChannelSendError::ReceiverCacheIsFull) => {
                 fail!(from self, with CommunicationChannelSendError::ReceiverCacheIsFull,
@@ -321,7 +321,7 @@ impl CommunicationChannelSender<usize> for Sender {
         }
     }
 
-    fn try_send(&self, value: &usize) -> Result<Option<usize>, CommunicationChannelSendError> {
+    fn try_send(&self, value: &u64) -> Result<Option<u64>, CommunicationChannelSendError> {
         if !self.management().enable_safe_overflow && self.management().index_queue.is_full() {
             return Err(CommunicationChannelSendError::ReceiverCacheIsFull);
         }

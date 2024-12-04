@@ -22,7 +22,7 @@ mod communication_channel {
     use iceoryx2_cal::testing::*;
 
     #[test]
-    fn names_are_set_correctly<Sut: CommunicationChannel<usize>>() {
+    fn names_are_set_correctly<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -40,7 +40,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn buffer_size_is_by_default_at_least_provided_constant<Sut: CommunicationChannel<usize>>() {
+    fn buffer_size_is_by_default_at_least_provided_constant<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -53,7 +53,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn safe_overflow_is_disabled_by_default<Sut: CommunicationChannel<usize>>() {
+    fn safe_overflow_is_disabled_by_default<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -71,7 +71,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn create_remove_and_create_again_works<Sut: CommunicationChannel<usize>>() {
+    fn create_remove_and_create_again_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -94,7 +94,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn connecting_to_non_existing_channel_fails<Sut: CommunicationChannel<usize>>() {
+    fn connecting_to_non_existing_channel_fails<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -109,7 +109,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn connecting_to_receiver_works<Sut: CommunicationChannel<usize>>() {
+    fn connecting_to_receiver_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -125,7 +125,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn connecting_after_first_connection_has_dropped_works<Sut: CommunicationChannel<usize>>() {
+    fn connecting_after_first_connection_has_dropped_works<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -147,7 +147,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn send_and_receive_works_for_single_packets<Sut: CommunicationChannel<usize>>() {
+    fn send_and_receive_works_for_single_packets<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -163,7 +163,7 @@ mod communication_channel {
         const MAX_NUMBER_OF_PACKETS: usize = 16;
 
         for i in 0..MAX_NUMBER_OF_PACKETS {
-            let data: usize = 12 * i;
+            let data: u64 = 12 * i as u64;
 
             assert_that!(sut_sender.send(&data), is_ok);
             let received = sut_receiver.receive();
@@ -175,7 +175,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn send_and_receive_for_multi_packets_has_queue_behavior<Sut: CommunicationChannel<usize>>() {
+    fn send_and_receive_for_multi_packets_has_queue_behavior<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -193,13 +193,13 @@ mod communication_channel {
 
         for i in 0..MAX_NUMBER_OF_PACKETS {
             for k in 0..sut_receiver.buffer_size() {
-                let data: usize = 12 * i + k;
+                let data: u64 = (12 * i + k) as u64;
 
                 assert_that!(sut_sender.send(&data), is_ok);
             }
 
             for k in 0..sut_receiver.buffer_size() {
-                let data: usize = 12 * i + k;
+                let data: u64 = (12 * i + k) as u64;
 
                 let received = sut_receiver.receive();
                 assert_that!(received, is_ok);
@@ -211,7 +211,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn receive_without_transmission_returns_none<Sut: CommunicationChannel<usize>>() {
+    fn receive_without_transmission_returns_none<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -231,7 +231,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn send_will_return_receiver_cache_full_when_cache_is_full<Sut: CommunicationChannel<usize>>() {
+    fn send_will_return_receiver_cache_full_when_cache_is_full<Sut: CommunicationChannel<u64>>() {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -245,7 +245,7 @@ mod communication_channel {
             .open_sender()
             .unwrap();
 
-        let mut send_counter: usize = 0;
+        let mut send_counter: u64 = 0;
         loop {
             let result = sut_sender.send(&send_counter);
             if result.is_err() {
@@ -258,12 +258,12 @@ mod communication_channel {
 
             send_counter += 1;
 
-            if send_counter == sut_receiver.buffer_size() {
+            if send_counter as usize == sut_receiver.buffer_size() {
                 break;
             }
         }
 
-        let mut receive_counter: usize = 0;
+        let mut receive_counter: u64 = 0;
         loop {
             let result = sut_receiver.receive();
             assert_that!(result, is_ok);
@@ -276,11 +276,11 @@ mod communication_channel {
         }
 
         assert_that!(send_counter, eq receive_counter);
-        assert_that!(send_counter, ge sut_receiver.buffer_size());
+        assert_that!(send_counter, ge sut_receiver.buffer_size() as u64);
     }
 
     #[test]
-    fn safe_overflow_works<Sut: CommunicationChannel<usize>>() {
+    fn safe_overflow_works<Sut: CommunicationChannel<u64>>() {
         if !Sut::does_support_safe_overflow() {
             return;
         }
@@ -302,21 +302,21 @@ mod communication_channel {
         assert_that!(sut_receiver.does_enable_safe_overflow(), eq true);
 
         for i in 0..sut_receiver.buffer_size() {
-            assert_that!(sut_sender.send(&i), is_ok);
+            assert_that!(sut_sender.send(&(i as u64)), is_ok);
         }
 
         const NUMBER_OF_PACKETS: usize = 128;
 
         for i in sut_receiver.buffer_size()..NUMBER_OF_PACKETS {
-            let data = sut_sender.send(&i).unwrap();
+            let data = sut_sender.send(&(i as u64)).unwrap();
 
             assert_that!(data, is_some);
-            assert_that!({ data.unwrap() }, eq i - sut_receiver.buffer_size());
+            assert_that!({ data.unwrap() as usize }, eq i - sut_receiver.buffer_size());
         }
     }
 
     #[test]
-    fn custom_buffer_size_works<Sut: CommunicationChannel<usize>>() {
+    fn custom_buffer_size_works<Sut: CommunicationChannel<u64>>() {
         if !Sut::has_configurable_buffer_size() {
             return;
         }
@@ -338,19 +338,19 @@ mod communication_channel {
             assert_that!(sut_receiver.buffer_size(), ge buffer_size);
 
             for i in 0..buffer_size {
-                assert_that!(sut_sender.send(&i), is_ok);
+                assert_that!(sut_sender.send(&(i as u64)), is_ok);
             }
 
             for i in 0..buffer_size {
                 let data = sut_receiver.receive().unwrap();
                 assert_that!(data, is_some);
-                assert_that!(data.unwrap(), eq i);
+                assert_that!(data.unwrap(), eq i as u64);
             }
         }
     }
 
     #[test]
-    fn custom_buffer_size_and_overflow_works<Sut: CommunicationChannel<usize>>() {
+    fn custom_buffer_size_and_overflow_works<Sut: CommunicationChannel<u64>>() {
         if !Sut::has_configurable_buffer_size() || !Sut::does_support_safe_overflow() {
             return;
         }
@@ -373,25 +373,25 @@ mod communication_channel {
             assert_that!(sut_receiver.buffer_size(), eq buffer_size);
 
             for i in 0..buffer_size {
-                assert_that!(sut_sender.send(&i), is_ok);
+                assert_that!(sut_sender.send(&(i as u64)), is_ok);
             }
 
             for i in buffer_size..buffer_size * 2 {
-                let result = sut_sender.send(&i).unwrap();
+                let result = sut_sender.send(&(i as u64)).unwrap();
                 assert_that!(result, is_some);
-                assert_that!(result.unwrap(), eq i - buffer_size);
+                assert_that!(result.unwrap() as usize, eq i - buffer_size);
             }
 
             for i in 0..buffer_size {
                 let data = sut_receiver.receive().unwrap();
                 assert_that!(data, is_some);
-                assert_that!(data.unwrap(), eq i + buffer_size);
+                assert_that!(data.unwrap() as usize, eq i + buffer_size);
             }
         }
     }
 
     #[test]
-    fn list_channels_works<Sut: CommunicationChannel<usize>>() {
+    fn list_channels_works<Sut: CommunicationChannel<u64>>() {
         let mut sut_names = vec![];
         let mut suts = vec![];
         const LIMIT: usize = 8;
@@ -437,7 +437,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn custom_suffix_keeps_channels_separated<Sut: CommunicationChannel<usize>>() {
+    fn custom_suffix_keeps_channels_separated<Sut: CommunicationChannel<u64>>() {
         let _watch_dog = Watchdog::new();
         let config = generate_isolated_config::<Sut>();
 
@@ -489,7 +489,7 @@ mod communication_channel {
     }
 
     #[test]
-    fn defaults_for_configuration_are_set_correctly<Sut: CommunicationChannel<usize>>() {
+    fn defaults_for_configuration_are_set_correctly<Sut: CommunicationChannel<u64>>() {
         let config = <Sut as NamedConceptMgmt>::Configuration::default();
         assert_that!(*config.get_suffix(), eq Sut::default_suffix());
         assert_that!(*config.get_path_hint(), eq Sut::default_path_hint());
@@ -497,7 +497,7 @@ mod communication_channel {
     }
 
     //#[cfg(not(any(target_os = "windows")))]
-    #[instantiate_tests(<communication_channel::unix_datagram::Channel<usize>>)]
+    #[instantiate_tests(<communication_channel::unix_datagram::Channel<u64>>)]
     mod unix_datagram {}
 
     #[instantiate_tests(<communication_channel::posix_shared_memory::Channel>)]
@@ -507,6 +507,6 @@ mod communication_channel {
     mod process_local {}
 
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-    #[instantiate_tests(<communication_channel::message_queue::Channel<usize>>)]
+    #[instantiate_tests(<communication_channel::message_queue::Channel<u64>>)]
     mod message_queue {}
 }

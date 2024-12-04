@@ -48,8 +48,23 @@ pub struct PointerOffset(u64);
 impl PointerOffset {
     /// Creates a new [`PointerOffset`] from the given offset value with the [`SegmentId`] == 0.
     pub const fn new(offset: usize) -> PointerOffset {
-        const SEGMENT_ID: u64 = 0;
-        Self((offset as u64) << (SegmentIdUnderlyingType::BITS) | SEGMENT_ID)
+        const SEGMENT_ID: u8 = 0;
+        Self::from_offset_and_segment_id(offset, SegmentId::new(SEGMENT_ID))
+    }
+
+    /// Creates a new [`PointerOffset`] from an offset and a [`SegmentId`]
+    pub const fn from_offset_and_segment_id(offset: usize, segment_id: SegmentId) -> PointerOffset {
+        Self((offset as u64) << (SegmentIdUnderlyingType::BITS) | segment_id.value() as u64)
+    }
+
+    /// Creates a new [`PointerOffset`] from a provided raw value.
+    pub const fn from_value(value: u64) -> PointerOffset {
+        Self(value)
+    }
+
+    /// Returns the underlying raw value of the [`PointerOffset`]
+    pub const fn as_value(&self) -> u64 {
+        self.0
     }
 
     /// Sets the [`SegmentId`] of the [`PointerOffset`].

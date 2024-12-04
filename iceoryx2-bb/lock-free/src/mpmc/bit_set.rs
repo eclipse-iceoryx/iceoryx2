@@ -181,7 +181,7 @@ pub mod details {
         fn verify_init(&self, source: &str) {
             debug_assert!(
                 self.is_memory_initialized.load(Ordering::Relaxed),
-                "Undefined behavior when calling \"{}\" and the object is not initialized.",
+                "Undefined behavior when calling BitSet::{} and the object is not initialized.",
                 source
             );
         }
@@ -242,7 +242,7 @@ pub mod details {
         /// If the bit was successfully set it returns true, if the bit was already set it
         /// returns false.
         pub fn set(&self, id: usize) -> bool {
-            self.verify_init("set");
+            self.verify_init("set()");
             debug_assert!(
                 id < self.capacity,
                 "This should never happen. Out of bounds access with index {}.",
@@ -255,7 +255,7 @@ pub mod details {
         /// Resets the next set bit and returns the bit index. If no bit was set it returns
         /// [`None`].
         pub fn reset_next(&self) -> Option<usize> {
-            self.verify_init("reset_next");
+            self.verify_init("reset_next()");
 
             let current_position = self.reset_position.load(Ordering::Relaxed);
             for pos in (current_position..self.capacity).chain(0..current_position) {
@@ -271,7 +271,7 @@ pub mod details {
         /// Reset every set bit in the BitSet and call the provided callback for every bit that
         /// was set. This is the most efficient way to acquire all bits that were set.
         pub fn reset_all<F: FnMut(usize)>(&self, mut callback: F) {
-            self.verify_init("reset_all");
+            self.verify_init("reset_all()");
 
             for i in 0..self.array_capacity {
                 let value = unsafe { (*self.data_ptr.as_ptr().add(i)).swap(0, Ordering::Relaxed) };

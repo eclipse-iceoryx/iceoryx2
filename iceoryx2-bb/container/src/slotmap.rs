@@ -91,6 +91,8 @@ const INVALID: usize = usize::MAX;
 
 #[doc(hidden)]
 pub mod details {
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+
     use super::*;
 
     /// The iterator of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`].
@@ -123,10 +125,21 @@ pub mod details {
         data: MetaVec<Option<T>, Ptr>,
         data_next_free_index: MetaQueue<usize, Ptr>,
         idx_to_data_free_list_head: usize,
+        is_initialized: IoxAtomicBool,
         len: usize,
     }
 
     impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
+        #[inline(always)]
+        fn verify_init(&self, source: &str) {
+            debug_assert!(
+                self.is_initialized
+                    .load(std::sync::atomic::Ordering::Relaxed),
+                "From: MetaSlotMap<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+                std::any::type_name::<T>(), source
+            );
+        }
+
         fn next_available_key_after(&self, start: SlotMapKey) -> Option<(SlotMapKey, &T)> {
             let idx_to_data = &self.idx_to_data;
 
@@ -160,6 +173,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn iter_impl(&self) -> Iter<T, Ptr> {
+            self.verify_init("iter()");
             Iter {
                 slotmap: self,
                 key: SlotMapKey(0),
@@ -167,10 +181,12 @@ pub mod details {
         }
 
         pub(crate) unsafe fn contains_impl(&self, key: SlotMapKey) -> bool {
+            self.verify_init("contains()");
             self.idx_to_data[key.0] != INVALID
         }
 
         pub(crate) unsafe fn get_impl(&self, key: SlotMapKey) -> Option<&T> {
+            self.verify_init("get()");
             match self.idx_to_data[key.0] {
                 INVALID => None,
                 n => Some(self.data[n].as_ref().expect(
@@ -180,6 +196,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn get_mut_impl(&mut self, key: SlotMapKey) -> Option<&mut T> {
+            self.verify_init("get_mut()");
             match self.idx_to_data[key.0] {
                 INVALID => None,
                 n => Some(self.data[n].as_mut().expect(
@@ -233,6 +250,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn insert_impl(&mut self, value: T) -> Option<SlotMapKey> {
+            self.verify_init("insert()");
             self.acquire_next_free_index().map(|key| {
                 let key = SlotMapKey(key);
                 self.store_value(key, value);
@@ -241,11 +259,13 @@ pub mod details {
         }
 
         pub(crate) unsafe fn insert_at_impl(&mut self, key: SlotMapKey, value: T) -> bool {
+            self.verify_init("insert_at()");
             self.claim_index(key.value());
             self.store_value(key, value)
         }
 
         pub(crate) unsafe fn store_value(&mut self, key: SlotMapKey, value: T) -> bool {
+            self.verify_init("store()");
             if key.0 > self.capacity_impl() {
                 return false;
             }
@@ -264,6 +284,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn remove_impl(&mut self, key: SlotMapKey) -> bool {
+            self.verify_init("remove()");
             if key.0 > self.idx_to_data.len() {
                 return false;
             }
@@ -283,6 +304,7 @@ pub mod details {
         }
 
         pub(crate) unsafe fn next_free_key_impl(&self) -> Option<SlotMapKey> {
+            self.verify_init("next_free_key()");
             if self.idx_to_data_free_list_head == INVALID {
                 return None;
             }
@@ -316,6 +338,7 @@ pub mod details {
                 idx_to_data_free_list: RelocatableVec::new_uninit(capacity),
                 data: RelocatableVec::new_uninit(capacity),
                 data_next_free_index: RelocatableQueue::new_uninit(capacity),
+                is_initialized: IoxAtomicBool::new(false),
             }
         }
 
@@ -338,6 +361,8 @@ pub mod details {
                   "{msg} since the underlying data_next_free_index queue could not be initialized.");
 
             self.initialize_data_structures();
+            self.is_initialized
+                .store(true, std::sync::atomic::Ordering::Relaxed);
             Ok(())
         }
 
@@ -356,6 +381,7 @@ pub mod details {
                 idx_to_data_free_list: MetaVec::new(capacity),
                 data: MetaVec::new(capacity),
                 data_next_free_index: MetaQueue::new(capacity),
+                is_initialized: IoxAtomicBool::new(true),
             };
             unsafe { new_self.initialize_data_structures() };
             new_self

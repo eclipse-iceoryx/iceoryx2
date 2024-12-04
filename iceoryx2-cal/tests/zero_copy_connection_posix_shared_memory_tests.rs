@@ -49,7 +49,7 @@ mod zero_copy_connection_posix_shared_memory_tests {
         let start = std::time::SystemTime::now();
         let sut = <Sut as ZeroCopyConnection>::Builder::new(&storage_name)
             .timeout(TIMEOUT)
-            .number_of_samples(1)
+            .number_of_samples_per_segment(1)
             .receiver_max_borrowed_samples(1)
             .create_sender(1);
 

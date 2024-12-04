@@ -181,14 +181,14 @@ pub mod details {
         type Target = [T];
 
         fn deref(&self) -> &Self::Target {
-            self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
+            self.verify_init("deref()");
             unsafe { core::slice::from_raw_parts((*self.data_ptr.as_ptr()).as_ptr(), self.len) }
         }
     }
 
     impl<T, Ptr: GenericPointer> DerefMut for MetaVec<T, Ptr> {
         fn deref_mut(&mut self) -> &mut Self::Target {
-            self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
+            self.verify_init("deref_mut()");
             unsafe {
                 core::slice::from_raw_parts_mut(
                     (*self.data_ptr.as_mut_ptr()).as_mut_ptr(),
@@ -222,8 +222,8 @@ pub mod details {
             debug_assert!(
                 self.is_initialized
                     .load(std::sync::atomic::Ordering::Relaxed),
-                "From: {}, Undefined behavior - the object was not initialized with 'init' before.",
-                source
+                "From: MetaVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+                core::any::type_name::<T>(), source
             );
         }
 
@@ -252,7 +252,7 @@ pub mod details {
                 return false;
             }
 
-            self.verify_init(&format!("Vec<{}>::push()", std::any::type_name::<T>()));
+            self.verify_init("push()");
             self.push_unchecked(value);
             true
         }
@@ -303,7 +303,7 @@ pub mod details {
                 return None;
             }
 
-            self.verify_init(&format!("Vec<{}>::pop()", std::any::type_name::<T>()));
+            self.verify_init("pop()");
             Some(self.pop_unchecked())
         }
 

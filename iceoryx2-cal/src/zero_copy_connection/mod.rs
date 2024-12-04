@@ -37,6 +37,7 @@ pub enum ZeroCopyCreationError {
     IncompatibleOverflowSetting,
     IncompatibleSampleSize,
     IncompatibleNumberOfSamples,
+    IncompatibleNumberOfSegments,
 }
 
 impl std::fmt::Display for ZeroCopyCreationError {
@@ -77,7 +78,7 @@ impl std::error::Error for ZeroCopyReceiveError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopyReclaimError {
-    ReceiverReturnedCorruptedOffset,
+    ReceiverReturnedCorruptedPointerOffset,
 }
 
 impl std::fmt::Display for ZeroCopyReclaimError {
@@ -104,12 +105,14 @@ impl std::error::Error for ZeroCopyReleaseError {}
 pub const DEFAULT_BUFFER_SIZE: usize = 4;
 pub const DEFAULT_ENABLE_SAFE_OVERFLOW: bool = false;
 pub const DEFAULT_MAX_BORROWED_SAMPLES: usize = 4;
+pub const DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS: u8 = 1;
 
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;
     fn enable_safe_overflow(self, value: bool) -> Self;
     fn receiver_max_borrowed_samples(self, value: usize) -> Self;
-    fn number_of_samples(self, value: usize) -> Self;
+    fn max_supported_shared_memory_segments(self, value: u8) -> Self;
+    fn number_of_samples_per_segment(self, value: usize) -> Self;
     /// The timeout defines how long the [`ZeroCopyConnectionBuilder`] should wait for
     /// concurrent
     /// [`ZeroCopyConnectionBuilder::create_sender()`] or
@@ -125,6 +128,7 @@ pub trait ZeroCopyPortDetails {
     fn buffer_size(&self) -> usize;
     fn has_enabled_safe_overflow(&self) -> bool;
     fn max_borrowed_samples(&self) -> usize;
+    fn max_supported_shared_memory_segments(&self) -> u8;
     fn is_connected(&self) -> bool;
 }
 

@@ -57,7 +57,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .buffer_size(subscriber_details.buffer_size)
                                 .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                 .enable_safe_overflow(this.static_config.enable_safe_overflow)
-                                .number_of_samples(number_of_samples)
+                                .number_of_samples_per_segment(number_of_samples)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
                                 .create_sender(this.static_config.message_type_details().sample_layout(max_slice_len).size()),
                         "{}.", msg);
