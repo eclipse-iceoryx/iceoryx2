@@ -94,3 +94,19 @@
    ```
 
 2. Removed `payload_type_layout()` from `publish_subscribe::Header`.
+
+3. Renamed `max_slice_len()` into `initial_max_slice_len()`.
+
+   ```rust
+   // old
+   let publisher = service
+        .publisher_builder()
+        .max_slice_len(16)
+        .create()?;
+
+   // new
+   let publisher = service
+        .publisher_builder()
+        .initial_max_slice_len(16)
+        .create()?;
+   ```
