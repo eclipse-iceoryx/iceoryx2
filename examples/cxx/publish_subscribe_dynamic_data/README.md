@@ -15,9 +15,9 @@ allowing users to send samples of arbitrary sizes.
 > * have a uniform memory representation -> `#[repr(C)]`
 > * not use pointers to manage their internal structure
 >
-> Data types like `String` or `Vec` will cause undefined behavior and may
-> result in segmentation faults. We provide alternative data types that are
-> compatible with shared memory. See the
+> Data types like `std::string` or `std::vector` will cause undefined behavior
+> and may result in segmentation faults. We provide alternative data types
+> that are compatible with shared memory. See the
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
 

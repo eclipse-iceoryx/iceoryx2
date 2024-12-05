@@ -261,6 +261,7 @@ impl SegmentState {
     }
 
     fn sample_index(&self, distance_to_chunk: usize) -> usize {
+        debug_assert!(distance_to_chunk % self.payload_size() == 0);
         distance_to_chunk / self.payload_size()
     }
 
