@@ -197,7 +197,7 @@ macro_rules! assert_that {
                 }
             }
             if does_contain {
-                assert_that!(message_contains_match $lhs, core::stringify!($predicate));
+                assert_that!(message_not_contains_match $lhs, core::stringify!($predicate));
             }
         }
     };
@@ -268,6 +268,15 @@ macro_rules! assert_that {
     [message_contains_match $lhs:expr, $predicate:expr] => {
         core::panic!(
             "assertion failed: {}expr: {} contains no element matching predicate: {}{}",
+            assert_that![color_start],
+            core::stringify!($lhs),
+            $predicate,
+            assert_that![color_end]
+        );
+    };
+    [message_not_contains_match $lhs:expr, $predicate:expr] => {
+        core::panic!(
+            "assertion failed: {}expr: {} contains element matching predicate: {}{}",
             assert_that![color_start],
             core::stringify!($lhs),
             $predicate,
