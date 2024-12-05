@@ -2,6 +2,21 @@
 
 ## Running The Example
 
+> [!CAUTION]
+> Every payload you transmit with iceoryx2 must be compatible with shared
+> memory. Specifically, it must:
+>
+> * be self contained, no heap, no pointers to external sources
+> * have a uniform memory representation, ensuring that shared structs have the
+>     same data layout
+> * not use pointers to manage their internal structure
+>
+> Data types like `std::string` or `std::vector` will cause undefined behavior
+> and may result in segmentation faults. We provide alternative data types
+> that are compatible with shared memory. See the
+> [complex data type example](../complex_data_types) for guidance on how to
+> use them.
+
 This example demonstrates iceoryx2's event multiplexing mechanism in a more
 complex setup. The iceoryx2 `Publisher` and `Subscriber` are integrated into
 custom `ExamplePublisher` and `ExampleSubscriber` classes, which also

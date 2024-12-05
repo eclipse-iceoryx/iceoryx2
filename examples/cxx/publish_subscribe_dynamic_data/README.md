@@ -12,7 +12,8 @@ allowing users to send samples of arbitrary sizes.
 > memory. Specifically, it must:
 >
 > * be self contained, no heap, no pointers to external sources
-> * have a uniform memory representation -> `#[repr(C)]`
+> * have a uniform memory representation, ensuring that shared structs have the
+>     same data layout
 > * not use pointers to manage their internal structure
 >
 > Data types like `std::string` or `std::vector` will cause undefined behavior
