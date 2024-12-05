@@ -43,6 +43,15 @@ mod deadline_queue {
     }
 
     #[test]
+    fn next_iteration_works_zero_deadline() {
+        let sut = DeadlineQueueBuilder::new().create().unwrap();
+
+        let _guard = sut.add_deadline_interval(Duration::from_secs(0)).unwrap();
+
+        assert_that!(sut.duration_until_next_deadline().unwrap(), eq Duration::from_secs(0));
+    }
+
+    #[test]
     fn next_iteration_works_smallest_deadline_added_first() {
         let sut = DeadlineQueueBuilder::new().create().unwrap();
 
