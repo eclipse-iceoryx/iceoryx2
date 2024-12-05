@@ -1,7 +1,9 @@
-# Publish-Subscribe
+# Publish-Subscribe With Dynamic Data (Slice Of Shared Memory Compatible Types)
 
-Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C++ Examples Readme](../README.md).
+This example demonstrates how to send data when the maximum data size cannot
+be predetermined and needs to be adjusted dynamically during the service's
+runtime. iceoryx2 enables the reallocation of the publisher's data segment,
+allowing users to send samples of arbitrary sizes.
 
 ## Running The Example
 
@@ -20,12 +22,18 @@ instructions in the [C++ Examples Readme](../README.md).
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
 
-This example illustrates a robust publisher-subscriber communication pattern
-between two separate processes. The publisher sends two messages every second,
-each containing [`TransmissionData`]. On the receiving end, the subscriber
-checks for new data every second.
+This example demonstrates a robust publisher-subscriber communication pattern
+between two separate processes. A service with the payload type of an `u8` slice
+is created, and every publisher can define a slice length hint they support
+for communication with `initial_max_slice_len`. The publisher sends a message with
+increasing size every second containing a piece of dynamic data. On the receiving
+end, the subscriber checks for new data every second.
 
 The subscriber is printing the sample on the console whenever new data arrives.
+
+The `initial_max_slice_len` hint and the `AllocationStrategy` set by the
+publisher will define how memory is reallocated when [`Publisher::loan_slice()`]
+or [`Publisher::loan_slice_uninit()`] request more memory than it is available.
 
 First you have to build the C++ examples:
 
@@ -40,13 +48,13 @@ execute the following commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_subscriber
+./target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_publisher
+./target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes

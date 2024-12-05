@@ -35,7 +35,6 @@ pub enum ZeroCopyCreationError {
     IncompatibleBufferSize,
     IncompatibleMaxBorrowedSampleSetting,
     IncompatibleOverflowSetting,
-    IncompatibleSampleSize,
     IncompatibleNumberOfSamples,
     IncompatibleNumberOfSegments,
 }
@@ -120,8 +119,8 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     /// By default it is set to [`Duration::ZERO`] for no timeout.
     fn timeout(self, value: Duration) -> Self;
 
-    fn create_sender(self, sample_size: usize) -> Result<C::Sender, ZeroCopyCreationError>;
-    fn create_receiver(self, sample_size: usize) -> Result<C::Receiver, ZeroCopyCreationError>;
+    fn create_sender(self) -> Result<C::Sender, ZeroCopyCreationError>;
+    fn create_receiver(self) -> Result<C::Receiver, ZeroCopyCreationError>;
 }
 
 pub trait ZeroCopyPortDetails {
@@ -133,10 +132,17 @@ pub trait ZeroCopyPortDetails {
 }
 
 pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
-    fn try_send(&self, ptr: PointerOffset) -> Result<Option<PointerOffset>, ZeroCopySendError>;
+    fn try_send(
+        &self,
+        ptr: PointerOffset,
+        sample_size: usize,
+    ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
-    fn blocking_send(&self, ptr: PointerOffset)
-        -> Result<Option<PointerOffset>, ZeroCopySendError>;
+    fn blocking_send(
+        &self,
+        ptr: PointerOffset,
+        sample_size: usize,
+    ) -> Result<Option<PointerOffset>, ZeroCopySendError>;
 
     fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError>;
 

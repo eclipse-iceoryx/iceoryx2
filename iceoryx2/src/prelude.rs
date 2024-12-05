@@ -29,3 +29,4 @@ pub use iceoryx2_bb_log::set_log_level;
 pub use iceoryx2_bb_log::LogLevel;
 pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
+pub use iceoryx2_cal::shm_allocator::AllocationStrategy;

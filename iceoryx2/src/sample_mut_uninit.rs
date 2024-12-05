@@ -49,7 +49,7 @@
 //! #     .publish_subscribe::<[usize]>()
 //! #     .create()?;
 //! #
-//! # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+//! # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
 //!
 //! let slice_length = 12;
 //! let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -76,7 +76,7 @@
 //! #     .publish_subscribe::<[usize]>()
 //! #     .create()?;
 //! #
-//! # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+//! # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
 //!
 //! let slice_length = 4;
 //! let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -95,7 +95,7 @@ use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{
-    port::publisher::DataSegment, raw_sample::RawSampleMut, sample_mut::SampleMut,
+    port::publisher::PublisherBackend, raw_sample::RawSampleMut, sample_mut::SampleMut,
     service::header::publish_subscribe::Header,
 };
 
@@ -261,15 +261,17 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
 {
     pub(crate) fn new(
-        data_segment: &Arc<DataSegment<Service>>,
+        publisher_backend: &Arc<PublisherBackend<Service>>,
         ptr: RawSampleMut<Header, UserHeader, MaybeUninit<Payload>>,
         offset_to_chunk: PointerOffset,
+        sample_size: usize,
     ) -> Self {
         Self {
             sample: SampleMut {
-                data_segment: Arc::clone(data_segment),
+                publisher_backend: Arc::clone(publisher_backend),
                 ptr,
                 offset_to_chunk,
+                sample_size,
             },
         }
     }
@@ -341,15 +343,17 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
     pub(crate) fn new(
-        data_segment: &Arc<DataSegment<Service>>,
+        publisher_backend: &Arc<PublisherBackend<Service>>,
         ptr: RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]>,
         offset_to_chunk: PointerOffset,
+        sample_size: usize,
     ) -> Self {
         Self {
             sample: SampleMut {
-                data_segment: Arc::clone(data_segment),
+                publisher_backend: Arc::clone(publisher_backend),
                 ptr,
                 offset_to_chunk,
+                sample_size,
             },
         }
     }
@@ -374,7 +378,7 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher_builder().max_slice_len(32).create()?;
+    /// # let publisher = service.publisher_builder().initial_max_slice_len(32).create()?;
     ///
     /// let slice_length = 10;
     /// let mut sample = publisher.loan_slice_uninit(slice_length)?;
@@ -408,7 +412,7 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+    /// # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
     ///
     /// let slice_length = 12;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;
@@ -448,7 +452,7 @@ impl<Service: crate::service::Service, Payload: Debug + Copy, UserHeader>
     /// #     .publish_subscribe::<[usize]>()
     /// #     .open_or_create()?;
     /// #
-    /// # let publisher = service.publisher_builder().max_slice_len(16).create()?;
+    /// # let publisher = service.publisher_builder().initial_max_slice_len(16).create()?;
     ///
     /// let slice_length = 3;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;

@@ -30,6 +30,7 @@ use crate::static_storage::file::{
 #[doc(hidden)]
 pub mod details {
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+    use pool_allocator::PoolAllocator;
 
     use super::*;
 
@@ -441,6 +442,22 @@ pub mod details {
 
         fn payload_start_address(&self) -> usize {
             self.payload_start_address
+        }
+    }
+
+    impl<Storage: DynamicStorage<AllocatorDetails<PoolAllocator>>> SharedMemoryForPoolAllocator
+        for Memory<PoolAllocator, Storage>
+    {
+        unsafe fn deallocate_bucket(&self, offset: PointerOffset) {
+            self.storage
+                .get()
+                .allocator
+                .assume_init_ref()
+                .deallocate_bucket(offset);
+        }
+
+        fn bucket_size(&self) -> usize {
+            unsafe { self.storage.get().allocator.assume_init_ref().bucket_size() }
         }
     }
 }

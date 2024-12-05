@@ -27,11 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(sample) = subscriber.receive()? {
-            print!("received {} bytes: ", sample.payload().len());
-            for byte in sample.payload() {
-                print!("{:02x} ", byte);
-            }
-            println!("");
+            println!("received {} bytes", sample.payload().len());
         }
     }
 

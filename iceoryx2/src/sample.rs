@@ -84,6 +84,13 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
     for Sample<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
+        unsafe {
+            self.details
+                .publisher_connection
+                .data_segment
+                .unregister_offset(self.details.offset)
+        };
+
         match self
             .details
             .publisher_connection

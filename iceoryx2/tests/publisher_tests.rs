@@ -105,7 +105,7 @@ mod publisher {
 
         let publisher = service
             .publisher_builder()
-            .max_slice_len(NUMBER_OF_ELEMENTS)
+            .initial_max_slice_len(NUMBER_OF_ELEMENTS)
             .create()?;
         let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS)?;
 
@@ -129,7 +129,7 @@ mod publisher {
 
         let publisher = service
             .publisher_builder()
-            .max_slice_len(NUMBER_OF_ELEMENTS)
+            .initial_max_slice_len(NUMBER_OF_ELEMENTS)
             .create()?;
 
         for i in 0..NUMBER_OF_ELEMENTS {
@@ -153,7 +153,7 @@ mod publisher {
 
         let publisher = service
             .publisher_builder()
-            .max_slice_len(NUMBER_OF_ELEMENTS)
+            .initial_max_slice_len(NUMBER_OF_ELEMENTS)
             .create()?;
 
         let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS + 1);

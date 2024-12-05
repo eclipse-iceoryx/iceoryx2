@@ -88,7 +88,7 @@
 
 pub mod dynamic;
 
-pub use crate::shm_allocator::AllocationStrategy;
+pub use crate::shm_allocator::{pool_allocator::PoolAllocator, AllocationStrategy};
 
 use std::alloc::Layout;
 use std::fmt::Debug;
@@ -98,7 +98,7 @@ use iceoryx2_bb_elementary::enum_gen;
 
 use crate::named_concept::*;
 use crate::shared_memory::{
-    SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
+    SegmentId, SharedMemory, SharedMemoryCreateError, SharedMemoryOpenError, ShmPointer,
 };
 use crate::shm_allocator::{PointerOffset, ShmAllocationError, ShmAllocator};
 
@@ -124,7 +124,7 @@ pub trait ResizableSharedMemoryViewBuilder<
     Shm: SharedMemory<Allocator>,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
     ResizableShmView: ResizableSharedMemoryView<Allocator, Shm>,
->: NamedConceptBuilder<ResizableShm>
+>: NamedConceptBuilder<ResizableShm> + Debug
 {
     /// The timeout defines how long the
     /// [`SharedMemoryBuilder`](crate::shared_memory::SharedMemoryBuilder) should wait for
@@ -146,7 +146,7 @@ pub trait ResizableSharedMemoryBuilder<
     Allocator: ShmAllocator,
     Shm: SharedMemory<Allocator>,
     ResizableShm: ResizableSharedMemory<Allocator, Shm>,
->: NamedConceptBuilder<ResizableShm>
+>: NamedConceptBuilder<ResizableShm> + Debug
 {
     /// Provides an initial hint to the underlying [`ShmAllocator`] on how large the largest chunk
     /// will be. If the chunk exceeds the hinted [`Layout`] a new [`SharedMemory`] segment is
@@ -167,7 +167,9 @@ pub trait ResizableSharedMemoryBuilder<
 }
 
 /// A read-only view to a [`ResizableSharedMemory`]. Can be created by arbitrary many processes.
-pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>> {
+pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
+    Debug
+{
     /// Registers a received [`PointerOffset`] at the [`ResizableSharedMemoryView`] and returns the
     /// absolut pointer to the data. If the segment of the received [`PointerOffset`] was not yet
     /// mapped into the processes space, it will be opened and mapped. If this fails a
@@ -237,4 +239,19 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
     unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout);
+}
+
+pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>>:
+    ResizableSharedMemory<PoolAllocator, Shm>
+{
+    /// Release previously allocated memory
+    ///
+    /// # Safety
+    ///
+    ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
+    ///    [`ShmPointer`]
+    unsafe fn deallocate_bucket(&self, offset: PointerOffset);
+
+    /// Returns the bucket size of the corresponding [`PoolAllocator`]
+    fn bucket_size(&self, segment_id: SegmentId) -> usize;
 }
