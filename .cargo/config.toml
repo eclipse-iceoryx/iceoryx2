@@ -4,6 +4,7 @@ rustdocflags = ["-D", "warnings"]
 [env]
 RUST_TEST_THREADS = "1"
 RUST_BACKTRACE = "1"
+IOX2_LOG_LEVEL = "Trace"
 
 [target.debug]
 rustflags = ["-Z", "sanitizer=address"]
