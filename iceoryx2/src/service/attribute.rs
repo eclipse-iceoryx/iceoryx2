@@ -97,6 +97,7 @@
 //! # }
 //! ```
 
+use iceoryx2_bb_elementary::CallbackProgression;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
@@ -198,8 +199,8 @@ impl AttributeVerifier {
         let is_subset = |lhs: Vec<&str>, rhs: Vec<&str>| lhs.iter().all(|v| rhs.contains(v));
 
         for attribute in self.attributes().iter() {
-            let lhs_values = self.attribute_set.get(&attribute.key);
-            let rhs_values = rhs.get(&attribute.key);
+            let lhs_values = self.attribute_set.get_vec(&attribute.key);
+            let rhs_values = rhs.get_vec(&attribute.key);
 
             if !is_subset(lhs_values, rhs_values) {
                 return Err(&attribute.key);
@@ -207,7 +208,7 @@ impl AttributeVerifier {
         }
 
         for key in self.keys() {
-            if rhs.get(key).is_empty() {
+            if rhs.get_vec(key).is_empty() {
                 return Err(key);
             }
         }
@@ -241,12 +242,28 @@ impl AttributeSet {
         self.0.sort();
     }
 
-    /// Returns all values to a specific key
-    pub fn get(&self, key: &str) -> Vec<&str> {
+    fn get_vec(&self, key: &str) -> Vec<&str> {
         self.0
             .iter()
             .filter(|p| p.key == key)
             .map(|p| p.value.as_str())
             .collect()
+    }
+
+    /// Returns all values to a specific key
+    pub fn get_key_values<F: FnMut(&str) -> CallbackProgression>(
+        &self,
+        key: &str,
+        mut callback: F,
+    ) {
+        for element in self.0.iter() {
+            if element.key != key {
+                continue;
+            }
+
+            if callback(&element.value) == CallbackProgression::Stop {
+                break;
+            }
+        }
     }
 }
