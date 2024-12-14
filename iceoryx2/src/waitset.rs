@@ -10,29 +10,29 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! A [`WaitSet`](crate::port::waitset::WaitSet) is an implementation of an event multiplexer
+//! A [`WaitSet`](crate::waitset::WaitSet) is an implementation of an event multiplexer
 //! (Reactor of the reactor design pattern). It allows the user to attach notifications,
 //! deadlines or intervals.
 //!
 //! * **Notification** - An object that emits an event. Whenever the event is detected the
-//!     [`WaitSet`](crate::port::waitset::WaitSet) wakes up and informs the user.
+//!     [`WaitSet`](crate::waitset::WaitSet) wakes up and informs the user.
 //!     Typical use case are gateways, which receives and forwards data whenever new data
 //!     is available.
 //! * **Deadline** - Like a *Notification* with the exception that the *Deadline* expects an
 //!     event after a certain predefined timeout. If the event does not arrive before the
-//!     timeout has passed, the [`WaitSet`](crate::port::waitset::WaitSet) wakes up and informs
+//!     timeout has passed, the [`WaitSet`](crate::waitset::WaitSet) wakes up and informs
 //!     the user that th *Deadline* has missed its timeout.
 //!     Whenever a *Deadline* receives an event, the timeout is reset.
 //!     One example is a sensor that shall send an update every 100ms and the applications requires
 //!     the sensor data latest after 120ms. If after 120ms an update
 //!     is not available the application must wake up and take counter measures. If the update
 //!     arrives within the timeout, the timeout is reset back to 120ms.
-//! * **Interval** - An time period after which the [`WaitSet`](crate::port::waitset::WaitSet)
+//! * **Interval** - An time period after which the [`WaitSet`](crate::waitset::WaitSet)
 //!     wakes up and informs the user that the time has passed by.
 //!     This is useful when a [`Publisher`](crate::port::publisher::Publisher) shall send an
 //!     heartbeat every 100ms.
 //!
-//! The [`WaitSet`](crate::port::waitset::WaitSet) allows the user to attach multiple
+//! The [`WaitSet`](crate::waitset::WaitSet) allows the user to attach multiple
 //! [`Listener`](crate::port::listener::Listener) from multiple [`Node`](crate::node::Node)s,
 //! anything that implements
 //! [`SynchronousMultiplexing`](iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing)
@@ -185,14 +185,14 @@
 //! # }
 //! ```
 //!
-//! ## Using [`WaitSet`](crate::port::waitset::WaitSet) Without [`Signal`](iceoryx2_bb_posix::signal::Signal) Handling
+//! ## Using [`WaitSet`](crate::waitset::WaitSet) Without [`Signal`](iceoryx2_bb_posix::signal::Signal) Handling
 //!
-//! This example demonstrates how the [`WaitSet`](crate::port::waitset::WaitSet) can be used when
+//! This example demonstrates how the [`WaitSet`](crate::waitset::WaitSet) can be used when
 //! system signals are being handled elsewhere. The builder parameter
-//! [`WaitSetBuilder::signal_handling_mode()`](crate::port::waitset::WaitSetBuilder::signal_handling_mode())
-//! can be used to disable signal handling in all [`WaitSet`](crate::port::waitset::WaitSet) calls
-//! like [`WaitSet::wait_and_process()`](crate::port::waitset::WaitSet::wait_and_process()) or
-//! [`WaitSet::wait_and_process_once()`](crate::port::waitset::WaitSet::wait_and_process_once()).
+//! [`WaitSetBuilder::signal_handling_mode()`](crate::waitset::WaitSetBuilder::signal_handling_mode())
+//! can be used to disable signal handling in all [`WaitSet`](crate::waitset::WaitSet) calls
+//! like [`WaitSet::wait_and_process()`](crate::waitset::WaitSet::wait_and_process()) or
+//! [`WaitSet::wait_and_process_once()`](crate::waitset::WaitSet::wait_and_process_once()).
 //!
 //! ```no_run
 //! use iceoryx2::prelude::*;
