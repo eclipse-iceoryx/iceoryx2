@@ -13,7 +13,6 @@
 pub use crate::config::Config;
 pub use crate::node::{node_name::NodeName, Node, NodeBuilder, NodeState};
 pub use crate::port::event_id::EventId;
-pub use crate::port::waitset::{WaitSet, WaitSetAttachmentId, WaitSetBuilder, WaitSetGuard};
 pub use crate::service::messaging_pattern::MessagingPattern;
 pub use crate::service::{
     attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier, ipc,
@@ -21,6 +20,7 @@ pub use crate::service::{
     service_name::ServiceName, Service, ServiceDetails,
 };
 pub use crate::signal_handling_mode::SignalHandlingMode;
+pub use crate::waitset::{WaitSet, WaitSetAttachmentId, WaitSetBuilder, WaitSetGuard};
 pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_elementary::alignment::Alignment;
 pub use iceoryx2_bb_elementary::placement_default::PlacementDefault;

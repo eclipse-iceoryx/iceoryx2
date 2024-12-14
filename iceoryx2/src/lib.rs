@@ -317,3 +317,7 @@ pub mod prelude;
 
 #[doc(hidden)]
 pub mod testing;
+
+/// Event handling mechanism to wait on multiple [`Listener`](crate::port::listener::Listener)s
+/// in one call, realizing the reactor pattern. (Event multiplexer)
+pub mod waitset;
