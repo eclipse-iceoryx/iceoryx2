@@ -19,6 +19,7 @@ use iceoryx2_bb_elementary::AsStringLiteral;
 
 use core::ffi::{c_char, c_int, c_void};
 
+mod attribute;
 mod config;
 mod event_id;
 mod file_descriptor;
@@ -60,6 +61,7 @@ mod waitset_attachment_id;
 mod waitset_builder;
 mod waitset_guard;
 
+pub use attribute::*;
 pub use config::*;
 pub use event_id::*;
 pub use file_descriptor::*;
