@@ -21,6 +21,7 @@ use core::ffi::{c_char, c_int, c_void};
 
 mod attribute;
 mod attribute_set;
+mod attribute_verifier;
 mod config;
 mod event_id;
 mod file_descriptor;
@@ -64,6 +65,7 @@ mod waitset_guard;
 
 pub use attribute::*;
 pub use attribute_set::*;
+pub use attribute_verifier::*;
 pub use config::*;
 pub use event_id::*;
 pub use file_descriptor::*;

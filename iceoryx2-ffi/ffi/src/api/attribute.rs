@@ -15,6 +15,7 @@
 use iceoryx2::service::attribute::Attribute;
 
 use core::ffi::c_char;
+use std::ffi::CString;
 
 // BEGIN types definition
 
@@ -23,12 +24,14 @@ pub type iox2_attribute_h_ref = *const Attribute;
 // END type definition
 
 // BEGIN C API
+const ZERO_TERMINATOR_LEN: usize = 1;
+
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_key_len(handle: iox2_attribute_h_ref) -> usize {
     debug_assert!(!handle.is_null());
 
     let attribute = &*handle;
-    attribute.key().len()
+    attribute.key().len() + ZERO_TERMINATOR_LEN
 }
 
 #[no_mangle]
@@ -40,9 +43,17 @@ pub unsafe extern "C" fn iox2_attribute_key(
     debug_assert!(!handle.is_null());
 
     let attribute = &*handle;
-    let copied_key_length = buffer_len.min(attribute.key().len());
-    core::ptr::copy_nonoverlapping(attribute.key().as_ptr(), buffer.cast(), copied_key_length);
-    copied_key_length
+    if let Ok(key) = CString::new(attribute.key()) {
+        let copied_key_length = buffer_len.min(key.as_bytes_with_nul().len());
+        core::ptr::copy_nonoverlapping(
+            key.as_bytes_with_nul().as_ptr(),
+            buffer.cast(),
+            copied_key_length,
+        );
+        copied_key_length
+    } else {
+        0
+    }
 }
 
 #[no_mangle]
@@ -50,7 +61,7 @@ pub unsafe extern "C" fn iox2_attribute_value_len(handle: iox2_attribute_h_ref) 
     debug_assert!(!handle.is_null());
 
     let attribute = &*handle;
-    attribute.value().len()
+    attribute.value().len() + ZERO_TERMINATOR_LEN
 }
 
 #[no_mangle]
@@ -62,9 +73,17 @@ pub unsafe extern "C" fn iox2_attribute_value(
     debug_assert!(!handle.is_null());
 
     let attribute = &*handle;
-    let copied_key_length = buffer_len.min(attribute.value().len());
-    core::ptr::copy_nonoverlapping(attribute.key().as_ptr(), buffer.cast(), copied_key_length);
-    copied_key_length
+    if let Ok(value) = CString::new(attribute.value()) {
+        let copied_key_length = buffer_len.min(value.as_bytes_with_nul().len());
+        core::ptr::copy_nonoverlapping(
+            value.as_bytes_with_nul().as_ptr(),
+            buffer.cast(),
+            copied_key_length,
+        );
+        copied_key_length
+    } else {
+        0
+    }
 }
 
 // END C API
