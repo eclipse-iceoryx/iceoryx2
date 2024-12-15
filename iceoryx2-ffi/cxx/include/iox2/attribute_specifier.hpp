@@ -14,17 +14,25 @@
 #define IOX2_ATTRIBUTE_SPECIFIER_HPP
 
 #include "attribute_set.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 class AttributeSpecifier {
   public:
-    auto define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier& {
-        IOX_TODO();
-    }
-    auto attributes() const -> AttributeSetView {
-        IOX_TODO();
-    }
+    AttributeSpecifier();
+    AttributeSpecifier(const AttributeSpecifier&) = delete;
+    AttributeSpecifier(AttributeSpecifier&&) noexcept;
+    ~AttributeSpecifier();
+
+    auto operator=(const AttributeSpecifier&) -> AttributeSpecifier& = delete;
+    auto operator=(AttributeSpecifier&&) noexcept -> AttributeSpecifier&;
+
+    auto define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier&;
+    auto attributes() const -> AttributeSetView;
+
+  private:
+    void drop();
+
+    iox2_attribute_specifier_h m_handle;
 };
 } // namespace iox2
 

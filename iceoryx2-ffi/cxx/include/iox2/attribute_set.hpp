@@ -29,6 +29,8 @@ class AttributeSetView {
 
   private:
     friend class AttributeVerifier;
+    friend class AttributeSpecifier;
+
     explicit AttributeSetView(iox2_attribute_set_h_ref handle);
 
     iox2_attribute_set_h_ref m_handle;
