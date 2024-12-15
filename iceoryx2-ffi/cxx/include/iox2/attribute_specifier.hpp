@@ -22,7 +22,7 @@ class AttributeSpecifier {
     auto define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier& {
         IOX_TODO();
     }
-    auto attributes() const -> AttributeSet& {
+    auto attributes() const -> AttributeSetView {
         IOX_TODO();
     }
 };

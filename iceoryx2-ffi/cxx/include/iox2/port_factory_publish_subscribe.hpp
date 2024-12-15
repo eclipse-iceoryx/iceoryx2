@@ -51,7 +51,7 @@ class PortFactoryPublishSubscribe {
     auto service_id() const -> const ServiceId&;
 
     /// Returns the attributes defined in the [`Service`]
-    auto attributes() const -> const AttributeSet&;
+    auto attributes() const -> AttributeSetView;
 
     /// Returns the StaticConfig of the [`Service`].
     /// Contains all settings that never change during the lifetime of the service.
@@ -132,7 +132,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() co
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::attributes() const -> const AttributeSet& {
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::attributes() const -> AttributeSetView {
     IOX_TODO();
 }
 

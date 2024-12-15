@@ -47,7 +47,7 @@ class PortFactoryEvent {
     auto service_id() const -> const ServiceId&;
 
     /// Returns the attributes defined in the [`Service`]
-    auto attributes() const -> const AttributeSet&;
+    auto attributes() const -> AttributeSetView;
 
     /// Returns the StaticConfig of the [`Service`].
     /// Contains all settings that never change during the lifetime of the service.

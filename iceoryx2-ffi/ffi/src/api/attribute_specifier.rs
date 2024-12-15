@@ -167,6 +167,6 @@ pub unsafe extern "C" fn iox2_attribute_specifier_attributes(
     debug_assert!(!handle.is_null());
 
     let attribute_specifier_struct = &mut *handle.as_type();
-    attribute_specifier_struct.value.as_ref().0.attributes()
+    (attribute_specifier_struct.value.as_ref().0.attributes() as *const AttributeSet).cast()
 }
 // END C API

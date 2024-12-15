@@ -14,14 +14,21 @@
 
 use std::ffi::{c_char, CStr, CString};
 
-use iceoryx2::service::attribute::AttributeSet;
+use iceoryx2::service::attribute::{Attribute, AttributeSet};
 use iceoryx2_bb_elementary::CallbackProgression;
 
 use super::{iox2_attribute_h_ref, iox2_callback_context, iox2_callback_progression_e};
 
 // BEGIN types definition
+pub struct iox2_attribute_set_h_t;
 
-pub type iox2_attribute_set_h_ref = *const AttributeSet;
+impl iox2_attribute_set_h_t {
+    pub(crate) unsafe fn underlying_type(&self) -> &AttributeSet {
+        &*(self as *const iox2_attribute_set_h_t).cast()
+    }
+}
+
+pub type iox2_attribute_set_h_ref = *const iox2_attribute_set_h_t;
 
 pub type iox2_attribute_set_get_callback =
     extern "C" fn(*const c_char, iox2_callback_context) -> iox2_callback_progression_e;
@@ -33,7 +40,7 @@ pub type iox2_attribute_set_get_callback =
 pub unsafe extern "C" fn iox2_attribute_set_len(handle: iox2_attribute_set_h_ref) -> usize {
     debug_assert!(!handle.is_null());
 
-    let attribute_set = &*handle;
+    let attribute_set = (*handle).underlying_type();
     attribute_set.iter().len()
 }
 
@@ -45,8 +52,8 @@ pub unsafe extern "C" fn iox2_attribute_set_at(
     debug_assert!(!handle.is_null());
     debug_assert!(index < iox2_attribute_set_len(handle));
 
-    let attribute_set = &*handle;
-    &attribute_set[index]
+    let attribute_set = (*handle).underlying_type();
+    (&attribute_set[index] as *const Attribute).cast()
 }
 
 #[no_mangle]
@@ -58,7 +65,7 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_values(
 ) {
     debug_assert!(!handle.is_null());
 
-    let attribute_set = &*handle;
+    let attribute_set = (*handle).underlying_type();
     let key = CStr::from_ptr(key);
     let c_str = key.to_str();
     if c_str.is_err() {

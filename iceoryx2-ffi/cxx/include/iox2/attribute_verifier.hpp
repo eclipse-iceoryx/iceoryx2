@@ -13,7 +13,6 @@
 #ifndef IOX2_ATTRIBUTE_VERIFIER_HPP
 #define IOX2_ATTRIBUTE_VERIFIER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/vector.hpp"
 #include "iox2/attribute.hpp"
@@ -23,23 +22,24 @@
 namespace iox2 {
 class AttributeVerifier {
   public:
-    AttributeVerifier() = default;
-    auto require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier& {
-        IOX_TODO();
-    }
-    auto require_key(const Attribute::Key& key) -> AttributeVerifier& {
-        IOX_TODO();
-    }
-    auto attributes() const -> const AttributeSet& {
-        IOX_TODO();
-    }
-    auto keys() const -> iox::vector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE> {
-        IOX_TODO();
-    }
+    AttributeVerifier();
+    AttributeVerifier(const AttributeVerifier&) = delete;
+    AttributeVerifier(AttributeVerifier&&) noexcept;
+    ~AttributeVerifier();
 
-    auto verify_requirements(const AttributeSet& rhs) const -> iox::expected<void, Attribute::Key> {
-        IOX_TODO();
-    }
+    auto operator=(const AttributeVerifier&) -> AttributeVerifier& = delete;
+    auto operator=(AttributeVerifier&&) noexcept -> AttributeVerifier&;
+
+    auto require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier&;
+    auto require_key(const Attribute::Key& key) -> AttributeVerifier&;
+    auto attributes() const -> AttributeSetView;
+    auto keys() const -> iox::vector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE>;
+    auto verify_requirements(const AttributeSetView& rhs) const -> iox::expected<void, Attribute::Key>;
+
+  private:
+    void drop();
+
+    iox2_attribute_verifier_h m_handle;
 };
 } // namespace iox2
 

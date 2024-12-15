@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/static_config.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/into.hpp"
 
 namespace iox2 {
@@ -18,7 +19,7 @@ StaticConfig::StaticConfig(iox2_static_config_t value)
     : m_value { value } {
 }
 
-auto StaticConfig::attributes() const -> const AttributeSet& {
+auto StaticConfig::attributes() const -> AttributeSetView {
     IOX_TODO();
 }
 

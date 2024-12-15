@@ -13,26 +13,28 @@
 #ifndef IOX2_ATTRIBUTE_SET_HPP
 #define IOX2_ATTRIBUTE_SET_HPP
 
-#include "iox/assertions_addendum.hpp"
-#include "iox/vector.hpp"
+#include "iox/function.hpp"
 #include "iox2/attribute.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 
 #include <iostream>
 
 namespace iox2 {
-class AttributeSet {
+class AttributeSetView {
   public:
-    auto get(const Attribute::Key& key) const -> iox::vector<Attribute::Value, IOX2_MAX_VALUES_PER_ATTRIBUTE_KEY> {
-        IOX_TODO();
-    }
+    auto len() const -> uint64_t;
+    auto at(uint64_t index) const -> AttributeView;
+    auto get_key_values(const Attribute::Key& key,
+                        const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
+
+  private:
+    friend class AttributeVerifier;
+    explicit AttributeSetView(iox2_attribute_set_h_ref handle);
+
+    iox2_attribute_set_h_ref m_handle;
 };
-
-inline auto operator<<(std::ostream& stream, const AttributeSet& value) -> std::ostream& {
-    stream << "AttributeSet { }";
-    return stream;
-}
-
 } // namespace iox2
+
+auto operator<<(std::ostream& stream, const iox2::AttributeSetView& value) -> std::ostream&;
 
 #endif
