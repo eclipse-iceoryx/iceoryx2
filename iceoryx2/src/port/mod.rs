@@ -31,9 +31,6 @@ pub mod subscriber;
 /// Interface to perform cyclic updates to the ports. Required to deliver history to new
 /// participants or to perform other management tasks.
 pub mod update_connections;
-/// Event handling mechanism to wait on multiple [`Listener`](crate::port::listener::Listener)s
-/// in one call, realizing the reactor pattern. (Event multiplexer)
-pub mod waitset;
 
 use crate::port::port_identifiers::*;
 use crate::service;

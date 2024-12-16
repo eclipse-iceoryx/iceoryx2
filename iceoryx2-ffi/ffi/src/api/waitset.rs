@@ -22,10 +22,10 @@ use crate::{
 
 use super::{iox2_signal_handling_mode_e, AssertNonNullHandle, HandleToType, IntoCInt};
 use iceoryx2::{
-    port::waitset::{
+    service::{ipc, local},
+    waitset::{
         WaitSet, WaitSetAttachmentError, WaitSetCreateError, WaitSetRunError, WaitSetRunResult,
     },
-    service::{ipc, local},
 };
 use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;

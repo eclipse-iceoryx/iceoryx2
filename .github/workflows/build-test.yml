@@ -479,10 +479,17 @@ jobs:
           internal/scripts/ci_prepare_ubuntu.sh
           uname -a
 
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.9.1
+
       - name: Run bazel build
+        env:
+          USE_BAZEL_VERSION: "7.4.1"
         run: bazel build //...
 
       - name: Run bazel test
+        env:
+          USE_BAZEL_VERSION: "7.4.1"
         run: bazel test //...
 
   grcov:

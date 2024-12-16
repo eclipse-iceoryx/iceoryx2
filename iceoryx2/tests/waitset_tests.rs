@@ -16,9 +16,9 @@ mod waitset {
 
     use iceoryx2::port::listener::Listener;
     use iceoryx2::port::notifier::Notifier;
-    use iceoryx2::port::waitset::{WaitSetAttachmentError, WaitSetRunError};
     use iceoryx2::prelude::{WaitSetBuilder, *};
     use iceoryx2::testing::*;
+    use iceoryx2::waitset::{WaitSetAttachmentError, WaitSetRunError};
     use iceoryx2_bb_posix::config::test_directory;
     use iceoryx2_bb_posix::directory::Directory;
     use iceoryx2_bb_posix::file::Permission;

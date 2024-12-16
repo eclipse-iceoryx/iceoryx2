@@ -15,8 +15,8 @@
 use std::mem::ManuallyDrop;
 
 use crate::iox2_service_type_e;
-use iceoryx2::port::waitset::WaitSetGuard;
 use iceoryx2::service::{ipc, local};
+use iceoryx2::waitset::WaitSetGuard;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
