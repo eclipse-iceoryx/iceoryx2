@@ -102,6 +102,13 @@ impl HandleToType for iox2_attribute_specifier_h_ref {
 
 // BEGIN C API
 
+/// Creates a new [`iox2_attribute_specifier_h`]. It must be cleaned up with
+/// [`iox2_attribute_specifier_drop()`].
+/// If the `struct_ptr` is null, then the function will allocate memory.
+///
+/// # Safety
+///
+/// * The `handle_ptr` must point to an uninitialized [`iox2_attribute_specifier_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_specifier_new(
     struct_ptr: *mut iox2_attribute_specifier_t,
@@ -128,6 +135,12 @@ pub unsafe extern "C" fn iox2_attribute_specifier_new(
     IOX2_OK
 }
 
+/// Deletes a [`iox2_attribute_specifier_h`]. It must be created with
+/// [`iox2_attribute_specifier_new()`].
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_specifier_drop(handle: iox2_attribute_specifier_h) {
     debug_assert!(!handle.is_null());
@@ -138,6 +151,13 @@ pub unsafe extern "C" fn iox2_attribute_specifier_drop(handle: iox2_attribute_sp
     (attribute_specifier.deleter)(attribute_specifier);
 }
 
+/// Defines a attribute (key / value pair).
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
+/// * The `key` must point to a valid null-terminated string.
+/// * The `value` must point to a valid null-terminated string.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_specifier_define(
     handle: iox2_attribute_specifier_h_ref,
@@ -160,6 +180,12 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
     ));
 }
 
+/// Returnes a [`iox2_attribute_set_h_ref`] to the underlying attribute set.
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
+/// * The `handle` must live at least as long as the returned [`iox2_attribute_set_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_specifier_attributes(
     handle: iox2_attribute_specifier_h_ref,

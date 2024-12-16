@@ -102,6 +102,13 @@ impl HandleToType for iox2_attribute_verifier_h_ref {
 
 // BEGIN C API
 
+/// Creates a new [`iox2_attribute_verifier_h`]. It must be cleaned up with
+/// [`iox2_attribute_verifier_drop()`].
+/// If the `struct_ptr` is null, then the function will allocate memory.
+///
+/// # Safety
+///
+/// * The `handle_ptr` must point to an uninitialized [`iox2_attribute_verifier_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_new(
     struct_ptr: *mut iox2_attribute_verifier_t,
@@ -128,6 +135,12 @@ pub unsafe extern "C" fn iox2_attribute_verifier_new(
     IOX2_OK
 }
 
+/// Deletes a [`iox2_attribute_verifier_h`]. It must be created with
+/// [`iox2_attribute_verifier_new()`].
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_drop(handle: iox2_attribute_verifier_h) {
     debug_assert!(!handle.is_null());
@@ -138,6 +151,13 @@ pub unsafe extern "C" fn iox2_attribute_verifier_drop(handle: iox2_attribute_ver
     (attribute_verifier.deleter)(attribute_verifier);
 }
 
+/// Defines a attribute (key / value pair) that is required.
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
+/// * The `key` must point to a valid null-terminated string.
+/// * The `value` must point to a valid null-terminated string.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_require(
     handle: iox2_attribute_verifier_h_ref,
@@ -160,6 +180,12 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
     ));
 }
 
+/// Defines a key that must be present.
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
+/// * The `key` must point to a valid null-terminated string.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     handle: iox2_attribute_verifier_h_ref,
@@ -179,6 +205,12 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     ));
 }
 
+/// Returnes a [`iox2_attribute_set_h_ref`] to the underlying attribute set.
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
+/// * The `handle` must live at least as long as the returned [`iox2_attribute_set_h_ref`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
     handle: iox2_attribute_verifier_h_ref,
@@ -189,6 +221,14 @@ pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
     (attribute_verifier_struct.value.as_ref().0.attributes() as *const AttributeSet).cast()
 }
 
+/// Verifies if the [`iox2_attribute_set_h_ref`] contains all required keys and key-value pairs.
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
+/// * The `rhs` must be valid.
+/// * `incompatible_key_buffer` must be either null or point to a valid memory location of size
+///   `incompatible_key_buffer_len`
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
     handle: iox2_attribute_verifier_h_ref,
@@ -219,6 +259,11 @@ pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
     }
 }
 
+/// Returns the number of required keys.
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_number_of_keys(
     handle: iox2_attribute_verifier_h_ref,
@@ -229,6 +274,12 @@ pub unsafe extern "C" fn iox2_attribute_verifier_number_of_keys(
     attribute_verifier.keys().len()
 }
 
+/// Returns the length of a required key at a specific key index.
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
+/// * `key_index` < [`iox2_attribute_verifier_number_of_keys()`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_key_len(
     handle: iox2_attribute_verifier_h_ref,
@@ -242,6 +293,13 @@ pub unsafe extern "C" fn iox2_attribute_verifier_key_len(
     attribute_verifier.keys()[key_index].len()
 }
 
+/// Copies the key value at a specific key index into the provided buffer.
+///
+/// # Safety
+///
+/// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
+/// * `key_index` < [`iox2_attribute_verifier_number_of_keys()`]
+/// * `key_value_buffer` must point to a valid memory location of size `key_value_buffer_len`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_key(
     handle: iox2_attribute_verifier_h_ref,
@@ -270,5 +328,4 @@ pub unsafe extern "C" fn iox2_attribute_verifier_key(
         0
     }
 }
-
 // END C API

@@ -16,8 +16,12 @@
 #include "attribute_set.hpp"
 
 namespace iox2 {
+
+/// Represents the set of [`Attribute`]s that are defined when the [`Service`]
+/// is created.
 class AttributeSpecifier {
   public:
+    /// Creates a new empty set of [`Attribute`]s
     AttributeSpecifier();
     AttributeSpecifier(const AttributeSpecifier&) = delete;
     AttributeSpecifier(AttributeSpecifier&&) noexcept;
@@ -26,7 +30,10 @@ class AttributeSpecifier {
     auto operator=(const AttributeSpecifier&) -> AttributeSpecifier& = delete;
     auto operator=(AttributeSpecifier&&) noexcept -> AttributeSpecifier&;
 
+    /// Defines a value for a specific key. A key is allowed to have multiple values.
     auto define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier&&;
+
+    /// Returns the underlying [`AttributeSetView`]
     auto attributes() const -> AttributeSetView;
 
   private:

@@ -226,6 +226,12 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
     (*subscriber_builder_struct_ptr).as_handle()
 }
 
+/// Returnes the services attributes.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The `port_factory_handle` must live longer than the returned `iox2_attribute_set_h_ref`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_attributes(
     port_factory_handle: iox2_port_factory_pub_sub_h_ref,

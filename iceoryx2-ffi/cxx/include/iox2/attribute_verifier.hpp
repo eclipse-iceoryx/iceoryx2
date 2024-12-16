@@ -20,8 +20,11 @@
 #include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
+/// Represents the set of [`Attribute`]s that are required when the [`Service`]
+/// is opened.
 class AttributeVerifier {
   public:
+    /// Creates a new empty set of [`Attribute`]s
     AttributeVerifier();
     AttributeVerifier(const AttributeVerifier&) = delete;
     AttributeVerifier(AttributeVerifier&&) noexcept;
@@ -30,10 +33,19 @@ class AttributeVerifier {
     auto operator=(const AttributeVerifier&) -> AttributeVerifier& = delete;
     auto operator=(AttributeVerifier&&) noexcept -> AttributeVerifier&;
 
+    /// Requires a value for a specific key. A key is allowed to have multiple values.
     auto require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier&&;
+
+    /// Requires that a specific key is defined.
     auto require_key(const Attribute::Key& key) -> AttributeVerifier&&;
+
+    /// Returns the underlying required [`AttributeSet`]
     auto attributes() const -> AttributeSetView;
+
+    /// Returns the underlying required keys
     auto keys() const -> iox::vector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE>;
+
+    /// Verifies if the [`AttributeSet`] contains all required keys and key-value pairs.
     auto verify_requirements(const AttributeSetView& rhs) const -> iox::expected<void, Attribute::Key>;
 
   private:

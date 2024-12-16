@@ -20,10 +20,20 @@
 #include <iostream>
 
 namespace iox2 {
+/// Represents all service attributes. They can be set when the service is created.
+///
+/// @attention The parent from which the view was extracted MUST live longer than the
+///            [`AttributeSetView`].
 class AttributeSetView {
   public:
+    /// Returns the number of [`Attribute`]s stored inside the [`AttributeSet`].
     auto len() const -> uint64_t;
+
+    /// Returns a [`AttributeView`] at a specific index. The number of indices is returned via
+    /// [`AttributeSetView::len()`].
     auto at(uint64_t index) const -> AttributeView;
+
+    /// Returns all values to a specific key
     void get_key_values(const Attribute::Key& key,
                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 

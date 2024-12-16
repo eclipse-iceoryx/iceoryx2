@@ -33,6 +33,11 @@ pub type iox2_attribute_h_ref = *const iox2_attribute_h_t;
 // BEGIN C API
 const ZERO_TERMINATOR_LEN: usize = 1;
 
+/// Returns the length of the attributes key.
+///
+/// # Safety
+///
+/// * The `handle` must be a valid handle.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_key_len(handle: iox2_attribute_h_ref) -> usize {
     debug_assert!(!handle.is_null());
@@ -41,6 +46,13 @@ pub unsafe extern "C" fn iox2_attribute_key_len(handle: iox2_attribute_h_ref) ->
     attribute.key().len() + ZERO_TERMINATOR_LEN
 }
 
+/// Copies the keys value into the provided buffer.
+///
+/// # Safety
+///
+/// * `handle` - A valid [`iox2_attribute_h_ref`],
+/// * `buffer` - Must be non-null and pointing to a valid memory location,
+/// * `buffer_len` - Must be the length of the provided `buffer`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_key(
     handle: iox2_attribute_h_ref,
@@ -63,6 +75,11 @@ pub unsafe extern "C" fn iox2_attribute_key(
     }
 }
 
+/// Returns the length of the attributes value.
+///
+/// # Safety
+///
+/// * The `handle` must be a valid handle.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_value_len(handle: iox2_attribute_h_ref) -> usize {
     debug_assert!(!handle.is_null());
@@ -71,6 +88,13 @@ pub unsafe extern "C" fn iox2_attribute_value_len(handle: iox2_attribute_h_ref) 
     attribute.value().len() + ZERO_TERMINATOR_LEN
 }
 
+/// Copies the values value into the provided buffer.
+///
+/// # Safety
+///
+/// * `handle` - A valid [`iox2_attribute_h_ref`],
+/// * `buffer` - Must be non-null and pointing to a valid memory location,
+/// * `buffer_len` - Must be the length of the provided `buffer`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_value(
     handle: iox2_attribute_h_ref,
@@ -92,5 +116,4 @@ pub unsafe extern "C" fn iox2_attribute_value(
         0
     }
 }
-
 // END C API

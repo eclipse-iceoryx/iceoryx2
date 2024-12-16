@@ -36,6 +36,12 @@ pub type iox2_attribute_set_get_callback =
 // END type definition
 
 // BEGIN C API
+
+/// Returns the length of the attribute set.
+///
+/// # Safety
+///
+/// * The `handle` must be a valid handle.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_set_len(handle: iox2_attribute_set_h_ref) -> usize {
     debug_assert!(!handle.is_null());
@@ -44,6 +50,12 @@ pub unsafe extern "C" fn iox2_attribute_set_len(handle: iox2_attribute_set_h_ref
     attribute_set.iter().len()
 }
 
+/// Returns a [`iox2_attribute_h_ref`] to the attribute stored at the provided index.
+///
+/// # Safety
+///
+/// * The `handle` must be a valid handle.
+/// * The `index` < [`iox2_attribute_set_len()`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_set_at(
     handle: iox2_attribute_set_h_ref,
@@ -56,6 +68,13 @@ pub unsafe extern "C" fn iox2_attribute_set_at(
     (&attribute_set[index] as *const Attribute).cast()
 }
 
+/// Calls the provided callback for every value that is owned by the provided key.
+///
+/// # Safety
+///
+/// * The `handle` must be a valid handle.
+/// * The `key` must be a valid null-terminated string.
+/// * The `callback` must point to a function with the required signature.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_set_get_key_values(
     handle: iox2_attribute_set_h_ref,

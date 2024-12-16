@@ -11,6 +11,7 @@
     conflicts when merging.
 -->
 
+* C++ bindings for attributes [#264](https://github.com/eclipse-iceoryx/iceoryx2/issues/264)
 * Add Event-Multiplexer `WaitSet` [#390](https://github.com/eclipse-iceoryx/iceoryx2/issues/390)
 * Add `PeriodicTimer` into POSIX building blocks [#425](https://github.com/eclipse-iceoryx/iceoryx2/issues/425)
 * Developer permissions for resources [#460](https://github.com/eclipse-iceoryx/iceoryx2/issues/460)
