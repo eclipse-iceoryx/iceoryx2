@@ -236,7 +236,16 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_crea
         required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                                                  PublishSubscribeOpenOrCreateError> {
     set_parameters();
-    IOX_TODO();
+
+    iox2_port_factory_pub_sub_h port_factory_handle {};
+    auto result = iox2_service_builder_pub_sub_open_or_create_with_attributes(
+        m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+    }
+
+    return iox::err(iox::into<PublishSubscribeOpenOrCreateError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -245,7 +254,16 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_with_at
         required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                                                  PublishSubscribeOpenError> {
     set_parameters();
-    IOX_TODO();
+
+    iox2_port_factory_pub_sub_h port_factory_handle {};
+    auto result = iox2_service_builder_pub_sub_open_with_attributes(
+        m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+    }
+
+    return iox::err(iox::into<PublishSubscribeOpenError>(result));
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -253,7 +271,16 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create_with_
     const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
                                                               PublishSubscribeCreateError> {
     set_parameters();
-    IOX_TODO();
+
+    iox2_port_factory_pub_sub_h port_factory_handle {};
+    auto result = iox2_service_builder_pub_sub_create_with_attributes(
+        m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryPublishSubscribe<S, Payload, UserHeader>(port_factory_handle));
+    }
+
+    return iox::err(iox::into<PublishSubscribeCreateError>(result));
 }
 } // namespace iox2
 

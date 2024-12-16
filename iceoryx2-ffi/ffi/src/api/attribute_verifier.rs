@@ -29,7 +29,7 @@ use super::iox2_attribute_set_h_ref;
 // BEGIN type definition
 
 #[repr(C)]
-struct AttributeVerifierType(ManuallyDrop<AttributeVerifier>);
+pub(crate) struct AttributeVerifierType(pub(crate) ManuallyDrop<AttributeVerifier>);
 
 impl AttributeVerifierType {
     fn new() -> Self {

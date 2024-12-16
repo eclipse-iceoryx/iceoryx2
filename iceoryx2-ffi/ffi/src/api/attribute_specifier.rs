@@ -29,7 +29,7 @@ use super::iox2_attribute_set_h_ref;
 // BEGIN type definition
 
 #[repr(C)]
-struct AttributeSpecifierType(ManuallyDrop<AttributeSpecifier>);
+pub(crate) struct AttributeSpecifierType(pub(crate) ManuallyDrop<AttributeSpecifier>);
 
 impl AttributeSpecifierType {
     fn new() -> Self {

@@ -29,6 +29,8 @@ use iceoryx2_bb_elementary::AsStringLiteral;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 
+use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref};
+
 // BEGIN types definition
 
 #[repr(C)]
@@ -296,6 +298,25 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
     )
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_open_or_create_with_attributes(
+    service_builder_handle: iox2_service_builder_event_h,
+    attribute_verifier_handle: iox2_attribute_verifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_event_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_event_h,
+) -> c_int {
+    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+
+    iox2_service_builder_event_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_or_create_with_attributes(&attribute_verifier),
+        |service_builder| service_builder.open_or_create_with_attributes(&attribute_verifier),
+    )
+}
+
 /// Opens an event service and returns a port factory to create notifiers and listeners.
 ///
 /// # Arguments
@@ -328,6 +349,25 @@ pub unsafe extern "C" fn iox2_service_builder_event_open(
     )
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_open_with_attributes(
+    service_builder_handle: iox2_service_builder_event_h,
+    attribute_verifier_handle: iox2_attribute_verifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_event_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_event_h,
+) -> c_int {
+    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+
+    iox2_service_builder_event_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_with_attributes(&attribute_verifier),
+        |service_builder| service_builder.open_with_attributes(&attribute_verifier),
+    )
+}
+
 /// Creates an event service and returns a port factory to create notifiers and listeners.
 ///
 /// # Arguments
@@ -357,6 +397,25 @@ pub unsafe extern "C" fn iox2_service_builder_event_create(
         port_factory_handle_ptr,
         |service_builder| service_builder.create(),
         |service_builder| service_builder.create(),
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_create_with_attributes(
+    service_builder_handle: iox2_service_builder_event_h,
+    attribute_specifier_handle: iox2_attribute_specifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_event_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_event_h,
+) -> c_int {
+    let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
+    let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
+
+    iox2_service_builder_event_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.create_with_attributes(&attribute_specifier),
+        |service_builder| service_builder.create_with_attributes(&attribute_specifier),
     )
 }
 

@@ -30,6 +30,11 @@ class AttributeSpecifier {
     auto attributes() const -> AttributeSetView;
 
   private:
+    template <ServiceType>
+    friend class ServiceBuilderEvent;
+    template <typename, typename, ServiceType>
+    friend class ServiceBuilderPublishSubscribe;
+
     void drop();
 
     iox2_attribute_specifier_h m_handle;

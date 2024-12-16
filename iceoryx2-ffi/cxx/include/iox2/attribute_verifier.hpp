@@ -37,6 +37,11 @@ class AttributeVerifier {
     auto verify_requirements(const AttributeSetView& rhs) const -> iox::expected<void, Attribute::Key>;
 
   private:
+    template <ServiceType>
+    friend class ServiceBuilderEvent;
+    template <typename, typename, ServiceType>
+    friend class ServiceBuilderPublishSubscribe;
+
     void drop();
 
     iox2_attribute_verifier_h m_handle;
