@@ -273,6 +273,45 @@ mod node_death_tests {
     }
 
     #[test]
+    fn notifier_of_dead_node_emits_death_event_when_configured<S: Test>() {
+        set_log_level(LogLevel::Error);
+        let _watchdog = Watchdog::new();
+        let mut config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let notifier_dead_event = EventId::new(8);
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        let mut dead_node = S::create_test_node(&config).node;
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+
+        let dead_service = dead_node
+            .service_builder(&service_name)
+            .event()
+            .notifier_dead_event(Some(notifier_dead_event))
+            .create()
+            .unwrap();
+        let dead_notifier = dead_service.notifier_builder().create().unwrap();
+
+        let service = node.service_builder(&service_name).event().open().unwrap();
+        let listener = service.listener_builder().create().unwrap();
+
+        S::staged_death(&mut dead_node);
+        core::mem::forget(dead_notifier);
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        let mut received_events = 0;
+        for event in listener.try_wait_one().unwrap().iter() {
+            assert_that!(*event, eq notifier_dead_event);
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 1);
+    }
+
+    #[test]
     fn event_service_is_removed_when_last_node_dies<S: Test>() {
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();

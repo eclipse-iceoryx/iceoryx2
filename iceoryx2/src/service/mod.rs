@@ -375,6 +375,7 @@ pub(crate) mod internal {
                 }
             };
 
+            let mut number_of_dead_node_notifications = 0;
             let cleanup_port_resources = |port_id| {
                 match port_id {
                     UniquePortId::Publisher(ref id) => {
@@ -399,7 +400,9 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
                     }
-                    UniquePortId::Notifier(_) => (),
+                    UniquePortId::Notifier(_) => {
+                        number_of_dead_node_notifications += 1;
+                    }
                     UniquePortId::Listener(ref id) => {
                         if let Err(e) = unsafe { remove_connection_of_listener::<S>(id, config) } {
                             debug!(from origin, "Failed to remove the listeners ({:?}) connection ({:?}).", id, e);
@@ -439,6 +442,10 @@ pub(crate) mod internal {
                         warn!(from origin, "Unable to remove static config of unused service ({:?}).",
                             e);
                     }
+                }
+            } else {
+                if number_of_dead_node_notifications != 0 {
+                    // println!("MUST SEND NOTIFICATION");
                 }
             }
 
