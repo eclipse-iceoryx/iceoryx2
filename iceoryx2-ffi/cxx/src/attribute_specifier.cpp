@@ -37,9 +37,9 @@ auto AttributeSpecifier::operator=(AttributeSpecifier&& rhs) noexcept -> Attribu
     return *this;
 }
 
-auto AttributeSpecifier::define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier& {
+auto AttributeSpecifier::define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier&& {
     iox2_attribute_specifier_define(&m_handle, key.c_str(), value.c_str());
-    return *this;
+    return std::move(*this);
 }
 
 auto AttributeSpecifier::attributes() const -> AttributeSetView {

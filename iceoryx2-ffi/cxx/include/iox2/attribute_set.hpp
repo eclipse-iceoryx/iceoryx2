@@ -24,7 +24,7 @@ class AttributeSetView {
   public:
     auto len() const -> uint64_t;
     auto at(uint64_t index) const -> AttributeView;
-    auto get_key_values(const Attribute::Key& key,
+    void get_key_values(const Attribute::Key& key,
                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
   private:

@@ -32,7 +32,7 @@ auto get_key_values_callback(const char* value, iox2_callback_context context) -
     return iox::into<iox2_callback_progression_e>(callback->value()(typed_value));
 }
 
-auto AttributeSetView::get_key_values(
+void AttributeSetView::get_key_values(
     const Attribute::Key& key, const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const {
     auto ctx = internal::ctx(callback);
     iox2_attribute_set_get_key_values(m_handle, key.c_str(), get_key_values_callback, static_cast<void*>(&ctx));

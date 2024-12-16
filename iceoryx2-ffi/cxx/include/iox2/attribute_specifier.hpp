@@ -26,7 +26,7 @@ class AttributeSpecifier {
     auto operator=(const AttributeSpecifier&) -> AttributeSpecifier& = delete;
     auto operator=(AttributeSpecifier&&) noexcept -> AttributeSpecifier&;
 
-    auto define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier&;
+    auto define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier&&;
     auto attributes() const -> AttributeSetView;
 
   private:

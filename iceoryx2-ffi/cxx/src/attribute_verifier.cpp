@@ -44,14 +44,14 @@ auto AttributeVerifier::operator=(AttributeVerifier&& rhs) noexcept -> Attribute
     return *this;
 }
 
-auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier& {
+auto AttributeVerifier::require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier&& {
     iox2_attribute_verifier_require(&m_handle, key.c_str(), value.c_str());
-    return *this;
+    return std::move(*this);
 }
 
-auto AttributeVerifier::require_key(const Attribute::Key& key) -> AttributeVerifier& {
+auto AttributeVerifier::require_key(const Attribute::Key& key) -> AttributeVerifier&& {
     iox2_attribute_verifier_require_key(&m_handle, key.c_str());
-    return *this;
+    return std::move(*this);
 }
 
 auto AttributeVerifier::attributes() const -> AttributeSetView {

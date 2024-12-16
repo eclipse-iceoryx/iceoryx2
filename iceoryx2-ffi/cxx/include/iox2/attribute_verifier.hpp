@@ -30,8 +30,8 @@ class AttributeVerifier {
     auto operator=(const AttributeVerifier&) -> AttributeVerifier& = delete;
     auto operator=(AttributeVerifier&&) noexcept -> AttributeVerifier&;
 
-    auto require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier&;
-    auto require_key(const Attribute::Key& key) -> AttributeVerifier&;
+    auto require(const Attribute::Key& key, const Attribute::Value& value) -> AttributeVerifier&&;
+    auto require_key(const Attribute::Key& key) -> AttributeVerifier&&;
     auto attributes() const -> AttributeSetView;
     auto keys() const -> iox::vector<Attribute::Key, IOX2_MAX_ATTRIBUTES_PER_SERVICE>;
     auto verify_requirements(const AttributeSetView& rhs) const -> iox::expected<void, Attribute::Key>;
