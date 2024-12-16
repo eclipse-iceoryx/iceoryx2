@@ -46,6 +46,12 @@ pub enum iox2_event_open_or_create_error_e {
     O_INCOMPATIBLE_MESSAGING_PATTERN,
     #[CustomString = "incompatible attributes"]
     O_INCOMPATIBLE_ATTRIBUTES,
+    #[CustomString = "incompatible notifier_created_event"]
+    O_INCOMPATIBLE_NOTIFIER_CREATED_EVENT,
+    #[CustomString = "incompatible notifier_dropped_event"]
+    O_INCOMPATIBLE_NOTIFIER_DROPPED_EVENT,
+    #[CustomString = "incompatible notifier_dead_event"]
+    O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT,
     #[CustomString = "internal failure"]
     O_INTERNAL_FAILURE,
     #[CustomString = "hangs in creation"]
@@ -117,6 +123,15 @@ impl IntoCInt for EventOpenError {
             }
             EventOpenError::IsMarkedForDestruction => {
                 iox2_event_open_or_create_error_e::O_IS_MARKED_FOR_DESTRUCTION
+            }
+            EventOpenError::IncompatibleNotifierCreatedEvent => {
+                iox2_event_open_or_create_error_e::O_INCOMPATIBLE_NOTIFIER_CREATED_EVENT
+            }
+            EventOpenError::IncompatibleNotifierDroppedEvent => {
+                iox2_event_open_or_create_error_e::O_INCOMPATIBLE_NOTIFIER_DROPPED_EVENT
+            }
+            EventOpenError::IncompatibleNotifierDeadEvent => {
+                iox2_event_open_or_create_error_e::O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT
             }
         }) as c_int
     }

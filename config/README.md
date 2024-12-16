@@ -63,11 +63,11 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.event.max-nodes` - [int]: Maximum number of nodes.
 * `defaults.event.event-id-max-value` - [int]: Greatest value an [`EventId`] can
   have.
-* `defaults.event.emit-event-id-with-new-notifier` - [Option\<int\>]: If defined,
+* `defaults.event.notifier-created-event` - [Option\<int\>]: If defined,
     it defines the event id that is emitted when a new notifier is created.
-* `defaults.event.emit-event-id-with-notifier-drop` - [Option\<int\>]: If defined,
+* `defaults.event.notifier-dropped-event` - [Option\<int\>]: If defined,
     it defines the event id that is emitted when a notifier is destroyed.
-* `defaults.event.emit-event-id-if-notifier-dead` - [Option\<int\>]: If defined,
+* `defaults.event.notifier-dead-event` - [Option\<int\>]: If defined,
     it defines the event id that is emitted when a dead notifier is cleaned up.
 
 ### Service: Publish Subscribe Messaging Pattern

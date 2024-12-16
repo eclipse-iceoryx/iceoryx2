@@ -40,6 +40,9 @@ pub struct StaticConfig {
     pub(crate) max_listeners: usize,
     pub(crate) max_nodes: usize,
     pub(crate) event_id_max_value: usize,
+    pub(crate) notifier_created_event: Option<usize>,
+    pub(crate) notifier_dropped_event: Option<usize>,
+    pub(crate) notifier_dead_event: Option<usize>,
 }
 
 impl StaticConfig {
@@ -49,6 +52,9 @@ impl StaticConfig {
             max_listeners: config.defaults.event.max_listeners,
             max_nodes: config.defaults.event.max_nodes,
             event_id_max_value: config.defaults.event.event_id_max_value,
+            notifier_created_event: config.defaults.event.notifier_created_event,
+            notifier_dropped_event: config.defaults.event.notifier_dropped_event,
+            notifier_dead_event: config.defaults.event.notifier_dead_event,
         }
     }
 
