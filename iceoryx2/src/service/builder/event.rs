@@ -250,8 +250,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it defines the event that shall be emitted by every newly
     /// created [`Notifier`](crate::port::notifier::Notifier). If [`None`] is provided a new
     /// [`Notifier`](crate::port::notifier::Notifier) will not emit an event.
-    pub fn notifier_created_event(mut self, value: Option<usize>) -> Self {
-        self.config_details().notifier_created_event = value;
+    pub fn notifier_created_event(mut self, value: Option<EventId>) -> Self {
+        self.config_details().notifier_created_event = value.map(|e| e.as_value());
         self.verify_notifier_created_event = true;
         self
     }
@@ -259,8 +259,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it defines the event that shall be emitted by every
     /// [`Notifier`](crate::port::notifier::Notifier) before it is dropped. If [`None`] is
     /// provided a [`Notifier`](crate::port::notifier::Notifier) will not emit an event.
-    pub fn notifier_dropped_event(mut self, value: Option<usize>) -> Self {
-        self.config_details().notifier_dropped_event = value;
+    pub fn notifier_dropped_event(mut self, value: Option<EventId>) -> Self {
+        self.config_details().notifier_dropped_event = value.map(|e| e.as_value());
         self.verify_notifier_dropped_event = true;
         self
     }
@@ -268,8 +268,8 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// If the [`Service`] is created it defines the event that shall be emitted when a
     /// [`Notifier`](crate::port::notifier::Notifier) is identified as dead. If [`None`] is
     /// provided no event will be emitted.
-    pub fn notifier_dead_event(mut self, value: Option<usize>) -> Self {
-        self.config_details().notifier_dead_event = value;
+    pub fn notifier_dead_event(mut self, value: Option<EventId>) -> Self {
+        self.config_details().notifier_dead_event = value.map(|e| e.as_value());
         self.verify_notifier_dead_event = true;
         self
     }
