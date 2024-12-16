@@ -810,8 +810,8 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create_with_attrib
         service_builder_handle,
         port_factory_struct_ptr,
         port_factory_handle_ptr,
-        |service_builder| service_builder.open_or_create_with_attributes(&attribute_verifier),
-        |service_builder| service_builder.open_or_create_with_attributes(&attribute_verifier),
+        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
     )
 }
 
@@ -880,8 +880,8 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_with_attributes(
         service_builder_handle,
         port_factory_struct_ptr,
         port_factory_handle_ptr,
-        |service_builder| service_builder.open_with_attributes(&attribute_verifier),
-        |service_builder| service_builder.open_with_attributes(&attribute_verifier),
+        |service_builder| service_builder.open_with_attributes(attribute_verifier),
+        |service_builder| service_builder.open_with_attributes(attribute_verifier),
     )
 }
 
@@ -950,8 +950,8 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_create_with_attributes(
         service_builder_handle,
         port_factory_struct_ptr,
         port_factory_handle_ptr,
-        |service_builder| service_builder.create_with_attributes(&attribute_specifier),
-        |service_builder| service_builder.create_with_attributes(&attribute_specifier),
+        |service_builder| service_builder.create_with_attributes(attribute_specifier),
+        |service_builder| service_builder.create_with_attributes(attribute_specifier),
     )
 }
 
