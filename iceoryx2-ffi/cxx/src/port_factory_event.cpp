@@ -63,7 +63,7 @@ auto PortFactoryEvent<S>::service_id() const -> const ServiceId& {
 
 template <ServiceType S>
 auto PortFactoryEvent<S>::attributes() const -> AttributeSetView {
-    IOX_TODO();
+    return AttributeSetView(iox2_port_factory_event_attributes(&m_handle));
 }
 
 template <ServiceType S>

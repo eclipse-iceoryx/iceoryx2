@@ -361,4 +361,65 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
         ASSERT_THAT(temp_sut.has_value(), Eq(true));
     }
 }
+
+TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
+
+    auto key = Attribute::Key("want to make your machine run faster:");
+    auto value = Attribute::Value("sudo rm -rf /");
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service_create = node.service_builder(service_name)
+                              .event()
+                              .create_with_attributes(AttributeSpecifier().define(key, value))
+                              .expect("");
+
+    auto service_open = node.service_builder(service_name).event().open().expect("");
+
+
+    auto attributes_create = service_create.attributes();
+    auto attributes_open = service_open.attributes();
+
+    ASSERT_THAT(attributes_create.len(), Eq(1));
+    ASSERT_THAT(attributes_create.at(0).key(), Eq(key));
+    ASSERT_THAT(attributes_create.at(0).value(), Eq(value));
+
+    ASSERT_THAT(attributes_open.len(), Eq(1));
+    ASSERT_THAT(attributes_open.at(0).key(), Eq(key));
+    ASSERT_THAT(attributes_open.at(0).value(), Eq(value));
+}
+
+TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
+
+    auto key = Attribute::Key("whats hypnotoad doing these days?");
+    auto value = Attribute::Value("eating hypnoflies?");
+    auto missing_key = Attribute::Key("no he is singing a song!");
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service_create = node.service_builder(service_name)
+                              .event()
+                              .open_or_create_with_attributes(AttributeVerifier().require(key, value))
+                              .expect("");
+
+    auto service_open_or_create =
+        node.service_builder(service_name)
+            .event()
+            .open_or_create_with_attributes(AttributeVerifier().require(key, value).require_key(missing_key));
+
+    ASSERT_THAT(service_open_or_create.has_error(), Eq(true));
+    ASSERT_THAT(service_open_or_create.error(), Eq(EventOpenOrCreateError::OpenIncompatibleAttributes));
+
+    auto service_open = node.service_builder(service_name)
+                            .event()
+                            .open_with_attributes(AttributeVerifier().require(key, value).require_key(missing_key));
+
+    ASSERT_THAT(service_open.has_error(), Eq(true));
+    ASSERT_THAT(service_open.error(), Eq(EventOpenError::IncompatibleAttributes));
+}
+
 } // namespace

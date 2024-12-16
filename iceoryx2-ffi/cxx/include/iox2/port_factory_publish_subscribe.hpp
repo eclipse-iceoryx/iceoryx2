@@ -133,7 +133,7 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() co
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::attributes() const -> AttributeSetView {
-    IOX_TODO();
+    return AttributeSetView(iox2_port_factory_pub_sub_attributes(&m_handle));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

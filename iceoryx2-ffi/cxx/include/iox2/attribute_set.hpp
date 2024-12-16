@@ -28,6 +28,10 @@ class AttributeSetView {
                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
   private:
+    template <ServiceType, typename, typename>
+    friend class PortFactoryPublishSubscribe;
+    template <ServiceType>
+    friend class PortFactoryEvent;
     friend class AttributeVerifier;
     friend class AttributeSpecifier;
 
