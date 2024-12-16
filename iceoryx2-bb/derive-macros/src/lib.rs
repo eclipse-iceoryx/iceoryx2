@@ -118,10 +118,10 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 /// }
 ///
 /// let v1 = MyEnum::VariantOne;
-/// assert_eq!(v1.as_str_literal(), "custom variant one");
+/// assert_eq!(v1.as_str_literal(), "custom variant one\0");
 ///
 /// let v2 = MyEnum::VariantTwo;
-/// assert_eq!(v2.as_str_literal(), "variant two");
+/// assert_eq!(v2.as_str_literal(), "variant two\0");
 /// ```
 #[proc_macro_derive(StringLiteral, attributes(CustomString))]
 pub fn string_literal_derive(input: TokenStream) -> TokenStream {
@@ -146,7 +146,11 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                             Ok(meta) => match &meta.value {
                                 Expr::Lit(ExprLit {
                                     lit: Lit::Str(lit), ..
-                                }) => Some(Literal::string(&lit.value())),
+                                }) => {
+                                    let mut value = lit.value();
+                                    value.push('\0');
+                                    Some(Literal::string(&value))
+                                }
                                 _ => None,
                             },
                             _ => None,
@@ -155,7 +159,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                     .unwrap_or_else(|| {
                         // If no CustomString, generates default string literal in the form
                         // MyEnum::MyVariantName => 'my variant name'
-                        let enum_string_literal = enum_name
+                        let mut enum_string_literal = enum_name
                             .to_string()
                             .chars()
                             .fold(String::new(), |mut acc, c| {
@@ -171,6 +175,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                                 c => c.to_ascii_lowercase(),
                             })
                             .collect::<String>();
+                        enum_string_literal.push('\0');
                         Literal::string(&enum_string_literal)
                     });
 
