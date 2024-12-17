@@ -212,11 +212,7 @@ impl<Service: service::Service> Notifier<Service> {
         let mut new_self = Self::new_without_auto_event_emission(service, default_event_id)?;
 
         let static_config = service.__internal_state().static_config.event();
-        new_self.on_drop_notification = if let Some(id) = static_config.notifier_dropped_event {
-            Some(EventId::new(id))
-        } else {
-            None
-        };
+        new_self.on_drop_notification = static_config.notifier_dropped_event.map(EventId::new);
 
         if let Some(event_id) = static_config.notifier_created_event() {
             if let Err(e) = new_self.notify_with_custom_event_id(event_id) {

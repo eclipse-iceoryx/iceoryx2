@@ -81,16 +81,16 @@ impl StaticConfig {
 
     /// Returns the emitted [`EventId`] when a new notifier is created.
     pub fn notifier_created_event(&self) -> Option<EventId> {
-        self.notifier_created_event.map(|e| EventId::new(e))
+        self.notifier_created_event.map(EventId::new)
     }
 
     /// Returns the emitted [`EventId`] when a notifier is dropped.
     pub fn notifier_dropped_event(&self) -> Option<EventId> {
-        self.notifier_dropped_event.map(|e| EventId::new(e))
+        self.notifier_dropped_event.map(EventId::new)
     }
 
     /// Returns the emitted [`EventId`] when a notifier is identified as dead.
     pub fn notifier_dead_event(&self) -> Option<EventId> {
-        self.notifier_dead_event.map(|e| EventId::new(e))
+        self.notifier_dead_event.map(EventId::new)
     }
 }

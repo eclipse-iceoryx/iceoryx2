@@ -380,7 +380,7 @@ pub(crate) mod internal {
             }
         };
 
-        let service = match node.service_builder(&service_name).event().open() {
+        let service = match node.service_builder(service_name).event().open() {
             Ok(service) => service,
             Err(EventOpenError::DoesNotExist) => return,
             Err(e) => {
@@ -519,10 +519,8 @@ pub(crate) mod internal {
                             e);
                     }
                 }
-            } else {
-                if number_of_dead_node_notifications != 0 {
-                    send_dead_node_signal::<S>(service_id, config);
-                }
+            } else if number_of_dead_node_notifications != 0 {
+                send_dead_node_signal::<S>(service_id, config);
             }
 
             Ok(())
