@@ -24,6 +24,9 @@
 //! println!("max listeners:                {:?}", event.static_config().max_listeners());
 //! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("event id max value:           {:?}", event.static_config().event_id_max_value());
+//! println!("notifier created event:       {:?}", event.static_config().notifier_created_event());
+//! println!("notifier dropped event:       {:?}", event.static_config().notifier_dropped_event());
+//! println!("notifier dead event:          {:?}", event.static_config().notifier_dead_event());
 //!
 //! # Ok(())
 //! # }

@@ -54,6 +54,9 @@
 //!     .max_notifiers(12)
 //!     .max_listeners(2)
 //!     .event_id_max_value(32)
+//!     .notifier_created_event(EventId::new(999))
+//!     .notifier_dropped_event(EventId::new(0))
+//!     .notifier_dead_event(EventId::new(2000))
 //!     // if the service already exists, open it, otherwise create it
 //!     .open_or_create()?;
 //!
