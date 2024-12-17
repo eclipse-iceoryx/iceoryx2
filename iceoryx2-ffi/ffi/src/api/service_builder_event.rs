@@ -195,6 +195,216 @@ pub unsafe extern "C" fn iox2_event_open_or_create_error_string(
     error.as_str_literal().as_ptr() as *const c_char
 }
 
+/// Sets the event id value that shall be emitted if a notifier was identified as dead.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+/// * `value` - the value of the event id that will be emitted.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dead_event(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    value: c_size_t,
+) {
+    iox2_service_builder_event_set_notifier_dead_event_impl(
+        service_builder_handle,
+        Some(EventId::new(value as _)),
+    );
+}
+
+/// Disables event id notification when a notifier was identified as dead.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_dead_event(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+) {
+    iox2_service_builder_event_set_notifier_dead_event_impl(service_builder_handle, None);
+}
+
+#[no_mangle]
+unsafe fn iox2_service_builder_event_set_notifier_dead_event_impl(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    value: Option<EventId>,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                service_builder.notifier_dead_event(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                service_builder.notifier_dead_event(value),
+            ));
+        }
+    }
+}
+
+/// Sets the event id value that shall be emitted after a notifier was created.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+/// * `value` - the value of the event id that will be emitted.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_created_event(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    value: c_size_t,
+) {
+    iox2_service_builder_event_set_notifier_created_event_impl(
+        service_builder_handle,
+        Some(EventId::new(value as _)),
+    );
+}
+
+/// Disables the event id value that shall be emitted after a notifier was created.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_created_event(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+) {
+    iox2_service_builder_event_set_notifier_created_event_impl(service_builder_handle, None);
+}
+
+#[no_mangle]
+unsafe fn iox2_service_builder_event_set_notifier_created_event_impl(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    value: Option<EventId>,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                service_builder.notifier_created_event(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                service_builder.notifier_created_event(value),
+            ));
+        }
+    }
+}
+
+/// Sets the event id value that shall be emitted before a notifier is dropped.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+/// * `value` - the value of the event id that will be emitted.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_set_notifier_dropped_event(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    value: c_size_t,
+) {
+    iox2_service_builder_event_set_notifier_dropped_event_impl(
+        service_builder_handle,
+        Some(EventId::new(value as _)),
+    );
+}
+
+/// Disables the event id value that shall be emitted before a notifier is dropped.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_dropped_event(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+) {
+    iox2_service_builder_event_set_notifier_dropped_event_impl(service_builder_handle, None);
+}
+
+#[no_mangle]
+unsafe fn iox2_service_builder_event_set_notifier_dropped_event_impl(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    value: Option<EventId>,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                service_builder.notifier_dropped_event(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                service_builder.notifier_dropped_event(value),
+            ));
+        }
+    }
+}
+
 /// Sets the max notifiers for the builder
 ///
 /// # Arguments

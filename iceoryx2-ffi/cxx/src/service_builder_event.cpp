@@ -23,6 +23,21 @@ template <ServiceType S>
 void ServiceBuilderEvent<S>::set_parameters() {
     m_max_notifiers.and_then([&](auto value) { iox2_service_builder_event_set_max_notifiers(&m_handle, value); });
     m_max_listeners.and_then([&](auto value) { iox2_service_builder_event_set_max_listeners(&m_handle, value); });
+    m_notifier_created_event.and_then(
+        [&](auto value) { iox2_service_builder_event_set_notifier_created_event(&m_handle, value.as_value()); });
+    m_notifier_dropped_event.and_then(
+        [&](auto value) { iox2_service_builder_event_set_notifier_dropped_event(&m_handle, value.as_value()); });
+    m_notifier_dead_event.and_then(
+        [&](auto value) { iox2_service_builder_event_set_notifier_dead_event(&m_handle, value.as_value()); });
+    if (m_disable_notifier_created_event) {
+        iox2_service_builder_event_disable_notifier_created_event(&m_handle);
+    }
+    if (m_disable_notifier_dropped_event) {
+        iox2_service_builder_event_disable_notifier_dropped_event(&m_handle);
+    }
+    if (m_disable_notifier_dead_event) {
+        iox2_service_builder_event_disable_notifier_dead_event(&m_handle);
+    }
     m_max_nodes.and_then([](auto) { IOX_TODO(); });
     m_event_id_max_value.and_then([](auto) { IOX_TODO(); });
 }

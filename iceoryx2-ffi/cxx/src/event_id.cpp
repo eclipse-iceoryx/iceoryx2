@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/event_id.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 EventId::EventId(const size_t value)
@@ -29,5 +28,29 @@ auto EventId::as_value() const -> size_t {
 auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream& {
     stream << "EventId { m_value: " << value.as_value() << " }";
     return stream;
+}
+
+auto operator==(const EventId& lhs, const EventId& rhs) -> bool {
+    return lhs.as_value() == rhs.as_value();
+}
+
+auto operator!=(const EventId& lhs, const EventId& rhs) -> bool {
+    return lhs.as_value() != rhs.as_value();
+}
+
+auto operator<(const EventId& lhs, const EventId& rhs) -> bool {
+    return lhs.as_value() < rhs.as_value();
+}
+
+auto operator<=(const EventId& lhs, const EventId& rhs) -> bool {
+    return lhs.as_value() <= rhs.as_value();
+}
+
+auto operator>(const EventId& lhs, const EventId& rhs) -> bool {
+    return lhs.as_value() > rhs.as_value();
+}
+
+auto operator>=(const EventId& lhs, const EventId& rhs) -> bool {
+    return lhs.as_value() >= rhs.as_value();
 }
 } // namespace iox2
