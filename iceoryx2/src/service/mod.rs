@@ -329,11 +329,13 @@ impl<S: Service> Drop for ServiceState<S> {
 }
 
 pub(crate) mod internal {
+    use builder::event::EventOpenError;
     use config_scheme::static_config_storage_config;
     use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
+    use port_factory::PortFactory;
 
     use crate::{
-        node::NodeId,
+        node::{NodeBuilder, NodeId},
         port::{
             listener::remove_connection_of_listener,
             port_identifiers::UniquePortId,
@@ -342,9 +344,79 @@ pub(crate) mod internal {
                 remove_subscriber_from_all_connections,
             },
         },
+        prelude::EventId,
     };
 
     use super::*;
+
+    fn send_dead_node_signal<S: Service>(service_id: &ServiceId, config: &config::Config) {
+        let origin = "send_dead_node_signal()";
+
+        let service_details = match details::<S>(config, &service_id.0.into()) {
+            Ok(Some(service_details)) => service_details,
+            Ok(None) => return,
+            Err(e) => {
+                warn!(from origin,
+                    "Unable to acquire service details to emit dead node signal to waiting listeners for the service id {:?} due to ({:?})",
+                    service_id, e);
+                return;
+            }
+        };
+
+        let service_name = service_details.static_details.name();
+
+        let mut config = config.clone();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        config.global.node.cleanup_dead_nodes_on_destruction = false;
+
+        let node = match NodeBuilder::new().config(&config).create::<S>() {
+            Ok(node) => node,
+            Err(e) => {
+                warn!(from origin,
+                                "Unable to create node to emit dead node signal to waiting listeners on the service {} due to ({:?}).",
+                                service_name, e);
+                return;
+            }
+        };
+
+        let service = match node.service_builder(&service_name).event().open() {
+            Ok(service) => service,
+            Err(EventOpenError::DoesNotExist) => return,
+            Err(e) => {
+                warn!(from origin,
+                                "Unable to open event service to emit dead node signal to waiting listeners on the service {} due to ({:?}).",
+                                service_name, e);
+                return;
+            }
+        };
+
+        if service.dynamic_config().number_of_listeners() == 0 {
+            return;
+        }
+
+        let event_id = match service.static_config().notifier_dead_event {
+            Some(event_id) => event_id,
+            None => return,
+        };
+
+        let notifier = match service.notifier_builder().create() {
+            Ok(notifier) => notifier,
+            Err(e) => {
+                warn!(from origin,
+                                "Unable to create notifier to send dead node signal to waiting listeners on the service {} due to ({:?})",
+                                service_name, e);
+                return;
+            }
+        };
+
+        if let Err(e) = notifier.notify_with_custom_event_id(EventId::new(event_id)) {
+            warn!(from origin,
+                            "Unable to send dead node signal to waiting listeners on service {} due to ({:?})",
+                            service_name, e);
+        }
+
+        trace!(from origin, "Send dead node signal on service {}.", service_name);
+    }
 
     pub(crate) trait ServiceInternal<S: Service> {
         fn __internal_from_state(state: ServiceState<S>) -> S;
@@ -445,7 +517,7 @@ pub(crate) mod internal {
                 }
             } else {
                 if number_of_dead_node_notifications != 0 {
-                    // println!("MUST SEND NOTIFICATION");
+                    send_dead_node_signal::<S>(service_id, config);
                 }
             }
 
