@@ -209,6 +209,30 @@ impl<Service: service::Service> Notifier<Service> {
         service: &Service,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
+        let mut new_self = Self::new_without_auto_event_emission(service, default_event_id)?;
+
+        let static_config = service.__internal_state().static_config.event();
+        new_self.on_drop_notification = if let Some(id) = static_config.notifier_dropped_event {
+            Some(EventId::new(id))
+        } else {
+            None
+        };
+
+        if let Some(event_id) = static_config.notifier_created_event() {
+            if let Err(e) = new_self.notify_with_custom_event_id(event_id) {
+                warn!(from new_self,
+                    "The new notifier was unable to send out the notifier_created_event: {:?} due to ({:?}).",
+                    event_id, e);
+            }
+        }
+
+        Ok(new_self)
+    }
+
+    pub(crate) fn new_without_auto_event_emission(
+        service: &Service,
+        default_event_id: EventId,
+    ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
         let notifier_id = UniqueNotifierId::new();
@@ -231,11 +255,7 @@ impl<Service: service::Service> Notifier<Service> {
             event_id_max_value: static_config.event_id_max_value,
             dynamic_notifier_handle: None,
             notifier_id,
-            on_drop_notification: if let Some(id) = static_config.notifier_dropped_event {
-                Some(EventId::new(id))
-            } else {
-                None
-            },
+            on_drop_notification: None,
         };
 
         new_self.populate_listener_channels();
@@ -262,14 +282,6 @@ impl<Service: service::Service> Notifier<Service> {
             }
         };
         new_self.dynamic_notifier_handle = Some(dynamic_notifier_handle);
-
-        if let Some(event_id) = static_config.notifier_created_event() {
-            if let Err(e) = new_self.notify_with_custom_event_id(event_id) {
-                warn!(from new_self,
-                    "The new notifier was unable to send out the notifier_created_event: {:?} due to ({:?}).",
-                    event_id, e);
-            }
-        }
 
         Ok(new_self)
     }

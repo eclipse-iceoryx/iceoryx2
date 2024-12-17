@@ -338,6 +338,7 @@ pub(crate) mod internal {
         node::{NodeBuilder, NodeId},
         port::{
             listener::remove_connection_of_listener,
+            notifier::Notifier,
             port_identifiers::UniquePortId,
             publisher::{
                 remove_data_segment_of_publisher, remove_publisher_from_all_connections,
@@ -399,7 +400,10 @@ pub(crate) mod internal {
             None => return,
         };
 
-        let notifier = match service.notifier_builder().create() {
+        let notifier = match Notifier::new_without_auto_event_emission(
+            &service.service,
+            EventId::new(0),
+        ) {
             Ok(notifier) => notifier,
             Err(e) => {
                 warn!(from origin,

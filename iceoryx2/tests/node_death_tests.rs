@@ -288,6 +288,8 @@ mod node_death_tests {
             .service_builder(&service_name)
             .event()
             .notifier_dead_event(Some(notifier_dead_event))
+            .notifier_created_event(Some(EventId::new(0)))
+            .notifier_dropped_event(Some(EventId::new(0)))
             .create()
             .unwrap();
         let dead_notifier = dead_service.notifier_builder().create().unwrap();
@@ -301,10 +303,13 @@ mod node_death_tests {
         assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
 
         let mut received_events = 0;
-        for event in listener.try_wait_one().unwrap().iter() {
-            assert_that!(*event, eq notifier_dead_event);
-            received_events += 1;
-        }
+        listener
+            .try_wait_all(|event| {
+                assert_that!(event, eq notifier_dead_event);
+                received_events += 1;
+            })
+            .unwrap();
+
         assert_that!(received_events, eq 1);
     }
 
