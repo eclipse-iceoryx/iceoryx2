@@ -249,18 +249,20 @@ unsafe fn iox2_service_builder_event_set_notifier_dead_event_impl(
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
-                service_builder.notifier_dead_event(value),
-            ));
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
+                Some(value) => service_builder.notifier_dead_event(value),
+                None => service_builder.disable_notifier_dead_event(),
+            }));
         }
         iox2_service_type_e::LOCAL => {
             let service_builder =
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
-                service_builder.notifier_dead_event(value),
-            ));
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
+                Some(value) => service_builder.notifier_dead_event(value),
+                None => service_builder.disable_notifier_dead_event(),
+            }));
         }
     }
 }
@@ -319,18 +321,20 @@ unsafe fn iox2_service_builder_event_set_notifier_created_event_impl(
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
-                service_builder.notifier_created_event(value),
-            ));
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
+                Some(value) => service_builder.notifier_created_event(value),
+                None => service_builder.disable_notifier_created_event(),
+            }));
         }
         iox2_service_type_e::LOCAL => {
             let service_builder =
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
-                service_builder.notifier_created_event(value),
-            ));
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
+                Some(value) => service_builder.notifier_created_event(value),
+                None => service_builder.disable_notifier_created_event(),
+            }));
         }
     }
 }
@@ -389,18 +393,20 @@ unsafe fn iox2_service_builder_event_set_notifier_dropped_event_impl(
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
-                service_builder.notifier_dropped_event(value),
-            ));
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match value {
+                Some(value) => service_builder.notifier_dropped_event(value),
+                None => service_builder.disable_notifier_dropped_event(),
+            }));
         }
         iox2_service_type_e::LOCAL => {
             let service_builder =
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.event);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
-                service_builder.notifier_dropped_event(value),
-            ));
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(match value {
+                Some(value) => service_builder.notifier_dropped_event(value),
+                None => service_builder.disable_notifier_dropped_event(),
+            }));
         }
     }
 }

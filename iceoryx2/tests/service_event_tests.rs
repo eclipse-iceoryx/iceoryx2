@@ -283,9 +283,9 @@ mod service_event {
             .max_nodes(7)
             .max_notifiers(4)
             .max_listeners(5)
-            .notifier_dead_event(Some(EventId::new(8)))
-            .notifier_dropped_event(Some(EventId::new(9)))
-            .notifier_created_event(Some(EventId::new(10)))
+            .notifier_dead_event(EventId::new(8))
+            .notifier_dropped_event(EventId::new(9))
+            .notifier_created_event(EventId::new(10))
             .create()
             .unwrap();
         assert_that!(sut.static_config().max_nodes(), eq 7);
@@ -404,8 +404,8 @@ mod service_event {
         let sut = node
             .service_builder(&service_name)
             .event()
-            .notifier_created_event(None)
-            .notifier_dropped_event(None)
+            .disable_notifier_created_event()
+            .disable_notifier_dropped_event()
             .create()
             .unwrap();
 
@@ -440,8 +440,8 @@ mod service_event {
         let sut = node
             .service_builder(&service_name)
             .event()
-            .notifier_created_event(Some(notifier_created))
-            .notifier_dropped_event(Some(notifier_dropped))
+            .notifier_created_event(notifier_created)
+            .notifier_dropped_event(notifier_dropped)
             .create()
             .unwrap();
 

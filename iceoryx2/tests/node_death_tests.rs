@@ -287,9 +287,9 @@ mod node_death_tests {
         let dead_service = dead_node
             .service_builder(&service_name)
             .event()
-            .notifier_dead_event(Some(notifier_dead_event))
-            .notifier_created_event(Some(EventId::new(0)))
-            .notifier_dropped_event(Some(EventId::new(0)))
+            .notifier_dead_event(notifier_dead_event)
+            .notifier_created_event(EventId::new(0))
+            .notifier_dropped_event(EventId::new(0))
             .create()
             .unwrap();
         let dead_notifier = dead_service.notifier_builder().create().unwrap();
