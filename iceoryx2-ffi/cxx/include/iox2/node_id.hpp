@@ -21,6 +21,7 @@
 #include <iostream>
 
 namespace iox2 {
+/// The system-wide unique id of a [`Node`]
 class NodeId {
   public:
     NodeId(const NodeId& rhs);
@@ -29,10 +30,10 @@ class NodeId {
     auto operator=(NodeId&& rhs) noexcept -> NodeId&;
     ~NodeId();
 
-    /// Returns high bits of the underlying value of the [`NodeId`].
+    /// Returns the high bits of the underlying value of the [`NodeId`].
     auto value_high() const -> uint64_t;
 
-    /// Returns low bits of the underlying value of the [`NodeId`].
+    /// Returns the low bits of the underlying value of the [`NodeId`].
     auto value_low() const -> uint64_t;
 
     /// Returns the [`ProcessId`] of the process that owns the [`Node`].
@@ -47,12 +48,9 @@ class NodeId {
     template <ServiceType>
     friend class DeadNodeView;
     template <ServiceType>
-    friend auto list_callback(iox2_node_state_e,
-                              iox2_node_id_ptr,
-                              const char*,
-                              iox2_node_name_ptr,
-                              iox2_config_ptr,
-                              iox2_callback_context) -> iox2_callback_progression_e;
+    friend auto list_callback(
+        iox2_node_state_e, iox2_node_id_ptr, const char*, iox2_node_name_ptr, iox2_config_ptr, iox2_callback_context)
+        -> iox2_callback_progression_e;
 
 
     explicit NodeId(iox2_node_id_h handle);

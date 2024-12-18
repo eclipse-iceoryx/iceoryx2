@@ -80,7 +80,7 @@ auto NodeId::creation_time() const -> timespec {
     uint32_t nanoseconds = 0;
     iox2_node_id_creation_time(&m_handle, &seconds, &nanoseconds);
 
-    return { static_cast<time_t>(seconds), nanoseconds };
+    return { static_cast<decltype(timespec::tv_sec)>(seconds), static_cast<decltype(timespec::tv_nsec)>(nanoseconds) };
 }
 
 auto operator<<(std::ostream& stream, const NodeId& node) -> std::ostream& {

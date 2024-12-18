@@ -102,13 +102,9 @@ class NodeState {
 
   private:
     template <ServiceType>
-    // NOLINTBEGIN(readability-function-size)
-    friend auto list_callback(iox2_node_state_e,
-                              iox2_node_id_ptr,
-                              const char*,
-                              iox2_node_name_ptr,
-                              iox2_config_ptr,
-                              iox2_callback_context) -> iox2_callback_progression_e;
+    friend auto list_callback(
+        iox2_node_state_e, iox2_node_id_ptr, const char*, iox2_node_name_ptr, iox2_config_ptr, iox2_callback_context)
+        -> iox2_callback_progression_e;
 
     explicit NodeState(const AliveNodeView<T>& view);
     explicit NodeState(const DeadNodeView<T>& view);

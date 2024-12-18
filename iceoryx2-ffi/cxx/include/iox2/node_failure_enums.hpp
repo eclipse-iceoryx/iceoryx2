@@ -36,6 +36,8 @@ enum class NodeCreationFailure : uint8_t {
     InternalError
 };
 
+/// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of
+/// a dead [`Node`] are removed.
 enum class NodeCleanupFailure : uint8_t {
     /// The process received an interrupt signal while cleaning up all stale resources of a dead [`Node`].
     Interrupt,
