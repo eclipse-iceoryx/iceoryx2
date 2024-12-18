@@ -13,7 +13,6 @@
 #ifndef IOX2_NODE_HPP
 #define IOX2_NODE_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/builder_addendum.hpp"
 #include "iox/duration.hpp"
 #include "iox/expected.hpp"
@@ -43,6 +42,9 @@ class Node {
     Node(const Node&) = delete;
     auto operator=(const Node&) -> Node& = delete;
     ~Node();
+
+    /// Returns the [`Config`] that the [`Node`] will use to create any iceoryx2 entity.
+    auto config() const -> ConfigView;
 
     /// Returns the name of the node inside a [`NodeNameView`].
     auto name() const -> NodeNameView;
