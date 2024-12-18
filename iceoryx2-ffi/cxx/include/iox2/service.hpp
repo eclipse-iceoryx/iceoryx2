@@ -33,9 +33,8 @@ template <ServiceType S>
 class Service {
   public:
     /// Checks if a service under a given [`ConfigView`] does exist.
-    static auto does_exist(const ServiceName& service_name,
-                           ConfigView config,
-                           MessagingPattern messaging_pattern) -> iox::expected<bool, ServiceDetailsError>;
+    static auto does_exist(const ServiceName& service_name, ConfigView config, MessagingPattern messaging_pattern)
+        -> iox::expected<bool, ServiceDetailsError>;
 
     /// Acquires the [`ServiceDetails`] of a [`Service`].
     static auto details(const ServiceName& service_name, ConfigView config, MessagingPattern messaging_pattern)

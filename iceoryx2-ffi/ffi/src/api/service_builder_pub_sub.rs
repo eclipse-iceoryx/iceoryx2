@@ -35,6 +35,8 @@ use core::mem::ManuallyDrop;
 use core::{slice, str};
 use std::alloc::Layout;
 
+use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref};
+
 // BEGIN types definition
 
 #[repr(C)]
@@ -742,8 +744,6 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_enable_safe_overflow(
     }
 }
 
-// TODO [#210] add all the other setter methods
-
 /// Opens a publish-subscribe service or creates the service if it does not exist and returns a port factory to create publishers and subscribers.
 ///
 /// # Arguments
@@ -773,6 +773,45 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create(
         port_factory_handle_ptr,
         |service_builder| service_builder.open_or_create(),
         |service_builder| service_builder.open_or_create(),
+    )
+}
+
+/// Opens a publish-subscribe service or creates the service if it does not exist and returns a port factory to create publishers and subscribers.
+/// If the service does not exist, the provided arguments are stored inside the services, if the
+/// service already exists, the provided attributes are considered as requirements.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_pub_sub_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_pub_sub_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_pub_sub_open_or_create_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
+/// * The `attribute_verifier_handle` must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_or_create_with_attributes(
+    service_builder_handle: iox2_service_builder_pub_sub_h,
+    attribute_verifier_handle: iox2_attribute_verifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
+) -> c_int {
+    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+
+    iox2_service_builder_pub_sub_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
     )
 }
 
@@ -808,6 +847,44 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_open(
     )
 }
 
+/// Opens a publish-subscribe service and returns a port factory to create publishers and subscribers.
+/// The provided attributes are considered as requirements.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_pub_sub_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_pub_sub_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_pub_sub_open_or_create_error_e`] otherwise. Note, only the errors annotated with `O_` are relevant.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
+/// * The `attribute_verifier_handle` must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_open_with_attributes(
+    service_builder_handle: iox2_service_builder_pub_sub_h,
+    attribute_verifier_handle: iox2_attribute_verifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
+) -> c_int {
+    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+
+    iox2_service_builder_pub_sub_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_with_attributes(attribute_verifier),
+        |service_builder| service_builder.open_with_attributes(attribute_verifier),
+    )
+}
+
 /// Creates a publish-subscribe service and returns a port factory to create publishers and subscribers.
 ///
 /// # Arguments
@@ -837,6 +914,44 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_create(
         port_factory_handle_ptr,
         |service_builder| service_builder.create(),
         |service_builder| service_builder.create(),
+    )
+}
+
+/// Creates a publish-subscribe service and returns a port factory to create publishers and subscribers.
+/// The provided arguments are stored inside the services.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_pub_sub_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_pub_sub_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_pub_sub_open_or_create_error_e`] otherwise. Note, only the errors annotated with `C_` are relevant.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
+/// * The `attribute_verifier_handle` must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_pub_sub_create_with_attributes(
+    service_builder_handle: iox2_service_builder_pub_sub_h,
+    attribute_specifier_handle: iox2_attribute_specifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
+) -> c_int {
+    let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
+    let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
+
+    iox2_service_builder_pub_sub_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.create_with_attributes(attribute_specifier),
+        |service_builder| service_builder.create_with_attributes(attribute_specifier),
     )
 }
 

@@ -13,7 +13,6 @@
 #ifndef IOX2_EXAMPLES_CUSTOM_SUBSCRIBER_HPP
 #define IOX2_EXAMPLES_CUSTOM_SUBSCRIBER_HPP
 
-#include "iox/into.hpp"
 #include "iox2/file_descriptor.hpp"
 #include "iox2/listener.hpp"
 #include "iox2/node.hpp"
@@ -44,8 +43,8 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
     auto operator=(const CustomSubscriber&) -> CustomSubscriber& = delete;
     auto operator=(CustomSubscriber&&) -> CustomSubscriber& = default;
 
-    static auto create(iox2::Node<iox2::ServiceType::Ipc>& node,
-                       const iox2::ServiceName& service_name) -> CustomSubscriber {
+    static auto create(iox2::Node<iox2::ServiceType::Ipc>& node, const iox2::ServiceName& service_name)
+        -> CustomSubscriber {
         auto pubsub_service =
             node.service_builder(service_name).publish_subscribe<TransmissionData>().open_or_create().expect("");
         auto event_service = node.service_builder(service_name).event().open_or_create().expect("");

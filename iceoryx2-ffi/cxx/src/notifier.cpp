@@ -19,8 +19,7 @@ Notifier<S>::Notifier(iox2_notifier_h handle)
 }
 
 template <ServiceType S>
-Notifier<S>::Notifier(Notifier&& rhs) noexcept
-    : m_handle { nullptr } {
+Notifier<S>::Notifier(Notifier&& rhs) noexcept {
     *this = std::move(rhs);
 }
 

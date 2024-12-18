@@ -219,8 +219,8 @@ class WaitSet {
     ///
     /// * The corresponding [`Listener`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_deadline(const Listener<S>& listener,
-                         iox::units::Duration deadline) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+    auto attach_deadline(const Listener<S>& listener, iox::units::Duration deadline)
+        -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a [`FileDescriptorBased`] object as deadline to the [`WaitSet`]. Whenever the event is received or the
     /// deadline is hit, the user is informed in [`WaitSet::wait_and_process()`].
@@ -232,8 +232,8 @@ class WaitSet {
     ///
     /// * The corresponding [`FileDescriptor`] must life at least as long as the returned [`WaitSetGuard`].
     /// * The [`WaitSetGuard`] must life at least as long as the [`WaitsSet`].
-    auto attach_deadline(const FileDescriptorBased& attachment,
-                         iox::units::Duration deadline) -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
+    auto attach_deadline(const FileDescriptorBased& attachment, iox::units::Duration deadline)
+        -> iox::expected<WaitSetGuard<S>, WaitSetAttachmentError>;
 
     /// Attaches a tick event to the [`WaitSet`]. Whenever the timeout is reached the [`WaitSet`]
     /// informs the user in [`WaitSet::wait_and_process()`].
@@ -251,7 +251,7 @@ class WaitSet {
     explicit WaitSet(iox2_waitset_h handle);
     void drop();
 
-    iox2_waitset_h m_handle {};
+    iox2_waitset_h m_handle = nullptr;
 };
 
 /// The builder for the [`WaitSet`].
@@ -275,7 +275,7 @@ class WaitSetBuilder {
     auto create() const&& -> iox::expected<WaitSet<S>, WaitSetCreateError>;
 
   private:
-    iox2_waitset_builder_h m_handle;
+    iox2_waitset_builder_h m_handle = nullptr;
 };
 } // namespace iox2
 #endif

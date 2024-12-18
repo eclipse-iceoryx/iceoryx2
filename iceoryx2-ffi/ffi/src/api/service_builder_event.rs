@@ -29,6 +29,8 @@ use iceoryx2_bb_elementary::AsStringLiteral;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 
+use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref};
+
 // BEGIN types definition
 
 #[repr(C)]
@@ -296,6 +298,45 @@ pub unsafe extern "C" fn iox2_service_builder_event_open_or_create(
     )
 }
 
+/// Opens an event service or creates the service if it does not exist and returns a port factory to create notifiers and listeners.
+/// If the service does not exist, the provided arguments are stored inside the services, if the
+/// service already exists, the provided attributes are considered as requirements.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_event_t`]). If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
+/// * The `attribute_verifier_handle` must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_open_or_create_with_attributes(
+    service_builder_handle: iox2_service_builder_event_h,
+    attribute_verifier_handle: iox2_attribute_verifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_event_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_event_h,
+) -> c_int {
+    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+
+    iox2_service_builder_event_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+    )
+}
+
 /// Opens an event service and returns a port factory to create notifiers and listeners.
 ///
 /// # Arguments
@@ -328,6 +369,44 @@ pub unsafe extern "C" fn iox2_service_builder_event_open(
     )
 }
 
+/// Opens an event service and returns a port factory to create notifiers and listeners.
+/// The provided attributes are considered as requirements.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_event_t`]). If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
+/// * The `attribute_verifier_handle` must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_open_with_attributes(
+    service_builder_handle: iox2_service_builder_event_h,
+    attribute_verifier_handle: iox2_attribute_verifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_event_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_event_h,
+) -> c_int {
+    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+
+    iox2_service_builder_event_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_with_attributes(attribute_verifier),
+        |service_builder| service_builder.open_with_attributes(attribute_verifier),
+    )
+}
+
 /// Creates an event service and returns a port factory to create notifiers and listeners.
 ///
 /// # Arguments
@@ -357,6 +436,44 @@ pub unsafe extern "C" fn iox2_service_builder_event_create(
         port_factory_handle_ptr,
         |service_builder| service_builder.create(),
         |service_builder| service_builder.create(),
+    )
+}
+
+/// Creates a service if it does not exist and returns a port factory to create notifiers and listeners.
+/// The provided arguments are stored inside the services.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event)
+/// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_port_factory_event_t`]). If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_event_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_event_open_or_create_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
+///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
+/// * The `attribute_verifier_handle` must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_create_with_attributes(
+    service_builder_handle: iox2_service_builder_event_h,
+    attribute_specifier_handle: iox2_attribute_specifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_event_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_event_h,
+) -> c_int {
+    let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
+    let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
+
+    iox2_service_builder_event_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.create_with_attributes(attribute_specifier),
+        |service_builder| service_builder.create_with_attributes(attribute_specifier),
     )
 }
 

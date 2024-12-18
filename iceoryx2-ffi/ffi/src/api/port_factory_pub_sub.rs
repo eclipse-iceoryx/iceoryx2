@@ -26,6 +26,8 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::mem::ManuallyDrop;
 
+use super::iox2_attribute_set_h_ref;
+
 // BEGIN types definition
 
 pub(super) union PortFactoryPubSubUnion {
@@ -222,6 +224,31 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
     };
 
     (*subscriber_builder_struct_ptr).as_handle()
+}
+
+/// Returnes the services attributes.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The `port_factory_handle` must live longer than the returned `iox2_attribute_set_h_ref`.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_pub_sub_attributes(
+    port_factory_handle: iox2_port_factory_pub_sub_h_ref,
+) -> iox2_attribute_set_h_ref {
+    use iceoryx2::prelude::PortFactory;
+
+    port_factory_handle.assert_non_null();
+
+    let port_factory = &mut *port_factory_handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => {
+            (port_factory.value.as_ref().ipc.attributes() as *const AttributeSet).cast()
+        }
+        iox2_service_type_e::LOCAL => {
+            (port_factory.value.as_ref().local.attributes() as *const AttributeSet).cast()
+        }
+    }
 }
 
 /// Set the values int the provided [`iox2_static_config_publish_subscribe_t`] pointer.

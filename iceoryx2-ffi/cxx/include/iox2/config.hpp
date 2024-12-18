@@ -63,7 +63,7 @@ class Node {
     friend class Global;
     explicit Node(iox2_config_h* config);
 
-    iox2_config_h* m_config;
+    iox2_config_h* m_config = nullptr;
 };
 
 /// All configurable settings of a [`Service`].
@@ -103,7 +103,7 @@ class Service {
     friend class Global;
     explicit Service(iox2_config_h* config);
 
-    iox2_config_h* m_config;
+    iox2_config_h* m_config = nullptr;
 };
 
 /// The global settings
@@ -128,7 +128,7 @@ class Global {
     friend class ::iox2::Config;
     explicit Global(iox2_config_h* config);
 
-    iox2_config_h* m_config;
+    iox2_config_h* m_config = nullptr;
 };
 
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
@@ -188,7 +188,7 @@ class PublishSubscribe {
     friend class Defaults;
     explicit PublishSubscribe(iox2_config_h* config);
 
-    iox2_config_h* m_config;
+    iox2_config_h* m_config = nullptr;
 };
 
 /// Default settings for the event messaging pattern. These settings are used unless
@@ -217,7 +217,7 @@ class Event {
     friend class Defaults;
     explicit Event(iox2_config_h* config);
 
-    iox2_config_h* m_config;
+    iox2_config_h* m_config = nullptr;
 };
 
 /// Default settings. These values are used when the user in the code does not specify anything
@@ -233,7 +233,7 @@ class Defaults {
     friend class ::iox2::Config;
     explicit Defaults(iox2_config_h* config);
 
-    iox2_config_h* m_config;
+    iox2_config_h* m_config = nullptr;
 };
 } // namespace config
 
@@ -258,7 +258,7 @@ class ConfigView {
     friend class Service;
 
     explicit ConfigView(iox2_config_ptr ptr);
-    iox2_config_ptr m_ptr;
+    iox2_config_ptr m_ptr = nullptr;
 };
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:

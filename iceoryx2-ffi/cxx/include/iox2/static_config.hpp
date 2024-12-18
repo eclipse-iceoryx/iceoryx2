@@ -21,7 +21,7 @@ namespace iox2 {
 class StaticConfig {
   public:
     /// Returns the attributes of the [`Service`]
-    auto attributes() const -> const AttributeSet&;
+    auto attributes() const -> AttributeSetView;
 
     /// Returns the id of the [`Service`]
     auto id() const -> const char*;

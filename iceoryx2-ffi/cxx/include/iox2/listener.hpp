@@ -55,8 +55,8 @@ class Listener : public FileDescriptorBased {
     /// currently available [`EventId`]s in buffer.
     /// For every received [`EventId`] the provided callback is called with the [`EventId`] as
     /// input argument.
-    auto timed_wait_all(const iox::function<void(EventId)>& callback,
-                        const iox::units::Duration& timeout) -> iox::expected<void, ListenerWaitError>;
+    auto timed_wait_all(const iox::function<void(EventId)>& callback, const iox::units::Duration& timeout)
+        -> iox::expected<void, ListenerWaitError>;
 
     /// Blocking wait for new [`EventId`]s. Collects either
     /// all [`EventId`]s that were received
@@ -75,8 +75,8 @@ class Listener : public FileDescriptorBased {
     /// has passed. If no [`EventId`] was notified it returns [`None`].
     /// On error it returns [`ListenerWaitError`] is returned which describes the error
     /// in detail.
-    auto
-    timed_wait_one(const iox::units::Duration& timeout) -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
+    auto timed_wait_one(const iox::units::Duration& timeout)
+        -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
 
     /// Blocking wait for a new [`EventId`].
     /// Sporadic wakeups can occur and if no [`EventId`] was notified it returns [`None`].
@@ -93,7 +93,7 @@ class Listener : public FileDescriptorBased {
     explicit Listener(iox2_listener_h handle);
     void drop();
 
-    iox2_listener_h m_handle;
+    iox2_listener_h m_handle = nullptr;
 };
 } // namespace iox2
 

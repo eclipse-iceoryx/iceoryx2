@@ -16,7 +16,6 @@
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
-#include "iox/string.hpp"
 #include "iox2/attribute_set.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_publish_subscribe.hpp"
@@ -51,7 +50,7 @@ class PortFactoryPublishSubscribe {
     auto service_id() const -> const ServiceId&;
 
     /// Returns the attributes defined in the [`Service`]
-    auto attributes() const -> const AttributeSet&;
+    auto attributes() const -> AttributeSetView;
 
     /// Returns the StaticConfig of the [`Service`].
     /// Contains all settings that never change during the lifetime of the service.
@@ -81,7 +80,7 @@ class PortFactoryPublishSubscribe {
     explicit PortFactoryPublishSubscribe(iox2_port_factory_pub_sub_h handle);
     void drop();
 
-    iox2_port_factory_pub_sub_h m_handle { nullptr };
+    iox2_port_factory_pub_sub_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -132,8 +131,8 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() co
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::attributes() const -> const AttributeSet& {
-    IOX_TODO();
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::attributes() const -> AttributeSetView {
+    return AttributeSetView(iox2_port_factory_pub_sub_attributes(&m_handle));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -145,8 +144,8 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::static_config()
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto
-PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config() const -> const DynamicConfigPublishSubscribe& {
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config() const
+    -> const DynamicConfigPublishSubscribe& {
     IOX_TODO();
 }
 

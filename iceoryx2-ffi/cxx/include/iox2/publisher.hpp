@@ -13,7 +13,6 @@
 #ifndef IOX2_PUBLISHER_HPP
 #define IOX2_PUBLISHER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/slice.hpp"
 #include "iox2/connection_failure.hpp"
@@ -109,7 +108,7 @@ class Publisher {
     explicit Publisher(iox2_publisher_h handle);
     void drop();
 
-    iox2_publisher_h m_handle { nullptr };
+    iox2_publisher_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -170,7 +169,7 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload) const
     -> iox::expected<size_t, PublisherSendError> {
-    static_assert(std::is_trivially_copyable<Payload>::value);
+    static_assert(std::is_trivially_copyable_v<Payload>);
 
     size_t number_of_recipients = 0;
     auto result =
@@ -218,8 +217,8 @@ inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
 
 template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
-inline auto
-Publisher<S, Payload, UserHeader>::loan() -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
+inline auto Publisher<S, Payload, UserHeader>::loan()
+    -> iox::expected<SampleMut<S, Payload, UserHeader>, PublisherLoanError> {
     auto sample = loan_uninit();
 
     if (sample.has_error()) {

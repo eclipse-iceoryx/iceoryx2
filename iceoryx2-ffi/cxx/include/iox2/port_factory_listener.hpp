@@ -41,7 +41,7 @@ class PortFactoryListener {
 
     explicit PortFactoryListener(iox2_port_factory_listener_builder_h handle);
 
-    iox2_port_factory_listener_builder_h m_handle;
+    iox2_port_factory_listener_builder_h m_handle = nullptr;
 };
 } // namespace iox2
 

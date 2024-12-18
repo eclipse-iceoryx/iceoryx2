@@ -14,17 +14,37 @@
 #define IOX2_ATTRIBUTE_SPECIFIER_HPP
 
 #include "attribute_set.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
+
+/// Represents the set of [`Attribute`]s that are defined when the [`Service`]
+/// is created.
 class AttributeSpecifier {
   public:
-    auto define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier& {
-        IOX_TODO();
-    }
-    auto attributes() const -> AttributeSet& {
-        IOX_TODO();
-    }
+    /// Creates a new empty set of [`Attribute`]s
+    AttributeSpecifier();
+    AttributeSpecifier(const AttributeSpecifier&) = delete;
+    AttributeSpecifier(AttributeSpecifier&&) noexcept;
+    ~AttributeSpecifier();
+
+    auto operator=(const AttributeSpecifier&) -> AttributeSpecifier& = delete;
+    auto operator=(AttributeSpecifier&&) noexcept -> AttributeSpecifier&;
+
+    /// Defines a value for a specific key. A key is allowed to have multiple values.
+    auto define(const Attribute::Key& key, const Attribute::Value& value) -> AttributeSpecifier&&;
+
+    /// Returns the underlying [`AttributeSetView`]
+    auto attributes() const -> AttributeSetView;
+
+  private:
+    template <ServiceType>
+    friend class ServiceBuilderEvent;
+    template <typename, typename, ServiceType>
+    friend class ServiceBuilderPublishSubscribe;
+
+    void drop();
+
+    iox2_attribute_specifier_h m_handle = nullptr;
 };
 } // namespace iox2
 

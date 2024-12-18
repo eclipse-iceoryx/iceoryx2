@@ -12,7 +12,6 @@
 
 #include "iox2/service_name.hpp"
 #include "iox/assertions.hpp"
-#include "iox/into.hpp"
 
 #include <cstring>
 
@@ -41,8 +40,7 @@ ServiceName::~ServiceName() {
     drop();
 }
 
-ServiceName::ServiceName(ServiceName&& rhs) noexcept
-    : m_handle { nullptr } {
+ServiceName::ServiceName(ServiceName&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
@@ -56,8 +54,7 @@ auto ServiceName::operator=(ServiceName&& rhs) noexcept -> ServiceName& {
     return *this;
 }
 
-ServiceName::ServiceName(const ServiceName& rhs)
-    : m_handle { nullptr } {
+ServiceName::ServiceName(const ServiceName& rhs) {
     *this = rhs;
 }
 
@@ -86,8 +83,8 @@ auto ServiceName::create(const char* value) -> iox::expected<ServiceName, Semant
     return ServiceName::create_impl(value, strnlen(value, IOX2_SERVICE_NAME_LENGTH + 1));
 }
 
-auto ServiceName::create_impl(const char* value,
-                              const size_t value_len) -> iox::expected<ServiceName, SemanticStringError> {
+auto ServiceName::create_impl(const char* value, const size_t value_len)
+    -> iox::expected<ServiceName, SemanticStringError> {
     iox2_service_name_h handle {};
     if (value_len > IOX2_SERVICE_NAME_LENGTH) {
         return iox::err(SemanticStringError::ExceedsMaximumLength);

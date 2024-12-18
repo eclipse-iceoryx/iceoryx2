@@ -24,8 +24,7 @@ void HeaderPublishSubscribe::drop() {
     }
 }
 
-HeaderPublishSubscribe::HeaderPublishSubscribe(HeaderPublishSubscribe&& rhs) noexcept
-    : m_handle { nullptr } {
+HeaderPublishSubscribe::HeaderPublishSubscribe(HeaderPublishSubscribe&& rhs) noexcept {
     *this = std::move(rhs);
 }
 

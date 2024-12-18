@@ -36,6 +36,10 @@ target_include_directories(includes-only-cxx
 # object lib
 
 add_library(iceoryx2-cxx-object-lib OBJECT
+    src/attribute.cpp
+    src/attribute_set.cpp
+    src/attribute_specifier.cpp
+    src/attribute_verifier.cpp
     src/config.cpp
     src/event_id.cpp
     src/file_descriptor.cpp

@@ -72,21 +72,48 @@ template <ServiceType S>
 auto ServiceBuilderEvent<S>::open_or_create_with_attributes(
     const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError> {
     set_parameters();
-    IOX_TODO();
+
+    iox2_port_factory_event_h event_handle {};
+    auto result = iox2_service_builder_event_open_or_create_with_attributes(
+        m_handle, &required_attributes.m_handle, nullptr, &event_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryEvent<S>(event_handle));
+    }
+
+    return iox::err(iox::into<EventOpenOrCreateError>(result));
 }
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::open_with_attributes(
     const AttributeVerifier& required_attributes) && -> iox::expected<PortFactoryEvent<S>, EventOpenError> {
     set_parameters();
-    IOX_TODO();
+
+    iox2_port_factory_event_h event_handle {};
+    auto result = iox2_service_builder_event_open_with_attributes(
+        m_handle, &required_attributes.m_handle, nullptr, &event_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryEvent<S>(event_handle));
+    }
+
+    return iox::err(iox::into<EventOpenError>(result));
 }
 
 template <ServiceType S>
 auto ServiceBuilderEvent<S>::create_with_attributes(
     const AttributeSpecifier& attributes) && -> iox::expected<PortFactoryEvent<S>, EventCreateError> {
     set_parameters();
-    IOX_TODO();
+
+    iox2_port_factory_event_h event_handle {};
+    auto result =
+        iox2_service_builder_event_create_with_attributes(m_handle, &attributes.m_handle, nullptr, &event_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryEvent<S>(event_handle));
+    }
+
+    return iox::err(iox::into<EventCreateError>(result));
 }
 
 template class ServiceBuilderEvent<ServiceType::Ipc>;

@@ -63,7 +63,7 @@ class PortFactoryPublisher {
 
     explicit PortFactoryPublisher(iox2_port_factory_publisher_builder_h handle);
 
-    iox2_port_factory_publisher_builder_h m_handle;
+    iox2_port_factory_publisher_builder_h m_handle = nullptr;
     iox::optional<uint64_t> m_max_slice_len;
     iox::optional<AllocationStrategy> m_allocation_strategy;
 };

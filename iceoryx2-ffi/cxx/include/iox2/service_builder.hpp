@@ -13,7 +13,6 @@
 #ifndef IOX2_SERVICE_BUILDER_HPP
 #define IOX2_SERVICE_BUILDER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox2/service_builder_event.hpp"
 #include "iox2/service_builder_publish_subscribe.hpp"
 #include "iox2/service_type.hpp"
@@ -44,7 +43,7 @@ class ServiceBuilder {
     friend class Node;
     ServiceBuilder(iox2_node_h_ref node_handle, iox2_service_name_ptr service_name_ptr);
 
-    iox2_service_builder_h m_handle;
+    iox2_service_builder_h m_handle = nullptr;
 };
 
 template <ServiceType S>
