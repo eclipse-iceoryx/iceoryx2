@@ -12,7 +12,6 @@
 
 #include "iox/uninitialized_array.hpp"
 #include "iox2/node.hpp"
-#include "iox2/node_name.hpp"
 #include "iox2/service.hpp"
 
 #include "test.hpp"
@@ -644,7 +643,7 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     ASSERT_THAT(**recv_sample, Eq(payload));
 
     for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
-        ASSERT_THAT(recv_sample->user_header().value.at(idx), Eq(4 * idx + 3));
+        ASSERT_THAT(recv_sample->user_header().value.at(idx), Eq((4 * idx) + 3));
     }
 }
 

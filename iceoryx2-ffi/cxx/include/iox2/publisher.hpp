@@ -169,7 +169,7 @@ template <ServiceType S, typename Payload, typename UserHeader>
 template <typename T, typename>
 inline auto Publisher<S, Payload, UserHeader>::send_copy(const Payload& payload) const
     -> iox::expected<size_t, PublisherSendError> {
-    static_assert(std::is_trivially_copyable<Payload>::value);
+    static_assert(std::is_trivially_copyable_v<Payload>);
 
     size_t number_of_recipients = 0;
     auto result =

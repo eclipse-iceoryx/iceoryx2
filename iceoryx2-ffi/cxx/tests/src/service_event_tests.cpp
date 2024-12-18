@@ -275,7 +275,7 @@ TYPED_TEST(ServiceEventTest, timed_wait_one_does_not_deadlock) {
 }
 
 TYPED_TEST(ServiceEventTest, timed_wait_all_does_not_deadlock) {
-    this->listener.timed_wait_all([](auto) {}, TIMEOUT).expect("");
+    this->listener.timed_wait_all([](auto) { }, TIMEOUT).expect("");
 }
 
 TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_notifier) {

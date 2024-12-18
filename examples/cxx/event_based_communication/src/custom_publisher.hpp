@@ -41,8 +41,8 @@ class CustomPublisher : public iox2::FileDescriptorBased {
             .expect("");
     }
 
-    static auto create(iox2::Node<iox2::ServiceType::Ipc>& node,
-                       const iox2::ServiceName& service_name) -> CustomPublisher {
+    static auto create(iox2::Node<iox2::ServiceType::Ipc>& node, const iox2::ServiceName& service_name)
+        -> CustomPublisher {
         auto pubsub_service = node.service_builder(service_name)
                                   .publish_subscribe<TransmissionData>()
                                   .history_size(HISTORY_SIZE)
