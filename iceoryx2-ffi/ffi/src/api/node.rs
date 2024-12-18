@@ -37,11 +37,15 @@ use super::{iox2_config_h_ref, iox2_node_id_h_ref, iox2_node_id_ptr, iox2_signal
 
 // BEGIN type definition
 
+/// The failures that can occur when a list of node states is created with [`iox2_node_list()`].
 #[repr(C)]
 #[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_node_list_failure_e {
+    /// A list of all Nodes could not be created since the process does not have sufficient permissions.
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
+    /// The process received an interrupt signal while acquiring the list of all Nodes.
     INTERRUPT,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     INTERNAL_ERROR,
 }
 
@@ -73,11 +77,16 @@ impl IntoCInt for NodeWaitFailure {
     }
 }
 
+/// Failures of [`iox2_dead_node_remove_stale_resources()`] that occur when the stale resources of
+/// a dead node are removed.
 #[repr(C)]
 #[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_node_cleanup_failure_e {
+    /// The process received an interrupt signal while cleaning up all stale resources of a dead node.
     INTERRUPT = IOX2_OK as isize + 1,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     INTERNAL_ERROR,
+    /// The stale resources of a dead node could not be removed since the process does not have sufficient permissions.
     INSUFFICIENT_PERMISSIONS,
 }
 
@@ -348,6 +357,16 @@ pub unsafe extern "C" fn iox2_node_id(
     }
 }
 
+/// Removes all stale resources of a dead node under a provided config.
+///
+/// Returns [`IOX2_OK`] on success, otherwise [`iox2_node_cleanup_failure_e`].
+///
+/// # Safety
+///
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * The `node_id` must be valid
+/// * The `config` must be valid
+/// * `has_success` must point to a valid memory location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
     service_type: iox2_service_type_e,
@@ -355,8 +374,12 @@ pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
     config: iox2_config_h_ref,
     has_success: *mut bool,
 ) -> c_int {
-    let node_id = (&*node_id.as_type()).value.as_ref();
-    let config = (&*config.as_type()).value.as_ref();
+    node_id.assert_non_null();
+    config.assert_non_null();
+    debug_assert!(!has_success.is_null());
+
+    let node_id = (*node_id.as_type()).value.as_ref();
+    let config = (*config.as_type()).value.as_ref();
 
     let result = match service_type {
         iox2_service_type_e::IPC => {
