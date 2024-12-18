@@ -54,6 +54,12 @@ auto Node<T>::name() const -> NodeNameView {
 }
 
 template <ServiceType T>
+auto Node<T>::config() const -> ConfigView {
+    const auto* config_ptr = iox2_node_config(&m_handle);
+    return ConfigView { config_ptr };
+}
+
+template <ServiceType T>
 auto Node<T>::id() const -> NodeId {
     IOX_TODO();
 }
@@ -78,6 +84,7 @@ template <ServiceType T>
 // NOLINTBEGIN(readability-function-size)
 auto list_callback(iox2_node_state_e node_state,
                    iox2_node_id_ptr node_id,
+                   const char* executable,
                    iox2_node_name_ptr node_name,
                    iox2_config_ptr config,
                    iox2_callback_context context) -> iox2_callback_progression_e {
@@ -86,7 +93,11 @@ auto list_callback(iox2_node_state_e node_state,
             return iox::optional<NodeDetails>();
         }
 
-        return iox::optional<NodeDetails>(NodeDetails { NodeNameView { node_name }.to_owned(), Config {} });
+        return iox::optional<NodeDetails>(NodeDetails {
+            iox::FileName::create(iox::string<iox::FileName::capacity()>(iox::TruncateToCapacity, executable))
+                .expect("The executable file name is always valid."),
+            NodeNameView { node_name }.to_owned(),
+            Config {} });
     }();
 
     auto node_state_object = [&] {

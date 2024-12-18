@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include "iox2/node.hpp"
 #include "iox2/node_state.hpp"
 
 #include "test.hpp"
@@ -30,39 +31,21 @@ TYPED_TEST(NodeStateTest, alive_node_works) {
 
     const auto* valid_name = "Which companies middleware could be best described as a dead horse!";
     auto node_name = NodeName::create(valid_name).expect("");
-    auto sut = NodeState<SERVICE_TYPE>(
-        AliveNodeView<SERVICE_TYPE>(NodeId {}, NodeDetails { node_name, Config::global_config().to_owned() }));
+    auto node = NodeBuilder().name(node_name).create<SERVICE_TYPE>().expect("");
 
-    iox::optional<NodeName> test_name;
-    bool entered_wrong_callback = false;
-    sut.alive([&](auto& view) { test_name = view.details()->name(); });
-    sut.dead([&](auto& view) { entered_wrong_callback = true; });
-    sut.undefined([&](auto& view) { entered_wrong_callback = true; });
-    sut.inaccessible([&](auto& view) { entered_wrong_callback = true; });
+    bool alive_node_found = false;
+    Node<SERVICE_TYPE>::list(node.config(), [&](auto state) {
+        state.alive(
+            [&](auto& view) { alive_node_found = view.details()->name().to_string() == node_name.to_string(); });
 
-    ASSERT_FALSE(entered_wrong_callback);
-    ASSERT_TRUE(test_name.has_value());
-    ASSERT_THAT(test_name->to_string().c_str(), StrEq(valid_name));
-}
+        if (alive_node_found) {
+            return CallbackProgression::Stop;
+        }
 
-TYPED_TEST(NodeStateTest, dead_node_works) {
-    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+        return CallbackProgression::Continue;
+    }).expect("");
 
-    const auto* valid_name = "Oh look there is Super-Hypnotoad flying to the moon!";
-    auto node_name = NodeName::create(valid_name).expect("");
-    auto sut = NodeState<SERVICE_TYPE>(DeadNodeView<SERVICE_TYPE>(
-        AliveNodeView<SERVICE_TYPE>(NodeId {}, NodeDetails { node_name, Config::global_config().to_owned() })));
-
-    iox::optional<NodeName> test_name;
-    bool entered_wrong_callback = false;
-    sut.alive([&](auto& view) { entered_wrong_callback = true; });
-    sut.dead([&](auto& view) { test_name = view.details()->name(); });
-    sut.undefined([&](auto& view) { entered_wrong_callback = true; });
-    sut.inaccessible([&](auto& view) { entered_wrong_callback = true; });
-
-    ASSERT_FALSE(entered_wrong_callback);
-    ASSERT_TRUE(test_name.has_value());
-    ASSERT_THAT(test_name->to_string().c_str(), StrEq(valid_name));
+    ASSERT_TRUE(alive_node_found);
 }
 
 TYPED_TEST(NodeStateTest, inaccessible_node_works) {

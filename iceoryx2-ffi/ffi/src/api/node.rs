@@ -20,6 +20,7 @@ use crate::api::{
 
 use iceoryx2::node::{NodeId, NodeListFailure, NodeView, NodeWaitFailure};
 use iceoryx2::prelude::*;
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsStringLiteral;
@@ -27,6 +28,7 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
+use std::ffi::CString;
 use std::time::Duration;
 
 use super::iox2_signal_handling_mode_e;
@@ -180,6 +182,7 @@ pub type iox2_node_id_ptr_mut = *mut NodeId;
 pub type iox2_node_list_callback = extern "C" fn(
     iox2_node_state_e,
     iox2_node_id_ptr,
+    *const c_char,
     iox2_node_name_ptr,
     iox2_config_ptr,
     iox2_callback_context,
@@ -326,16 +329,24 @@ fn iox2_node_list_impl<S: Service>(
     callback: iox2_node_list_callback,
     callback_ctx: iox2_callback_context,
 ) -> CallbackProgression {
+    let unknown_executable = CString::new("unknown_executable").unwrap();
     match node_state {
         NodeState::Alive(alive_node_view) => {
-            let (node_name, config) = alive_node_view
+            let (executable, node_name, config) = alive_node_view
                 .details()
                 .as_ref()
-                .map(|view| (view.name() as _, view.config() as _))
-                .unwrap_or((std::ptr::null(), std::ptr::null()));
+                .map(|view| {
+                    (
+                        CString::new(view.executable().as_bytes()).unwrap(),
+                        view.name() as _,
+                        view.config() as _,
+                    )
+                })
+                .unwrap_or((unknown_executable, std::ptr::null(), std::ptr::null()));
             callback(
                 iox2_node_state_e::ALIVE,
                 alive_node_view.id(),
+                executable.as_bytes_with_nul().as_ptr().cast(),
                 node_name,
                 config,
                 callback_ctx,
@@ -343,14 +354,21 @@ fn iox2_node_list_impl<S: Service>(
             .into()
         }
         NodeState::Dead(dead_node_view) => {
-            let (node_name, config) = dead_node_view
+            let (executable, node_name, config) = dead_node_view
                 .details()
                 .as_ref()
-                .map(|view| (view.name() as _, view.config() as _))
-                .unwrap_or((std::ptr::null(), std::ptr::null()));
+                .map(|view| {
+                    (
+                        CString::new(view.executable().as_bytes()).unwrap(),
+                        view.name() as _,
+                        view.config() as _,
+                    )
+                })
+                .unwrap_or((unknown_executable, std::ptr::null(), std::ptr::null()));
             callback(
                 iox2_node_state_e::DEAD,
                 dead_node_view.id(),
+                executable.as_bytes_with_nul().as_ptr().cast(),
                 node_name,
                 config,
                 callback_ctx,
@@ -360,6 +378,7 @@ fn iox2_node_list_impl<S: Service>(
         NodeState::Inaccessible(ref node_id) => callback(
             iox2_node_state_e::INACCESSIBLE,
             node_id,
+            unknown_executable.as_bytes_with_nul().as_ptr().cast(),
             std::ptr::null(),
             std::ptr::null(),
             callback_ctx,
@@ -368,6 +387,7 @@ fn iox2_node_list_impl<S: Service>(
         NodeState::Undefined(ref node_id) => callback(
             iox2_node_state_e::UNDEFINED,
             node_id,
+            unknown_executable.as_bytes_with_nul().as_ptr().cast(),
             std::ptr::null(),
             std::ptr::null(),
             callback_ctx,
