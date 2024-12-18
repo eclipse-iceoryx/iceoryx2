@@ -13,7 +13,6 @@
 #ifndef IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/attribute_specifier.hpp"
@@ -85,20 +84,16 @@ class ServiceBuilderPublishSubscribe {
     /// created. It defines a set of attributes. If the [`Service`] already exists all attribute
     /// requirements must be satisfied otherwise the open process will fail. If the [`Service`]
     /// does not exist the required attributes will be defined in the [`Service`].
-    auto open_or_create_with_attributes(
-        const AttributeVerifier&
-            required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                     PublishSubscribeOpenOrCreateError>;
+    auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox::
+        expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
     auto open() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
-    auto open_with_attributes(
-        const AttributeVerifier&
-            required_attributes) && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                                     PublishSubscribeOpenError>;
+    auto open_with_attributes(const AttributeVerifier& required_attributes) && -> iox::
+        expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError>;
 
     /// Creates a new [`Service`].
     auto create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeCreateError>;
@@ -116,7 +111,7 @@ class ServiceBuilderPublishSubscribe {
 
     void set_parameters();
 
-    iox2_service_builder_pub_sub_h m_handle;
+    iox2_service_builder_pub_sub_h m_handle = nullptr;
 };
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -185,9 +180,8 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
-    open_or_create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>,
-                                         PublishSubscribeOpenOrCreateError> {
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open_or_create() && -> iox::
+    expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenOrCreateError> {
     set_parameters();
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
@@ -201,8 +195,8 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
-    open() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::open() && -> iox::
+    expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeOpenError> {
     set_parameters();
 
     iox2_port_factory_pub_sub_h port_factory_handle {};
@@ -216,8 +210,8 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::
-    create() && -> iox::expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeCreateError> {
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::create() && -> iox::
+    expected<PortFactoryPublishSubscribe<S, Payload, UserHeader>, PublishSubscribeCreateError> {
     set_parameters();
 
     iox2_port_factory_pub_sub_h port_factory_handle {};

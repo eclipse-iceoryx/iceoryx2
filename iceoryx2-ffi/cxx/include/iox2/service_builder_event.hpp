@@ -83,7 +83,7 @@ class ServiceBuilderEvent {
 
     void set_parameters();
 
-    iox2_service_builder_event_h m_handle;
+    iox2_service_builder_event_h m_handle = nullptr;
 };
 } // namespace iox2
 

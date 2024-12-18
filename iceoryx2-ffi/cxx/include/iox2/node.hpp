@@ -74,7 +74,7 @@ class Node {
 
     friend class NodeBuilder;
 
-    iox2_node_h m_handle;
+    iox2_node_h m_handle = nullptr;
 };
 
 /// Creates a new [`Node`].
@@ -106,7 +106,7 @@ class NodeBuilder {
     auto create() const&& -> iox::expected<Node<T>, NodeCreationFailure>;
 
   private:
-    iox2_node_builder_h m_handle;
+    iox2_node_builder_h m_handle = nullptr;
 };
 } // namespace iox2
 

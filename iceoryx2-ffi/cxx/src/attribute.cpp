@@ -14,18 +14,21 @@
 
 namespace iox2 {
 auto AttributeView::key() const -> Attribute::Key {
-    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) used as an uninitialized buffer
-    char buffer[Attribute::Key::capacity()];
-    iox2_attribute_key(m_handle, &buffer[0], Attribute::Key::capacity());
-    return { iox::TruncateToCapacity, &buffer[0] };
+    Attribute::Key key;
+    key.unsafe_raw_access([this](auto* buffer, const auto& info) {
+        iox2_attribute_key(m_handle, buffer, info.total_size);
+        return iox2_attribute_key_len(m_handle);
+    });
+    return key;
 }
 
 auto AttributeView::value() const -> Attribute::Value {
-    // NOLINTNEXTLINE(hicpp-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays, modernize-avoid-c-arrays) used as an uninitialized buffer
-    char buffer[Attribute::Key::capacity()];
-    iox2_attribute_value(m_handle, &buffer[0], Attribute::Value::capacity());
-
-    return { iox::TruncateToCapacity, &buffer[0] };
+    Attribute::Value value;
+    value.unsafe_raw_access([this](auto* buffer, const auto& info) {
+        iox2_attribute_value(m_handle, buffer, info.total_size);
+        return iox2_attribute_value_len(m_handle);
+    });
+    return value;
 }
 
 AttributeView::AttributeView(iox2_attribute_h_ref handle)

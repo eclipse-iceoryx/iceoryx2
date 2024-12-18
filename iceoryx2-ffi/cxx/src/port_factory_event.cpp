@@ -26,8 +26,7 @@ PortFactoryEvent<S>::~PortFactoryEvent() {
 }
 
 template <ServiceType S>
-PortFactoryEvent<S>::PortFactoryEvent(PortFactoryEvent&& rhs) noexcept
-    : m_handle { nullptr } {
+PortFactoryEvent<S>::PortFactoryEvent(PortFactoryEvent&& rhs) noexcept {
     *this = std::move(rhs);
 }
 

@@ -47,7 +47,7 @@ class PortFactoryNotifier {
 
     explicit PortFactoryNotifier(iox2_port_factory_notifier_builder_h handle);
 
-    iox2_port_factory_notifier_builder_h m_handle;
+    iox2_port_factory_notifier_builder_h m_handle = nullptr;
 };
 } // namespace iox2
 

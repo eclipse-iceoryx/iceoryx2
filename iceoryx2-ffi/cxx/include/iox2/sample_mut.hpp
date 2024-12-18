@@ -13,7 +13,6 @@
 #ifndef IOX2_SAMPLE_MUT_HPP
 #define IOX2_SAMPLE_MUT_HPP
 
-#include "iox/assertions.hpp"
 #include "iox/expected.hpp"
 #include "iox/slice.hpp"
 #include "iox2/header_publish_subscribe.hpp"
@@ -109,7 +108,7 @@ class SampleMut {
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) will not be accessed directly but only via m_handle and will be set together with m_handle
     iox2_sample_mut_t m_sample;
-    iox2_sample_mut_h m_handle { nullptr };
+    iox2_sample_mut_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>

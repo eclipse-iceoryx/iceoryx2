@@ -47,7 +47,7 @@ class AttributeSetView {
 
     explicit AttributeSetView(iox2_attribute_set_h_ref handle);
 
-    iox2_attribute_set_h_ref m_handle;
+    iox2_attribute_set_h_ref m_handle = nullptr;
 };
 } // namespace iox2
 

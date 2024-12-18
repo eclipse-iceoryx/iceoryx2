@@ -23,7 +23,6 @@
 #include "iox2/service_type.hpp"
 #include "iox2/subscriber_error.hpp"
 #include "iox2/unique_port_id.hpp"
-#include <cinttypes>
 
 namespace iox2 {
 /// The receiving endpoint of a publish-subscribe communication.
@@ -66,7 +65,7 @@ class Subscriber {
     explicit Subscriber(iox2_subscriber_h handle);
     void drop();
 
-    iox2_subscriber_h m_handle { nullptr };
+    iox2_subscriber_h m_handle = nullptr;
 };
 template <ServiceType S, typename Payload, typename UserHeader>
 inline Subscriber<S, Payload, UserHeader>::Subscriber(iox2_subscriber_h handle)

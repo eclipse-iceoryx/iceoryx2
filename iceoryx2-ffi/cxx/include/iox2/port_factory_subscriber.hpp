@@ -13,7 +13,6 @@
 #ifndef IOX2_PORTFACTORY_SUBSCRIBER_HPP
 #define IOX2_PORTFACTORY_SUBSCRIBER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/internal/iceoryx2.hpp"
@@ -47,7 +46,7 @@ class PortFactorySubscriber {
 
     explicit PortFactorySubscriber(iox2_port_factory_subscriber_builder_h handle);
 
-    iox2_port_factory_subscriber_builder_h m_handle;
+    iox2_port_factory_subscriber_builder_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>

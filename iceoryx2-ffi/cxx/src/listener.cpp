@@ -20,8 +20,7 @@ Listener<S>::Listener(iox2_listener_h handle)
 }
 
 template <ServiceType S>
-Listener<S>::Listener(Listener&& rhs) noexcept
-    : m_handle { nullptr } {
+Listener<S>::Listener(Listener&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
@@ -80,8 +79,8 @@ auto Listener<S>::try_wait_all(const iox::function<void(EventId)>& callback) -> 
 }
 
 template <ServiceType S>
-auto Listener<S>::timed_wait_all(const iox::function<void(EventId)>& callback,
-                                 const iox::units::Duration& timeout) -> iox::expected<void, ListenerWaitError> {
+auto Listener<S>::timed_wait_all(const iox::function<void(EventId)>& callback, const iox::units::Duration& timeout)
+    -> iox::expected<void, ListenerWaitError> {
     auto ctx = internal::ctx(callback);
     auto timeout_timespec = timeout.timespec();
 

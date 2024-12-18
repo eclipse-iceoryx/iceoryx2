@@ -13,7 +13,6 @@
 #ifndef IOX2_SAMPLE_HPP
 #define IOX2_SAMPLE_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/slice.hpp"
 #include "iox2/header_publish_subscribe.hpp"
 #include "iox2/internal/iceoryx2.hpp"
@@ -80,7 +79,7 @@ class Sample {
     void drop();
 
     iox2_sample_t m_sample;
-    iox2_sample_h m_handle { nullptr };
+    iox2_sample_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename Payload, typename UserHeader>

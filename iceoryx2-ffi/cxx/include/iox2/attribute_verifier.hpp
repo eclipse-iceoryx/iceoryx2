@@ -56,7 +56,7 @@ class AttributeVerifier {
 
     void drop();
 
-    iox2_attribute_verifier_h m_handle;
+    iox2_attribute_verifier_h m_handle = nullptr;
 };
 } // namespace iox2
 

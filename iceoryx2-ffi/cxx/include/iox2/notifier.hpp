@@ -58,7 +58,7 @@ class Notifier {
     explicit Notifier(iox2_notifier_h handle);
     void drop();
 
-    iox2_notifier_h m_handle;
+    iox2_notifier_h m_handle = nullptr;
 };
 } // namespace iox2
 

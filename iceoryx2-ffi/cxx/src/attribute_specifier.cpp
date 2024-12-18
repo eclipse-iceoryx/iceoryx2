@@ -13,8 +13,7 @@
 #include "iox2/attribute_specifier.hpp"
 
 namespace iox2 {
-AttributeSpecifier::AttributeSpecifier()
-    : m_handle { nullptr } {
+AttributeSpecifier::AttributeSpecifier() {
     iox2_attribute_specifier_new(nullptr, &m_handle);
 }
 

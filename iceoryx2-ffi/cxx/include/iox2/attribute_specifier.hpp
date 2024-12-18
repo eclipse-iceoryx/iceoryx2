@@ -44,7 +44,7 @@ class AttributeSpecifier {
 
     void drop();
 
-    iox2_attribute_specifier_h m_handle;
+    iox2_attribute_specifier_h m_handle = nullptr;
 };
 } // namespace iox2
 

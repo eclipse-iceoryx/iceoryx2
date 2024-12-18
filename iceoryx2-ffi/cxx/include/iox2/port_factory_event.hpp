@@ -77,7 +77,7 @@ class PortFactoryEvent {
     explicit PortFactoryEvent(iox2_port_factory_event_h handle);
     void drop() noexcept;
 
-    iox2_port_factory_event_h m_handle;
+    iox2_port_factory_event_h m_handle = nullptr;
 };
 } // namespace iox2
 

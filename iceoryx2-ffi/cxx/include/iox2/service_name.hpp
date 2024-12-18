@@ -46,7 +46,7 @@ class ServiceNameView {
     friend class PortFactoryEvent;
 
     explicit ServiceNameView(iox2_service_name_ptr ptr);
-    iox2_service_name_ptr m_ptr;
+    iox2_service_name_ptr m_ptr = nullptr;
 };
 
 /// The name of a [`Service`].
@@ -73,7 +73,7 @@ class ServiceName {
     static auto create_impl(const char* value, size_t value_len) -> iox::expected<ServiceName, SemanticStringError>;
     void drop() noexcept;
 
-    iox2_service_name_h m_handle;
+    iox2_service_name_h m_handle = nullptr;
 };
 } // namespace iox2
 

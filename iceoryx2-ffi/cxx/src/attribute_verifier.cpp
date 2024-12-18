@@ -13,8 +13,7 @@
 #include "iox2/attribute_verifier.hpp"
 
 namespace iox2 {
-AttributeVerifier::AttributeVerifier()
-    : m_handle { nullptr } {
+AttributeVerifier::AttributeVerifier() {
     iox2_attribute_verifier_new(nullptr, &m_handle);
 }
 

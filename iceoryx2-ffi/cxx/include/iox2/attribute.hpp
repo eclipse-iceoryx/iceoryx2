@@ -42,7 +42,7 @@ class AttributeView {
     friend class AttributeSetView;
     explicit AttributeView(iox2_attribute_h_ref handle);
 
-    iox2_attribute_h_ref m_handle;
+    iox2_attribute_h_ref m_handle = nullptr;
 };
 } // namespace iox2
   //

@@ -42,7 +42,7 @@ class HeaderPublishSubscribe {
     explicit HeaderPublishSubscribe(iox2_publish_subscribe_header_h handle);
     void drop();
 
-    iox2_publish_subscribe_header_h m_handle;
+    iox2_publish_subscribe_header_h m_handle = nullptr;
 };
 } // namespace iox2
 

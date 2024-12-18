@@ -31,8 +31,6 @@ pub type iox2_attribute_h_ref = *const iox2_attribute_h_t;
 // END type definition
 
 // BEGIN C API
-const ZERO_TERMINATOR_LEN: usize = 1;
-
 /// Returns the length of the attributes key.
 ///
 /// # Safety
@@ -43,7 +41,7 @@ pub unsafe extern "C" fn iox2_attribute_key_len(handle: iox2_attribute_h_ref) ->
     debug_assert!(!handle.is_null());
 
     let attribute = (*handle).underlying_type();
-    attribute.key().len() + ZERO_TERMINATOR_LEN
+    attribute.key().len()
 }
 
 /// Copies the keys value into the provided buffer.
@@ -85,7 +83,7 @@ pub unsafe extern "C" fn iox2_attribute_value_len(handle: iox2_attribute_h_ref) 
     debug_assert!(!handle.is_null());
 
     let attribute = (*handle).underlying_type();
-    attribute.value().len() + ZERO_TERMINATOR_LEN
+    attribute.value().len()
 }
 
 /// Copies the values value into the provided buffer.
