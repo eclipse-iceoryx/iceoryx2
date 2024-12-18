@@ -37,6 +37,13 @@ enum class NodeCreationFailure : uint8_t {
 };
 
 enum class NodeCleanupFailure : uint8_t {
+    /// The process received an interrupt signal while cleaning up all stale resources of a dead [`Node`].
+    Interrupt,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    InternalError,
+    /// The stale resources of a dead [`Node`] could not be removed since the process does not have sufficient
+    /// permissions.
+    InsufficientPermissions,
 };
 
 } // namespace iox2

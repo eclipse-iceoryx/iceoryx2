@@ -306,6 +306,9 @@ class Config {
     friend class ConfigView;
     friend class config::Global;
     friend class NodeBuilder;
+    template <ServiceType>
+    friend class DeadNodeView;
+
     explicit Config(iox2_config_h handle);
     void drop();
 

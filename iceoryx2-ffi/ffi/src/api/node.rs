@@ -18,7 +18,9 @@ use crate::api::{
     AssertNonNullHandle, HandleToType, IntoCInt, ServiceBuilderUnion, IOX2_OK,
 };
 
-use iceoryx2::node::{NodeId, NodeListFailure, NodeView, NodeWaitFailure};
+use iceoryx2::node::{
+    DeadNodeView, NodeCleanupFailure, NodeDetails, NodeListFailure, NodeView, NodeWaitFailure,
+};
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::StringLiteral;
@@ -31,7 +33,7 @@ use core::mem::ManuallyDrop;
 use std::ffi::CString;
 use std::time::Duration;
 
-use super::iox2_signal_handling_mode_e;
+use super::{iox2_config_h_ref, iox2_node_id_h_ref, iox2_node_id_ptr, iox2_signal_handling_mode_e};
 
 // BEGIN type definition
 
@@ -67,6 +69,26 @@ impl IntoCInt for NodeWaitFailure {
         (match self {
             NodeWaitFailure::TerminationRequest => iox2_node_wait_failure_e::TERMINATION_REQUEST,
             NodeWaitFailure::Interrupt => iox2_node_wait_failure_e::INTERRUPT,
+        }) as c_int
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, StringLiteral)]
+pub enum iox2_node_cleanup_failure_e {
+    INTERRUPT = IOX2_OK as isize + 1,
+    INTERNAL_ERROR,
+    INSUFFICIENT_PERMISSIONS,
+}
+
+impl IntoCInt for NodeCleanupFailure {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            NodeCleanupFailure::Interrupt => iox2_node_cleanup_failure_e::INTERRUPT,
+            NodeCleanupFailure::InternalError => iox2_node_cleanup_failure_e::INTERNAL_ERROR,
+            NodeCleanupFailure::InsufficientPermissions => {
+                iox2_node_cleanup_failure_e::INSUFFICIENT_PERMISSIONS
+            }
         }) as c_int
     }
 }
@@ -161,12 +183,6 @@ pub enum iox2_node_state_e {
     INACCESSIBLE,
     UNDEFINED,
 }
-
-// NOTE check the README.md for using opaque types with renaming
-/// The immutable pointer to the underlying `NodeId`
-pub type iox2_node_id_ptr = *const NodeId;
-/// The mutable pointer to the underlying `NodeId`
-pub type iox2_node_id_ptr_mut = *mut NodeId;
 
 /// The callback for [`iox2_node_list`]
 ///
@@ -319,9 +335,51 @@ pub unsafe extern "C" fn iox2_node_signal_handling_mode(
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h_ref) -> iox2_node_id_ptr {
+pub unsafe extern "C" fn iox2_node_id(
+    node_handle: iox2_node_h_ref,
+    service_type: iox2_service_type_e,
+) -> iox2_node_id_ptr {
     node_handle.assert_non_null();
-    todo!() // TODO: [#210] implement
+
+    let node = &mut *node_handle.as_type();
+    match service_type {
+        iox2_service_type_e::IPC => node.value.as_ref().ipc.id(),
+        iox2_service_type_e::LOCAL => node.value.as_ref().local.id(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
+    service_type: iox2_service_type_e,
+    node_id: iox2_node_id_h_ref,
+    config: iox2_config_h_ref,
+    has_success: *mut bool,
+) -> c_int {
+    let node_id = (&*node_id.as_type()).value.as_ref();
+    let config = (&*config.as_type()).value.as_ref();
+
+    let result = match service_type {
+        iox2_service_type_e::IPC => {
+            DeadNodeView::<ipc::Service>::__internal_remove_stale_resources(
+                *node_id,
+                NodeDetails::__internal_new(&None, &config.value),
+            )
+        }
+        iox2_service_type_e::LOCAL => {
+            DeadNodeView::<local::Service>::__internal_remove_stale_resources(
+                *node_id,
+                NodeDetails::__internal_new(&None, &config.value),
+            )
+        }
+    };
+
+    match result {
+        Ok(v) => {
+            *has_success = v;
+            IOX2_OK
+        }
+        Err(e) => e.into_c_int(),
+    }
 }
 
 fn iox2_node_list_impl<S: Service>(

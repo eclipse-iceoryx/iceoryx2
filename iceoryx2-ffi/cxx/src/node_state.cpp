@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/node_state.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 constexpr uint64_t ALIVE_STATE = 0;
@@ -20,8 +19,8 @@ constexpr uint64_t INACCESSIBLE_STATE = 2;
 constexpr uint64_t UNDEFINED_STATE = 3;
 
 template <ServiceType T>
-AliveNodeView<T>::AliveNodeView(const NodeId& node_id, const iox::optional<NodeDetails>& details)
-    : m_id { node_id }
+AliveNodeView<T>::AliveNodeView(NodeId node_id, const iox::optional<NodeDetails>& details)
+    : m_id { std::move(node_id) }
     , m_details { details } {
 }
 
@@ -52,7 +51,17 @@ auto DeadNodeView<T>::details() const -> iox::optional<NodeDetails> {
 
 template <ServiceType T>
 auto DeadNodeView<T>::remove_stale_resources() -> iox::expected<bool, NodeCleanupFailure> {
-    IOX_TODO();
+    bool has_success = false;
+    auto result = iox2_dead_node_remove_stale_resources(iox::into<iox2_service_type_e>(T),
+                                                        &m_view.id().m_handle,
+                                                        &m_view.details().value().config().m_handle,
+                                                        &has_success);
+
+    if (result == IOX2_OK) {
+        return iox::ok(has_success);
+    }
+
+    return iox::err(iox::into<NodeCleanupFailure>(result));
 }
 
 template <ServiceType T>
