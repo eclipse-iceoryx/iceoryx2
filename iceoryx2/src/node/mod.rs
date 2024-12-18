@@ -300,6 +300,11 @@ pub struct NodeDetails {
 }
 
 impl NodeDetails {
+    #[doc(hidden)]
+    pub fn __internal_new(node_name: &Option<NodeName>, config: &Config) -> Self {
+        Self::new(node_name, config)
+    }
+
     fn new(node_name: &Option<NodeName>, config: &Config) -> Self {
         let executable = match Process::from_self().executable() {
             Ok(n) => n.file_name(),
@@ -469,6 +474,19 @@ impl<Service: service::Service> NodeView for DeadNodeView<Service> {
 }
 
 impl<Service: service::Service> DeadNodeView<Service> {
+    #[doc(hidden)]
+    pub fn __internal_remove_stale_resources(
+        id: NodeId,
+        details: NodeDetails,
+    ) -> Result<bool, NodeCleanupFailure> {
+        DeadNodeView(AliveNodeView {
+            id,
+            details: Some(details),
+            _service: PhantomData::<Service>,
+        })
+        .remove_stale_resources()
+    }
+
     /// Removes all stale resources of a dead [`Node`].
     pub fn remove_stale_resources(self) -> Result<bool, NodeCleanupFailure> {
         let msg = "Unable to remove stale resources";

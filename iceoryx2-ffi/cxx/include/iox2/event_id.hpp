@@ -15,7 +15,6 @@
 
 #include "iox2/internal/iceoryx2.hpp"
 
-#include <cstdint>
 #include <iostream>
 
 namespace iox2 {

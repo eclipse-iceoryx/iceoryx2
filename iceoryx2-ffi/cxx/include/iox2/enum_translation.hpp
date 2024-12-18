@@ -53,9 +53,8 @@ constexpr auto from<int, iox2::SemanticStringError>(const int value) noexcept ->
 }
 
 template <>
-constexpr auto
-from<iox2::SemanticStringError, iox2_semantic_string_error_e>(const iox2::SemanticStringError value) noexcept
-    -> iox2_semantic_string_error_e {
+constexpr auto from<iox2::SemanticStringError, iox2_semantic_string_error_e>(
+    const iox2::SemanticStringError value) noexcept -> iox2_semantic_string_error_e {
     switch (value) {
     case iox2::SemanticStringError::InvalidContent:
         return iox2_semantic_string_error_e_INVALID_CONTENT;
@@ -86,8 +85,8 @@ constexpr auto from<int, iox2::ServiceType>(const int value) noexcept -> iox2::S
 }
 
 template <>
-constexpr auto from<iox2::ServiceType, iox2_service_type_e>(const iox2::ServiceType value) noexcept
-    -> iox2_service_type_e {
+constexpr auto
+from<iox2::ServiceType, iox2_service_type_e>(const iox2::ServiceType value) noexcept -> iox2_service_type_e {
     switch (value) {
     case iox2::ServiceType::Ipc:
         return iox2_service_type_e_IPC;
@@ -112,9 +111,8 @@ constexpr auto from<int, iox2::NodeCreationFailure>(const int value) noexcept ->
 }
 
 template <>
-constexpr auto
-from<iox2::NodeCreationFailure, iox2_node_creation_failure_e>(const iox2::NodeCreationFailure value) noexcept
-    -> iox2_node_creation_failure_e {
+constexpr auto from<iox2::NodeCreationFailure, iox2_node_creation_failure_e>(
+    const iox2::NodeCreationFailure value) noexcept -> iox2_node_creation_failure_e {
     switch (value) {
     case iox2::NodeCreationFailure::InsufficientPermissions:
         return iox2_node_creation_failure_e_INSUFFICIENT_PERMISSIONS;
@@ -145,9 +143,8 @@ constexpr auto from<int, iox2::CallbackProgression>(const int value) noexcept ->
 }
 
 template <>
-constexpr auto
-from<iox2::CallbackProgression, iox2_callback_progression_e>(const iox2::CallbackProgression value) noexcept
-    -> iox2_callback_progression_e {
+constexpr auto from<iox2::CallbackProgression, iox2_callback_progression_e>(
+    const iox2::CallbackProgression value) noexcept -> iox2_callback_progression_e {
     switch (value) {
     case iox2::CallbackProgression::Continue:
         return iox2_callback_progression_e_CONTINUE;
@@ -261,9 +258,8 @@ constexpr auto from<int, iox2::ServiceDetailsError>(const int value) noexcept ->
 }
 
 template <>
-constexpr auto
-from<iox2::ServiceDetailsError, iox2_service_details_error_e>(const iox2::ServiceDetailsError value) noexcept
-    -> iox2_service_details_error_e {
+constexpr auto from<iox2::ServiceDetailsError, iox2_service_details_error_e>(
+    const iox2::ServiceDetailsError value) noexcept -> iox2_service_details_error_e {
     switch (value) {
     case iox2::ServiceDetailsError::FailedToOpenStaticServiceInfo:
         return iox2_service_details_error_e_FAILED_TO_OPEN_STATIC_SERVICE_INFO;
@@ -341,9 +337,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
 }
 
 template <>
-constexpr auto
-from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(const iox2::EventOpenOrCreateError value) noexcept
-    -> iox2_event_open_or_create_error_e {
+constexpr auto from<iox2::EventOpenOrCreateError, iox2_event_open_or_create_error_e>(
+    const iox2::EventOpenOrCreateError value) noexcept -> iox2_event_open_or_create_error_e {
     switch (value) {
     case iox2::EventOpenOrCreateError::OpenDoesNotExist:
         return iox2_event_open_or_create_error_e_O_DOES_NOT_EXIST;
@@ -494,9 +489,8 @@ constexpr auto from<int, iox2::EventCreateError>(const int value) noexcept -> io
 }
 
 template <>
-constexpr auto
-from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(const iox2::EventCreateError value) noexcept
-    -> iox2_event_open_or_create_error_e {
+constexpr auto from<iox2::EventCreateError, iox2_event_open_or_create_error_e>(
+    const iox2::EventCreateError value) noexcept -> iox2_event_open_or_create_error_e {
     switch (value) {
     case iox2::EventCreateError::InsufficientPermissions:
         return iox2_event_open_or_create_error_e_C_INSUFFICIENT_PERMISSIONS;
@@ -670,14 +664,15 @@ constexpr auto from<iox2::PublishSubscribeOpenError, iox2_pub_sub_open_or_create
 }
 
 template <>
-inline auto from<iox2::PublishSubscribeOpenError, const char*>(const iox2::PublishSubscribeOpenError value) noexcept
-    -> const char* {
+inline auto
+from<iox2::PublishSubscribeOpenError, const char*>(const iox2::PublishSubscribeOpenError value) noexcept -> const
+    char* {
     return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
 }
 
 template <>
-constexpr auto from<int, iox2::PublishSubscribeCreateError>(const int value) noexcept
-    -> iox2::PublishSubscribeCreateError {
+constexpr auto
+from<int, iox2::PublishSubscribeCreateError>(const int value) noexcept -> iox2::PublishSubscribeCreateError {
     const auto error = static_cast<iox2_pub_sub_open_or_create_error_e>(value);
     switch (error) {
     case iox2_pub_sub_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
@@ -723,8 +718,9 @@ constexpr auto from<iox2::PublishSubscribeCreateError, iox2_pub_sub_open_or_crea
 }
 
 template <>
-inline auto from<iox2::PublishSubscribeCreateError, const char*>(const iox2::PublishSubscribeCreateError value) noexcept
-    -> const char* {
+inline auto
+from<iox2::PublishSubscribeCreateError, const char*>(const iox2::PublishSubscribeCreateError value) noexcept -> const
+    char* {
     return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
 }
 
@@ -788,9 +784,8 @@ constexpr auto from<iox2::PublishSubscribeOpenOrCreateError, iox2_pub_sub_open_o
 }
 
 template <>
-inline auto
-from<iox2::PublishSubscribeOpenOrCreateError, const char*>(const iox2::PublishSubscribeOpenOrCreateError value) noexcept
-    -> const char* {
+inline auto from<iox2::PublishSubscribeOpenOrCreateError, const char*>(
+    const iox2::PublishSubscribeOpenOrCreateError value) noexcept -> const char* {
     return iox2_pub_sub_open_or_create_error_string(iox::into<iox2_pub_sub_open_or_create_error_e>(value));
 }
 
@@ -806,9 +801,8 @@ constexpr auto from<int, iox2::NotifierCreateError>(const int value) noexcept ->
 }
 
 template <>
-constexpr auto
-from<iox2::NotifierCreateError, iox2_notifier_create_error_e>(const iox2::NotifierCreateError value) noexcept
-    -> iox2_notifier_create_error_e {
+constexpr auto from<iox2::NotifierCreateError, iox2_notifier_create_error_e>(
+    const iox2::NotifierCreateError value) noexcept -> iox2_notifier_create_error_e {
     switch (value) {
     case iox2::NotifierCreateError::ExceedsMaxSupportedNotifiers:
         return iox2_notifier_create_error_e_EXCEEDS_MAX_SUPPORTED_NOTIFIERS;
@@ -837,9 +831,8 @@ constexpr auto from<int, iox2::ListenerCreateError>(const int value) noexcept ->
 }
 
 template <>
-constexpr auto
-from<iox2::ListenerCreateError, iox2_listener_create_error_e>(const iox2::ListenerCreateError value) noexcept
-    -> iox2_listener_create_error_e {
+constexpr auto from<iox2::ListenerCreateError, iox2_listener_create_error_e>(
+    const iox2::ListenerCreateError value) noexcept -> iox2_listener_create_error_e {
     switch (value) {
     case iox2::ListenerCreateError::ExceedsMaxSupportedListeners:
         return iox2_listener_create_error_e_EXCEEDS_MAX_SUPPORTED_LISTENERS;
@@ -868,9 +861,8 @@ constexpr auto from<int, iox2::NotifierNotifyError>(const int value) noexcept ->
 }
 
 template <>
-constexpr auto
-from<iox2::NotifierNotifyError, iox2_notifier_notify_error_e>(const iox2::NotifierNotifyError value) noexcept
-    -> iox2_notifier_notify_error_e {
+constexpr auto from<iox2::NotifierNotifyError, iox2_notifier_notify_error_e>(
+    const iox2::NotifierNotifyError value) noexcept -> iox2_notifier_notify_error_e {
     switch (value) {
     case iox2::NotifierNotifyError::EventIdOutOfBounds:
         return iox2_notifier_notify_error_e_EVENT_ID_OUT_OF_BOUNDS;
@@ -934,9 +926,8 @@ constexpr auto from<int, iox2::PublisherCreateError>(const int value) noexcept -
 }
 
 template <>
-constexpr auto
-from<iox2::PublisherCreateError, iox2_publisher_create_error_e>(const iox2::PublisherCreateError value) noexcept
-    -> iox2_publisher_create_error_e {
+constexpr auto from<iox2::PublisherCreateError, iox2_publisher_create_error_e>(
+    const iox2::PublisherCreateError value) noexcept -> iox2_publisher_create_error_e {
     switch (value) {
     case iox2::PublisherCreateError::ExceedsMaxSupportedPublishers:
         return iox2_publisher_create_error_e_EXCEEDS_MAX_SUPPORTED_PUBLISHERS;
@@ -967,9 +958,8 @@ constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept 
 }
 
 template <>
-constexpr auto
-from<iox2::SubscriberCreateError, iox2_subscriber_create_error_e>(const iox2::SubscriberCreateError value) noexcept
-    -> iox2_subscriber_create_error_e {
+constexpr auto from<iox2::SubscriberCreateError, iox2_subscriber_create_error_e>(
+    const iox2::SubscriberCreateError value) noexcept -> iox2_subscriber_create_error_e {
     switch (value) {
     case iox2::SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService:
         return iox2_subscriber_create_error_e_BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE;
@@ -1010,9 +1000,8 @@ constexpr auto from<int, iox2::PublisherSendError>(const int value) noexcept -> 
 }
 
 template <>
-constexpr auto
-from<iox2::PublisherSendError, iox2_publisher_send_error_e>(const iox2::PublisherSendError value) noexcept
-    -> iox2_publisher_send_error_e {
+constexpr auto from<iox2::PublisherSendError, iox2_publisher_send_error_e>(
+    const iox2::PublisherSendError value) noexcept -> iox2_publisher_send_error_e {
     switch (value) {
     case iox2::PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists:
         return iox2_publisher_send_error_e_CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS;
@@ -1054,9 +1043,8 @@ constexpr auto from<int, iox2::SubscriberReceiveError>(const int value) noexcept
 }
 
 template <>
-constexpr auto
-from<iox2::SubscriberReceiveError, iox2_subscriber_receive_error_e>(const iox2::SubscriberReceiveError value) noexcept
-    -> iox2_subscriber_receive_error_e {
+constexpr auto from<iox2::SubscriberReceiveError, iox2_subscriber_receive_error_e>(
+    const iox2::SubscriberReceiveError value) noexcept -> iox2_subscriber_receive_error_e {
     switch (value) {
     case iox2::SubscriberReceiveError::FailedToEstablishConnection:
         return iox2_subscriber_receive_error_e_FAILED_TO_ESTABLISH_CONNECTION;
@@ -1093,9 +1081,8 @@ constexpr auto from<int, iox2::PublisherLoanError>(const int value) noexcept -> 
 }
 
 template <>
-constexpr auto
-from<iox2::PublisherLoanError, iox2_publisher_loan_error_e>(const iox2::PublisherLoanError value) noexcept
-    -> iox2_publisher_loan_error_e {
+constexpr auto from<iox2::PublisherLoanError, iox2_publisher_loan_error_e>(
+    const iox2::PublisherLoanError value) noexcept -> iox2_publisher_loan_error_e {
     switch (value) {
     case iox2::PublisherLoanError::ExceedsMaxLoanedSamples:
         return iox2_publisher_loan_error_e_EXCEEDS_MAX_LOANED_SAMPLES;
@@ -1247,9 +1234,8 @@ constexpr auto from<int, iox2::ConfigCreationError>(const int value) noexcept ->
 }
 
 template <>
-constexpr auto
-from<iox2::ConfigCreationError, iox2_config_creation_error_e>(const iox2::ConfigCreationError value) noexcept
-    -> iox2_config_creation_error_e {
+constexpr auto from<iox2::ConfigCreationError, iox2_config_creation_error_e>(
+    const iox2::ConfigCreationError value) noexcept -> iox2_config_creation_error_e {
     switch (value) {
     case iox2::ConfigCreationError::FailedToOpenConfigFile:
         return iox2_config_creation_error_e_FAILED_TO_OPEN_CONFIG_FILE;
@@ -1320,9 +1306,8 @@ constexpr auto from<int, iox2::WaitSetCreateError>(const int value) noexcept -> 
 }
 
 template <>
-constexpr auto
-from<iox2::WaitSetCreateError, iox2_waitset_create_error_e>(const iox2::WaitSetCreateError value) noexcept
-    -> iox2_waitset_create_error_e {
+constexpr auto from<iox2::WaitSetCreateError, iox2_waitset_create_error_e>(
+    const iox2::WaitSetCreateError value) noexcept -> iox2_waitset_create_error_e {
     switch (value) {
     case iox2::WaitSetCreateError::InternalError:
         return iox2_waitset_create_error_e_INTERNAL_ERROR;
@@ -1386,9 +1371,8 @@ constexpr auto from<int, iox2::WaitSetAttachmentError>(const int value) noexcept
 }
 
 template <>
-constexpr auto
-from<iox2::WaitSetAttachmentError, iox2_waitset_attachment_error_e>(const iox2::WaitSetAttachmentError value) noexcept
-    -> iox2_waitset_attachment_error_e {
+constexpr auto from<iox2::WaitSetAttachmentError, iox2_waitset_attachment_error_e>(
+    const iox2::WaitSetAttachmentError value) noexcept -> iox2_waitset_attachment_error_e {
     switch (value) {
     case iox2::WaitSetAttachmentError::AlreadyAttached:
         return iox2_waitset_attachment_error_e_ALREADY_ATTACHED;
@@ -1451,9 +1435,8 @@ inline auto from<iox2::WaitSetRunError, const char*>(const iox2::WaitSetRunError
 }
 
 template <>
-constexpr auto
-from<iox2::SignalHandlingMode, iox2_signal_handling_mode_e>(const iox2::SignalHandlingMode value) noexcept
-    -> iox2_signal_handling_mode_e {
+constexpr auto from<iox2::SignalHandlingMode, iox2_signal_handling_mode_e>(
+    const iox2::SignalHandlingMode value) noexcept -> iox2_signal_handling_mode_e {
     switch (value) {
     case iox2::SignalHandlingMode::Disabled:
         return iox2_signal_handling_mode_e_DISABLED;
@@ -1488,6 +1471,22 @@ constexpr auto from<iox2::AllocationStrategy, iox2_allocation_strategy_e>(const 
         return iox2_allocation_strategy_e_POWER_OF_TWO;
     case iox2::AllocationStrategy::Static:
         return iox2_allocation_strategy_e_STATIC;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<int, iox2::NodeCleanupFailure>(const int value) noexcept -> iox2::NodeCleanupFailure {
+    const auto variant = static_cast<iox2_node_cleanup_failure_e>(value);
+
+    switch (variant) {
+    case iox2_node_cleanup_failure_e_INTERRUPT:
+        return iox2::NodeCleanupFailure::Interrupt;
+    case iox2_node_cleanup_failure_e_INTERNAL_ERROR:
+        return iox2::NodeCleanupFailure::InternalError;
+    case iox2_node_cleanup_failure_e_INSUFFICIENT_PERMISSIONS:
+        return iox2::NodeCleanupFailure::InsufficientPermissions;
     }
 
     IOX_UNREACHABLE();

@@ -26,7 +26,7 @@ use crate::{
     iox2_waitset_create_error_e, iox2_waitset_run_error_e, iox2_waitset_run_result_e,
 };
 
-use super::iox2_connection_failure_e;
+use super::{iox2_connection_failure_e, iox2_node_cleanup_failure_e};
 
 #[doc(hidden)]
 #[no_mangle]
@@ -210,4 +210,12 @@ pub unsafe extern "C" fn __iox2_internal_waitset_run_result_stub() -> iox2_waits
 pub unsafe extern "C" fn __iox2_internal_waitset_attachment_error_stub(
 ) -> iox2_waitset_attachment_error_e {
     iox2_waitset_attachment_error_e::INTERNAL_ERROR
+}
+
+#[doc(hidden)]
+#[no_mangle]
+// TODO: enums are only exported when they are actually used by some function
+pub unsafe extern "C" fn __iox2_internal_node_cleanup_failure_stub() -> iox2_node_cleanup_failure_e
+{
+    iox2_node_cleanup_failure_e::INTERNAL_ERROR
 }

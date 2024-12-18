@@ -61,7 +61,10 @@ auto Node<T>::config() const -> ConfigView {
 
 template <ServiceType T>
 auto Node<T>::id() const -> NodeId {
-    IOX_TODO();
+    const auto* node_id_ptr = iox2_node_id(&m_handle, iox::into<iox2_service_type_e>(T));
+    iox2_node_id_h node_id_handle = nullptr;
+    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &node_id_handle);
+    return NodeId(node_id_handle);
 }
 
 template <ServiceType T>
@@ -83,13 +86,13 @@ auto Node<T>::service_builder(const ServiceName& name) const -> ServiceBuilder<T
 template <ServiceType T>
 // NOLINTBEGIN(readability-function-size)
 auto list_callback(iox2_node_state_e node_state,
-                   iox2_node_id_ptr node_id,
+                   iox2_node_id_ptr node_id_ptr,
                    const char* executable,
                    iox2_node_name_ptr node_name,
                    iox2_config_ptr config,
                    iox2_callback_context context) -> iox2_callback_progression_e {
     auto node_details = [&] {
-        if (node_id == nullptr || config == nullptr) {
+        if (node_id_ptr == nullptr || config == nullptr) {
             return iox::optional<NodeDetails>();
         }
 
@@ -100,16 +103,20 @@ auto list_callback(iox2_node_state_e node_state,
             Config {} });
     }();
 
+    iox2_node_id_h node_id_handle = nullptr;
+    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &node_id_handle);
+    NodeId node_id { node_id_handle };
+
     auto node_state_object = [&] {
         switch (node_state) {
         case iox2_node_state_e_ALIVE:
-            return NodeState<T> { AliveNodeView<T> { NodeId {}, node_details } };
+            return NodeState<T> { AliveNodeView<T> { node_id, node_details } };
         case iox2_node_state_e_DEAD:
-            return NodeState<T> { DeadNodeView<T> { AliveNodeView<T> { NodeId {}, node_details } } };
+            return NodeState<T> { DeadNodeView<T> { AliveNodeView<T> { node_id, node_details } } };
         case iox2_node_state_e_UNDEFINED:
-            return NodeState<T> { iox2_node_state_e_UNDEFINED, NodeId {} };
+            return NodeState<T> { iox2_node_state_e_UNDEFINED, node_id };
         case iox2_node_state_e_INACCESSIBLE:
-            return NodeState<T> { iox2_node_state_e_INACCESSIBLE, NodeId {} };
+            return NodeState<T> { iox2_node_state_e_INACCESSIBLE, node_id };
         }
 
         IOX_UNREACHABLE();
