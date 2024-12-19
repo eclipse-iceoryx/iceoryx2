@@ -283,16 +283,25 @@ mod service_event {
             .max_nodes(7)
             .max_notifiers(4)
             .max_listeners(5)
+            .notifier_dead_event(EventId::new(8))
+            .notifier_dropped_event(EventId::new(9))
+            .notifier_created_event(EventId::new(10))
             .create()
             .unwrap();
         assert_that!(sut.static_config().max_nodes(), eq 7);
         assert_that!(sut.static_config().max_notifiers(), eq 4);
         assert_that!(sut.static_config().max_listeners(), eq 5);
+        assert_that!(sut.static_config().notifier_dead_event(), eq Some(EventId::new(8)));
+        assert_that!(sut.static_config().notifier_dropped_event(), eq Some(EventId::new(9)));
+        assert_that!(sut.static_config().notifier_created_event(), eq Some(EventId::new(10)));
 
         let sut2 = node.service_builder(&service_name).event().open().unwrap();
         assert_that!(sut2.static_config().max_nodes(), eq 7);
         assert_that!(sut2.static_config().max_notifiers(), eq 4);
         assert_that!(sut2.static_config().max_listeners(), eq 5);
+        assert_that!(sut2.static_config().notifier_dead_event(), eq Some(EventId::new(8)));
+        assert_that!(sut2.static_config().notifier_dropped_event(), eq Some(EventId::new(9)));
+        assert_that!(sut2.static_config().notifier_created_event(), eq Some(EventId::new(10)));
     }
 
     #[test]
@@ -381,6 +390,78 @@ mod service_event {
         let mut received_events = 0;
         for event in listener.try_wait_one().unwrap().iter() {
             assert_that!(*event, eq event_id);
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 1);
+    }
+
+    #[test]
+    fn notifier_emits_create_and_dropped_event_id<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .disable_notifier_created_event()
+            .disable_notifier_dropped_event()
+            .create()
+            .unwrap();
+
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
+
+        let listener = sut.listener_builder().create().unwrap();
+        let notifier = sut2.notifier_builder().create().unwrap();
+
+        let mut received_events = 0;
+        for _ in listener.try_wait_one().unwrap().iter() {
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 0);
+
+        drop(notifier);
+
+        let mut received_events = 0;
+        for _ in listener.try_wait_one().unwrap().iter() {
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 0);
+    }
+
+    #[test]
+    fn notifier_emits_nothing_when_no_events_are_configured<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let notifier_created = EventId::new(31);
+        let notifier_dropped = EventId::new(28);
+
+        let sut = node
+            .service_builder(&service_name)
+            .event()
+            .notifier_created_event(notifier_created)
+            .notifier_dropped_event(notifier_dropped)
+            .create()
+            .unwrap();
+
+        let sut2 = node.service_builder(&service_name).event().open().unwrap();
+
+        let listener = sut.listener_builder().create().unwrap();
+        let notifier = sut2.notifier_builder().create().unwrap();
+
+        let mut received_events = 0;
+        for event in listener.try_wait_one().unwrap().iter() {
+            assert_that!(*event, eq notifier_created);
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 1);
+
+        drop(notifier);
+
+        let mut received_events = 0;
+        for event in listener.try_wait_one().unwrap().iter() {
+            assert_that!(*event, eq notifier_dropped);
             received_events += 1;
         }
         assert_that!(received_events, eq 1);

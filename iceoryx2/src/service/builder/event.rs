@@ -43,6 +43,15 @@ pub enum EventOpenError {
     IncompatibleAttributes,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// The event id that is emitted for a newly created [`Notifier`](crate::port::notifier::Notifier)
+    /// does not fit the required event id.
+    IncompatibleNotifierCreatedEvent,
+    /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is dropped
+    /// does not fit the required event id.
+    IncompatibleNotifierDroppedEvent,
+    /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is
+    /// identified as dead does not fit the required event id.
+    IncompatibleNotifierDeadEvent,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
@@ -168,6 +177,9 @@ pub struct Builder<ServiceType: service::Service> {
     verify_max_listeners: bool,
     verify_max_nodes: bool,
     verify_event_id_max_value: bool,
+    verify_notifier_created_event: bool,
+    verify_notifier_dropped_event: bool,
+    verify_notifier_dead_event: bool,
 }
 
 impl<ServiceType: service::Service> Builder<ServiceType> {
@@ -178,6 +190,9 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             verify_max_listeners: false,
             verify_max_nodes: false,
             verify_event_id_max_value: false,
+            verify_notifier_dead_event: false,
+            verify_notifier_created_event: false,
+            verify_notifier_dropped_event: false,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Event(
@@ -229,6 +244,54 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     pub fn max_listeners(mut self, value: usize) -> Self {
         self.config_details().max_listeners = value;
         self.verify_max_listeners = true;
+        self
+    }
+
+    /// If the [`Service`] is created it defines the event that shall be emitted by every newly
+    /// created [`Notifier`](crate::port::notifier::Notifier).
+    pub fn notifier_created_event(mut self, value: EventId) -> Self {
+        self.config_details().notifier_created_event = Some(value.as_value());
+        self.verify_notifier_created_event = true;
+        self
+    }
+
+    /// If the [`Service`] is created it disables the event that shall be emitted by every newly
+    /// created [`Notifier`](crate::port::notifier::Notifier).
+    pub fn disable_notifier_created_event(mut self) -> Self {
+        self.config_details().notifier_created_event = None;
+        self.verify_notifier_created_event = true;
+        self
+    }
+
+    /// If the [`Service`] is created it defines the event that shall be emitted by every
+    /// [`Notifier`](crate::port::notifier::Notifier) before it is dropped.
+    pub fn notifier_dropped_event(mut self, value: EventId) -> Self {
+        self.config_details().notifier_dropped_event = Some(value.as_value());
+        self.verify_notifier_dropped_event = true;
+        self
+    }
+
+    /// If the [`Service`] is created it disables the event that shall be emitted by every
+    /// [`Notifier`](crate::port::notifier::Notifier) before it is dropped.
+    pub fn disable_notifier_dropped_event(mut self) -> Self {
+        self.config_details().notifier_dropped_event = None;
+        self.verify_notifier_dropped_event = true;
+        self
+    }
+
+    /// If the [`Service`] is created it defines the event that shall be emitted when a
+    /// [`Notifier`](crate::port::notifier::Notifier) is identified as dead.
+    pub fn notifier_dead_event(mut self, value: EventId) -> Self {
+        self.config_details().notifier_dead_event = Some(value.as_value());
+        self.verify_notifier_dead_event = true;
+        self
+    }
+
+    /// If the [`Service`] is created it disables the event that shall be emitted when a
+    /// [`Notifier`](crate::port::notifier::Notifier) is identified as dead.
+    pub fn disable_notifier_dead_event(mut self) -> Self {
+        self.config_details().notifier_dead_event = None;
+        self.verify_notifier_dead_event = true;
         self
     }
 
@@ -520,6 +583,30 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             fail!(from self, with EventOpenError::DoesNotSupportRequestedAmountOfNodes,
                 "{} since the event supports only {} nodes but {} are required.",
                 msg, existing_settings.max_nodes, required_settings.max_nodes);
+        }
+
+        if self.verify_notifier_created_event
+            && existing_settings.notifier_created_event != required_settings.notifier_created_event
+        {
+            fail!(from self, with EventOpenError::IncompatibleNotifierCreatedEvent,
+                "{} since the notifier_created_event id is {:?} but the value {:?} is required.",
+                msg, existing_settings.notifier_created_event, required_settings.notifier_created_event);
+        }
+
+        if self.verify_notifier_dropped_event
+            && existing_settings.notifier_dropped_event != required_settings.notifier_dropped_event
+        {
+            fail!(from self, with EventOpenError::IncompatibleNotifierDroppedEvent,
+                "{} since the notifier_dropped_event id is {:?} but the value {:?} is required.",
+                msg, existing_settings.notifier_dropped_event, required_settings.notifier_dropped_event);
+        }
+
+        if self.verify_notifier_dead_event
+            && existing_settings.notifier_dead_event != required_settings.notifier_dead_event
+        {
+            fail!(from self, with EventOpenError::IncompatibleNotifierDeadEvent,
+                "{} since the notifier_dead_event id is {:?} but the value {:?} is required.",
+                msg, existing_settings.notifier_dead_event, required_settings.notifier_dead_event);
         }
 
         Ok(*existing_settings)

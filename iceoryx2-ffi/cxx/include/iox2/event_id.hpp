@@ -50,6 +50,12 @@ class EventId {
 };
 
 auto operator<<(std::ostream& stream, const EventId& value) -> std::ostream&;
+auto operator==(const EventId& lhs, const EventId& rhs) -> bool;
+auto operator!=(const EventId& lhs, const EventId& rhs) -> bool;
+auto operator<(const EventId& lhs, const EventId& rhs) -> bool;
+auto operator<=(const EventId& lhs, const EventId& rhs) -> bool;
+auto operator>(const EventId& lhs, const EventId& rhs) -> bool;
+auto operator>=(const EventId& lhs, const EventId& rhs) -> bool;
 } // namespace iox2
 
 #endif

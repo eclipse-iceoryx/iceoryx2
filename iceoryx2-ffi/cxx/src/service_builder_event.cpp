@@ -23,8 +23,72 @@ template <ServiceType S>
 void ServiceBuilderEvent<S>::set_parameters() {
     m_max_notifiers.and_then([&](auto value) { iox2_service_builder_event_set_max_notifiers(&m_handle, value); });
     m_max_listeners.and_then([&](auto value) { iox2_service_builder_event_set_max_listeners(&m_handle, value); });
+
+    if (m_verify_notifier_created_event) {
+        m_notifier_created_event
+            .and_then(
+                [&](auto value) { iox2_service_builder_event_set_notifier_created_event(&m_handle, value.as_value()); })
+            .or_else([&]() { iox2_service_builder_event_disable_notifier_created_event(&m_handle); });
+    }
+
+    if (m_verify_notifier_dropped_event) {
+        m_notifier_dropped_event
+            .and_then(
+                [&](auto value) { iox2_service_builder_event_set_notifier_dropped_event(&m_handle, value.as_value()); })
+            .or_else([&]() { iox2_service_builder_event_disable_notifier_dropped_event(&m_handle); });
+    }
+
+    if (m_verify_notifier_dead_event) {
+        m_notifier_dead_event
+            .and_then(
+                [&](auto value) { iox2_service_builder_event_set_notifier_dead_event(&m_handle, value.as_value()); })
+            .or_else([&]() { iox2_service_builder_event_disable_notifier_dead_event(&m_handle); });
+    }
+
     m_max_nodes.and_then([](auto) { IOX_TODO(); });
     m_event_id_max_value.and_then([](auto) { IOX_TODO(); });
+}
+
+template <ServiceType S>
+auto ServiceBuilderEvent<S>::notifier_dropped_event(EventId event_id) && -> ServiceBuilderEvent&& {
+    m_notifier_dropped_event.emplace(event_id);
+    m_verify_notifier_dropped_event = true;
+    return std::move(*this);
+}
+
+template <ServiceType S>
+auto ServiceBuilderEvent<S>::notifier_created_event(EventId event_id) && -> ServiceBuilderEvent&& {
+    m_notifier_created_event.emplace(event_id);
+    m_verify_notifier_created_event = true;
+    return std::move(*this);
+}
+
+template <ServiceType S>
+auto ServiceBuilderEvent<S>::notifier_dead_event(EventId event_id) && -> ServiceBuilderEvent&& {
+    m_notifier_dead_event.emplace(event_id);
+    m_verify_notifier_dead_event = true;
+    return std::move(*this);
+}
+
+template <ServiceType S>
+auto ServiceBuilderEvent<S>::disable_notifier_dropped_event() && -> ServiceBuilderEvent&& {
+    m_notifier_dropped_event.reset();
+    m_verify_notifier_dropped_event = true;
+    return std::move(*this);
+}
+
+template <ServiceType S>
+auto ServiceBuilderEvent<S>::disable_notifier_created_event() && -> ServiceBuilderEvent&& {
+    m_notifier_created_event.reset();
+    m_verify_notifier_created_event = true;
+    return std::move(*this);
+}
+
+template <ServiceType S>
+auto ServiceBuilderEvent<S>::disable_notifier_dead_event() && -> ServiceBuilderEvent&& {
+    m_notifier_dead_event.reset();
+    m_verify_notifier_dead_event = true;
+    return std::move(*this);
 }
 
 template <ServiceType S>

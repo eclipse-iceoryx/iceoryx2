@@ -13,6 +13,8 @@
 #ifndef IOX2_STATIC_CONFIG_EVENT_HPP
 #define IOX2_STATIC_CONFIG_EVENT_HPP
 
+#include "iox/optional.hpp"
+#include "iox2/event_id.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
 
@@ -34,6 +36,15 @@ class StaticConfigEvent {
 
     /// Returns the largest [`EventId`] that is supported by the service
     auto event_id_max_value() const -> size_t;
+
+    /// Returns the emitted [`EventId`] when a new notifier is created.
+    auto notifier_created_event() const -> iox::optional<EventId>;
+
+    /// Returns the emitted [`EventId`] when a notifier is dropped.
+    auto notifier_dropped_event() const -> iox::optional<EventId>;
+
+    /// Returns the emitted [`EventId`] when a notifier is identified as dead.
+    auto notifier_dead_event() const -> iox::optional<EventId>;
 
   private:
     template <ServiceType>

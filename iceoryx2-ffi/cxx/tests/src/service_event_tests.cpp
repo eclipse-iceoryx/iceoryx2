@@ -91,6 +91,9 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_NOTIFIERS = 5;
     constexpr uint64_t NUMBER_OF_LISTENERS = 7;
+    const auto create_event_id = EventId(12);
+    const auto dropped_event_id = EventId(13);
+    const auto dead_event_id = EventId(14);
 
     const auto service_name = iox2_testing::generate_service_name();
 
@@ -99,6 +102,9 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
                    .event()
                    .max_notifiers(NUMBER_OF_NOTIFIERS)
                    .max_listeners(NUMBER_OF_LISTENERS)
+                   .notifier_created_event(create_event_id)
+                   .notifier_dropped_event(dropped_event_id)
+                   .notifier_dead_event(dead_event_id)
                    .create()
                    .expect("");
 
@@ -106,6 +112,9 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
 
     ASSERT_THAT(static_config.max_notifiers(), Eq(NUMBER_OF_NOTIFIERS));
     ASSERT_THAT(static_config.max_listeners(), Eq(NUMBER_OF_LISTENERS));
+    ASSERT_THAT(static_config.notifier_created_event(), Eq(iox::optional<EventId>(create_event_id)));
+    ASSERT_THAT(static_config.notifier_dropped_event(), Eq(iox::optional<EventId>(dropped_event_id)));
+    ASSERT_THAT(static_config.notifier_dead_event(), Eq(iox::optional<EventId>(dead_event_id)));
 }
 
 TYPED_TEST(ServiceEventTest, open_fails_with_incompatible_max_notifiers_requirements) {
@@ -204,6 +213,47 @@ TYPED_TEST(ServiceEventTest, service_name_is_set) {
     auto sut_service_name = sut.name();
     ASSERT_THAT(service_name.to_string(), Eq(sut_service_name.to_string()));
 }
+
+TYPED_TEST(ServiceEventTest, notifier_emits_create_and_drop_events) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto create_event_id = EventId(21);
+    const auto dropped_event_id = EventId(31);
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .event()
+                       .notifier_created_event(create_event_id)
+                       .notifier_dropped_event(dropped_event_id)
+                       .create()
+                       .expect("");
+
+    auto listener = service.listener_builder().create().expect("");
+
+    {
+        auto notifier = service.notifier_builder().create();
+
+        auto counter = 0;
+        listener
+            .try_wait_all([&](auto event_id) {
+                EXPECT_THAT(event_id, Eq(create_event_id));
+                counter++;
+            })
+            .expect("");
+        ASSERT_THAT(counter, Eq(1));
+    }
+
+    auto counter = 0;
+    listener
+        .try_wait_all([&](auto event_id) {
+            EXPECT_THAT(event_id, Eq(dropped_event_id));
+            counter++;
+        })
+        .expect("");
+    ASSERT_THAT(counter, Eq(1));
+}
+
 
 TYPED_TEST(ServiceEventTest, notification_is_received_with_try_wait_one) {
     this->notifier.notify().expect("");

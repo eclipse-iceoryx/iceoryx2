@@ -201,6 +201,58 @@ auto Event::event_id_max_value() && -> size_t {
 void Event::set_event_id_max_value(size_t value) && {
     iox2_config_defaults_event_set_event_id_max_value(m_config, value);
 }
+
+auto Event::notifier_created_event() && -> iox::optional<size_t> {
+    size_t value = 0;
+    if (iox2_config_defaults_event_notifier_created_event(m_config, &value)) {
+        return { value };
+    }
+
+    return iox::nullopt;
+}
+
+void Event::set_notifier_created_event(iox::optional<size_t> value) && {
+    if (value.has_value()) {
+        iox2_config_defaults_event_set_notifier_created_event(m_config, &*value);
+    } else {
+        iox2_config_defaults_event_set_notifier_created_event(m_config, nullptr);
+    }
+}
+
+auto Event::notifier_dropped_event() && -> iox::optional<size_t> {
+    size_t value = 0;
+    if (iox2_config_defaults_event_notifier_dropped_event(m_config, &value)) {
+        return { value };
+    }
+
+    return iox::nullopt;
+}
+
+void Event::set_notifier_dropped_event(iox::optional<size_t> value) && {
+    if (value.has_value()) {
+        iox2_config_defaults_event_set_notifier_dropped_event(m_config, &*value);
+    } else {
+        iox2_config_defaults_event_set_notifier_dropped_event(m_config, nullptr);
+    }
+}
+
+auto Event::notifier_dead_event() && -> iox::optional<size_t> {
+    size_t value = 0;
+    if (iox2_config_defaults_event_notifier_dead_event(m_config, &value)) {
+        return { value };
+    }
+
+    return iox::nullopt;
+}
+
+void Event::set_notifier_dead_event(iox::optional<size_t> value) && {
+    if (value.has_value()) {
+        iox2_config_defaults_event_set_notifier_dead_event(m_config, &*value);
+    } else {
+        iox2_config_defaults_event_set_notifier_dead_event(m_config, nullptr);
+    }
+}
+
 /////////////////////////
 // END: Event
 /////////////////////////

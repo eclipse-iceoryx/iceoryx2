@@ -181,10 +181,18 @@ pub struct Notifier<Service: service::Service> {
     event_id_max_value: usize,
     dynamic_notifier_handle: Option<ContainerHandle>,
     notifier_id: UniqueNotifierId,
+    on_drop_notification: Option<EventId>,
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {
     fn drop(&mut self) {
+        if let Some(event_id) = self.on_drop_notification {
+            if let Err(e) = self.notify_with_custom_event_id(event_id) {
+                warn!(from self, "Unable to send notifier_dropped_event {:?} due to ({:?}).",
+                    event_id, e);
+            }
+        }
+
         if let Some(handle) = self.dynamic_notifier_handle {
             self.listener_connections
                 .service_state
@@ -201,6 +209,26 @@ impl<Service: service::Service> Notifier<Service> {
         service: &Service,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
+        let mut new_self = Self::new_without_auto_event_emission(service, default_event_id)?;
+
+        let static_config = service.__internal_state().static_config.event();
+        new_self.on_drop_notification = static_config.notifier_dropped_event.map(EventId::new);
+
+        if let Some(event_id) = static_config.notifier_created_event() {
+            if let Err(e) = new_self.notify_with_custom_event_id(event_id) {
+                warn!(from new_self,
+                    "The new notifier was unable to send out the notifier_created_event: {:?} due to ({:?}).",
+                    event_id, e);
+            }
+        }
+
+        Ok(new_self)
+    }
+
+    pub(crate) fn new_without_auto_event_emission(
+        service: &Service,
+        default_event_id: EventId,
+    ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
         let notifier_id = UniqueNotifierId::new();
@@ -212,6 +240,7 @@ impl<Service: service::Service> Notifier<Service> {
             .event()
             .listeners;
 
+        let static_config = service.__internal_state().static_config.event();
         let mut new_self = Self {
             listener_connections: ListenerConnections::new(
                 listener_list.capacity(),
@@ -219,13 +248,10 @@ impl<Service: service::Service> Notifier<Service> {
             ),
             default_event_id,
             listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
-            event_id_max_value: service
-                .__internal_state()
-                .static_config
-                .event()
-                .event_id_max_value,
+            event_id_max_value: static_config.event_id_max_value,
             dynamic_notifier_handle: None,
             notifier_id,
+            on_drop_notification: None,
         };
 
         new_self.populate_listener_channels();
