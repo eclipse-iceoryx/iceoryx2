@@ -18,8 +18,11 @@ use crate::api::{
     AssertNonNullHandle, HandleToType, IntoCInt, ServiceBuilderUnion, IOX2_OK,
 };
 
-use iceoryx2::node::{NodeId, NodeListFailure, NodeView, NodeWaitFailure};
+use iceoryx2::node::{
+    DeadNodeView, NodeCleanupFailure, NodeDetails, NodeListFailure, NodeView, NodeWaitFailure,
+};
 use iceoryx2::prelude::*;
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsStringLiteral;
@@ -27,17 +30,22 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
+use std::ffi::CString;
 use std::time::Duration;
 
-use super::iox2_signal_handling_mode_e;
+use super::{iox2_config_h_ref, iox2_node_id_h_ref, iox2_node_id_ptr, iox2_signal_handling_mode_e};
 
 // BEGIN type definition
 
+/// The failures that can occur when a list of node states is created with [`iox2_node_list()`].
 #[repr(C)]
 #[derive(Copy, Clone, StringLiteral)]
 pub enum iox2_node_list_failure_e {
+    /// A list of all Nodes could not be created since the process does not have sufficient permissions.
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
+    /// The process received an interrupt signal while acquiring the list of all Nodes.
     INTERRUPT,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     INTERNAL_ERROR,
 }
 
@@ -65,6 +73,31 @@ impl IntoCInt for NodeWaitFailure {
         (match self {
             NodeWaitFailure::TerminationRequest => iox2_node_wait_failure_e::TERMINATION_REQUEST,
             NodeWaitFailure::Interrupt => iox2_node_wait_failure_e::INTERRUPT,
+        }) as c_int
+    }
+}
+
+/// Failures of [`iox2_dead_node_remove_stale_resources()`] that occur when the stale resources of
+/// a dead node are removed.
+#[repr(C)]
+#[derive(Copy, Clone, StringLiteral)]
+pub enum iox2_node_cleanup_failure_e {
+    /// The process received an interrupt signal while cleaning up all stale resources of a dead node.
+    INTERRUPT = IOX2_OK as isize + 1,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    INTERNAL_ERROR,
+    /// The stale resources of a dead node could not be removed since the process does not have sufficient permissions.
+    INSUFFICIENT_PERMISSIONS,
+}
+
+impl IntoCInt for NodeCleanupFailure {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            NodeCleanupFailure::Interrupt => iox2_node_cleanup_failure_e::INTERRUPT,
+            NodeCleanupFailure::InternalError => iox2_node_cleanup_failure_e::INTERNAL_ERROR,
+            NodeCleanupFailure::InsufficientPermissions => {
+                iox2_node_cleanup_failure_e::INSUFFICIENT_PERMISSIONS
+            }
         }) as c_int
     }
 }
@@ -160,12 +193,6 @@ pub enum iox2_node_state_e {
     UNDEFINED,
 }
 
-// NOTE check the README.md for using opaque types with renaming
-/// The immutable pointer to the underlying `NodeId`
-pub type iox2_node_id_ptr = *const NodeId;
-/// The mutable pointer to the underlying `NodeId`
-pub type iox2_node_id_ptr_mut = *mut NodeId;
-
 /// The callback for [`iox2_node_list`]
 ///
 /// # Arguments
@@ -180,6 +207,7 @@ pub type iox2_node_id_ptr_mut = *mut NodeId;
 pub type iox2_node_list_callback = extern "C" fn(
     iox2_node_state_e,
     iox2_node_id_ptr,
+    *const c_char,
     iox2_node_name_ptr,
     iox2_config_ptr,
     iox2_callback_context,
@@ -316,9 +344,65 @@ pub unsafe extern "C" fn iox2_node_signal_handling_mode(
 ///
 /// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
 #[no_mangle]
-pub unsafe extern "C" fn iox2_node_id(node_handle: iox2_node_h_ref) -> iox2_node_id_ptr {
+pub unsafe extern "C" fn iox2_node_id(
+    node_handle: iox2_node_h_ref,
+    service_type: iox2_service_type_e,
+) -> iox2_node_id_ptr {
     node_handle.assert_non_null();
-    todo!() // TODO: [#210] implement
+
+    let node = &mut *node_handle.as_type();
+    match service_type {
+        iox2_service_type_e::IPC => node.value.as_ref().ipc.id(),
+        iox2_service_type_e::LOCAL => node.value.as_ref().local.id(),
+    }
+}
+
+/// Removes all stale resources of a dead node under a provided config.
+///
+/// Returns [`IOX2_OK`] on success, otherwise [`iox2_node_cleanup_failure_e`].
+///
+/// # Safety
+///
+/// * The `node_handle` must be valid and obtained by [`iox2_node_builder_create`](crate::iox2_node_builder_create)!
+/// * The `node_id` must be valid
+/// * The `config` must be valid
+/// * `has_success` must point to a valid memory location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
+    service_type: iox2_service_type_e,
+    node_id: iox2_node_id_h_ref,
+    config: iox2_config_h_ref,
+    has_success: *mut bool,
+) -> c_int {
+    node_id.assert_non_null();
+    config.assert_non_null();
+    debug_assert!(!has_success.is_null());
+
+    let node_id = (*node_id.as_type()).value.as_ref();
+    let config = (*config.as_type()).value.as_ref();
+
+    let result = match service_type {
+        iox2_service_type_e::IPC => {
+            DeadNodeView::<ipc::Service>::__internal_remove_stale_resources(
+                *node_id,
+                NodeDetails::__internal_new(&None, &config.value),
+            )
+        }
+        iox2_service_type_e::LOCAL => {
+            DeadNodeView::<local::Service>::__internal_remove_stale_resources(
+                *node_id,
+                NodeDetails::__internal_new(&None, &config.value),
+            )
+        }
+    };
+
+    match result {
+        Ok(v) => {
+            *has_success = v;
+            IOX2_OK
+        }
+        Err(e) => e.into_c_int(),
+    }
 }
 
 fn iox2_node_list_impl<S: Service>(
@@ -326,16 +410,24 @@ fn iox2_node_list_impl<S: Service>(
     callback: iox2_node_list_callback,
     callback_ctx: iox2_callback_context,
 ) -> CallbackProgression {
+    let unknown_executable = CString::new("unknown_executable").unwrap();
     match node_state {
         NodeState::Alive(alive_node_view) => {
-            let (node_name, config) = alive_node_view
+            let (executable, node_name, config) = alive_node_view
                 .details()
                 .as_ref()
-                .map(|view| (view.name() as _, view.config() as _))
-                .unwrap_or((std::ptr::null(), std::ptr::null()));
+                .map(|view| {
+                    (
+                        CString::new(view.executable().as_bytes()).unwrap(),
+                        view.name() as _,
+                        view.config() as _,
+                    )
+                })
+                .unwrap_or((unknown_executable, std::ptr::null(), std::ptr::null()));
             callback(
                 iox2_node_state_e::ALIVE,
                 alive_node_view.id(),
+                executable.as_bytes_with_nul().as_ptr().cast(),
                 node_name,
                 config,
                 callback_ctx,
@@ -343,14 +435,21 @@ fn iox2_node_list_impl<S: Service>(
             .into()
         }
         NodeState::Dead(dead_node_view) => {
-            let (node_name, config) = dead_node_view
+            let (executable, node_name, config) = dead_node_view
                 .details()
                 .as_ref()
-                .map(|view| (view.name() as _, view.config() as _))
-                .unwrap_or((std::ptr::null(), std::ptr::null()));
+                .map(|view| {
+                    (
+                        CString::new(view.executable().as_bytes()).unwrap(),
+                        view.name() as _,
+                        view.config() as _,
+                    )
+                })
+                .unwrap_or((unknown_executable, std::ptr::null(), std::ptr::null()));
             callback(
                 iox2_node_state_e::DEAD,
                 dead_node_view.id(),
+                executable.as_bytes_with_nul().as_ptr().cast(),
                 node_name,
                 config,
                 callback_ctx,
@@ -360,6 +459,7 @@ fn iox2_node_list_impl<S: Service>(
         NodeState::Inaccessible(ref node_id) => callback(
             iox2_node_state_e::INACCESSIBLE,
             node_id,
+            unknown_executable.as_bytes_with_nul().as_ptr().cast(),
             std::ptr::null(),
             std::ptr::null(),
             callback_ctx,
@@ -368,6 +468,7 @@ fn iox2_node_list_impl<S: Service>(
         NodeState::Undefined(ref node_id) => callback(
             iox2_node_state_e::UNDEFINED,
             node_id,
+            unknown_executable.as_bytes_with_nul().as_ptr().cast(),
             std::ptr::null(),
             std::ptr::null(),
             callback_ctx,

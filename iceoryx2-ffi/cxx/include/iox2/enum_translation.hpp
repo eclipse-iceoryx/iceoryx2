@@ -1492,6 +1492,22 @@ constexpr auto from<iox2::AllocationStrategy, iox2_allocation_strategy_e>(const 
 
     IOX_UNREACHABLE();
 }
+
+template <>
+constexpr auto from<int, iox2::NodeCleanupFailure>(const int value) noexcept -> iox2::NodeCleanupFailure {
+    const auto variant = static_cast<iox2_node_cleanup_failure_e>(value);
+
+    switch (variant) {
+    case iox2_node_cleanup_failure_e_INTERRUPT:
+        return iox2::NodeCleanupFailure::Interrupt;
+    case iox2_node_cleanup_failure_e_INTERNAL_ERROR:
+        return iox2::NodeCleanupFailure::InternalError;
+    case iox2_node_cleanup_failure_e_INSUFFICIENT_PERMISSIONS:
+        return iox2::NodeCleanupFailure::InsufficientPermissions;
+    }
+
+    IOX_UNREACHABLE();
+}
 } // namespace iox
 
 #endif

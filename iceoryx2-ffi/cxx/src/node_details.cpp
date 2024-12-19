@@ -13,8 +13,9 @@
 #include "iox2/node_details.hpp"
 
 namespace iox2 {
-NodeDetails::NodeDetails(NodeName name, Config config)
-    : m_node_name { std::move(name) }
+NodeDetails::NodeDetails(iox::FileName executable, NodeName name, Config config)
+    : m_executable { std::move(executable) }
+    , m_node_name { std::move(name) }
     , m_config { std::move(config) } {
 }
 

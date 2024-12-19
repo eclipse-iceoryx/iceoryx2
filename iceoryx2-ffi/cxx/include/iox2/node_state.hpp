@@ -33,7 +33,7 @@ class AliveNodeView {
     auto operator=(AliveNodeView&&) -> AliveNodeView& = default;
     ~AliveNodeView() = default;
 
-    AliveNodeView(const NodeId& node_id, const iox::optional<NodeDetails>& details);
+    AliveNodeView(NodeId node_id, const iox::optional<NodeDetails>& details);
 
     /// Returns the [`NodeId`].
     auto id() const -> const NodeId&;
@@ -84,10 +84,6 @@ class NodeState {
     auto operator=(NodeState&&) -> NodeState& = default;
     ~NodeState() = default;
 
-    explicit NodeState(const AliveNodeView<T>& view);
-    explicit NodeState(const DeadNodeView<T>& view);
-    NodeState(iox2_node_state_e node_state, const NodeId& node_id);
-
     /// If the [`Node`] is alive the provided callback is called with an [`AliveNodeView`]
     /// as argument.
     auto alive(const iox::function<void(AliveNodeView<T>&)>& callback) -> NodeState&;
@@ -105,6 +101,15 @@ class NodeState {
     auto undefined(const iox::function<void(NodeId&)>& callback) -> NodeState&;
 
   private:
+    template <ServiceType>
+    friend auto list_callback(
+        iox2_node_state_e, iox2_node_id_ptr, const char*, iox2_node_name_ptr, iox2_config_ptr, iox2_callback_context)
+        -> iox2_callback_progression_e;
+
+    explicit NodeState(const AliveNodeView<T>& view);
+    explicit NodeState(const DeadNodeView<T>& view);
+    NodeState(iox2_node_state_e node_state, const NodeId& node_id);
+
     iox::variant<AliveNodeView<T>, DeadNodeView<T>, NodeId, NodeId> m_state;
 };
 } // namespace iox2
