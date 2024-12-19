@@ -63,6 +63,24 @@ path = "rust/event_based_communication/publisher.rs"
 name = "event_based_comm_subscriber"
 path = "rust/event_based_communication/subscriber.rs"
 
+# event based communication
+
+[[example]]
+name = "health_monitoring_publisher_1"
+path = "rust/health_monitoring/publisher_1.rs"
+
+[[example]]
+name = "health_monitoring_publisher_2"
+path = "rust/health_monitoring/publisher_2.rs"
+
+[[example]]
+name = "health_monitoring_subscriber"
+path = "rust/health_monitoring/subscriber.rs"
+
+[[example]]
+name = "health_monitoring_central_daemon"
+path = "rust/health_monitoring/central_daemon.rs"
+
 # publish_subscribe
 
 [[example]]

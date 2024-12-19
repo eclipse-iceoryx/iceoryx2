@@ -17,3 +17,27 @@ mod transmission_data;
 pub use custom_header::CustomHeader;
 pub use pubsub_event::PubSubEvent;
 pub use transmission_data::TransmissionData;
+
+use iceoryx2::{
+    prelude::*,
+    service::port_factory::{event, publish_subscribe},
+};
+
+pub type ServiceTuple = (
+    event::PortFactory<ipc::Service>,
+    publish_subscribe::PortFactory<ipc::Service, u64, ()>,
+);
+
+pub fn open_service(
+    node: &Node<ipc::Service>,
+    service_name: &ServiceName,
+) -> Result<ServiceTuple, Box<dyn std::error::Error>> {
+    let service_pubsub = node
+        .service_builder(service_name)
+        .publish_subscribe::<u64>()
+        .open()?;
+
+    let service_event = node.service_builder(service_name).event().open()?;
+
+    Ok((service_event, service_pubsub))
+}
