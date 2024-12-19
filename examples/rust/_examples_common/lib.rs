@@ -23,22 +23,21 @@ use iceoryx2::{
     service::port_factory::{event, publish_subscribe},
 };
 
+pub type ServiceTuple = (
+    event::PortFactory<ipc::Service>,
+    publish_subscribe::PortFactory<ipc::Service, u64, ()>,
+);
+
 pub fn open_service(
     node: &Node<ipc::Service>,
     service_name: &ServiceName,
-) -> Result<
-    (
-        event::PortFactory<ipc::Service>,
-        publish_subscribe::PortFactory<ipc::Service, u64, ()>,
-    ),
-    Box<dyn std::error::Error>,
-> {
+) -> Result<ServiceTuple, Box<dyn std::error::Error>> {
     let service_pubsub = node
-        .service_builder(&service_name)
+        .service_builder(service_name)
         .publish_subscribe::<u64>()
         .open()?;
 
-    let service_event = node.service_builder(&service_name).event().open()?;
+    let service_event = node.service_builder(service_name).event().open()?;
 
     Ok((service_event, service_pubsub))
 }
