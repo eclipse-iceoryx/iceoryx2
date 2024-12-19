@@ -49,31 +49,32 @@ class ServiceBuilderEvent {
     /// [`Listener`] must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_listeners);
 
-    /// If the [`Service`] is created it defines the event that shall be emitted by every newly
-    /// created [`Notifier`].
-    IOX_BUILDER_OPTIONAL(EventId, notifier_created_event);
-
-    /// If the [`Service`] is created it disables sending an event when a new notifier was created.
-    IOX_BUILDER_SWITCH(disable_notifier_created_event);
-
+  public:
     /// If the [`Service`] is created it defines the event that shall be emitted by every
     /// [`Notifier`] before it is dropped. If [`None`] is
     /// provided a [`Notifier`] will not emit an event.
-    IOX_BUILDER_OPTIONAL(EventId, notifier_dropped_event);
+    auto notifier_dropped_event(EventId event_id) && -> ServiceBuilderEvent&&;
 
-    /// If the [`Service`] is created it disables sending an event when a notifier was dropped.
-    IOX_BUILDER_SWITCH(disable_notifier_dropped_event);
+    /// If the [`Service`] is created it defines the event that shall be emitted by every newly
+    /// created [`Notifier`].
+    auto notifier_created_event(EventId event_id) && -> ServiceBuilderEvent&&;
 
     /// If the [`Service`] is created it defines the event that shall be emitted when a
     /// [`Notifier`] is identified as dead. If [`None`] is
     /// provided no event will be emitted.
-    IOX_BUILDER_OPTIONAL(EventId, notifier_dead_event);
+    auto notifier_dead_event(EventId event_id) && -> ServiceBuilderEvent&&;
+
+    /// If the [`Service`] is created it disables sending an event when a notifier was dropped.
+    auto disable_notifier_dropped_event() && -> ServiceBuilderEvent&&;
+
+    /// If the [`Service`] is created it disables sending an event when a new notifier was created.
+    auto disable_notifier_created_event() && -> ServiceBuilderEvent&&;
 
     /// If the [`Service`] is created it disables sending an event when a notifier was identified
     /// as dead.
-    IOX_BUILDER_SWITCH(disable_notifier_dead_event);
+    auto disable_notifier_dead_event() && -> ServiceBuilderEvent&&;
 
-  public:
+
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     auto open_or_create() && -> iox::expected<PortFactoryEvent<S>, EventOpenOrCreateError>;
@@ -109,6 +110,13 @@ class ServiceBuilderEvent {
     void set_parameters();
 
     iox2_service_builder_event_h m_handle = nullptr;
+
+    iox::optional<EventId> m_notifier_dead_event;
+    iox::optional<EventId> m_notifier_created_event;
+    iox::optional<EventId> m_notifier_dropped_event;
+    bool m_verify_notifier_dead_event = false;
+    bool m_verify_notifier_created_event = false;
+    bool m_verify_notifier_dropped_event = false;
 };
 } // namespace iox2
 
