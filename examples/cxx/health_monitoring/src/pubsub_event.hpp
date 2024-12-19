@@ -37,8 +37,8 @@ struct ServiceTuple {
     iox2::PortFactoryPublishSubscribe<iox2::ServiceType::Ipc, uint64_t, void> pubsub;
 };
 
-inline auto open_service(const iox2::Node<iox2::ServiceType::Ipc>& node,
-                         const iox2::ServiceName& service_name) -> ServiceTuple {
+inline auto open_service(const iox2::Node<iox2::ServiceType::Ipc>& node, const iox2::ServiceName& service_name)
+    -> ServiceTuple {
     auto service_pubsub = node.service_builder(service_name).publish_subscribe<uint64_t>().open().expect("");
     auto service_event = node.service_builder(service_name).event().open().expect("");
 
