@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use iceoryx2::service::static_config::event::StaticConfig;
+use iceoryx2::{prelude::EventId, service::static_config::event::StaticConfig};
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -21,6 +21,12 @@ pub struct iox2_static_config_event_t {
     pub max_listeners: usize,
     pub max_nodes: usize,
     pub event_id_max_value: usize,
+    pub notifier_dead_event: usize,
+    pub has_notifier_dead_event: bool,
+    pub notifier_dropped_event: usize,
+    pub has_notifier_dropped_event: bool,
+    pub notifier_created_event: usize,
+    pub has_notifier_created_event: bool,
 }
 
 impl From<&StaticConfig> for iox2_static_config_event_t {
@@ -30,6 +36,21 @@ impl From<&StaticConfig> for iox2_static_config_event_t {
             max_listeners: c.max_listeners(),
             max_nodes: c.max_nodes(),
             event_id_max_value: c.event_id_max_value(),
+            notifier_dead_event: c
+                .notifier_dead_event()
+                .unwrap_or(EventId::new(0))
+                .as_value(),
+            has_notifier_dead_event: c.notifier_dead_event().is_some(),
+            notifier_dropped_event: c
+                .notifier_dropped_event()
+                .unwrap_or(EventId::new(0))
+                .as_value(),
+            has_notifier_dropped_event: c.notifier_dropped_event().is_some(),
+            notifier_created_event: c
+                .notifier_created_event()
+                .unwrap_or(EventId::new(0))
+                .as_value(),
+            has_notifier_created_event: c.notifier_created_event().is_some(),
         }
     }
 }

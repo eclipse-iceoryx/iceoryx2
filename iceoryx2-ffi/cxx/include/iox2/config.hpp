@@ -212,6 +212,18 @@ class Event {
     auto event_id_max_value() && -> size_t;
     /// Set the largest event id supported by the event service
     void set_event_id_max_value(size_t value) &&;
+    /// Defines the event id value that is emitted after a new notifier was created.
+    auto notifier_created_event() && -> iox::optional<size_t>;
+    /// Sets the event id value that is emitted after a new notifier was created.
+    void set_notifier_created_event(iox::optional<size_t> value) &&;
+    /// Defines the event id value that is emitted before a new notifier is dropped.
+    auto notifier_dropped_event() && -> iox::optional<size_t>;
+    /// Sets the event id value that is emitted before a new notifier is dropped.
+    void set_notifier_dropped_event(iox::optional<size_t> value) &&;
+    /// Defines the event id value that is emitted if a notifier was identified as dead.
+    auto notifier_dead_event() && -> iox::optional<size_t>;
+    /// Sets the event id value that is emitted if a notifier was identified as dead.
+    void set_notifier_dead_event(iox::optional<size_t> value) &&;
 
   private:
     friend class Defaults;
@@ -294,6 +306,9 @@ class Config {
     friend class ConfigView;
     friend class config::Global;
     friend class NodeBuilder;
+    template <ServiceType>
+    friend class DeadNodeView;
+
     explicit Config(iox2_config_h handle);
     void drop();
 

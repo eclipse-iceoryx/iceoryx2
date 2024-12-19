@@ -20,13 +20,40 @@ StaticConfigEvent::StaticConfigEvent(iox2_static_config_event_t value)
 auto StaticConfigEvent::max_nodes() const -> size_t {
     return m_value.max_nodes;
 }
+
 auto StaticConfigEvent::max_notifiers() const -> size_t {
     return m_value.max_notifiers;
 }
+
 auto StaticConfigEvent::max_listeners() const -> size_t {
     return m_value.max_listeners;
 }
+
 auto StaticConfigEvent::event_id_max_value() const -> size_t {
     return m_value.event_id_max_value;
+}
+
+auto StaticConfigEvent::notifier_created_event() const -> iox::optional<EventId> {
+    if (!m_value.has_notifier_created_event) {
+        return iox::nullopt;
+    }
+
+    return { EventId(m_value.notifier_created_event) };
+}
+
+auto StaticConfigEvent::notifier_dropped_event() const -> iox::optional<EventId> {
+    if (!m_value.has_notifier_dropped_event) {
+        return iox::nullopt;
+    }
+
+    return { EventId(m_value.notifier_dropped_event) };
+}
+
+auto StaticConfigEvent::notifier_dead_event() const -> iox::optional<EventId> {
+    if (!m_value.has_notifier_dead_event) {
+        return iox::nullopt;
+    }
+
+    return { EventId(m_value.notifier_dead_event) };
 }
 } // namespace iox2

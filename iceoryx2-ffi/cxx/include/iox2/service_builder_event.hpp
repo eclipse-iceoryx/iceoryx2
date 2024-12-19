@@ -17,6 +17,7 @@
 #include "iox/expected.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/port_factory_event.hpp"
 #include "iox2/service_builder_event_error.hpp"
@@ -47,6 +48,30 @@ class ServiceBuilderEvent {
     /// be supported at most. If an existing [`Service`] is opened it defines how many
     /// [`Listener`] must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_listeners);
+
+    /// If the [`Service`] is created it defines the event that shall be emitted by every newly
+    /// created [`Notifier`].
+    IOX_BUILDER_OPTIONAL(EventId, notifier_created_event);
+
+    /// If the [`Service`] is created it disables sending an event when a new notifier was created.
+    IOX_BUILDER_SWITCH(disable_notifier_created_event);
+
+    /// If the [`Service`] is created it defines the event that shall be emitted by every
+    /// [`Notifier`] before it is dropped. If [`None`] is
+    /// provided a [`Notifier`] will not emit an event.
+    IOX_BUILDER_OPTIONAL(EventId, notifier_dropped_event);
+
+    /// If the [`Service`] is created it disables sending an event when a notifier was dropped.
+    IOX_BUILDER_SWITCH(disable_notifier_dropped_event);
+
+    /// If the [`Service`] is created it defines the event that shall be emitted when a
+    /// [`Notifier`] is identified as dead. If [`None`] is
+    /// provided no event will be emitted.
+    IOX_BUILDER_OPTIONAL(EventId, notifier_dead_event);
+
+    /// If the [`Service`] is created it disables sending an event when a notifier was identified
+    /// as dead.
+    IOX_BUILDER_SWITCH(disable_notifier_dead_event);
 
   public:
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
