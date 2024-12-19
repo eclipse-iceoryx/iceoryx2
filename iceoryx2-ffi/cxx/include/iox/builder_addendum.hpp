@@ -15,6 +15,16 @@
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 // NOLINTBEGIN(bugprone-macro-parentheses)
+#define IOX_BUILDER_SWITCH(name)                                                                                       \
+  public:                                                                                                              \
+    auto name()&& noexcept -> decltype(auto) {                                                                         \
+        m_##name = true;                                                                                               \
+        return std::move(*this);                                                                                       \
+    }                                                                                                                  \
+                                                                                                                       \
+  private:                                                                                                             \
+    bool m_##name { false };
+
 #define IOX_BUILDER_PARAMETER(type, name, defaultValue)                                                                \
   public:                                                                                                              \
     auto name(type const& value)&& noexcept -> decltype(auto) {                                                        \

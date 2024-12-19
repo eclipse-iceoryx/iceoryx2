@@ -272,6 +272,12 @@ pub struct Event {
     pub max_nodes: usize,
     /// The largest event id supported by the event service
     pub event_id_max_value: usize,
+    /// Defines the event id value that is emitted after a new notifier was created.
+    pub notifier_created_event: Option<usize>,
+    /// Defines the event id value that is emitted before a new notifier is dropped.
+    pub notifier_dropped_event: Option<usize>,
+    /// Defines the event id value that is emitted if a notifier was identified as dead.
+    pub notifier_dead_event: Option<usize>,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -333,6 +339,9 @@ impl Default for Config {
                     max_notifiers: 16,
                     max_nodes: 36,
                     event_id_max_value: 4294967295,
+                    notifier_created_event: None,
+                    notifier_dropped_event: None,
+                    notifier_dead_event: None,
                 },
             },
         }

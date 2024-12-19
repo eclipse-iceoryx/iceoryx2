@@ -20,7 +20,6 @@ mod node_death_tests {
     use iceoryx2::prelude::*;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
-    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
@@ -191,7 +190,6 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_removed_from_event_service<S: Test>() {
-        set_log_level(LogLevel::Error);
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -270,6 +268,49 @@ mod node_death_tests {
             assert_that!(service.dynamic_config().number_of_notifiers(), eq NUMBER_OF_NOTIFIERS - NUMBER_OF_BAD_NODES);
             assert_that!(service.dynamic_config().number_of_listeners(), eq NUMBER_OF_LISTENERS - NUMBER_OF_BAD_NODES);
         }
+    }
+
+    #[test]
+    fn notifier_of_dead_node_emits_death_event_when_configured<S: Test>() {
+        let _watchdog = Watchdog::new();
+        let mut config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let notifier_dead_event = EventId::new(8);
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        let mut dead_node = S::create_test_node(&config).node;
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+
+        let dead_service = dead_node
+            .service_builder(&service_name)
+            .event()
+            .notifier_dead_event(notifier_dead_event)
+            .notifier_created_event(EventId::new(0))
+            .notifier_dropped_event(EventId::new(0))
+            .create()
+            .unwrap();
+        let dead_notifier = dead_service.notifier_builder().create().unwrap();
+
+        let service = node.service_builder(&service_name).event().open().unwrap();
+        let listener = service.listener_builder().create().unwrap();
+
+        S::staged_death(&mut dead_node);
+        core::mem::forget(dead_notifier);
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        let mut received_events = 0;
+        listener
+            .try_wait_all(|event| {
+                assert_that!(event, eq notifier_dead_event);
+                received_events += 1;
+            })
+            .unwrap();
+
+        assert_that!(received_events, eq 1);
     }
 
     #[test]

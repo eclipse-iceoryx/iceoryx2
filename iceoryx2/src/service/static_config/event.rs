@@ -24,11 +24,14 @@
 //! println!("max listeners:                {:?}", event.static_config().max_listeners());
 //! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("event id max value:           {:?}", event.static_config().event_id_max_value());
+//! println!("notifier created event:       {:?}", event.static_config().notifier_created_event());
+//! println!("notifier dropped event:       {:?}", event.static_config().notifier_dropped_event());
+//! println!("notifier dead event:          {:?}", event.static_config().notifier_dead_event());
 //!
 //! # Ok(())
 //! # }
 //! ```
-use crate::config;
+use crate::{config, prelude::EventId};
 use serde::{Deserialize, Serialize};
 
 /// The static configuration of an [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)
@@ -40,6 +43,9 @@ pub struct StaticConfig {
     pub(crate) max_listeners: usize,
     pub(crate) max_nodes: usize,
     pub(crate) event_id_max_value: usize,
+    pub(crate) notifier_created_event: Option<usize>,
+    pub(crate) notifier_dropped_event: Option<usize>,
+    pub(crate) notifier_dead_event: Option<usize>,
 }
 
 impl StaticConfig {
@@ -49,6 +55,9 @@ impl StaticConfig {
             max_listeners: config.defaults.event.max_listeners,
             max_nodes: config.defaults.event.max_nodes,
             event_id_max_value: config.defaults.event.event_id_max_value,
+            notifier_created_event: config.defaults.event.notifier_created_event,
+            notifier_dropped_event: config.defaults.event.notifier_dropped_event,
+            notifier_dead_event: config.defaults.event.notifier_dead_event,
         }
     }
 
@@ -71,5 +80,20 @@ impl StaticConfig {
     /// Returns the largest event_id that is supported by the service
     pub fn event_id_max_value(&self) -> usize {
         self.event_id_max_value
+    }
+
+    /// Returns the emitted [`EventId`] when a new notifier is created.
+    pub fn notifier_created_event(&self) -> Option<EventId> {
+        self.notifier_created_event.map(EventId::new)
+    }
+
+    /// Returns the emitted [`EventId`] when a notifier is dropped.
+    pub fn notifier_dropped_event(&self) -> Option<EventId> {
+        self.notifier_dropped_event.map(EventId::new)
+    }
+
+    /// Returns the emitted [`EventId`] when a notifier is identified as dead.
+    pub fn notifier_dead_event(&self) -> Option<EventId> {
+        self.notifier_dead_event.map(EventId::new)
     }
 }

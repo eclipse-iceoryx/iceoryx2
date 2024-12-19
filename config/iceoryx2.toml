@@ -38,3 +38,6 @@ max-listeners                               = 16
 max-notifiers                               = 16
 max-nodes                                   = 36
 event-id-max-value                          = 4294967295
+# notifier-created-event                      = 1 # uncomment to enable setting
+# notifier-dropped-event                      = 2 # uncomment to enable setting
+# notifier-dead-event                         = 3 # uncomment to enable setting

@@ -41,6 +41,39 @@ TEST(Config, defaults_event_max_listeners) {
     ASSERT_THAT(config.defaults().event().max_listeners(), Eq(test_value));
 }
 
+TEST(Config, defaults_event_notifier_created_event) {
+    const auto test_value = iox::optional<size_t>(12);
+    auto config = Config();
+
+    config.defaults().event().set_notifier_created_event(test_value);
+    ASSERT_THAT(config.defaults().event().notifier_created_event(), Eq(test_value));
+
+    config.defaults().event().set_notifier_created_event(iox::nullopt);
+    ASSERT_THAT(config.defaults().event().notifier_created_event(), Eq(iox::nullopt));
+}
+
+TEST(Config, defaults_event_notifier_dropped_event) {
+    const auto test_value = iox::optional<size_t>(13);
+    auto config = Config();
+
+    config.defaults().event().set_notifier_dropped_event(test_value);
+    ASSERT_THAT(config.defaults().event().notifier_dropped_event(), Eq(test_value));
+
+    config.defaults().event().set_notifier_dropped_event(iox::nullopt);
+    ASSERT_THAT(config.defaults().event().notifier_dropped_event(), Eq(iox::nullopt));
+}
+
+TEST(Config, defaults_event_notifier_dead_event) {
+    const auto test_value = iox::optional<size_t>(14);
+    auto config = Config();
+
+    config.defaults().event().set_notifier_dead_event(test_value);
+    ASSERT_THAT(config.defaults().event().notifier_dead_event(), Eq(test_value));
+
+    config.defaults().event().set_notifier_dead_event(iox::nullopt);
+    ASSERT_THAT(config.defaults().event().notifier_dead_event(), Eq(iox::nullopt));
+}
+
 TEST(Config, defaults_event_max_notifiers) {
     const auto test_value = 45;
     auto config = Config();

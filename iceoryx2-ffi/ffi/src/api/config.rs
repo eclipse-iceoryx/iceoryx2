@@ -76,7 +76,7 @@ pub(super) struct ConfigOwner {
 #[repr(C)]
 #[repr(align(8))] // align_of<ConfigOwner>()
 pub struct iox2_config_storage_t {
-    internal: [u8; 3560], // size_of<ConfigOwner>()
+    internal: [u8; 3608], // size_of<ConfigOwner>()
 }
 
 /// Contains the iceoryx2 config
@@ -1556,6 +1556,171 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_listeners(
 
     let config = &mut *handle.as_type();
     config.value.as_mut().value.defaults.event.max_listeners = value;
+}
+
+/// Returns the event id value that is emitted when a new notifier is created. It returns `true`
+/// if a value is emitted and sets the provided `value`, otherwise it returns `false`.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+/// * `value` - points to a valid memory location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_event_notifier_created_event(
+    handle: iox2_config_h_ref,
+    value: *mut c_size_t,
+) -> bool {
+    handle.assert_non_null();
+    debug_assert!(!value.is_null());
+
+    let config = &*handle.as_type();
+    if let Some(v) = config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .event
+        .notifier_created_event
+    {
+        *value = v;
+        true
+    } else {
+        false
+    }
+}
+
+/// Sets the event id value that is emitted when a new notifier is created. If `value` is `NULL`
+/// no event will be emitted, otherwise the provided value will be used.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_created_event(
+    handle: iox2_config_h_ref,
+    value: *const c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .event
+        .notifier_created_event = if value.is_null() { None } else { Some(*value) };
+}
+
+/// Returns the event id value that is emitted when a notifier is dropped. It returns `true`
+/// if a value is emitted and sets the provided `value`, otherwise it returns `false`.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+/// * `value` - points to a valid memory location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_event_notifier_dropped_event(
+    handle: iox2_config_h_ref,
+    value: *mut c_size_t,
+) -> bool {
+    handle.assert_non_null();
+    debug_assert!(!value.is_null());
+
+    let config = &*handle.as_type();
+    if let Some(v) = config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .event
+        .notifier_dropped_event
+    {
+        *value = v;
+        true
+    } else {
+        false
+    }
+}
+
+/// Sets the event id value that is emitted when a notifier is dropped. If `value` is `NULL`
+/// no event will be emitted, otherwise the provided value will be used.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_dropped_event(
+    handle: iox2_config_h_ref,
+    value: *const c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .event
+        .notifier_dropped_event = if value.is_null() { None } else { Some(*value) };
+}
+
+/// Returns the event id value that is emitted when a notifier is identified as dead. It returns
+/// `true` if a value is emitted and sets the provided `value`, otherwise it returns `false`.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+/// * `value` - points to a valid memory location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_event_notifier_dead_event(
+    handle: iox2_config_h_ref,
+    value: *mut c_size_t,
+) -> bool {
+    handle.assert_non_null();
+    debug_assert!(!value.is_null());
+
+    let config = &*handle.as_type();
+    if let Some(v) = config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .event
+        .notifier_dead_event
+    {
+        *value = v;
+        true
+    } else {
+        false
+    }
+}
+
+/// Sets the event id value that is emitted when a notifier is identified as dead. If `value` is `NULL`
+/// no event will be emitted, otherwise the provided value will be used.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_event_set_notifier_dead_event(
+    handle: iox2_config_h_ref,
+    value: *const c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .event
+        .notifier_dead_event = if value.is_null() { None } else { Some(*value) };
 }
 
 /// Returns the maximum amount of supported [`iox2_notifier_h`](crate::api::iox2_notifier_h)
