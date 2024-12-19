@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_name_2 = ServiceName::new("service_2")?;
 
     let node = NodeBuilder::new()
-        .name(&"watchdog and resource creator".try_into()?)
+        .name(&"central daemon".try_into()?)
         .create::<ipc::Service>()?;
 
     // The central daemon is responsible to create all services before hand and the other processes
