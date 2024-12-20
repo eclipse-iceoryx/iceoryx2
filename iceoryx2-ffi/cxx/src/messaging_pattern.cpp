@@ -16,8 +16,10 @@ auto operator<<(std::ostream& stream, const iox2::MessagingPattern& value) -> st
     switch (value) {
     case iox2::MessagingPattern::PublishSubscribe:
         stream << "iox2::MessagingPattern::PublishSubscribe";
+        break;
     case iox2::MessagingPattern::Event:
         stream << "iox2::MessagingPattern::Event";
+        break;
     }
     return stream;
 }

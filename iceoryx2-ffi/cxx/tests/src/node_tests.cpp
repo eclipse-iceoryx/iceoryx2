@@ -70,7 +70,7 @@ TYPED_TEST(NodeTest, created_nodes_can_be_listed) {
     }
 
     uint64_t counter = 0;
-    auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](const auto& node_state) {
+    auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](const auto&) {
         counter++;
         return CallbackProgression::Continue;
     });

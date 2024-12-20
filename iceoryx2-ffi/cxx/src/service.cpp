@@ -42,6 +42,9 @@ auto Service<S>::details(const ServiceName& service_name,
                          const ConfigView config,
                          const MessagingPattern messaging_pattern)
     -> iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError> {
+    static_cast<void>(service_name);
+    static_cast<void>(config);
+    static_cast<void>(messaging_pattern);
     IOX_TODO();
 }
 

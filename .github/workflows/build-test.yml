@@ -334,7 +334,7 @@ jobs:
       - name: Build language bindings
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
+          cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DTREAT_WARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
           cmake --build target/ffi/build ${{ matrix.mode.cmake-build-config }}
           cmake --install target/ffi/build ${{ matrix.mode.cmake-build-config }}
 

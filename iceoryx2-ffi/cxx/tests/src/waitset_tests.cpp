@@ -197,7 +197,7 @@ TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
 
     auto callback_called = false;
     auto result = sut.wait_and_process_once_with_timeout(
-        [&](auto attachment_id) -> CallbackProgression {
+        [&](auto) -> CallbackProgression {
             callback_called = true;
             return CallbackProgression::Stop;
         },
@@ -217,7 +217,7 @@ TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
     auto guard = sut.attach_interval(TIMEOUT).expect("");
 
     auto callback_called = false;
-    auto result = sut.wait_and_process_once([&](auto attachment_id) -> CallbackProgression {
+    auto result = sut.wait_and_process_once([&](auto) -> CallbackProgression {
         callback_called = true;
         return CallbackProgression::Stop;
     });
