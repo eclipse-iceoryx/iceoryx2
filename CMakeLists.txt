@@ -76,7 +76,7 @@ add_option(
 )
 
 add_option(
-    NAME TREAT_WARNING_AS_ERROR
+    NAME WARNING_AS_ERROR
     DESCRIPTION "Fails if the compiler emits a warning"
     DEFAULT_VALUE OFF
 )
@@ -116,7 +116,7 @@ add_rust_feature(
     RUST_FEATURE "iceoryx2/logger_tracing"
 )
 
-if(TREAT_WARNING_AS_ERROR)
+if(WARNING_AS_ERROR)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -Wpedantic")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wpedantic")
 endif()

@@ -63,7 +63,7 @@ struct UniquePortIdTest : public ::testing::Test {
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
-TYPED_TEST_SUITE(UniquePortIdTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(UniquePortIdTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(UniquePortIdTest, unique_port_id_value) {
     auto null_id = iox::vector<uint8_t, iox2::UNIQUE_PORT_ID_LENGTH> { iox2::UNIQUE_PORT_ID_LENGTH, 0 };

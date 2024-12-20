@@ -22,8 +22,6 @@
 #include "iox2/service_type.hpp"
 #include "iox2/waitset.hpp"
 
-constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
-
 // NOLINTBEGIN
 struct Args {
     IOX_CLI_DEFINITION(Args);
@@ -42,7 +40,6 @@ auto main(int argc, char** argv) -> int {
     using namespace iox2;
     auto args = Args::parse(argc, argv, "Notifier of the event multiplexing example.");
 
-    auto event_id = EventId(args.event_id());
     auto service_name_1 = ServiceName::create(args.service1().c_str()).expect("valid service name");
     auto service_name_2 = ServiceName::create(args.service2().c_str()).expect("valid service name");
 

@@ -58,7 +58,7 @@ struct WaitSetTest : public ::testing::Test {
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
-TYPED_TEST_SUITE(WaitSetTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(WaitSetTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(WaitSetTest, newly_created_waitset_is_empty) {
     auto sut = this->create_sut();

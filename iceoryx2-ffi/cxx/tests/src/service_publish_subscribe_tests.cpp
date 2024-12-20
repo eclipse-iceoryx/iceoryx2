@@ -31,7 +31,7 @@ class ServicePublishSubscribeTest : public ::testing::Test {
     static constexpr ServiceType TYPE = T::TYPE;
 };
 
-TYPED_TEST_SUITE(ServicePublishSubscribeTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(ServicePublishSubscribeTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(ServicePublishSubscribeTest, created_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;

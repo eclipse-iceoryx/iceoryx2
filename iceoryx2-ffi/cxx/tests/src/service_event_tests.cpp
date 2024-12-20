@@ -51,7 +51,7 @@ struct ServiceEventTest : public ::testing::Test {
 template <typename T>
 std::atomic<size_t> ServiceEventTest<T>::event_id_counter { 0 };
 
-TYPED_TEST_SUITE(ServiceEventTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(ServiceEventTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(ServiceEventTest, created_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
