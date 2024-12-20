@@ -104,7 +104,7 @@ int main(void) {
             printf("received: %lu, user_header: version = %d, timestamp = %lu\n",
                    (long unsigned) *payload,
                    user_header->version,
-                   user_header->timestamp);
+                   (long unsigned) user_header->timestamp);
             iox2_sample_drop(sample);
         }
     }
