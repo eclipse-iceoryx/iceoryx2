@@ -75,7 +75,7 @@ anyhow = { version = "1.0.86" }
 bindgen = { version = "0.69.4" }
 bitflags = { version = "2.5.0" }
 cargo_metadata = { version = "0.18.1" }
-cbindgen = { version = "0.26.0" }
+cbindgen = { version = "0.27.0" }
 cc = { version = "1.0.98" }
 cdr = { version = "0.2.4" }
 clap = { version = "4.5.4", features = ["derive"] }
