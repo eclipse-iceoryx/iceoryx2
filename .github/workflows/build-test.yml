@@ -223,7 +223,7 @@ jobs:
                 -DBUILD_TESTING=ON \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ matrix.mode.name }}" \
                 ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/build
           cmake --install target/ffi/build
