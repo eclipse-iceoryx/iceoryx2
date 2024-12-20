@@ -76,12 +76,18 @@ add_option(
 )
 
 add_param(
-    NAME RUST_TARGET_TRIPLET
-    DESCRIPTION "The target triplet for cross compilation, e.g. 'aarch64-unknown-linux-gnu'"
+    NAME RUST_BUILD_ARTIFACT_PATH
+    DESCRIPTION "The path to the folder with the Rust build artifacts, e.g. '/full/path/to/iceoryx2/target/release'"
     DEFAULT_VALUE ""
 )
 
-message(STATUS "iceoryx2 Rust feature flags:")
+add_param(
+    NAME RUST_TARGET_TRIPLET
+    DESCRIPTION "The target triplet for cross compilation when 'RUST_BUILD_ARTIFACT_PATH' is not set, e.g. 'aarch64-unknown-linux-gnu'"
+    DEFAULT_VALUE ""
+)
+
+message(STATUS "iceoryx2 Rust feature flags (only used when 'RUST_BUILD_ARTIFACT_PATH' is not set):")
 
 add_rust_feature(
     NAME IOX2_FEATURE_DEV_PERMISSIONS
