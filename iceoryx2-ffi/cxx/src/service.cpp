@@ -38,13 +38,10 @@ auto Service<S>::does_exist(const ServiceName& service_name,
 }
 
 template <ServiceType S>
-auto Service<S>::details(const ServiceName& service_name,
-                         const ConfigView config,
-                         const MessagingPattern messaging_pattern)
+auto Service<S>::details([[maybe_unused]] const ServiceName& service_name,
+                         [[maybe_unused]] const ConfigView config,
+                         [[maybe_unused]] const MessagingPattern messaging_pattern)
     -> iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError> {
-    static_cast<void>(service_name);
-    static_cast<void>(config);
-    static_cast<void>(messaging_pattern);
     IOX_TODO();
 }
 

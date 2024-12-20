@@ -79,9 +79,8 @@ auto PortFactoryEvent<S>::dynamic_config() const -> const DynamicConfigEvent& {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
+auto PortFactoryEvent<S>::nodes([[maybe_unused]] const iox::function<CallbackProgression(NodeState<S>)>& callback) const
     -> iox::expected<void, NodeListFailure> {
-    static_cast<void>(callback);
     IOX_TODO();
 }
 

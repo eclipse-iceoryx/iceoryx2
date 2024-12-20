@@ -25,10 +25,12 @@ constexpr iox::units::Duration REACTION_BUFFER = iox::units::Duration::fromMilli
 constexpr iox::units::Duration CYCLE_TIME_1 = iox::units::Duration::fromMilliseconds(1000) + REACTION_BUFFER;
 constexpr iox::units::Duration CYCLE_TIME_2 = iox::units::Duration::fromMilliseconds(1500) + REACTION_BUFFER;
 
+namespace {
 void find_and_cleanup_dead_nodes();
 void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                             const Subscriber<ServiceType::Ipc, uint64_t, void>& subscriber,
                             const ServiceName& service_name);
+} // namespace
 
 auto main() -> int {
     auto service_name_1 = ServiceName::create("service_1").expect("");
@@ -94,6 +96,7 @@ auto main() -> int {
     return 0;
 }
 
+namespace {
 void handle_incoming_events(Listener<ServiceType::Ipc>& listener,
                             const Subscriber<ServiceType::Ipc, uint64_t, void>& subscriber,
                             const ServiceName& service_name) {
@@ -119,10 +122,11 @@ void find_and_cleanup_dead_nodes() {
     Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) {
         node_state.dead([](auto view) {
             std::cout << "detected dead node: ";
-            view.details().and_then([](auto details) { std::cout << details.name().to_string().c_str(); });
+            view.details().and_then([](const auto& details) { std::cout << details.name().to_string().c_str(); });
             std::cout << std::endl;
             view.remove_stale_resources().expect("");
         });
         return CallbackProgression::Continue;
     }).expect("");
 }
+} // namespace

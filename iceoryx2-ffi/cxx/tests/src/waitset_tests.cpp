@@ -284,6 +284,8 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
 
     std::vector<Listener<TestFixture::TYPE>> listeners;
     std::vector<WaitSetGuard<TestFixture::TYPE>> guards;
+    guards.reserve(NUMBER_OF_INTERVALS + NUMBER_OF_NOTIFICATIONS + NUMBER_OF_DEADLINES);
+    listeners.reserve(NUMBER_OF_NOTIFICATIONS + NUMBER_OF_DEADLINES);
 
     for (uint64_t idx = 0; idx < NUMBER_OF_INTERVALS; ++idx) {
         guards.emplace_back(sut.attach_interval(Duration::fromNanoseconds(1)).expect(""));

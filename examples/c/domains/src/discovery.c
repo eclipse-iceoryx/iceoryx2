@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 iox2_callback_progression_e list_callback(const iox2_static_config_t* static_details, void* callback_context) {
+    (void) callback_context;
     printf("Found Service: %s, ServiceID: %s\n", static_details->name, static_details->id);
     return iox2_callback_progression_e_CONTINUE;
 }

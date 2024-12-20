@@ -23,7 +23,9 @@ using namespace iox2;
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromMilliseconds(100);
 
+namespace {
 void find_and_cleanup_dead_nodes();
+}
 
 auto main() -> int {
     auto service_name_1 = ServiceName::create("service_1").expect("");
@@ -93,14 +95,16 @@ auto main() -> int {
     return 0;
 }
 
+namespace {
 void find_and_cleanup_dead_nodes() {
     Node<ServiceType::Ipc>::list(Config::global_config(), [](auto node_state) {
         node_state.dead([](auto view) {
             std::cout << "detected dead node: ";
-            view.details().and_then([](auto details) { std::cout << details.name().to_string().c_str(); });
+            view.details().and_then([](const auto& details) { std::cout << details.name().to_string().c_str(); });
             std::cout << std::endl;
             view.remove_stale_resources().expect("");
         });
         return CallbackProgression::Continue;
     }).expect("");
 }
+} // namespace
