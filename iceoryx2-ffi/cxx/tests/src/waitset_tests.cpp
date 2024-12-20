@@ -58,7 +58,7 @@ struct WaitSetTest : public ::testing::Test {
     // NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
-TYPED_TEST_SUITE(WaitSetTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(WaitSetTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(WaitSetTest, newly_created_waitset_is_empty) {
     auto sut = this->create_sut();
@@ -197,7 +197,7 @@ TYPED_TEST(WaitSetTest, does_not_block_longer_than_provided_timeout) {
 
     auto callback_called = false;
     auto result = sut.wait_and_process_once_with_timeout(
-        [&](auto attachment_id) -> CallbackProgression {
+        [&](auto) -> CallbackProgression {
             callback_called = true;
             return CallbackProgression::Stop;
         },
@@ -217,7 +217,7 @@ TYPED_TEST(WaitSetTest, blocks_until_interval_when_user_timeout_is_larger) {
     auto guard = sut.attach_interval(TIMEOUT).expect("");
 
     auto callback_called = false;
-    auto result = sut.wait_and_process_once([&](auto attachment_id) -> CallbackProgression {
+    auto result = sut.wait_and_process_once([&](auto) -> CallbackProgression {
         callback_called = true;
         return CallbackProgression::Stop;
     });
@@ -284,6 +284,8 @@ TYPED_TEST(WaitSetTest, triggering_everything_works) {
 
     std::vector<Listener<TestFixture::TYPE>> listeners;
     std::vector<WaitSetGuard<TestFixture::TYPE>> guards;
+    guards.reserve(NUMBER_OF_INTERVALS + NUMBER_OF_NOTIFICATIONS + NUMBER_OF_DEADLINES);
+    listeners.reserve(NUMBER_OF_NOTIFICATIONS + NUMBER_OF_DEADLINES);
 
     for (uint64_t idx = 0; idx < NUMBER_OF_INTERVALS; ++idx) {
         guards.emplace_back(sut.attach_interval(Duration::fromNanoseconds(1)).expect(""));

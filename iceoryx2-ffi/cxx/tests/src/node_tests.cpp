@@ -26,7 +26,7 @@ class NodeTest : public ::testing::Test {
     static constexpr ServiceType TYPE = T::TYPE;
 };
 
-TYPED_TEST_SUITE(NodeTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(NodeTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(NodeTest, node_name_is_applied) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -70,7 +70,7 @@ TYPED_TEST(NodeTest, created_nodes_can_be_listed) {
     }
 
     uint64_t counter = 0;
-    auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](const auto& node_state) {
+    auto result = Node<SERVICE_TYPE>::list(Config::global_config(), [&](const auto&) {
         counter++;
         return CallbackProgression::Continue;
     });

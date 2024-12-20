@@ -320,7 +320,12 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::OpenExceedsMaxNumberOfNodes;
     case iox2_event_open_or_create_error_e_O_IS_MARKED_FOR_DESTRUCTION:
         return iox2::EventOpenOrCreateError::OpenIsMarkedForDestruction;
-
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_CREATED_EVENT:
+        return iox2::EventOpenOrCreateError::OpenIncompatibleNotifierCreatedEvent;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DROPPED_EVENT:
+        return iox2::EventOpenOrCreateError::OpenIncompatibleNotifierDroppedEvent;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT:
+        return iox2::EventOpenOrCreateError::OpenIncompatibleNotifierDeadEvent;
     case iox2_event_open_or_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
         return iox2::EventOpenOrCreateError::CreateServiceInCorruptedState;
     case iox2_event_open_or_create_error_e_C_INTERNAL_FAILURE:

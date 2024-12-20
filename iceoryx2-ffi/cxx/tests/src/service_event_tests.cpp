@@ -51,7 +51,7 @@ struct ServiceEventTest : public ::testing::Test {
 template <typename T>
 std::atomic<size_t> ServiceEventTest<T>::event_id_counter { 0 };
 
-TYPED_TEST_SUITE(ServiceEventTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(ServiceEventTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(ServiceEventTest, created_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -414,7 +414,6 @@ TYPED_TEST(ServiceEventTest, service_can_be_opened_when_there_is_a_listener) {
 
 TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
 
     auto key = Attribute::Key("want to make your machine run faster:");
     auto value = Attribute::Value("sudo rm -rf /");
@@ -443,7 +442,6 @@ TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
 
 TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
 
     auto key = Attribute::Key("whats hypnotoad doing these days?");
     auto value = Attribute::Value("eating hypnoflies?");

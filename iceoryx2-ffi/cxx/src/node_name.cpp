@@ -91,7 +91,7 @@ auto NodeName::create_impl(const char* value, size_t value_len) -> iox::expected
     iox2_node_name_h handle {};
     const auto ret_val = iox2_node_name_new(nullptr, value, value_len, &handle);
     if (ret_val == IOX2_OK) {
-        return iox::ok(std::move(NodeName { handle }));
+        return iox::ok(NodeName { handle });
     }
 
     return iox::err(iox::into<SemanticStringError>(ret_val));

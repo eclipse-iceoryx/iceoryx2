@@ -151,7 +151,8 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config(
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::nodes(
-    const iox::function<CallbackProgression(NodeState<S>)>& callback) const -> iox::expected<void, NodeListFailure> {
+    [[maybe_unused]] const iox::function<CallbackProgression(NodeState<S>)>& callback) const
+    -> iox::expected<void, NodeListFailure> {
     IOX_TODO();
 }
 

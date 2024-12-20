@@ -94,11 +94,8 @@ int main(int argc, char** argv) {
         goto drop_service;
     }
 
-    uint64_t counter = 0;
     printf("subscribed to: [domain: \"%s\", service: \"%s\"]\n", argv[1], argv[2]);
     while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
-        counter += 1;
-
         // receive sample
         iox2_sample_h sample = NULL;
         if (iox2_subscriber_receive(&subscriber, NULL, &sample) != IOX2_OK) {

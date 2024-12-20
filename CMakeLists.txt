@@ -75,6 +75,12 @@ add_option(
     DEFAULT_VALUE OFF
 )
 
+add_option(
+    NAME WARNING_AS_ERROR
+    DESCRIPTION "Fails if the compiler emits a warning"
+    DEFAULT_VALUE OFF
+)
+
 add_param(
     NAME RUST_BUILD_ARTIFACT_PATH
     DESCRIPTION "The path to the folder with the Rust build artifacts, e.g. '/full/path/to/iceoryx2/target/release'"
@@ -109,6 +115,16 @@ add_rust_feature(
     DEFAULT_VALUE OFF
     RUST_FEATURE "iceoryx2/logger_tracing"
 )
+
+if(WARNING_AS_ERROR)
+    if(WIN32)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    else()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -Wpedantic")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wpedantic")
+    endif()
+endif()
 
 if(SANITIZERS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=undefined")

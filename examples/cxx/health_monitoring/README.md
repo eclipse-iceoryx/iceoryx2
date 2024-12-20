@@ -1,5 +1,8 @@
 # Health Monitoring
 
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C++ Examples Readme](../README.md).
+
 This example demonstrates how to create a robust system using iceoryx2.
 A central daemon pre-creates all communication resources to ensure that every
 required resource, such as memory, is available as soon as the application
@@ -57,6 +60,13 @@ This example is more advanced and consists of four components:
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
 
+First you have to build the C++ examples:
+
+```sh
+cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/build
+```
+
 For this example, you need to open five separate terminals.
 
 ## Terminal 1: Central Daemon - Create All Communication Resources
@@ -65,7 +75,7 @@ Run the central daemon, which sets up all communication resources and monitors
 processes.
 
 ```sh
-cargo run --example health_monitoring_central_daemon
+./target/ffi/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_central_daemon
 ```
 
 ## Terminal 2: Publisher 1
@@ -73,7 +83,7 @@ cargo run --example health_monitoring_central_daemon
 Run the first publisher, which sends data on `service_1`.
 
 ```sh
-cargo run --example health_monitoring_publisher_1
+./target/ffi/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_publisher_1
 ```
 
 ## Terminal 3: Publisher 2
@@ -81,7 +91,7 @@ cargo run --example health_monitoring_publisher_1
 Run the second publisher, which sends data on `service_2`.
 
 ```sh
-cargo run --example health_monitoring_publisher_2
+./target/ffi/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_publisher_2
 ```
 
 ## Terminal 4: Subscriber
@@ -89,7 +99,7 @@ cargo run --example health_monitoring_publisher_2
 Run the subscriber, which listens to both `service_1` and `service_2`.
 
 ```sh
-cargo run --example health_monitoring_subscriber
+./target/ffi/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_subscriber
 ```
 
 ## Terminal 5: Simulate Process Crashes
@@ -98,7 +108,7 @@ Send a `SIGKILL` signal to `publisher_1` to simulate a fatal crash. This
 ensures that the process is unable to clean up any resources.
 
 ```sh
-killall -9 health_monitoring_publisher_1
+killall -9 example_cxx_health_monitoring_publisher_1
 ```
 
 After running this command:

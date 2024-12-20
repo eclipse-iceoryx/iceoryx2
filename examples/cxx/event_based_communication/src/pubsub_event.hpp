@@ -26,7 +26,7 @@ enum class PubSubEvent : uint8_t {
     SentSample = 4,
     ReceivedSample = 5,
     SentHistory = 6,
-    Unknown
+    Unknown = 7
 };
 
 namespace iox {

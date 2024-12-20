@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     iox2_port_factory_event_h service = NULL;
     if (iox2_service_builder_event_open_or_create(service_builder_event, NULL, &service) != IOX2_OK) {
         printf("Unable to create service!\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     // create notifier

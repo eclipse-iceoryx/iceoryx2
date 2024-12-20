@@ -31,7 +31,7 @@ class ServicePublishSubscribeTest : public ::testing::Test {
     static constexpr ServiceType TYPE = T::TYPE;
 };
 
-TYPED_TEST_SUITE(ServicePublishSubscribeTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(ServicePublishSubscribeTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(ServicePublishSubscribeTest, created_service_does_exist) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -819,7 +819,6 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_does_not_reallocate_when_alloc
 
 TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
 
     auto key = Attribute::Key("want to make your machine run faster:");
     auto value = Attribute::Value("sudo rm -rf /");
@@ -848,7 +847,6 @@ TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) 
 
 TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompatible) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 12;
 
     auto key = Attribute::Key("whats hypnotoad doing these days?");
     auto value = Attribute::Value("eating hypnoflies?");

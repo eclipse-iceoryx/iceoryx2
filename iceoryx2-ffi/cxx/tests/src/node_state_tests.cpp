@@ -23,7 +23,7 @@ class NodeStateTest : public ::testing::Test {
     static constexpr ServiceType TYPE = T::TYPE;
 };
 
-TYPED_TEST_SUITE(NodeStateTest, iox2_testing::ServiceTypes);
+TYPED_TEST_SUITE(NodeStateTest, iox2_testing::ServiceTypes, );
 
 TYPED_TEST(NodeStateTest, alive_node_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;

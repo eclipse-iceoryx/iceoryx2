@@ -86,10 +86,7 @@ int main(void) {
         goto drop_service;
     }
 
-    uint64_t counter = 0;
     while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
-        counter += 1;
-
         // receive sample
         iox2_sample_h sample = NULL;
         if (iox2_subscriber_receive(&subscriber, NULL, &sample) != IOX2_OK) {
@@ -107,7 +104,7 @@ int main(void) {
             printf("received: %lu, user_header: version = %d, timestamp = %lu\n",
                    (long unsigned) *payload,
                    user_header->version,
-                   user_header->timestamp);
+                   (long unsigned) user_header->timestamp);
             iox2_sample_drop(sample);
         }
     }
