@@ -107,7 +107,7 @@ iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND
 iox2_ffi_common_debug_template: &IOX2_FFI_COMMON_DEBUG
   ffi_script:
     - ./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-    - cmake -S . -B target/ffi/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_INSTALL_PREFIX="$( pwd )/target/iceoryx/install"
+    - cmake -S . -B target/ffi/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_INSTALL_PREFIX="$( pwd )/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/debug"
     - cmake --build target/ffi/build
     - cmake --install target/ffi/build
     - target/ffi/build/tests/iceoryx2-c-tests
@@ -120,7 +120,7 @@ iox2_ffi_common_debug_template: &IOX2_FFI_COMMON_DEBUG
 iox2_ffi_common_release_template: &IOX2_FFI_COMMON_RELEASE
   ffi_script:
     - ./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-    - cmake -S . -B target/ffi/build -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_INSTALL_PREFIX="$( pwd )/target/iceoryx/install"
+    - cmake -S . -B target/ffi/build -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_INSTALL_PREFIX="$( pwd )/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
     - cmake --build target/ffi/build
     - cmake --install target/ffi/build
     - target/ffi/build/tests/iceoryx2-c-tests
