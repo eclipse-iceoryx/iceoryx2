@@ -25,6 +25,7 @@
 * Add benchmark for iceoryx2 queues [#535](https://github.com/eclipse-iceoryx/iceoryx2/issues/535)
 * Add auto event mission for create, drop and dead notifiers [#550](https://github.com/eclipse-iceoryx/iceoryx2/issues/550)
 * Introduce health monitoring example [#555](https://github.com/eclipse-iceoryx/iceoryx2/issues/555)
+* Reuse existing cargo build with C and C++ bindings [#559](https://github.com/eclipse-iceoryx/iceoryx2/issues/559)
 
 ### Bugfixes
 

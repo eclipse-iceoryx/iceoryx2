@@ -19,24 +19,40 @@ set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
 ########## Rust target ##########
 #
 
-set(RUST_BUILD_TYPE "release")
-set(RUST_BUILD_TYPE_FLAG "--${RUST_BUILD_TYPE}")
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(RUST_BUILD_TYPE "debug")
-    set(RUST_BUILD_TYPE_FLAG "")
+set(USE_CARGO FALSE)
+if("${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "")
+    set(USE_CARGO TRUE)
 endif()
 
-if("${RUST_TARGET_TRIPLET}" STREQUAL "")
-    set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust/native)
-    set(RUST_TARGET_DIR_FULL ${CMAKE_BINARY_DIR}/rust/native/${RUST_BUILD_TYPE})
-    set(RUST_TARGET_TRIPLET_FLAG "")
-else()
-    set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
-    set(RUST_TARGET_DIR_FULL ${CMAKE_BINARY_DIR}/rust/${RUST_TARGET_TRIPLET}/${RUST_BUILD_TYPE})
-    set(RUST_TARGET_TRIPLET_FLAG "--target=${RUST_TARGET_TRIPLET}")
+if(${USE_CARGO})
+    message(WARNING "\
+#############################################################
+Using cargo to build the Rust part of iceoryx2.
+This is fine for development but for production, it is
+recommended to use an existing installation with
+'-DRUST_BUILD_ARTIFACT_PATH=/full/path/to/iceoryx2/target/release'!
+#############################################################
+")
+
+    set(RUST_BUILD_TYPE "release")
+    set(RUST_BUILD_TYPE_FLAG "--${RUST_BUILD_TYPE}")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(RUST_BUILD_TYPE "debug")
+        set(RUST_BUILD_TYPE_FLAG "")
+    endif()
+
+    if("${RUST_TARGET_TRIPLET}" STREQUAL "")
+        set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust/native)
+        set(RUST_BUILD_ARTIFACT_PATH ${CMAKE_BINARY_DIR}/rust/native/${RUST_BUILD_TYPE})
+        set(RUST_TARGET_TRIPLET_FLAG "")
+    else()
+        set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
+        set(RUST_BUILD_ARTIFACT_PATH ${CMAKE_BINARY_DIR}/rust/${RUST_TARGET_TRIPLET}/${RUST_BUILD_TYPE})
+        set(RUST_TARGET_TRIPLET_FLAG "--target=${RUST_TARGET_TRIPLET}")
+    endif()
 endif()
 
-set(ICEORYX2_C_INCLUDE_DIR ${RUST_TARGET_DIR_FULL}/iceoryx2-ffi-cbindgen/include)
+set(ICEORYX2_C_INCLUDE_DIR ${RUST_BUILD_ARTIFACT_PATH}/iceoryx2-ffi-cbindgen/include)
 
 set(ICEORYX2_C_LIB iceoryx2_ffi)
 set(ICEORYX2_C_STATIC_LIB_LINK_NAME lib${ICEORYX2_C_LIB}.a)
@@ -53,14 +69,14 @@ elseif(APPLE)
     set(ICEORYX2_C_SHARED_LIB_LINK_NAME lib${ICEORYX2_C_LIB}.dylib)
 endif()
 
-set(ICEORYX2_C_STATIC_LIB_LINK_FILE ${RUST_TARGET_DIR_FULL}/${ICEORYX2_C_STATIC_LIB_LINK_NAME})
-set(ICEORYX2_C_SHARED_LIB_LINK_FILE ${RUST_TARGET_DIR_FULL}/${ICEORYX2_C_SHARED_LIB_LINK_NAME})
+set(ICEORYX2_C_STATIC_LIB_LINK_FILE ${RUST_BUILD_ARTIFACT_PATH}/${ICEORYX2_C_STATIC_LIB_LINK_NAME})
+set(ICEORYX2_C_SHARED_LIB_LINK_FILE ${RUST_BUILD_ARTIFACT_PATH}/${ICEORYX2_C_SHARED_LIB_LINK_NAME})
 set(ICEORYX2_C_SHARED_LIB_DLL_FILE) # intentionally empty; only used on Windows
 
 list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_STATIC_LIB_LINK_FILE})
 list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_SHARED_LIB_LINK_FILE})
 if(WIN32)
-    set(ICEORYX2_C_SHARED_LIB_DLL_FILE ${RUST_TARGET_DIR_FULL}/${ICEORYX2_C_LIB}.dll)
+    set(ICEORYX2_C_SHARED_LIB_DLL_FILE ${RUST_BUILD_ARTIFACT_PATH}/${ICEORYX2_C_LIB}.dll)
     list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_SHARED_LIB_DLL_FILE})
 endif()
 
@@ -71,19 +87,23 @@ if(IOX2_RUST_FEATURES_COUNT GREATER 0)
     set(RUST_FEATURE_FLAGS "--features=${RUST_FEATURE_FLAGS_STRING}")
 endif()
 
-# run cargo
-add_custom_target(
-    iceoryx2-build-step ALL
-    COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
-    BYPRODUCTS
-        ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
-        ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
-        ${ICEORYX2_C_SHARED_LIB_LINK_FILE}
-        ${ICEORYX2_C_SHARED_LIB_DLL_FILE}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/../..
-    VERBATIM
-    USES_TERMINAL
-)
+if(${USE_CARGO})
+    # run cargo
+    add_custom_target(
+        iceoryx2-build-step ALL
+        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+        BYPRODUCTS
+            ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
+            ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
+            ${ICEORYX2_C_SHARED_LIB_LINK_FILE}
+            ${ICEORYX2_C_SHARED_LIB_DLL_FILE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/../..
+        VERBATIM
+        USES_TERMINAL
+    )
+else()
+    add_custom_target(iceoryx2-build-step)
+endif()
 
 #
 ########## C target ##########
