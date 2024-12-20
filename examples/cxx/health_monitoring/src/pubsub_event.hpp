@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef __EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP__
-#define __EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP__
+#ifndef IOX2_EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP
+#define IOX2_EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP
 
 #include "iox/into.hpp"
 #include "iox2/event_id.hpp"
@@ -29,7 +29,7 @@ enum class PubSubEvent : uint8_t {
     ReceivedSample = 5,
     SentHistory = 6,
     ProcessDied = 7,
-    Unknown,
+    Unknown = 8,
 };
 
 struct ServiceTuple {

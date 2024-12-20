@@ -104,6 +104,15 @@ enum class EventOpenOrCreateError : uint8_t {
     /// The [`AttributeVerifier`] required attributes that the [`Service`] does
     /// not satisfy.
     OpenIncompatibleAttributes,
+    /// The event id that is emitted for a newly created [`Notifier`](crate::port::notifier::Notifier)
+    /// does not fit the required event id.
+    OpenIncompatibleNotifierCreatedEvent,
+    /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is dropped
+    /// does not fit the required event id.
+    OpenIncompatibleNotifierDroppedEvent,
+    /// The event id that is emitted if a [`Notifier`](crate::port::notifier::Notifier) is
+    /// identified as dead does not fit the required event id.
+    OpenIncompatibleNotifierDeadEvent,
     /// Errors that indicate either an implementation issue or a wrongly
     /// configured system.
     OpenInternalFailure,
