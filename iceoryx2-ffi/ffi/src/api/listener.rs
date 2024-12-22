@@ -20,12 +20,12 @@ use crate::iox2_file_descriptor_ptr;
 
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_cal::event::ListenerWaitError;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_ffi_macros::StringLiteral;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;

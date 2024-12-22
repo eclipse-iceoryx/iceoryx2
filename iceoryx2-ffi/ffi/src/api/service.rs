@@ -21,9 +21,9 @@ use iceoryx2::service::{
     ipc, local, messaging_pattern::MessagingPattern, Service, ServiceDetails, ServiceDetailsError,
     ServiceListError,
 };
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_ffi_macros::StringLiteral;
 
 use crate::{
     iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_service_name_ptr,

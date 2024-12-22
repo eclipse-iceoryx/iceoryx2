@@ -17,13 +17,13 @@ use core::ffi::{c_char, c_int};
 use core::time::Duration;
 use iceoryx2::config::{Config, ConfigCreationError};
 use iceoryx2_bb_container::semantic_string::*;
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_ffi_macros::StringLiteral;
 use std::mem::ManuallyDrop;
 
 use crate::IOX2_OK;

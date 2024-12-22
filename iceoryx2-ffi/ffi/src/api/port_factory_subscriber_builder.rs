@@ -20,10 +20,10 @@ use crate::api::{
 use iceoryx2::port::subscriber::SubscriberCreateError;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::subscriber::PortFactorySubscriber;
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_ffi_macros::StringLiteral;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;

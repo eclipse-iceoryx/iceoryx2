@@ -15,9 +15,8 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::Literal;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Expr, ExprLit, Fields, Lit};
+use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 /// Implements the [`iceoryx2_bb_elementary::placement_default::PlacementDefault`] trait when all
 /// fields of the struct implement it.
@@ -94,132 +93,6 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl #impl_generics PlacementDefault for #name #ty_generics #where_clause {
             #place_default_impl
-        }
-    };
-
-    TokenStream::from(expanded)
-}
-
-/// Implements the [`iceoryx2_bb_elementary::AsStringLiteral`] trait for enums to provide a string representation of each enum variant.
-///
-/// The string representation can be customized using the `CustomString` attribute, otherwise it will
-/// convert the variant name to lowercase and replace underscores with spaces.
-///
-/// # Example
-/// ```
-/// use iceoryx2_bb_derive_macros::StringLiteral;
-/// use iceoryx2_bb_elementary::AsStringLiteral;
-///
-/// #[derive(StringLiteral)]
-/// enum MyEnum {
-///     #[CustomString = "custom variant one"]
-///     VariantOne,
-///     VariantTwo,
-/// }
-///
-/// let v1 = MyEnum::VariantOne;
-/// assert_eq!(v1.as_str_literal(), "custom variant one\0");
-///
-/// let v2 = MyEnum::VariantTwo;
-/// assert_eq!(v2.as_str_literal(), "variant two\0");
-/// ```
-#[proc_macro_derive(StringLiteral, attributes(CustomString))]
-pub fn string_literal_derive(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    let name = &input.ident;
-    let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
-
-    // Generate implementation converting enums to a string representation
-    let as_string_literal_impl = match input.data {
-        Data::Enum(ref data_enum) => {
-            let enum_to_string_mapping = data_enum.variants.iter().map(|variant| {
-                let enum_name = &variant.ident;
-                let enum_string_literal = variant
-                    .attrs
-                    .iter()
-                    .find_map(|attr| {
-                        if !attr.path().is_ident("CustomString") {
-                            return None;
-                        }
-                        // Get the value of CustomString as a string literal
-                        match attr.meta.require_name_value() {
-                            Ok(meta) => match &meta.value {
-                                Expr::Lit(ExprLit {
-                                    lit: Lit::Str(lit), ..
-                                }) => {
-                                    let mut value = lit.value();
-                                    value.push('\0');
-                                    Some(Literal::string(&value))
-                                }
-                                _ => None,
-                            },
-                            _ => None,
-                        }
-                    })
-                    .unwrap_or_else(|| {
-                        // If no CustomString, generates default string literal in the form
-                        // MyEnum::MyVariantName => 'my variant name'
-                        let mut enum_string_literal = enum_name
-                            .to_string()
-                            .chars()
-                            .fold(String::new(), |mut acc, c| {
-                                if c.is_uppercase() && !acc.is_empty() {
-                                    acc.push('_');
-                                }
-                                acc.push(c);
-                                acc
-                            })
-                            .chars()
-                            .map(|c| match c {
-                                '_' => ' ',
-                                c => c.to_ascii_lowercase(),
-                            })
-                            .collect::<String>();
-                        enum_string_literal.push('\0');
-                        Literal::string(&enum_string_literal)
-                    });
-
-                // Maps each enum variant to its string representation
-                match &variant.fields {
-                    Fields::Unit => {
-                        quote! {
-                            Self::#enum_name => #enum_string_literal
-                        }
-                    }
-                    Fields::Unnamed(_) => {
-                        quote! {
-                            Self::#enum_name(..) => #enum_string_literal
-                        }
-                    }
-                    Fields::Named(_) => {
-                        quote! {
-                            Self::#enum_name{..} => #enum_string_literal
-                        }
-                    }
-                }
-            });
-
-            // Generate the mapping for the enum variant
-            quote! {
-                fn as_str_literal(&self) -> &'static str {
-                    match self {
-                        #(#enum_to_string_mapping,)*
-                    }
-                }
-            }
-        }
-        _ => {
-            // Does not work for non-enum types
-            let err =
-                syn::Error::new_spanned(&input, "AsStringLiteral can only be derived for enums");
-            return err.to_compile_error().into();
-        }
-    };
-
-    // Implement the trait with the generated implementation
-    let expanded = quote! {
-        impl #impl_generics AsStringLiteral for #name #type_generics #where_clause {
-            #as_string_literal_impl
         }
     };
 

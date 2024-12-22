@@ -21,10 +21,10 @@ use crate::api::{
 use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
 use iceoryx2::port::update_connections::UpdateConnections;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_ffi_macros::StringLiteral;
 
 use super::{iox2_sample_mut_h, iox2_sample_mut_t, IntoCInt};
 

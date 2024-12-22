@@ -23,8 +23,8 @@ use iceoryx2::service::builder::event::{
     Builder, EventCreateError, EventOpenError, EventOpenOrCreateError,
 };
 use iceoryx2::service::port_factory::event::PortFactory;
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_ffi_macros::StringLiteral;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;

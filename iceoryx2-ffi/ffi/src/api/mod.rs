@@ -14,8 +14,8 @@
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_ffi_macros::StringLiteral;
 
 use core::ffi::{c_char, c_int, c_void};
 

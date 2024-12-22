@@ -26,9 +26,9 @@ use iceoryx2::service::builder::publish_subscribe::{
 };
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::AsStringLiteral;
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_ffi_macros::StringLiteral;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
