@@ -223,7 +223,7 @@ fn parse_attribute_args(args: TokenStream) -> Args {
 
 /// Implements the [`iceoryx2_bb_elementary::AsCStr`] trait for enums to provide a string representation of each enum variant.
 ///
-/// The string representation can be customized using the `CustomString` attribute, otherwise it will
+/// The string representation can be customized using the `CStr` attribute, otherwise it will
 /// convert the variant name to lowercase and replace underscores with spaces.
 ///
 /// # Example
@@ -250,84 +250,50 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
     let name = &input.ident;
     let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
-    // Generate implementation of `AsCStrRepr` for all enum variants.
-    let as_string_literal_impl = match input.data {
+    let as_cstr_impl = match input.data {
         Data::Enum(ref data_enum) => {
             let enum_to_string_mapping = data_enum.variants.iter().map(|variant| {
+                let null_terminated = |s: &str| {
+                    quote! {
+                        // This code appends the null termination which cannot be confirmed at compile time,
+                        // thus the code is ensured safe.
+                        unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#s, "\0").as_bytes()) }
+                    }
+                };
+
                 let enum_name = &variant.ident;
-                let enum_string_literal = variant
+                let cstr_literal = variant
                     .attrs
                     .iter()
-                    .find_map(|attr| {
-                        // Use provided `CStr` if present, otherwise return None to trigger
-                        // `or_else` logic.
-                        if !attr.path().is_ident("CStr") {
-                            return None;
-                        }
-                        match attr.meta.require_name_value() {
-                            Ok(meta) => match &meta.value {
-                                Expr::Lit(ExprLit {
-                                    lit: Lit::Str(lit), ..
-                                }) => {
-                                    let value = lit.value();
-                                    Some(quote! {
-                                        // The following is unsafe because the compiler cannot confirm the
-                                        // string is null terminated.
-                                        // However, since this code appends the null termination itself, the
-                                        // code is ensured safe.
-                                        unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#value, "\0").as_bytes()) }
-                                    })
-                                }
-                                _ => None,
-                            },
+                    .find(|attr| attr.path().is_ident("CStr"))
+                    .and_then(|attr| match attr.meta.require_name_value() {
+                        Ok(meta) => match &meta.value {
+                            Expr::Lit(ExprLit { lit: Lit::Str(lit), .. }) => Some(null_terminated(&lit.value())),
                             _ => None,
-                        }
+                        },
+                        _ => None,
                     })
                     .unwrap_or_else(|| {
-                        // No `CStr` provided. Convert the variant name from
-                        // "UpperCamelCase" to "lowercase with spaces".
-                        let enum_string_literal = enum_name
-                            .to_string()
-                            .chars()
-                            .fold(String::new(), |mut acc, c| {
-                                if c.is_uppercase() && !acc.is_empty() {
-                                    acc.push('_');
+                        // No explicity `CStr` is provided.
+                        // Convert variant name from 'UpperCamelCase' to 'lowercase with spaces'.
+                        let enum_string = enum_name.to_string()
+                            .char_indices()
+                            .fold(String::new(), |mut acc, (i, c)| {
+                                if i > 0 && c.is_uppercase() {
+                                    acc.push(' ');
                                 }
-                                acc.push(c);
+                                acc.push(c.to_ascii_lowercase());
                                 acc
-                            })
-                            .chars()
-                            .map(|c| match c {
-                                '_' => ' ',
-                                c => c.to_ascii_lowercase(),
-                            })
-                            .collect::<String>();
-                        quote! {
-                            // The following is unsafe because the compiler cannot confirm the
-                            // string is null terminated.
-                            // However, since this code appends the null termination itself, the
-                            // code is ensured safe.
-                            unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#enum_string_literal, "\0").as_bytes()) }
-                        }
+                            });
+                        null_terminated(&enum_string)
                     });
 
-                match &variant.fields {
-                    Fields::Unit => {
-                        quote! {
-                            Self::#enum_name => #enum_string_literal
-                        }
-                    }
-                    Fields::Unnamed(_) => {
-                        quote! {
-                            Self::#enum_name(..) => #enum_string_literal
-                        }
-                    }
-                    Fields::Named(_) => {
-                        quote! {
-                            Self::#enum_name{..} => #enum_string_literal
-                        }
-                    }
-                }
+                let pattern = match &variant.fields {
+                    Fields::Unit => quote!(Self::#enum_name),
+                    Fields::Unnamed(_) => quote!(Self::#enum_name(..)),
+                    Fields::Named(_) => quote!(Self::#enum_name{..}),
+                };
+                quote! { #pattern => #cstr_literal }
             });
 
             quote! {
@@ -344,12 +310,9 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
         }
     };
 
-    // Provide the generated trait implementation for the enum.
-    let expanded = quote! {
+    TokenStream::from(quote! {
         impl #impl_generics AsCStr for #name #type_generics #where_clause {
-            #as_string_literal_impl
+            #as_cstr_impl
         }
-    };
-
-    TokenStream::from(expanded)
+    })
 }
