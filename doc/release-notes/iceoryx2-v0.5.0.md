@@ -1,4 +1,4 @@
-# iceoryx2 v?.?.?
+# iceoryx2 v0.5.0
 
 ## [v0.5.0](https://github.com/eclipse-iceoryx/iceoryx2/tree/v0.5.0)
 
