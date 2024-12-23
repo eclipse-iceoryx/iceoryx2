@@ -21,11 +21,11 @@ use crate::iox2_file_descriptor_ptr;
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_cal::event::ListenerWaitError;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
-use iceoryx2_ffi_macros::StringLiteral;
+use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -34,7 +34,7 @@ use core::time::Duration;
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_listener_wait_error_e {
     CONTRACT_VIOLATION = IOX2_OK as isize + 1,
     INTERNAL_FAILURE,
@@ -158,7 +158,7 @@ pub type iox2_listener_wait_all_callback =
 pub unsafe extern "C" fn iox2_listener_wait_error_string(
     error: iox2_listener_wait_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// This function needs to be called to destroy the listener!

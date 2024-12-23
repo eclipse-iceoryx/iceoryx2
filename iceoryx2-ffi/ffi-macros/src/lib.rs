@@ -221,38 +221,36 @@ fn parse_attribute_args(args: TokenStream) -> Args {
     Args { rust_type }
 }
 
-/// Implements the [`iceoryx2_bb_elementary::AsStringLiteral`] trait for enums to provide a string representation of each enum variant.
+/// Implements the [`iceoryx2_bb_elementary::AsCStr`] trait for enums to provide a string representation of each enum variant.
 ///
 /// The string representation can be customized using the `CustomString` attribute, otherwise it will
 /// convert the variant name to lowercase and replace underscores with spaces.
 ///
 /// # Example
 /// ```
-/// use iceoryx2_ffi_macros::StringLiteral;
-/// use iceoryx2_bb_elementary::AsStringLiteral;
+/// use iceoryx2_ffi_macros::CStrRepr;
+/// use iceoryx2_bb_elementary::AsCStr;
 ///
-/// #[derive(StringLiteral)]
+/// #[derive(CStrRepr)]
 /// enum MyEnum {
-///     #[CustomString = "custom variant one"]
+///     #[CStr = "custom variant one"]
 ///     VariantOne,
 ///     VariantTwo,
 /// }
 ///
 /// let v1 = MyEnum::VariantOne;
-/// assert_eq!(v1.as_str_literal(), c"custom variant one");
+/// assert_eq!(v1.as_const_cstr(), c"custom variant one");
 ///
 /// let v2 = MyEnum::VariantTwo;
-/// assert_eq!(v2.as_str_literal(), c"variant two");
+/// assert_eq!(v2.as_const_cstr(), c"variant two");
 /// ```
-///
-#[proc_macro_derive(StringLiteral, attributes(CustomString))]
+#[proc_macro_derive(CStrRepr, attributes(CStr))]
 pub fn string_literal_derive(input: TokenStream) -> TokenStream {
-
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
     let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
-    // Generate implementation of `AsStringLiteral` for all enum variants.
+    // Generate implementation of `AsCStrRepr` for all enum variants.
     let as_string_literal_impl = match input.data {
         Data::Enum(ref data_enum) => {
             let enum_to_string_mapping = data_enum.variants.iter().map(|variant| {
@@ -261,9 +259,9 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                     .attrs
                     .iter()
                     .find_map(|attr| {
-                        // Use provided `CustomString` if present, otherwise return None to trigger
+                        // Use provided `CStr` if present, otherwise return None to trigger
                         // `or_else` logic.
-                        if !attr.path().is_ident("CustomString") {
+                        if !attr.path().is_ident("CStr") {
                             return None;
                         }
                         match attr.meta.require_name_value() {
@@ -286,7 +284,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                         }
                     })
                     .unwrap_or_else(|| {
-                        // No `CustomString` provided. Convert the variant name from
+                        // No `CStr` provided. Convert the variant name from
                         // "UpperCamelCase" to "lowercase with spaces".
                         let enum_string_literal = enum_name
                             .to_string()
@@ -304,7 +302,6 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                                 c => c.to_ascii_lowercase(),
                             })
                             .collect::<String>();
-                        
                         quote! {
                             // The following is unsafe because the compiler cannot confirm the
                             // string is null terminated.
@@ -334,7 +331,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
             });
 
             quote! {
-                fn as_str_literal(&self) -> &'static ::std::ffi::CStr {
+                fn as_const_cstr(&self) -> &'static ::std::ffi::CStr {
                     match self {
                         #(#enum_to_string_mapping,)*
                     }
@@ -342,18 +339,17 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
             }
         }
         _ => {
-            let err = syn::Error::new_spanned(&input, "AsStringLiteral can only be derived for enums");
+            let err = syn::Error::new_spanned(&input, "AsCStrRepr can only be derived for enums");
             return err.to_compile_error().into();
         }
     };
 
     // Provide the generated trait implementation for the enum.
     let expanded = quote! {
-        impl #impl_generics AsStringLiteral for #name #type_generics #where_clause {
+        impl #impl_generics AsCStr for #name #type_generics #where_clause {
             #as_string_literal_impl
         }
     };
 
     TokenStream::from(expanded)
 }
-

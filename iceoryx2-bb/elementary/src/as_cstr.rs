@@ -12,6 +12,15 @@
 
 use std::ffi::CStr;
 
-pub trait AsStringLiteral {
-    fn as_str_literal(&self) -> &'static CStr;
+/// Trait for types that can be represented as a C-style string.
+///
+/// This trait provides a method to obtain a reference to a static C-style string
+/// representation of the implementing type.
+///
+/// # Safety
+///
+/// Implementations of this trait must ensure that the returned `CStr` is valid
+/// and remains valid for the entire lifetime of the program.
+pub trait AsCStr {
+    fn as_const_cstr(&self) -> &'static CStr;
 }

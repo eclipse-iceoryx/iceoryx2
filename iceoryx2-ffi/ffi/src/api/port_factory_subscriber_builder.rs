@@ -21,9 +21,9 @@ use iceoryx2::port::subscriber::SubscriberCreateError;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::subscriber::PortFactorySubscriber;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
-use iceoryx2_ffi_macros::StringLiteral;
+use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -31,7 +31,7 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_subscriber_create_error_e {
     EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS = IOX2_OK as isize + 1,
     BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE,
@@ -158,7 +158,7 @@ impl HandleToType for iox2_port_factory_subscriber_builder_h_ref {
 pub unsafe extern "C" fn iox2_subscriber_create_error_string(
     error: iox2_subscriber_create_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Sets the buffer size for the subscriber

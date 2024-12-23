@@ -21,9 +21,9 @@ use iceoryx2::port::publisher::PublisherCreateError;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::publisher::PortFactoryPublisher;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
-use iceoryx2_ffi_macros::StringLiteral;
+use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -33,7 +33,7 @@ use core::mem::ManuallyDrop;
 /// Describes generically an allocation strategy, meaning how the memory is increased when the
 /// available memory is insufficient.
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_allocation_strategy_e {
     /// Increases the memory so that it perfectly fits the new size requirements. This may lead
     /// to a lot of reallocations but has the benefit that no byte is wasted.
@@ -56,7 +56,7 @@ impl From<iox2_allocation_strategy_e> for AllocationStrategy {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_publisher_create_error_e {
     EXCEEDS_MAX_SUPPORTED_PUBLISHERS = IOX2_OK as isize + 1,
     UNABLE_TO_CREATE_DATA_SEGMENT,
@@ -218,7 +218,7 @@ impl HandleToType for iox2_port_factory_publisher_builder_h_ref {
 pub unsafe extern "C" fn iox2_publisher_create_error_string(
     error: iox2_publisher_create_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Sets the [`iox2_allocation_strategy_e`] for the publisher
