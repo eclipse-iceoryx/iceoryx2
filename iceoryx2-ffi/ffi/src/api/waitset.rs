@@ -27,15 +27,15 @@ use iceoryx2::{
         WaitSet, WaitSetAttachmentError, WaitSetCreateError, WaitSetRunError, WaitSetRunResult,
     },
 };
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_waitset_run_error_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
@@ -57,7 +57,7 @@ impl IntoCInt for WaitSetRunError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_waitset_run_result_e {
     TERMINATION_REQUEST = IOX2_OK as isize + 1,
     INTERRUPT,
@@ -83,7 +83,7 @@ impl From<WaitSetRunResult> for iox2_waitset_run_result_e {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_waitset_attachment_error_e {
     INSUFFICIENT_CAPACITY = IOX2_OK as isize + 1,
     ALREADY_ATTACHED,
@@ -107,7 +107,7 @@ impl IntoCInt for WaitSetAttachmentError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_waitset_create_error_e {
     INTERNAL_ERROR = IOX2_OK as isize + 1,
 }
@@ -229,7 +229,7 @@ pub type iox2_waitset_run_callback = extern "C" fn(
 pub unsafe extern "C" fn iox2_waitset_create_error_string(
     error: iox2_waitset_create_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Returns a string literal describing the provided [`iox2_waitset_attachment_error_e`].
@@ -250,7 +250,7 @@ pub unsafe extern "C" fn iox2_waitset_create_error_string(
 pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
     error: iox2_waitset_attachment_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Returns a string literal describing the provided [`iox2_waitset_run_error_e`].
@@ -271,7 +271,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_error_string(
 pub unsafe extern "C" fn iox2_waitset_run_error_string(
     error: iox2_waitset_run_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Drops a [`iox2_waitset_h`] and calls all corresponding cleanup functions.

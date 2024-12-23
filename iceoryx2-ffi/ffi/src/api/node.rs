@@ -23,10 +23,10 @@ use iceoryx2::node::{
 };
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
@@ -39,7 +39,7 @@ use super::{iox2_config_h_ref, iox2_node_id_h_ref, iox2_node_id_ptr, iox2_signal
 
 /// The failures that can occur when a list of node states is created with [`iox2_node_list()`].
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_node_list_failure_e {
     /// A list of all Nodes could not be created since the process does not have sufficient permissions.
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
@@ -62,7 +62,7 @@ impl IntoCInt for NodeListFailure {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_node_wait_failure_e {
     INTERRUPT = IOX2_OK as isize + 1,
     TERMINATION_REQUEST,
@@ -80,7 +80,7 @@ impl IntoCInt for NodeWaitFailure {
 /// Failures of [`iox2_dead_node_remove_stale_resources()`] that occur when the stale resources of
 /// a dead node are removed.
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_node_cleanup_failure_e {
     /// The process received an interrupt signal while cleaning up all stale resources of a dead node.
     INTERRUPT = IOX2_OK as isize + 1,
@@ -232,7 +232,7 @@ pub type iox2_node_list_callback = extern "C" fn(
 pub unsafe extern "C" fn iox2_node_list_failure_string(
     error: iox2_node_list_failure_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Returns a string representation of the [`iox2_node_wait_failure_e`] error code.
@@ -253,7 +253,7 @@ pub unsafe extern "C" fn iox2_node_list_failure_string(
 pub unsafe extern "C" fn iox2_node_wait_failure_string(
     error: iox2_node_wait_failure_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Returns the [`iox2_node_name_ptr`](crate::iox2_node_name_ptr), an immutable pointer to the node name.

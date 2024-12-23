@@ -17,13 +17,13 @@ use core::ffi::{c_char, c_int};
 use core::time::Duration;
 use iceoryx2::config::{Config, ConfigCreationError};
 use iceoryx2_bb_container::semantic_string::*;
-use iceoryx2_bb_derive_macros::StringLiteral;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_ffi_macros::CStrRepr;
 use std::mem::ManuallyDrop;
 
 use crate::IOX2_OK;
@@ -34,7 +34,7 @@ use super::{HandleToType, IntoCInt};
 
 /// Failures occurring while creating a new [`iox2_config_t`] object with [`iox2_config_from_file()`].
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_config_creation_error_e {
     /// The config file could not be opened.
     FAILED_TO_OPEN_CONFIG_FILE = IOX2_OK as isize + 1,
@@ -154,7 +154,7 @@ impl HandleToType for iox2_config_h_ref {
 pub unsafe extern "C" fn iox2_config_creation_error_string(
     error: iox2_config_creation_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// This function casts a [`iox2_config_h`] into a [`iox2_config_ptr`]

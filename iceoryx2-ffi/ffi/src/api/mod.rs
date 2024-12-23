@@ -14,8 +14,8 @@
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
-use iceoryx2_bb_derive_macros::StringLiteral;
-use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_bb_elementary::AsCStr;
+use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int, c_void};
 
@@ -133,7 +133,7 @@ impl From<iox2_callback_progression_e> for CallbackProgression {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_semantic_string_error_e {
     INVALID_CONTENT = IOX2_OK as isize + 1,
     EXCEEDS_MAXIMUM_LENGTH,
@@ -219,5 +219,5 @@ trait AssertNonNullHandle {
 pub unsafe extern "C" fn iox2_semantic_string_error_string(
     error: iox2_semantic_string_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }

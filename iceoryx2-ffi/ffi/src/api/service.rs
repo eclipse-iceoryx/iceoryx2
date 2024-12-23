@@ -21,9 +21,9 @@ use iceoryx2::service::{
     ipc, local, messaging_pattern::MessagingPattern, Service, ServiceDetails, ServiceDetailsError,
     ServiceListError,
 };
-use iceoryx2_bb_derive_macros::StringLiteral;
-use iceoryx2_bb_elementary::AsStringLiteral;
+use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_ffi_macros::CStrRepr;
 
 use crate::{
     iox2_callback_context, iox2_callback_progression_e, iox2_config_ptr, iox2_service_name_ptr,
@@ -72,7 +72,7 @@ impl From<&iceoryx2::service::static_config::messaging_pattern::MessagingPattern
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_service_details_error_e {
     FAILED_TO_OPEN_STATIC_SERVICE_INFO = IOX2_OK as isize + 1,
     FAILED_TO_READ_STATIC_SERVICE_INFO,
@@ -108,7 +108,7 @@ impl IntoCInt for ServiceDetailsError {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, StringLiteral)]
+#[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_service_list_error_e {
     INSUFFICIENT_PERMISSIONS = IOX2_OK as isize + 1,
     INTERNAL_ERROR,
@@ -152,7 +152,7 @@ pub type iox2_service_list_callback = extern "C" fn(
 pub unsafe extern "C" fn iox2_service_details_error_string(
     error: iox2_service_details_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Returns a string literal describing the provided [`iox2_service_list_error_e`].
@@ -173,7 +173,7 @@ pub unsafe extern "C" fn iox2_service_details_error_string(
 pub unsafe extern "C" fn iox2_service_list_error_string(
     error: iox2_service_list_error_e,
 ) -> *const c_char {
-    error.as_str_literal().as_ptr() as *const c_char
+    error.as_const_cstr().as_ptr() as *const c_char
 }
 
 /// Checks if a specified service exists. If the service exists `does_exist` will contain

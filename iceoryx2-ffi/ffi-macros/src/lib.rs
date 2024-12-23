@@ -13,7 +13,10 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, punctuated::Punctuated, DeriveInput, LitStr, Meta, Token};
+use syn::{
+    parse_macro_input, punctuated::Punctuated, Data, DeriveInput, Expr, ExprLit, Fields, Lit,
+    LitStr, Meta, Token,
+};
 
 #[proc_macro_attribute]
 pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -216,4 +219,100 @@ fn parse_attribute_args(args: TokenStream) -> Args {
     // };
 
     Args { rust_type }
+}
+
+/// Implements the [`iceoryx2_bb_elementary::AsCStr`] trait for enums to provide a string representation of each enum variant.
+///
+/// The string representation can be customized using the `CStr` attribute, otherwise it will
+/// convert the variant name to lowercase and replace underscores with spaces.
+///
+/// # Example
+/// ```
+/// use iceoryx2_ffi_macros::CStrRepr;
+/// use iceoryx2_bb_elementary::AsCStr;
+///
+/// #[derive(CStrRepr)]
+/// enum MyEnum {
+///     #[CStr = "custom variant one"]
+///     VariantOne,
+///     VariantTwo,
+/// }
+///
+/// let v1 = MyEnum::VariantOne;
+/// assert_eq!(v1.as_const_cstr(), c"custom variant one");
+///
+/// let v2 = MyEnum::VariantTwo;
+/// assert_eq!(v2.as_const_cstr(), c"variant two");
+/// ```
+#[proc_macro_derive(CStrRepr, attributes(CStr))]
+pub fn string_literal_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
+
+    let as_cstr_impl = match input.data {
+        Data::Enum(ref data_enum) => {
+            let enum_to_string_mapping = data_enum.variants.iter().map(|variant| {
+                let null_terminated = |s: &str| {
+                    quote! {
+                        // This code appends the null termination which cannot be confirmed at compile time,
+                        // thus the code is ensured safe.
+                        unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#s, "\0").as_bytes()) }
+                    }
+                };
+
+                let enum_name = &variant.ident;
+                let cstr_literal = variant
+                    .attrs
+                    .iter()
+                    .find(|attr| attr.path().is_ident("CStr"))
+                    .and_then(|attr| match attr.meta.require_name_value() {
+                        Ok(meta) => match &meta.value {
+                            Expr::Lit(ExprLit { lit: Lit::Str(lit), .. }) => Some(null_terminated(&lit.value())),
+                            _ => None,
+                        },
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| {
+                        // No explicity `CStr` is provided.
+                        // Convert variant name from 'UpperCamelCase' to 'lowercase with spaces'.
+                        let enum_string = enum_name.to_string()
+                            .char_indices()
+                            .fold(String::new(), |mut acc, (i, c)| {
+                                if i > 0 && c.is_uppercase() {
+                                    acc.push(' ');
+                                }
+                                acc.push(c.to_ascii_lowercase());
+                                acc
+                            });
+                        null_terminated(&enum_string)
+                    });
+
+                let pattern = match &variant.fields {
+                    Fields::Unit => quote!(Self::#enum_name),
+                    Fields::Unnamed(_) => quote!(Self::#enum_name(..)),
+                    Fields::Named(_) => quote!(Self::#enum_name{..}),
+                };
+                quote! { #pattern => #cstr_literal }
+            });
+
+            quote! {
+                fn as_const_cstr(&self) -> &'static ::std::ffi::CStr {
+                    match self {
+                        #(#enum_to_string_mapping,)*
+                    }
+                }
+            }
+        }
+        _ => {
+            let err = syn::Error::new_spanned(&input, "AsCStrRepr can only be derived for enums");
+            return err.to_compile_error().into();
+        }
+    };
+
+    TokenStream::from(quote! {
+        impl #impl_generics AsCStr for #name #type_generics #where_clause {
+            #as_cstr_impl
+        }
+    })
 }
