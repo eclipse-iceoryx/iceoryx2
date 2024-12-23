@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::ffi::CStr;
+
 pub trait AsStringLiteral {
-    fn as_str_literal(&self) -> &'static str;
+    fn as_str_literal(&self) -> &'static CStr;
 }

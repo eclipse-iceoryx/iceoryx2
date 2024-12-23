@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use proc_macro::TokenStream;
-use proc_macro2::Literal;
 use proc_macro2::TokenTree;
 use quote::{format_ident, quote};
 use syn::{
@@ -229,7 +228,7 @@ fn parse_attribute_args(args: TokenStream) -> Args {
 ///
 /// # Example
 /// ```
-/// use iceoryx2_bb_derive_macros::StringLiteral;
+/// use iceoryx2_ffi_macros::StringLiteral;
 /// use iceoryx2_bb_elementary::AsStringLiteral;
 ///
 /// #[derive(StringLiteral)]
@@ -240,18 +239,20 @@ fn parse_attribute_args(args: TokenStream) -> Args {
 /// }
 ///
 /// let v1 = MyEnum::VariantOne;
-/// assert_eq!(v1.as_str_literal(), "custom variant one\0");
+/// assert_eq!(v1.as_str_literal(), c"custom variant one");
 ///
 /// let v2 = MyEnum::VariantTwo;
-/// assert_eq!(v2.as_str_literal(), "variant two\0");
+/// assert_eq!(v2.as_str_literal(), c"variant two");
 /// ```
+///
 #[proc_macro_derive(StringLiteral, attributes(CustomString))]
 pub fn string_literal_derive(input: TokenStream) -> TokenStream {
+
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
     let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
 
-    // Generate implementation converting enums to a string representation
+    // Generate implementation of `AsStringLiteral` for all enum variants.
     let as_string_literal_impl = match input.data {
         Data::Enum(ref data_enum) => {
             let enum_to_string_mapping = data_enum.variants.iter().map(|variant| {
@@ -260,18 +261,24 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                     .attrs
                     .iter()
                     .find_map(|attr| {
+                        // Use provided `CustomString` if present, otherwise return None to trigger
+                        // `or_else` logic.
                         if !attr.path().is_ident("CustomString") {
                             return None;
                         }
-                        // Get the value of CustomString as a string literal
                         match attr.meta.require_name_value() {
                             Ok(meta) => match &meta.value {
                                 Expr::Lit(ExprLit {
                                     lit: Lit::Str(lit), ..
                                 }) => {
-                                    let mut value = lit.value();
-                                    value.push('\0');
-                                    Some(Literal::string(&value))
+                                    let value = lit.value();
+                                    Some(quote! {
+                                        // The following is unsafe because the compiler cannot confirm the
+                                        // string is null terminated.
+                                        // However, since this code appends the null termination itself, the
+                                        // code is ensured safe.
+                                        unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#value, "\0").as_bytes()) }
+                                    })
                                 }
                                 _ => None,
                             },
@@ -279,9 +286,9 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                         }
                     })
                     .unwrap_or_else(|| {
-                        // If no CustomString, generates default string literal in the form
-                        // MyEnum::MyVariantName => 'my variant name'
-                        let mut enum_string_literal = enum_name
+                        // No `CustomString` provided. Convert the variant name from
+                        // "UpperCamelCase" to "lowercase with spaces".
+                        let enum_string_literal = enum_name
                             .to_string()
                             .chars()
                             .fold(String::new(), |mut acc, c| {
@@ -297,11 +304,16 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                                 c => c.to_ascii_lowercase(),
                             })
                             .collect::<String>();
-                        enum_string_literal.push('\0');
-                        Literal::string(&enum_string_literal)
+                        
+                        quote! {
+                            // The following is unsafe because the compiler cannot confirm the
+                            // string is null terminated.
+                            // However, since this code appends the null termination itself, the
+                            // code is ensured safe.
+                            unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#enum_string_literal, "\0").as_bytes()) }
+                        }
                     });
 
-                // Maps each enum variant to its string representation
                 match &variant.fields {
                     Fields::Unit => {
                         quote! {
@@ -321,9 +333,8 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                 }
             });
 
-            // Generate the mapping for the enum variant
             quote! {
-                fn as_str_literal(&self) -> &'static str {
+                fn as_str_literal(&self) -> &'static ::std::ffi::CStr {
                     match self {
                         #(#enum_to_string_mapping,)*
                     }
@@ -331,14 +342,12 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
             }
         }
         _ => {
-            // Does not work for non-enum types
-            let err =
-                syn::Error::new_spanned(&input, "AsStringLiteral can only be derived for enums");
+            let err = syn::Error::new_spanned(&input, "AsStringLiteral can only be derived for enums");
             return err.to_compile_error().into();
         }
     };
 
-    // Implement the trait with the generated implementation
+    // Provide the generated trait implementation for the enum.
     let expanded = quote! {
         impl #impl_generics AsStringLiteral for #name #type_generics #where_clause {
             #as_string_literal_impl
@@ -347,3 +356,4 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+

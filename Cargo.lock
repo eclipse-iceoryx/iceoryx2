@@ -534,7 +534,6 @@ dependencies = [
 name = "iceoryx2-bb-derive-macros"
 version = "0.4.1"
 dependencies = [
- "iceoryx2-bb-elementary",
  "iceoryx2-bb-testing",
  "proc-macro2",
  "quote",
@@ -719,6 +718,7 @@ dependencies = [
 name = "iceoryx2-ffi-macros"
 version = "0.4.1"
 dependencies = [
+ "iceoryx2-bb-elementary",
  "proc-macro2",
  "quote",
  "syn 2.0.79",
