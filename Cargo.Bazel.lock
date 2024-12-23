@@ -1,5 +1,5 @@
 {
-  "checksum": "d4a54d3dd02b5784e5ec834d19cb1bc1a0b2d895449d7f5c93ba0c7afaec9927",
+  "checksum": "447043df7c396095966ba37a0c0172c696c643f2396385310bd37bc345318e5e",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -441,89 +441,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "atty 0.2.14": {
-      "name": "atty",
-      "version": "0.2.14",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/atty/0.2.14/download",
-          "sha256": "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "atty",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "atty",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [],
-          "selects": {
-            "cfg(target_os = \"hermit\")": [
-              {
-                "id": "hermit-abi 0.1.19",
-                "target": "hermit_abi"
-              }
-            ],
-            "cfg(unix)": [
-              {
-                "id": "libc 0.2.159",
-                "target": "libc"
-              }
-            ],
-            "cfg(windows)": [
-              {
-                "id": "winapi 0.3.9",
-                "target": "winapi"
-              }
-            ]
-          }
-        },
-        "edition": "2015",
-        "version": "0.2.14"
-      },
-      "license": "MIT"
-    },
-    "autocfg 1.4.0": {
-      "name": "autocfg",
-      "version": "1.4.0",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/autocfg/1.4.0/download",
-          "sha256": "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "autocfg",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "autocfg",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2015",
-        "version": "1.4.0"
-      },
-      "license": "Apache-2.0 OR MIT"
-    },
     "backtrace 0.3.74": {
       "name": "backtrace",
       "version": "0.3.74",
@@ -637,9 +554,9 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "benchmark-event 0.4.1": {
+    "benchmark-event 0.5.0": {
       "name": "benchmark-event",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [],
       "library_target_name": null,
@@ -657,13 +574,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "benchmark-publish-subscribe 0.4.1": {
+    "benchmark-publish-subscribe 0.5.0": {
       "name": "benchmark-publish-subscribe",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [],
       "library_target_name": null,
@@ -681,13 +598,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "benchmark-queue 0.4.1": {
+    "benchmark-queue 0.5.0": {
       "name": "benchmark-queue",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [],
       "library_target_name": null,
@@ -705,7 +622,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -887,42 +804,6 @@
         }
       },
       "license": "BSD-3-Clause"
-    },
-    "bitflags 1.3.2": {
-      "name": "bitflags",
-      "version": "1.3.2",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/bitflags/1.3.2/download",
-          "sha256": "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "bitflags",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "bitflags",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default"
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "1.3.2"
-      },
-      "license": "MIT/Apache-2.0"
     },
     "bitflags 2.6.0": {
       "name": "bitflags",
@@ -1175,13 +1056,13 @@
       },
       "license": "MIT"
     },
-    "cbindgen 0.26.0": {
+    "cbindgen 0.27.0": {
       "name": "cbindgen",
-      "version": "0.26.0",
+      "version": "0.27.0",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/cbindgen/0.26.0/download",
-          "sha256": "da6bc11b07529f16944307272d5bd9b22530bc7d05751717c9d416586cedab49"
+          "url": "https://static.crates.io/crates/cbindgen/0.27.0/download",
+          "sha256": "3fce8dd7fcfcbf3a0a87d8f515194b49d6135acab73e18bd380d1d93bb1a15eb"
         }
       },
       "targets": [
@@ -1219,11 +1100,11 @@
         "deps": {
           "common": [
             {
-              "id": "cbindgen 0.26.0",
+              "id": "cbindgen 0.27.0",
               "target": "build_script_build"
             },
             {
-              "id": "clap 3.2.25",
+              "id": "clap 4.5.19",
               "target": "clap"
             },
             {
@@ -1231,7 +1112,7 @@
               "target": "heck"
             },
             {
-              "id": "indexmap 1.9.3",
+              "id": "indexmap 2.6.0",
               "target": "indexmap"
             },
             {
@@ -1255,7 +1136,7 @@
               "target": "serde_json"
             },
             {
-              "id": "syn 1.0.109",
+              "id": "syn 2.0.79",
               "target": "syn"
             },
             {
@@ -1263,14 +1144,14 @@
               "target": "tempfile"
             },
             {
-              "id": "toml 0.5.11",
+              "id": "toml 0.8.19",
               "target": "toml"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.26.0"
+        "version": "0.27.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -1520,81 +1401,6 @@
       },
       "license": "Apache-2.0"
     },
-    "clap 3.2.25": {
-      "name": "clap",
-      "version": "3.2.25",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/clap/3.2.25/download",
-          "sha256": "4ea181bf566f71cb9a5d17a59e1871af638180a18fb0035c92ae62b705207123"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "clap",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "clap",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "atty",
-            "color",
-            "default",
-            "std",
-            "strsim",
-            "suggestions",
-            "termcolor"
-          ],
-          "selects": {}
-        },
-        "deps": {
-          "common": [
-            {
-              "id": "atty 0.2.14",
-              "target": "atty"
-            },
-            {
-              "id": "bitflags 1.3.2",
-              "target": "bitflags"
-            },
-            {
-              "id": "clap_lex 0.2.4",
-              "target": "clap_lex"
-            },
-            {
-              "id": "indexmap 1.9.3",
-              "target": "indexmap"
-            },
-            {
-              "id": "strsim 0.10.0",
-              "target": "strsim"
-            },
-            {
-              "id": "termcolor 1.4.1",
-              "target": "termcolor"
-            },
-            {
-              "id": "textwrap 0.16.1",
-              "target": "textwrap"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
-        "version": "3.2.25"
-      },
-      "license": "MIT OR Apache-2.0"
-    },
     "clap 4.5.19": {
       "name": "clap",
       "version": "4.5.19",
@@ -1772,45 +1578,6 @@
         },
         "edition": "2021",
         "version": "4.5.18"
-      },
-      "license": "MIT OR Apache-2.0"
-    },
-    "clap_lex 0.2.4": {
-      "name": "clap_lex",
-      "version": "0.2.4",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/clap_lex/0.2.4/download",
-          "sha256": "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "clap_lex",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "clap_lex",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "os_str_bytes 6.6.1",
-              "target": "os_str_bytes"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
-        "version": "0.2.4"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -2229,9 +1996,9 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "example 0.4.1": {
+    "example 0.5.0": {
       "name": "example",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -2259,7 +2026,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -2467,49 +2234,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "hashbrown 0.12.3": {
+    "hashbrown 0.15.2": {
       "name": "hashbrown",
-      "version": "0.12.3",
+      "version": "0.15.2",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/hashbrown/0.12.3/download",
-          "sha256": "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "hashbrown",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "hashbrown",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "raw"
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
-        "version": "0.12.3"
-      },
-      "license": "MIT OR Apache-2.0"
-    },
-    "hashbrown 0.15.0": {
-      "name": "hashbrown",
-      "version": "0.15.0",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/hashbrown/0.15.0/download",
-          "sha256": "1e087f84d4f86bf4b218b927129862374b72199ae7d8657835f1e89000eea4fb"
+          "url": "https://static.crates.io/crates/hashbrown/0.15.2/download",
+          "sha256": "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
         }
       },
       "targets": [
@@ -2529,7 +2260,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.15.0"
+        "version": "0.15.2"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -2598,45 +2329,6 @@
         "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
-    },
-    "hermit-abi 0.1.19": {
-      "name": "hermit-abi",
-      "version": "0.1.19",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/hermit-abi/0.1.19/download",
-          "sha256": "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "hermit_abi",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "hermit_abi",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "libc 0.2.159",
-              "target": "libc"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.1.19"
-      },
-      "license": "MIT/Apache-2.0"
     },
     "home 0.5.9": {
       "name": "home",
@@ -2758,9 +2450,9 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2 0.4.1": {
+    "iceoryx2 0.5.0": {
       "name": "iceoryx2",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -2817,13 +2509,13 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-container 0.4.1": {
+    "iceoryx2-bb-container 0.5.0": {
       "name": "iceoryx2-bb-container",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -2869,13 +2561,13 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-derive-macros 0.4.1": {
+    "iceoryx2-bb-derive-macros 0.5.0": {
       "name": "iceoryx2-bb-derive-macros",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -2911,13 +2603,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-elementary 0.4.1": {
+    "iceoryx2-bb-elementary 0.5.0": {
       "name": "iceoryx2-bb-elementary",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -2945,13 +2637,13 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-lock-free 0.4.1": {
+    "iceoryx2-bb-lock-free 0.5.0": {
       "name": "iceoryx2-bb-lock-free",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -2988,13 +2680,13 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-log 0.4.1": {
+    "iceoryx2-bb-log 0.5.0": {
       "name": "iceoryx2-bb-log",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3022,13 +2714,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-memory 0.4.1": {
+    "iceoryx2-bb-memory 0.5.0": {
       "name": "iceoryx2-bb-memory",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3060,13 +2752,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-posix 0.4.1": {
+    "iceoryx2-bb-posix 0.5.0": {
       "name": "iceoryx2-bb-posix",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3119,13 +2811,13 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-system-types 0.4.1": {
+    "iceoryx2-bb-system-types 0.5.0": {
       "name": "iceoryx2-bb-system-types",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3153,13 +2845,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-testing 0.4.1": {
+    "iceoryx2-bb-testing 0.5.0": {
       "name": "iceoryx2-bb-testing",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3178,13 +2870,13 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-threadsafe 0.4.1": {
+    "iceoryx2-bb-threadsafe 0.5.0": {
       "name": "iceoryx2-bb-threadsafe",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3203,13 +2895,13 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-trait-tests 0.4.1": {
+    "iceoryx2-bb-trait-tests 0.5.0": {
       "name": "iceoryx2-bb-trait-tests",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3237,13 +2929,13 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-cal 0.4.1": {
+    "iceoryx2-cal 0.5.0": {
       "name": "iceoryx2-cal",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3308,13 +3000,13 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-cli 0.4.1": {
+    "iceoryx2-cli 0.5.0": {
       "name": "iceoryx2-cli",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3387,13 +3079,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-ffi 0.4.1": {
+    "iceoryx2-ffi 0.5.0": {
       "name": "iceoryx2-ffi",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3423,7 +3115,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-ffi 0.4.1",
+              "id": "iceoryx2-ffi 0.5.0",
               "target": "build_script_build"
             }
           ],
@@ -3439,7 +3131,7 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -3448,7 +3140,7 @@
         "deps": {
           "common": [
             {
-              "id": "cbindgen 0.26.0",
+              "id": "cbindgen 0.27.0",
               "target": "cbindgen"
             }
           ],
@@ -3457,9 +3149,9 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-ffi-macros 0.4.1": {
+    "iceoryx2-ffi-macros 0.5.0": {
       "name": "iceoryx2-ffi-macros",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3495,13 +3187,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-pal-concurrency-sync 0.4.1": {
+    "iceoryx2-pal-concurrency-sync 0.5.0": {
       "name": "iceoryx2-pal-concurrency-sync",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3529,13 +3221,13 @@
           ],
           "selects": {}
         },
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-pal-configuration 0.4.1": {
+    "iceoryx2-pal-configuration 0.5.0": {
       "name": "iceoryx2-pal-configuration",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3554,13 +3246,13 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-pal-posix 0.4.1": {
+    "iceoryx2-pal-posix 0.5.0": {
       "name": "iceoryx2-pal-posix",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "repository": null,
       "targets": [
         {
@@ -3590,7 +3282,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-pal-posix 0.4.1",
+              "id": "iceoryx2-pal-posix 0.5.0",
               "target": "build_script_build"
             },
             {
@@ -3608,7 +3300,7 @@
           }
         },
         "edition": "2021",
-        "version": "0.4.1"
+        "version": "0.5.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -3629,78 +3321,6 @@
         }
       },
       "license": "MIT OR Apache-2.0"
-    },
-    "indexmap 1.9.3": {
-      "name": "indexmap",
-      "version": "1.9.3",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/indexmap/1.9.3/download",
-          "sha256": "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "indexmap",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        },
-        {
-          "BuildScript": {
-            "crate_name": "build_script_build",
-            "crate_root": "build.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "indexmap",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "std"
-          ],
-          "selects": {}
-        },
-        "deps": {
-          "common": [
-            {
-              "id": "hashbrown 0.12.3",
-              "target": "hashbrown"
-            },
-            {
-              "id": "indexmap 1.9.3",
-              "target": "build_script_build"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
-        "version": "1.9.3"
-      },
-      "build_script_attrs": {
-        "data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "autocfg 1.4.0",
-              "target": "autocfg"
-            }
-          ],
-          "selects": {}
-        }
-      },
-      "license": "Apache-2.0 OR MIT"
     },
     "indexmap 2.6.0": {
       "name": "indexmap",
@@ -3741,7 +3361,7 @@
               "target": "equivalent"
             },
             {
-              "id": "hashbrown 0.15.0",
+              "id": "hashbrown 0.15.2",
               "target": "hashbrown"
             }
           ],
@@ -4463,42 +4083,6 @@
         "version": "3.8.2"
       },
       "license": "MIT"
-    },
-    "os_str_bytes 6.6.1": {
-      "name": "os_str_bytes",
-      "version": "6.6.1",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/os_str_bytes/6.6.1/download",
-          "sha256": "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "os_str_bytes",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "os_str_bytes",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "raw_os_str"
-          ],
-          "selects": {}
-        },
-        "edition": "2021",
-        "version": "6.6.1"
-      },
-      "license": "MIT OR Apache-2.0"
     },
     "ouroboros 0.18.4": {
       "name": "ouroboros",
@@ -5796,36 +5380,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "strsim 0.10.0": {
-      "name": "strsim",
-      "version": "0.10.0",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/strsim/0.10.0/download",
-          "sha256": "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "strsim",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "strsim",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2015",
-        "version": "0.10.0"
-      },
-      "license": "MIT"
-    },
     "strsim 0.11.1": {
       "name": "strsim",
       "version": "0.11.1",
@@ -5896,7 +5450,6 @@
             "default",
             "derive",
             "extra-traits",
-            "fold",
             "full",
             "parsing",
             "printing",
@@ -5969,6 +5522,7 @@
             "default",
             "derive",
             "extra-traits",
+            "fold",
             "full",
             "parsing",
             "printing",
@@ -6059,47 +5613,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "termcolor 1.4.1": {
-      "name": "termcolor",
-      "version": "1.4.1",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/termcolor/1.4.1/download",
-          "sha256": "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "termcolor",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "termcolor",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [],
-          "selects": {
-            "cfg(windows)": [
-              {
-                "id": "winapi-util 0.1.9",
-                "target": "winapi_util"
-              }
-            ]
-          }
-        },
-        "edition": "2018",
-        "version": "1.4.1"
-      },
-      "license": "Unlicense OR MIT"
-    },
     "termsize 0.1.9": {
       "name": "termsize",
       "version": "0.1.9",
@@ -6144,36 +5657,6 @@
         },
         "edition": "2021",
         "version": "0.1.9"
-      },
-      "license": "MIT"
-    },
-    "textwrap 0.16.1": {
-      "name": "textwrap",
-      "version": "0.16.1",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/textwrap/0.16.1/download",
-          "sha256": "23d434d3f8967a09480fb04132ebe0a3e088c173e6d0ee7897abbdf4eab0f8b9"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "textwrap",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "textwrap",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2021",
-        "version": "0.16.1"
       },
       "license": "MIT"
     },
@@ -6315,51 +5798,6 @@
         "version": "0.1.7"
       },
       "license": "MIT OR Apache-2.0"
-    },
-    "toml 0.5.11": {
-      "name": "toml",
-      "version": "0.5.11",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/toml/0.5.11/download",
-          "sha256": "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "toml",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "toml",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default"
-          ],
-          "selects": {}
-        },
-        "deps": {
-          "common": [
-            {
-              "id": "serde 1.0.210",
-              "target": "serde"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.5.11"
-      },
-      "license": "MIT/Apache-2.0"
     },
     "toml 0.8.19": {
       "name": "toml",
@@ -6912,47 +6350,6 @@
         ]
       },
       "license": "MIT/Apache-2.0"
-    },
-    "winapi-util 0.1.9": {
-      "name": "winapi-util",
-      "version": "0.1.9",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/winapi-util/0.1.9/download",
-          "sha256": "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "winapi_util",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "winapi_util",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [],
-          "selects": {
-            "cfg(windows)": [
-              {
-                "id": "windows-sys 0.59.0",
-                "target": "windows_sys"
-              }
-            ]
-          }
-        },
-        "edition": "2021",
-        "version": "0.1.9"
-      },
-      "license": "Unlicense OR MIT"
     },
     "winapi-x86_64-pc-windows-gnu 0.4.0": {
       "name": "winapi-x86_64-pc-windows-gnu",
@@ -8215,29 +7612,29 @@
   },
   "binary_crates": [],
   "workspace_members": {
-    "benchmark-event 0.4.1": "benchmarks/event",
-    "benchmark-publish-subscribe 0.4.1": "benchmarks/publish-subscribe",
-    "benchmark-queue 0.4.1": "benchmarks/queue",
-    "example 0.4.1": "examples",
-    "iceoryx2 0.4.1": "iceoryx2",
-    "iceoryx2-bb-container 0.4.1": "iceoryx2-bb/container",
-    "iceoryx2-bb-derive-macros 0.4.1": "iceoryx2-bb/derive-macros",
-    "iceoryx2-bb-elementary 0.4.1": "iceoryx2-bb/elementary",
-    "iceoryx2-bb-lock-free 0.4.1": "iceoryx2-bb/lock-free",
-    "iceoryx2-bb-log 0.4.1": "iceoryx2-bb/log",
-    "iceoryx2-bb-memory 0.4.1": "iceoryx2-bb/memory",
-    "iceoryx2-bb-posix 0.4.1": "iceoryx2-bb/posix",
-    "iceoryx2-bb-system-types 0.4.1": "iceoryx2-bb/system-types",
-    "iceoryx2-bb-testing 0.4.1": "iceoryx2-bb/testing",
-    "iceoryx2-bb-threadsafe 0.4.1": "iceoryx2-bb/threadsafe",
-    "iceoryx2-bb-trait-tests 0.4.1": "iceoryx2-bb/trait-tests",
-    "iceoryx2-cal 0.4.1": "iceoryx2-cal",
-    "iceoryx2-cli 0.4.1": "iceoryx2-cli",
-    "iceoryx2-ffi 0.4.1": "iceoryx2-ffi/ffi",
-    "iceoryx2-ffi-macros 0.4.1": "iceoryx2-ffi/ffi-macros",
-    "iceoryx2-pal-concurrency-sync 0.4.1": "iceoryx2-pal/concurrency-sync",
-    "iceoryx2-pal-configuration 0.4.1": "iceoryx2-pal/configuration",
-    "iceoryx2-pal-posix 0.4.1": "iceoryx2-pal/posix"
+    "benchmark-event 0.5.0": "benchmarks/event",
+    "benchmark-publish-subscribe 0.5.0": "benchmarks/publish-subscribe",
+    "benchmark-queue 0.5.0": "benchmarks/queue",
+    "example 0.5.0": "examples",
+    "iceoryx2 0.5.0": "iceoryx2",
+    "iceoryx2-bb-container 0.5.0": "iceoryx2-bb/container",
+    "iceoryx2-bb-derive-macros 0.5.0": "iceoryx2-bb/derive-macros",
+    "iceoryx2-bb-elementary 0.5.0": "iceoryx2-bb/elementary",
+    "iceoryx2-bb-lock-free 0.5.0": "iceoryx2-bb/lock-free",
+    "iceoryx2-bb-log 0.5.0": "iceoryx2-bb/log",
+    "iceoryx2-bb-memory 0.5.0": "iceoryx2-bb/memory",
+    "iceoryx2-bb-posix 0.5.0": "iceoryx2-bb/posix",
+    "iceoryx2-bb-system-types 0.5.0": "iceoryx2-bb/system-types",
+    "iceoryx2-bb-testing 0.5.0": "iceoryx2-bb/testing",
+    "iceoryx2-bb-threadsafe 0.5.0": "iceoryx2-bb/threadsafe",
+    "iceoryx2-bb-trait-tests 0.5.0": "iceoryx2-bb/trait-tests",
+    "iceoryx2-cal 0.5.0": "iceoryx2-cal",
+    "iceoryx2-cli 0.5.0": "iceoryx2-cli",
+    "iceoryx2-ffi 0.5.0": "iceoryx2-ffi/ffi",
+    "iceoryx2-ffi-macros 0.5.0": "iceoryx2-ffi/ffi-macros",
+    "iceoryx2-pal-concurrency-sync 0.5.0": "iceoryx2-pal/concurrency-sync",
+    "iceoryx2-pal-configuration 0.5.0": "iceoryx2-pal/configuration",
+    "iceoryx2-pal-posix 0.5.0": "iceoryx2-pal/posix"
   },
   "conditions": {
     "aarch64-pc-windows-gnullvm": [],
