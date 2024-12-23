@@ -24,7 +24,8 @@ env:
 # Filter to run the CI only on the main branch or for pull request to the main branch
 #
 
-only_if: $CI_ENABLED && !$CIRRUS_PR_DRAFT && ( $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH == 'main'))
+# TODO: check why !$CIRRUS_PR_DRAFT breaks the CI on the main branch
+only_if: $CI_ENABLED && ( $CIRRUS_BRANCH == 'main' || ($CIRRUS_PR != '' && $CIRRUS_BASE_BRANCH == 'main'))
 
 #
 # Templates
