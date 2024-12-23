@@ -32,6 +32,4 @@ cargo publish -p iceoryx2-bb-memory
 cargo publish -p iceoryx2-cal
 cargo publish -p iceoryx2-bb-trait-tests
 cargo publish -p iceoryx2
-cargo publish -p iceoryx2-ffi-macros
-cargo publish -p iceoryx2-ffi
 cargo publish -p iceoryx2-cli
