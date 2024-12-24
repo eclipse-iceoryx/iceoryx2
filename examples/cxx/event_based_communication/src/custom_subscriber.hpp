@@ -23,6 +23,8 @@
 #include "pubsub_event.hpp"
 #include "transmission_data.hpp"
 
+constexpr uint64_t HISTORY_SIZE = 20;
+
 // High-level subscriber class that contains besides a subscriber also a notifier
 // and a listener. The notifier is used to send events like
 // `PubSubEvent::ReceivedSample` or to notify the publisher that a new subscriber
@@ -45,8 +47,12 @@ class CustomSubscriber : public iox2::FileDescriptorBased {
 
     static auto create(iox2::Node<iox2::ServiceType::Ipc>& node, const iox2::ServiceName& service_name)
         -> CustomSubscriber {
-        auto pubsub_service =
-            node.service_builder(service_name).publish_subscribe<TransmissionData>().open_or_create().expect("");
+        auto pubsub_service = node.service_builder(service_name)
+                                  .publish_subscribe<TransmissionData>()
+                                  .history_size(HISTORY_SIZE)
+                                  .subscriber_max_buffer_size(HISTORY_SIZE)
+                                  .open_or_create()
+                                  .expect("");
         auto event_service = node.service_builder(service_name).event().open_or_create().expect("");
 
         auto listener = event_service.listener_builder().create().expect("");
