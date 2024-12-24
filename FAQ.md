@@ -1,5 +1,10 @@
 # Frequently Asked Questions
 
+// TODO:
+// * Update ## How To Send Data Where The Size Is Unknown At Compilation-Time?
+// * Can this be extended to use between Rust and Language X?
+// * Does it work in a multithreaded context instead of multi-process?
+
 ## Encountered a SEGFAULT. What Kind Of Data Types Can Be Transmitted Via iceoryx2
 
 iceoryx2 stores all data in shared memory, which imposes certain restrictions.
@@ -52,7 +57,7 @@ Take a look at the
 [publish-subscribe dynamic data size example](examples/rust/publish_subscribe_dynamic_data_size).
 
 The idea is to create a service based on a slice and define at runtime a
-`max_slice_len`. Then samples up to a length of the max slice length can be
+`initial_max_slice_len`. Then samples up to a length of the max slice length can be
 allocated with `loan_slice{_uninit}`. When it turns out that the slice length is
 insufficient, a new publisher with a larger `max_slice_len` can be created.
 
