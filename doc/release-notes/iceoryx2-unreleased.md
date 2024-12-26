@@ -6,57 +6,23 @@
 
 ### Features
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
-
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
-
-### Bugfixes
-
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
-
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add CLI to display complete system configuration [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 ### Refactoring
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+* Remove the `print_system_configuration()` function in
+`iceoryx2-bb/posix/src/system_configuration.rs` file and move it into the CLI `iox2-config`
+[#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+### New CLI features
 
-### Workflow
+CLI can show the current iceoryx/system configuration or generate a iceoryx
+configuration file.
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+```sh
+iox2 config show system
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+iox2 config show current
 
-### New API features
-
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
-
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
-
-### API Breaking Changes
-
-1. Example
-
-   ```rust
-   // old
-   let fuu = hello().is_it_me_you_re_looking_for()
-
-   // new
-   let fuu = hypnotoad().all_glory_to_the_hypnotoad()
-   ```
+iox2 config generate
+```
