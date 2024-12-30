@@ -3200,6 +3200,88 @@ mod service_publish_subscribe {
         deliver_history_with_increasing_samples_works::<Sut>(AllocationStrategy::PowerOfTwo);
     }
 
+    #[test]
+    fn does_not_leak_when_subscriber_has_smaller_buffer_size_than_history_size<Sut: Service>() {
+        let _watchdog = Watchdog::new();
+        const HISTORY_SIZE: usize = 1000;
+        const REPETITIONS: usize = 10;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let finish_setup = Barrier::new(2);
+        let start = Barrier::new(2);
+        let end = Barrier::new(2);
+
+        std::thread::scope(|s| {
+            let update_connection_thread = s.spawn(|| {
+                let service = node
+                    .service_builder(&service_name)
+                    .publish_subscribe::<usize>()
+                    .max_publishers(1)
+                    .max_subscribers(1)
+                    .subscriber_max_borrowed_samples(1)
+                    .history_size(HISTORY_SIZE)
+                    .subscriber_max_buffer_size(HISTORY_SIZE)
+                    .create()
+                    .unwrap();
+
+                let publisher = service
+                    .publisher_builder()
+                    .max_loaned_samples(1)
+                    .create()
+                    .unwrap();
+
+                for n in 0..HISTORY_SIZE {
+                    publisher.send_copy(n).unwrap();
+                }
+
+                finish_setup.wait();
+
+                for _ in 0..REPETITIONS {
+                    start.wait();
+
+                    publisher.update_connections().unwrap();
+
+                    end.wait();
+                }
+            });
+
+            let new_subscriber_thread = s.spawn(|| {
+                finish_setup.wait();
+
+                let service = node
+                    .service_builder(&service_name)
+                    .publish_subscribe::<usize>()
+                    .open()
+                    .unwrap();
+
+                for _ in 0..REPETITIONS {
+                    let subscriber = service
+                        .subscriber_builder()
+                        .buffer_size(1)
+                        .create()
+                        .unwrap();
+                    start.wait();
+
+                    let mut previous_value = 0;
+                    for _ in 0..HISTORY_SIZE {
+                        let sample = subscriber.receive().unwrap();
+                        if let Some(sample) = sample {
+                            assert_that!(*sample, ge previous_value);
+                            previous_value = *sample;
+                        }
+                    }
+
+                    end.wait();
+                }
+            });
+
+            update_connection_thread.join().unwrap();
+            new_subscriber_thread.join().unwrap();
+        });
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

@@ -403,7 +403,6 @@ impl<Service: service::Service> PublisherBackend<Service> {
         sample_size: usize,
     ) -> Result<usize, PublisherSendError> {
         self.retrieve_returned_samples();
-
         let deliver_call = match self.config.unable_to_deliver_strategy {
             UnableToDeliverStrategy::Block => {
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
@@ -555,11 +554,16 @@ impl<Service: service::Service> PublisherBackend<Service> {
                 let history = unsafe { &mut *history.get() };
                 for i in 0..history.len() {
                     let old_sample = unsafe { history.get_unchecked(i) };
+                    self.retrieve_returned_samples();
 
                     let offset = PointerOffset::from_value(old_sample.offset);
                     match connection.sender.try_send(offset, old_sample.size) {
-                        Ok(_) => {
+                        Ok(overflow) => {
                             self.borrow_sample(offset);
+
+                            if let Some(old) = overflow {
+                                self.release_sample(old);
+                            }
                         }
                         Err(e) => {
                             warn!(from self, "Failed to deliver history to new subscriber via {:?} due to {:?}", connection, e);
