@@ -150,6 +150,8 @@ impl<Service: service::Service> Listener<Service> {
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
 
+        service.__internal_state().static_config.event().deadline;
+
         let mut new_self = Self {
             service_state: service.__internal_state().clone(),
             dynamic_listener_handle: None,
@@ -181,6 +183,11 @@ impl<Service: service::Service> Listener<Service> {
         new_self.dynamic_listener_handle = Some(dynamic_listener_handle);
 
         Ok(new_self)
+    }
+
+    /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
+    pub fn deadline(&self) -> Option<Duration> {
+        self.service_state.static_config.event().deadline
     }
 
     /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and

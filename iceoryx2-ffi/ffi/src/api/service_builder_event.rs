@@ -46,6 +46,8 @@ pub enum iox2_event_open_or_create_error_e {
     O_INCOMPATIBLE_MESSAGING_PATTERN,
     #[CStr = "incompatible attributes"]
     O_INCOMPATIBLE_ATTRIBUTES,
+    #[CStr = "incompatible deadline"]
+    O_INCOMPATIBLE_DEADLINE,
     #[CStr = "incompatible notifier_created event"]
     O_INCOMPATIBLE_NOTIFIER_CREATED_EVENT,
     #[CStr = "incompatible notifier_dropped event"]
@@ -132,6 +134,9 @@ impl IntoCInt for EventOpenError {
             }
             EventOpenError::IncompatibleNotifierDeadEvent => {
                 iox2_event_open_or_create_error_e::O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT
+            }
+            EventOpenError::IncompatibleDeadline => {
+                iox2_event_open_or_create_error_e::O_INCOMPATIBLE_DEADLINE
             }
         }) as c_int
     }

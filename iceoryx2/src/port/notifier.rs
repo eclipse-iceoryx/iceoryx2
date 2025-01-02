@@ -54,6 +54,7 @@ use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 use std::{
     cell::UnsafeCell,
     sync::{atomic::Ordering, Arc},
+    time::Duration,
 };
 
 /// Failures that can occur when a new [`Notifier`] is created with the
@@ -342,6 +343,15 @@ impl<Service: service::Service> Notifier<Service> {
     /// [`NotifierNotifyError`].
     pub fn notify(&self) -> Result<usize, NotifierNotifyError> {
         self.notify_with_custom_event_id(self.default_event_id)
+    }
+
+    /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
+    pub fn deadline(&self) -> Option<Duration> {
+        self.listener_connections
+            .service_state
+            .static_config
+            .event()
+            .deadline
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with a custom

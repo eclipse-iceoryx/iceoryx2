@@ -23,6 +23,7 @@
 //!
 //! println!("name:                         {:?}", event.name());
 //! println!("service id:                   {:?}", event.service_id());
+//! println!("deadline:                     {:?}", event.static_config().deadline());
 //! println!("max listeners:                {:?}", event.static_config().max_listeners());
 //! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("number of active listeners:   {:?}", event.dynamic_config().number_of_listeners());

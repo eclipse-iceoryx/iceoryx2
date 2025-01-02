@@ -43,6 +43,8 @@ pub enum EventOpenError {
     IncompatibleAttributes,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// The [`Service`]s deadline settings are not equal the the user given requirements.
+    IncompatibleDeadline,
     /// The event id that is emitted for a newly created [`Notifier`](crate::port::notifier::Notifier)
     /// does not fit the required event id.
     IncompatibleNotifierCreatedEvent,
@@ -625,6 +627,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             fail!(from self, with EventOpenError::IncompatibleNotifierDeadEvent,
                 "{} since the notifier_dead_event id is {:?} but the value {:?} is required.",
                 msg, existing_settings.notifier_dead_event, required_settings.notifier_dead_event);
+        }
+
+        if self.verify_deadline && existing_settings.deadline != required_settings.deadline {
+            fail!(from self, with EventOpenError::IncompatibleDeadline,
+                "{} since the deadline is {:?} but a deadline of {:?} is required.",
+                msg, existing_settings.deadline, required_settings.deadline);
         }
 
         Ok(*existing_settings)
