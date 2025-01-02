@@ -133,7 +133,8 @@ use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
+    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
+    ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 use std::any::TypeId;
@@ -552,7 +553,10 @@ impl<Service: service::Service> PublisherBackend<Service> {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
-                for i in 0..history.len() {
+                let buffer_size = connection.sender.buffer_size();
+                let history_start = history.len().saturating_sub(buffer_size);
+
+                for i in history_start..history.len() {
                     let old_sample = unsafe { history.get_unchecked(i) };
                     self.retrieve_returned_samples();
 
