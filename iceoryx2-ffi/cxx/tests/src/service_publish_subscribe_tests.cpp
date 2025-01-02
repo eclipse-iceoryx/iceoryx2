@@ -455,7 +455,8 @@ TYPED_TEST(ServicePublishSubscribeTest, update_connections_delivers_history) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<uint64_t>().history_size(1).create().expect("");
 
     auto sut_publisher = service.publisher_builder().create().expect("");
     const uint64_t payload = 123;

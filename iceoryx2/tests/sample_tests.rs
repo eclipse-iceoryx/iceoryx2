@@ -152,7 +152,8 @@ mod sample {
 
     #[test]
     fn sample_from_dropped_subscriber_does_not_block_new_subscribers<Sut: Service>() {
-        let config = generate_isolated_config();
+        let mut config = generate_isolated_config();
+        config.defaults.publish_subscribe.publisher_history_size = 1;
         let test_context = TestContext::<Sut>::new(&config);
         const PAYLOAD_1: u64 = 7781123554;
 
