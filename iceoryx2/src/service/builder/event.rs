@@ -177,6 +177,7 @@ pub struct Builder<ServiceType: service::Service> {
     verify_max_listeners: bool,
     verify_max_nodes: bool,
     verify_event_id_max_value: bool,
+    verify_deadline: bool,
     verify_notifier_created_event: bool,
     verify_notifier_dropped_event: bool,
     verify_notifier_dead_event: bool,
@@ -190,6 +191,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             verify_max_listeners: false,
             verify_max_nodes: false,
             verify_event_id_max_value: false,
+            verify_deadline: false,
             verify_notifier_dead_event: false,
             verify_notifier_created_event: false,
             verify_notifier_dropped_event: false,
@@ -209,6 +211,22 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 fatal_panic!(from self, "This should never happen! Accessing wrong messaging pattern in Event builder!");
             }
         }
+    }
+
+    /// Enables the deadline property of the service. There must be a notification emitted by any
+    /// [`Notifier`](crate::port::notifier::Notifier) after at least the `deadline`.
+    pub fn deadline(mut self, deadline: Duration) -> Self {
+        self.config_details().deadline = Some(deadline);
+        self.verify_deadline = true;
+        self
+    }
+
+    /// Disables the deadline property of the service. [`Notifier`](crate::port::notifier::Notifier)
+    /// can signal notifications at any rate.
+    pub fn disable_deadline(mut self) -> Self {
+        self.config_details().deadline = None;
+        self.verify_deadline = true;
+        self
     }
 
     /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
