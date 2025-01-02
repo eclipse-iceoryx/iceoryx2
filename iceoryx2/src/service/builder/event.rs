@@ -21,7 +21,9 @@ use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::event::DynamicConfigSettings};
 use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
+use static_config::event::Deadline;
 
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
 
@@ -218,7 +220,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// Enables the deadline property of the service. There must be a notification emitted by any
     /// [`Notifier`](crate::port::notifier::Notifier) after at least the `deadline`.
     pub fn deadline(mut self, deadline: Duration) -> Self {
-        self.config_details().deadline = Some(deadline);
+        self.config_details().deadline = Some(Deadline {
+            value: deadline,
+            creation_time: Time::default(),
+        });
         self.verify_deadline = true;
         self
     }
@@ -454,6 +459,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     .base
                     .create_node_service_tag(msg, EventCreateError::InternalFailure)?;
 
+                if let Some(ref mut deadline) = self.base.service_config.event_mut().deadline {
+                    let now = fail!(from self, when Time::now(),
+                                with EventCreateError::InternalFailure,
+                                "{} since the current system time could not be acquired.", msg);
+
+                    deadline.creation_time = now;
+                }
+
                 let static_config = match self.base.create_static_config_storage() {
                     Ok(c) => c,
                     Err(StaticStorageCreateError::AlreadyExists) => {
@@ -629,7 +642,10 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 msg, existing_settings.notifier_dead_event, required_settings.notifier_dead_event);
         }
 
-        if self.verify_deadline && existing_settings.deadline != required_settings.deadline {
+        if self.verify_deadline
+            && existing_settings.deadline.map(|v| v.value)
+                != required_settings.deadline.map(|v| v.value)
+        {
             fail!(from self, with EventOpenError::IncompatibleDeadline,
                 "{} since the deadline is {:?} but a deadline of {:?} is required.",
                 msg, existing_settings.deadline, required_settings.deadline);

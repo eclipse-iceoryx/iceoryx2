@@ -187,7 +187,11 @@ impl<Service: service::Service> Listener<Service> {
 
     /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
     pub fn deadline(&self) -> Option<Duration> {
-        self.service_state.static_config.event().deadline
+        self.service_state
+            .static_config
+            .event()
+            .deadline
+            .map(|v| v.value)
     }
 
     /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and

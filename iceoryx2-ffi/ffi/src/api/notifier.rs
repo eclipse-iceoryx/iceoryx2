@@ -33,6 +33,8 @@ use core::mem::ManuallyDrop;
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_notifier_notify_error_e {
     EVENT_ID_OUT_OF_BOUNDS = IOX2_OK as isize + 1,
+    MISSED_DEADLINE,
+    UNABLE_TO_ACQUIRE_ELAPSED_TIME,
 }
 
 impl IntoCInt for NotifierNotifyError {
@@ -40,6 +42,10 @@ impl IntoCInt for NotifierNotifyError {
         (match self {
             NotifierNotifyError::EventIdOutOfBounds => {
                 iox2_notifier_notify_error_e::EVENT_ID_OUT_OF_BOUNDS
+            }
+            NotifierNotifyError::MissedDeadline => iox2_notifier_notify_error_e::MISSED_DEADLINE,
+            NotifierNotifyError::UnableToAcquireElapsedTime => {
+                iox2_notifier_notify_error_e::UNABLE_TO_ACQUIRE_ELAPSED_TIME
             }
         }) as c_int
     }

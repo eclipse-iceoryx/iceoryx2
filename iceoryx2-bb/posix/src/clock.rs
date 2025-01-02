@@ -27,6 +27,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -63,7 +64,7 @@ impl From<TimeError> for NanosleepError {
 }
 
 /// Represents different low level clocks.
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[repr(i32)]
 pub enum ClockType {
     /// represents a steady clock which does not change when the system time
@@ -179,7 +180,7 @@ impl TimeBuilder {
 }
 
 /// Represents time under a specified [`ClockType`]
-#[derive(Default, Clone, Copy, Eq, PartialEq, Hash, Debug)]
+#[derive(Default, Clone, Copy, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub struct Time {
     pub(crate) clock_type: ClockType,
     pub(crate) seconds: u64,

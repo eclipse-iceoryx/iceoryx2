@@ -83,6 +83,13 @@ pub enum NotifierNotifyError {
     /// is greater than the maximum supported [`EventId`] by the
     /// [`Service`](crate::service::Service)
     EventIdOutOfBounds,
+    /// The notification was delivered to all [`Listener`](crate::port::listener::Listener) ports
+    /// but the deadline contract, the maximum time span between two notifications, of the
+    /// [`Service`](crate::service::Service) was violated.
+    MissedDeadline,
+    /// The notification was delivered but the elapsed system time could not be acquired.
+    /// Therefore, it is unknown if the deadline was missed or not.
+    UnableToAcquireElapsedTime,
 }
 
 impl std::fmt::Display for NotifierNotifyError {
@@ -352,6 +359,7 @@ impl<Service: service::Service> Notifier<Service> {
             .static_config
             .event()
             .deadline
+            .map(|v| v.value)
     }
 
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with a custom
@@ -389,6 +397,39 @@ impl<Service: service::Service> Notifier<Service> {
                         number_of_triggered_listeners += 1;
                     }
                 }
+            }
+        }
+
+        if let Some(deadline) = self
+            .listener_connections
+            .service_state
+            .static_config
+            .event()
+            .deadline
+        {
+            let msg = "The notification was sent";
+            let duration_since_creation = fail!(from self, when deadline.creation_time.elapsed(),
+                                with NotifierNotifyError::UnableToAcquireElapsedTime,
+                                "{} but the elapsed system time could not be acquired which is required for deadline handling.",
+                                msg);
+
+            let previous_duration_since_creation = self
+                .listener_connections
+                .service_state
+                .dynamic_storage
+                .get()
+                .event()
+                .elapsed_time_since_last_notification
+                .swap(duration_since_creation.as_nanos() as u64, Ordering::Relaxed);
+
+            let time_since_last_notification = Duration::from_nanos(
+                duration_since_creation.as_nanos() as u64 - previous_duration_since_creation,
+            );
+
+            if deadline.value < time_since_last_notification {
+                fail!(from self, with NotifierNotifyError::MissedDeadline,
+                "{} but the deadline was hit. The service requires a notification after {:?} but {:?} passed without a notification.",
+                msg, deadline.value, time_since_last_notification);
             }
         }
 
