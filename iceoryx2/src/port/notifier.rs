@@ -223,10 +223,17 @@ impl<Service: service::Service> Notifier<Service> {
         new_self.on_drop_notification = static_config.notifier_dropped_event.map(EventId::new);
 
         if let Some(event_id) = static_config.notifier_created_event() {
-            if let Err(e) = new_self.notify_with_custom_event_id(event_id) {
-                warn!(from new_self,
-                    "The new notifier was unable to send out the notifier_created_event: {:?} due to ({:?}).",
-                    event_id, e);
+            match new_self.notify_with_custom_event_id(event_id) {
+                Ok(_)
+                | Err(
+                    NotifierNotifyError::MissedDeadline
+                    | NotifierNotifyError::UnableToAcquireElapsedTime,
+                ) => (),
+                Err(e) => {
+                    warn!(from new_self,
+                        "The new notifier was unable to send out the notifier_created_event: {:?} due to ({:?}).",
+                        event_id, e);
+                }
             }
         }
 
