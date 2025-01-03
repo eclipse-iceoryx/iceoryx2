@@ -218,7 +218,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     /// Enables the deadline property of the service. There must be a notification emitted by any
-    /// [`Notifier`](crate::port::notifier::Notifier) after at least the `deadline`.
+    /// [`Notifier`](crate::port::notifier::Notifier) after at least the provided `deadline`.
     pub fn deadline(mut self, deadline: Duration) -> Self {
         self.config_details().deadline = Some(Deadline {
             value: deadline,

@@ -344,6 +344,40 @@ pub unsafe extern "C" fn iox2_listener_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
+/// Returns the deadline of the listener's service. If there is a deadline set, the provided
+/// arguments `seconds` and `nanoseconds` will be set `true` is returned. Otherwise, false is
+/// returned and nothing is set.
+///
+/// # Safety
+///
+/// * `listener_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
+/// * `seconds` is pointing to a valid memory location and non-null
+/// * `nanoseconds` is pointing to a valid memory location and non-null
+#[no_mangle]
+pub unsafe extern "C" fn iox2_listener_deadline(
+    listener_handle: iox2_listener_h_ref,
+    seconds: *mut u64,
+    nanoseconds: *mut u32,
+) -> bool {
+    listener_handle.assert_non_null();
+    debug_assert!(!seconds.is_null());
+    debug_assert!(!nanoseconds.is_null());
+
+    let listener = &mut *listener_handle.as_type();
+
+    let deadline = match listener.service_type {
+        iox2_service_type_e::IPC => listener.value.as_mut().ipc.deadline(),
+        iox2_service_type_e::LOCAL => listener.value.as_mut().local.deadline(),
+    };
+
+    deadline.map(|v| {
+        *seconds = v.as_secs();
+        *nanoseconds = v.subsec_nanos();
+    });
+
+    deadline.is_some()
+}
+
 /// Blocks the listener until at least one event was received and then calls the callback for
 /// every received event providing the corresponding [`iox2_event_id_t`] pointer to the event.
 /// On error it returns [`iox2_listener_wait_error_e`].

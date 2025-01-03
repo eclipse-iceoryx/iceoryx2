@@ -195,6 +195,40 @@ pub unsafe extern "C" fn iox2_notifier_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
+/// Returns the deadline of the notifier's service. If there is a deadline set, the provided
+/// arguments `seconds` and `nanoseconds` will be set `true` is returned. Otherwise, false is
+/// returned and nothing is set.
+///
+/// # Safety
+///
+/// * `notifier_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
+/// * `seconds` is pointing to a valid memory location and non-null
+/// * `nanoseconds` is pointing to a valid memory location and non-null
+#[no_mangle]
+pub unsafe extern "C" fn iox2_notifier_deadline(
+    notifier_handle: iox2_notifier_h_ref,
+    seconds: *mut u64,
+    nanoseconds: *mut u32,
+) -> bool {
+    notifier_handle.assert_non_null();
+    debug_assert!(!seconds.is_null());
+    debug_assert!(!nanoseconds.is_null());
+
+    let notifier = &mut *notifier_handle.as_type();
+
+    let deadline = match notifier.service_type {
+        iox2_service_type_e::IPC => notifier.value.as_mut().ipc.deadline(),
+        iox2_service_type_e::LOCAL => notifier.value.as_mut().local.deadline(),
+    };
+
+    deadline.map(|v| {
+        *seconds = v.as_secs();
+        *nanoseconds = v.subsec_nanos();
+    });
+
+    deadline.is_some()
+}
+
 /// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service
 /// with the default event id provided on creation.
 ///
