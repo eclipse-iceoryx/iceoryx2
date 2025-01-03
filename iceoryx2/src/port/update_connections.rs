@@ -64,6 +64,7 @@ pub trait UpdateConnections {
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .publish_subscribe::<u64>()
+    /// #     .history_size(1)
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder().create()?;

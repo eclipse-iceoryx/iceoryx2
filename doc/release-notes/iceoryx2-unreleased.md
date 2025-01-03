@@ -20,7 +20,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Completion queue capacity exceeded when history > buffer
+    [#571](https://github.com/eclipse-iceoryx/iceoryx2/issues/571)
 
 ### Refactoring
 

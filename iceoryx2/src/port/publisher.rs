@@ -133,7 +133,8 @@ use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopySendError, ZeroCopySender,
+    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
+    ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 use std::any::TypeId;
@@ -403,7 +404,6 @@ impl<Service: service::Service> PublisherBackend<Service> {
         sample_size: usize,
     ) -> Result<usize, PublisherSendError> {
         self.retrieve_returned_samples();
-
         let deliver_call = match self.config.unable_to_deliver_strategy {
             UnableToDeliverStrategy::Block => {
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
@@ -553,13 +553,21 @@ impl<Service: service::Service> PublisherBackend<Service> {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
-                for i in 0..history.len() {
+                let buffer_size = connection.sender.buffer_size();
+                let history_start = history.len().saturating_sub(buffer_size);
+
+                for i in history_start..history.len() {
                     let old_sample = unsafe { history.get_unchecked(i) };
+                    self.retrieve_returned_samples();
 
                     let offset = PointerOffset::from_value(old_sample.offset);
                     match connection.sender.try_send(offset, old_sample.size) {
-                        Ok(_) => {
+                        Ok(overflow) => {
                             self.borrow_sample(offset);
+
+                            if let Some(old) = overflow {
+                                self.release_sample(old);
+                            }
                         }
                         Err(e) => {
                             warn!(from self, "Failed to deliver history to new subscriber via {:?} due to {:?}", connection, e);

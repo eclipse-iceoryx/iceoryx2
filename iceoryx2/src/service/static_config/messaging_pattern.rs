@@ -116,9 +116,9 @@ mod tests {
         let cfg = config::Config::default();
         let p1 = MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(&cfg));
         let sut = p1.required_amount_of_samples_per_data_segment(0);
-        assert_that!(sut, eq 33);
+        assert_that!(sut, eq 32);
         let sut = p1.required_amount_of_samples_per_data_segment(1);
-        assert_that!(sut, eq 34);
+        assert_that!(sut, eq 33);
 
         let e1 = MessagingPattern::Event(event::StaticConfig::new(&cfg));
         let sut = e1.required_amount_of_samples_per_data_segment(1);

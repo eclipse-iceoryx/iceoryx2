@@ -326,7 +326,7 @@ impl Default for Config {
                     max_subscribers: 8,
                     max_publishers: 2,
                     max_nodes: 20,
-                    publisher_history_size: 1,
+                    publisher_history_size: 0,
                     subscriber_max_buffer_size: 2,
                     subscriber_max_borrowed_samples: 2,
                     publisher_max_loaned_samples: 2,
