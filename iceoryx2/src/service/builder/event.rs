@@ -21,7 +21,9 @@ use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::event::DynamicConfigSettings};
 use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
+use static_config::event::Deadline;
 
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
 
@@ -43,6 +45,8 @@ pub enum EventOpenError {
     IncompatibleAttributes,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// The [`Service`]s deadline settings are not equal the the user given requirements.
+    IncompatibleDeadline,
     /// The event id that is emitted for a newly created [`Notifier`](crate::port::notifier::Notifier)
     /// does not fit the required event id.
     IncompatibleNotifierCreatedEvent,
@@ -177,6 +181,7 @@ pub struct Builder<ServiceType: service::Service> {
     verify_max_listeners: bool,
     verify_max_nodes: bool,
     verify_event_id_max_value: bool,
+    verify_deadline: bool,
     verify_notifier_created_event: bool,
     verify_notifier_dropped_event: bool,
     verify_notifier_dead_event: bool,
@@ -190,6 +195,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             verify_max_listeners: false,
             verify_max_nodes: false,
             verify_event_id_max_value: false,
+            verify_deadline: false,
             verify_notifier_dead_event: false,
             verify_notifier_created_event: false,
             verify_notifier_dropped_event: false,
@@ -209,6 +215,25 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 fatal_panic!(from self, "This should never happen! Accessing wrong messaging pattern in Event builder!");
             }
         }
+    }
+
+    /// Enables the deadline property of the service. There must be a notification emitted by any
+    /// [`Notifier`](crate::port::notifier::Notifier) after at least the provided `deadline`.
+    pub fn deadline(mut self, deadline: Duration) -> Self {
+        self.config_details().deadline = Some(Deadline {
+            value: deadline,
+            creation_time: Time::default(),
+        });
+        self.verify_deadline = true;
+        self
+    }
+
+    /// Disables the deadline property of the service. [`Notifier`](crate::port::notifier::Notifier)
+    /// can signal notifications at any rate.
+    pub fn disable_deadline(mut self) -> Self {
+        self.config_details().deadline = None;
+        self.verify_deadline = true;
+        self
     }
 
     /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
@@ -434,6 +459,14 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     .base
                     .create_node_service_tag(msg, EventCreateError::InternalFailure)?;
 
+                if let Some(ref mut deadline) = self.base.service_config.event_mut().deadline {
+                    let now = fail!(from self, when Time::now(),
+                                with EventCreateError::InternalFailure,
+                                "{} since the current system time could not be acquired.", msg);
+
+                    deadline.creation_time = now;
+                }
+
                 let static_config = match self.base.create_static_config_storage() {
                     Ok(c) => c,
                     Err(StaticStorageCreateError::AlreadyExists) => {
@@ -607,6 +640,15 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             fail!(from self, with EventOpenError::IncompatibleNotifierDeadEvent,
                 "{} since the notifier_dead_event id is {:?} but the value {:?} is required.",
                 msg, existing_settings.notifier_dead_event, required_settings.notifier_dead_event);
+        }
+
+        if self.verify_deadline
+            && existing_settings.deadline.map(|v| v.value)
+                != required_settings.deadline.map(|v| v.value)
+        {
+            fail!(from self, with EventOpenError::IncompatibleDeadline,
+                "{} since the deadline is {:?} but a deadline of {:?} is required.",
+                msg, existing_settings.deadline, required_settings.deadline);
         }
 
         Ok(*existing_settings)

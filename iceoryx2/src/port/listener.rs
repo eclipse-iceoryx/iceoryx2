@@ -183,6 +183,15 @@ impl<Service: service::Service> Listener<Service> {
         Ok(new_self)
     }
 
+    /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
+    pub fn deadline(&self) -> Option<Duration> {
+        self.service_state
+            .static_config
+            .event()
+            .deadline
+            .map(|v| v.value)
+    }
+
     /// Non-blocking wait for new [`EventId`]s. Collects all [`EventId`]s that were received and
     /// calls the provided callback is with the [`EventId`] as input argument.
     pub fn try_wait_all<F: FnMut(EventId)>(&self, callback: F) -> Result<(), ListenerWaitError> {

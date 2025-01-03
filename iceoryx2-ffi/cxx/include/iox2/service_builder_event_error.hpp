@@ -99,6 +99,8 @@ enum class EventOpenOrCreateError : uint8_t {
     /// a corrupted
     /// [`Service`]state.
     OpenServiceInCorruptedState,
+    /// The [`Service`]s deadline settings are not equal the the user given requirements.
+    OpenIncompatibleDeadline,
     /// The [`Service`] has the wrong messaging pattern.
     OpenIncompatibleMessagingPattern,
     /// The [`AttributeVerifier`] required attributes that the [`Service`] does

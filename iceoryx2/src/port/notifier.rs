@@ -54,6 +54,7 @@ use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 use std::{
     cell::UnsafeCell,
     sync::{atomic::Ordering, Arc},
+    time::Duration,
 };
 
 /// Failures that can occur when a new [`Notifier`] is created with the
@@ -82,6 +83,13 @@ pub enum NotifierNotifyError {
     /// is greater than the maximum supported [`EventId`] by the
     /// [`Service`](crate::service::Service)
     EventIdOutOfBounds,
+    /// The notification was delivered to all [`Listener`](crate::port::listener::Listener) ports
+    /// but the deadline contract, the maximum time span between two notifications, of the
+    /// [`Service`](crate::service::Service) was violated.
+    MissedDeadline,
+    /// The notification was delivered but the elapsed system time could not be acquired.
+    /// Therefore, it is unknown if the deadline was missed or not.
+    UnableToAcquireElapsedTime,
 }
 
 impl std::fmt::Display for NotifierNotifyError {
@@ -215,10 +223,17 @@ impl<Service: service::Service> Notifier<Service> {
         new_self.on_drop_notification = static_config.notifier_dropped_event.map(EventId::new);
 
         if let Some(event_id) = static_config.notifier_created_event() {
-            if let Err(e) = new_self.notify_with_custom_event_id(event_id) {
-                warn!(from new_self,
-                    "The new notifier was unable to send out the notifier_created_event: {:?} due to ({:?}).",
-                    event_id, e);
+            match new_self.notify_with_custom_event_id(event_id) {
+                Ok(_)
+                | Err(
+                    NotifierNotifyError::MissedDeadline
+                    | NotifierNotifyError::UnableToAcquireElapsedTime,
+                ) => (),
+                Err(e) => {
+                    warn!(from new_self,
+                        "The new notifier was unable to send out the notifier_created_event: {:?} due to ({:?}).",
+                        event_id, e);
+                }
             }
         }
 
@@ -344,6 +359,16 @@ impl<Service: service::Service> Notifier<Service> {
         self.notify_with_custom_event_id(self.default_event_id)
     }
 
+    /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
+    pub fn deadline(&self) -> Option<Duration> {
+        self.listener_connections
+            .service_state
+            .static_config
+            .event()
+            .deadline
+            .map(|v| v.value)
+    }
+
     /// Notifies all [`crate::port::listener::Listener`] connected to the service with a custom
     /// [`EventId`].
     /// On success the number of
@@ -379,6 +404,39 @@ impl<Service: service::Service> Notifier<Service> {
                         number_of_triggered_listeners += 1;
                     }
                 }
+            }
+        }
+
+        if let Some(deadline) = self
+            .listener_connections
+            .service_state
+            .static_config
+            .event()
+            .deadline
+        {
+            let msg = "The notification was sent";
+            let duration_since_creation = fail!(from self, when deadline.creation_time.elapsed(),
+                                with NotifierNotifyError::UnableToAcquireElapsedTime,
+                                "{} but the elapsed system time could not be acquired which is required for deadline handling.",
+                                msg);
+
+            let previous_duration_since_creation = self
+                .listener_connections
+                .service_state
+                .dynamic_storage
+                .get()
+                .event()
+                .elapsed_time_since_last_notification
+                .swap(duration_since_creation.as_nanos() as u64, Ordering::Relaxed);
+
+            let duration_since_last_notification = Duration::from_nanos(
+                duration_since_creation.as_nanos() as u64 - previous_duration_since_creation,
+            );
+
+            if deadline.value < duration_since_last_notification {
+                fail!(from self, with NotifierNotifyError::MissedDeadline,
+                "{} but the deadline was hit. The service requires a notification after {:?} but {:?} passed without a notification.",
+                msg, deadline.value, duration_since_last_notification);
             }
         }
 

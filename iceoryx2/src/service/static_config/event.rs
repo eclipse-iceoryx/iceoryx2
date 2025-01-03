@@ -24,6 +24,7 @@
 //! println!("max listeners:                {:?}", event.static_config().max_listeners());
 //! println!("max notifiers:                {:?}", event.static_config().max_notifiers());
 //! println!("event id max value:           {:?}", event.static_config().event_id_max_value());
+//! println!("deadline:                     {:?}", event.static_config().deadline());
 //! println!("notifier created event:       {:?}", event.static_config().notifier_created_event());
 //! println!("notifier dropped event:       {:?}", event.static_config().notifier_dropped_event());
 //! println!("notifier dead event:          {:?}", event.static_config().notifier_dead_event());
@@ -31,8 +32,17 @@
 //! # Ok(())
 //! # }
 //! ```
+use std::time::Duration;
+
 use crate::{config, prelude::EventId};
+use iceoryx2_bb_posix::clock::Time;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
+pub(crate) struct Deadline {
+    pub(crate) creation_time: Time,
+    pub(crate) value: Duration,
+}
 
 /// The static configuration of an [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)
 /// based service. Contains all parameters that do not change during the lifetime of a
@@ -43,6 +53,7 @@ pub struct StaticConfig {
     pub(crate) max_listeners: usize,
     pub(crate) max_nodes: usize,
     pub(crate) event_id_max_value: usize,
+    pub(crate) deadline: Option<Deadline>,
     pub(crate) notifier_created_event: Option<usize>,
     pub(crate) notifier_dropped_event: Option<usize>,
     pub(crate) notifier_dead_event: Option<usize>,
@@ -54,11 +65,24 @@ impl StaticConfig {
             max_notifiers: config.defaults.event.max_notifiers,
             max_listeners: config.defaults.event.max_listeners,
             max_nodes: config.defaults.event.max_nodes,
+            deadline: config.defaults.event.deadline.map(|v| Deadline {
+                creation_time: Time::default(),
+                value: v,
+            }),
             event_id_max_value: config.defaults.event.event_id_max_value,
             notifier_created_event: config.defaults.event.notifier_created_event,
             notifier_dropped_event: config.defaults.event.notifier_dropped_event,
             notifier_dead_event: config.defaults.event.notifier_dead_event,
         }
+    }
+
+    /// Returns the deadline of the service. If no new notification is signaled from any
+    /// [`Notifier`](crate::port::notifier::Notifier) after the given deadline, it is rated
+    /// as an error and all [`Listener`](crate::port::listener::Listener) that are attached
+    /// to a [`WaitSet`](crate::waitset::WaitSet) are woken up and notified about the missed
+    /// deadline.
+    pub fn deadline(&self) -> Option<Duration> {
+        self.deadline.map(|v| v.value)
     }
 
     /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the

@@ -28,6 +28,7 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
+use std::time::Duration;
 
 use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref};
 
@@ -46,6 +47,8 @@ pub enum iox2_event_open_or_create_error_e {
     O_INCOMPATIBLE_MESSAGING_PATTERN,
     #[CStr = "incompatible attributes"]
     O_INCOMPATIBLE_ATTRIBUTES,
+    #[CStr = "incompatible deadline"]
+    O_INCOMPATIBLE_DEADLINE,
     #[CStr = "incompatible notifier_created event"]
     O_INCOMPATIBLE_NOTIFIER_CREATED_EVENT,
     #[CStr = "incompatible notifier_dropped event"]
@@ -133,6 +136,9 @@ impl IntoCInt for EventOpenError {
             EventOpenError::IncompatibleNotifierDeadEvent => {
                 iox2_event_open_or_create_error_e::O_INCOMPATIBLE_NOTIFIER_DEAD_EVENT
             }
+            EventOpenError::IncompatibleDeadline => {
+                iox2_event_open_or_create_error_e::O_INCOMPATIBLE_DEADLINE
+            }
         }) as c_int
     }
 }
@@ -193,6 +199,77 @@ pub unsafe extern "C" fn iox2_event_open_or_create_error_string(
     error: iox2_event_open_or_create_error_e,
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
+}
+
+/// Enables the deadline property of the service. There must be a notification emitted by any
+/// notifier after at least the provided `deadline`.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+/// * `seconds` - the second part of the deadline
+/// * `nanoseconds` - the nanosecond part of the deadline
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_set_deadline(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    seconds: u64,
+    nanoseconds: u32,
+) {
+    let deadline = Duration::from_secs(seconds) + Duration::from_nanos(nanoseconds as u64);
+    iox2_service_builder_event_set_deadline_impl(service_builder_handle, Some(deadline));
+}
+
+/// Disables the deadline property of the service.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_disable_deadline(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+) {
+    iox2_service_builder_event_set_deadline_impl(service_builder_handle, None);
+}
+
+unsafe fn iox2_service_builder_event_set_deadline_impl(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    deadline: Option<Duration>,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(match deadline {
+                Some(v) => service_builder.deadline(v),
+                None => service_builder.disable_deadline(),
+            }));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(match deadline {
+                Some(v) => service_builder.deadline(v),
+                None => service_builder.disable_deadline(),
+            }));
+        }
+    }
 }
 
 /// Sets the event id value that shall be emitted if a notifier was identified as dead.
@@ -306,7 +383,6 @@ pub unsafe extern "C" fn iox2_service_builder_event_disable_notifier_created_eve
     iox2_service_builder_event_set_notifier_created_event_impl(service_builder_handle, None);
 }
 
-#[no_mangle]
 unsafe fn iox2_service_builder_event_set_notifier_created_event_impl(
     service_builder_handle: iox2_service_builder_event_h_ref,
     value: Option<EventId>,

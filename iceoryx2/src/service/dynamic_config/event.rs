@@ -30,6 +30,7 @@ use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::{container::*, unique_index_set::ReleaseMode};
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 use crate::{
     node::NodeId,
@@ -52,6 +53,7 @@ pub(crate) struct DynamicConfigSettings {
 pub struct DynamicConfig {
     pub(crate) listeners: Container<ListenerDetails>,
     pub(crate) notifiers: Container<NotifierDetails>,
+    pub(crate) elapsed_time_since_last_notification: IoxAtomicU64,
 }
 
 #[repr(C)]
@@ -73,6 +75,7 @@ impl DynamicConfig {
         Self {
             listeners: unsafe { Container::new_uninit(config.number_of_listeners) },
             notifiers: unsafe { Container::new_uninit(config.number_of_notifiers) },
+            elapsed_time_since_last_notification: IoxAtomicU64::new(0),
         }
     }
 

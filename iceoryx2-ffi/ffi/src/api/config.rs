@@ -76,7 +76,7 @@ pub(super) struct ConfigOwner {
 #[repr(C)]
 #[repr(align(8))] // align_of<ConfigOwner>()
 pub struct iox2_config_storage_t {
-    internal: [u8; 3608], // size_of<ConfigOwner>()
+    internal: [u8; 3624], // size_of<ConfigOwner>()
 }
 
 /// Contains the iceoryx2 config
@@ -1556,6 +1556,68 @@ pub unsafe extern "C" fn iox2_config_defaults_event_set_max_listeners(
 
     let config = &mut *handle.as_type();
     config.value.as_mut().value.defaults.event.max_listeners = value;
+}
+
+/// Returns the default deadline for event services. If there is a deadline set, the provided
+/// arguments `seconds` and `nanoseconds` will be set `true` is returned. Otherwise, false is
+/// returned and nothing is set.
+///
+/// # Safety
+///
+/// * `notifier_handle` is valid, non-null and was obtained via [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
+/// * `seconds` is pointing to a valid memory location and non-null
+/// * `nanoseconds` is pointing to a valid memory location and non-null
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_event_deadline(
+    handle: iox2_config_h_ref,
+    seconds: *mut u64,
+    nanoseconds: *mut u32,
+) -> bool {
+    handle.assert_non_null();
+    debug_assert!(!seconds.is_null());
+    debug_assert!(!nanoseconds.is_null());
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .event
+        .deadline
+        .map(|v| {
+            *seconds = v.as_secs();
+            *nanoseconds = v.subsec_nanos();
+        })
+        .is_some()
+}
+
+/// Sets the default deadline for event services. If `seconds` and `nanoseconds` is `NULL`
+/// the deadline will be disabled, otherwise the deadline will be set to the provided values.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+/// * `seconds` & `nanoseconds` - either both must be `NULL` or both must point to a valid memory
+///                               location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_event_set_deadline(
+    handle: iox2_config_h_ref,
+    seconds: *const u64,
+    nanoseconds: *const u32,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    let deadline = if seconds.is_null() {
+        debug_assert!(nanoseconds.is_null());
+        None
+    } else {
+        debug_assert!(!nanoseconds.is_null());
+        Some(Duration::from_secs(*seconds) + Duration::from_nanos(*nanoseconds as u64))
+    };
+
+    config.value.as_mut().value.defaults.event.deadline = deadline;
 }
 
 /// Returns the event id value that is emitted when a new notifier is created. It returns `true`

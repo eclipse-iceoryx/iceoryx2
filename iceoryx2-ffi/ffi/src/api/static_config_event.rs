@@ -27,6 +27,9 @@ pub struct iox2_static_config_event_t {
     pub has_notifier_dropped_event: bool,
     pub notifier_created_event: usize,
     pub has_notifier_created_event: bool,
+    pub deadline_seconds: u64,
+    pub deadline_nanoseconds: u32,
+    pub has_deadline: bool,
 }
 
 impl From<&StaticConfig> for iox2_static_config_event_t {
@@ -51,6 +54,9 @@ impl From<&StaticConfig> for iox2_static_config_event_t {
                 .unwrap_or(EventId::new(0))
                 .as_value(),
             has_notifier_created_event: c.notifier_created_event().is_some(),
+            deadline_seconds: c.deadline().map(|v| v.as_secs()).unwrap_or(0),
+            deadline_nanoseconds: c.deadline().map(|v| v.subsec_nanos()).unwrap_or(0),
+            has_deadline: c.deadline().is_some(),
         }
     }
 }

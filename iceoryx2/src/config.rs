@@ -272,6 +272,10 @@ pub struct Event {
     pub max_nodes: usize,
     /// The largest event id supported by the event service
     pub event_id_max_value: usize,
+    /// Defines the maximum allowed time between two consecutive notifications. If a notifiation
+    /// is not sent after the defined time, every [`Listener`](crate::port::listener::Listener)
+    /// that is attached to a [`WaitSet`](crate::waitset::WaitSet) will be notified.
+    pub deadline: Option<Duration>,
     /// Defines the event id value that is emitted after a new notifier was created.
     pub notifier_created_event: Option<usize>,
     /// Defines the event id value that is emitted before a new notifier is dropped.
@@ -339,6 +343,7 @@ impl Default for Config {
                     max_notifiers: 16,
                     max_nodes: 36,
                     event_id_max_value: 4294967295,
+                    deadline: None,
                     notifier_created_event: None,
                     notifier_dropped_event: None,
                     notifier_dead_event: None,

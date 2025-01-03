@@ -18,7 +18,7 @@ use iceoryx2::{
     prelude::*,
 };
 
-const REACTION_BUFFER_MS: u64 = 100;
+const REACTION_BUFFER_MS: u64 = 500;
 const CYCLE_TIME_1: Duration = Duration::from_millis(1000 + REACTION_BUFFER_MS);
 const CYCLE_TIME_2: Duration = Duration::from_millis(1500 + REACTION_BUFFER_MS);
 
@@ -41,10 +41,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 
+    // If the service has defined a deadline we will use it, otherwise
     // we expect that the listener receive a message sent event after at most CYCLE_TIME_X
-    // so we add it as a deadline
-    let listener_1_guard = waitset.attach_deadline(&listener_1, CYCLE_TIME_1)?;
-    let listener_2_guard = waitset.attach_deadline(&listener_2, CYCLE_TIME_2)?;
+    let deadline_1 = listener_1.deadline().unwrap_or(CYCLE_TIME_1);
+    let deadline_2 = listener_2.deadline().unwrap_or(CYCLE_TIME_2);
+    let listener_1_guard = waitset.attach_deadline(&listener_1, deadline_1)?;
+    let listener_2_guard = waitset.attach_deadline(&listener_2, deadline_2)?;
 
     let missed_deadline = |service_name, cycle_time| {
         println!(
@@ -55,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id.has_missed_deadline(&listener_1_guard) {
-            missed_deadline(&service_name_1, CYCLE_TIME_1);
+            missed_deadline(&service_name_1, deadline_1);
             // one cause of a deadline it can be a dead node. usually our "central_daemon" would
             // take care of monitoring but when the node and the central daemon crashed we take
             // over here and check for dead nodes
@@ -63,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         if attachment_id.has_missed_deadline(&listener_2_guard) {
-            missed_deadline(&service_name_2, CYCLE_TIME_2);
+            missed_deadline(&service_name_2, deadline_2);
             find_and_cleanup_dead_nodes();
         }
 

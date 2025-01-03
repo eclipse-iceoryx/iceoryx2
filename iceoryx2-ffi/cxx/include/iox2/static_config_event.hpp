@@ -13,6 +13,7 @@
 #ifndef IOX2_STATIC_CONFIG_EVENT_HPP
 #define IOX2_STATIC_CONFIG_EVENT_HPP
 
+#include "iox/duration.hpp"
 #include "iox/optional.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/iceoryx2.h"
@@ -45,6 +46,13 @@ class StaticConfigEvent {
 
     /// Returns the emitted [`EventId`] when a notifier is identified as dead.
     auto notifier_dead_event() const -> iox::optional<EventId>;
+
+    /// Returns the deadline of the service. If no new notification is signaled from any
+    /// [`Notifier`] after the given deadline, it is rated
+    /// as an error and all [`Listener`] that are attached
+    /// to a [`WaitSet`] are woken up and notified about the missed
+    /// deadline.
+    auto deadline() const -> iox::optional<iox::units::Duration>;
 
   private:
     template <ServiceType>

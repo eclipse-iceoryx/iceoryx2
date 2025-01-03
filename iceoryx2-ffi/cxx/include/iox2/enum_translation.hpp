@@ -304,6 +304,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::OpenIncompatibleMessagingPattern;
     case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_ATTRIBUTES:
         return iox2::EventOpenOrCreateError::OpenIncompatibleAttributes;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_DEADLINE:
+        return iox2::EventOpenOrCreateError::OpenIncompatibleDeadline;
     case iox2_event_open_or_create_error_e_O_INTERNAL_FAILURE:
         return iox2::EventOpenOrCreateError::OpenInternalFailure;
     case iox2_event_open_or_create_error_e_O_HANGS_IN_CREATION:
@@ -867,6 +869,10 @@ constexpr auto from<int, iox2::NotifierNotifyError>(const int value) noexcept ->
     switch (error) {
     case iox2_notifier_notify_error_e_EVENT_ID_OUT_OF_BOUNDS:
         return iox2::NotifierNotifyError::EventIdOutOfBounds;
+    case iox2_notifier_notify_error_e_MISSED_DEADLINE:
+        return iox2::NotifierNotifyError::MissedDeadline;
+    case iox2_notifier_notify_error_e_UNABLE_TO_ACQUIRE_ELAPSED_TIME:
+        return iox2::NotifierNotifyError::UnableToAcquireElapsedTime;
     }
 
     IOX_UNREACHABLE();
@@ -879,6 +885,10 @@ from<iox2::NotifierNotifyError, iox2_notifier_notify_error_e>(const iox2::Notifi
     switch (value) {
     case iox2::NotifierNotifyError::EventIdOutOfBounds:
         return iox2_notifier_notify_error_e_EVENT_ID_OUT_OF_BOUNDS;
+    case iox2::NotifierNotifyError::MissedDeadline:
+        return iox2_notifier_notify_error_e_MISSED_DEADLINE;
+    case iox2::NotifierNotifyError::UnableToAcquireElapsedTime:
+        return iox2_notifier_notify_error_e_UNABLE_TO_ACQUIRE_ELAPSED_TIME;
     }
 
     IOX_UNREACHABLE();

@@ -224,6 +224,12 @@ class Event {
     auto notifier_dead_event() && -> iox::optional<size_t>;
     /// Sets the event id value that is emitted if a notifier was identified as dead.
     void set_notifier_dead_event(iox::optional<size_t> value) &&;
+    /// Defines the maximum allowed time between two consecutive notifications. If a notifiation
+    /// is not sent after the defined time, every [`Listener`]
+    /// that is attached to a [`WaitSet`] will be notified.
+    auto deadline() && -> iox::optional<iox::units::Duration>;
+    /// Sets the deadline of the event service.
+    void set_deadline(iox::optional<iox::units::Duration> value) &&;
 
   private:
     friend class Defaults;

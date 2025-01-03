@@ -253,6 +253,26 @@ void Event::set_notifier_dead_event(iox::optional<size_t> value) && {
     }
 }
 
+auto Event::deadline() && -> iox::optional<iox::units::Duration> {
+    uint64_t seconds = 0;
+    uint32_t nanoseconds = 0;
+    if (iox2_config_defaults_event_deadline(m_config, &seconds, &nanoseconds)) {
+        return { iox::units::Duration::fromSeconds(seconds) + iox::units::Duration::fromNanoseconds(nanoseconds) };
+    }
+
+    return iox::nullopt;
+}
+
+void Event::set_deadline(iox::optional<iox::units::Duration> value) && {
+    value
+        .and_then([&](auto value) {
+            const uint64_t seconds = value.toSeconds();
+            const uint32_t nanoseconds =
+                value.toNanoseconds() - (value.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC);
+            iox2_config_defaults_event_set_deadline(m_config, &seconds, &nanoseconds);
+        })
+        .or_else([&] { iox2_config_defaults_event_set_deadline(m_config, nullptr, nullptr); });
+}
 /////////////////////////
 // END: Event
 /////////////////////////
