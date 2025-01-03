@@ -1279,6 +1279,98 @@ mod service_event {
             format!("{}", EventCreateError::IsBeingCreatedByAnotherInstance), eq "EventCreateError::IsBeingCreatedByAnotherInstance");
     }
 
+    #[test]
+    fn deadline_can_be_set<S: Service>() {
+        const DEADLINE: Duration = Duration::from_secs(556);
+        let service_name = generate_name();
+        let mut config = generate_isolated_config();
+        config.defaults.event.deadline = None;
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut_create = node
+            .service_builder(&service_name)
+            .event()
+            .deadline(DEADLINE)
+            .create()
+            .unwrap();
+        let listener_create = sut_create.listener_builder().create().unwrap();
+        let notifier_create = sut_create.notifier_builder().create().unwrap();
+
+        let sut_open = node.service_builder(&service_name).event().open().unwrap();
+        let listener_open = sut_open.listener_builder().create().unwrap();
+        let notifier_open = sut_open.notifier_builder().create().unwrap();
+
+        assert_that!(sut_create.static_config().deadline(), eq Some(DEADLINE));
+        assert_that!(sut_open.static_config().deadline(), eq Some(DEADLINE));
+
+        assert_that!(listener_create.deadline(), eq Some(DEADLINE));
+        assert_that!(listener_open.deadline(), eq Some(DEADLINE));
+        assert_that!(notifier_create.deadline(), eq Some(DEADLINE));
+        assert_that!(notifier_open.deadline(), eq Some(DEADLINE));
+    }
+
+    #[test]
+    fn deadline_can_be_disabled<S: Service>() {
+        const DEADLINE: Duration = Duration::from_secs(556);
+        let service_name = generate_name();
+        let mut config = generate_isolated_config();
+        config.defaults.event.deadline = Some(DEADLINE);
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut_create = node
+            .service_builder(&service_name)
+            .event()
+            .disable_deadline()
+            .create()
+            .unwrap();
+        let listener_create = sut_create.listener_builder().create().unwrap();
+        let notifier_create = sut_create.notifier_builder().create().unwrap();
+
+        let sut_open = node.service_builder(&service_name).event().open().unwrap();
+        let listener_open = sut_open.listener_builder().create().unwrap();
+        let notifier_open = sut_open.notifier_builder().create().unwrap();
+
+        assert_that!(sut_create.static_config().deadline(), eq None);
+        assert_that!(sut_open.static_config().deadline(), eq None);
+
+        assert_that!(listener_create.deadline(), eq None);
+        assert_that!(listener_open.deadline(), eq None);
+        assert_that!(notifier_create.deadline(), eq None);
+        assert_that!(notifier_open.deadline(), eq None);
+    }
+
+    #[test]
+    fn notifier_is_informed_when_deadline_was_missed<S: Service>() {
+        const DEADLINE: Duration = Duration::from_nanos(1);
+        const TIMEOUT: Duration = Duration::from_millis(10);
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut_create = node
+            .service_builder(&service_name)
+            .event()
+            .deadline(DEADLINE)
+            .create()
+            .unwrap();
+
+        let listener = sut_create.listener_builder().create().unwrap();
+        let notifier_create = sut_create.notifier_builder().create().unwrap();
+
+        let sut_open = node.service_builder(&service_name).event().open().unwrap();
+        let notifier_open = sut_open.notifier_builder().create().unwrap();
+
+        std::thread::sleep(TIMEOUT);
+        let result = notifier_create.notify();
+        assert_that!(result.err(), eq Some(NotifierNotifyError::MissedDeadline));
+        assert_that!(listener.try_wait_one().unwrap(), is_some);
+
+        std::thread::sleep(TIMEOUT);
+        let result = notifier_open.notify();
+        assert_that!(result.err(), eq Some(NotifierNotifyError::MissedDeadline));
+        assert_that!(listener.try_wait_one().unwrap(), is_some);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
