@@ -22,6 +22,8 @@
 using namespace iox2;
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromMilliseconds(100);
+constexpr iox::units::Duration DEADLINE_SERVICE_1 = iox::units::Duration::fromMilliseconds(1500);
+constexpr iox::units::Duration DEADLINE_SERVICE_2 = iox::units::Duration::fromMilliseconds(2000);
 
 namespace {
 void find_and_cleanup_dead_nodes();
@@ -47,6 +49,10 @@ auto main() -> int {
 
     auto service_event_1 = node.service_builder(service_name_1)
                                .event()
+                               // Defines the maximum timespan between two notifications for this service. The user of a
+                               // notifier that send a notification after the deadline was already reached, receives an
+                               // MISSED_DEADLINE error after the notification was delivered.
+                               .deadline(DEADLINE_SERVICE_1)
                                // Whenever a new notifier is created the PublisherConnected event is emitted. this makes
                                // sense since in this example a notifier is always created after a new publisher was
                                // created.
@@ -67,6 +73,7 @@ auto main() -> int {
 
     auto service_event_2 = node.service_builder(service_name_2)
                                .event()
+                               .deadline(DEADLINE_SERVICE_2)
                                .notifier_created_event(iox::into<EventId>(PubSubEvent::PublisherConnected))
                                .notifier_dropped_event(iox::into<EventId>(PubSubEvent::PublisherDisconnected))
                                .notifier_dead_event(iox::into<EventId>(PubSubEvent::ProcessDied))
