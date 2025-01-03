@@ -1371,6 +1371,36 @@ mod service_event {
         assert_that!(listener.try_wait_one().unwrap(), is_some);
     }
 
+    #[test]
+    fn when_deadline_is_not_missed_notification_works<S: Service>() {
+        const DEADLINE: Duration = Duration::from_secs(3600);
+        const TIMEOUT: Duration = Duration::from_millis(10);
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut_create = node
+            .service_builder(&service_name)
+            .event()
+            .deadline(DEADLINE)
+            .create()
+            .unwrap();
+
+        let listener = sut_create.listener_builder().create().unwrap();
+        let notifier_create = sut_create.notifier_builder().create().unwrap();
+
+        let sut_open = node.service_builder(&service_name).event().open().unwrap();
+        let notifier_open = sut_open.notifier_builder().create().unwrap();
+
+        std::thread::sleep(TIMEOUT);
+        assert_that!(notifier_create.notify(), is_ok);
+        assert_that!(listener.try_wait_one().unwrap(), is_some);
+
+        std::thread::sleep(TIMEOUT);
+        assert_that!(notifier_open.notify(), is_ok);
+        assert_that!(listener.try_wait_one().unwrap(), is_some);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

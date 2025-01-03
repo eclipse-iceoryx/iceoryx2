@@ -470,4 +470,103 @@ TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {
     ASSERT_THAT(service_open.error(), Eq(EventOpenError::IncompatibleAttributes));
 }
 
+TYPED_TEST(ServiceEventTest, deadline_can_be_set) {
+    constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromMilliseconds(9281);
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+    Config config;
+    config.defaults().event().set_deadline(iox::nullopt);
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().expect("");
+
+    auto service_create = node.service_builder(service_name).event().deadline(DEADLINE).create().expect("");
+    auto listener_create = service_create.listener_builder().create().expect("");
+    auto notifier_create = service_create.notifier_builder().create().expect("");
+
+    auto service_open = node.service_builder(service_name).event().open().expect("");
+    auto listener_open = service_open.listener_builder().create().expect("");
+    auto notifier_open = service_open.notifier_builder().create().expect("");
+
+    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox::optional(DEADLINE)));
+    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox::optional(DEADLINE)));
+    ASSERT_THAT(listener_create.deadline(), Eq(iox::optional(DEADLINE)));
+    ASSERT_THAT(listener_open.deadline(), Eq(iox::optional(DEADLINE)));
+    ASSERT_THAT(notifier_create.deadline(), Eq(iox::optional(DEADLINE)));
+    ASSERT_THAT(notifier_open.deadline(), Eq(iox::optional(DEADLINE)));
+}
+
+TYPED_TEST(ServiceEventTest, deadline_can_be_disabled) {
+    constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromMilliseconds(9281);
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+    Config config;
+    config.defaults().event().set_deadline(iox::optional(DEADLINE));
+    auto node = NodeBuilder().config(config).create<SERVICE_TYPE>().expect("");
+
+    auto service_create = node.service_builder(service_name).event().disable_deadline().create().expect("");
+    auto listener_create = service_create.listener_builder().create().expect("");
+    auto notifier_create = service_create.notifier_builder().create().expect("");
+
+    auto service_open = node.service_builder(service_name).event().open().expect("");
+    auto listener_open = service_open.listener_builder().create().expect("");
+    auto notifier_open = service_open.notifier_builder().create().expect("");
+
+    ASSERT_THAT(service_create.static_config().deadline(), Eq(iox::nullopt));
+    ASSERT_THAT(service_open.static_config().deadline(), Eq(iox::nullopt));
+    ASSERT_THAT(listener_create.deadline(), Eq(iox::nullopt));
+    ASSERT_THAT(listener_open.deadline(), Eq(iox::nullopt));
+    ASSERT_THAT(notifier_create.deadline(), Eq(iox::nullopt));
+    ASSERT_THAT(notifier_open.deadline(), Eq(iox::nullopt));
+}
+
+TYPED_TEST(ServiceEventTest, notifier_is_informed_when_deadline_was_missed) {
+    constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromNanoseconds(1);
+    constexpr uint64_t TIMEOUT = 10;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    auto service_create = node.service_builder(service_name).event().deadline(DEADLINE).create().expect("");
+    auto listener = service_create.listener_builder().create().expect("");
+    auto notifier_create = service_create.notifier_builder().create().expect("");
+
+    auto service_open = node.service_builder(service_name).event().open().expect("");
+    auto notifier_open = service_open.notifier_builder().create().expect("");
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT));
+    auto result = notifier_create.notify();
+    ASSERT_THAT(result.has_value(), Eq(false));
+    ASSERT_THAT(result.error(), Eq(NotifierNotifyError::MissedDeadline));
+    ASSERT_THAT(listener.try_wait_one().expect("").has_value(), Eq(true));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT));
+    result = notifier_open.notify();
+    ASSERT_THAT(result.has_value(), Eq(false));
+    ASSERT_THAT(result.error(), Eq(NotifierNotifyError::MissedDeadline));
+    ASSERT_THAT(listener.try_wait_one().expect("").has_value(), Eq(true));
+}
+
+TYPED_TEST(ServiceEventTest, when_deadline_is_not_missed_notification_works) {
+    constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromSeconds(3600);
+    constexpr uint64_t TIMEOUT = 10;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    auto service_create = node.service_builder(service_name).event().deadline(DEADLINE).create().expect("");
+    auto listener = service_create.listener_builder().create().expect("");
+    auto notifier_create = service_create.notifier_builder().create().expect("");
+
+    auto service_open = node.service_builder(service_name).event().open().expect("");
+    auto notifier_open = service_open.notifier_builder().create().expect("");
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT));
+    auto result = notifier_create.notify();
+    ASSERT_THAT(result.has_value(), Eq(true));
+    ASSERT_THAT(listener.try_wait_one().expect("").has_value(), Eq(true));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(TIMEOUT));
+    result = notifier_open.notify();
+    ASSERT_THAT(result.has_value(), Eq(true));
+    ASSERT_THAT(listener.try_wait_one().expect("").has_value(), Eq(true));
+}
 } // namespace
