@@ -370,12 +370,12 @@ pub unsafe extern "C" fn iox2_listener_deadline(
         iox2_service_type_e::LOCAL => listener.value.as_mut().local.deadline(),
     };
 
-    deadline.map(|v| {
-        *seconds = v.as_secs();
-        *nanoseconds = v.subsec_nanos();
-    });
-
-    deadline.is_some()
+    deadline
+        .map(|v| {
+            *seconds = v.as_secs();
+            *nanoseconds = v.subsec_nanos();
+        })
+        .is_some()
 }
 
 /// Blocks the listener until at least one event was received and then calls the callback for

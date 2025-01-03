@@ -221,12 +221,12 @@ pub unsafe extern "C" fn iox2_notifier_deadline(
         iox2_service_type_e::LOCAL => notifier.value.as_mut().local.deadline(),
     };
 
-    deadline.map(|v| {
-        *seconds = v.as_secs();
-        *nanoseconds = v.subsec_nanos();
-    });
-
-    deadline.is_some()
+    deadline
+        .map(|v| {
+            *seconds = v.as_secs();
+            *nanoseconds = v.subsec_nanos();
+        })
+        .is_some()
 }
 
 /// Notifies all [`iox2_listener_h`](crate::iox2_listener_h) connected to the service

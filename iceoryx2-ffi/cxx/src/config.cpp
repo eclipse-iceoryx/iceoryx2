@@ -266,8 +266,9 @@ auto Event::deadline() && -> iox::optional<iox::units::Duration> {
 void Event::set_deadline(iox::optional<iox::units::Duration> value) && {
     value
         .and_then([&](auto value) {
-            uint64_t seconds = value.toSeconds();
-            uint32_t nanoseconds = value.toNanoseconds() - (value.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC);
+            const uint64_t seconds = value.toSeconds();
+            const uint32_t nanoseconds =
+                value.toNanoseconds() - (value.toSeconds() * iox::units::Duration::NANOSECS_PER_SEC);
             iox2_config_defaults_event_set_deadline(m_config, &seconds, &nanoseconds);
         })
         .or_else([&] { iox2_config_defaults_event_set_deadline(m_config, nullptr, nullptr); });

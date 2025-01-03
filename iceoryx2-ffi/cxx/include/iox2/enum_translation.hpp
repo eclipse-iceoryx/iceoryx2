@@ -304,6 +304,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::OpenIncompatibleMessagingPattern;
     case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_ATTRIBUTES:
         return iox2::EventOpenOrCreateError::OpenIncompatibleAttributes;
+    case iox2_event_open_or_create_error_e_O_INCOMPATIBLE_DEADLINE:
+        return iox2::EventOpenOrCreateError::OpenIncompatibleDeadline;
     case iox2_event_open_or_create_error_e_O_INTERNAL_FAILURE:
         return iox2::EventOpenOrCreateError::OpenInternalFailure;
     case iox2_event_open_or_create_error_e_O_HANGS_IN_CREATION:
