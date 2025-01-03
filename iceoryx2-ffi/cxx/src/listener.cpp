@@ -61,6 +61,18 @@ auto Listener<S>::id() const -> UniqueListenerId {
     return UniqueListenerId { id_handle };
 }
 
+template <ServiceType S>
+auto Listener<S>::deadline() const -> iox::optional<iox::units::Duration> {
+    uint64_t seconds = 0;
+    uint32_t nanoseconds = 0;
+
+    if (iox2_listener_deadline(&m_handle, &seconds, &nanoseconds)) {
+        return { iox::units::Duration::fromSeconds(seconds) + iox::units::Duration::fromNanoseconds(nanoseconds) };
+    }
+
+    return iox::nullopt;
+}
+
 void wait_callback(const iox2_event_id_t* event_id, iox2_callback_context context) {
     auto* callback = internal::ctx_cast<iox::function<void(EventId)>>(context);
     callback->value()(EventId(*event_id));

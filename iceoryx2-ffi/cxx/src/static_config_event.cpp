@@ -56,4 +56,14 @@ auto StaticConfigEvent::notifier_dead_event() const -> iox::optional<EventId> {
 
     return { EventId(m_value.notifier_dead_event) };
 }
+
+auto StaticConfigEvent::deadline() const -> iox::optional<iox::units::Duration> {
+    if (!m_value.has_deadline) {
+        return iox::nullopt;
+    }
+
+    return { iox::units::Duration::fromSeconds(m_value.deadline_seconds)
+             + iox::units::Duration::fromNanoseconds(m_value.deadline_nanoseconds) };
+}
+
 } // namespace iox2

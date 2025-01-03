@@ -64,6 +64,10 @@ class ServiceBuilderEvent {
     /// provided no event will be emitted.
     auto notifier_dead_event(EventId event_id) && -> ServiceBuilderEvent&&;
 
+    /// Enables the deadline property of the service. There must be a notification emitted by any
+    /// [`Notifier`] after at least the provided `deadline`.
+    auto deadline(iox::units::Duration deadline) && -> ServiceBuilderEvent&&;
+
     /// If the [`Service`] is created it disables sending an event when a notifier was dropped.
     auto disable_notifier_dropped_event() && -> ServiceBuilderEvent&&;
 
@@ -74,6 +78,9 @@ class ServiceBuilderEvent {
     /// as dead.
     auto disable_notifier_dead_event() && -> ServiceBuilderEvent&&;
 
+    /// Disables the deadline property of the service. [`Notifier`]
+    /// can signal notifications at any rate.
+    auto disable_deadline() && -> ServiceBuilderEvent&&;
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
@@ -114,9 +121,11 @@ class ServiceBuilderEvent {
     iox::optional<EventId> m_notifier_dead_event;
     iox::optional<EventId> m_notifier_created_event;
     iox::optional<EventId> m_notifier_dropped_event;
+    iox::optional<iox::units::Duration> m_deadline;
     bool m_verify_notifier_dead_event = false;
     bool m_verify_notifier_created_event = false;
     bool m_verify_notifier_dropped_event = false;
+    bool m_verify_deadline = false;
 };
 } // namespace iox2
 

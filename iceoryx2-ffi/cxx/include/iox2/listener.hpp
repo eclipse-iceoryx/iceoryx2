@@ -84,6 +84,9 @@ class Listener : public FileDescriptorBased {
     /// in detail.
     auto blocking_wait_one() -> iox::expected<iox::optional<EventId>, ListenerWaitError>;
 
+    /// Returns the deadline of the corresponding [`Service`].
+    auto deadline() const -> iox::optional<iox::units::Duration>;
+
   private:
     template <ServiceType>
     friend class PortFactoryListener;

@@ -13,14 +13,13 @@
 #ifndef IOX2_NOTIFIER_HPP
 #define IOX2_NOTIFIER_HPP
 
+#include "iox/duration.hpp"
 #include "iox/expected.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/notifier_error.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
-
-#include <cstdint>
 
 namespace iox2 {
 /// Represents the sending endpoint of an event based communication.
@@ -50,6 +49,9 @@ class Notifier {
     /// [`Listener`]s that were notified otherwise it returns
     /// [`NotifierNotifyError`].
     auto notify_with_custom_event_id(EventId event_id) const -> iox::expected<size_t, NotifierNotifyError>;
+
+    /// Returns the deadline of the corresponding [`Service`].
+    auto deadline() const -> iox::optional<iox::units::Duration>;
 
   private:
     template <ServiceType>
