@@ -429,14 +429,14 @@ impl<Service: service::Service> Notifier<Service> {
                 .elapsed_time_since_last_notification
                 .swap(duration_since_creation.as_nanos() as u64, Ordering::Relaxed);
 
-            let time_since_last_notification = Duration::from_nanos(
+            let duration_since_last_notification = Duration::from_nanos(
                 duration_since_creation.as_nanos() as u64 - previous_duration_since_creation,
             );
 
-            if deadline.value < time_since_last_notification {
+            if deadline.value < duration_since_last_notification {
                 fail!(from self, with NotifierNotifyError::MissedDeadline,
                 "{} but the deadline was hit. The service requires a notification after {:?} but {:?} passed without a notification.",
-                msg, deadline.value, time_since_last_notification);
+                msg, deadline.value, duration_since_last_notification);
             }
         }
 
