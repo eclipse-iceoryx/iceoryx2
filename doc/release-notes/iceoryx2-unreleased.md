@@ -11,7 +11,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Deadline property for event services
+    [#573](https://github.com/eclipse-iceoryx/iceoryx2/issues/573)
 
 ### Bugfixes
 
