@@ -51,24 +51,6 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
 Take a look at the
 [publish-subscribe dynamic data size example](examples/rust/publish_subscribe_dynamic_data_size).
 
-The idea is to create a service based on a slice and define at runtime a
-`max_slice_len`. Then samples up to a length of the max slice length can be
-allocated with `loan_slice{_uninit}`. When it turns out that the slice length is
-insufficient, a new publisher with a larger `max_slice_len` can be created.
-
-<!-- markdownlint-disable -->
-
-> [!IMPORTANT]
-> Be aware that the history of the old publisher is lost when it is
-> removed.
-
-> [!NOTE]
-> We are also working on an API that does not require the user to
-> explicitly create a new publisher whenever the memory is insufficient. It
-> would also solve the history issue.
-
-<!-- markdownlint-enable -->
-
 ## How To Make 32-bit and 64-bit iceoryx2 Applications Interoperatable
 
 This is currently not possible since we cannot guarantee to have the same
@@ -187,3 +169,43 @@ cleanup:
     files with the `iox2` prefix from:
    * POSIX: `/dev/shm/`, `/tmp/iceoryx2`
    * Windows: `c:\Temp\iceoryx2`
+
+## Run Out-Of-Memory When Creating Publisher With A Large Service Payload
+
+Since iceoryx2 is designed to operate in safety-critical systems, it must
+ensure that a publisher (or sender) never runs out of memory. To achieve this,
+iceoryx2 preallocates a data segment for each new publisher. This segment is
+sized to handle the worst-case service requirements, ensuring that every
+subscriber can receive and store as many samples as permitted, even under
+maximum load.
+
+To minimize the required worst-case memory, you can adjust specific service
+settings. For example:
+
+```rust
+let service = node
+    .service_builder(&"some service name".try_into()?)
+    .publish_subscribe::<[u8]>()
+    // Limit the maximum number of subscribers
+    .max_subscribers(1)
+    // Limit the number of samples a subscriber can hold simultaneously
+    .subscriber_max_borrowed_samples(1)
+    // Reduce the subscriber's overall sample buffer size
+    .subscriber_max_buffer_size(1)
+    // Limit the size of the publisher's history buffer
+    .history_size(1)
+    // ...
+```
+
+On the publisher side, you can also configure resource usage:
+
+```rust
+let publisher = service
+    .publisher_builder()
+    // Limit the number of samples a publisher can loan at once
+    .max_loaned_samples(1)
+    // ...
+```
+
+All these parameters can also be set globally by using the
+[iceoryx2 config file](config).

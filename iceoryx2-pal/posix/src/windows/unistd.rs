@@ -21,8 +21,8 @@ use windows_sys::Win32::{
     Networking::WinSock::closesocket,
     Storage::FileSystem::{
         FlushFileBuffers, GetFileAttributesA, ReadFile, RemoveDirectoryA, SetEndOfFile,
-        SetFilePointer, WriteFile, FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_READONLY, FILE_BEGIN,
-        FILE_CURRENT, FILE_END, INVALID_FILE_ATTRIBUTES, INVALID_SET_FILE_POINTER,
+        SetFilePointerEx, WriteFile, FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_READONLY, FILE_BEGIN,
+        FILE_CURRENT, FILE_END, INVALID_FILE_ATTRIBUTES,
     },
     System::{
         Diagnostics::ToolHelp::{
@@ -263,9 +263,10 @@ pub unsafe fn lseek(fd: int, offset: off_t, whence: int) -> off_t {
                 }
             };
 
-            let (new_position, _) = win32call! {SetFilePointer(handle.handle, offset, core::ptr::null_mut::<i32>(), move_method)};
+            let mut new_position = 0;
+            let (has_success, _) = win32call! {SetFilePointerEx(handle.handle, offset, &mut new_position, move_method)};
 
-            if new_position == INVALID_SET_FILE_POINTER {
+            if has_success == 0 {
                 return -1;
             }
 
@@ -307,12 +308,15 @@ pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
             0
         }
         Some(FdHandleEntry::File(handle)) => {
-            win32call! { SetFilePointer(
+            let (result, _) = win32call! { SetFilePointerEx(
                 handle.handle,
                 length as _,
                 core::ptr::null_mut(),
                 FILE_BEGIN,
             )};
+            if result == 0 {
+                return -1;
+            }
             win32call! { SetEndOfFile(handle.handle)};
             0
         }

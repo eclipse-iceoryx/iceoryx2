@@ -585,6 +585,7 @@ impl SharedMemory {
         handle_errno!(SharedMemoryCreationError, from config,
             Errno::EAGAIN => (InsufficientMemoryToBeMemoryLocked, "{} since a previous mlockall() enforces all mappings to be memory locked but this mapping cannot be locked due to insufficient memory.", msg),
             Errno::EINVAL => (UnsupportedSizeOfZero, "{} since a size of zero is not supported.", msg),
+            Errno::ENOMEM => (InsufficientMemory, "{} since the system is out-of-memory or does not the support a shared memory with the size of {}.", msg, config.size),
             Errno::EMFILE => (MappedRegionLimitReached, "{} since the number of mapped regions would exceed the process or system limit.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         );
