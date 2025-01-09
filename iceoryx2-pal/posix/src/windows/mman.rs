@@ -37,7 +37,7 @@ use windows_sys::Win32::{
 
 use super::win32_handle_translator::{FdHandleEntry, FileHandle, HandleTranslator, ShmHandle};
 
-const MAX_SUPPORTED_SHM_SIZE: u64 = 1024 * 1024 * 1024 * 1024 * 1024;
+const MAX_SUPPORTED_SHM_SIZE: u64 = 128 * 1024 * 1024 * 1024;
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
     -1
