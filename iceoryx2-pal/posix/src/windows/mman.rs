@@ -37,7 +37,7 @@ use windows_sys::Win32::{
 
 use super::win32_handle_translator::{FdHandleEntry, FileHandle, HandleTranslator, ShmHandle};
 
-const MAX_SUPPORTED_SHM_SIZE: u64 = 1024 * 1024 * 1024;
+const MAX_SUPPORTED_SHM_SIZE: u64 = 1024 * 1024 * 1024 * 1024 * 1024;
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
     -1
@@ -257,6 +257,10 @@ unsafe fn open_state_handle(name: *const c_char) -> HANDLE {
 pub(crate) unsafe fn shm_set_size(fd_handle: HANDLE, shm_size: u64) {
     if fd_handle == INVALID_HANDLE_VALUE {
         return;
+    }
+
+    if shm_size > MAX_SUPPORTED_SHM_SIZE {
+        eprintln!("Trying to allocate {shm_size} which is larger than the maximum supported shared memory size of {MAX_SUPPORTED_SHM_SIZE}");
     }
 
     let mut bytes_written = 0;

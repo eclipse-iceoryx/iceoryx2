@@ -117,7 +117,7 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
                 return -1;
             }
 
-            file_stat.st_size = size as i32;
+            file_stat.st_size = size as _;
             file_stat.st_mode = S_IFREG;
 
             let mut info = BY_HANDLE_FILE_INFORMATION::new();
