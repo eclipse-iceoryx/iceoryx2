@@ -23,6 +23,9 @@
 
 * Completion queue capacity exceeded when history > buffer
     [#571](https://github.com/eclipse-iceoryx/iceoryx2/issues/571)
+* Increase max supported shared memory size in Windows that restricts
+    the maximum supported payload size
+    [#575](https://github.com/eclipse-iceoryx/iceoryx2/issues/575)
 
 ### Refactoring
 
