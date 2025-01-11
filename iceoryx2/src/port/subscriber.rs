@@ -31,11 +31,11 @@
 //! # }
 //! ```
 
+use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 use std::any::TypeId;
-use std::cell::UnsafeCell;
 use std::sync::Arc;
 
 use iceoryx2_bb_container::queue::Queue;

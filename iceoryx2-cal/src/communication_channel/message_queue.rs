@@ -15,6 +15,7 @@
 
 use std::{fmt::Debug, marker::PhantomData};
 
+use core::cell::UnsafeCell;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::directory::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
@@ -23,7 +24,6 @@ use iceoryx2_bb_posix::{
     shared_memory::{AccessMode, SharedMemory, SharedMemoryBuilder, SharedMemoryCreationError},
 };
 use iceoryx2_bb_system_types::path::Path;
-use std::cell::UnsafeCell;
 
 pub use crate::communication_channel::*;
 use crate::static_storage::file::{

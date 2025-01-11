@@ -15,8 +15,8 @@
 
 pub use crate::ipc_capable::{Handle, IpcCapable};
 
+use core::cell::UnsafeCell;
 use core::fmt::Debug;
-use std::cell::UnsafeCell;
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 use iceoryx2_bb_container::semantic_string::*;

@@ -15,13 +15,13 @@ use crate::shared_memory_directory::file::File;
 use crate::shared_memory_directory::reference_counter::ReferenceCounter;
 use crate::shared_memory_directory::SharedMemoryDirectoryCreateFileError;
 use crate::shared_memory_directory::MAX_NUMBER_OF_ENTRIES;
+use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::FixedSizeUniqueIndexSet;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::ReleaseMode;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::cell::UnsafeCell;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct FileReferenceSetId(usize);

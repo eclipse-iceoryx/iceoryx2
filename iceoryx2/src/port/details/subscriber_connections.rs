@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::cell::UnsafeCell;
+use core::cell::UnsafeCell;
 use std::sync::Arc;
 
 use iceoryx2_bb_log::fail;

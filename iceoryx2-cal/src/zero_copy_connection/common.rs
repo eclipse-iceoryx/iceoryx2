@@ -12,12 +12,12 @@
 
 #[doc(hidden)]
 pub mod details {
+    use core::cell::UnsafeCell;
     use core::fmt::Debug;
     use core::marker::PhantomData;
     use core::sync::atomic::Ordering;
     use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
-    use std::cell::UnsafeCell;
 
     use crate::dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,

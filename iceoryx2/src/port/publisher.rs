@@ -121,6 +121,7 @@ use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::static_config::publish_subscribe::{self};
 use crate::service::{self, ServiceState};
 use crate::{config, sample_mut::SampleMut};
+use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_container::queue::Queue;
@@ -140,7 +141,6 @@ use iceoryx2_cal::zero_copy_connection::{
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 use std::any::TypeId;
-use std::cell::UnsafeCell;
 use std::sync::Arc;
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 

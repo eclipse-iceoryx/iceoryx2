@@ -14,10 +14,10 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+use core::cell::OnceCell;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
-use std::cell::OnceCell;
 use std::time::Instant;
 use windows_sys::Win32::Networking::WinSock::WSAEWOULDBLOCK;
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
