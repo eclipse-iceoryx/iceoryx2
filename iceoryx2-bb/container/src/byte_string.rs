@@ -147,7 +147,7 @@ impl<const CAPACITY: usize> Ord for FixedSizeByteString<CAPACITY> {
 }
 
 impl<const CAPACITY: usize> Hash for FixedSizeByteString<CAPACITY> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         state.write(self.as_bytes())
     }
 }

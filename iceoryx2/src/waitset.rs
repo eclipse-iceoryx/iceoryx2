@@ -365,7 +365,7 @@ impl<Service: crate::service::Service> PartialEq for WaitSetAttachmentId<Service
 impl<Service: crate::service::Service> Eq for WaitSetAttachmentId<Service> {}
 
 impl<Service: crate::service::Service> Hash for WaitSetAttachmentId<Service> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.attachment_type.hash(state)
     }
 }
