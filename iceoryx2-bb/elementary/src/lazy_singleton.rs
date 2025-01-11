@@ -96,7 +96,7 @@ impl<T> LazySingleton<T> {
         }
 
         while !self.is_finalized.load(Ordering::Acquire) {
-            std::hint::spin_loop()
+            core::hint::spin_loop()
         }
         unsafe { self.data.get().as_ref().unwrap().as_ref().unwrap() }
     }
