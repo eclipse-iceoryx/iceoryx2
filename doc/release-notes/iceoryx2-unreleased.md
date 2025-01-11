@@ -13,6 +13,8 @@
 
 * Deadline property for event services
     [#573](https://github.com/eclipse-iceoryx/iceoryx2/issues/573)
+* Use 'std_instead_of_core' clippy warning
+    [#579](https://github.com/eclipse-iceoryx/iceoryx2/issues/579)
 
 ### Bugfixes
 
