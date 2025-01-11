@@ -93,7 +93,7 @@ fn perform_benchmark<T: Service>(args: &Args) {
     let stop = start.elapsed().expect("failed to measure time");
     println!(
         "{} ::: MaxEventId: {}, Iterations: {}, Time: {} s, Latency: {} ns",
-        std::any::type_name::<T>(),
+        core::any::type_name::<T>(),
         args.max_event_id,
         args.iterations,
         stop.as_secs_f64(),

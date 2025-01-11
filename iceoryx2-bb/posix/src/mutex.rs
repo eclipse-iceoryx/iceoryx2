@@ -360,7 +360,7 @@ impl MutexBuilder {
                     _ => {
                         fatal_panic!(
                             "Mutex<{}>, failed to destroy mutex attributes - possible leak?",
-                            std::any::type_name::<T>()
+                            core::any::type_name::<T>()
                         );
                     }
                 },

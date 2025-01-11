@@ -632,10 +632,10 @@ mod dynamic_storage {
         let state = LifetimeTracker::start_tracking();
         let config = generate_isolated_config::<Sut>();
 
-        if std::any::TypeId::of::<Sut>()
+        if core::any::TypeId::of::<Sut>()
             // skip process local test since the process locality ensures that an initializer
             // never dies
-            != std::any::TypeId::of::<iceoryx2_cal::dynamic_storage::process_local::Storage<TestData>>(
+            != core::any::TypeId::of::<iceoryx2_cal::dynamic_storage::process_local::Storage<TestData>>(
             )
         {
             let storage_name = generate_name();

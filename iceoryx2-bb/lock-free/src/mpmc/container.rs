@@ -246,7 +246,7 @@ impl<T: Copy + Debug> Container<T> {
     fn verify_init(&self, source: &str) {
         debug_assert!(self.is_initialized.load(Ordering::Relaxed),
             "Undefined behavior when calling Container<{}>::{} and the object is not initialized with 'init'.",
-            std::any::type_name::<T>(), source);
+            core::any::type_name::<T>(), source);
     }
 
     /// Returns the required memory size of the data segment of the [`Container`].

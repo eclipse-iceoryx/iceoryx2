@@ -461,7 +461,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
             Err(e) => {
                 warn!(from origin,
                     "Removing DynamicStorage in broken state ({:?}) will not call drop of the underlying data type {:?}.",
-                    e, std::any::type_name::<T>());
+                    e, core::any::type_name::<T>());
 
                 match iceoryx2_bb_posix::shared_memory::SharedMemory::remove(&full_name) {
                     Ok(v) => Ok(v),

@@ -334,7 +334,7 @@ pub mod details {
                 self.is_initialized
                     .load(core::sync::atomic::Ordering::Relaxed),
                 "From: MetaQueue<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
-                std::any::type_name::<T>(), source
+                core::any::type_name::<T>(), source
             );
         }
 

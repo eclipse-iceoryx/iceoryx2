@@ -138,7 +138,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::
     let stop = start.elapsed().expect("failed to measure time");
     println!(
         "{} ::: Iterations: {}, Time: {} s, Latency: {} ns, Sample Size: {}",
-        std::any::type_name::<T>(),
+        core::any::type_name::<T>(),
         args.iterations,
         stop.as_secs_f64(),
         stop.as_nanos() / (args.iterations as u128 * 2),

@@ -76,7 +76,7 @@ impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {
         write!(
             f,
             "UnrestrictedAtomic<{}> {{ write_cell: {}, data: {:?}, has_producer: {} }}",
-            std::any::type_name::<T>(),
+            core::any::type_name::<T>(),
             self.write_cell.load(Ordering::Relaxed),
             self.load(),
             self.has_producer.load(Ordering::Relaxed)

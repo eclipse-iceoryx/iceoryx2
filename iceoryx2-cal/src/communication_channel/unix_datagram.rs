@@ -373,7 +373,7 @@ impl<T: Copy + Debug> CommunicationChannelSender<T> for Sender<T> {
             Err(UnixDatagramSendError::MessageTooLarge) => {
                 fail!(from self, with CommunicationChannelSendError::MessageTooLarge,
                     "{} since the size ({} bytes) of the type \"{}\" is too large.",
-                    msg, core::mem::size_of::<T>(), std::any::type_name::<T>());
+                    msg, core::mem::size_of::<T>(), core::any::type_name::<T>());
             }
             Err(UnixDatagramSendError::ConnectionReset)
             | Err(UnixDatagramSendError::NotConnected) => {

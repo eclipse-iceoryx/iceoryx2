@@ -40,7 +40,7 @@ pub(crate) mod internal {
             write!(
                 f,
                 "HandleStorage<{}> {{ is_interprocess_capable: {}, is_initialized: {} }}",
-                std::any::type_name::<T>(),
+                core::any::type_name::<T>(),
                 self.is_inter_process_capable.load(Ordering::Relaxed),
                 self.is_initialized.load(Ordering::Relaxed),
             )
