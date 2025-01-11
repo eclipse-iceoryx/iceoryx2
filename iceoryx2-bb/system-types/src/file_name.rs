@@ -224,7 +224,7 @@ impl<const CAPACITY: usize> From<&RestrictedFileName<CAPACITY>> for String {
     }
 }
 
-impl<const CAPACITY: usize> std::convert::TryFrom<&str> for RestrictedFileName<CAPACITY> {
+impl<const CAPACITY: usize> core::convert::TryFrom<&str> for RestrictedFileName<CAPACITY> {
     type Error = iceoryx2_bb_container::semantic_string::SemanticStringError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -232,7 +232,7 @@ impl<const CAPACITY: usize> std::convert::TryFrom<&str> for RestrictedFileName<C
     }
 }
 
-impl<const CAPACITY: usize> std::convert::TryFrom<&FileName> for RestrictedFileName<CAPACITY> {
+impl<const CAPACITY: usize> core::convert::TryFrom<&FileName> for RestrictedFileName<CAPACITY> {
     type Error = iceoryx2_bb_container::semantic_string::SemanticStringError;
 
     fn try_from(value: &FileName) -> Result<Self, Self::Error> {

@@ -490,7 +490,7 @@ macro_rules! semantic_string {
             }
         }
 
-        impl std::convert::TryFrom<&str> for $string_name {
+        impl core::convert::TryFrom<&str> for $string_name {
             type Error = iceoryx2_bb_container::semantic_string::SemanticStringError;
 
             fn try_from(value: &str) -> Result<Self, Self::Error> {
