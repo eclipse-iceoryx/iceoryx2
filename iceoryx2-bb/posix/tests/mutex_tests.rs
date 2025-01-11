@@ -357,7 +357,7 @@ fn mutex_can_be_recovered_when_thread_died() {
         s.spawn(|| {
             let guard = sut.lock();
             assert_that!(guard, is_ok);
-            std::mem::forget(guard);
+            core::mem::forget(guard);
         });
     });
 
@@ -400,7 +400,7 @@ fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
     thread::scope(|s| {
         s.spawn(|| {
             let guard = sut.lock();
-            std::mem::forget(guard);
+            core::mem::forget(guard);
         });
     });
 

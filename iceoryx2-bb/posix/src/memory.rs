@@ -70,7 +70,7 @@ pub mod heap {
     use super::*;
 
     use super::MemoryError;
-    const MEMORY_START_STORAGE_SPACE: usize = std::mem::size_of::<usize>();
+    const MEMORY_START_STORAGE_SPACE: usize = core::mem::size_of::<usize>();
 
     fn setup_and_align(
         msg: &str,

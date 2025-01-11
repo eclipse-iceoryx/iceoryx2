@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
 
 use clap::Parser;
 use iceoryx2::prelude::*;

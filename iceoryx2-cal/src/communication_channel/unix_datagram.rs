@@ -362,7 +362,7 @@ impl<T: Copy + Debug> CommunicationChannelSender<T> for Sender<T> {
     fn try_send(&self, data: &T) -> Result<Option<T>, CommunicationChannelSendError> {
         let msg = "Unable to try send data";
         let result = self.sender.try_send(unsafe {
-            std::slice::from_raw_parts((data as *const T) as *const u8, std::mem::size_of::<T>())
+            std::slice::from_raw_parts((data as *const T) as *const u8, core::mem::size_of::<T>())
         });
 
         match result {
@@ -373,7 +373,7 @@ impl<T: Copy + Debug> CommunicationChannelSender<T> for Sender<T> {
             Err(UnixDatagramSendError::MessageTooLarge) => {
                 fail!(from self, with CommunicationChannelSendError::MessageTooLarge,
                     "{} since the size ({} bytes) of the type \"{}\" is too large.",
-                    msg, std::mem::size_of::<T>(), std::any::type_name::<T>());
+                    msg, core::mem::size_of::<T>(), std::any::type_name::<T>());
             }
             Err(UnixDatagramSendError::ConnectionReset)
             | Err(UnixDatagramSendError::NotConnected) => {
@@ -421,14 +421,14 @@ impl<T: Copy + Debug> CommunicationChannelReceiver<T> for Receiver<T> {
         let msg = "Unable to receive data";
         let mut data = MaybeUninit::<T>::uninit();
         match self.receiver.try_receive(unsafe {
-            std::slice::from_raw_parts_mut(data.as_mut_ptr() as *mut u8, std::mem::size_of::<T>())
+            std::slice::from_raw_parts_mut(data.as_mut_ptr() as *mut u8, core::mem::size_of::<T>())
         }) {
             Ok(0) => Ok(None),
             Ok(received_bytes) => {
-                if received_bytes != std::mem::size_of::<T>() as u64 {
+                if received_bytes != core::mem::size_of::<T>() as u64 {
                     fail!(from self, with CommunicationChannelReceiveError::MessageCorrupt,
                     "The received message is corrupted. Expected to receive {} bytes but got {} bytes.",
-                    std::mem::size_of::<T>(), received_bytes );
+                    core::mem::size_of::<T>(), received_bytes );
                 }
                 Ok(Some(unsafe { data.assume_init() }))
             }

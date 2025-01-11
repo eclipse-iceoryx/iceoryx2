@@ -41,8 +41,8 @@ impl<T> OwningPointer<T> {
 
         let layout = unsafe {
             Layout::from_size_align_unchecked(
-                std::mem::size_of::<T>() * number_of_elements,
-                std::mem::align_of::<T>(),
+                core::mem::size_of::<T>() * number_of_elements,
+                core::mem::align_of::<T>(),
             )
         };
 

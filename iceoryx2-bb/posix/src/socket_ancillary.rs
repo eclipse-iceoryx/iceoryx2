@@ -82,8 +82,8 @@ use std::{fmt::Display, marker::PhantomPinned};
 /// Defines the maximum amount of [`FileDescriptor`]s which can be sent with a single message.
 pub const MAX_FILE_DESCRIPTORS_PER_MESSAGE: usize = posix::SCM_MAX_FD as usize;
 
-const SIZE_OF_CRED: usize = std::mem::size_of::<posix::ucred>();
-const SIZE_OF_FD: usize = std::mem::size_of::<i32>();
+const SIZE_OF_CRED: usize = core::mem::size_of::<posix::ucred>();
+const SIZE_OF_FD: usize = core::mem::size_of::<i32>();
 const IOVEC_BUFFER_CAPACITY: usize = 1;
 const BUFFER_CAPACITY: usize = 3072;
 pub(crate) const CMSG_SOCKET_LEVEL: posix::int = posix::SOL_SOCKET;
@@ -211,7 +211,7 @@ impl UdsMsgHeader {
     }
 
     fn assign_via_memcpy<T>(&mut self, value: &T) {
-        let memcpy_required_space = std::mem::size_of::<T>();
+        let memcpy_required_space = core::mem::size_of::<T>();
         let required_space = unsafe { posix::CMSG_LEN(memcpy_required_space as _) };
 
         unsafe {
@@ -261,7 +261,7 @@ impl Default for SocketAncillary {
             credentials: None,
             is_prepared_for_send: false,
             set_memory_to_zero_first: false,
-            _alignment: unsafe { std::mem::zeroed() },
+            _alignment: unsafe { core::mem::zeroed() },
             _pin: PhantomPinned,
         };
 

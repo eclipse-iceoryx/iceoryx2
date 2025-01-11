@@ -44,7 +44,7 @@ impl Display for MessagingPattern {
 impl MessagingPattern {
     /// checks whether the 2 MessagingPatterns are the same regardless the values inside them.
     pub(crate) fn is_same_pattern(&self, rhs: &MessagingPattern) -> bool {
-        std::mem::discriminant(self) == std::mem::discriminant(rhs)
+        core::mem::discriminant(self) == core::mem::discriminant(rhs)
     }
 
     pub(crate) fn required_amount_of_samples_per_data_segment(

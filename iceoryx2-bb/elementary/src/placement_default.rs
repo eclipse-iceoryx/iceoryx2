@@ -13,7 +13,7 @@
 //! Trait to perform placement new construction on a given pointer via [`Default::default()`].
 //! See [`PlacementDefault`] for example.
 
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 

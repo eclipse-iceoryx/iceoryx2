@@ -201,7 +201,7 @@ impl Drop for UniqueIndex<'_> {
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 /// use iceoryx2_bb_elementary::relocatable_container::*;
 /// use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-/// use std::mem::MaybeUninit;
+/// use core::mem::MaybeUninit;
 ///
 /// const CAPACITY: usize = 128;
 ///
@@ -286,8 +286,8 @@ impl RelocatableContainer for UniqueIndexSet {
 
         self.data_ptr.init(fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                std::mem::size_of::<u32>() * (self.capacity + 1) as usize,
-                std::mem::align_of::<u32>())),
+                core::mem::size_of::<u32>() * (self.capacity + 1) as usize,
+                core::mem::align_of::<u32>())),
             "Failed to initialize since the allocation of the data memory failed."
         ));
 
@@ -318,7 +318,7 @@ impl UniqueIndexSet {
 
     /// The compile time version of [`UniqueIndexSet::memory_size()`]
     pub const fn const_memory_size(capacity: usize) -> usize {
-        std::mem::size_of::<UnsafeCell<u32>>() * (capacity + 1) + std::mem::align_of::<u32>() - 1
+        core::mem::size_of::<UnsafeCell<u32>>() * (capacity + 1) + core::mem::align_of::<u32>() - 1
     }
 
     /// Acquires a new [`UniqueIndex`]. If the set does not contain any more indices it returns

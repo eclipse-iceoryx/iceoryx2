@@ -95,19 +95,19 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
         impl #struct_storage_name {
             const fn assert_storage_layout() {
                 static_assert_ge::<
-                { ::std::mem::align_of::<#struct_storage_name>() },
-                { ::std::mem::align_of::<Option<#my_type>>() },
+                { ::core::mem::align_of::<#struct_storage_name>() },
+                { ::core::mem::align_of::<Option<#my_type>>() },
                 >();
                 static_assert_ge::<
-                { ::std::mem::size_of::<#struct_storage_name>() },
-                { ::std::mem::size_of::<Option<#my_type>>() },
+                { ::core::mem::size_of::<#struct_storage_name>() },
+                { ::core::mem::size_of::<Option<#my_type>>() },
                 >();
             }
 
             fn init(&mut self, value: #my_type) {
                 #struct_storage_name::assert_storage_layout();
 
-                unsafe { &mut *(self as *mut Self).cast::<::std::mem::MaybeUninit<Option<#my_type>>>() }
+                unsafe { &mut *(self as *mut Self).cast::<::core::mem::MaybeUninit<Option<#my_type>>>() }
                 .write(Some(value));
             }
 

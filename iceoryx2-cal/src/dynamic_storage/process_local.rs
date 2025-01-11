@@ -142,8 +142,8 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
 
 impl<T> StorageDetails<T> {
     fn new(value: T, additional_size: u64) -> Self {
-        let size = std::mem::size_of::<T>() + additional_size as usize;
-        let align = std::mem::align_of::<T>();
+        let size = core::mem::size_of::<T>() + additional_size as usize;
+        let align = core::mem::align_of::<T>();
         let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
         let new_self = Self {
             data_ptr: fatal_panic!(from "StorageDetails::new", when HeapAllocator::new()
@@ -389,7 +389,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
         ));
 
         let value = storage_details.data_ptr;
-        let supplementary_start = (value as usize + std::mem::size_of::<T>()) as *mut u8;
+        let supplementary_start = (value as usize + core::mem::size_of::<T>()) as *mut u8;
 
         let mut allocator = BumpAllocator::new(
             unsafe { NonNull::new_unchecked(supplementary_start) },

@@ -53,7 +53,7 @@
 //!                         // the data_ptr is the first member of container. The distance from
 //!                         // the memory location of the RelocatablePointer `data_ptr` is
 //!                         // therefore the size of `Container` aligned to the type `u128`
-//!                         align_to::<u128>(std::mem::size_of::<Container>()) as isize),
+//!                         align_to::<u128>(core::mem::size_of::<Container>()) as isize),
 //!             data: [0; 128]
 //!         }
 //!     }

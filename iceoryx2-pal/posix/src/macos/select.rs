@@ -27,19 +27,19 @@ pub unsafe fn select(
 }
 
 pub const fn CMSG_ALIGN(len: usize) -> usize {
-    (len + std::mem::size_of::<usize>() - 1) & !(std::mem::size_of::<usize>() - 1)
+    (len + core::mem::size_of::<usize>() - 1) & !(core::mem::size_of::<usize>() - 1)
 }
 
 pub const unsafe fn CMSG_SPACE(length: uint) -> uint {
-    (CMSG_ALIGN(length as usize) + CMSG_ALIGN(std::mem::size_of::<cmsghdr>())) as uint
+    (CMSG_ALIGN(length as usize) + CMSG_ALIGN(core::mem::size_of::<cmsghdr>())) as uint
 }
 
 pub fn CMSG_SPACE_NON_CONST(length: uint) -> uint {
-    (CMSG_ALIGN(length as usize) + CMSG_ALIGN(std::mem::size_of::<cmsghdr>())) as uint
+    (CMSG_ALIGN(length as usize) + CMSG_ALIGN(core::mem::size_of::<cmsghdr>())) as uint
 }
 
 pub unsafe fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
-    match ((*mhdr).msg_controllen as usize) < std::mem::size_of::<cmsghdr>() {
+    match ((*mhdr).msg_controllen as usize) < core::mem::size_of::<cmsghdr>() {
         true => core::ptr::null_mut::<cmsghdr>(),
         false => (*mhdr).msg_control as *mut cmsghdr,
     }
@@ -47,7 +47,7 @@ pub unsafe fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
 
 pub unsafe fn CMSG_NXTHDR(header: *const msghdr, sub_header: *const cmsghdr) -> *mut cmsghdr {
     // no header contained
-    if (*sub_header).cmsg_len < std::mem::size_of::<cmsghdr>() as _ {
+    if (*sub_header).cmsg_len < core::mem::size_of::<cmsghdr>() as _ {
         return core::ptr::null_mut::<cmsghdr>();
     };
 
@@ -67,7 +67,7 @@ pub unsafe fn CMSG_NXTHDR(header: *const msghdr, sub_header: *const cmsghdr) -> 
 }
 
 pub const unsafe fn CMSG_LEN(length: uint) -> uint {
-    CMSG_ALIGN(std::mem::size_of::<cmsghdr>()) as uint + length
+    CMSG_ALIGN(core::mem::size_of::<cmsghdr>()) as uint + length
 }
 
 pub unsafe fn CMSG_DATA(cmsg: *const cmsghdr) -> *mut uchar {

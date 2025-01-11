@@ -14,7 +14,7 @@
 mod service_static_config_message_type_details {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2_bb_testing::assert_that;
-    use std::mem::size_of;
+    use core::mem::size_of;
 
     #[cfg(target_pointer_width = "32")]
     const ALIGNMENT: usize = 4;

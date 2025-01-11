@@ -256,7 +256,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
             .creation_mode(CreationMode::CreateExclusive)
             // posix shared memory is always aligned to the greatest possible value (PAGE_SIZE)
             // therefore we do not have to add additional alignment space for T
-            .size(std::mem::size_of::<Data<T>>() + self.supplementary_size)
+            .size(core::mem::size_of::<Data<T>>() + self.supplementary_size)
             .permission(INIT_PERMISSIONS)
             .zero_memory(false)
             .has_ownership(self.has_ownership)
@@ -293,8 +293,8 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         unsafe { core::ptr::addr_of_mut!((*value).data).write(initial_value) };
 
         let supplementary_start =
-            (shm.base_address().as_ptr() as usize + std::mem::size_of::<Data<T>>()) as *mut u8;
-        let supplementary_len = shm.size() - std::mem::size_of::<Data<T>>();
+            (shm.base_address().as_ptr() as usize + core::mem::size_of::<Data<T>>()) as *mut u8;
+        let supplementary_len = shm.size() - core::mem::size_of::<Data<T>>();
 
         let mut allocator = BumpAllocator::new(
             unsafe { NonNull::new_unchecked(supplementary_start) },

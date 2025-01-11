@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::marker::PhantomData;
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
 use std::{alloc::Layout, fmt::Debug};
 
 use crate::dynamic_storage::*;

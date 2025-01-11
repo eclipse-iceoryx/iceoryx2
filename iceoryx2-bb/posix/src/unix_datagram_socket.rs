@@ -129,7 +129,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
 use std::sync::atomic::Ordering;
 use std::{mem::size_of, time::Duration};
 
@@ -354,7 +354,7 @@ impl UnixDatagramSocket {
                 CMSG_SOCKET_LEVEL,
                 socket_option,
                 (value as *const T) as *const posix::void,
-                std::mem::size_of::<T>() as u32,
+                core::mem::size_of::<T>() as u32,
             )
         } == 0
         {
@@ -374,7 +374,7 @@ impl UnixDatagramSocket {
         socket_option: posix::int,
     ) -> Result<T, UnixDatagramGetSocketOptionError> {
         let mut value: MaybeUninit<T> = MaybeUninit::uninit();
-        let mut value_len: posix::socklen_t = std::mem::size_of::<T>() as posix::socklen_t;
+        let mut value_len: posix::socklen_t = core::mem::size_of::<T>() as posix::socklen_t;
 
         if unsafe {
             posix::getsockopt(

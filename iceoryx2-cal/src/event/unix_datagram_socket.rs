@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;

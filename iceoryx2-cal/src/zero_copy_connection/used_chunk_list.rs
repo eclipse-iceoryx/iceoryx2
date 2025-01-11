@@ -82,8 +82,8 @@ pub mod details {
 
             let memory = fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                    std::mem::size_of::<IoxAtomicBool>() * self.capacity,
-                    std::mem::align_of::<IoxAtomicBool>())),
+                    core::mem::size_of::<IoxAtomicBool>() * self.capacity,
+                    core::mem::align_of::<IoxAtomicBool>())),
             "Failed to initialize since the allocation of the data memory failed.");
 
             self.data_ptr.init(memory);

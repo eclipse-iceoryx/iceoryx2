@@ -464,7 +464,7 @@ mod dynamic_storage {
             assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
         }
 
-        std::mem::forget(suts);
+        core::mem::forget(suts);
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
@@ -515,8 +515,8 @@ mod dynamic_storage {
         assert_that!(*sut_1.name(), eq sut_name);
         assert_that!(*sut_2.name(), eq sut_name);
 
-        std::mem::forget(sut_1);
-        std::mem::forget(sut_2);
+        core::mem::forget(sut_1);
+        core::mem::forget(sut_2);
 
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(true));
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(false));
@@ -618,7 +618,7 @@ mod dynamic_storage {
         sut.release_ownership();
         // it leaks a memory mapping here but this we want explicitly to test remove also
         // for platforms that do not support persistent dynamic storage
-        std::mem::forget(sut);
+        core::mem::forget(sut);
 
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
         assert_that!(state.number_of_living_instances(), eq 0);

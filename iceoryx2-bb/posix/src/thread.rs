@@ -419,7 +419,7 @@ impl ThreadBuilder {
 
         let msg = "Unable to set cpu affinity for thread";
         handle_errno!(ThreadSpawnError, from self,
-            errno_source unsafe { posix::pthread_attr_setaffinity_np(attributes.get_mut(), std::mem::size_of::<posix::cpu_set_t>(), &cpuset)
+            errno_source unsafe { posix::pthread_attr_setaffinity_np(attributes.get_mut(), core::mem::size_of::<posix::cpu_set_t>(), &cpuset)
                                             .into()},
             continue_on_success,
             success Errno::ESUCCES => (),
@@ -672,7 +672,7 @@ impl ThreadProperties for ThreadHandle {
         let mut cpuset = posix::cpu_set_t::new();
         let msg = "Unable to acquire threads CPU affinity";
         handle_errno!(ThreadSetAffinityError, from self,
-            errno_source unsafe { posix::pthread_getaffinity_np(self.handle, std::mem::size_of::<posix::cpu_set_t>(), &mut cpuset).into()},
+            errno_source unsafe { posix::pthread_getaffinity_np(self.handle, core::mem::size_of::<posix::cpu_set_t>(), &mut cpuset).into()},
             continue_on_success,
             success Errno::ESUCCES => (),
             Errno::EINVAL => (InvalidCpuCores, "{} since some cpu cores were invalid (maybe exceeded maximum supported CPU core number of the system).", msg ),
@@ -709,7 +709,7 @@ impl ThreadProperties for ThreadHandle {
 
         let msg = "Unable to set cpu affinity";
         handle_errno!(ThreadSetAffinityError, from self,
-            errno_source unsafe { posix::pthread_setaffinity_np(self.handle, std::mem::size_of::<posix::cpu_set_t>(), &cpuset).into() },
+            errno_source unsafe { posix::pthread_setaffinity_np(self.handle, core::mem::size_of::<posix::cpu_set_t>(), &cpuset).into() },
             success Errno::ESUCCES => (),
             Errno::EINVAL => (InvalidCpuCores, "{} since some cpu cores were invalid (maybe exceeded maximum supported CPU core number of the system).", msg),
             v=> (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)

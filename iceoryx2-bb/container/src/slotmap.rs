@@ -44,7 +44,7 @@
 //! println!("value: {:?}", slotmap.get(key));
 //! ```
 
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
 
 use crate::queue::details::MetaQueue;
 use crate::vec::details::MetaVec;

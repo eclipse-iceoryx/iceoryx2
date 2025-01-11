@@ -406,7 +406,7 @@ mod event {
         for i in 0..LIMIT {
             sut_names.push(generate_name());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
-            std::mem::forget(
+            core::mem::forget(
                 Sut::ListenerBuilder::new(&sut_names[i])
                     .config(&config)
                     .create(),
@@ -478,8 +478,8 @@ mod event {
         assert_that!(*sut_1.name(), eq sut_name);
         assert_that!(*sut_2.name(), eq sut_name);
 
-        std::mem::forget(sut_1);
-        std::mem::forget(sut_2);
+        core::mem::forget(sut_1);
+        core::mem::forget(sut_2);
 
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(true));
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(false));

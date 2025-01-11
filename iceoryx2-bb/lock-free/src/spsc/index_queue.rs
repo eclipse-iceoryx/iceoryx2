@@ -161,8 +161,8 @@ pub mod details {
 
             self.data_ptr.init(fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                    std::mem::size_of::<u64>() * self.capacity,
-                    std::mem::align_of::<u64>())),
+                    core::mem::size_of::<u64>() * self.capacity,
+                    core::mem::align_of::<u64>())),
             "Failed to initialize since the allocation of the data memory failed."));
 
             for i in 0..self.capacity {

@@ -24,7 +24,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
-use std::mem::ManuallyDrop;
+use core::mem::ManuallyDrop;
 
 use crate::IOX2_OK;
 

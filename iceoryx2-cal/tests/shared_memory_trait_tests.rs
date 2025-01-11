@@ -273,7 +273,7 @@ mod shared_memory {
             assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&storage_names[i], &config)}, eq Ok(false));
         }
 
-        std::mem::forget(storages);
+        core::mem::forget(storages);
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }

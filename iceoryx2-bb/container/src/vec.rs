@@ -162,8 +162,8 @@ pub mod details {
 
             self.data_ptr.init(fail!(from "Queue::init", when allocator
                  .allocate(Layout::from_size_align_unchecked(
-                     std::mem::size_of::<T>() * self.capacity,
-                     std::mem::align_of::<T>(),
+                     core::mem::size_of::<T>() * self.capacity,
+                     core::mem::align_of::<T>(),
                  )), "Failed to initialize queue since the allocation of the data memory failed."
             ));
             self.is_initialized
@@ -314,7 +314,7 @@ pub mod details {
         }
 
         fn pop_unchecked(&mut self) -> T {
-            let value = std::mem::replace(
+            let value = core::mem::replace(
                 unsafe { &mut *self.data_ptr.as_mut_ptr().offset(self.len as isize - 1) },
                 MaybeUninit::uninit(),
             );

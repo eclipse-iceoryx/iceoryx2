@@ -266,7 +266,7 @@ impl<T: Copy + Debug> CommunicationChannelCreator<T, Channel<T>> for Creator<T> 
         let mut _shared_memory = match SharedMemoryBuilder::new(&full_name)
             .creation_mode(CreationMode::CreateExclusive)
             .permission(INIT_PERMISSIONS)
-            .size(std::mem::size_of::<SharedConfiguration>())
+            .size(core::mem::size_of::<SharedConfiguration>())
             .create()
         {
             Ok(s) => s,

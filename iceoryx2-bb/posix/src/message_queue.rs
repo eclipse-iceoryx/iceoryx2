@@ -43,7 +43,7 @@
 
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::mem::MaybeUninit;
+use core::mem::MaybeUninit;
 use std::time::Duration;
 
 pub use crate::clock::ClockType;
@@ -557,7 +557,7 @@ pub trait MessageQueueSenderInterface<T>: internal::MessageQueueInterface + Debu
             posix::mq_send(
                 self.get().mqdes,
                 (value as *const T) as *const posix::c_char,
-                std::mem::size_of::<T>(),
+                core::mem::size_of::<T>(),
                 prio,
             )
         } == 0
@@ -617,7 +617,7 @@ pub trait MessageQueueSenderInterface<T>: internal::MessageQueueInterface + Debu
                     posix::mq_timedsend(
                         self.get().mqdes,
                         (value as *const T) as *const posix::c_char,
-                        std::mem::size_of::<T>(),
+                        core::mem::size_of::<T>(),
                         prio,
                         &(timeout + now.as_duration()).as_timespec(),
                     )
@@ -698,16 +698,16 @@ pub trait MessageQueueReceiverInterface<T>: internal::MessageQueueInterface + De
             posix::mq_receive(
                 self.get().mqdes,
                 data.as_mut_ptr() as *mut posix::c_char,
-                std::mem::size_of::<T>(),
+                core::mem::size_of::<T>(),
                 &mut priority,
             )
         };
 
         let msg = "Unable to receive message";
-        if received_bytes != -1 && received_bytes as usize != std::mem::size_of::<T>() {
+        if received_bytes != -1 && received_bytes as usize != core::mem::size_of::<T>() {
             fail!(from self, with MessageQueueReceiveError::CorruptedMessageReceived,
                 "{} since it was corrupted. Expected to receive {} bytes but received {} bytes.",
-                msg, std::mem::size_of::<T>(), received_bytes);
+                msg, core::mem::size_of::<T>(), received_bytes);
         }
 
         if received_bytes != -1 {
@@ -753,16 +753,16 @@ pub trait MessageQueueReceiverInterface<T>: internal::MessageQueueInterface + De
                     posix::mq_timedreceive(
                         self.get().mqdes,
                         data.as_mut_ptr() as *mut posix::c_char,
-                        std::mem::size_of::<T>(),
+                        core::mem::size_of::<T>(),
                         &mut priority,
                         &(now.as_duration() + timeout).as_timespec(),
                     )
                 };
 
-                if received_bytes != -1 && received_bytes as usize != std::mem::size_of::<T>() {
+                if received_bytes != -1 && received_bytes as usize != core::mem::size_of::<T>() {
                     fail!(from self, with MessageQueueTimedReceiveError::MessageQueueReceiveError(MessageQueueReceiveError::CorruptedMessageReceived),
                 "{} since it was corrupted. Expected to receive {} bytes but received {} bytes.",
-                msg, std::mem::size_of::<T>(), received_bytes);
+                msg, core::mem::size_of::<T>(), received_bytes);
                 }
 
                 if received_bytes != -1 {
@@ -952,7 +952,7 @@ impl<T> MessageQueueDuplex<T> {
         mut config: MessageQueueBuilder,
         mode: CreationMode,
     ) -> Result<Self, MessageQueueCreationError> {
-        config.max_message_size = std::mem::size_of::<T>();
+        config.max_message_size = core::mem::size_of::<T>();
 
         Ok(Self {
             queue: internal::MessageQueue::create(config, mode)?,
@@ -961,7 +961,7 @@ impl<T> MessageQueueDuplex<T> {
     }
 
     fn open(mut config: MessageQueueBuilder) -> Result<Self, MessageQueueOpenError> {
-        config.max_message_size = std::mem::size_of::<T>();
+        config.max_message_size = core::mem::size_of::<T>();
 
         Ok(Self {
             queue: internal::MessageQueue::open(config)?,
