@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::std_instead_of_core)]
+
 //! Simplistic logger. It has 6 [`LogLevel`]s which can be set via [`set_log_level()`] and read via
 //! [`get_log_level()`].
 //!

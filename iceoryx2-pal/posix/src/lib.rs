@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![allow(clippy::missing_safety_doc)]
+#![warn(clippy::std_instead_of_core)]
 
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]

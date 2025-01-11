@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::std_instead_of_core)]
+
 //! Library of lock-free constructs.
 //!
 //! From C++ Concurrency in Action - Anthony Williams

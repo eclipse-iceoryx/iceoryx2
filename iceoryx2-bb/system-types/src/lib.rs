@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::std_instead_of_core)]
+
 pub mod base64url;
 pub mod file_name;
 pub mod file_path;

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::std_instead_of_core)]
+
 pub mod bump_allocator;
 pub mod heap_allocator;
 pub mod one_chunk_allocator;
