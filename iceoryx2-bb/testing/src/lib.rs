@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
 #[macro_use]
