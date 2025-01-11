@@ -358,22 +358,22 @@ mod fixed_size_byte_string {
     #[test]
     fn ordering_works() {
         unsafe {
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla")), eq std::cmp::Ordering::Equal );
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuvbla")), eq std::cmp::Ordering::Less );
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubaa")), eq std::cmp::Ordering::Greater );
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla123")), eq std::cmp::Ordering::Less );
-            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuu")), eq std::cmp::Ordering::Greater );
+            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla")), eq core::cmp::Ordering::Equal );
+            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuvbla")), eq core::cmp::Ordering::Less );
+            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubaa")), eq core::cmp::Ordering::Greater );
+            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuubla123")), eq core::cmp::Ordering::Less );
+            assert_that!(Sut::new_unchecked(b"fuubla").cmp(&Sut::new_unchecked(b"fuu")), eq core::cmp::Ordering::Greater );
         }
     }
 
     #[test]
     fn partial_ordering_works() {
         unsafe {
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubla")), eq Some(std::cmp::Ordering::Equal ));
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuvbla")), eq Some(std::cmp::Ordering::Less ));
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubaa")), eq Some(std::cmp::Ordering::Greater ));
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubla123")), eq Some(std::cmp::Ordering::Less ));
-            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuu")), eq Some(std::cmp::Ordering::Greater ));
+            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubla")), eq Some(core::cmp::Ordering::Equal ));
+            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuvbla")), eq Some(core::cmp::Ordering::Less ));
+            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubaa")), eq Some(core::cmp::Ordering::Greater ));
+            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuubla123")), eq Some(core::cmp::Ordering::Less ));
+            assert_that!(SutAlt::new_unchecked(b"darth_fuubla").partial_cmp(&Sut::new_unchecked(b"darth_fuu")), eq Some(core::cmp::Ordering::Greater ));
         }
     }
 

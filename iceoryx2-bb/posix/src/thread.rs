@@ -411,7 +411,7 @@ impl ThreadBuilder {
         }
 
         let mut cpuset = posix::cpu_set_t::new();
-        for i in 0..std::cmp::min(posix::CPU_SETSIZE, SystemInfo::NumberOfCpuCores.value()) {
+        for i in 0..core::cmp::min(posix::CPU_SETSIZE, SystemInfo::NumberOfCpuCores.value()) {
             if self.affinity[i] {
                 cpuset.set(i);
             }

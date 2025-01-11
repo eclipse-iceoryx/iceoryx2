@@ -329,7 +329,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
         let mut new_self = FixedSizePoolAllocator {
             state: PoolAllocator {
                 buckets: unsafe {
-                    UniqueIndexSet::new_uninit(std::cmp::min(
+                    UniqueIndexSet::new_uninit(core::cmp::min(
                         number_of_buckets,
                         MAX_NUMBER_OF_BUCKETS,
                     ))

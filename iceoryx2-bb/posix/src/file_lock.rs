@@ -502,19 +502,19 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
     /// Returns the current [`LockState`] of the [`FileLock`].
     pub fn get_lock_state(&self) -> Result<LockState, FileLockStateError> {
         match 0.cmp(&self.lock_state.load(Ordering::Relaxed)) {
-            std::cmp::Ordering::Less => {
+            core::cmp::Ordering::Less => {
                 return Ok(LockState {
                     lock_type: LockType::Read,
                     pid: Process::from_self().id(),
                 })
             }
-            std::cmp::Ordering::Greater => {
+            core::cmp::Ordering::Greater => {
                 return Ok(LockState {
                     lock_type: LockType::Write,
                     pid: Process::from_self().id(),
                 })
             }
-            std::cmp::Ordering::Equal => (),
+            core::cmp::Ordering::Equal => (),
         }
 
         let msg = "Unable to acquire current file lock state";

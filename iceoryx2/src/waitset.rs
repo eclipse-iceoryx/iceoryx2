@@ -345,13 +345,13 @@ impl<Service: crate::service::Service> WaitSetAttachmentId<Service> {
 }
 
 impl<Service: crate::service::Service> PartialOrd for WaitSetAttachmentId<Service> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl<Service: crate::service::Service> Ord for WaitSetAttachmentId<Service> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         self.attachment_type.cmp(&other.attachment_type)
     }
 }

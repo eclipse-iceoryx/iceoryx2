@@ -595,7 +595,7 @@ pub unsafe fn pthread_rwlock_timedwrlock(
     abs_timeout: *const timespec,
 ) -> int {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let timeout = std::cmp::max(
+    let timeout = core::cmp::max(
         0,
         (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
             - now.as_millis() as i64,
@@ -645,7 +645,7 @@ pub unsafe fn pthread_rwlock_timedrdlock(
     abs_timeout: *const timespec,
 ) -> int {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let timeout = std::cmp::max(
+    let timeout = core::cmp::max(
         0,
         (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
             - now.as_millis() as i64,
@@ -740,7 +740,7 @@ pub unsafe fn pthread_cond_timedwait(
     abstime: *const timespec,
 ) -> int {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let timeout = std::cmp::max(
+    let timeout = core::cmp::max(
         0,
         (*abstime).tv_sec * 1000 + (*abstime).tv_nsec as i64 / 1000000 - now.as_millis() as i64,
     );
@@ -916,7 +916,7 @@ pub unsafe fn pthread_mutex_timedlock(
     };
 
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let timeout = std::cmp::max(
+    let timeout = core::cmp::max(
         0,
         (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
             - now.as_millis() as i64,

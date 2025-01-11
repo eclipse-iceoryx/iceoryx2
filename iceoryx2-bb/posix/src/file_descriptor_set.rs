@@ -185,7 +185,7 @@ impl FileDescriptorSet {
                 &mut self.internals_mut().fd_set,
             )
         };
-        self.internals_mut().max_fd = std::cmp::max(
+        self.internals_mut().max_fd = core::cmp::max(
             self.internals().max_fd,
             unsafe { fd.file_descriptor().native_handle() } + 1,
         );
@@ -202,7 +202,7 @@ impl FileDescriptorSet {
         if self.internals_mut().max_fd == value + 1 {
             self.internals_mut().max_fd = 0;
             for fd in &self.internals().file_descriptors {
-                self.internals_mut().max_fd = std::cmp::max(self.internals().max_fd, fd + 1);
+                self.internals_mut().max_fd = core::cmp::max(self.internals().max_fd, fd + 1);
             }
         }
 

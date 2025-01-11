@@ -120,7 +120,7 @@ unsafe extern "C" fn iox2_unique_subscriber_id_value(
             core::ptr::copy_nonoverlapping(
                 bytes.as_ptr(),
                 id_ptr,
-                std::cmp::min(bytes.len(), id_length),
+                core::cmp::min(bytes.len(), id_length),
             );
         }
     }

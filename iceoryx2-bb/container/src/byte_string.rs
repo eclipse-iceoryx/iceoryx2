@@ -304,7 +304,7 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
     /// into the [`FixedSizeByteString`] it will be truncated.
     pub fn from_bytes_truncated(bytes: &[u8]) -> Self {
         let mut new_self = Self::new();
-        new_self.len = std::cmp::min(bytes.len(), CAPACITY);
+        new_self.len = core::cmp::min(bytes.len(), CAPACITY);
         for (i, byte) in bytes.iter().enumerate().take(new_self.len) {
             new_self.data[i].write(*byte);
         }

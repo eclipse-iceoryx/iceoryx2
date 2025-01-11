@@ -252,7 +252,7 @@ impl ProcessResourceLimit {
         }
 
         let new_value = posix::rlimit {
-            rlim_cur: std::cmp::min(value, hard_limit) as _,
+            rlim_cur: core::cmp::min(value, hard_limit) as _,
             rlim_max: self.hard_limit() as _,
         };
 
@@ -276,7 +276,7 @@ impl ProcessResourceLimit {
 
         let new_value = posix::rlimit {
             rlim_cur: soft_limit as _,
-            rlim_max: std::cmp::max(value, soft_limit) as _,
+            rlim_max: core::cmp::max(value, soft_limit) as _,
         };
 
         if unsafe { posix::setrlimit(*self as i32, &new_value) } == -1 {
