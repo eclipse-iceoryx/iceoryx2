@@ -38,7 +38,7 @@ impl From<&TypeDetail> for iox2_type_detail_t {
         Self {
             variant: (&value.variant).into(),
             type_name: core::array::from_fn(|n| {
-                if n < value.type_name.as_bytes().len() {
+                if n < value.type_name.len() {
                     value.type_name.as_bytes()[n] as _
                 } else {
                     0
