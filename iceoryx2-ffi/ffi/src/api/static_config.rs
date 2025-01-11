@@ -51,9 +51,9 @@ impl From<&StaticConfig> for iox2_static_config_t {
                 }
             }),
             name: core::array::from_fn(|n| {
-                debug_assert!(value.name().as_bytes().len() + 1 < IOX2_SERVICE_NAME_LENGTH);
+                debug_assert!(value.name().len() + 1 < IOX2_SERVICE_NAME_LENGTH);
 
-                if n < value.name().as_bytes().len() {
+                if n < value.name().len() {
                     value.name().as_bytes()[n] as _
                 } else {
                     0
