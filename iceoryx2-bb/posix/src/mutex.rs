@@ -50,11 +50,11 @@ pub use crate::ipc_capable::{Handle, IpcCapable};
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
+use core::ops::{Deref, DerefMut};
 use core::time::Duration;
 use iceoryx2_bb_elementary::scope_guard::*;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::*;
-use std::ops::{Deref, DerefMut};
 
 use crate::adaptive_wait::*;
 use crate::clock::{AsTimespec, ClockType, NanosleepError, Time, TimeError};

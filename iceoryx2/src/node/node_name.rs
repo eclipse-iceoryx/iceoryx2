@@ -60,7 +60,7 @@ impl PartialEq<&str> for &NodeName {
     }
 }
 
-impl std::ops::Deref for NodeName {
+impl core::ops::Deref for NodeName {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {

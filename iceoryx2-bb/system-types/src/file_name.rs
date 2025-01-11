@@ -294,7 +294,7 @@ impl<const CAPACITY: usize> PartialEq<&[u8; CAPACITY]> for RestrictedFileName<CA
     }
 }
 
-impl<const CAPACITY: usize> std::ops::Deref for RestrictedFileName<CAPACITY> {
+impl<const CAPACITY: usize> core::ops::Deref for RestrictedFileName<CAPACITY> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {

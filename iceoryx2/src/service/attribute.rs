@@ -97,9 +97,9 @@
 //! # }
 //! ```
 
+use core::ops::Deref;
 use iceoryx2_bb_elementary::CallbackProgression;
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
 
 /// Represents a single service attribute (key-value) pair that can be defined when the service
 /// is being created.

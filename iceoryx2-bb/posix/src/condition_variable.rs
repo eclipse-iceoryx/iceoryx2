@@ -24,13 +24,13 @@ pub use crate::mutex::*;
 use crate::clock::ClockType;
 use crate::clock::{AsTimespec, Time, TimeError};
 use crate::handle_errno;
+use core::ops::{Deref, DerefMut};
 use core::time::Duration;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::*};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::ops::{Deref, DerefMut};
 use std::{cell::UnsafeCell, fmt::Debug};
 use tiny_fn::tiny_fn;
 

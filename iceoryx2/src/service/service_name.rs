@@ -73,7 +73,7 @@ impl PartialEq<&str> for &ServiceName {
     }
 }
 
-impl std::ops::Deref for ServiceName {
+impl core::ops::Deref for ServiceName {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {

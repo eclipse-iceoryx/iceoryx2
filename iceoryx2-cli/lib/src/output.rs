@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::ops::Deref;
+use core::ops::Deref;
 
 use iceoryx2::node::NodeDetails as IceoryxNodeDetails;
 use iceoryx2::node::NodeId as IceoryxNodeId;

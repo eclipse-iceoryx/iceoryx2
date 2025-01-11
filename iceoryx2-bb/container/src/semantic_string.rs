@@ -63,9 +63,9 @@
 use crate::byte_string::FixedSizeByteStringModificationError;
 use crate::byte_string::{as_escaped_string, strnlen, FixedSizeByteString};
 use core::fmt::{Debug, Display};
+use core::ops::Deref;
 use iceoryx2_bb_log::fail;
 use std::hash::Hash;
-use std::ops::Deref;
 
 /// Failures that can occur when a [`SemanticString`] is created or modified
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -548,7 +548,7 @@ macro_rules! semantic_string {
             }
         }
 
-        impl std::ops::Deref for $string_name {
+        impl core::ops::Deref for $string_name {
             type Target = [u8];
 
             fn deref(&self) -> &Self::Target {
