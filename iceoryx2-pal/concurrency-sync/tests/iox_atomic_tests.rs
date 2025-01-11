@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::atomic::AtomicU32;
+use core::sync::atomic::AtomicU32;
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
 

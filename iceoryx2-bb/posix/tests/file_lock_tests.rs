@@ -23,8 +23,8 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_FILE_LOCK;
 
+use core::sync::atomic::{AtomicU64, Ordering};
 use core::time::Duration;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::Instant;
 

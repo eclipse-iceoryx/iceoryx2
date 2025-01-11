@@ -271,7 +271,7 @@ impl<Service: service::Service> Notifier<Service> {
 
         new_self.populate_listener_channels();
 
-        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a notifier is added to the dynamic config without
         // the creation of all required channels

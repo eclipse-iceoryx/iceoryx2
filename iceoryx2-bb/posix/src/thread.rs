@@ -730,7 +730,7 @@ struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + 
 ///
 /// ```
 /// use iceoryx2_bb_posix::thread::*;
-/// use std::sync::atomic::{AtomicBool, Ordering};
+/// use core::sync::atomic::{AtomicBool, Ordering};
 ///
 /// static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 ///

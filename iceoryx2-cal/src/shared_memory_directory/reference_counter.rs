@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::sync::atomic::Ordering;
 
 struct ReferenceCounterDetails {
     reference_counter: u64,
@@ -221,7 +221,7 @@ impl ReferenceCounter {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::Ordering;
+    use core::sync::atomic::Ordering;
 
     use iceoryx2_bb_testing::assert_that;
 

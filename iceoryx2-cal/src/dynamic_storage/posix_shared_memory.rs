@@ -19,7 +19,7 @@
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::posix_shared_memory::*;
 //! use iceoryx2_cal::named_concept::*;
-//! use std::sync::atomic::{AtomicI64, Ordering};
+//! use core::sync::atomic::{AtomicI64, Ordering};
 //!
 //! let additional_size: usize = 1024;
 //! let storage_name = FileName::new(b"myStorageName").unwrap();
@@ -44,6 +44,7 @@ use crate::static_storage::file::NamedConceptConfiguration;
 use crate::static_storage::file::NamedConceptRemoveError;
 use core::fmt::Debug;
 use core::ptr::NonNull;
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::warn;
@@ -55,7 +56,6 @@ use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use std::marker::PhantomData;
 pub use std::ops::Deref;
-use std::sync::atomic::Ordering;
 
 use self::dynamic_storage_configuration::DynamicStorageConfiguration;
 
@@ -219,7 +219,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
             //////////////////////////////////////////
             let package_version = unsafe { &(*init_state) }
                 .version
-                .load(std::sync::atomic::Ordering::SeqCst);
+                .load(core::sync::atomic::Ordering::SeqCst);
 
             let package_version = PackageVersion::from_u64(package_version);
             if package_version.to_u64() == 0 {

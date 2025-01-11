@@ -12,9 +12,9 @@
 
 #[generic_tests::define]
 mod event {
+    use core::sync::atomic::{AtomicU64, Ordering};
     use core::time::Duration;
     use std::collections::HashSet;
-    use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::{Barrier, Mutex};
     use std::time::Instant;
 

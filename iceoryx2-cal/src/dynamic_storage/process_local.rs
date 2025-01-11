@@ -20,7 +20,7 @@
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::process_local::*;
 //! use iceoryx2_cal::named_concept::*;
-//! use std::sync::atomic::{AtomicI64, Ordering};
+//! use core::sync::atomic::{AtomicI64, Ordering};
 //!
 //! let additional_size: usize = 1024;
 //! let storage_name = FileName::new(b"myDynStorage").unwrap();
@@ -39,6 +39,7 @@
 
 use core::fmt::Debug;
 use core::ptr::NonNull;
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
@@ -52,7 +53,6 @@ use std::alloc::Layout;
 use std::any::Any;
 use std::collections::HashMap;
 use std::marker::PhantomData;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 pub use crate::dynamic_storage::*;

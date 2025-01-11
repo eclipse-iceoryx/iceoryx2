@@ -19,8 +19,8 @@ mod reactor {
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
 
+    use core::sync::atomic::{AtomicU64, Ordering};
     use core::time::Duration;
-    use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::{Barrier, Mutex};
     use std::time::Instant;
 

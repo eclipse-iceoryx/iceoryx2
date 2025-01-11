@@ -72,8 +72,8 @@ use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::service::ServiceState;
 use crate::{port::port_identifiers::UniqueListenerId, service};
+use core::sync::atomic::Ordering;
 use core::time::Duration;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use super::event_id::EventId;
@@ -157,7 +157,7 @@ impl<Service: service::Service> Listener<Service> {
             listener_id,
         };
 
-        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels

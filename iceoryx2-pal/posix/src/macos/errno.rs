@@ -212,7 +212,7 @@ impl Errno {
 
 #[cfg(target_os = "linux")]
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use core::sync::atomic::{AtomicBool, Ordering};
     static IS_LOCKED: AtomicBool = AtomicBool::new(false);
 
     while IS_LOCKED

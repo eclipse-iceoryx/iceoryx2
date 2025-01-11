@@ -12,7 +12,7 @@
 
 #[cfg(test)]
 mod placement_new {
-    use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+    use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
     use iceoryx2_bb_derive_macros::PlacementDefault;
     use iceoryx2_bb_elementary::placement_default::PlacementDefault;

@@ -43,9 +43,9 @@
 //! unsafe{ allocator.deallocate(NonNull::new(grown_memory.as_mut().as_mut_ptr()).unwrap(),
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
-use std::sync::atomic::Ordering;
 
 pub use iceoryx2_bb_elementary::allocator::*;
 use iceoryx2_bb_elementary::math::align;

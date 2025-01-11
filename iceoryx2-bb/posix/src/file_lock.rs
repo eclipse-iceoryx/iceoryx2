@@ -43,13 +43,13 @@ use crate::file_descriptor::FileDescriptor;
 use crate::process::{Process, ProcessId};
 use crate::{clock::Time, file_descriptor::FileDescriptorBased};
 use core::fmt::Debug;
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::sync::atomic::Ordering;
 use std::{ops::Deref, ops::DerefMut, time::Duration};
 
 use crate::{

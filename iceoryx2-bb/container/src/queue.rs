@@ -232,7 +232,7 @@ pub mod details {
         ) -> Result<(), AllocationError> {
             if self
                 .is_initialized
-                .load(std::sync::atomic::Ordering::Relaxed)
+                .load(core::sync::atomic::Ordering::Relaxed)
             {
                 fatal_panic!(
                     from "Queue::init()",
@@ -247,7 +247,7 @@ pub mod details {
                  )), "Failed to initialize queue since the allocation of the data memory failed."
             ));
             self.is_initialized
-                .store(true, std::sync::atomic::Ordering::Relaxed);
+                .store(true, core::sync::atomic::Ordering::Relaxed);
 
             Ok(())
         }
@@ -332,7 +332,7 @@ pub mod details {
         fn verify_init(&self, source: &str) {
             debug_assert!(
                 self.is_initialized
-                    .load(std::sync::atomic::Ordering::Relaxed),
+                    .load(core::sync::atomic::Ordering::Relaxed),
                 "From: MetaQueue<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
                 std::any::type_name::<T>(), source
             );
@@ -441,7 +441,7 @@ pub mod details {
         fn drop(&mut self) {
             if self
                 .is_initialized
-                .load(std::sync::atomic::Ordering::Relaxed)
+                .load(core::sync::atomic::Ordering::Relaxed)
             {
                 unsafe { self.clear_impl() }
             }

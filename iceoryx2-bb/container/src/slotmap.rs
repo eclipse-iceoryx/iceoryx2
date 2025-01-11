@@ -134,7 +134,7 @@ pub mod details {
         fn verify_init(&self, source: &str) {
             debug_assert!(
                 self.is_initialized
-                    .load(std::sync::atomic::Ordering::Relaxed),
+                    .load(core::sync::atomic::Ordering::Relaxed),
                 "From: MetaSlotMap<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
                 std::any::type_name::<T>(), source
             );
@@ -362,7 +362,7 @@ pub mod details {
 
             self.initialize_data_structures();
             self.is_initialized
-                .store(true, std::sync::atomic::Ordering::Relaxed);
+                .store(true, core::sync::atomic::Ordering::Relaxed);
             Ok(())
         }
 

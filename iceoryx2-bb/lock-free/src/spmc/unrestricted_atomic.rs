@@ -17,7 +17,7 @@
 //!
 //! ```
 //! use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
-//! use std::sync::atomic::Ordering;
+//! use core::sync::atomic::Ordering;
 //!
 //! let atomic = UnrestrictedAtomic::<[u8; 1024]>::new([0u8; 1024]);
 //!

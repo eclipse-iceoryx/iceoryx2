@@ -122,6 +122,7 @@ use crate::service::static_config::publish_subscribe::{self};
 use crate::service::{self, ServiceState};
 use crate::{config, sample_mut::SampleMut};
 use core::fmt::Debug;
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -140,7 +141,6 @@ use iceoryx2_cal::zero_copy_connection::{
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 use std::any::TypeId;
 use std::cell::UnsafeCell;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
@@ -724,7 +724,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
         }
 
-        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources

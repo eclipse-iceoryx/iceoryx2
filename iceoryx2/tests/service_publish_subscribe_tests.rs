@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod service_publish_subscribe {
-    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::{Barrier, Mutex};
     use std::thread;
 

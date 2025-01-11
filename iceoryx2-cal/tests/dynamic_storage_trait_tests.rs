@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod dynamic_storage {
+    use core::sync::atomic::{AtomicI64, Ordering};
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary::allocator::*;
     use iceoryx2_bb_system_types::file_name::FileName;
@@ -20,7 +21,6 @@ mod dynamic_storage {
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
-    use std::sync::atomic::{AtomicI64, Ordering};
 
     #[derive(Debug)]
     struct TestData {

@@ -127,14 +127,14 @@ impl<T> RelocatablePointer<T> {
     pub unsafe fn init(&self, ptr: NonNull<[u8]>) {
         self.distance.store(
             (ptr.as_ptr() as *const u8) as isize - (self as *const Self) as isize,
-            std::sync::atomic::Ordering::Relaxed,
+            core::sync::atomic::Ordering::Relaxed,
         );
     }
 }
 
 impl<T> PointerTrait<T> for RelocatablePointer<T> {
     unsafe fn as_ptr(&self) -> *const T {
-        ((self as *const Self) as isize + self.distance.load(std::sync::atomic::Ordering::Relaxed))
+        ((self as *const Self) as isize + self.distance.load(core::sync::atomic::Ordering::Relaxed))
             as *const T
     }
 

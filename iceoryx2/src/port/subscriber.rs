@@ -32,10 +32,10 @@
 //! ```
 
 use core::fmt::Debug;
+use core::sync::atomic::Ordering;
 use std::any::TypeId;
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use iceoryx2_bb_container::queue::Queue;
@@ -197,7 +197,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
         }
 
-        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels

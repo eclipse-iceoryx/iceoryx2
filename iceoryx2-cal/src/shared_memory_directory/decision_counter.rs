@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::sync::atomic::Ordering;
 
 const UNDECIDED: u64 = u64::MAX;
 const LOST: u64 = u64::MAX;

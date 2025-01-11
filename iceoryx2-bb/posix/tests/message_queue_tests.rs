@@ -263,7 +263,7 @@ fn message_queue_blocking_send_does_block() {
             let try_send_result = sut_sender.try_send(&12893);
             barrier.wait();
             sut_sender.blocking_send(&12893).unwrap();
-            counter.store(1, std::sync::atomic::Ordering::SeqCst);
+            counter.store(1, core::sync::atomic::Ordering::SeqCst);
 
             assert_that!(try_send_result, is_ok);
             assert_that!(try_send_result.unwrap(), eq true);
@@ -297,7 +297,7 @@ fn message_queue_blocking_receive_does_block() {
 
             barrier.wait();
             let receive_result = sut_receiver.blocking_receive();
-            counter.store(1, std::sync::atomic::Ordering::SeqCst);
+            counter.store(1, core::sync::atomic::Ordering::SeqCst);
             assert_that!(receive_result.unwrap().value, eq 981293);
         });
 
@@ -332,7 +332,7 @@ fn message_queue_blocking_timed_send_does_block() {
                 let try_send_result = sut_sender.try_send(&12893);
                 barrier.wait();
                 let timed_send_result = sut_sender.timed_send(&12893, TIMEOUT * 10);
-                counter.store(1, std::sync::atomic::Ordering::SeqCst);
+                counter.store(1, core::sync::atomic::Ordering::SeqCst);
 
                 assert_that!(try_send_result.unwrap(), eq true);
                 assert_that!(timed_send_result.unwrap(), eq true);
@@ -370,7 +370,7 @@ fn message_queue_timed_receive_does_block() {
 
                 barrier.wait();
                 let timed_receive_result = sut_receiver.timed_receive(TIMEOUT * 10);
-                counter.store(1, std::sync::atomic::Ordering::SeqCst);
+                counter.store(1, core::sync::atomic::Ordering::SeqCst);
                 assert_that!(timed_receive_result.unwrap().unwrap().value, eq 981293);
             });
 

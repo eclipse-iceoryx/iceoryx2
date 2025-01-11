@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::sync::atomic::Ordering;
 use core::time::Duration;
 use std::alloc::Layout;
 use std::cell::UnsafeCell;
-use std::sync::atomic::Ordering;
 use std::{fmt::Debug, marker::PhantomData};
 
 use crate::shared_memory::{

@@ -38,7 +38,7 @@ impl Display for BumpAllocator {
             self.start,
             self.size,
             self.current_position
-                .load(std::sync::atomic::Ordering::Relaxed)
+                .load(core::sync::atomic::Ordering::Relaxed)
         )
     }
 }
@@ -81,7 +81,7 @@ impl BaseAllocator for BumpAllocator {
 
         let mut current_position = self
             .current_position
-            .load(std::sync::atomic::Ordering::Relaxed);
+            .load(core::sync::atomic::Ordering::Relaxed);
         loop {
             aligned_position = align(self.start + current_position, layout.align()) - self.start;
             if aligned_position + layout.size() > self.size {
@@ -92,8 +92,8 @@ impl BaseAllocator for BumpAllocator {
             match self.current_position.compare_exchange_weak(
                 current_position,
                 aligned_position + layout.size(),
-                std::sync::atomic::Ordering::Relaxed,
-                std::sync::atomic::Ordering::Relaxed,
+                core::sync::atomic::Ordering::Relaxed,
+                core::sync::atomic::Ordering::Relaxed,
             ) {
                 Ok(_) => break,
                 Err(v) => current_position = v,
@@ -110,6 +110,6 @@ impl BaseAllocator for BumpAllocator {
 
     unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: std::alloc::Layout) {
         self.current_position
-            .store(0, std::sync::atomic::Ordering::Relaxed);
+            .store(0, core::sync::atomic::Ordering::Relaxed);
     }
 }

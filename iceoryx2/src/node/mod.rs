@@ -155,6 +155,7 @@ use crate::service::service_name::ServiceName;
 use crate::service::{self, remove_service_tag};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
+use core::sync::atomic::Ordering;
 use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -173,7 +174,6 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::marker::PhantomData;
-use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
 /// The system-wide unique id of a [`Node`]

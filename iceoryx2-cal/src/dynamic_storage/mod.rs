@@ -32,7 +32,7 @@
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::*;
 //! use iceoryx2_cal::named_concept::*;
-//! use std::sync::atomic::{AtomicU64, Ordering};
+//! use core::sync::atomic::{AtomicU64, Ordering};
 //!
 //! // the following two functions can be implemented in different processes
 //! fn process_one<Storage: DynamicStorage<AtomicU64>>() {
