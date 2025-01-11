@@ -340,7 +340,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
                 size,
                 is_memory_initialized: IoxAtomicBool::new(true),
             },
-            next_free_index: std::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
+            next_free_index: core::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
             next_free_index_plus_one: UnsafeCell::new(MAX_NUMBER_OF_BUCKETS as u32 + 1),
         };
 
