@@ -101,6 +101,7 @@
 //! unsafe { queue.init(&bump_allocator).expect("queue init failed") };
 //! ```
 //!
+use core::marker::PhantomData;
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
@@ -111,7 +112,6 @@ pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use std::marker::PhantomData;
 use std::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
 
 /// Queue with run-time fixed size capacity. In contrast to its counterpart the

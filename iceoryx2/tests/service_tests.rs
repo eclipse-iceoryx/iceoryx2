@@ -12,9 +12,9 @@
 
 #[generic_tests::define]
 mod service {
+    use core::marker::PhantomData;
     use core::sync::atomic::{AtomicU64, Ordering};
     use core::time::Duration;
-    use std::marker::PhantomData;
     use std::sync::Barrier;
 
     use iceoryx2::node::NodeView;

@@ -14,7 +14,7 @@
 //!
 //! See [`crate::service`]
 //!
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::service;
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;

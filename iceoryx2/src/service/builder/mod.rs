@@ -26,6 +26,7 @@ use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
@@ -38,7 +39,6 @@ use iceoryx2_cal::named_concept::NamedConceptDoesExistError;
 use iceoryx2_cal::named_concept::NamedConceptMgmt;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use super::config_scheme::dynamic_config_storage_config;

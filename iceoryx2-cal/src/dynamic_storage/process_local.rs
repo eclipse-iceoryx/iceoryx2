@@ -39,6 +39,7 @@
 
 use core::alloc::Layout;
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
@@ -52,7 +53,6 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use once_cell::sync::Lazy;
 use std::any::Any;
 use std::collections::HashMap;
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 pub use crate::dynamic_storage::*;
