@@ -494,12 +494,12 @@ impl SharedMemory {
 
     /// returns a slice to the memory
     pub fn as_slice(&self) -> &[u8] {
-        unsafe { std::slice::from_raw_parts(self.base_address, self.size) }
+        unsafe { core::slice::from_raw_parts(self.base_address, self.size) }
     }
 
     /// returns a mutable slice to the memory
     pub fn as_mut_slice(&mut self) -> &mut [u8] {
-        unsafe { std::slice::from_raw_parts_mut(self.base_address, self.size) }
+        unsafe { core::slice::from_raw_parts_mut(self.base_address, self.size) }
     }
 
     fn shm_create(

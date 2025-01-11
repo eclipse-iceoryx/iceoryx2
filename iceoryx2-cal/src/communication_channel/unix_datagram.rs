@@ -362,7 +362,7 @@ impl<T: Copy + Debug> CommunicationChannelSender<T> for Sender<T> {
     fn try_send(&self, data: &T) -> Result<Option<T>, CommunicationChannelSendError> {
         let msg = "Unable to try send data";
         let result = self.sender.try_send(unsafe {
-            std::slice::from_raw_parts((data as *const T) as *const u8, core::mem::size_of::<T>())
+            core::slice::from_raw_parts((data as *const T) as *const u8, core::mem::size_of::<T>())
         });
 
         match result {
@@ -421,7 +421,7 @@ impl<T: Copy + Debug> CommunicationChannelReceiver<T> for Receiver<T> {
         let msg = "Unable to receive data";
         let mut data = MaybeUninit::<T>::uninit();
         match self.receiver.try_receive(unsafe {
-            std::slice::from_raw_parts_mut(data.as_mut_ptr() as *mut u8, core::mem::size_of::<T>())
+            core::slice::from_raw_parts_mut(data.as_mut_ptr() as *mut u8, core::mem::size_of::<T>())
         }) {
             Ok(0) => Ok(None),
             Ok(received_bytes) => {

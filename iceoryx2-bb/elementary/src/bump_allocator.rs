@@ -40,7 +40,7 @@ impl BaseAllocator for BumpAllocator {
 
         unsafe {
             Ok(core::ptr::NonNull::new_unchecked(
-                std::slice::from_raw_parts_mut(mem as *mut u8, layout.size()),
+                core::slice::from_raw_parts_mut(mem as *mut u8, layout.size()),
             ))
         }
     }

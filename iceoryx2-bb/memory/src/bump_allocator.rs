@@ -101,7 +101,7 @@ impl BaseAllocator for BumpAllocator {
         }
 
         Ok(unsafe {
-            NonNull::new_unchecked(std::slice::from_raw_parts_mut(
+            NonNull::new_unchecked(core::slice::from_raw_parts_mut(
                 (self.start + aligned_position) as *mut u8,
                 layout.size(),
             ))

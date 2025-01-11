@@ -89,7 +89,7 @@ pub mod heap {
         unsafe { *(aligned_start as *mut usize).offset(-1) = addr };
 
         Ok(NonNull::new(unsafe {
-            std::slice::from_raw_parts_mut(aligned_start as *mut u8, layout.size())
+            core::slice::from_raw_parts_mut(aligned_start as *mut u8, layout.size())
         })
         .unwrap())
     }
