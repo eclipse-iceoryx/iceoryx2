@@ -33,11 +33,8 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
-lazy_static = { workspace = true }
 serde = { workspace = true }
-cdr = { workspace = true }
 toml = { workspace = true }
-sha1_smol = { workspace = true }
 tiny-fn = { workspace = true }
 
 [dev-dependencies]

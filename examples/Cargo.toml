@@ -15,6 +15,8 @@ iceoryx2 = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
+
+[dev-dependencies]
 clap = { workspace = true }
 
 [lib]

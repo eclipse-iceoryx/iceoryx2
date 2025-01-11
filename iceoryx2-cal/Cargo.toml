@@ -27,7 +27,6 @@ iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
 once_cell = { workspace = true }
-lazy_static = { workspace = true }
 serde = { workspace = true }
 cdr = { workspace = true }
 toml = { workspace = true }
@@ -39,3 +38,4 @@ ouroboros = { workspace = true }
 iceoryx2-bb-testing = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 generic-tests = { workspace = true }
+lazy_static = { workspace = true }
