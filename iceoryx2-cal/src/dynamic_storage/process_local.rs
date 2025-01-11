@@ -49,7 +49,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use once_cell::sync::Lazy;
-use std::alloc::Layout;
+use core::alloc::Layout;
 use std::any::Any;
 use std::collections::HashMap;
 use std::marker::PhantomData;

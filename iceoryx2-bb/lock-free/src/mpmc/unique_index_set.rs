@@ -91,7 +91,7 @@ use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
-use std::alloc::Layout;
+use core::alloc::Layout;
 use std::cell::UnsafeCell;
 use tiny_fn::tiny_fn;
 

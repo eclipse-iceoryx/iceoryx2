@@ -145,7 +145,7 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             pub(super) fn alloc() -> *mut #struct_name {
-                unsafe { ::std::alloc::alloc(::std::alloc::Layout::new::<#struct_name>()) as _ }
+                unsafe { ::std::alloc::alloc(::core::alloc::Layout::new::<#struct_name>()) as _ }
             }
 
             pub(super) fn dealloc(storage: *mut #struct_name) {

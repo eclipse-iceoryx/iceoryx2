@@ -422,7 +422,7 @@ pub mod details {
             unsafe { self.storage.get().allocator.assume_init_ref() }.max_alignment()
         }
 
-        fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
+        fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, ShmAllocationError> {
             let offset = fail!(from self, when unsafe { self.storage.get().allocator.assume_init_ref().allocate(layout) },
             "Failed to allocate shared memory due to an internal allocator failure.");
 
@@ -432,7 +432,7 @@ pub mod details {
             })
         }
 
-        unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout) {
+        unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout) {
             self.storage
                 .get()
                 .allocator

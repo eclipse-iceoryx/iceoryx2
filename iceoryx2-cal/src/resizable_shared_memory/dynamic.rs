@@ -12,7 +12,7 @@
 
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-use std::alloc::Layout;
+use core::alloc::Layout;
 use std::cell::UnsafeCell;
 use std::{fmt::Debug, marker::PhantomData};
 

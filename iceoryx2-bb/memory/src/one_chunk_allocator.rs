@@ -49,7 +49,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 pub use iceoryx2_bb_elementary::allocator::*;
 use iceoryx2_bb_elementary::math::align;
-pub use std::alloc::Layout;
+pub use core::alloc::Layout;
 
 #[derive(Debug)]
 pub struct OneChunkAllocator {

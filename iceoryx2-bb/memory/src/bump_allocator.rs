@@ -70,7 +70,7 @@ impl BumpAllocator {
 }
 
 impl BaseAllocator for BumpAllocator {
-    fn allocate(&self, layout: std::alloc::Layout) -> Result<NonNull<[u8]>, AllocationError> {
+    fn allocate(&self, layout: core::alloc::Layout) -> Result<NonNull<[u8]>, AllocationError> {
         let msg = "Unable to allocate chunk with";
         let mut aligned_position;
 
@@ -108,7 +108,7 @@ impl BaseAllocator for BumpAllocator {
         })
     }
 
-    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: std::alloc::Layout) {
+    unsafe fn deallocate(&self, _ptr: NonNull<u8>, _layout: core::alloc::Layout) {
         self.current_position
             .store(0, core::sync::atomic::Ordering::Relaxed);
     }

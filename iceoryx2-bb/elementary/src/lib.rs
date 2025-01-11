@@ -22,7 +22,7 @@ pub use as_cstr::*;
 
 pub mod alignment;
 pub mod allocator;
-/// A strong type that represents the alignment part of [`std::alloc::Layout`]
+/// A strong type that represents the alignment part of [`core::alloc::Layout`]
 pub mod bump_allocator;
 pub mod generic_pointer;
 pub mod lazy_singleton;

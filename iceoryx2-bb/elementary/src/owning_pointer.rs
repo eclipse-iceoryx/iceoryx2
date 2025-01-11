@@ -14,7 +14,7 @@
 //! [`crate::relocatable_ptr::RelocatablePointer`]. It implements the [`PointerTrait`].
 
 use core::fmt::Debug;
-use std::alloc::Layout;
+use core::alloc::Layout;
 use std::alloc::{alloc, dealloc};
 
 use crate::generic_pointer::GenericPointer;

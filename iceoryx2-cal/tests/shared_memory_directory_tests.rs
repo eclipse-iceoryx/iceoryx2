@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod shared_memory_directory {
-    use std::alloc::Layout;
+    use core::alloc::Layout;
     use std::sync::Barrier;
 
     use iceoryx2_bb_testing::{assert_that, test_requires};

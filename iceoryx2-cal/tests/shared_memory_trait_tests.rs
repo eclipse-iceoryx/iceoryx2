@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod shared_memory {
-    use std::alloc::Layout;
+    use core::alloc::Layout;
 
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_system_types::file_name::FileName;

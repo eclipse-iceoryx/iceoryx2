@@ -17,7 +17,7 @@ use iceoryx2_bb_elementary::allocator::{
     AllocationError, AllocationGrowError, AllocationShrinkError,
 };
 use iceoryx2_bb_elementary::math::*;
-pub use std::alloc::Layout;
+pub use core::alloc::Layout;
 
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;

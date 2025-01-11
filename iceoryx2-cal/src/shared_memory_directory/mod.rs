@@ -82,7 +82,7 @@ impl SharedMemoryDirectoryCreator {
         "{} since the management segment could not be created.", msg);
 
         let shm_ptr = fatal_panic!(from self,
-                                when mgmt_shm.allocate(std::alloc::Layout::new::<FileReferenceSet>()),
+                                when mgmt_shm.allocate(core::alloc::Layout::new::<FileReferenceSet>()),
                                 "This should never happen! {} since the allocation of the management segment failed.",
                                 msg);
 

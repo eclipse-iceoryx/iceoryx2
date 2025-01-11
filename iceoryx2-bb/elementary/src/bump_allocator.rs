@@ -33,7 +33,7 @@ impl BumpAllocator {
 impl BaseAllocator for BumpAllocator {
     fn allocate(
         &self,
-        layout: std::alloc::Layout,
+        layout: core::alloc::Layout,
     ) -> Result<core::ptr::NonNull<[u8]>, crate::allocator::AllocationError> {
         let mem = align(self.pos.load(Ordering::Relaxed), layout.align());
         self.pos.store(mem + layout.size(), Ordering::Relaxed);
@@ -45,7 +45,7 @@ impl BaseAllocator for BumpAllocator {
         }
     }
 
-    unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: std::alloc::Layout) {
+    unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: core::alloc::Layout) {
         self.pos.store(self.start, Ordering::Relaxed);
     }
 }

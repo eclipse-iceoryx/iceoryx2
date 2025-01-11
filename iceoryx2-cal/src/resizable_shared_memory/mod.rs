@@ -34,7 +34,7 @@
 //! use iceoryx2_cal::shm_allocator::ShmAllocator;
 //! use iceoryx2_cal::shared_memory::SharedMemory;
 //! use iceoryx2_cal::named_concept::*;
-//! use std::alloc::Layout;
+//! use core::alloc::Layout;
 //! use core::time::Duration;
 //!
 //! fn example<Alloc: ShmAllocator, Shm: SharedMemory<Alloc>, Memory: ResizableSharedMemory<Alloc, Shm>>(
@@ -92,7 +92,7 @@ pub use crate::shm_allocator::{pool_allocator::PoolAllocator, AllocationStrategy
 
 use core::fmt::Debug;
 use core::time::Duration;
-use std::alloc::Layout;
+use core::alloc::Layout;
 
 use iceoryx2_bb_elementary::enum_gen;
 
@@ -228,7 +228,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     /// fails an [`SharedMemoryCreateError`] will be returned.
     fn allocate(
         &self,
-        layout: std::alloc::Layout,
+        layout: core::alloc::Layout,
     ) -> Result<ShmPointer, ResizableShmAllocationError>;
 
     /// Release previously allocated memory
@@ -238,7 +238,7 @@ pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Alloc
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout);
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout);
 }
 
 pub trait ResizableSharedMemoryForPoolAllocator<Shm: SharedMemory<PoolAllocator>>:
