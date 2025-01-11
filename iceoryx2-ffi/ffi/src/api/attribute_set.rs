@@ -12,7 +12,8 @@
 
 #![allow(non_camel_case_types)]
 
-use std::ffi::{c_char, CStr, CString};
+use core::ffi::{c_char, CStr};
+use std::ffi::CString;
 
 use iceoryx2::service::attribute::{Attribute, AttributeSet};
 use iceoryx2_bb_elementary::CallbackProgression;

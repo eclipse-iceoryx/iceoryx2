@@ -52,12 +52,12 @@ use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary::relocatable_container::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 
+pub use core::alloc::Layout;
 use core::sync::atomic::Ordering;
 pub use iceoryx2_bb_elementary::allocator::*;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-pub use core::alloc::Layout;
 use std::cell::UnsafeCell;
 
 #[derive(Debug)]

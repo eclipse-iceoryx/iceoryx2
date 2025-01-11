@@ -259,7 +259,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                     quote! {
                         // This code appends the null termination which cannot be confirmed at compile time,
                         // thus the code is ensured safe.
-                        unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#s, "\0").as_bytes()) }
+                        unsafe { ::core::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#s, "\0").as_bytes()) }
                     }
                 };
 
@@ -299,7 +299,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
             });
 
             quote! {
-                fn as_const_cstr(&self) -> &'static ::std::ffi::CStr {
+                fn as_const_cstr(&self) -> &'static ::core::ffi::CStr {
                     match self {
                         #(#enum_to_string_mapping,)*
                     }

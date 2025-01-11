@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::alloc::Layout;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-use core::alloc::Layout;
 use std::cell::UnsafeCell;
 use std::{fmt::Debug, marker::PhantomData};
 

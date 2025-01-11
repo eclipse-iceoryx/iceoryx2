@@ -151,7 +151,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     ///   * The contents must have a length that is less or equal CAPACITY
     ///   * The contents must not contain invalid UTF-8 characters
     ///
-    unsafe fn from_c_str(ptr: *const std::ffi::c_char) -> Result<Self, SemanticStringError> {
+    unsafe fn from_c_str(ptr: *const core::ffi::c_char) -> Result<Self, SemanticStringError> {
         Self::new(core::slice::from_raw_parts(
             ptr.cast(),
             strnlen(ptr, CAPACITY + 1),
@@ -164,7 +164,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     }
 
     /// Returns a zero terminated slice of the underlying bytes
-    fn as_c_str(&self) -> *const std::ffi::c_char {
+    fn as_c_str(&self) -> *const core::ffi::c_char {
         self.as_string().as_c_str()
     }
 

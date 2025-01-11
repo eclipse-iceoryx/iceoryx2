@@ -90,9 +90,9 @@ pub mod dynamic;
 
 pub use crate::shm_allocator::{pool_allocator::PoolAllocator, AllocationStrategy};
 
+use core::alloc::Layout;
 use core::fmt::Debug;
 use core::time::Duration;
-use core::alloc::Layout;
 
 use iceoryx2_bb_elementary::enum_gen;
 

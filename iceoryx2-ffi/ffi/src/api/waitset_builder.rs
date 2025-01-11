@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use std::ffi::c_int;
+use core::ffi::c_int;
 
 use crate::{
     api::IntoCInt, iox2_service_type_e, iox2_waitset_h, iox2_waitset_t, WaitSetUnion, IOX2_OK,

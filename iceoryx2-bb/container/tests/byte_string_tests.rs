@@ -228,13 +228,13 @@ mod fixed_size_byte_string {
     #[test]
     fn from_c_str_works() {
         let value = Sut::from(b"");
-        let sut = unsafe { Sut::from_c_str(value.as_ptr() as *mut std::ffi::c_char).unwrap() };
+        let sut = unsafe { Sut::from_c_str(value.as_ptr() as *mut core::ffi::c_char).unwrap() };
 
         assert_that!(sut, len 0);
         assert_that!(sut, eq b"");
 
         let value = Sut::from(b"foo baha");
-        let sut = unsafe { Sut::from_c_str(value.as_ptr() as *mut std::ffi::c_char).unwrap() };
+        let sut = unsafe { Sut::from_c_str(value.as_ptr() as *mut core::ffi::c_char).unwrap() };
 
         assert_that!(sut, len 8);
         assert_that!(sut, eq b"foo baha");

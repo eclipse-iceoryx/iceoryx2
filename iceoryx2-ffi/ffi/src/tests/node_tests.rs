@@ -14,8 +14,8 @@
 mod node {
     use crate::tests::*;
 
+    use core::ffi::c_char;
     use core::{slice, str};
-    use std::ffi::c_char;
 
     #[test]
     fn basic_node_api_test<S: Service + ServiceTypeMapping>() {
