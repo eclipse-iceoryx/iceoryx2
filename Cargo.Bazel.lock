@@ -1,5 +1,5 @@
 {
-  "checksum": "447043df7c396095966ba37a0c0172c696c643f2396385310bd37bc345318e5e",
+  "checksum": "904dcb8a11d275446a0883d509f57dc79d98a328977a4d37fb7915476bec2922",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -658,7 +658,7 @@
               "target": "backtrace"
             },
             {
-              "id": "console 0.15.8",
+              "id": "console 0.15.10",
               "target": "console"
             }
           ],
@@ -1687,13 +1687,13 @@
       },
       "license": "MPL-2.0"
     },
-    "console 0.15.8": {
+    "console 0.15.10": {
       "name": "console",
-      "version": "0.15.8",
+      "version": "0.15.10",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/console/0.15.8/download",
-          "sha256": "0e1f83fc076bd6dd27517eacdf25fef6c4dfe5f1d7448bafaaf3a26f13b5e4eb"
+          "url": "https://static.crates.io/crates/console/0.15.10/download",
+          "sha256": "ea3c6ecd8059b57859df5c69830340ed3c41d30e3da0c1cbed90a96ac853041b"
         }
       },
       "targets": [
@@ -1715,29 +1715,29 @@
         "deps": {
           "common": [
             {
-              "id": "lazy_static 1.5.0",
-              "target": "lazy_static"
-            },
-            {
               "id": "libc 0.2.159",
               "target": "libc"
+            },
+            {
+              "id": "once_cell 1.20.2",
+              "target": "once_cell"
             }
           ],
           "selects": {
             "cfg(windows)": [
               {
-                "id": "encode_unicode 0.3.6",
+                "id": "encode_unicode 1.0.0",
                 "target": "encode_unicode"
               },
               {
-                "id": "windows-sys 0.52.0",
+                "id": "windows-sys 0.59.0",
                 "target": "windows_sys"
               }
             ]
           }
         },
         "edition": "2018",
-        "version": "0.15.8"
+        "version": "0.15.10"
       },
       "license": "MIT"
     },
@@ -1778,13 +1778,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "encode_unicode 0.3.6": {
+    "encode_unicode 1.0.0": {
       "name": "encode_unicode",
-      "version": "0.3.6",
+      "version": "1.0.0",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/encode_unicode/0.3.6/download",
-          "sha256": "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
+          "url": "https://static.crates.io/crates/encode_unicode/1.0.0/download",
+          "sha256": "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0"
         }
       },
       "targets": [
@@ -1810,10 +1810,10 @@
           ],
           "selects": {}
         },
-        "edition": "2015",
-        "version": "0.3.6"
+        "edition": "2021",
+        "version": "1.0.0"
       },
-      "license": "MIT/Apache-2.0"
+      "license": "Apache-2.0 OR MIT"
     },
     "enum-iterator 2.1.0": {
       "name": "enum-iterator",
@@ -2016,7 +2016,7 @@
         "compile_data_glob": [
           "**"
         ],
-        "deps": {
+        "deps_dev": {
           "common": [
             {
               "id": "clap 4.5.19",
@@ -2473,20 +2473,8 @@
         "deps": {
           "common": [
             {
-              "id": "cdr 0.2.4",
-              "target": "cdr"
-            },
-            {
-              "id": "lazy_static 1.5.0",
-              "target": "lazy_static"
-            },
-            {
               "id": "serde 1.0.210",
               "target": "serde"
-            },
-            {
-              "id": "sha1_smol 1.0.1",
-              "target": "sha1_smol"
             },
             {
               "id": "tiny-fn 0.1.7",
@@ -2738,19 +2726,6 @@
         "compile_data_glob": [
           "**"
         ],
-        "deps": {
-          "common": [
-            {
-              "id": "lazy_static 1.5.0",
-              "target": "lazy_static"
-            },
-            {
-              "id": "tiny-fn 0.1.7",
-              "target": "tiny_fn"
-            }
-          ],
-          "selects": {}
-        },
         "edition": "2021",
         "version": "0.5.0"
       },
@@ -2960,10 +2935,6 @@
               "target": "cdr"
             },
             {
-              "id": "lazy_static 1.5.0",
-              "target": "lazy_static"
-            },
-            {
               "id": "once_cell 1.20.2",
               "target": "once_cell"
             },
@@ -2986,6 +2957,15 @@
             {
               "id": "toml 0.8.19",
               "target": "toml"
+            }
+          ],
+          "selects": {}
+        },
+        "deps_dev": {
+          "common": [
+            {
+              "id": "lazy_static 1.5.0",
+              "target": "lazy_static"
             }
           ],
           "selects": {}
@@ -6498,8 +6478,6 @@
           "common": [
             "Win32",
             "Win32_Foundation",
-            "Win32_Storage",
-            "Win32_Storage_FileSystem",
             "Win32_System",
             "Win32_System_Console",
             "Win32_System_LibraryLoader",
@@ -6508,8 +6486,6 @@
             "Win32_System_SystemServices",
             "Win32_System_Threading",
             "Win32_UI",
-            "Win32_UI_Input",
-            "Win32_UI_Input_KeyboardAndMouse",
             "Win32_UI_WindowsAndMessaging",
             "default"
           ],
@@ -6560,6 +6536,11 @@
             "Win32_Foundation",
             "Win32_Storage",
             "Win32_Storage_FileSystem",
+            "Win32_System",
+            "Win32_System_Console",
+            "Win32_UI",
+            "Win32_UI_Input",
+            "Win32_UI_Input_KeyboardAndMouse",
             "default"
           ],
           "selects": {}

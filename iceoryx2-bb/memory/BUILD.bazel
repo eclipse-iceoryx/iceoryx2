@@ -28,8 +28,6 @@ rust_library(
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
-        "@crate_index//:lazy_static",
-        "@crate_index//:tiny-fn",
     ],
 )
 
