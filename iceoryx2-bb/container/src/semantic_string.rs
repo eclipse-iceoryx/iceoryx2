@@ -432,7 +432,7 @@ macro_rules! semantic_string {
             where
                 S: serde::Serializer,
             {
-                serializer.serialize_str(std::str::from_utf8(self.as_bytes()).unwrap())
+                serializer.serialize_str(core::str::from_utf8(self.as_bytes()).unwrap())
             }
         }
         // END: serde

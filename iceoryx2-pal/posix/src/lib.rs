@@ -123,7 +123,7 @@ pub(crate) mod win_internal {
         let len = crate::posix::c_string_length(value);
 
         let text =
-            std::str::from_utf8(core::slice::from_raw_parts(value as *const u8, len)).unwrap();
+            core::str::from_utf8(core::slice::from_raw_parts(value as *const u8, len)).unwrap();
         println!("{}", text);
     }
 

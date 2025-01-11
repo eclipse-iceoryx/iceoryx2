@@ -30,7 +30,7 @@ impl NodeName {
     /// Returns a str reference to the [`NodeName`]
     pub fn as_str(&self) -> &str {
         // SAFETY: `ServieName` was created from a `&str` and therefore this conversion is safe
-        unsafe { std::str::from_utf8_unchecked(self.value.as_bytes()) }
+        unsafe { core::str::from_utf8_unchecked(self.value.as_bytes()) }
     }
 }
 
@@ -102,6 +102,6 @@ impl Serialize for NodeName {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(std::str::from_utf8(self.as_bytes()).unwrap())
+        serializer.serialize_str(core::str::from_utf8(self.as_bytes()).unwrap())
     }
 }

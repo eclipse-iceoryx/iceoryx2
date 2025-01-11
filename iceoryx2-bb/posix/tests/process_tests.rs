@@ -53,7 +53,7 @@ pub fn process_executable_path_works() {
 
     assert_that!(executable_path, is_ok);
     let file_name = executable_path.as_ref().unwrap().file_name();
-    let executable_file = std::str::from_utf8(&file_name).unwrap();
+    let executable_file = core::str::from_utf8(&file_name).unwrap();
     println!("{}", executable_file);
     assert_that!(executable_file.starts_with("process_tests"), eq true);
 }
