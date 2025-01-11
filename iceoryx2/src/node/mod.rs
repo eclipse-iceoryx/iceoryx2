@@ -213,8 +213,8 @@ pub enum NodeCreationFailure {
     InternalError,
 }
 
-impl std::fmt::Display for NodeCreationFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeCreationFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NodeCreationFailure::{:?}", self)
     }
 }
@@ -230,8 +230,8 @@ pub enum NodeWaitFailure {
     TerminationRequest,
 }
 
-impl std::fmt::Display for NodeWaitFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeWaitFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NodeWaitFailure::{:?}", self)
     }
 }
@@ -249,8 +249,8 @@ pub enum NodeListFailure {
     InternalError,
 }
 
-impl std::fmt::Display for NodeListFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeListFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NodeListFailure::{:?}", self)
     }
 }
@@ -269,8 +269,8 @@ pub enum NodeCleanupFailure {
     InsufficientPermissions,
 }
 
-impl std::fmt::Display for NodeCleanupFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeCleanupFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NodeCleanupFailure::{:?}", self)
     }
 }

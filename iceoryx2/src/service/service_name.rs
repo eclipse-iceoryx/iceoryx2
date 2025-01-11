@@ -47,8 +47,8 @@ impl ServiceName {
     }
 }
 
-impl std::fmt::Display for ServiceName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ServiceName {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}", self.value)
     }
 }
@@ -86,7 +86,7 @@ struct ServiceNameVisitor;
 impl Visitor<'_> for ServiceNameVisitor {
     type Value = ServiceName;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         formatter.write_str("a string containing the service name")
     }
 

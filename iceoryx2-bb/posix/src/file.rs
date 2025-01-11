@@ -52,7 +52,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 pub use crate::creation_mode::CreationMode;
 pub use crate::{access_mode::AccessMode, permission::*};

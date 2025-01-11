@@ -41,7 +41,7 @@
 //! assert_eq!(data.as_ref().unwrap().priority, 2);
 //! ```
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::marker::PhantomData;
 use core::mem::MaybeUninit;
 use std::time::Duration;

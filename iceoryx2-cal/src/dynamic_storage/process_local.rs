@@ -49,7 +49,7 @@ use once_cell::sync::Lazy;
 use std::alloc::Layout;
 use std::any::Any;
 use std::collections::HashMap;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::marker::PhantomData;
 use core::ptr::NonNull;
 use std::sync::atomic::Ordering;

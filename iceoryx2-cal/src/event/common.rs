@@ -95,7 +95,7 @@ pub mod details {
             Storage: DynamicStorage<Management<Tracker, WaitMechanism>>,
         > Debug for Configuration<Tracker, WaitMechanism, Storage>
     {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             write!(
                 f,
                 "Configuration<{}, {}, {}> {{ suffix: {}, prefix: {}, path: {} }}",

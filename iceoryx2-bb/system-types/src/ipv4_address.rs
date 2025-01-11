@@ -105,7 +105,7 @@ impl Ipv4Address {
 }
 
 impl Debug for Ipv4Address {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let ipv4 = self.octets();
         write!(
             f,
@@ -116,7 +116,7 @@ impl Debug for Ipv4Address {
 }
 
 impl Display for Ipv4Address {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let ipv4 = self.octets();
         write!(f, "{}.{}.{}.{}", ipv4[0], ipv4[1], ipv4[2], ipv4[3])
     }

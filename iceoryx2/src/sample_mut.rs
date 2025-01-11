@@ -96,7 +96,7 @@ pub struct SampleMut<Service: crate::service::Service, Payload: Debug + ?Sized, 
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debug
     for SampleMut<Service, Payload, UserHeader>
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",

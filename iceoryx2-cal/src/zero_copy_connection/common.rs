@@ -15,7 +15,7 @@ pub mod details {
     use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
     use std::cell::UnsafeCell;
-    use std::fmt::Debug;
+    use core::fmt::Debug;
     use std::marker::PhantomData;
     use std::sync::atomic::Ordering;
 

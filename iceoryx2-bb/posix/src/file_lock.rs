@@ -48,7 +48,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::sync::atomic::Ordering;
 use std::{ops::Deref, ops::DerefMut, time::Duration};
 

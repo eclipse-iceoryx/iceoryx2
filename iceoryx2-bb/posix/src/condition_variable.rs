@@ -704,7 +704,7 @@ tiny_fn! {
 }
 
 impl<T> Debug for Predicate<'static, T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Predicate")
     }
 }

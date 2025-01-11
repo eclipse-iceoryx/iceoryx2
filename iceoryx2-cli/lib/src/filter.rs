@@ -18,7 +18,7 @@ use iceoryx2::service::ipc::Service;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::ServiceDetails;
 use iceoryx2_pal_posix::posix::pid_t;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::str::FromStr;
 
 pub trait Filter<T>: Debug {

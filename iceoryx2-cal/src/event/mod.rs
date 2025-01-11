@@ -32,8 +32,8 @@ pub enum NotifierNotifyError {
     InternalFailure,
 }
 
-impl std::fmt::Display for NotifierNotifyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NotifierNotifyError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
@@ -49,8 +49,8 @@ pub enum NotifierCreateError {
     InternalFailure,
 }
 
-impl std::fmt::Display for NotifierCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NotifierCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
@@ -64,8 +64,8 @@ pub enum ListenerWaitError {
     InterruptSignal,
 }
 
-impl std::fmt::Display for ListenerWaitError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ListenerWaitError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
@@ -79,8 +79,8 @@ pub enum ListenerCreateError {
     InternalFailure,
 }
 
-impl std::fmt::Display for ListenerCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ListenerCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }

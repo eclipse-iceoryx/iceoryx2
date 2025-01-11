@@ -33,7 +33,7 @@
 //! }
 //! ```
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::time::Duration;
 
 use crate::clock::*;

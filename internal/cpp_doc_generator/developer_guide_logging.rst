@@ -288,7 +288,7 @@ The following code snippet demonstrates how to implement a simple `println!` log
     struct PrintLogger {}
 
     impl Log for PrintLogger {
-        fn log(&self, log_level: LogLevel, origin: std::fmt::Arguments, message: std::fmt::Arguments ) {
+        fn log(&self, log_level: LogLevel, origin: core::fmt::Arguments, message: core::fmt::Arguments ) {
             println!("log level: {:?}, origin: {}, message: {}",
                     log_level, origin.to_string(), message.to_string());
         }

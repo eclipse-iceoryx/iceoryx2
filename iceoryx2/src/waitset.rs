@@ -256,8 +256,8 @@ pub enum WaitSetAttachmentError {
     InternalError,
 }
 
-impl std::fmt::Display for WaitSetAttachmentError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for WaitSetAttachmentError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "WaitSetAttachmentError::{:?}", self)
     }
 }
@@ -275,8 +275,8 @@ pub enum WaitSetRunError {
     NoAttachments,
 }
 
-impl std::fmt::Display for WaitSetRunError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for WaitSetRunError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "WaitSetRunError::{:?}", self)
     }
 }
@@ -290,8 +290,8 @@ pub enum WaitSetCreateError {
     InternalError,
 }
 
-impl std::fmt::Display for WaitSetCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for WaitSetCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "WaitSetCreateError::{:?}", self)
     }
 }
@@ -313,7 +313,7 @@ pub struct WaitSetAttachmentId<Service: crate::service::Service> {
 }
 
 impl<Service: crate::service::Service> Debug for WaitSetAttachmentId<Service> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "WaitSetAttachmentId<{}> {{ attachment_type: {:?} }}",

@@ -139,7 +139,7 @@ use iceoryx2_cal::zero_copy_connection::{
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 use std::any::TypeId;
 use std::cell::UnsafeCell;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
@@ -157,8 +157,8 @@ pub enum PublisherCreateError {
     UnableToCreateDataSegment,
 }
 
-impl std::fmt::Display for PublisherCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublisherCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublisherCreateError::{:?}", self)
     }
 }
@@ -184,8 +184,8 @@ pub enum PublisherLoanError {
     InternalFailure,
 }
 
-impl std::fmt::Display for PublisherLoanError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublisherLoanError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublisherLoanError::{:?}", self)
     }
 }
@@ -220,8 +220,8 @@ impl From<ConnectionFailure> for PublisherSendError {
     }
 }
 
-impl std::fmt::Display for PublisherSendError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublisherSendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublisherSendError::{:?}", self)
     }
 }

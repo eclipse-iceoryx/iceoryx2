@@ -68,8 +68,8 @@ pub enum NotifierCreateError {
     ExceedsMaxSupportedNotifiers,
 }
 
-impl std::fmt::Display for NotifierCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NotifierCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NotifierCreateError::{:?}", self)
     }
 }
@@ -92,8 +92,8 @@ pub enum NotifierNotifyError {
     UnableToAcquireElapsedTime,
 }
 
-impl std::fmt::Display for NotifierNotifyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NotifierNotifyError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NotifierNotifyError::{:?}", self)
     }
 }

@@ -43,8 +43,8 @@ mod service {
 
     trait SutFactory<Sut: Service>: Send + Sync {
         type Factory: PortFactory;
-        type CreateError: std::fmt::Debug;
-        type OpenError: std::fmt::Debug;
+        type CreateError: core::fmt::Debug;
+        type OpenError: core::fmt::Debug;
 
         fn new() -> Self;
         fn create(

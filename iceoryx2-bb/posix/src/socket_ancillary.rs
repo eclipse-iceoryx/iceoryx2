@@ -156,7 +156,7 @@ impl SocketCred {
 }
 
 impl Display for SocketCred {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "SocketCred {{ pid: {:?}, uid: {}, gid: {} }}",
@@ -182,7 +182,7 @@ pub struct SocketAncillary {
 }
 
 impl Display for SocketAncillary {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let cred = if self.credentials.is_some() {
             format!("{}", self.credentials.as_ref().unwrap())
         } else {

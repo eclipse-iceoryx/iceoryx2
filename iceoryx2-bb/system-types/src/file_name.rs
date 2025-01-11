@@ -123,7 +123,7 @@ pub(crate) mod visitor_type {
 impl<const CAPACITY: usize> serde::de::Visitor<'_> for visitor_type::RestrictedFileName<CAPACITY> {
     type Value = RestrictedFileName<CAPACITY>;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         formatter.write_str("a string containing the service name")
     }
 
@@ -190,8 +190,8 @@ impl<const CAPACITY: usize> RestrictedFileName<CAPACITY> {
     }
 }
 
-impl<const CAPACITY: usize> std::fmt::Display for RestrictedFileName<CAPACITY> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<const CAPACITY: usize> core::fmt::Display for RestrictedFileName<CAPACITY> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}", self.value)
     }
 }

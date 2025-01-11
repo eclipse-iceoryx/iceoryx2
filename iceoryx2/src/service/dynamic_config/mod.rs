@@ -28,7 +28,7 @@ use iceoryx2_bb_lock_free::mpmc::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use std::fmt::Display;
+use core::fmt::Display;
 
 use crate::{node::NodeId, port::port_identifiers::UniquePortId};
 
@@ -68,7 +68,7 @@ pub struct DynamicConfig {
 }
 
 impl Display for DynamicConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "service::DynamicConfig {{ messaging_pattern: {:?} }}",

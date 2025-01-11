@@ -13,7 +13,7 @@
 //! The [`CreationMode`] describes how certain posix resources should be created.
 
 use iceoryx2_pal_posix::*;
-use std::fmt::Display;
+use core::fmt::Display;
 
 /// Describes how new resources like [`crate::file::File`], [`crate::shared_memory::SharedMemory`]
 /// or others should be created.
@@ -39,7 +39,7 @@ impl CreationMode {
 }
 
 impl Display for CreationMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "CreationMode::{}",

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::fmt::Display;
+use core::fmt::Display;
 
 /// Represents the crates version acquired through the internal environment variables set by cargo,
 /// ("CARGO_PKG_VERSION_{MAJOR|MINOR|PATCH}").
@@ -71,7 +71,7 @@ impl PackageVersion {
 }
 
 impl Display for PackageVersion {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}.{}.{}", self.major(), self.minor(), self.patch())
     }
 }

@@ -39,7 +39,7 @@
 //!             process.get_scheduler().expect("failed to get scheduler"),
 //!             process.get_priority().expect("failed to get priority"));
 //! ```
-use std::fmt::Display;
+use core::fmt::Display;
 
 use crate::handle_errno;
 use iceoryx2_bb_elementary::enum_gen;
@@ -128,7 +128,7 @@ impl ProcessId {
 }
 
 impl Display for ProcessId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0)
     }
 }

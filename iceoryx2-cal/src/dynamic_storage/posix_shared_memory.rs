@@ -51,7 +51,7 @@ use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::marker::PhantomData;
 pub use std::ops::Deref;
 use core::ptr::NonNull;

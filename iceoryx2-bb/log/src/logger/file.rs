@@ -58,7 +58,7 @@ struct Entry {
 }
 
 impl Debug for Entry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "timestamp: {:?}, elapsed_time: {:?}, log_level: {:?}, origin: {}, message: {}",
@@ -122,8 +122,8 @@ impl crate::Log for Logger {
     fn log(
         &self,
         log_level: LogLevel,
-        origin: std::fmt::Arguments,
-        formatted_message: std::fmt::Arguments,
+        origin: core::fmt::Arguments,
+        formatted_message: core::fmt::Arguments,
     ) {
         if get_log_level() > log_level as u8 {
             return;

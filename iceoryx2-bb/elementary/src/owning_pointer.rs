@@ -15,7 +15,7 @@
 
 use std::alloc::Layout;
 use std::alloc::{alloc, dealloc};
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crate::generic_pointer::GenericPointer;
 use crate::pointer_trait::PointerTrait;

@@ -518,7 +518,7 @@ impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Visitor<'de>
 {
     type Value = FixedSizeVec<T, CAPACITY>;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         let str = format!(
             "an array of at most {} elements of type {}",
             CAPACITY,

@@ -55,7 +55,7 @@ mod mpmc_container {
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashMap;
     use std::collections::HashSet;
-    use std::fmt::Debug;
+    use core::fmt::Debug;
     use std::sync::atomic::AtomicU32;
     use std::sync::atomic::Ordering;
     use std::sync::{Barrier, Mutex};

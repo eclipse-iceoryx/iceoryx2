@@ -75,8 +75,8 @@ pub enum EventOpenError {
     IsMarkedForDestruction,
 }
 
-impl std::fmt::Display for EventOpenError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for EventOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "EventOpenError::{:?}", self)
     }
 }
@@ -114,8 +114,8 @@ pub enum EventCreateError {
     InsufficientPermissions,
 }
 
-impl std::fmt::Display for EventCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for EventCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "EventCreateError::{:?}", self)
     }
 }
@@ -155,8 +155,8 @@ impl From<EventCreateError> for EventOpenOrCreateError {
     }
 }
 
-impl std::fmt::Display for EventOpenOrCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for EventOpenOrCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "EventOpenOrCreateError::{:?}", self)
     }
 }

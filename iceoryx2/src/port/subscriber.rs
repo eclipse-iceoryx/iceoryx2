@@ -33,7 +33,7 @@
 
 use std::any::TypeId;
 use std::cell::UnsafeCell;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -72,8 +72,8 @@ pub enum SubscriberReceiveError {
     ConnectionFailure(ConnectionFailure),
 }
 
-impl std::fmt::Display for SubscriberReceiveError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for SubscriberReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "SubscriberReceiveError::{:?}", self)
     }
 }
@@ -94,8 +94,8 @@ pub enum SubscriberCreateError {
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
 }
 
-impl std::fmt::Display for SubscriberCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for SubscriberCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "SubscriberCreateError::{:?}", self)
     }
 }

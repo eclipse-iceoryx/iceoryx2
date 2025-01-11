@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Stores the [`Service`](crate::service::Service) messaging pattern specific static configuration.
-use std::fmt::Display;
+use core::fmt::Display;
 
 use crate::service::static_config::event;
 use crate::service::static_config::publish_subscribe;
@@ -33,7 +33,7 @@ pub enum MessagingPattern {
 }
 
 impl Display for MessagingPattern {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             MessagingPattern::Event(_) => write!(f, "Event"),
             MessagingPattern::PublishSubscribe(_) => write!(f, "PublishSubscribe"),

@@ -52,7 +52,7 @@ use iceoryx2_bb_elementary::scope_guard::*;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::*;
 use std::cell::UnsafeCell;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 use std::time::Duration;
 

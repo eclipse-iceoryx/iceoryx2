@@ -54,7 +54,7 @@
 //! # }
 //! ```
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::shm_allocator::AllocationStrategy;
@@ -98,7 +98,7 @@ struct UnableToDeliverStrategyVisitor;
 impl Visitor<'_> for UnableToDeliverStrategyVisitor {
     type Value = UnableToDeliverStrategy;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         formatter.write_str("a string containing either 'Block' or 'DiscardSample'")
     }
 

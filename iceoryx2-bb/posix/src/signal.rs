@@ -289,13 +289,13 @@ pub struct SignalHandler {
 unsafe impl Send for SignalHandler {}
 
 impl Debug for SignalHandler {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(&self, f)
     }
 }
 
 impl Display for SignalHandler {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut registered_signals: Vec<FetchableSignal> = vec![];
         for i in 0..posix::MAX_SIGNAL_VALUE {
             if self.registered_signals[i].is_some() {

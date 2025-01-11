@@ -22,7 +22,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::sync::Arc;
 
 #[derive(Debug)]

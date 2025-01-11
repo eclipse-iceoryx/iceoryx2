@@ -95,7 +95,7 @@ pub type IndexQueue = details::IndexQueue<OwningPointer<UnsafeCell<u64>>>;
 pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
-    use std::fmt::Debug;
+    use core::fmt::Debug;
 
     use iceoryx2_bb_elementary::math::unaligned_mem_size;
 

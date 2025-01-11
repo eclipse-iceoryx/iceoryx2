@@ -91,7 +91,7 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 use std::alloc::Layout;
 use std::cell::UnsafeCell;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::sync::atomic::{fence, Ordering};
 use tiny_fn::tiny_fn;
 
@@ -146,7 +146,7 @@ pub struct UniqueIndex<'a> {
 }
 
 impl Debug for UniqueIndex<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "UniqueIndex {{ value: {}, index_set addr: {:#x} }}",

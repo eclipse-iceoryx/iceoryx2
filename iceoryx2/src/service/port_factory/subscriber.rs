@@ -29,7 +29,7 @@
 //! # }
 //! ```
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
 

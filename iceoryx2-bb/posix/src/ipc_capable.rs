@@ -14,7 +14,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
 pub(crate) mod internal {
-    use std::fmt::Debug;
+    use core::fmt::Debug;
 
     use super::*;
 
@@ -36,7 +36,7 @@ pub(crate) mod internal {
     unsafe impl<T> Sync for HandleStorage<T> {}
 
     impl<T> Debug for HandleStorage<T> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             write!(
                 f,
                 "HandleStorage<{}> {{ is_interprocess_capable: {}, is_initialized: {} }}",

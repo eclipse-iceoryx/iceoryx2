@@ -88,8 +88,8 @@ impl crate::Log for Logger {
     fn log(
         &self,
         log_level: LogLevel,
-        origin: std::fmt::Arguments,
-        formatted_message: std::fmt::Arguments,
+        origin: core::fmt::Arguments,
+        formatted_message: core::fmt::Arguments,
     ) {
         self.buffer
             .lock()

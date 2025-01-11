@@ -92,8 +92,8 @@ impl Log for CLogger {
     fn log(
         &self,
         log_level: LogLevel,
-        origin: std::fmt::Arguments,
-        formatted_message: std::fmt::Arguments,
+        origin: core::fmt::Arguments,
+        formatted_message: core::fmt::Arguments,
     ) {
         let mut origin = origin.to_string();
         origin.push('\0');

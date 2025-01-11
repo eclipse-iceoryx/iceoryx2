@@ -91,7 +91,7 @@ pub mod dynamic;
 pub use crate::shm_allocator::{pool_allocator::PoolAllocator, AllocationStrategy};
 
 use std::alloc::Layout;
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::time::Duration;
 
 use iceoryx2_bb_elementary::enum_gen;

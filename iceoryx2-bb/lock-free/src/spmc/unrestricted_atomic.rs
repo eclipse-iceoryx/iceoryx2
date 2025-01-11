@@ -72,7 +72,7 @@ pub struct UnrestrictedAtomic<T: Copy> {
 }
 
 impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "UnrestrictedAtomic<{}> {{ write_cell: {}, data: {:?}, has_producer: {} }}",

@@ -72,7 +72,7 @@ pub struct UniqueSystemId {
 }
 
 impl Debug for UniqueSystemId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "UniqueSystemId {{ value: {}, pid: {}, creation_time: {:?} }}",
@@ -84,7 +84,7 @@ impl Debug for UniqueSystemId {
 }
 
 impl Display for UniqueSystemId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.value())
     }
 }

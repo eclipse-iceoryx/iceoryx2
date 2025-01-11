@@ -63,7 +63,7 @@
 use crate::byte_string::FixedSizeByteStringModificationError;
 use crate::byte_string::{as_escaped_string, strnlen, FixedSizeByteString};
 use iceoryx2_bb_log::fail;
-use std::fmt::{Debug, Display};
+use core::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::ops::Deref;
 
@@ -82,8 +82,8 @@ impl From<FixedSizeByteStringModificationError> for SemanticStringError {
     }
 }
 
-impl std::fmt::Display for SemanticStringError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for SemanticStringError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "SemanticStringError::{:?}", self)
     }
 }
@@ -403,7 +403,7 @@ macro_rules! semantic_string {
         impl<'de> serde::de::Visitor<'de> for VisitorType::$string_name {
             type Value = $string_name;
 
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
                 formatter.write_str("a string containing the service name")
             }
 
@@ -464,8 +464,8 @@ macro_rules! semantic_string {
             }
         }
 
-        impl std::fmt::Display for $string_name {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        impl core::fmt::Display for $string_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 std::write!(f, "{}", self.value)
             }
         }

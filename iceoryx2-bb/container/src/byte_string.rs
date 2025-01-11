@@ -67,8 +67,8 @@ pub enum FixedSizeByteStringModificationError {
     InsertWouldExceedCapacity,
 }
 
-impl std::fmt::Display for FixedSizeByteStringModificationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for FixedSizeByteStringModificationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "FixedSizeByteStringModificationError::{:?}", self)
     }
 }
@@ -98,7 +98,7 @@ struct FixedSizeByteStringVisitor<const CAPACITY: usize>;
 impl<const CAPACITY: usize> Visitor<'_> for FixedSizeByteStringVisitor<CAPACITY> {
     type Value = FixedSizeByteString<CAPACITY>;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         formatter.write_str(&format!("a string with a length of at most {}", CAPACITY))
     }
 
@@ -199,7 +199,7 @@ impl<const CAPACITY: usize, const OTHER_CAPACITY: usize> PartialEq<&[u8; OTHER_C
 }
 
 impl<const CAPACITY: usize> Debug for FixedSizeByteString<CAPACITY> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "FixedSizeByteString<{}> {{ len: {}, data: \"{}\" }}",
@@ -211,7 +211,7 @@ impl<const CAPACITY: usize> Debug for FixedSizeByteString<CAPACITY> {
 }
 
 impl<const CAPACITY: usize> Display for FixedSizeByteString<CAPACITY> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", as_escaped_string(self.as_bytes()))
     }
 }

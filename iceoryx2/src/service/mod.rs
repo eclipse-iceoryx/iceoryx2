@@ -167,7 +167,7 @@ pub mod ipc;
 pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -233,8 +233,8 @@ pub enum ServiceDetailsError {
     FailedToAcquireNodeState,
 }
 
-impl std::fmt::Display for ServiceDetailsError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ServiceDetailsError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "ServiceDetailsError::{:?}", self)
     }
 }
@@ -250,8 +250,8 @@ pub enum ServiceListError {
     InternalError,
 }
 
-impl std::fmt::Display for ServiceListError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ServiceListError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "ServiceListError::{:?}", self)
     }
 }
