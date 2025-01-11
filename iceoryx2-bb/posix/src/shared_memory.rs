@@ -82,7 +82,7 @@ use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 use iceoryx2_pal_posix::*;
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use std::ptr::NonNull;
+use core::ptr::NonNull;
 use std::sync::atomic::Ordering;
 
 pub use crate::access_mode::AccessMode;
@@ -568,7 +568,7 @@ impl SharedMemory {
     ) -> Result<*mut posix::void, SharedMemoryCreationError> {
         let base_address = unsafe {
             posix::mmap(
-                std::ptr::null_mut::<posix::void>(),
+                core::ptr::null_mut::<posix::void>(),
                 config.size,
                 config.access_mode.as_protflag(),
                 posix::MAP_SHARED,

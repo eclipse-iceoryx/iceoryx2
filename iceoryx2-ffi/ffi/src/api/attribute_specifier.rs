@@ -116,7 +116,7 @@ pub unsafe extern "C" fn iox2_attribute_specifier_new(
 ) -> c_int {
     debug_assert!(!handle_ptr.is_null());
 
-    *handle_ptr = std::ptr::null_mut();
+    *handle_ptr = core::ptr::null_mut();
 
     let mut struct_ptr = struct_ptr;
     fn no_op(_: *mut iox2_attribute_specifier_t) {}

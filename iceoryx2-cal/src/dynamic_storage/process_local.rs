@@ -51,7 +51,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::ptr::NonNull;
+use core::ptr::NonNull;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -255,7 +255,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
             return Ok(false);
         }
 
-        std::ptr::drop_in_place(
+        core::ptr::drop_in_place(
             entry
                 .as_mut()
                 .unwrap()

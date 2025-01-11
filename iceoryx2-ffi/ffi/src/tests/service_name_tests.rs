@@ -19,9 +19,9 @@ fn basic_service_name_test() -> Result<(), Box<dyn std::error::Error>> {
     unsafe {
         let expected_service_name = ServiceName::new("all/glory/to/hypnotaod")?;
 
-        let mut service_name_handle: iox2_service_name_h = std::ptr::null_mut();
+        let mut service_name_handle: iox2_service_name_h = core::ptr::null_mut();
         let ret_val = iox2_service_name_new(
-            std::ptr::null_mut(),
+            core::ptr::null_mut(),
             expected_service_name.as_str().as_ptr() as *const _,
             expected_service_name.len() as _,
             &mut service_name_handle,

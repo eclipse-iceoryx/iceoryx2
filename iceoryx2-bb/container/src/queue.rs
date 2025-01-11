@@ -89,7 +89,7 @@
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-//! use std::ptr::NonNull;
+//! use core::ptr::NonNull;
 //!
 //! const QUEUE_CAPACITY:usize = 12;
 //! const MEM_SIZE: usize = RelocatableQueue::<u128>::const_memory_size(QUEUE_CAPACITY);

@@ -423,7 +423,7 @@ fn iox2_node_list_impl<S: Service>(
                         view.config() as _,
                     )
                 })
-                .unwrap_or((unknown_executable, std::ptr::null(), std::ptr::null()));
+                .unwrap_or((unknown_executable, core::ptr::null(), core::ptr::null()));
             callback(
                 iox2_node_state_e::ALIVE,
                 alive_node_view.id(),
@@ -445,7 +445,7 @@ fn iox2_node_list_impl<S: Service>(
                         view.config() as _,
                     )
                 })
-                .unwrap_or((unknown_executable, std::ptr::null(), std::ptr::null()));
+                .unwrap_or((unknown_executable, core::ptr::null(), core::ptr::null()));
             callback(
                 iox2_node_state_e::DEAD,
                 dead_node_view.id(),
@@ -460,8 +460,8 @@ fn iox2_node_list_impl<S: Service>(
             iox2_node_state_e::INACCESSIBLE,
             node_id,
             unknown_executable.as_bytes_with_nul().as_ptr().cast(),
-            std::ptr::null(),
-            std::ptr::null(),
+            core::ptr::null(),
+            core::ptr::null(),
             callback_ctx,
         )
         .into(),
@@ -469,8 +469,8 @@ fn iox2_node_list_impl<S: Service>(
             iox2_node_state_e::UNDEFINED,
             node_id,
             unknown_executable.as_bytes_with_nul().as_ptr().cast(),
-            std::ptr::null(),
-            std::ptr::null(),
+            core::ptr::null(),
+            core::ptr::null(),
             callback_ctx,
         )
         .into(),

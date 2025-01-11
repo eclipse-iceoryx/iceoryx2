@@ -270,21 +270,21 @@ impl FileDescriptorSet {
             | FileEvent::ReadWrite
             | FileEvent::ReadExceptional
             | FileEvent::ReadWriteExceptional => &mut fd_set,
-            _ => std::ptr::null_mut::<posix::fd_set>(),
+            _ => core::ptr::null_mut::<posix::fd_set>(),
         };
         let write_fd: *mut posix::fd_set = match event {
             FileEvent::Write
             | FileEvent::ReadWrite
             | FileEvent::WriteExceptional
             | FileEvent::ReadWriteExceptional => &mut fd_set,
-            _ => std::ptr::null_mut::<posix::fd_set>(),
+            _ => core::ptr::null_mut::<posix::fd_set>(),
         };
         let exceptional_fd: *mut posix::fd_set = match event {
             FileEvent::Exceptional
             | FileEvent::ReadExceptional
             | FileEvent::WriteExceptional
             | FileEvent::ReadWriteExceptional => &mut fd_set,
-            _ => std::ptr::null_mut::<posix::fd_set>(),
+            _ => core::ptr::null_mut::<posix::fd_set>(),
         };
 
         let msg = "Failure while waiting for file descriptor events";

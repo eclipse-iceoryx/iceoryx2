@@ -151,7 +151,7 @@ impl Debug for UniqueIndex<'_> {
             f,
             "UniqueIndex {{ value: {}, index_set addr: {:#x} }}",
             self.value,
-            std::ptr::addr_of!(self.index_set) as u64
+            core::ptr::addr_of!(self.index_set) as u64
         )
     }
 }

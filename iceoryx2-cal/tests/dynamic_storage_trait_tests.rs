@@ -34,7 +34,7 @@ mod dynamic_storage {
         fn new(value: i64) -> Self {
             Self {
                 value: AtomicI64::new(value),
-                supplementary_ptr: std::ptr::null_mut::<u8>(),
+                supplementary_ptr: core::ptr::null_mut::<u8>(),
                 supplementary_len: 0,
                 _lifetime_tracker: None,
             }
@@ -43,7 +43,7 @@ mod dynamic_storage {
         fn new_with_lifetime_tracking(value: i64) -> Self {
             Self {
                 value: AtomicI64::new(value),
-                supplementary_ptr: std::ptr::null_mut::<u8>(),
+                supplementary_ptr: core::ptr::null_mut::<u8>(),
                 supplementary_len: 0,
                 _lifetime_tracker: Some(LifetimeTracker::new()),
             }

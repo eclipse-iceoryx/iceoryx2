@@ -19,9 +19,9 @@ fn basic_node_name_test() -> Result<(), Box<dyn std::error::Error>> {
     unsafe {
         let expected_node_name = NodeName::new("hypnotaod")?;
 
-        let mut node_name_handle: iox2_node_name_h = std::ptr::null_mut();
+        let mut node_name_handle: iox2_node_name_h = core::ptr::null_mut();
         let ret_val = iox2_node_name_new(
-            std::ptr::null_mut(),
+            core::ptr::null_mut(),
             expected_node_name.as_str().as_ptr() as *const _,
             expected_node_name.len() as _,
             &mut node_name_handle,

@@ -685,7 +685,7 @@ impl UnixDatagramSender {
                 data.as_ptr() as *const posix::void,
                 data.len(),
                 0,
-                std::ptr::null::<posix::sockaddr>(),
+                core::ptr::null::<posix::sockaddr>(),
                 0,
             )
         };
@@ -1031,8 +1031,8 @@ impl UnixDatagramReceiver {
                 buffer.as_mut_ptr() as *mut posix::void,
                 buffer.len(),
                 flags,
-                std::ptr::null_mut::<posix::sockaddr>(),
-                std::ptr::null_mut::<u32>(),
+                core::ptr::null_mut::<posix::sockaddr>(),
+                core::ptr::null_mut::<u32>(),
             )
         };
 

@@ -22,7 +22,7 @@ mod node {
         unsafe {
             let node_handle = create_node::<S>("");
 
-            assert_that!(node_handle, ne(std::ptr::null_mut()));
+            assert_that!(node_handle, ne(core::ptr::null_mut()));
 
             iox2_node_drop(node_handle);
         }

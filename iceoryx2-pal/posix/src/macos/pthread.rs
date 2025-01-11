@@ -894,7 +894,7 @@ pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
 
 pub unsafe fn pthread_mutexattr_destroy(attr: *mut pthread_mutexattr_t) -> int {
     Errno::set(Errno::ESUCCES);
-    std::ptr::drop_in_place(attr);
+    core::ptr::drop_in_place(attr);
     0
 }
 

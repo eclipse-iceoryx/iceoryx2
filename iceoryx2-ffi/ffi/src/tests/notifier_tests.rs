@@ -23,13 +23,13 @@ mod service_builder {
 
             let notifier_builder_handle = iox2_port_factory_event_notifier_builder(
                 &event_service_handle,
-                std::ptr::null_mut(),
+                core::ptr::null_mut(),
             );
 
-            let mut notifier_handle = std::ptr::null_mut();
+            let mut notifier_handle = core::ptr::null_mut();
             let ret_val = iox2_port_factory_notifier_builder_create(
                 notifier_builder_handle,
-                std::ptr::null_mut(),
+                core::ptr::null_mut(),
                 &mut notifier_handle,
             );
             assert_that!(ret_val, eq(IOX2_OK));

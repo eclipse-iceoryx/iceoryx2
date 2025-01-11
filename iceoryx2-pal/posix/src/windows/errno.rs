@@ -221,7 +221,7 @@ pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
         buflen
     }();
 
-    std::ptr::copy_nonoverlapping(error, buf, len);
+    core::ptr::copy_nonoverlapping(error, buf, len);
 
     0
 }

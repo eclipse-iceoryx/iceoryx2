@@ -332,7 +332,7 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         }
 
         let mut new_self = Self::new();
-        std::ptr::copy_nonoverlapping(
+        core::ptr::copy_nonoverlapping(
             ptr,
             new_self.as_mut_bytes().as_mut_ptr() as *mut core::ffi::c_char,
             string_length,
@@ -452,7 +452,7 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
     ///
     pub unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
         unsafe {
-            std::ptr::copy(
+            core::ptr::copy(
                 self.data[idx].as_ptr(),
                 self.data[idx].as_mut_ptr().add(bytes.len()),
                 self.len - idx,
@@ -528,7 +528,7 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
 
     fn remove_range_impl(&mut self, idx: usize, len: usize) {
         unsafe {
-            std::ptr::copy(
+            core::ptr::copy(
                 self.data[idx + len].as_ptr(),
                 self.data[idx].as_mut_ptr(),
                 self.len - (idx + len),

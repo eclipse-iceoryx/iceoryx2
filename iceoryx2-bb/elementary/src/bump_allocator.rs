@@ -34,18 +34,18 @@ impl BaseAllocator for BumpAllocator {
     fn allocate(
         &self,
         layout: std::alloc::Layout,
-    ) -> Result<std::ptr::NonNull<[u8]>, crate::allocator::AllocationError> {
+    ) -> Result<core::ptr::NonNull<[u8]>, crate::allocator::AllocationError> {
         let mem = align(self.pos.load(Ordering::Relaxed), layout.align());
         self.pos.store(mem + layout.size(), Ordering::Relaxed);
 
         unsafe {
-            Ok(std::ptr::NonNull::new_unchecked(
+            Ok(core::ptr::NonNull::new_unchecked(
                 std::slice::from_raw_parts_mut(mem as *mut u8, layout.size()),
             ))
         }
     }
 
-    unsafe fn deallocate(&self, _ptr: std::ptr::NonNull<u8>, _layout: std::alloc::Layout) {
+    unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: std::alloc::Layout) {
         self.pos.store(self.start, Ordering::Relaxed);
     }
 }

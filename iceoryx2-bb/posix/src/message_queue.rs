@@ -426,7 +426,7 @@ mod internal {
                 posix::mq_setattr(
                     self.mqdes,
                     &attributes,
-                    std::ptr::null_mut::<posix::mq_attr>(),
+                    core::ptr::null_mut::<posix::mq_attr>(),
                 )
             } == -1
             {

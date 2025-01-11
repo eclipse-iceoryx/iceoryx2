@@ -71,7 +71,7 @@
 //! use iceoryx2_bb_container::vec::RelocatableVec;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-//! use std::ptr::NonNull;
+//! use core::ptr::NonNull;
 //!
 //! const VEC_CAPACITY:usize = 12;
 //! const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(VEC_CAPACITY);

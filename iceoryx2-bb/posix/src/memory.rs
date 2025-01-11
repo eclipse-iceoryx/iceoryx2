@@ -17,7 +17,7 @@ use iceoryx2_bb_elementary::allocator::{
 };
 use iceoryx2_bb_elementary::math::*;
 pub use std::alloc::Layout;
-pub use std::ptr::NonNull;
+pub use core::ptr::NonNull;
 
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;

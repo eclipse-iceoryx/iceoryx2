@@ -54,7 +54,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 pub use std::ops::Deref;
-use std::ptr::NonNull;
+use core::ptr::NonNull;
 use std::sync::atomic::Ordering;
 
 use self::dynamic_storage_configuration::DynamicStorageConfiguration;

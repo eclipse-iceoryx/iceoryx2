@@ -518,7 +518,7 @@ pub unsafe extern "C" fn iox2_publisher_loan_slice_uninit(
     publisher_handle.assert_non_null();
     debug_assert!(!sample_handle_ptr.is_null());
 
-    *sample_handle_ptr = std::ptr::null_mut();
+    *sample_handle_ptr = core::ptr::null_mut();
 
     let init_sample_struct_ptr = |sample_struct_ptr: *mut iox2_sample_mut_t| {
         let mut sample_struct_ptr = sample_struct_ptr;
