@@ -10,10 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
+use core::{
     sync::atomic::{AtomicU64, Ordering},
-    time::{Duration, Instant},
+    time::Duration,
 };
+use std::time::Instant;
 
 use iceoryx2_bb_posix::{barrier::*, udp_socket::*};
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};

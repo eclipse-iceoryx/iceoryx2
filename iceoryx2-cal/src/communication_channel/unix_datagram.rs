@@ -13,7 +13,7 @@
 //! [CommunicationChannel] based on [`UnixDatagramSender`] & [`UnixDatagramSender`]. Can send and
 //! receive data without restrictions.
 
-use std::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
+use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::{

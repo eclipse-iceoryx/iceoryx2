@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::c_size_t;
-use std::{ffi::c_char, mem::ManuallyDrop};
+use core::{ffi::c_char, mem::ManuallyDrop};
 
 use iceoryx2::{
     prelude::WaitSetAttachmentId,

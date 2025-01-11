@@ -14,7 +14,7 @@
 #![allow(unused_variables)]
 
 use crate::posix::types::*;
-use std::{cell::Cell, ffi::CStr, fmt::Display};
+use core::{cell::Cell, ffi::CStr, fmt::Display};
 
 macro_rules! ErrnoEnumGenerator {
     (assign $($entry:ident = $value:expr),*; map $($map_entry:ident),*) => {

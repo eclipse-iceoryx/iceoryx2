@@ -13,7 +13,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::types::*;
-use std::{ffi::CStr, fmt::Display};
+use core::{ffi::CStr, fmt::Display};
 
 macro_rules! ErrnoEnumGenerator {
     (assign $($entry:ident = $value:expr),*; map $($map_entry:ident),*) => {

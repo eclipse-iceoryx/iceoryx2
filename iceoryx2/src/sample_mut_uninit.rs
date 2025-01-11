@@ -90,7 +90,8 @@
 //! # }
 //! ```
 
-use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
+use core::{fmt::Debug, mem::MaybeUninit};
+use std::sync::Arc;
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
 

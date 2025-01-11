@@ -14,7 +14,7 @@ use core::alloc::Layout;
 use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-use std::{fmt::Debug, marker::PhantomData};
+use core::{fmt::Debug, marker::PhantomData};
 
 use crate::shared_memory::{
     AllocationStrategy, SegmentId, SharedMemoryForPoolAllocator, ShmPointer,

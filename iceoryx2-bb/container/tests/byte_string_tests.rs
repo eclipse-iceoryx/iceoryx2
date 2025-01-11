@@ -11,10 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod fixed_size_byte_string {
-    use std::{
-        hash::{Hash, Hasher},
-        ops::DerefMut,
-    };
+    use core::ops::DerefMut;
+    use std::hash::{Hash, Hasher};
 
     use iceoryx2_bb_container::byte_string::*;
     use iceoryx2_bb_elementary::placement_default::PlacementDefault;

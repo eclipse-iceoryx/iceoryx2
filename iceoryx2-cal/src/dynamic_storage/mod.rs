@@ -54,7 +54,7 @@
 //! }
 //! ```
 
-use std::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;

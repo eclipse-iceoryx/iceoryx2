@@ -12,7 +12,7 @@
 
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
-use std::{alloc::Layout, fmt::Debug};
+use core::{alloc::Layout, fmt::Debug};
 
 use crate::dynamic_storage::*;
 pub use crate::shared_memory::*;

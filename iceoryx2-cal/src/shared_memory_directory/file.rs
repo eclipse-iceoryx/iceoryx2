@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::{alloc::Layout, fmt::Debug};
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::FileName;
-use std::{alloc::Layout, fmt::Debug};
 
 use crate::shared_memory::ShmPointer;
 use crate::shared_memory_directory::SharedMemoryDirectoryCreateFileError;

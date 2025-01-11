@@ -10,10 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
+use core::{
     sync::atomic::{AtomicU32, Ordering},
-    time::{Duration, Instant},
+    time::Duration,
 };
+use std::time::Instant;
 
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_pal_concurrency_sync::{mutex::*, WaitAction, WaitResult};

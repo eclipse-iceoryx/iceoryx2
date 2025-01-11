@@ -19,7 +19,7 @@ use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_int;
-use std::{
+use core::{
     ffi::{c_char, CStr},
     mem::ManuallyDrop,
 };

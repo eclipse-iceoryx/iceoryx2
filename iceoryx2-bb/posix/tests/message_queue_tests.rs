@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
+use core::{
     sync::atomic::{AtomicU64, Ordering},
     time::Duration,
 };

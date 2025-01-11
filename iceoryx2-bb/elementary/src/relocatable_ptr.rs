@@ -66,8 +66,8 @@
 
 use crate::generic_pointer::GenericPointer;
 pub use crate::pointer_trait::PointerTrait;
+use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicIsize;
-use std::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 
 #[derive(Debug)]
 pub struct GenericRelocatablePointer;

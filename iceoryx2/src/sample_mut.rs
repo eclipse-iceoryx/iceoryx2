@@ -69,10 +69,9 @@ use crate::{
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_cal::shared_memory::*;
-use std::{
-    fmt::{Debug, Formatter},
-    sync::Arc,
-};
+
+use core::fmt::{Debug, Formatter};
+use std::sync::Arc;
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 ///  * [`crate::port::publisher::Publisher::loan()`],

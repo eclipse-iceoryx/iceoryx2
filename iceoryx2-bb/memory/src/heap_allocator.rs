@@ -12,7 +12,7 @@
 
 //! A **threadsafe** and **lock-free** [`Allocator`] which acquires the memory from the heap.
 
-use std::{alloc::Layout, ptr::NonNull};
+use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_elementary::allocator::{AllocationGrowError, AllocationShrinkError};
 use iceoryx2_bb_log::fail;

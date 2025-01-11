@@ -10,11 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
-    any::Any,
-    collections::HashMap,
-    sync::{atomic::Ordering, Arc},
-};
+use core::{any::Any, sync::atomic::Ordering};
+use std::{collections::HashMap, sync::Arc};
 
 pub use crate::event::*;
 use crate::static_storage::file::NamedConceptConfiguration;

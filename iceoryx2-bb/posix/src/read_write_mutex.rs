@@ -62,7 +62,8 @@ use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::{
+
+use core::{
     cell::UnsafeCell,
     fmt::Debug,
     ops::{Deref, DerefMut},

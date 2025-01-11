@@ -22,7 +22,8 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 /// copies when a type must be written into a specific memory location.
 ///
 /// ```
-/// use std::alloc::{alloc, dealloc, Layout};
+/// use core::alloc::Layout;
+/// use std::alloc::{alloc, dealloc};
 /// use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 ///
 /// struct MyLargeType {

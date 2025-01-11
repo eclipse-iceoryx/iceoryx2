@@ -13,7 +13,7 @@
 //! Contains the traits [`BaseAllocator`] which contains the most basic functionality an allocator
 //! requires and [`Allocator`] with more advanced allocation features.
 
-pub use std::{alloc::Layout, ptr::NonNull};
+pub use core::{alloc::Layout, ptr::NonNull};
 
 /// Failures caused by [`BaseAllocator::allocate()`] or [`BaseAllocator::allocate_zeroed()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

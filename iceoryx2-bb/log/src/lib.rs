@@ -147,10 +147,9 @@ pub mod fail;
 pub mod logger;
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
-use std::{
-    fmt::Arguments,
-    sync::{atomic::Ordering, Once},
-};
+
+use core::{fmt::Arguments, sync::atomic::Ordering};
+use std::sync::Once;
 
 #[cfg(feature = "logger_tracing")]
 static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();

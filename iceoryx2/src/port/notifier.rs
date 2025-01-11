@@ -51,11 +51,9 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, fail, warn};
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
 use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
-use std::{
-    cell::UnsafeCell,
-    sync::{atomic::Ordering, Arc},
-    time::Duration,
-};
+
+use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
+use std::sync::Arc;
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].

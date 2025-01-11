@@ -10,13 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Mutex,
-    },
-    thread,
-};
+use core::sync::atomic::{AtomicBool, Ordering};
+use std::{sync::Mutex, thread};
 
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_posix::{barrier::*, system_configuration::SystemInfo};

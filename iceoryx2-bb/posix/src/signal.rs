@@ -52,7 +52,7 @@
 //!
 //! SignalHandler::wait_for_signal(NonFatalFetchableSignal::Terminate);
 //! ```
-use std::{
+use core::{
     fmt::{Debug, Display},
     time::Duration,
 };

@@ -31,7 +31,7 @@
 //! let my_data = atomic.load();
 //! ```
 
-use std::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32};
 

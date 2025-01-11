@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{cell::UnsafeCell, sync::Arc};
+use core::cell::UnsafeCell;
+use std::sync::Arc;
 
 use crate::{
     port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},

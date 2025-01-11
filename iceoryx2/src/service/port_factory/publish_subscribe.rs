@@ -40,7 +40,7 @@
 //! # }
 //! ```
 
-use std::{fmt::Debug, marker::PhantomData};
+use core::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;

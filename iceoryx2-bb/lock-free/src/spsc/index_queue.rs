@@ -42,7 +42,7 @@
 //! }
 //! ```
 
-use std::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
+use core::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator, owning_pointer::OwningPointer, pointer_trait::PointerTrait,

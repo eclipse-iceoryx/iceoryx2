@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{collections::HashSet, sync::Barrier, time::Duration};
+use core::time::Duration;
+use std::{collections::HashSet, sync::Barrier};
 
 use iceoryx2_bb_posix::{process::Process, system_configuration::SystemInfo, unique_system_id::*};
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};

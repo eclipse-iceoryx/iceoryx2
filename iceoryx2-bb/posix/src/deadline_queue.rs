@@ -38,9 +38,9 @@
 
 pub use iceoryx2_bb_elementary::CallbackProgression;
 
+use core::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::{cell::RefCell, fmt::Debug, sync::atomic::Ordering, time::Duration};
 
 use crate::{
     clock::ClockType,

@@ -19,10 +19,11 @@ use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_int;
-use std::{
-    ffi::{c_char, CStr, CString},
+use core::{
+    ffi::{c_char, CStr},
     mem::ManuallyDrop,
 };
+use std::ffi::CString;
 
 use super::iox2_attribute_set_h_ref;
 

@@ -70,7 +70,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 use crate::mpmc::unique_index_set::*;
 use core::alloc::Layout;
 use core::fmt::Debug;
-use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
+use core::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 
 /// States the reason why an element could not be added to the [`Container`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

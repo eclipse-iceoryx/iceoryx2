@@ -11,7 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod shm_allocator_pool_allocator {
-    use std::{alloc::Layout, collections::HashSet, ptr::NonNull};
+    use core::{alloc::Layout, ptr::NonNull};
+    use std::collections::HashSet;
 
     use iceoryx2_bb_elementary::allocator::AllocationError;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;

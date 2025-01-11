@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{

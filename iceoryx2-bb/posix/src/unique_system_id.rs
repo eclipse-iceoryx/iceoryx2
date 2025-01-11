@@ -42,7 +42,8 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_posix::posix;
 use serde::{Deserialize, Serialize};
-use std::{
+
+use core::{
     fmt::{Debug, Display},
     sync::atomic::Ordering,
 };

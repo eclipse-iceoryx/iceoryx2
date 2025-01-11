@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod shm_allocator_bump_allocator {
-    use std::{alloc::Layout, ptr::NonNull};
+    use core::{alloc::Layout, ptr::NonNull};
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::shm_allocator::{bump_allocator::*, AllocationStrategy, ShmAllocator};

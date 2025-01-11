@@ -58,7 +58,7 @@ pub mod common;
 pub mod posix;
 pub mod process_local;
 
-use std::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};

@@ -16,7 +16,7 @@
 pub mod file;
 pub mod process_local;
 
-use std::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::*;

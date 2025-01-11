@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::{alloc::Layout, sync::atomic::Ordering};
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
     owning_pointer::OwningPointer,
@@ -18,7 +19,6 @@ use iceoryx2_bb_elementary::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use std::{alloc::Layout, sync::atomic::Ordering};
 
 pub type UsedChunkList = details::UsedChunkList<OwningPointer<IoxAtomicBool>>;
 pub type RelocatableUsedChunkList = details::UsedChunkList<RelocatablePointer<IoxAtomicBool>>;

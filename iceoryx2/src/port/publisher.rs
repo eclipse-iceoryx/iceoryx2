@@ -125,6 +125,7 @@ use core::any::TypeId;
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
+use core::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -142,7 +143,6 @@ use iceoryx2_cal::zero_copy_connection::{
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 use std::sync::Arc;
-use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 
 /// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].

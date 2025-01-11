@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{fmt::Debug, fmt::Display};
+use core::{fmt::Debug, fmt::Display};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Ipv4Address(u32);

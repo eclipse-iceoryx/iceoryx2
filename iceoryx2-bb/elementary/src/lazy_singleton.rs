@@ -33,8 +33,8 @@
 //! println!("{}", LAZY_GLOBAL.get());
 //! ```
 
+use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
 /// The lazy initialized singleton building block of type T
 #[derive(Debug)]

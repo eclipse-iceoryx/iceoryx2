@@ -19,10 +19,9 @@ use iceoryx2_bb_log::{
     get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
     logger::{use_console_logger, use_file_logger},
 };
-use std::{
-    ffi::{c_char, CStr},
-    sync::Once,
-};
+
+use core::ffi::{c_char, CStr};
+use std::sync::Once;
 
 #[repr(C)]
 #[derive(Copy, Clone)]

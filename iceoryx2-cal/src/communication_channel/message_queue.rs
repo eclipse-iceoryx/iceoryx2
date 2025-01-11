@@ -13,7 +13,7 @@
 //! [CommunicationChannel] based on [`MessageQueueSender`] & [`MessageQueueReceiver`]. Can send and
 //! receive data without restrictions.
 
-use std::{fmt::Debug, marker::PhantomData};
+use core::{fmt::Debug, marker::PhantomData};
 
 use core::cell::UnsafeCell;
 use iceoryx2_bb_log::fail;

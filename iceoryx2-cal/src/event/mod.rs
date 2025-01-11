@@ -18,7 +18,7 @@ pub mod sem_bitset_process_local;
 pub mod signal_mechanism;
 pub mod unix_datagram_socket;
 
-use std::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, time::Duration};
 
 pub use crate::named_concept::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 pub use iceoryx2_bb_system_types::file_name::*;

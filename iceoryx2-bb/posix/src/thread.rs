@@ -82,7 +82,7 @@
 //! println!("The thread {:?} was created.", thread);
 //! ```
 
-use std::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
+use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
 
 use crate::handle_errno;
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;

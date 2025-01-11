@@ -29,7 +29,7 @@
 //! println!("removed byte {}", some_string.remove(0));
 //! ```
 
-use std::{
+use core::{
     cmp::Ordering,
     fmt::{Debug, Display},
     hash::Hash,

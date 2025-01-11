@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
+use core::{
     hint::spin_loop,
     sync::atomic::{AtomicBool, AtomicU32, Ordering},
     time::Duration,

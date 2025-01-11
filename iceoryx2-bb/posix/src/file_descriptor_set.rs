@@ -44,7 +44,7 @@
 //!     |fd| println!("Fd was triggered {}", unsafe { fd.native_handle() })).unwrap();
 //! ```
 
-use std::{cell::UnsafeCell, fmt::Debug, time::Duration};
+use core::{cell::UnsafeCell, fmt::Debug, time::Duration};
 
 use crate::{
     clock::AsTimeval,

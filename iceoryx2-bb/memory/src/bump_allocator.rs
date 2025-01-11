@@ -15,7 +15,7 @@
 //! deallocate all allocated chunks. See this: `https://os.phil-opp.com/allocator-designs/`
 //! for more details.
 
-use std::{fmt::Display, ptr::NonNull, sync::atomic::Ordering};
+use core::{fmt::Display, ptr::NonNull, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_log::fail;

@@ -15,10 +15,8 @@
 #![allow(unused_variables)]
 
 use core::panic;
-use std::{
-    cell::UnsafeCell, os::windows::prelude::OsStringExt, sync::atomic::Ordering, time::SystemTime,
-    time::UNIX_EPOCH,
-};
+use core::{cell::UnsafeCell, sync::atomic::Ordering};
+use std::{os::windows::prelude::OsStringExt, time::SystemTime, time::UNIX_EPOCH};
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_concurrency_sync::rwlock::*;

@@ -45,9 +45,9 @@
 pub use iceoryx2_bb_posix::mutex::*;
 pub use iceoryx2_bb_posix::semaphore::*;
 
+use core::{fmt::Debug, marker::PhantomData, time::Duration};
 use iceoryx2_bb_container::queue::FixedSizeQueue;
 use iceoryx2_bb_log::fatal_panic;
-use std::{fmt::Debug, marker::PhantomData, time::Duration};
 
 const INTER_PROCESS_SUPPORT: bool = true;
 

@@ -83,7 +83,7 @@
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 
-use std::{
+use core::{
     alloc::Layout,
     marker::PhantomData,
     mem::MaybeUninit,

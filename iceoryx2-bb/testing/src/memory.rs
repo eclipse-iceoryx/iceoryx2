@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::alloc::{alloc, dealloc, Layout};
+use core::alloc::Layout;
+use std::alloc::{alloc, dealloc};
 
 /// Allocates uninitialized memory on the heap. When it goes out of scope the memory is released.
 /// The user has to ensure that the memory is initialized.

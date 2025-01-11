@@ -13,7 +13,9 @@
 //! The default [`Logger`] implementation.
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::{io::IsTerminal, sync::atomic::Ordering};
+
+use core::sync::atomic::Ordering;
+use std::io::IsTerminal;
 
 use termsize::Size;
 

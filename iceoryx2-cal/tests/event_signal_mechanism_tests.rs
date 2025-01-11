@@ -12,10 +12,8 @@
 
 #[generic_tests::define]
 mod signal_mechanism {
-    use std::{
-        sync::{atomic::AtomicU64, Barrier},
-        time::Duration,
-    };
+    use core::{sync::atomic::AtomicU64, time::Duration};
+    use std::sync::Barrier;
 
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};

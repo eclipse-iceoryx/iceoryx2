@@ -74,10 +74,10 @@
 use crate::{
     file_descriptor::FileDescriptor, process::*, unix_datagram_socket::UnixDatagramReceiver,
 };
+use core::{fmt::Display, marker::PhantomPinned};
 use iceoryx2_bb_log::warn;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::{fmt::Display, marker::PhantomPinned};
 
 /// Defines the maximum amount of [`FileDescriptor`]s which can be sent with a single message.
 pub const MAX_FILE_DESCRIPTORS_PER_MESSAGE: usize = posix::SCM_MAX_FD as usize;

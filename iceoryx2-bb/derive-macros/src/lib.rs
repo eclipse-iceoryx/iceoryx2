@@ -26,7 +26,8 @@ use syn::{parse_macro_input, Data, DeriveInput, Fields};
 /// ```
 /// use iceoryx2_bb_derive_macros::PlacementDefault;
 /// use iceoryx2_bb_elementary::placement_default::PlacementDefault;
-/// use std::alloc::{alloc, dealloc, Layout};
+/// use core::alloc::Layout;
+/// use std::alloc::{alloc, dealloc};
 ///
 /// #[derive(PlacementDefault)]
 /// struct MyLargeType {

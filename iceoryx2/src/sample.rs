@@ -30,8 +30,8 @@
 //! # }
 //! ```
 
+use core::{fmt::Debug, ops::Deref};
 use std::sync::Arc;
-use std::{fmt::Debug, ops::Deref};
 
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyReceiver, ZeroCopyReleaseError};
