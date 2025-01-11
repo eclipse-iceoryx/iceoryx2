@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![allow(clippy::missing_safety_doc)]
+#![warn(clippy::alloc_instead_of_core)]
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
