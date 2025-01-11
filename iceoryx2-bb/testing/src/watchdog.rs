@@ -11,11 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-    time::Instant,
-};
+
+extern crate alloc;
+use alloc::sync::Arc;
+
+use std::{sync::Mutex, thread, time::Instant};
 
 pub struct Watchdog {
     termination_thread: Option<thread::JoinHandle<()>>,

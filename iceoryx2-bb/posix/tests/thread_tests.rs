@@ -14,7 +14,10 @@ use iceoryx2_bb_posix::thread::*;
 use iceoryx2_bb_testing::assert_that;
 
 use core::time::Duration;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
+
 use std::sync::Barrier;
 use std::time::Instant;
 

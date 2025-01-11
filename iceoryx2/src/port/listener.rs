@@ -74,7 +74,9 @@ use crate::service::ServiceState;
 use crate::{port::port_identifiers::UniqueListenerId, service};
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use super::event_id::EventId;
 

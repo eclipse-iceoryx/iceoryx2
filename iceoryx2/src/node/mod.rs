@@ -173,8 +173,12 @@ use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+
+extern crate alloc;
+use alloc::sync::Arc;
+
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 /// The system-wide unique id of a [`Node`]
 #[derive(

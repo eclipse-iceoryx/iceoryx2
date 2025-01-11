@@ -31,7 +31,9 @@
 //! ```
 
 use core::{fmt::Debug, ops::Deref};
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyReceiver, ZeroCopyReleaseError};

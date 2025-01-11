@@ -142,7 +142,9 @@ use iceoryx2_cal::zero_copy_connection::{
     ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].

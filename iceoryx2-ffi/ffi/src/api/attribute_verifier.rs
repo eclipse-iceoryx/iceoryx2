@@ -23,7 +23,9 @@ use core::{
     ffi::{c_char, CStr},
     mem::ManuallyDrop,
 };
-use std::ffi::CString;
+
+extern crate alloc;
+use alloc::ffi::CString;
 
 use super::iox2_attribute_set_h_ref;
 

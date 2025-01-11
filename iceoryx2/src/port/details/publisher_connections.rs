@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::cell::UnsafeCell;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use crate::{
     port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},

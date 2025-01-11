@@ -23,7 +23,9 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 #[derive(Debug)]
 pub(crate) struct Management {

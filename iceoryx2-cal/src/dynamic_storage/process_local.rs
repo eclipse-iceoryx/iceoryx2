@@ -53,7 +53,9 @@ use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 pub use crate::dynamic_storage::*;
 use crate::static_storage::file::NamedConceptConfiguration;

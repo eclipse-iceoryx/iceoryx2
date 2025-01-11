@@ -10,14 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::time::Duration;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use std::sync::Arc;
+
+use core::time::Duration;
+
+extern crate alloc;
+use alloc::sync::Arc;
+
 use std::sync::Barrier;
 use std::thread;
 

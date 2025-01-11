@@ -53,7 +53,9 @@ use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
 use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 
 use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].

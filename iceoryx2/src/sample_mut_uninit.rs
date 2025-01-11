@@ -91,7 +91,9 @@
 //! ```
 
 use core::{fmt::Debug, mem::MaybeUninit};
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
 

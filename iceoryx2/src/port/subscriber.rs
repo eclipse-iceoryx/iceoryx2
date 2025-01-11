@@ -36,7 +36,9 @@ use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;

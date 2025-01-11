@@ -169,7 +169,9 @@ pub(crate) mod naming_scheme;
 
 use core::fmt::Debug;
 use core::time::Duration;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use crate::config;
 use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};

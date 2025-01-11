@@ -39,7 +39,9 @@ use iceoryx2_cal::named_concept::NamedConceptDoesExistError;
 use iceoryx2_cal::named_concept::NamedConceptMgmt;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use super::config_scheme::dynamic_config_storage_config;
 use super::config_scheme::service_tag_config;

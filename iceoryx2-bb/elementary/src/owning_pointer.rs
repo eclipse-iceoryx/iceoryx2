@@ -15,7 +15,9 @@
 
 use core::alloc::Layout;
 use core::fmt::Debug;
-use std::alloc::{alloc, dealloc};
+
+extern crate alloc;
+use alloc::alloc::{alloc, dealloc};
 
 use crate::generic_pointer::GenericPointer;
 use crate::pointer_trait::PointerTrait;

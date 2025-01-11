@@ -520,7 +520,8 @@ pub trait BasicConditionVariableInterface<T: Debug>:
 /// ```
 /// use iceoryx2_bb_posix::condition_variable::*;
 /// use std::thread;
-/// use std::sync::Arc;
+/// extern crate alloc;
+/// use alloc::sync::Arc;
 /// use core::time::Duration;
 ///
 /// let mtx_handle = MutexHandle::<i32>::new();
@@ -779,7 +780,8 @@ impl<T: Debug> Drop for ConditionVariableGuard<'_, '_, '_, T> {
 /// ```
 /// use iceoryx2_bb_posix::condition_variable::*;
 /// use std::thread;
-/// use std::sync::Arc;
+/// extern crate alloc;
+/// use alloc::sync::Arc;
 /// use core::time::Duration;
 ///
 /// let mtx_handle = MutexHandle::<ConditionVariableData<i32>>::new();

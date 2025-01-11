@@ -71,7 +71,9 @@ use crate::{
 use iceoryx2_cal::shared_memory::*;
 
 use core::fmt::{Debug, Formatter};
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 ///  * [`crate::port::publisher::Publisher::loan()`],

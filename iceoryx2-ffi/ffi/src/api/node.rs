@@ -31,7 +31,9 @@ use iceoryx2_ffi_macros::CStrRepr;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use core::time::Duration;
-use std::ffi::CString;
+
+extern crate alloc;
+use alloc::ffi::CString;
 
 use super::{iox2_config_h_ref, iox2_node_id_h_ref, iox2_node_id_ptr, iox2_signal_handling_mode_e};
 
