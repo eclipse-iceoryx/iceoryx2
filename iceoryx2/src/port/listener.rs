@@ -72,9 +72,9 @@ use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::service::ServiceState;
 use crate::{port::port_identifiers::UniqueListenerId, service};
+use core::time::Duration;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::time::Duration;
 
 use super::event_id::EventId;
 

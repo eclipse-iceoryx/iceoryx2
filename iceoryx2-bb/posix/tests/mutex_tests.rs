@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::mutex::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
@@ -19,7 +20,6 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 use std::sync::Arc;
 use std::sync::Barrier;
 use std::thread;
-use std::time::Duration;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
@@ -64,7 +64,7 @@ fn mutex_try_lock_leads_to_blocked_mutex() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -92,7 +92,7 @@ fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -122,7 +122,7 @@ fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -306,7 +306,7 @@ fn mutex_recursive_mutex_blocks() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let old_value = *value;
         *value = 444;
         drop(value);
@@ -333,7 +333,7 @@ fn mutex_with_deadlock_detection_blocks() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let old_value = *value;
         *value = 444;
         drop(value);

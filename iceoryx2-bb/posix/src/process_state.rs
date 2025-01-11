@@ -44,7 +44,7 @@
 //!             Err(ProcessCleanerCreateError::OwnedByAnotherProcess) => {
 //!                 // cool, someone else has instantiated it and is already cleaning up all resources
 //!                 // wait a bit and try again
-//!                 std::thread::sleep(std::time::Duration::from_millis(500));
+//!                 std::thread::sleep(core::time::Duration::from_millis(500));
 //!                 match ProcessGuard::new(&process_state_path) {
 //!                     Ok(guard) => guard,
 //!                     Err(_) => {

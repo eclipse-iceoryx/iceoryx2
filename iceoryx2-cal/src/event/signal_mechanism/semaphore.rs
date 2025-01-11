@@ -66,7 +66,7 @@ impl SignalMechanism for Semaphore {
 
     unsafe fn timed_wait(
         &self,
-        timeout: std::time::Duration,
+        timeout: core::time::Duration,
     ) -> Result<bool, crate::event::ListenerWaitError> {
         let msg = "Failed to decrement underlying semaphore with timeout";
         match self.semaphore().timed_wait(timeout) {

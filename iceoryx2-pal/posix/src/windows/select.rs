@@ -14,7 +14,8 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use std::time::{Duration, Instant};
+use core::time::Duration;
+use std::time::Instant;
 
 use crate::posix::Struct;
 use crate::{posix::types::*, win32call};

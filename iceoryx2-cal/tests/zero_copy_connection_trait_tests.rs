@@ -12,9 +12,10 @@
 
 #[generic_tests::define]
 mod zero_copy_connection {
+    use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::Mutex;
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
 
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;

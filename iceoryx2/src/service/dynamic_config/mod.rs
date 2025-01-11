@@ -20,6 +20,7 @@ pub mod event;
 /// based service.
 pub mod publish_subscribe;
 
+use core::fmt::Display;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::{
@@ -28,7 +29,6 @@ use iceoryx2_bb_lock_free::mpmc::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use core::fmt::Display;
 
 use crate::{node::NodeId, port::port_identifiers::UniquePortId};
 

@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
@@ -21,7 +22,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_pal_posix::posix;
-use std::time::Duration;
 use std::time::Instant;
 
 static TIMEOUT: Duration = Duration::from_millis(10);

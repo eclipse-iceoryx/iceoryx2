@@ -19,7 +19,7 @@
 //! ```ignore
 //! use iceoryx2_bb_posix::file_descriptor_set::*;
 //! use iceoryx2_bb_posix::unix_datagram_socket::*;
-//! use std::time::Duration;
+//! use core::time::Duration;
 //! use iceoryx2_bb_system_types::file_path::FilePath;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //!

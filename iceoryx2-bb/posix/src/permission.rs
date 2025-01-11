@@ -16,8 +16,8 @@
 //! credentials of [`crate::file::File`], [`crate::shared_memory::SharedMemory`] and others.
 
 use bitflags::bitflags;
-use iceoryx2_pal_posix::*;
 use core::fmt::Display;
+use iceoryx2_pal_posix::*;
 
 type ModeType = posix::mode_t;
 

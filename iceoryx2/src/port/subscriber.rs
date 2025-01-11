@@ -31,9 +31,9 @@
 //! # }
 //! ```
 
+use core::fmt::Debug;
 use std::any::TypeId;
 use std::cell::UnsafeCell;
-use core::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;

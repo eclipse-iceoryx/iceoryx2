@@ -35,7 +35,7 @@
 //! use iceoryx2_cal::shared_memory::SharedMemory;
 //! use iceoryx2_cal::named_concept::*;
 //! use std::alloc::Layout;
-//! use std::time::Duration;
+//! use core::time::Duration;
 //!
 //! fn example<Alloc: ShmAllocator, Shm: SharedMemory<Alloc>, Memory: ResizableSharedMemory<Alloc, Shm>>(
 //!     name: &FileName
@@ -90,9 +90,9 @@ pub mod dynamic;
 
 pub use crate::shm_allocator::{pool_allocator::PoolAllocator, AllocationStrategy};
 
-use std::alloc::Layout;
 use core::fmt::Debug;
-use std::time::Duration;
+use core::time::Duration;
+use std::alloc::Layout;
 
 use iceoryx2_bb_elementary::enum_gen;
 

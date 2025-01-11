@@ -14,6 +14,7 @@
 
 use crate::{api::AssertNonNullHandle, c_size_t, iox2_unable_to_deliver_strategy_e};
 use core::ffi::{c_char, c_int};
+use core::mem::ManuallyDrop;
 use core::time::Duration;
 use iceoryx2::config::{Config, ConfigCreationError};
 use iceoryx2_bb_container::semantic_string::*;
@@ -24,7 +25,6 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 use iceoryx2_ffi_macros::CStrRepr;
-use core::mem::ManuallyDrop;
 
 use crate::IOX2_OK;
 

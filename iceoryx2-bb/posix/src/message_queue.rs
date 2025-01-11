@@ -42,9 +42,9 @@
 //! ```
 
 use core::fmt::Debug;
-use std::marker::PhantomData;
 use core::mem::MaybeUninit;
-use std::time::Duration;
+use core::time::Duration;
+use std::marker::PhantomData;
 
 pub use crate::clock::ClockType;
 pub use crate::creation_mode::CreationMode;

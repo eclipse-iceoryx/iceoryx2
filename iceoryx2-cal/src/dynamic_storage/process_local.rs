@@ -37,6 +37,8 @@
 //! println!("New value: {}", reader.get().load(Ordering::Relaxed));
 //! ```
 
+use core::fmt::Debug;
+use core::ptr::NonNull;
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
@@ -49,9 +51,7 @@ use once_cell::sync::Lazy;
 use std::alloc::Layout;
 use std::any::Any;
 use std::collections::HashMap;
-use core::fmt::Debug;
 use std::marker::PhantomData;
-use core::ptr::NonNull;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 

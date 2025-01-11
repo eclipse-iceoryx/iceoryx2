@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod zero_copy_connection_posix_shared_memory_tests {
+    use core::time::Duration;
     use iceoryx2_bb_elementary::math::ToB64;
     use iceoryx2_bb_posix::creation_mode::CreationMode;
     use iceoryx2_bb_posix::permission::Permission;
@@ -19,7 +20,6 @@ mod zero_copy_connection_posix_shared_memory_tests {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::zero_copy_connection::*;
-    use std::time::Duration;
 
     const TIMEOUT: Duration = Duration::from_millis(100);
 

@@ -10,11 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
-use std::time::Duration;
 use std::time::Instant;
 
 const TIMEOUT: Duration = Duration::from_millis(100);

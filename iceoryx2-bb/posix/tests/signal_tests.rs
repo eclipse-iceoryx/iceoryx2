@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::process::*;
 use iceoryx2_bb_posix::signal::*;
@@ -22,7 +23,6 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::thread;
-use std::time::Duration;
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
 static SIGNAL: AtomicUsize = AtomicUsize::new(posix::MAX_SIGNAL_VALUE);

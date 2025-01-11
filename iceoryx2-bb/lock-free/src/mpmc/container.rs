@@ -68,8 +68,8 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 use crate::mpmc::unique_index_set::*;
-use std::alloc::Layout;
 use core::fmt::Debug;
+use std::alloc::Layout;
 use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 
 /// States the reason why an element could not be added to the [`Container`]
@@ -189,7 +189,8 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             container_id: UniqueId::new(),
             active_index_ptr: RelocatablePointer::new(distance_to_active_index),
             data_ptr: RelocatablePointer::new(align_to::<MaybeUninit<T>>(
-                distance_to_active_index as usize + capacity * core::mem::size_of::<IoxAtomicBool>(),
+                distance_to_active_index as usize
+                    + capacity * core::mem::size_of::<IoxAtomicBool>(),
             ) as isize),
             capacity,
             change_counter: IoxAtomicU64::new(0),

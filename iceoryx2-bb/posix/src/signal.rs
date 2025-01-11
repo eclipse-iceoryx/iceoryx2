@@ -451,7 +451,7 @@ impl SignalHandler {
     /// raised it returns true otherwise false.
     /// ```ignore
     /// use iceoryx2_bb_posix::signal::*;
-    /// use std::time::Duration;
+    /// use core::time::Duration;
     ///
     /// let result = SignalHandler::timed_wait_for_signal(
     ///                     FetchableSignal::Terminate, Duration::from_millis(10)).unwrap();

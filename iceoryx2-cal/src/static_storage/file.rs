@@ -31,7 +31,7 @@
 //!                 .create(content.as_bytes()).unwrap();
 //!
 //! // usually a different process
-//! let initialization_timeout = std::time::Duration::from_millis(100);
+//! let initialization_timeout = core::time::Duration::from_millis(100);
 //! let reader = Builder::new(&storage_name)
 //!                 // if the config here differs the wrong static storage may be opened
 //!                 .config(&custom_config)

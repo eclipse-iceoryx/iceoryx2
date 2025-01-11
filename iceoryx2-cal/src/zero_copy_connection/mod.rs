@@ -16,7 +16,7 @@ pub mod process_local;
 pub mod used_chunk_list;
 
 use core::fmt::Debug;
-use std::time::Duration;
+use core::time::Duration;
 
 pub use crate::shared_memory::PointerOffset;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};

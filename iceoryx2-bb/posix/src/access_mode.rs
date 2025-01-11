@@ -13,8 +13,8 @@
 //! The [`AccessMode`] describes the mode in which resources like [`crate::file::File`],
 //! [`crate::shared_memory::SharedMemory`] or others should be opened.
 
-use iceoryx2_pal_posix::*;
 use core::fmt::Display;
+use iceoryx2_pal_posix::*;
 
 /// Describes the mode in which resources like [`crate::file::File`],
 /// [`crate::shared_memory::SharedMemory`] or others should be opened.

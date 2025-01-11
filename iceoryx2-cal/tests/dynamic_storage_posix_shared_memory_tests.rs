@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod dynamic_storage_posix_shared_memory {
+    use core::time::Duration;
     use iceoryx2_bb_posix::creation_mode::CreationMode;
     use iceoryx2_bb_posix::permission::Permission;
     use iceoryx2_bb_posix::shared_memory::SharedMemoryBuilder;
@@ -18,7 +19,6 @@ mod dynamic_storage_posix_shared_memory {
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
-    use std::time::Duration;
 
     const TIMEOUT: Duration = Duration::from_millis(100);
 

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::time::Duration;
+use core::time::Duration;
 
 use examples_common::{PubSubEvent, TransmissionData};
 use iceoryx2::{

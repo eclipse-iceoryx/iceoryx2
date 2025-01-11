@@ -62,8 +62,8 @@
 
 use crate::byte_string::FixedSizeByteStringModificationError;
 use crate::byte_string::{as_escaped_string, strnlen, FixedSizeByteString};
-use iceoryx2_bb_log::fail;
 use core::fmt::{Debug, Display};
+use iceoryx2_bb_log::fail;
 use std::hash::Hash;
 use std::ops::Deref;
 

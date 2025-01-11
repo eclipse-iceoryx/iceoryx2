@@ -764,7 +764,11 @@ impl Drop for Thread<'_> {
     fn drop(&mut self) {
         let msg = "Unable to join thread";
         match unsafe {
-            posix::pthread_join(self.handle.handle, core::ptr::null_mut::<*mut posix::void>()).into()
+            posix::pthread_join(
+                self.handle.handle,
+                core::ptr::null_mut::<*mut posix::void>(),
+            )
+            .into()
         } {
             Errno::ESUCCES => (),
             Errno::EDEADLK => {

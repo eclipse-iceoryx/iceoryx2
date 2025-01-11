@@ -42,6 +42,8 @@
 pub use crate::dynamic_storage::*;
 use crate::static_storage::file::NamedConceptConfiguration;
 use crate::static_storage::file::NamedConceptRemoveError;
+use core::fmt::Debug;
+use core::ptr::NonNull;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::warn;
@@ -51,10 +53,8 @@ use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use core::fmt::Debug;
 use std::marker::PhantomData;
 pub use std::ops::Deref;
-use core::ptr::NonNull;
 use std::sync::atomic::Ordering;
 
 use self::dynamic_storage_configuration::DynamicStorageConfiguration;

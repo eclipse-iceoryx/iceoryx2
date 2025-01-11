@@ -12,10 +12,11 @@
 
 #[generic_tests::define]
 mod event {
+    use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::{Barrier, Mutex};
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
 
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;

@@ -16,7 +16,7 @@
 //!
 //! ```ignore
 //! use iceoryx2_bb_posix::mutex::*;
-//! use std::time::Duration;
+//! use core::time::Duration;
 //! use iceoryx2_bb_posix::clock::ClockType;
 //!
 //! let handle = MutexHandle::<i32>::new();
@@ -48,13 +48,13 @@
 pub use crate::ipc_capable::{Handle, IpcCapable};
 
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
+use core::fmt::Debug;
+use core::time::Duration;
 use iceoryx2_bb_elementary::scope_guard::*;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::*;
 use std::cell::UnsafeCell;
-use core::fmt::Debug;
 use std::ops::{Deref, DerefMut};
-use std::time::Duration;
 
 use crate::adaptive_wait::*;
 use crate::clock::{AsTimespec, ClockType, NanosleepError, Time, TimeError};
@@ -527,7 +527,7 @@ impl<T: Sized + Debug> MutexHandle<T> {
 ///
 /// ```
 /// use iceoryx2_bb_posix::mutex::*;
-/// use std::time::Duration;
+/// use core::time::Duration;
 ///
 /// let handle = MutexHandle::<i32>::new();
 /// let mutex = MutexBuilder::new().create(5, &handle)

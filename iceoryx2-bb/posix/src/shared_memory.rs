@@ -81,8 +81,8 @@ use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 use iceoryx2_pal_posix::*;
 
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use core::ptr::NonNull;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use std::sync::atomic::Ordering;
 
 pub use crate::access_mode::AccessMode;

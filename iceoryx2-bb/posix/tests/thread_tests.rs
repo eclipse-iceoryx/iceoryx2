@@ -12,9 +12,11 @@
 
 use iceoryx2_bb_posix::thread::*;
 use iceoryx2_bb_testing::assert_that;
+
+use core::time::Duration;
 use std::sync::Arc;
 use std::sync::Barrier;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 #[test]
 fn thread_set_name_works() {

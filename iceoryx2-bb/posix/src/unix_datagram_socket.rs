@@ -121,6 +121,7 @@ use crate::clock::AsTimeval;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::SynchronousMultiplexing;
 use crate::socket_ancillary::*;
+use core::mem::MaybeUninit;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
@@ -129,7 +130,6 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
-use core::mem::MaybeUninit;
 use std::sync::atomic::Ordering;
 use std::{mem::size_of, time::Duration};
 

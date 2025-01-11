@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::time::Duration;
+use core::time::Duration;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::{

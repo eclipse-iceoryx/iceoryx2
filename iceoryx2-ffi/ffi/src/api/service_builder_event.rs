@@ -28,7 +28,7 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use std::time::Duration;
+use core::time::Duration;
 
 use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref};
 

@@ -23,9 +23,10 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_FILE_LOCK;
 
+use core::time::Duration;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 fn generate_file_name() -> FilePath {
     let mut file = FileName::new(b"file_lock_tests_").unwrap();
@@ -290,10 +291,10 @@ fn file_lock_write_lock_blocks() {
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let counter_old = counter.load(Ordering::Relaxed);
         drop(guard);
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
 
         assert_that!(counter_old, eq 0);
         assert_that!(counter.load(Ordering::Relaxed), eq 2);
@@ -320,10 +321,10 @@ fn file_lock_read_lock_blocks_write_locks() {
             counter.fetch_add(2, Ordering::Relaxed);
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let counter_old = counter.load(Ordering::Relaxed);
         drop(guard);
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
 
         assert_that!(counter_old, eq 1);
         assert_that!(counter.load(Ordering::Relaxed), eq 3);
@@ -388,7 +389,7 @@ fn file_lock_read_try_lock_does_not_block() {
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
     });
 }
@@ -409,7 +410,7 @@ fn file_lock_write_try_lock_does_not_block() {
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
     });
 }

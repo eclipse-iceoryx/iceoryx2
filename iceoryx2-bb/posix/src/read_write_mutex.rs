@@ -19,7 +19,7 @@
 //! ```ignore
 //! use iceoryx2_bb_posix::read_write_mutex::*;
 //! use std::thread;
-//! use std::time::Duration;
+//! use core::time::Duration;
 //! use iceoryx2_bb_posix::clock::ClockType;
 //!
 //! let rw_handle = ReadWriteMutexHandle::new();

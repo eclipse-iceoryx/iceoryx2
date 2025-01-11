@@ -24,13 +24,13 @@ pub use crate::mutex::*;
 use crate::clock::ClockType;
 use crate::clock::{AsTimespec, Time, TimeError};
 use crate::handle_errno;
+use core::time::Duration;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::*};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 use std::ops::{Deref, DerefMut};
-use std::time::Duration;
 use std::{cell::UnsafeCell, fmt::Debug};
 use tiny_fn::tiny_fn;
 
@@ -521,7 +521,7 @@ pub trait BasicConditionVariableInterface<T: Debug>:
 /// use iceoryx2_bb_posix::condition_variable::*;
 /// use std::thread;
 /// use std::sync::Arc;
-/// use std::time::Duration;
+/// use core::time::Duration;
 ///
 /// let mtx_handle = MutexHandle::<i32>::new();
 /// let cv = ConditionVariableBuilder::new()
@@ -780,7 +780,7 @@ impl<T: Debug> Drop for ConditionVariableGuard<'_, '_, '_, T> {
 /// use iceoryx2_bb_posix::condition_variable::*;
 /// use std::thread;
 /// use std::sync::Arc;
-/// use std::time::Duration;
+/// use core::time::Duration;
 ///
 /// let mtx_handle = MutexHandle::<ConditionVariableData<i32>>::new();
 /// let cv = ConditionVariableBuilder::new()

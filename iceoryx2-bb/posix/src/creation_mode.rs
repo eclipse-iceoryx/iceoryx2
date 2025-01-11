@@ -12,8 +12,8 @@
 
 //! The [`CreationMode`] describes how certain posix resources should be created.
 
-use iceoryx2_pal_posix::*;
 use core::fmt::Display;
+use iceoryx2_pal_posix::*;
 
 /// Describes how new resources like [`crate::file::File`], [`crate::shared_memory::SharedMemory`]
 /// or others should be created.

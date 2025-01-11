@@ -168,8 +168,8 @@ pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 
 use core::fmt::Debug;
+use core::time::Duration;
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::config;
 use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};

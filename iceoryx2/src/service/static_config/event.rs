@@ -32,7 +32,7 @@
 //! # Ok(())
 //! # }
 //! ```
-use std::time::Duration;
+use core::time::Duration;
 
 use crate::{config, prelude::EventId};
 use iceoryx2_bb_posix::clock::Time;
