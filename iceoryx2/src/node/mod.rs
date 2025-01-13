@@ -269,7 +269,7 @@ pub enum NodeCleanupFailure {
     InternalError,
     /// The stale resources of a dead [`Node`] could not be removed since the process does not have sufficient permissions.
     InsufficientPermissions,
-    /// Trying to cleanup resources from a dead node which was using a different iceoryx2 version.
+    /// Trying to cleanup resources from a dead [`Node`] which was using a different iceoryx2 version.
     VersionMismatch,
 }
 

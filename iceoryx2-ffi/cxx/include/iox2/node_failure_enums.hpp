@@ -46,6 +46,8 @@ enum class NodeCleanupFailure : uint8_t {
     /// The stale resources of a dead [`Node`] could not be removed since the process does not have sufficient
     /// permissions.
     InsufficientPermissions,
+    /// Trying to cleanup resources from a [`Node`] node which was using a different iceoryx2 version.
+    VersionMismatch,
 };
 
 } // namespace iox2
