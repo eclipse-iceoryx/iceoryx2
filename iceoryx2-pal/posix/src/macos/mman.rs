@@ -15,7 +15,9 @@
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
-use std::{io::Write, sync::atomic::Ordering};
+
+use core::sync::atomic::Ordering;
+use std::io::Write;
 
 use crate::posix::*;
 

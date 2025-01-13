@@ -213,10 +213,11 @@
 //! # Ok(())
 //! # }
 
-use std::{
-    cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, marker::PhantomData,
-    sync::atomic::Ordering, time::Duration,
+use core::{
+    cell::RefCell, fmt::Debug, hash::Hash, marker::PhantomData, sync::atomic::Ordering,
+    time::Duration,
 };
+use std::collections::HashMap;
 
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fail;
@@ -256,8 +257,8 @@ pub enum WaitSetAttachmentError {
     InternalError,
 }
 
-impl std::fmt::Display for WaitSetAttachmentError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for WaitSetAttachmentError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "WaitSetAttachmentError::{:?}", self)
     }
 }
@@ -275,8 +276,8 @@ pub enum WaitSetRunError {
     NoAttachments,
 }
 
-impl std::fmt::Display for WaitSetRunError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for WaitSetRunError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "WaitSetRunError::{:?}", self)
     }
 }
@@ -290,8 +291,8 @@ pub enum WaitSetCreateError {
     InternalError,
 }
 
-impl std::fmt::Display for WaitSetCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for WaitSetCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "WaitSetCreateError::{:?}", self)
     }
 }
@@ -313,7 +314,7 @@ pub struct WaitSetAttachmentId<Service: crate::service::Service> {
 }
 
 impl<Service: crate::service::Service> Debug for WaitSetAttachmentId<Service> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "WaitSetAttachmentId<{}> {{ attachment_type: {:?} }}",
@@ -345,13 +346,13 @@ impl<Service: crate::service::Service> WaitSetAttachmentId<Service> {
 }
 
 impl<Service: crate::service::Service> PartialOrd for WaitSetAttachmentId<Service> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl<Service: crate::service::Service> Ord for WaitSetAttachmentId<Service> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         self.attachment_type.cmp(&other.attachment_type)
     }
 }
@@ -365,7 +366,7 @@ impl<Service: crate::service::Service> PartialEq for WaitSetAttachmentId<Service
 impl<Service: crate::service::Service> Eq for WaitSetAttachmentId<Service> {}
 
 impl<Service: crate::service::Service> Hash for WaitSetAttachmentId<Service> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.attachment_type.hash(state)
     }
 }

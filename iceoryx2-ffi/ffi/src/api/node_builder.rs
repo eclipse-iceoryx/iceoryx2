@@ -235,7 +235,7 @@ unsafe fn iox2_node_builder_drop(node_builder_handle: iox2_node_builder_h) {
     debug_assert!(!node_builder_handle.is_null());
 
     let node_builder = &mut *node_builder_handle.as_type();
-    std::ptr::drop_in_place(node_builder.value.as_option_mut());
+    core::ptr::drop_in_place(node_builder.value.as_option_mut());
     (node_builder.deleter)(node_builder);
 }
 

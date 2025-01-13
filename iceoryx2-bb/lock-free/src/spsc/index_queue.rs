@@ -42,7 +42,7 @@
 //! }
 //! ```
 
-use std::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
+use core::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
 
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator, owning_pointer::OwningPointer, pointer_trait::PointerTrait,
@@ -95,7 +95,7 @@ pub type IndexQueue = details::IndexQueue<OwningPointer<UnsafeCell<u64>>>;
 pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
-    use std::fmt::Debug;
+    use core::fmt::Debug;
 
     use iceoryx2_bb_elementary::math::unaligned_mem_size;
 
@@ -161,8 +161,8 @@ pub mod details {
 
             self.data_ptr.init(fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                    std::mem::size_of::<u64>() * self.capacity,
-                    std::mem::align_of::<u64>())),
+                    core::mem::size_of::<u64>() * self.capacity,
+                    core::mem::align_of::<u64>())),
             "Failed to initialize since the allocation of the data memory failed."));
 
             for i in 0..self.capacity {

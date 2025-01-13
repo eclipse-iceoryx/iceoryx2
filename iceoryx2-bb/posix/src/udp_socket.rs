@@ -54,15 +54,15 @@
 //!                            .expect("failed to receive answer");
 //! ```
 
+use core::fmt::Debug;
+use core::sync::atomic::Ordering;
+use core::time::Duration;
 use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_system_types::port::{self, Port};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::{self, Struct};
 use iceoryx2_pal_posix::posix::{Errno, SockAddrIn};
-use std::fmt::Debug;
-use std::sync::atomic::Ordering;
-use std::time::Duration;
 
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use crate::file_descriptor_set::{
@@ -526,7 +526,7 @@ struct UdpSocket {
 }
 
 impl Debug for UdpSocket {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "UdpSocket {{ socket_fd: {:?}, details: posix::sockaddr_in {{ sin_addr: {}, sin_family: {}, sin_port: {} }}, is_non_blocking: {:?} }}",

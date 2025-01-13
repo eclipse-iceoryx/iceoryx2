@@ -81,6 +81,10 @@
 //! unsafe { index_set.release_raw_index(new_index, ReleaseMode::Default) };
 //! ```
 
+use core::alloc::Layout;
+use core::cell::UnsafeCell;
+use core::fmt::Debug;
+use core::sync::atomic::{fence, Ordering};
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::enum_gen;
@@ -89,10 +93,6 @@ use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
-use std::alloc::Layout;
-use std::cell::UnsafeCell;
-use std::fmt::Debug;
-use std::sync::atomic::{fence, Ordering};
 use tiny_fn::tiny_fn;
 
 tiny_fn! {
@@ -146,12 +146,12 @@ pub struct UniqueIndex<'a> {
 }
 
 impl Debug for UniqueIndex<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "UniqueIndex {{ value: {}, index_set addr: {:#x} }}",
             self.value,
-            std::ptr::addr_of!(self.index_set) as u64
+            core::ptr::addr_of!(self.index_set) as u64
         )
     }
 }
@@ -201,7 +201,7 @@ impl Drop for UniqueIndex<'_> {
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 /// use iceoryx2_bb_elementary::relocatable_container::*;
 /// use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-/// use std::mem::MaybeUninit;
+/// use core::mem::MaybeUninit;
 ///
 /// const CAPACITY: usize = 128;
 ///
@@ -286,8 +286,8 @@ impl RelocatableContainer for UniqueIndexSet {
 
         self.data_ptr.init(fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                std::mem::size_of::<u32>() * (self.capacity + 1) as usize,
-                std::mem::align_of::<u32>())),
+                core::mem::size_of::<u32>() * (self.capacity + 1) as usize,
+                core::mem::align_of::<u32>())),
             "Failed to initialize since the allocation of the data memory failed."
         ));
 
@@ -318,7 +318,7 @@ impl UniqueIndexSet {
 
     /// The compile time version of [`UniqueIndexSet::memory_size()`]
     pub const fn const_memory_size(capacity: usize) -> usize {
-        std::mem::size_of::<UnsafeCell<u32>>() * (capacity + 1) + std::mem::align_of::<u32>() - 1
+        core::mem::size_of::<UnsafeCell<u32>>() * (capacity + 1) + core::mem::align_of::<u32>() - 1
     }
 
     /// Acquires a new [`UniqueIndex`]. If the set does not contain any more indices it returns

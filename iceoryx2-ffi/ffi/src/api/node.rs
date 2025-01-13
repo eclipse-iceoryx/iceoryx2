@@ -30,8 +30,10 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use std::ffi::CString;
-use std::time::Duration;
+use core::time::Duration;
+
+extern crate alloc;
+use alloc::ffi::CString;
 
 use super::{iox2_config_h_ref, iox2_node_id_h_ref, iox2_node_id_ptr, iox2_signal_handling_mode_e};
 
@@ -423,7 +425,7 @@ fn iox2_node_list_impl<S: Service>(
                         view.config() as _,
                     )
                 })
-                .unwrap_or((unknown_executable, std::ptr::null(), std::ptr::null()));
+                .unwrap_or((unknown_executable, core::ptr::null(), core::ptr::null()));
             callback(
                 iox2_node_state_e::ALIVE,
                 alive_node_view.id(),
@@ -445,7 +447,7 @@ fn iox2_node_list_impl<S: Service>(
                         view.config() as _,
                     )
                 })
-                .unwrap_or((unknown_executable, std::ptr::null(), std::ptr::null()));
+                .unwrap_or((unknown_executable, core::ptr::null(), core::ptr::null()));
             callback(
                 iox2_node_state_e::DEAD,
                 dead_node_view.id(),
@@ -460,8 +462,8 @@ fn iox2_node_list_impl<S: Service>(
             iox2_node_state_e::INACCESSIBLE,
             node_id,
             unknown_executable.as_bytes_with_nul().as_ptr().cast(),
-            std::ptr::null(),
-            std::ptr::null(),
+            core::ptr::null(),
+            core::ptr::null(),
             callback_ctx,
         )
         .into(),
@@ -469,8 +471,8 @@ fn iox2_node_list_impl<S: Service>(
             iox2_node_state_e::UNDEFINED,
             node_id,
             unknown_executable.as_bytes_with_nul().as_ptr().cast(),
-            std::ptr::null(),
-            std::ptr::null(),
+            core::ptr::null(),
+            core::ptr::null(),
             callback_ctx,
         )
         .into(),

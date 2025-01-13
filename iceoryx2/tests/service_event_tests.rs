@@ -12,10 +12,11 @@
 
 #[generic_tests::define]
 mod service_event {
+    use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+    use core::time::Duration;
     use std::collections::HashSet;
-    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use std::sync::Barrier;
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
 
     use iceoryx2::port::listener::{Listener, ListenerCreateError};
     use iceoryx2::port::notifier::{NotifierCreateError, NotifierNotifyError};

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, fatal_panic};

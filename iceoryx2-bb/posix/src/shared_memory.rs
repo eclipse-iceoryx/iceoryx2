@@ -81,9 +81,9 @@ use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
 use iceoryx2_pal_posix::*;
 
+use core::ptr::NonNull;
+use core::sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use std::ptr::NonNull;
-use std::sync::atomic::Ordering;
 
 pub use crate::access_mode::AccessMode;
 pub use crate::creation_mode::CreationMode;
@@ -494,12 +494,12 @@ impl SharedMemory {
 
     /// returns a slice to the memory
     pub fn as_slice(&self) -> &[u8] {
-        unsafe { std::slice::from_raw_parts(self.base_address, self.size) }
+        unsafe { core::slice::from_raw_parts(self.base_address, self.size) }
     }
 
     /// returns a mutable slice to the memory
     pub fn as_mut_slice(&mut self) -> &mut [u8] {
-        unsafe { std::slice::from_raw_parts_mut(self.base_address, self.size) }
+        unsafe { core::slice::from_raw_parts_mut(self.base_address, self.size) }
     }
 
     fn shm_create(
@@ -568,7 +568,7 @@ impl SharedMemory {
     ) -> Result<*mut posix::void, SharedMemoryCreationError> {
         let base_address = unsafe {
             posix::mmap(
-                std::ptr::null_mut::<posix::void>(),
+                core::ptr::null_mut::<posix::void>(),
                 config.size,
                 config.access_mode.as_protflag(),
                 posix::MAP_SHARED,

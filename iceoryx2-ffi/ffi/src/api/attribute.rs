@@ -15,7 +15,9 @@
 use iceoryx2::service::attribute::Attribute;
 
 use core::ffi::c_char;
-use std::ffi::CString;
+
+extern crate alloc;
+use alloc::ffi::CString;
 
 // BEGIN types definition
 pub struct iox2_attribute_h_t;

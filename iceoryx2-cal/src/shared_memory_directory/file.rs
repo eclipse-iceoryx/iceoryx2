@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::{alloc::Layout, fmt::Debug};
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_name::FileName;
-use std::{alloc::Layout, fmt::Debug};
 
 use crate::shared_memory::ShmPointer;
 use crate::shared_memory_directory::SharedMemoryDirectoryCreateFileError;
@@ -26,7 +26,7 @@ pub struct File<'a> {
 }
 
 impl Debug for File<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "File {{ name: {}, id: {:?}, base_address: {} }}",

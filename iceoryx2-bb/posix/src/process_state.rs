@@ -44,7 +44,7 @@
 //!             Err(ProcessCleanerCreateError::OwnedByAnotherProcess) => {
 //!                 // cool, someone else has instantiated it and is already cleaning up all resources
 //!                 // wait a bit and try again
-//!                 std::thread::sleep(std::time::Duration::from_millis(500));
+//!                 std::thread::sleep(core::time::Duration::from_millis(500));
 //!                 match ProcessGuard::new(&process_state_path) {
 //!                     Ok(guard) => guard,
 //!                     Err(_) => {
@@ -129,7 +129,7 @@
 //! }
 //! ```
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
@@ -529,7 +529,7 @@ pub struct ProcessMonitor {
 }
 
 impl Debug for ProcessMonitor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "ProcessMonitor {{ file = {:?}, path = {:?}}}",

@@ -12,8 +12,8 @@
 
 use anyhow::{anyhow, Context, Error, Result};
 use clap::ValueEnum;
+use core::str::FromStr;
 use serde::Serialize;
-use std::str::FromStr;
 
 #[derive(Clone, Copy, ValueEnum)]
 #[value(rename_all = "UPPERCASE")]

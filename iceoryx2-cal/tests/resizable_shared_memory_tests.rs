@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod resizable_shared_memory {
-    use std::alloc::Layout;
+    use core::alloc::Layout;
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::named_concept::*;

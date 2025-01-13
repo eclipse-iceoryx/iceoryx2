@@ -44,6 +44,9 @@ unsafe impl Send for TestType {}
 
 #[generic_tests::define]
 mod mpmc_container {
+    use core::fmt::Debug;
+    use core::sync::atomic::AtomicU32;
+    use core::sync::atomic::Ordering;
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_elementary::CallbackProgression;
@@ -55,9 +58,6 @@ mod mpmc_container {
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashMap;
     use std::collections::HashSet;
-    use std::fmt::Debug;
-    use std::sync::atomic::AtomicU32;
-    use std::sync::atomic::Ordering;
     use std::sync::{Barrier, Mutex};
     use std::thread;
 

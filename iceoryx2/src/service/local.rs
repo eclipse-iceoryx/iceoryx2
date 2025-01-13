@@ -32,7 +32,9 @@
 //!
 //! See [`Service`](crate::service) for more detailed examples.
 
-use std::sync::Arc;
+extern crate alloc;
+
+use alloc::sync::Arc;
 
 use crate::service::dynamic_config::DynamicConfig;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;

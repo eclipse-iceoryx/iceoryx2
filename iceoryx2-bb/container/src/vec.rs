@@ -71,7 +71,7 @@
 //! use iceoryx2_bb_container::vec::RelocatableVec;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
-//! use std::ptr::NonNull;
+//! use core::ptr::NonNull;
 //!
 //! const VEC_CAPACITY:usize = 12;
 //! const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(VEC_CAPACITY);
@@ -83,7 +83,7 @@
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 
-use std::{
+use core::{
     alloc::Layout,
     marker::PhantomData,
     mem::MaybeUninit,
@@ -134,7 +134,7 @@ pub mod details {
         fn drop(&mut self) {
             if self
                 .is_initialized
-                .load(std::sync::atomic::Ordering::Relaxed)
+                .load(core::sync::atomic::Ordering::Relaxed)
             {
                 unsafe { self.clear_impl() };
             }
@@ -162,12 +162,12 @@ pub mod details {
 
             self.data_ptr.init(fail!(from "Queue::init", when allocator
                  .allocate(Layout::from_size_align_unchecked(
-                     std::mem::size_of::<T>() * self.capacity,
-                     std::mem::align_of::<T>(),
+                     core::mem::size_of::<T>() * self.capacity,
+                     core::mem::align_of::<T>(),
                  )), "Failed to initialize queue since the allocation of the data memory failed."
             ));
             self.is_initialized
-                .store(true, std::sync::atomic::Ordering::Relaxed);
+                .store(true, core::sync::atomic::Ordering::Relaxed);
 
             Ok(())
         }
@@ -221,7 +221,7 @@ pub mod details {
         fn verify_init(&self, source: &str) {
             debug_assert!(
                 self.is_initialized
-                    .load(std::sync::atomic::Ordering::Relaxed),
+                    .load(core::sync::atomic::Ordering::Relaxed),
                 "From: MetaVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
                 core::any::type_name::<T>(), source
             );
@@ -314,7 +314,7 @@ pub mod details {
         }
 
         fn pop_unchecked(&mut self) -> T {
-            let value = std::mem::replace(
+            let value = core::mem::replace(
                 unsafe { &mut *self.data_ptr.as_mut_ptr().offset(self.len as isize - 1) },
                 MaybeUninit::uninit(),
             );
@@ -518,7 +518,7 @@ impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Visitor<'de>
 {
     type Value = FixedSizeVec<T, CAPACITY>;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         let str = format!(
             "an array of at most {} elements of type {}",
             CAPACITY,

@@ -16,10 +16,14 @@ use iceoryx2_bb_posix::system_configuration::Feature;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
-use std::sync::Arc;
+
+use core::time::Duration;
+
+extern crate alloc;
+use alloc::sync::Arc;
+
 use std::sync::Barrier;
 use std::thread;
-use std::time::Duration;
 
 const TIMEOUT: Duration = Duration::from_millis(100);
 
@@ -64,7 +68,7 @@ fn mutex_try_lock_leads_to_blocked_mutex() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -92,7 +96,7 @@ fn mutex_timed_lock_leads_to_blocked_mutex_realtime() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -122,7 +126,7 @@ fn mutex_timed_lock_leads_to_blocked_mutex_monotonic() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let value_old = *value;
         *value = 444;
         drop(value);
@@ -306,7 +310,7 @@ fn mutex_recursive_mutex_blocks() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let old_value = *value;
         *value = 444;
         drop(value);
@@ -333,7 +337,7 @@ fn mutex_with_deadlock_detection_blocks() {
             *value = 555;
         });
 
-        thread::sleep(std::time::Duration::from_millis(10));
+        thread::sleep(core::time::Duration::from_millis(10));
         let old_value = *value;
         *value = 444;
         drop(value);
@@ -357,7 +361,7 @@ fn mutex_can_be_recovered_when_thread_died() {
         s.spawn(|| {
             let guard = sut.lock();
             assert_that!(guard, is_ok);
-            std::mem::forget(guard);
+            core::mem::forget(guard);
         });
     });
 
@@ -400,7 +404,7 @@ fn mutex_in_unrecoverable_state_if_state_of_leaked_mutex_is_not_repaired() {
     thread::scope(|s| {
         s.spawn(|| {
             let guard = sut.lock();
-            std::mem::forget(guard);
+            core::mem::forget(guard);
         });
     });
 

@@ -25,7 +25,7 @@
 //! use iceoryx2_cal::shm_allocator::pool_allocator;
 //! use iceoryx2_bb_system_types::file_name::FileName;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
-//! use std::alloc::Layout;
+//! use core::alloc::Layout;
 //!
 //! fn process_one<Shm: SharedMemory<PoolAllocator>>() {
 //!     let shm_name = FileName::new(b"myShmName").unwrap();
@@ -58,7 +58,7 @@ pub mod common;
 pub mod posix;
 pub mod process_local;
 
-use std::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, time::Duration};
 
 pub use crate::shm_allocator::*;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
@@ -154,7 +154,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
 
     /// Allocates memory. The alignment in the layout must be smaller or equal
     /// [`SharedMemory::max_alignment()`] otherwise the method will fail.
-    fn allocate(&self, layout: std::alloc::Layout) -> Result<ShmPointer, ShmAllocationError>;
+    fn allocate(&self, layout: core::alloc::Layout) -> Result<ShmPointer, ShmAllocationError>;
 
     /// Release previously allocated memory
     ///
@@ -163,7 +163,7 @@ pub trait SharedMemory<Allocator: ShmAllocator>:
     ///  * the offset must be acquired with [`SharedMemory::allocate()`] - extracted from the
     ///    [`ShmPointer`]
     ///  * the layout must be identical to the one used in [`SharedMemory::allocate()`]
-    unsafe fn deallocate(&self, offset: PointerOffset, layout: std::alloc::Layout);
+    unsafe fn deallocate(&self, offset: PointerOffset, layout: core::alloc::Layout);
 
     /// Returns if the [`SharedMemory`] supports persistency, meaning that the underlying OS
     /// resource remain even when every [`SharedMemory`] instance in every process was removed.

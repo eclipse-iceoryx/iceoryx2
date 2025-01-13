@@ -13,7 +13,7 @@
 //! Defines configuration options for the posix module. They can be adapted when working on
 //! a different system.
 
-use std::time::Duration;
+use core::time::Duration;
 
 use iceoryx2_bb_system_types::{file_name::FileName, path::Path, user_name::UserName};
 

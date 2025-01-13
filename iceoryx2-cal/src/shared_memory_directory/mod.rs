@@ -18,10 +18,10 @@ mod reference_counter;
 use crate::shared_memory_directory::file_reference_set::FileReferenceSet;
 use crate::shm_allocator::bump_allocator::BumpAllocator;
 use crate::{named_concept::*, shared_memory::*, shm_allocator::ShmAllocator};
+use core::{alloc::Layout, fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_elementary::math::align_to;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_system_types::file_name::*;
-use std::{alloc::Layout, fmt::Debug, marker::PhantomData};
 
 use crate::shared_memory_directory::file::{File, FileCreator};
 
@@ -82,7 +82,7 @@ impl SharedMemoryDirectoryCreator {
         "{} since the management segment could not be created.", msg);
 
         let shm_ptr = fatal_panic!(from self,
-                                when mgmt_shm.allocate(std::alloc::Layout::new::<FileReferenceSet>()),
+                                when mgmt_shm.allocate(core::alloc::Layout::new::<FileReferenceSet>()),
                                 "This should never happen! {} since the allocation of the management segment failed.",
                                 msg);
 
@@ -162,7 +162,7 @@ impl<
         DataShm: SharedMemory<Allocator>,
     > Debug for SharedMemoryDirectory<MgmtShm, Allocator, DataShm>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "SharedMemoryDirectory {{  }}")
     }
 }

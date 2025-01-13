@@ -13,7 +13,7 @@
 //! Contains the traits [`BaseAllocator`] which contains the most basic functionality an allocator
 //! requires and [`Allocator`] with more advanced allocation features.
 
-pub use std::{alloc::Layout, ptr::NonNull};
+pub use core::{alloc::Layout, ptr::NonNull};
 
 /// Failures caused by [`BaseAllocator::allocate()`] or [`BaseAllocator::allocate_zeroed()`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -55,7 +55,7 @@ pub trait BaseAllocator {
     fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocationError> {
         let memory = self.allocate(layout)?;
         unsafe {
-            std::ptr::write_bytes(
+            core::ptr::write_bytes(
                 memory.as_ref().as_ptr() as *mut u8,
                 0,
                 memory.as_ref().len(),
@@ -115,7 +115,7 @@ pub trait Allocator: BaseAllocator {
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocationGrowError> {
         let memory = self.grow(ptr, old_layout, new_layout)?;
-        std::ptr::write_bytes(
+        core::ptr::write_bytes(
             memory.as_ref().as_ptr().add(old_layout.size()) as *mut u8,
             0,
             memory.as_ref().len() - old_layout.size(),

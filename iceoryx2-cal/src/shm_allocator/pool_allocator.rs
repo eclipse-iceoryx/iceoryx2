@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{alloc::Layout, ptr::NonNull, sync::atomic::Ordering};
+use core::{alloc::Layout, ptr::NonNull, sync::atomic::Ordering};
 
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
 use iceoryx2_bb_elementary::allocator::BaseAllocator;

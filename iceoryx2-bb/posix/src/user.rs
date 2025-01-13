@@ -28,7 +28,7 @@
 //! println!("my gecos: {}", myself.info());
 //! ```
 
-use std::ffi::CStr;
+use core::ffi::CStr;
 
 use crate::handle_errno;
 use crate::{config::PASSWD_BUFFER_SIZE, system_configuration::*};

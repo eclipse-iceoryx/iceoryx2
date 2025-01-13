@@ -28,7 +28,7 @@ pub const fn align(value: usize, alignment: usize) -> usize {
 
 /// Aligns value to the alignment of T.
 pub const fn align_to<T>(value: usize) -> usize {
-    align(value, std::mem::align_of::<T>())
+    align(value, core::mem::align_of::<T>())
 }
 
 pub trait ToB64 {
@@ -135,7 +135,7 @@ impl<const N: usize> ToB64 for [u8; N] {
 /// ```
 /// use iceoryx2_bb_elementary::math::max;
 ///
-/// const SIZE: usize = max(std::mem::size_of::<u32>(), std::mem::size_of::<u32>());
+/// const SIZE: usize = max(core::mem::size_of::<u32>(), core::mem::size_of::<u32>());
 /// ```
 ///
 /// # Note

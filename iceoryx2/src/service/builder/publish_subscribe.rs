@@ -14,7 +14,7 @@
 //!
 //! See [`crate::service`]
 //!
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::service;
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
@@ -87,8 +87,8 @@ pub enum PublishSubscribeOpenError {
     IsMarkedForDestruction,
 }
 
-impl std::fmt::Display for PublishSubscribeOpenError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublishSubscribeOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublishSubscribeOpenError::{:?}", self)
     }
 }
@@ -139,8 +139,8 @@ pub enum PublishSubscribeCreateError {
     HangsInCreation,
 }
 
-impl std::fmt::Display for PublishSubscribeCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublishSubscribeCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublishSubscribeCreateError::{:?}", self)
     }
 }
@@ -201,8 +201,8 @@ impl From<PublishSubscribeCreateError> for PublishSubscribeOpenOrCreateError {
     }
 }
 
-impl std::fmt::Display for PublishSubscribeOpenOrCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublishSubscribeOpenOrCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublishSubscribeOpenOrCreateError::{:?}", self)
     }
 }

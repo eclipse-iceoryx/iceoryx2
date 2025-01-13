@@ -13,9 +13,11 @@
 //! Represents a normal non-null pointer. It was introduced to distinguish normal pointers from
 //! [`crate::relocatable_ptr::RelocatablePointer`]. It implements the [`PointerTrait`].
 
-use std::alloc::Layout;
-use std::alloc::{alloc, dealloc};
-use std::fmt::Debug;
+use core::alloc::Layout;
+use core::fmt::Debug;
+
+extern crate alloc;
+use alloc::alloc::{alloc, dealloc};
 
 use crate::generic_pointer::GenericPointer;
 use crate::pointer_trait::PointerTrait;
@@ -41,8 +43,8 @@ impl<T> OwningPointer<T> {
 
         let layout = unsafe {
             Layout::from_size_align_unchecked(
-                std::mem::size_of::<T>() * number_of_elements,
-                std::mem::align_of::<T>(),
+                core::mem::size_of::<T>() * number_of_elements,
+                core::mem::align_of::<T>(),
             )
         };
 

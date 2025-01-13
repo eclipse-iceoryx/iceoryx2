@@ -69,6 +69,7 @@
 //! # }
 //! ```
 
+use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::lazy_singleton::*;
 use iceoryx2_bb_posix::{file::FileBuilder, shared_memory::AccessMode};
@@ -76,7 +77,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
 use iceoryx2_bb_log::{debug, fail, trace, warn};
 
@@ -97,8 +97,8 @@ pub enum ConfigCreationError {
     UnableToDeserializeContents,
 }
 
-impl std::fmt::Display for ConfigCreationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ConfigCreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "ConfigCreationError::{:?}", self)
     }
 }

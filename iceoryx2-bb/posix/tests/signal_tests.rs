@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::sync::atomic::AtomicUsize;
+use core::sync::atomic::{AtomicI32, Ordering};
+use core::time::Duration;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::process::*;
 use iceoryx2_bb_posix::signal::*;
@@ -17,12 +20,9 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
 use iceoryx2_pal_posix::*;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::thread;
-use std::time::Duration;
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
 static SIGNAL: AtomicUsize = AtomicUsize::new(posix::MAX_SIGNAL_VALUE);

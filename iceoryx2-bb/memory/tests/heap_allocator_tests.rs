@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{alloc::Layout, ptr::NonNull};
+use core::{alloc::Layout, ptr::NonNull};
 
 use iceoryx2_bb_memory::heap_allocator::*;
 use iceoryx2_bb_testing::assert_that;

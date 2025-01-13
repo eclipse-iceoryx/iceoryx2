@@ -42,7 +42,8 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_posix::posix;
 use serde::{Deserialize, Serialize};
-use std::{
+
+use core::{
     fmt::{Debug, Display},
     sync::atomic::Ordering,
 };
@@ -72,7 +73,7 @@ pub struct UniqueSystemId {
 }
 
 impl Debug for UniqueSystemId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "UniqueSystemId {{ value: {}, pid: {}, creation_time: {:?} }}",
@@ -84,7 +85,7 @@ impl Debug for UniqueSystemId {
 }
 
 impl Display for UniqueSystemId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.value())
     }
 }

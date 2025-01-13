@@ -41,6 +41,6 @@ pub trait RelocatableContainer {
     unsafe fn init<T: BaseAllocator>(&mut self, allocator: &T) -> Result<(), AllocationError>;
 
     /// Returns the amount of memory the object requires. The whole memory consumption is
-    /// `std::mem::size_of::<RelocatableContainer>() + RelocatableContainer::memory_size()`.
+    /// `core::mem::size_of::<RelocatableContainer>() + RelocatableContainer::memory_size()`.
     fn memory_size(capacity: usize) -> usize;
 }

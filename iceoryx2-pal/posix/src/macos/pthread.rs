@@ -16,12 +16,12 @@
 
 use crate::posix::*;
 
+use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::barrier::Barrier;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::{rwlock::*, WaitAction, WaitResult};
-use std::cell::UnsafeCell;
 
 #[derive(Clone, Copy)]
 struct ThreadState {
@@ -894,7 +894,7 @@ pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
 
 pub unsafe fn pthread_mutexattr_destroy(attr: *mut pthread_mutexattr_t) -> int {
     Errno::set(Errno::ESUCCES);
-    std::ptr::drop_in_place(attr);
+    core::ptr::drop_in_place(attr);
     0
 }
 

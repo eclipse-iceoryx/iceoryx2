@@ -19,10 +19,13 @@ use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_int;
-use std::{
-    ffi::{c_char, CStr, CString},
+use core::{
+    ffi::{c_char, CStr},
     mem::ManuallyDrop,
 };
+
+extern crate alloc;
+use alloc::ffi::CString;
 
 use super::iox2_attribute_set_h_ref;
 
@@ -116,7 +119,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_new(
 ) -> c_int {
     debug_assert!(!handle_ptr.is_null());
 
-    *handle_ptr = std::ptr::null_mut();
+    *handle_ptr = core::ptr::null_mut();
 
     let mut struct_ptr = struct_ptr;
     fn no_op(_: *mut iox2_attribute_verifier_t) {}

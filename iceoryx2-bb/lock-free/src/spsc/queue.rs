@@ -42,8 +42,8 @@
 //! }
 //! ```
 
+use core::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
-use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 
 /// The [`Producer`] of the [`Queue`] which can add values to it via [`Producer::push()`].
 pub struct Producer<'a, T: Copy, const CAPACITY: usize> {

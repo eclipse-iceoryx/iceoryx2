@@ -15,10 +15,8 @@
 #![allow(unused_variables)]
 
 use core::panic;
-use std::{
-    cell::UnsafeCell, os::windows::prelude::OsStringExt, sync::atomic::Ordering, time::SystemTime,
-    time::UNIX_EPOCH,
-};
+use core::{cell::UnsafeCell, sync::atomic::Ordering};
+use std::{os::windows::prelude::OsStringExt, time::SystemTime, time::UNIX_EPOCH};
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
@@ -595,7 +593,7 @@ pub unsafe fn pthread_rwlock_timedwrlock(
     abs_timeout: *const timespec,
 ) -> int {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let timeout = std::cmp::max(
+    let timeout = core::cmp::max(
         0,
         (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
             - now.as_millis() as i64,
@@ -645,7 +643,7 @@ pub unsafe fn pthread_rwlock_timedrdlock(
     abs_timeout: *const timespec,
 ) -> int {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let timeout = std::cmp::max(
+    let timeout = core::cmp::max(
         0,
         (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
             - now.as_millis() as i64,
@@ -740,7 +738,7 @@ pub unsafe fn pthread_cond_timedwait(
     abstime: *const timespec,
 ) -> int {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let timeout = std::cmp::max(
+    let timeout = core::cmp::max(
         0,
         (*abstime).tv_sec * 1000 + (*abstime).tv_nsec as i64 / 1000000 - now.as_millis() as i64,
     );
@@ -916,7 +914,7 @@ pub unsafe fn pthread_mutex_timedlock(
     };
 
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    let timeout = std::cmp::max(
+    let timeout = core::cmp::max(
         0,
         (*abs_timeout).tv_sec * 1000 + (*abs_timeout).tv_nsec as i64 / 1000000
             - now.as_millis() as i64,
@@ -1035,7 +1033,7 @@ pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
 
 pub unsafe fn pthread_mutexattr_destroy(attr: *mut pthread_mutexattr_t) -> int {
     Errno::set(Errno::ESUCCES);
-    std::ptr::drop_in_place(attr);
+    core::ptr::drop_in_place(attr);
     0
 }
 

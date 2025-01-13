@@ -15,7 +15,9 @@ mod shm_allocator {
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::shm_allocator::{ShmAllocator, *};
-    use std::{alloc::Layout, collections::HashSet, ptr::NonNull, sync::Mutex};
+
+    use core::{alloc::Layout, ptr::NonNull};
+    use std::{collections::HashSet, sync::Mutex};
 
     use lazy_static::lazy_static;
 

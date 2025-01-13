@@ -121,6 +121,11 @@ use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::static_config::publish_subscribe::{self};
 use crate::service::{self, ServiceState};
 use crate::{config, sample_mut::SampleMut};
+use core::any::TypeId;
+use core::cell::UnsafeCell;
+use core::fmt::Debug;
+use core::sync::atomic::Ordering;
+use core::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -137,12 +142,9 @@ use iceoryx2_cal::zero_copy_connection::{
     ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
-use std::any::TypeId;
-use std::cell::UnsafeCell;
-use std::fmt::Debug;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
@@ -157,8 +159,8 @@ pub enum PublisherCreateError {
     UnableToCreateDataSegment,
 }
 
-impl std::fmt::Display for PublisherCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublisherCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublisherCreateError::{:?}", self)
     }
 }
@@ -184,8 +186,8 @@ pub enum PublisherLoanError {
     InternalFailure,
 }
 
-impl std::fmt::Display for PublisherLoanError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublisherLoanError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublisherLoanError::{:?}", self)
     }
 }
@@ -220,8 +222,8 @@ impl From<ConnectionFailure> for PublisherSendError {
     }
 }
 
-impl std::fmt::Display for PublisherSendError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for PublisherSendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "PublisherSendError::{:?}", self)
     }
 }
@@ -724,7 +726,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
         }
 
-        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources

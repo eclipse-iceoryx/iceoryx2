@@ -12,9 +12,10 @@
 
 #[generic_tests::define]
 mod publisher {
+    use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::Mutex;
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
 
     use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
     use iceoryx2::prelude::*;

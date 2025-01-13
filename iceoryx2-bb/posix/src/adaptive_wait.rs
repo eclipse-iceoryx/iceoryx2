@@ -33,8 +33,8 @@
 //! }
 //! ```
 
-use std::fmt::Debug;
-use std::time::Duration;
+use core::fmt::Debug;
+use core::time::Duration;
 
 use crate::clock::*;
 use crate::config::{
@@ -158,7 +158,7 @@ impl AdaptiveWait {
     ///
     /// ```
     /// use iceoryx2_bb_posix::adaptive_wait::*;
-    /// use std::time::Duration;
+    /// use core::time::Duration;
     ///
     /// AdaptiveWaitBuilder::new()
     ///     .create().unwrap().timed_wait_while(|| -> Result<bool, ()> { Ok(true) },

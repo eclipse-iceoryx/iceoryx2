@@ -82,7 +82,7 @@
 //! println!("The thread {:?} was created.", thread);
 //! ```
 
-use std::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
+use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData};
 
 use crate::handle_errno;
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
@@ -411,7 +411,7 @@ impl ThreadBuilder {
         }
 
         let mut cpuset = posix::cpu_set_t::new();
-        for i in 0..std::cmp::min(posix::CPU_SETSIZE, SystemInfo::NumberOfCpuCores.value()) {
+        for i in 0..core::cmp::min(posix::CPU_SETSIZE, SystemInfo::NumberOfCpuCores.value()) {
             if self.affinity[i] {
                 cpuset.set(i);
             }
@@ -419,7 +419,7 @@ impl ThreadBuilder {
 
         let msg = "Unable to set cpu affinity for thread";
         handle_errno!(ThreadSpawnError, from self,
-            errno_source unsafe { posix::pthread_attr_setaffinity_np(attributes.get_mut(), std::mem::size_of::<posix::cpu_set_t>(), &cpuset)
+            errno_source unsafe { posix::pthread_attr_setaffinity_np(attributes.get_mut(), core::mem::size_of::<posix::cpu_set_t>(), &cpuset)
                                             .into()},
             continue_on_success,
             success Errno::ESUCCES => (),
@@ -468,7 +468,7 @@ impl ThreadBuilder {
 
             (t.callback)();
             unsafe { posix::free(args) };
-            std::ptr::null_mut::<posix::void>()
+            core::ptr::null_mut::<posix::void>()
         }
 
         let startup_args = unsafe {
@@ -672,7 +672,7 @@ impl ThreadProperties for ThreadHandle {
         let mut cpuset = posix::cpu_set_t::new();
         let msg = "Unable to acquire threads CPU affinity";
         handle_errno!(ThreadSetAffinityError, from self,
-            errno_source unsafe { posix::pthread_getaffinity_np(self.handle, std::mem::size_of::<posix::cpu_set_t>(), &mut cpuset).into()},
+            errno_source unsafe { posix::pthread_getaffinity_np(self.handle, core::mem::size_of::<posix::cpu_set_t>(), &mut cpuset).into()},
             continue_on_success,
             success Errno::ESUCCES => (),
             Errno::EINVAL => (InvalidCpuCores, "{} since some cpu cores were invalid (maybe exceeded maximum supported CPU core number of the system).", msg ),
@@ -709,7 +709,7 @@ impl ThreadProperties for ThreadHandle {
 
         let msg = "Unable to set cpu affinity";
         handle_errno!(ThreadSetAffinityError, from self,
-            errno_source unsafe { posix::pthread_setaffinity_np(self.handle, std::mem::size_of::<posix::cpu_set_t>(), &cpuset).into() },
+            errno_source unsafe { posix::pthread_setaffinity_np(self.handle, core::mem::size_of::<posix::cpu_set_t>(), &cpuset).into() },
             success Errno::ESUCCES => (),
             Errno::EINVAL => (InvalidCpuCores, "{} since some cpu cores were invalid (maybe exceeded maximum supported CPU core number of the system).", msg),
             v=> (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
@@ -730,7 +730,7 @@ struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + 
 ///
 /// ```
 /// use iceoryx2_bb_posix::thread::*;
-/// use std::sync::atomic::{AtomicBool, Ordering};
+/// use core::sync::atomic::{AtomicBool, Ordering};
 ///
 /// static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 ///
@@ -755,7 +755,7 @@ pub struct Thread<'thread> {
 }
 
 impl Debug for Thread<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Thread {{ handle: {:?} }}", self.handle)
     }
 }
@@ -764,7 +764,11 @@ impl Drop for Thread<'_> {
     fn drop(&mut self) {
         let msg = "Unable to join thread";
         match unsafe {
-            posix::pthread_join(self.handle.handle, std::ptr::null_mut::<*mut posix::void>()).into()
+            posix::pthread_join(
+                self.handle.handle,
+                core::ptr::null_mut::<*mut posix::void>(),
+            )
+            .into()
         } {
             Errno::ESUCCES => (),
             Errno::EDEADLK => {

@@ -111,7 +111,7 @@ pub unsafe extern "C" fn iox2_node_name_new(
     debug_assert!(!node_name_str.is_null());
     debug_assert!(!node_name_handle_ptr.is_null());
 
-    *node_name_handle_ptr = std::ptr::null_mut();
+    *node_name_handle_ptr = core::ptr::null_mut();
 
     let mut node_name_struct_ptr = node_name_struct_ptr;
     fn no_op(_: *mut iox2_node_name_t) {}
@@ -223,7 +223,7 @@ pub unsafe extern "C" fn iox2_node_name_drop(node_name_handle: iox2_node_name_h)
 
     let node_name = &mut *node_name_handle.as_type();
 
-    std::ptr::drop_in_place(node_name.value.as_option_mut());
+    core::ptr::drop_in_place(node_name.value.as_option_mut());
     (node_name.deleter)(node_name);
 }
 

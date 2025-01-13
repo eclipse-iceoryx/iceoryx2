@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod node_death_tests {
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use core::sync::atomic::{AtomicU32, Ordering};
 
     use iceoryx2::config::Config;
     use iceoryx2::node::testing::__internal_node_staged_death;

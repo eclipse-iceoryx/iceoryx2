@@ -10,6 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::alloc_instead_of_core)]
+#![warn(clippy::std_instead_of_alloc)]
+#![warn(clippy::std_instead_of_core)]
+
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::{format_ident, quote};
@@ -93,19 +97,19 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
         impl #struct_storage_name {
             const fn assert_storage_layout() {
                 static_assert_ge::<
-                { ::std::mem::align_of::<#struct_storage_name>() },
-                { ::std::mem::align_of::<Option<#my_type>>() },
+                { ::core::mem::align_of::<#struct_storage_name>() },
+                { ::core::mem::align_of::<Option<#my_type>>() },
                 >();
                 static_assert_ge::<
-                { ::std::mem::size_of::<#struct_storage_name>() },
-                { ::std::mem::size_of::<Option<#my_type>>() },
+                { ::core::mem::size_of::<#struct_storage_name>() },
+                { ::core::mem::size_of::<Option<#my_type>>() },
                 >();
             }
 
             fn init(&mut self, value: #my_type) {
                 #struct_storage_name::assert_storage_layout();
 
-                unsafe { &mut *(self as *mut Self).cast::<::std::mem::MaybeUninit<Option<#my_type>>>() }
+                unsafe { &mut *(self as *mut Self).cast::<::core::mem::MaybeUninit<Option<#my_type>>>() }
                 .write(Some(value));
             }
 
@@ -143,7 +147,7 @@ pub fn iceoryx2_ffi(args: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             pub(super) fn alloc() -> *mut #struct_name {
-                unsafe { ::std::alloc::alloc(::std::alloc::Layout::new::<#struct_name>()) as _ }
+                unsafe { ::std::alloc::alloc(::core::alloc::Layout::new::<#struct_name>()) as _ }
             }
 
             pub(super) fn dealloc(storage: *mut #struct_name) {
@@ -257,7 +261,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
                     quote! {
                         // This code appends the null termination which cannot be confirmed at compile time,
                         // thus the code is ensured safe.
-                        unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#s, "\0").as_bytes()) }
+                        unsafe { ::core::ffi::CStr::from_bytes_with_nul_unchecked(concat!(#s, "\0").as_bytes()) }
                     }
                 };
 
@@ -297,7 +301,7 @@ pub fn string_literal_derive(input: TokenStream) -> TokenStream {
             });
 
             quote! {
-                fn as_const_cstr(&self) -> &'static ::std::ffi::CStr {
+                fn as_const_cstr(&self) -> &'static ::core::ffi::CStr {
                     match self {
                         #(#enum_to_string_mapping,)*
                     }

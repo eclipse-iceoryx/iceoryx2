@@ -30,12 +30,12 @@ impl NodeName {
     /// Returns a str reference to the [`NodeName`]
     pub fn as_str(&self) -> &str {
         // SAFETY: `ServieName` was created from a `&str` and therefore this conversion is safe
-        unsafe { std::str::from_utf8_unchecked(self.value.as_bytes()) }
+        unsafe { core::str::from_utf8_unchecked(self.value.as_bytes()) }
     }
 }
 
-impl std::fmt::Display for NodeName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeName {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}", self.value)
     }
 }
@@ -60,7 +60,7 @@ impl PartialEq<&str> for &NodeName {
     }
 }
 
-impl std::ops::Deref for NodeName {
+impl core::ops::Deref for NodeName {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -73,7 +73,7 @@ struct NodeNameVisitor;
 impl Visitor<'_> for NodeNameVisitor {
     type Value = NodeName;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         formatter.write_str("a string containing the service name")
     }
 
@@ -102,6 +102,6 @@ impl Serialize for NodeName {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(std::str::from_utf8(self.as_bytes()).unwrap())
+        serializer.serialize_str(core::str::from_utf8(self.as_bytes()).unwrap())
     }
 }

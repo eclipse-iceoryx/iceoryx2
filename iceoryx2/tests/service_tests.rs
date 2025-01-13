@@ -12,10 +12,10 @@
 
 #[generic_tests::define]
 mod service {
-    use std::marker::PhantomData;
-    use std::sync::atomic::{AtomicU64, Ordering};
+    use core::marker::PhantomData;
+    use core::sync::atomic::{AtomicU64, Ordering};
+    use core::time::Duration;
     use std::sync::Barrier;
-    use std::time::Duration;
 
     use iceoryx2::node::NodeView;
     use iceoryx2::prelude::*;
@@ -43,8 +43,8 @@ mod service {
 
     trait SutFactory<Sut: Service>: Send + Sync {
         type Factory: PortFactory;
-        type CreateError: std::fmt::Debug;
-        type OpenError: std::fmt::Debug;
+        type CreateError: core::fmt::Debug;
+        type OpenError: core::fmt::Debug;
 
         fn new() -> Self;
         fn create(

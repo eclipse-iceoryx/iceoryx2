@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::c_size_t;
-use std::{ffi::c_char, mem::ManuallyDrop};
+use core::{ffi::c_char, mem::ManuallyDrop};
 
 use iceoryx2::{
     prelude::WaitSetAttachmentId,
@@ -333,7 +333,7 @@ pub unsafe extern "C" fn iox2_waitset_attachment_id_debug(
         return false;
     }
 
-    std::ptr::copy_nonoverlapping(
+    core::ptr::copy_nonoverlapping(
         raw_str.as_bytes().as_ptr().cast(),
         debug_output,
         raw_str.len(),

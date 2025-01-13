@@ -14,7 +14,7 @@
 #![allow(unused_variables)]
 
 use crate::posix::types::*;
-use std::{cell::Cell, ffi::CStr, fmt::Display};
+use core::{cell::Cell, ffi::CStr, fmt::Display};
 
 macro_rules! ErrnoEnumGenerator {
     (assign $($entry:ident = $value:expr),*; map $($map_entry:ident),*) => {
@@ -43,7 +43,7 @@ macro_rules! ErrnoEnumGenerator {
         }
 
         impl Display for Errno {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 const BUFFER_SIZE: usize = 1024;
                 let mut buffer: [c_char; BUFFER_SIZE] = [0; BUFFER_SIZE];
                 unsafe { strerror_r(*self as i32, buffer.as_mut_ptr(), BUFFER_SIZE) };
@@ -221,7 +221,7 @@ pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
         buflen
     }();
 
-    std::ptr::copy_nonoverlapping(error, buf, len);
+    core::ptr::copy_nonoverlapping(error, buf, len);
 
     0
 }

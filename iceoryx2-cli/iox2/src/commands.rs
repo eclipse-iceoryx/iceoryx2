@@ -99,7 +99,7 @@ pub trait CommandFinder<E: Environment> {
 }
 
 pub struct IceoryxCommandFinder<E: Environment> {
-    _phantom: std::marker::PhantomData<E>,
+    _phantom: core::marker::PhantomData<E>,
 }
 
 impl<E> IceoryxCommandFinder<E>

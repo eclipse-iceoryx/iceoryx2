@@ -30,10 +30,10 @@ use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_ffi_macros::CStrRepr;
 
+use core::alloc::Layout;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use core::{slice, str};
-use std::alloc::Layout;
 
 use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref};
 

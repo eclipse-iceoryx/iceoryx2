@@ -68,9 +68,9 @@ use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 use crate::mpmc::unique_index_set::*;
-use std::alloc::Layout;
-use std::fmt::Debug;
-use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
+use core::alloc::Layout;
+use core::fmt::Debug;
+use core::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
 
 /// States the reason why an element could not be added to the [`Container`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -184,12 +184,13 @@ unsafe impl<T: Copy + Debug> Sync for Container<T> {}
 impl<T: Copy + Debug> RelocatableContainer for Container<T> {
     unsafe fn new_uninit(capacity: usize) -> Self {
         let distance_to_active_index =
-            (std::mem::size_of::<Self>() + UniqueIndexSet::memory_size(capacity)) as isize;
+            (core::mem::size_of::<Self>() + UniqueIndexSet::memory_size(capacity)) as isize;
         Self {
             container_id: UniqueId::new(),
             active_index_ptr: RelocatablePointer::new(distance_to_active_index),
             data_ptr: RelocatablePointer::new(align_to::<MaybeUninit<T>>(
-                distance_to_active_index as usize + capacity * std::mem::size_of::<IoxAtomicBool>(),
+                distance_to_active_index as usize
+                    + capacity * core::mem::size_of::<IoxAtomicBool>(),
             ) as isize),
             capacity,
             change_counter: IoxAtomicU64::new(0),
@@ -211,13 +212,13 @@ impl<T: Copy + Debug> RelocatableContainer for Container<T> {
             "{} since the underlying UniqueIndexSet could not be initialized", msg);
 
         self.active_index_ptr.init(fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
-                        std::mem::size_of::<IoxAtomicU64>() * self.capacity,
-                        std::mem::align_of::<IoxAtomicU64>())), "{} since the allocation of the active index memory failed.",
+                        core::mem::size_of::<IoxAtomicU64>() * self.capacity,
+                        core::mem::align_of::<IoxAtomicU64>())), "{} since the allocation of the active index memory failed.",
                 msg));
         self.data_ptr.init(
             fail!(from self, when allocator.allocate(Layout::from_size_align_unchecked(
-                    std::mem::size_of::<T>() * self.capacity,
-                    std::mem::align_of::<T>())),
+                    core::mem::size_of::<T>() * self.capacity,
+                    core::mem::align_of::<T>())),
                 "{} since the allocation of the data memory failed.", msg
             ),
         );
@@ -245,7 +246,7 @@ impl<T: Copy + Debug> Container<T> {
     fn verify_init(&self, source: &str) {
         debug_assert!(self.is_initialized.load(Ordering::Relaxed),
             "Undefined behavior when calling Container<{}>::{} and the object is not initialized with 'init'.",
-            std::any::type_name::<T>(), source);
+            core::any::type_name::<T>(), source);
     }
 
     /// Returns the required memory size of the data segment of the [`Container`].

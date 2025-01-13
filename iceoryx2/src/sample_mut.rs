@@ -69,10 +69,11 @@ use crate::{
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_cal::shared_memory::*;
-use std::{
-    fmt::{Debug, Formatter},
-    sync::Arc,
-};
+
+use core::fmt::{Debug, Formatter};
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 ///  * [`crate::port::publisher::Publisher::loan()`],
@@ -96,7 +97,7 @@ pub struct SampleMut<Service: crate::service::Service, Payload: Debug + ?Sized, 
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debug
     for SampleMut<Service, Payload, UserHeader>
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",

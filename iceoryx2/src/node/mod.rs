@@ -155,6 +155,10 @@ use crate::service::service_name::ServiceName;
 use crate::service::{self, remove_service_tag};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
+use core::cell::UnsafeCell;
+use core::marker::PhantomData;
+use core::sync::atomic::Ordering;
+use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
@@ -169,12 +173,12 @@ use iceoryx2_cal::{
     monitoring::*, named_concept::NamedConceptListError, serialize::*, static_storage::*,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use std::cell::UnsafeCell;
+
+extern crate alloc;
+use alloc::sync::Arc;
+
 use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::sync::atomic::Ordering;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::sync::Mutex;
 
 /// The system-wide unique id of a [`Node`]
 #[derive(
@@ -213,8 +217,8 @@ pub enum NodeCreationFailure {
     InternalError,
 }
 
-impl std::fmt::Display for NodeCreationFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeCreationFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NodeCreationFailure::{:?}", self)
     }
 }
@@ -230,8 +234,8 @@ pub enum NodeWaitFailure {
     TerminationRequest,
 }
 
-impl std::fmt::Display for NodeWaitFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeWaitFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NodeWaitFailure::{:?}", self)
     }
 }
@@ -249,8 +253,8 @@ pub enum NodeListFailure {
     InternalError,
 }
 
-impl std::fmt::Display for NodeListFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeListFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NodeListFailure::{:?}", self)
     }
 }
@@ -269,8 +273,8 @@ pub enum NodeCleanupFailure {
     InsufficientPermissions,
 }
 
-impl std::fmt::Display for NodeCleanupFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NodeCleanupFailure {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NodeCleanupFailure::{:?}", self)
     }
 }

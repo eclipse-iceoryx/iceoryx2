@@ -30,8 +30,10 @@
 //! # }
 //! ```
 
-use std::sync::Arc;
-use std::{fmt::Debug, ops::Deref};
+use core::{fmt::Debug, ops::Deref};
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyReceiver, ZeroCopyReleaseError};
@@ -59,7 +61,7 @@ pub struct Sample<Service: crate::service::Service, Payload: Debug + ?Sized, Use
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debug
     for Sample<Service, Payload, UserHeader>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "Sample<{}, {}, {}> {{ details: {:?} }}",

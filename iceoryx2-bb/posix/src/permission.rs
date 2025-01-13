@@ -16,8 +16,8 @@
 //! credentials of [`crate::file::File`], [`crate::shared_memory::SharedMemory`] and others.
 
 use bitflags::bitflags;
+use core::fmt::Display;
 use iceoryx2_pal_posix::*;
-use std::fmt::Display;
 
 type ModeType = posix::mode_t;
 
@@ -131,7 +131,7 @@ impl Permission {
 }
 
 impl Display for Permission {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut owner = "---".to_string();
         if self.has(Permission::OWNER_READ) {
             owner.replace_range(0..1, "r");

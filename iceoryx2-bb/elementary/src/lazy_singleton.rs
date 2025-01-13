@@ -33,8 +33,8 @@
 //! println!("{}", LAZY_GLOBAL.get());
 //! ```
 
+use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
 /// The lazy initialized singleton building block of type T
 #[derive(Debug)]
@@ -96,7 +96,7 @@ impl<T> LazySingleton<T> {
         }
 
         while !self.is_finalized.load(Ordering::Acquire) {
-            std::hint::spin_loop()
+            core::hint::spin_loop()
         }
         unsafe { self.data.get().as_ref().unwrap().as_ref().unwrap() }
     }

@@ -13,8 +13,8 @@
 //! The [`AccessMode`] describes the mode in which resources like [`crate::file::File`],
 //! [`crate::shared_memory::SharedMemory`] or others should be opened.
 
+use core::fmt::Display;
 use iceoryx2_pal_posix::*;
-use std::fmt::Display;
 
 /// Describes the mode in which resources like [`crate::file::File`],
 /// [`crate::shared_memory::SharedMemory`] or others should be opened.
@@ -66,7 +66,7 @@ impl AccessMode {
 }
 
 impl Display for AccessMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "AccessMode::{}",

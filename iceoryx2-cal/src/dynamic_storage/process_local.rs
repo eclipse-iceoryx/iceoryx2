@@ -20,7 +20,7 @@
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::process_local::*;
 //! use iceoryx2_cal::named_concept::*;
-//! use std::sync::atomic::{AtomicI64, Ordering};
+//! use core::sync::atomic::{AtomicI64, Ordering};
 //!
 //! let additional_size: usize = 1024;
 //! let storage_name = FileName::new(b"myDynStorage").unwrap();
@@ -37,6 +37,12 @@
 //! println!("New value: {}", reader.get().load(Ordering::Relaxed));
 //! ```
 
+use core::alloc::Layout;
+use core::any::Any;
+use core::fmt::Debug;
+use core::marker::PhantomData;
+use core::ptr::NonNull;
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::allocator::BaseAllocator;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
@@ -46,14 +52,10 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use once_cell::sync::Lazy;
-use std::alloc::Layout;
-use std::any::Any;
 use std::collections::HashMap;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::ptr::NonNull;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 pub use crate::dynamic_storage::*;
 use crate::static_storage::file::NamedConceptConfiguration;
@@ -142,8 +144,8 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
 
 impl<T> StorageDetails<T> {
     fn new(value: T, additional_size: u64) -> Self {
-        let size = std::mem::size_of::<T>() + additional_size as usize;
-        let align = std::mem::align_of::<T>();
+        let size = core::mem::size_of::<T>() + additional_size as usize;
+        let align = core::mem::align_of::<T>();
         let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
         let new_self = Self {
             data_ptr: fatal_panic!(from "StorageDetails::new", when HeapAllocator::new()
@@ -255,7 +257,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
             return Ok(false);
         }
 
-        std::ptr::drop_in_place(
+        core::ptr::drop_in_place(
             entry
                 .as_mut()
                 .unwrap()
@@ -389,7 +391,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
         ));
 
         let value = storage_details.data_ptr;
-        let supplementary_start = (value as usize + std::mem::size_of::<T>()) as *mut u8;
+        let supplementary_start = (value as usize + core::mem::size_of::<T>()) as *mut u8;
 
         let mut allocator = BumpAllocator::new(
             unsafe { NonNull::new_unchecked(supplementary_start) },

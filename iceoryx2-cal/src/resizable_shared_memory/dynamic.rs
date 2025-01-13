@@ -10,11 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::alloc::Layout;
-use std::cell::UnsafeCell;
-use std::sync::atomic::Ordering;
-use std::time::Duration;
-use std::{fmt::Debug, marker::PhantomData};
+use core::alloc::Layout;
+use core::cell::UnsafeCell;
+use core::sync::atomic::Ordering;
+use core::time::Duration;
+use core::{fmt::Debug, marker::PhantomData};
 
 use crate::shared_memory::{
     AllocationStrategy, SegmentId, SharedMemoryForPoolAllocator, ShmPointer,

@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::{alloc::Layout, sync::atomic::Ordering};
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
     owning_pointer::OwningPointer,
@@ -18,13 +19,12 @@ use iceoryx2_bb_elementary::{
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use std::{alloc::Layout, sync::atomic::Ordering};
 
 pub type UsedChunkList = details::UsedChunkList<OwningPointer<IoxAtomicBool>>;
 pub type RelocatableUsedChunkList = details::UsedChunkList<RelocatablePointer<IoxAtomicBool>>;
 
 pub mod details {
-    use std::fmt::Debug;
+    use core::fmt::Debug;
 
     use iceoryx2_bb_elementary::{math::unaligned_mem_size, owning_pointer::OwningPointer};
 
@@ -82,8 +82,8 @@ pub mod details {
 
             let memory = fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                    std::mem::size_of::<IoxAtomicBool>() * self.capacity,
-                    std::mem::align_of::<IoxAtomicBool>())),
+                    core::mem::size_of::<IoxAtomicBool>() * self.capacity,
+                    core::mem::align_of::<IoxAtomicBool>())),
             "Failed to initialize since the allocation of the data memory failed.");
 
             self.data_ptr.init(memory);

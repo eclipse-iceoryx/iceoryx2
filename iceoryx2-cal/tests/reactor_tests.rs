@@ -18,9 +18,11 @@ mod reactor {
     use iceoryx2_cal::event::{Listener, ListenerBuilder, Notifier, NotifierBuilder};
     use iceoryx2_cal::reactor::{Reactor, *};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
-    use std::sync::atomic::{AtomicU64, Ordering};
+
+    use core::sync::atomic::{AtomicU64, Ordering};
+    use core::time::Duration;
     use std::sync::{Barrier, Mutex};
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
 
     const TIMEOUT: Duration = Duration::from_millis(50);
     const INFINITE_TIMEOUT: Duration = Duration::from_secs(3600 * 24);

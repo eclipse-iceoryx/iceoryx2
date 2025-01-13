@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod shared_memory_posix_shared_memory_tests {
+    use core::time::Duration;
     use iceoryx2_bb_posix::creation_mode::CreationMode;
     use iceoryx2_bb_posix::permission::Permission;
     use iceoryx2_bb_testing::assert_that;
@@ -18,7 +19,6 @@ mod shared_memory_posix_shared_memory_tests {
     use iceoryx2_cal::shared_memory::*;
     use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
     use iceoryx2_cal::testing::generate_name;
-    use std::time::Duration;
 
     const TIMEOUT: Duration = Duration::from_millis(100);
 

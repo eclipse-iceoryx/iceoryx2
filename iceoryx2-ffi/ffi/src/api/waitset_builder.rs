@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use std::ffi::c_int;
+use core::ffi::c_int;
 
 use crate::{
     api::IntoCInt, iox2_service_type_e, iox2_waitset_h, iox2_waitset_t, WaitSetUnion, IOX2_OK,
@@ -101,7 +101,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_new(
 ) {
     debug_assert!(!handle_ptr.is_null());
 
-    *handle_ptr = std::ptr::null_mut();
+    *handle_ptr = core::ptr::null_mut();
 
     let mut struct_ptr = struct_ptr;
     fn no_op(_: *mut iox2_waitset_builder_t) {}
@@ -162,7 +162,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
     fn no_op(_: *mut iox2_waitset_t) {}
     let mut deleter: fn(*mut iox2_waitset_t) = no_op;
     let mut struct_ptr = struct_ptr;
-    *handle_ptr = std::ptr::null_mut();
+    *handle_ptr = core::ptr::null_mut();
 
     let mut alloc_memory = || {
         if struct_ptr.is_null() {

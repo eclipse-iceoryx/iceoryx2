@@ -12,10 +12,8 @@
 
 #[generic_tests::define]
 mod signal_mechanism {
-    use std::{
-        sync::{atomic::AtomicU64, Barrier},
-        time::Duration,
-    };
+    use core::{sync::atomic::AtomicU64, time::Duration};
+    use std::sync::Barrier;
 
     use iceoryx2_bb_posix::clock::Time;
     use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
@@ -66,16 +64,16 @@ mod signal_mechanism {
                 let t = s.spawn(|| {
                     barrier.wait();
                     assert_that!(wait_call(&sut), eq true);
-                    counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    counter.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
                 });
 
                 barrier.wait();
                 std::thread::sleep(TIMEOUT);
-                assert_that!(counter.load(std::sync::atomic::Ordering::Relaxed), eq 0);
+                assert_that!(counter.load(core::sync::atomic::Ordering::Relaxed), eq 0);
                 sut.notify().unwrap();
                 t.join().unwrap();
 
-                assert_that!(counter.load(std::sync::atomic::Ordering::Relaxed), eq 1);
+                assert_that!(counter.load(core::sync::atomic::Ordering::Relaxed), eq 1);
             });
         }
     }

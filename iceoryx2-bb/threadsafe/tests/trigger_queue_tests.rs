@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use core::sync::atomic::{AtomicU64, Ordering};
+use core::time::Duration;
 use std::sync::Barrier;
 use std::thread;
-use std::time::Duration;
 
 use iceoryx2_bb_posix::clock::{nanosleep, Time};
 use iceoryx2_bb_posix::mutex::MutexHandle;

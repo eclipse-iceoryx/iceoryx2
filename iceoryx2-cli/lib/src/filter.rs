@@ -12,14 +12,14 @@
 
 use crate::output::NodeIdString;
 use clap::ValueEnum;
+use core::fmt::Debug;
+use core::str::FromStr;
 use iceoryx2::node::NodeState;
 use iceoryx2::node::NodeView;
 use iceoryx2::service::ipc::Service;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::ServiceDetails;
 use iceoryx2_pal_posix::posix::pid_t;
-use std::fmt::Debug;
-use std::str::FromStr;
 
 pub trait Filter<T>: Debug {
     fn matches(&self, item: &T) -> bool;

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crate::pointer_trait::PointerTrait;
 

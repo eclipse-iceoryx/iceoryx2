@@ -112,7 +112,7 @@ pub unsafe extern "C" fn iox2_service_name_new(
     debug_assert!(!service_name_str.is_null());
     debug_assert!(!service_name_handle_ptr.is_null());
 
-    *service_name_handle_ptr = std::ptr::null_mut();
+    *service_name_handle_ptr = core::ptr::null_mut();
 
     let mut service_name_struct_ptr = service_name_struct_ptr;
     fn no_op(_: *mut iox2_service_name_t) {}
@@ -224,7 +224,7 @@ pub unsafe extern "C" fn iox2_service_name_drop(service_name_handle: iox2_servic
 
     let service_name = &mut *service_name_handle.as_type();
 
-    std::ptr::drop_in_place(service_name.value.as_option_mut());
+    core::ptr::drop_in_place(service_name.value.as_option_mut());
     (service_name.deleter)(service_name);
 }
 

@@ -52,13 +52,13 @@ use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary::relocatable_container::*;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 
+pub use core::alloc::Layout;
+use core::cell::UnsafeCell;
+use core::sync::atomic::Ordering;
 pub use iceoryx2_bb_elementary::allocator::*;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-pub use std::alloc::Layout;
-use std::cell::UnsafeCell;
-use std::sync::atomic::Ordering;
 
 #[derive(Debug)]
 pub struct PoolAllocator {
@@ -204,7 +204,7 @@ impl BaseAllocator for PoolAllocator {
 
         match unsafe { self.buckets.acquire_raw_index() } {
             Ok(v) => Ok(unsafe {
-                NonNull::new_unchecked(std::slice::from_raw_parts_mut(
+                NonNull::new_unchecked(core::slice::from_raw_parts_mut(
                     (self.start + v as usize * self.bucket_size) as *mut u8,
                     layout.size(),
                 ))
@@ -250,7 +250,7 @@ impl Allocator for PoolAllocator {
                 "{} since the new size {} exceeds the maximum supported size.", msg, new_layout.size());
         }
 
-        Ok(NonNull::new(std::slice::from_raw_parts_mut(
+        Ok(NonNull::new(core::slice::from_raw_parts_mut(
             ptr.as_ptr(),
             new_layout.size(),
         ))
@@ -278,7 +278,7 @@ impl Allocator for PoolAllocator {
                 "{} since the new alignment {} exceeds the maximum supported alignment.", msg, new_layout.align() );
         }
 
-        Ok(NonNull::new(std::slice::from_raw_parts_mut(
+        Ok(NonNull::new(core::slice::from_raw_parts_mut(
             ptr.as_ptr(),
             new_layout.size(),
         ))
@@ -329,7 +329,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
         let mut new_self = FixedSizePoolAllocator {
             state: PoolAllocator {
                 buckets: unsafe {
-                    UniqueIndexSet::new_uninit(std::cmp::min(
+                    UniqueIndexSet::new_uninit(core::cmp::min(
                         number_of_buckets,
                         MAX_NUMBER_OF_BUCKETS,
                     ))
@@ -340,7 +340,7 @@ impl<const MAX_NUMBER_OF_BUCKETS: usize> FixedSizePoolAllocator<MAX_NUMBER_OF_BU
                 size,
                 is_memory_initialized: IoxAtomicBool::new(true),
             },
-            next_free_index: std::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
+            next_free_index: core::array::from_fn(|i| UnsafeCell::new(i as u32 + 1)),
             next_free_index_plus_one: UnsafeCell::new(MAX_NUMBER_OF_BUCKETS as u32 + 1),
         };
 

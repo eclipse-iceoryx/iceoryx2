@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::atomic::AtomicU32;
+use core::sync::atomic::AtomicU32;
 
 static COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -20,7 +20,8 @@ mod ice_atomic {
 
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_pal_concurrency_sync::iox_atomic::{internal::AtomicInteger, IoxAtomic};
-    use std::{
+
+    use core::{
         fmt::Debug,
         ops::{AddAssign, BitAnd, BitOr},
         sync::atomic::Ordering,

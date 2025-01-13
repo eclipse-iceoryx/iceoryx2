@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::sync::atomic::{AtomicBool, Ordering};
+use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_posix::config::*;
@@ -25,9 +27,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use std::time::Duration;
 use std::time::Instant;
 
 const TIMEOUT: Duration = Duration::from_millis(100);

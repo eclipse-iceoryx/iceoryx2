@@ -51,11 +51,11 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, fail, warn};
 use iceoryx2_cal::{dynamic_storage::DynamicStorage, event::NotifierBuilder};
 use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
-use std::{
-    cell::UnsafeCell,
-    sync::{atomic::Ordering, Arc},
-    time::Duration,
-};
+
+use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].
@@ -68,8 +68,8 @@ pub enum NotifierCreateError {
     ExceedsMaxSupportedNotifiers,
 }
 
-impl std::fmt::Display for NotifierCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NotifierCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NotifierCreateError::{:?}", self)
     }
 }
@@ -92,8 +92,8 @@ pub enum NotifierNotifyError {
     UnableToAcquireElapsedTime,
 }
 
-impl std::fmt::Display for NotifierNotifyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NotifierNotifyError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "NotifierNotifyError::{:?}", self)
     }
 }
@@ -271,7 +271,7 @@ impl<Service: service::Service> Notifier<Service> {
 
         new_self.populate_listener_channels();
 
-        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a notifier is added to the dynamic config without
         // the creation of all required channels

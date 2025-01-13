@@ -376,7 +376,7 @@ impl Directory {
     /// Returns the contents of the directory inside a vector of [`DirectoryEntry`]s.
     pub fn contents(&self) -> Result<Vec<DirectoryEntry>, DirectoryReadError> {
         let mut namelist: *mut *mut posix::types::dirent =
-            std::ptr::null_mut::<*mut posix::types::dirent>();
+            core::ptr::null_mut::<*mut posix::types::dirent>();
         let number_of_directory_entries =
             unsafe { posix::scandir(self.path.as_c_str(), &mut namelist) };
 

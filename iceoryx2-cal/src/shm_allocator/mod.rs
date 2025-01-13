@@ -14,7 +14,7 @@ pub mod bump_allocator;
 pub mod pointer_offset;
 pub mod pool_allocator;
 
-use std::{alloc::Layout, fmt::Debug, ptr::NonNull};
+use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 pub use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};

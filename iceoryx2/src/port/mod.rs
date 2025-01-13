@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use tiny_fn::tiny_fn;
 
@@ -54,7 +54,7 @@ tiny_fn! {
 }
 
 impl Debug for DegrationCallback<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
     }
 }

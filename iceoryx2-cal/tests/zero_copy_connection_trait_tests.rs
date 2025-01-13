@@ -12,9 +12,10 @@
 
 #[generic_tests::define]
 mod zero_copy_connection {
+    use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::Mutex;
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
 
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_posix::barrier::*;
@@ -780,7 +781,7 @@ mod zero_copy_connection {
             assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len i);
             sut_names.push(generate_name());
             assert_that!(<Sut as NamedConceptMgmt>::does_exist_cfg(&sut_names[i], &config), eq Ok(false));
-            std::mem::forget(
+            core::mem::forget(
                 Sut::Builder::new(&sut_names[i])
                     .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
                     .config(&config)
@@ -858,8 +859,8 @@ mod zero_copy_connection {
         assert_that!(*sut_1.name(), eq sut_name);
         assert_that!(*sut_2.name(), eq sut_name);
 
-        std::mem::forget(sut_1);
-        std::mem::forget(sut_2);
+        core::mem::forget(sut_1);
+        core::mem::forget(sut_2);
 
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(true));
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(false));

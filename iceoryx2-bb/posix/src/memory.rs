@@ -12,12 +12,12 @@
 
 //! Provides an interface for low-level heap allocations.
 
+pub use core::alloc::Layout;
+pub use core::ptr::NonNull;
 use iceoryx2_bb_elementary::allocator::{
     AllocationError, AllocationGrowError, AllocationShrinkError,
 };
 use iceoryx2_bb_elementary::math::*;
-pub use std::alloc::Layout;
-pub use std::ptr::NonNull;
 
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
@@ -70,7 +70,7 @@ pub mod heap {
     use super::*;
 
     use super::MemoryError;
-    const MEMORY_START_STORAGE_SPACE: usize = std::mem::size_of::<usize>();
+    const MEMORY_START_STORAGE_SPACE: usize = core::mem::size_of::<usize>();
 
     fn setup_and_align(
         msg: &str,
@@ -89,7 +89,7 @@ pub mod heap {
         unsafe { *(aligned_start as *mut usize).offset(-1) = addr };
 
         Ok(NonNull::new(unsafe {
-            std::slice::from_raw_parts_mut(aligned_start as *mut u8, layout.size())
+            core::slice::from_raw_parts_mut(aligned_start as *mut u8, layout.size())
         })
         .unwrap())
     }

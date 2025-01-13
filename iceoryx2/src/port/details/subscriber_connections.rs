@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::cell::UnsafeCell;
-use std::sync::Arc;
+use core::cell::UnsafeCell;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;

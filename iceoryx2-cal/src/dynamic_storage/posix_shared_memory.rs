@@ -19,7 +19,7 @@
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::posix_shared_memory::*;
 //! use iceoryx2_cal::named_concept::*;
-//! use std::sync::atomic::{AtomicI64, Ordering};
+//! use core::sync::atomic::{AtomicI64, Ordering};
 //!
 //! let additional_size: usize = 1024;
 //! let storage_name = FileName::new(b"myStorageName").unwrap();
@@ -42,6 +42,11 @@
 pub use crate::dynamic_storage::*;
 use crate::static_storage::file::NamedConceptConfiguration;
 use crate::static_storage::file::NamedConceptRemoveError;
+use core::fmt::Debug;
+use core::marker::PhantomData;
+pub use core::ops::Deref;
+use core::ptr::NonNull;
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::warn;
@@ -51,11 +56,6 @@ use iceoryx2_bb_posix::file_descriptor::FileDescriptorManagement;
 use iceoryx2_bb_posix::shared_memory::*;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-pub use std::ops::Deref;
-use std::ptr::NonNull;
-use std::sync::atomic::Ordering;
 
 use self::dynamic_storage_configuration::DynamicStorageConfiguration;
 
@@ -219,7 +219,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
             //////////////////////////////////////////
             let package_version = unsafe { &(*init_state) }
                 .version
-                .load(std::sync::atomic::Ordering::SeqCst);
+                .load(core::sync::atomic::Ordering::SeqCst);
 
             let package_version = PackageVersion::from_u64(package_version);
             if package_version.to_u64() == 0 {
@@ -256,7 +256,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
             .creation_mode(CreationMode::CreateExclusive)
             // posix shared memory is always aligned to the greatest possible value (PAGE_SIZE)
             // therefore we do not have to add additional alignment space for T
-            .size(std::mem::size_of::<Data<T>>() + self.supplementary_size)
+            .size(core::mem::size_of::<Data<T>>() + self.supplementary_size)
             .permission(INIT_PERMISSIONS)
             .zero_memory(false)
             .has_ownership(self.has_ownership)
@@ -293,8 +293,8 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         unsafe { core::ptr::addr_of_mut!((*value).data).write(initial_value) };
 
         let supplementary_start =
-            (shm.base_address().as_ptr() as usize + std::mem::size_of::<Data<T>>()) as *mut u8;
-        let supplementary_len = shm.size() - std::mem::size_of::<Data<T>>();
+            (shm.base_address().as_ptr() as usize + core::mem::size_of::<Data<T>>()) as *mut u8;
+        let supplementary_len = shm.size() - core::mem::size_of::<Data<T>>();
 
         let mut allocator = BumpAllocator::new(
             unsafe { NonNull::new_unchecked(supplementary_start) },
@@ -461,7 +461,7 @@ impl<T: Send + Sync + Debug> NamedConceptMgmt for Storage<T> {
             Err(e) => {
                 warn!(from origin,
                     "Removing DynamicStorage in broken state ({:?}) will not call drop of the underlying data type {:?}.",
-                    e, std::any::type_name::<T>());
+                    e, core::any::type_name::<T>());
 
                 match iceoryx2_bb_posix::shared_memory::SharedMemory::remove(&full_name) {
                     Ok(v) => Ok(v),

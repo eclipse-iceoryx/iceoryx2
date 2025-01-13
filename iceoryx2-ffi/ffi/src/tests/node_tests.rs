@@ -14,15 +14,15 @@
 mod node {
     use crate::tests::*;
 
+    use core::ffi::c_char;
     use core::{slice, str};
-    use std::ffi::c_char;
 
     #[test]
     fn basic_node_api_test<S: Service + ServiceTypeMapping>() {
         unsafe {
             let node_handle = create_node::<S>("");
 
-            assert_that!(node_handle, ne(std::ptr::null_mut()));
+            assert_that!(node_handle, ne(core::ptr::null_mut()));
 
             iox2_node_drop(node_handle);
         }

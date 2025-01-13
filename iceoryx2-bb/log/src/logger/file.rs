@@ -31,13 +31,17 @@
 // In the long-term the file logger may be required to be based on the same
 // iceoryx2_pal_posix platform. In this case, the logger needs to use the low-level calls directly
 // to avoid a circular dependency with iceoryx2_bb_posix.
+use core::{fmt::Debug, time::Duration};
+
+extern crate alloc;
+use alloc::sync::Arc;
+
 use std::{
-    fmt::Debug,
     fs::OpenOptions,
     io::Write,
-    sync::{mpsc::Sender, Arc},
+    sync::mpsc::Sender,
     thread::JoinHandle,
-    time::{Duration, Instant, SystemTime},
+    time::{Instant, SystemTime},
 };
 
 use std::sync::mpsc::channel;
@@ -58,7 +62,7 @@ struct Entry {
 }
 
 impl Debug for Entry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "timestamp: {:?}, elapsed_time: {:?}, log_level: {:?}, origin: {}, message: {}",
@@ -122,8 +126,8 @@ impl crate::Log for Logger {
     fn log(
         &self,
         log_level: LogLevel,
-        origin: std::fmt::Arguments,
-        formatted_message: std::fmt::Arguments,
+        origin: core::fmt::Arguments,
+        formatted_message: core::fmt::Arguments,
     ) {
         if get_log_level() > log_level as u8 {
             return;

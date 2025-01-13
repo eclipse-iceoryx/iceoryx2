@@ -32,7 +32,7 @@
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_cal::dynamic_storage::*;
 //! use iceoryx2_cal::named_concept::*;
-//! use std::sync::atomic::{AtomicU64, Ordering};
+//! use core::sync::atomic::{AtomicU64, Ordering};
 //!
 //! // the following two functions can be implemented in different processes
 //! fn process_one<Storage: DynamicStorage<AtomicU64>>() {
@@ -54,7 +54,7 @@
 //! }
 //! ```
 
-use std::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -68,7 +68,7 @@ tiny_fn! {
 }
 
 impl<T> Debug for Initializer<'_, T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
     }
 }

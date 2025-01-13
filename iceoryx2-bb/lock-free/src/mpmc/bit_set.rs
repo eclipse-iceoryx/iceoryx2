@@ -36,6 +36,7 @@
 //!  });
 //!  ```
 
+use core::{alloc::Layout, fmt::Debug, sync::atomic::Ordering};
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
     math::unaligned_mem_size,
@@ -44,7 +45,6 @@ use iceoryx2_bb_elementary::{
     relocatable_ptr::{PointerTrait, RelocatablePointer},
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
-use std::{alloc::Layout, fmt::Debug, sync::atomic::Ordering};
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 
@@ -135,8 +135,8 @@ pub mod details {
 
             let memory = fail!(from self, when allocator
             .allocate(Layout::from_size_align_unchecked(
-                    std::mem::size_of::<BitsetElement>() * self.array_capacity,
-                    std::mem::align_of::<BitsetElement>())),
+                    core::mem::size_of::<BitsetElement>() * self.array_capacity,
+                    core::mem::align_of::<BitsetElement>())),
             "Failed to initialize since the allocation of the data memory failed.");
 
             self.data_ptr.init(memory);

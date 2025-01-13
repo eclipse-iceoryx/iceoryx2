@@ -44,7 +44,7 @@ impl TestFixture {
     }
 
     fn calc_min_number_of_buckets(size: usize, align: usize) -> u32 {
-        (TestFixture::memory_size() / std::cmp::max(size, align)) as u32 - 1
+        (TestFixture::memory_size() / core::cmp::max(size, align)) as u32 - 1
     }
 
     fn create_pool_allocator(&mut self, size: usize, align: usize) -> FixedSizePoolAllocator<512> {

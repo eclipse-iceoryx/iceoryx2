@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
 use examples_common::{PubSubEvent, TransmissionData};
 use iceoryx2::{
     port::{
@@ -18,7 +19,6 @@ use iceoryx2::{
     },
     prelude::*,
 };
-use std::time::Duration;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 const HISTORY_SIZE: usize = 20;

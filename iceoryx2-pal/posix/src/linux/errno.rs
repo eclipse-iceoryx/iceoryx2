@@ -13,7 +13,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::types::*;
-use std::{ffi::CStr, fmt::Display};
+use core::{ffi::CStr, fmt::Display};
 
 macro_rules! ErrnoEnumGenerator {
     (assign $($entry:ident = $value:expr),*; map $($map_entry:ident),*) => {
@@ -47,7 +47,7 @@ macro_rules! ErrnoEnumGenerator {
         }
 
         impl Display for Errno {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 const BUFFER_SIZE: usize = 1024;
                 let mut buffer: [c_char; BUFFER_SIZE] = [0; BUFFER_SIZE];
                 unsafe { strerror_r(*self as i32, buffer.as_mut_ptr(), BUFFER_SIZE) };
@@ -211,8 +211,8 @@ impl Errno {
 }
 
 pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
+    use core::sync::atomic::Ordering;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-    use std::sync::atomic::Ordering;
     static IS_LOCKED: IoxAtomicBool = IoxAtomicBool::new(false);
 
     while IS_LOCKED

@@ -10,13 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::fmt::Display;
+use core::fmt::Display;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Port(u16);
 
 impl Display for Port {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0)
     }
 }

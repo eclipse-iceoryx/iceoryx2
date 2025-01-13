@@ -12,7 +12,8 @@
 
 #[generic_tests::define]
 mod waitset {
-    use std::time::{Duration, Instant};
+    use core::time::Duration;
+    use std::time::Instant;
 
     use iceoryx2::port::listener::Listener;
     use iceoryx2::port::notifier::Notifier;

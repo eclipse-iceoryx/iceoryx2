@@ -12,7 +12,7 @@
 
 #[generic_tests::define]
 mod service_publish_subscribe {
-    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::{Barrier, Mutex};
     use std::thread;
 
@@ -825,16 +825,16 @@ mod service_publish_subscribe {
         let d = sut.static_config().message_type_details();
         assert_that!(d.header.variant, eq TypeVariant::FixedSize);
         assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
-        assert_that!(d.header.size, eq std::mem::size_of::<Header>());
-        assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
+        assert_that!(d.header.size, eq core::mem::size_of::<Header>());
+        assert_that!(d.header.alignment, eq core::mem::align_of::<Header>());
         assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
         assert_that!(d.user_header.type_name, eq core::any::type_name::<SomeUserHeader>());
-        assert_that!(d.user_header.size, eq std::mem::size_of::<SomeUserHeader>());
-        assert_that!(d.user_header.alignment, eq std::mem::align_of::<SomeUserHeader>());
+        assert_that!(d.user_header.size, eq core::mem::size_of::<SomeUserHeader>());
+        assert_that!(d.user_header.alignment, eq core::mem::align_of::<SomeUserHeader>());
         assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
         assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
-        assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
-        assert_that!(d.payload.alignment, eq std::mem::align_of::<PayloadType>());
+        assert_that!(d.payload.size, eq core::mem::size_of::<PayloadType>());
+        assert_that!(d.payload.alignment, eq core::mem::align_of::<PayloadType>());
     }
 
     #[test]
@@ -855,16 +855,16 @@ mod service_publish_subscribe {
         let d = sut.static_config().message_type_details();
         assert_that!(d.header.variant, eq TypeVariant::FixedSize);
         assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
-        assert_that!(d.header.size, eq std::mem::size_of::<Header>());
-        assert_that!(d.header.alignment, eq std::mem::align_of::<Header>());
+        assert_that!(d.header.size, eq core::mem::size_of::<Header>());
+        assert_that!(d.header.alignment, eq core::mem::align_of::<Header>());
         assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
         assert_that!(d.user_header.type_name, eq core::any::type_name::<()>());
-        assert_that!(d.user_header.size, eq std::mem::size_of::<()>());
-        assert_that!(d.user_header.alignment, eq std::mem::align_of::<()>());
+        assert_that!(d.user_header.size, eq core::mem::size_of::<()>());
+        assert_that!(d.user_header.alignment, eq core::mem::align_of::<()>());
         assert_that!(d.payload.variant, eq TypeVariant::Dynamic);
         assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
-        assert_that!(d.payload.size, eq std::mem::size_of::<PayloadType>());
-        assert_that!(d.payload.alignment, eq std::mem::align_of::<PayloadType>());
+        assert_that!(d.payload.size, eq core::mem::size_of::<PayloadType>());
+        assert_that!(d.payload.alignment, eq core::mem::align_of::<PayloadType>());
     }
 
     #[test]

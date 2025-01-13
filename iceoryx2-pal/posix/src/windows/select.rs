@@ -14,7 +14,8 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use std::time::{Duration, Instant};
+use core::time::Duration;
+use std::time::Instant;
 
 use crate::posix::Struct;
 use crate::{posix::types::*, win32call};
@@ -90,28 +91,28 @@ pub unsafe fn select(
 }
 
 pub const fn CMSG_ALIGN(len: usize) -> usize {
-    (len + std::mem::size_of::<usize>() - 1) & !(std::mem::size_of::<usize>() - 1)
+    (len + core::mem::size_of::<usize>() - 1) & !(core::mem::size_of::<usize>() - 1)
 }
 
 pub const unsafe fn CMSG_SPACE(length: uint) -> uint {
-    (CMSG_ALIGN(length as usize) + CMSG_ALIGN(std::mem::size_of::<cmsghdr>())) as uint
+    (CMSG_ALIGN(length as usize) + CMSG_ALIGN(core::mem::size_of::<cmsghdr>())) as uint
 }
 
 pub fn CMSG_SPACE_NON_CONST(length: uint) -> uint {
-    (CMSG_ALIGN(length as usize) + CMSG_ALIGN(std::mem::size_of::<cmsghdr>())) as uint
+    (CMSG_ALIGN(length as usize) + CMSG_ALIGN(core::mem::size_of::<cmsghdr>())) as uint
 }
 
 pub unsafe fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
-    match ((*mhdr).msg_controllen as usize) < std::mem::size_of::<cmsghdr>() {
-        true => std::ptr::null_mut::<cmsghdr>(),
+    match ((*mhdr).msg_controllen as usize) < core::mem::size_of::<cmsghdr>() {
+        true => core::ptr::null_mut::<cmsghdr>(),
         false => (*mhdr).msg_control as *mut cmsghdr,
     }
 }
 
 pub unsafe fn CMSG_NXTHDR(header: *const msghdr, sub_header: *const cmsghdr) -> *mut cmsghdr {
     // no header contained
-    if (*sub_header).cmsg_len < std::mem::size_of::<cmsghdr>() {
-        return std::ptr::null_mut::<cmsghdr>();
+    if (*sub_header).cmsg_len < core::mem::size_of::<cmsghdr>() {
+        return core::ptr::null_mut::<cmsghdr>();
     };
 
     let next_sub_header =
@@ -119,18 +120,18 @@ pub unsafe fn CMSG_NXTHDR(header: *const msghdr, sub_header: *const cmsghdr) -> 
     let end_of_message = (*header).msg_control as usize + (*header).msg_controllen as usize;
 
     if (next_sub_header.offset(1)) as usize > end_of_message {
-        return std::ptr::null_mut::<cmsghdr>();
+        return core::ptr::null_mut::<cmsghdr>();
     }
 
     if next_sub_header as usize + CMSG_ALIGN((*next_sub_header).cmsg_len) > end_of_message {
-        return std::ptr::null_mut::<cmsghdr>();
+        return core::ptr::null_mut::<cmsghdr>();
     }
 
     next_sub_header
 }
 
 pub const unsafe fn CMSG_LEN(length: uint) -> uint {
-    CMSG_ALIGN(std::mem::size_of::<cmsghdr>()) as uint + length
+    CMSG_ALIGN(core::mem::size_of::<cmsghdr>()) as uint + length
 }
 
 pub unsafe fn CMSG_DATA(cmsg: *const cmsghdr) -> *mut uchar {

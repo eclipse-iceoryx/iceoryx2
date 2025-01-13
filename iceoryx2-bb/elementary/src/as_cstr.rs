@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::ffi::CStr;
+use core::ffi::CStr;
 
 /// Trait for types that can be represented as a C-style string.
 ///

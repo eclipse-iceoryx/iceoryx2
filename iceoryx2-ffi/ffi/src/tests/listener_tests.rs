@@ -23,13 +23,13 @@ mod service_builder {
 
             let listener_builder_handle = iox2_port_factory_event_listener_builder(
                 &event_service_handle,
-                std::ptr::null_mut(),
+                core::ptr::null_mut(),
             );
 
-            let mut listener_handle = std::ptr::null_mut();
+            let mut listener_handle = core::ptr::null_mut();
             let ret_val = iox2_port_factory_listener_builder_create(
                 listener_builder_handle,
-                std::ptr::null_mut(),
+                core::ptr::null_mut(),
                 &mut listener_handle,
             );
             assert_that!(ret_val, eq(IOX2_OK));

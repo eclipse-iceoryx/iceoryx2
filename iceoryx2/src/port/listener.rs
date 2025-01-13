@@ -72,9 +72,11 @@ use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::service::ServiceState;
 use crate::{port::port_identifiers::UniqueListenerId, service};
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::time::Duration;
+use core::sync::atomic::Ordering;
+use core::time::Duration;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use super::event_id::EventId;
 
@@ -91,8 +93,8 @@ pub enum ListenerCreateError {
     ResourceCreationFailed,
 }
 
-impl std::fmt::Display for ListenerCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ListenerCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "ListenerCreateError::{:?}", self)
     }
 }
@@ -157,7 +159,7 @@ impl<Service: service::Service> Listener<Service> {
             listener_id,
         };
 
-        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels

@@ -12,9 +12,9 @@
 
 #[generic_tests::define]
 mod node {
+    use core::time::Duration;
     use std::collections::{HashSet, VecDeque};
     use std::sync::Barrier;
-    use std::time::Duration;
 
     use iceoryx2::config::Config;
     use iceoryx2::node::{

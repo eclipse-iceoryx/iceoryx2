@@ -21,9 +21,9 @@ mod service_builder {
 
             let service_name = "all/glory/to/hypnotaod";
 
-            let mut service_name_handle: iox2_service_name_h = std::ptr::null_mut();
+            let mut service_name_handle: iox2_service_name_h = core::ptr::null_mut();
             let ret_val = iox2_service_name_new(
-                std::ptr::null_mut(),
+                core::ptr::null_mut(),
                 service_name.as_ptr() as *const _,
                 service_name.len(),
                 &mut service_name_handle,
@@ -32,7 +32,7 @@ mod service_builder {
 
             let service_builder_handle = iox2_node_service_builder(
                 &node_handle,
-                std::ptr::null_mut(),
+                core::ptr::null_mut(),
                 iox2_cast_service_name_ptr(service_name_handle),
             );
             iox2_service_name_drop(service_name_handle);
@@ -41,10 +41,10 @@ mod service_builder {
             iox2_service_builder_event_set_max_notifiers(&service_builder_handle, 10);
             iox2_service_builder_event_set_max_listeners(&service_builder_handle, 10);
 
-            let mut event_factory: iox2_port_factory_event_h = std::ptr::null_mut();
+            let mut event_factory: iox2_port_factory_event_h = core::ptr::null_mut();
             let ret_val = iox2_service_builder_event_open_or_create(
                 service_builder_handle,
-                std::ptr::null_mut(),
+                core::ptr::null_mut(),
                 &mut event_factory as *mut _,
             );
             assert_that!(ret_val, eq(IOX2_OK));

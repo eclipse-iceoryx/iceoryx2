@@ -42,15 +42,15 @@ pub use crate::read_write_mutex::*;
 use crate::file_descriptor::FileDescriptor;
 use crate::process::{Process, ProcessId};
 use crate::{clock::Time, file_descriptor::FileDescriptorBased};
+use core::fmt::Debug;
+use core::sync::atomic::Ordering;
+use core::{ops::Deref, ops::DerefMut, time::Duration};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::fmt::Debug;
-use std::sync::atomic::Ordering;
-use std::{ops::Deref, ops::DerefMut, time::Duration};
 
 use crate::{
     adaptive_wait::*,
@@ -502,19 +502,19 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
     /// Returns the current [`LockState`] of the [`FileLock`].
     pub fn get_lock_state(&self) -> Result<LockState, FileLockStateError> {
         match 0.cmp(&self.lock_state.load(Ordering::Relaxed)) {
-            std::cmp::Ordering::Less => {
+            core::cmp::Ordering::Less => {
                 return Ok(LockState {
                     lock_type: LockType::Read,
                     pid: Process::from_self().id(),
                 })
             }
-            std::cmp::Ordering::Greater => {
+            core::cmp::Ordering::Greater => {
                 return Ok(LockState {
                     lock_type: LockType::Write,
                     pid: Process::from_self().id(),
                 })
             }
-            std::cmp::Ordering::Equal => (),
+            core::cmp::Ordering::Equal => (),
         }
 
         let msg = "Unable to acquire current file lock state";

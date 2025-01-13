@@ -10,6 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::alloc_instead_of_core)]
+#![warn(clippy::std_instead_of_alloc)]
+#![warn(clippy::std_instead_of_core)]
+
 pub mod communication_channel;
 pub mod dynamic_storage;
 pub mod event;

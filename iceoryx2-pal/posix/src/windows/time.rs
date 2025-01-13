@@ -14,7 +14,8 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use core::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
     posix::CLOCK_REALTIME,

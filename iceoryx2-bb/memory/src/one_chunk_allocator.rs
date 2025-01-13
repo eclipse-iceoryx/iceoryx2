@@ -43,13 +43,13 @@
 //! unsafe{ allocator.deallocate(NonNull::new(grown_memory.as_mut().as_mut_ptr()).unwrap(),
 //!                              Layout::from_size_align_unchecked(32, 4))};
 //! ```
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
-use std::sync::atomic::Ordering;
 
+pub use core::alloc::Layout;
 pub use iceoryx2_bb_elementary::allocator::*;
 use iceoryx2_bb_elementary::math::align;
-pub use std::alloc::Layout;
 
 #[derive(Debug)]
 pub struct OneChunkAllocator {
@@ -111,7 +111,7 @@ impl BaseAllocator for OneChunkAllocator {
         self.allocated_chunk_start
             .store(adjusted_start, Ordering::Relaxed);
         Ok(NonNull::new(unsafe {
-            std::slice::from_raw_parts_mut(adjusted_start as *mut u8, available_size)
+            core::slice::from_raw_parts_mut(adjusted_start as *mut u8, available_size)
         })
         .unwrap())
     }
@@ -150,7 +150,11 @@ impl Allocator for OneChunkAllocator {
                 "{} since the size of {} exceeds the available memory size of {}.", msg, new_layout.size(), available_size);
         }
 
-        Ok(NonNull::new(std::slice::from_raw_parts_mut(ptr.as_ptr(), available_size)).unwrap())
+        Ok(NonNull::new(core::slice::from_raw_parts_mut(
+            ptr.as_ptr(),
+            available_size,
+        ))
+        .unwrap())
     }
 
     unsafe fn shrink(
@@ -172,7 +176,7 @@ impl Allocator for OneChunkAllocator {
                 "{} since this allocator does not support to any alignment increase in this operation.", msg);
         }
 
-        Ok(NonNull::new(std::slice::from_raw_parts_mut(
+        Ok(NonNull::new(core::slice::from_raw_parts_mut(
             ptr.as_ptr(),
             new_layout.size(),
         ))

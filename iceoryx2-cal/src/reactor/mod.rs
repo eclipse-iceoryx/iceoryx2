@@ -12,7 +12,7 @@
 
 pub mod posix_select;
 
-use std::{fmt::Debug, time::Duration};
+use core::{fmt::Debug, time::Duration};
 
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptor, file_descriptor_set::SynchronousMultiplexing,

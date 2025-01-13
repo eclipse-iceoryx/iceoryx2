@@ -10,6 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::alloc_instead_of_core)]
+#![warn(clippy::std_instead_of_alloc)]
+#![warn(clippy::std_instead_of_core)]
+
 //! Contains basic constructs which do not have any kind of dependency.
 
 #[macro_use]
@@ -20,7 +24,7 @@ pub use as_cstr::*;
 
 pub mod alignment;
 pub mod allocator;
-/// A strong type that represents the alignment part of [`std::alloc::Layout`]
+/// A strong type that represents the alignment part of [`core::alloc::Layout`]
 pub mod bump_allocator;
 pub mod generic_pointer;
 pub mod lazy_singleton;

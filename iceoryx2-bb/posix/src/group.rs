@@ -46,7 +46,7 @@
 //! }
 //! ```
 
-use std::ffi::CStr;
+use core::ffi::CStr;
 
 use iceoryx2_bb_container::byte_string::strnlen;
 use iceoryx2_bb_container::semantic_string::*;

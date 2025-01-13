@@ -20,7 +20,7 @@ fn relocatable_pointer_works() {
     let mut _o3: i32 = 0;
     let value = 9128391;
 
-    let distance = std::ptr::addr_of!(_o3) as isize - std::ptr::addr_of!(sut) as isize;
+    let distance = core::ptr::addr_of!(_o3) as isize - core::ptr::addr_of!(sut) as isize;
 
     sut = RelocatablePointer::<i32>::new(distance);
     _o3 = value;

@@ -90,7 +90,10 @@
 //! # }
 //! ```
 
-use std::{fmt::Debug, mem::MaybeUninit, sync::Arc};
+use core::{fmt::Debug, mem::MaybeUninit};
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
@@ -335,7 +338,7 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     /// ```
     pub unsafe fn assume_init(self) -> SampleMut<Service, Payload, UserHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        std::mem::transmute(self.sample)
+        core::mem::transmute(self.sample)
     }
 }
 
@@ -396,7 +399,7 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     /// ```
     pub unsafe fn assume_init(self) -> SampleMut<Service, [Payload], UserHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        std::mem::transmute(self.sample)
+        core::mem::transmute(self.sample)
     }
 
     /// Writes the payload to the sample and labels the sample as initialized

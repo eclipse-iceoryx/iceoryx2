@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::alloc::Layout;
+use core::alloc::Layout;
 
 use iceoryx2_bb_elementary::math::align;
 use serde::{Deserialize, Serialize};

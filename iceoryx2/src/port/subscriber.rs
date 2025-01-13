@@ -31,12 +31,14 @@
 //! # }
 //! ```
 
-use std::any::TypeId;
-use std::cell::UnsafeCell;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use core::any::TypeId;
+use core::cell::UnsafeCell;
+use core::fmt::Debug;
+use core::marker::PhantomData;
+use core::sync::atomic::Ordering;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -72,8 +74,8 @@ pub enum SubscriberReceiveError {
     ConnectionFailure(ConnectionFailure),
 }
 
-impl std::fmt::Display for SubscriberReceiveError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for SubscriberReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "SubscriberReceiveError::{:?}", self)
     }
 }
@@ -94,8 +96,8 @@ pub enum SubscriberCreateError {
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
 }
 
-impl std::fmt::Display for SubscriberCreateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for SubscriberCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "SubscriberCreateError::{:?}", self)
     }
 }
@@ -197,7 +199,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
         }
 
-        std::sync::atomic::compiler_fence(Ordering::SeqCst);
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels

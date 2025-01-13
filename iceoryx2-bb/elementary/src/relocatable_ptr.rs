@@ -53,7 +53,7 @@
 //!                         // the data_ptr is the first member of container. The distance from
 //!                         // the memory location of the RelocatablePointer `data_ptr` is
 //!                         // therefore the size of `Container` aligned to the type `u128`
-//!                         align_to::<u128>(std::mem::size_of::<Container>()) as isize),
+//!                         align_to::<u128>(core::mem::size_of::<Container>()) as isize),
 //!             data: [0; 128]
 //!         }
 //!     }
@@ -66,8 +66,8 @@
 
 use crate::generic_pointer::GenericPointer;
 pub use crate::pointer_trait::PointerTrait;
+use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicIsize;
-use std::{fmt::Debug, marker::PhantomData, ptr::NonNull};
 
 #[derive(Debug)]
 pub struct GenericRelocatablePointer;
@@ -127,14 +127,14 @@ impl<T> RelocatablePointer<T> {
     pub unsafe fn init(&self, ptr: NonNull<[u8]>) {
         self.distance.store(
             (ptr.as_ptr() as *const u8) as isize - (self as *const Self) as isize,
-            std::sync::atomic::Ordering::Relaxed,
+            core::sync::atomic::Ordering::Relaxed,
         );
     }
 }
 
 impl<T> PointerTrait<T> for RelocatablePointer<T> {
     unsafe fn as_ptr(&self) -> *const T {
-        ((self as *const Self) as isize + self.distance.load(std::sync::atomic::Ordering::Relaxed))
+        ((self as *const Self) as isize + self.distance.load(core::sync::atomic::Ordering::Relaxed))
             as *const T
     }
 

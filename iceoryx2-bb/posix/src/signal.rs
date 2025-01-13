@@ -52,7 +52,7 @@
 //!
 //! SignalHandler::wait_for_signal(NonFatalFetchableSignal::Terminate);
 //! ```
-use std::{
+use core::{
     fmt::{Debug, Display},
     time::Duration,
 };
@@ -63,6 +63,7 @@ use crate::{
     file_lock::ClockType,
     mutex::*,
 };
+use core::sync::atomic::Ordering;
 use enum_iterator::{all, Sequence};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -70,7 +71,6 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_posix::posix::{Errno, Struct};
 use iceoryx2_pal_posix::*;
 use lazy_static::lazy_static;
-use std::sync::atomic::Ordering;
 use tiny_fn::tiny_fn;
 
 macro_rules! define_signals {
@@ -289,13 +289,13 @@ pub struct SignalHandler {
 unsafe impl Send for SignalHandler {}
 
 impl Debug for SignalHandler {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(&self, f)
     }
 }
 
 impl Display for SignalHandler {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut registered_signals: Vec<FetchableSignal> = vec![];
         for i in 0..posix::MAX_SIGNAL_VALUE {
             if self.registered_signals[i].is_some() {
@@ -451,7 +451,7 @@ impl SignalHandler {
     /// raised it returns true otherwise false.
     /// ```ignore
     /// use iceoryx2_bb_posix::signal::*;
-    /// use std::time::Duration;
+    /// use core::time::Duration;
     ///
     /// let result = SignalHandler::timed_wait_for_signal(
     ///                     FetchableSignal::Terminate, Duration::from_millis(10)).unwrap();

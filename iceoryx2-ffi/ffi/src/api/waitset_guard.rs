@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use std::mem::ManuallyDrop;
+use core::mem::ManuallyDrop;
 
 use crate::iox2_service_type_e;
 use iceoryx2::service::{ipc, local};

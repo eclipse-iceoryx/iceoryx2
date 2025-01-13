@@ -12,7 +12,7 @@
 
 pub mod bit_set;
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 

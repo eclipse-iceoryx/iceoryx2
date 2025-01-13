@@ -11,6 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![allow(clippy::missing_safety_doc)]
+#![warn(clippy::alloc_instead_of_core)]
+#![warn(clippy::std_instead_of_alloc)]
+#![warn(clippy::std_instead_of_core)]
 
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
@@ -122,7 +125,7 @@ pub(crate) mod win_internal {
         let len = crate::posix::c_string_length(value);
 
         let text =
-            std::str::from_utf8(core::slice::from_raw_parts(value as *const u8, len)).unwrap();
+            core::str::from_utf8(core::slice::from_raw_parts(value as *const u8, len)).unwrap();
         println!("{}", text);
     }
 

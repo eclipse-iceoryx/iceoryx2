@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::sync::atomic::{AtomicUsize, Ordering};
+use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_posix::clock::*;
 use iceoryx2_bb_posix::semaphore::*;
@@ -20,10 +22,8 @@ use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_NAMED_SEMAPHORE;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Barrier;
 use std::thread;
-use std::time::Duration;
 
 struct NamedSemaphoreTest {
     monotonic_named_sut1: NamedSemaphore,

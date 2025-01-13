@@ -67,7 +67,7 @@
 //! file.set_permission(Permission::ALL);
 //! ```
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crate::config::EINTR_REPETITIONS;
 use crate::file::*;

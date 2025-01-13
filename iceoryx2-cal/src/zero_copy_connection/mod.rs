@@ -15,8 +15,8 @@ pub mod posix_shared_memory;
 pub mod process_local;
 pub mod used_chunk_list;
 
-use std::fmt::Debug;
-use std::time::Duration;
+use core::fmt::Debug;
+use core::time::Duration;
 
 pub use crate::shared_memory::PointerOffset;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
@@ -39,8 +39,8 @@ pub enum ZeroCopyCreationError {
     IncompatibleNumberOfSegments,
 }
 
-impl std::fmt::Display for ZeroCopyCreationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ZeroCopyCreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
@@ -54,8 +54,8 @@ pub enum ZeroCopySendError {
     UsedChunkListFull,
 }
 
-impl std::fmt::Display for ZeroCopySendError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ZeroCopySendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
@@ -67,8 +67,8 @@ pub enum ZeroCopyReceiveError {
     ReceiveWouldExceedMaxBorrowValue,
 }
 
-impl std::fmt::Display for ZeroCopyReceiveError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ZeroCopyReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
@@ -80,8 +80,8 @@ pub enum ZeroCopyReclaimError {
     ReceiverReturnedCorruptedPointerOffset,
 }
 
-impl std::fmt::Display for ZeroCopyReclaimError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ZeroCopyReclaimError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
@@ -93,8 +93,8 @@ pub enum ZeroCopyReleaseError {
     RetrieveBufferFull,
 }
 
-impl std::fmt::Display for ZeroCopyReleaseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ZeroCopyReleaseError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }

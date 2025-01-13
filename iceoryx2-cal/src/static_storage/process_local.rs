@@ -27,7 +27,7 @@
 //!                 .create(content.as_bytes()).unwrap();
 //!
 //! // at some other place in the local process, can be another thread
-//! let initialization_timeout = std::time::Duration::from_millis(100);
+//! let initialization_timeout = core::time::Duration::from_millis(100);
 //! let reader = Builder::new(&storage_name)
 //!                 .open(initialization_timeout).unwrap();
 //!
@@ -44,7 +44,9 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 #[derive(Debug)]
 struct StorageContent {

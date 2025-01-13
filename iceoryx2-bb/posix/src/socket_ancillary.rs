@@ -74,16 +74,16 @@
 use crate::{
     file_descriptor::FileDescriptor, process::*, unix_datagram_socket::UnixDatagramReceiver,
 };
+use core::{fmt::Display, marker::PhantomPinned};
 use iceoryx2_bb_log::warn;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::{fmt::Display, marker::PhantomPinned};
 
 /// Defines the maximum amount of [`FileDescriptor`]s which can be sent with a single message.
 pub const MAX_FILE_DESCRIPTORS_PER_MESSAGE: usize = posix::SCM_MAX_FD as usize;
 
-const SIZE_OF_CRED: usize = std::mem::size_of::<posix::ucred>();
-const SIZE_OF_FD: usize = std::mem::size_of::<i32>();
+const SIZE_OF_CRED: usize = core::mem::size_of::<posix::ucred>();
+const SIZE_OF_FD: usize = core::mem::size_of::<i32>();
 const IOVEC_BUFFER_CAPACITY: usize = 1;
 const BUFFER_CAPACITY: usize = 3072;
 pub(crate) const CMSG_SOCKET_LEVEL: posix::int = posix::SOL_SOCKET;
@@ -156,7 +156,7 @@ impl SocketCred {
 }
 
 impl Display for SocketCred {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "SocketCred {{ pid: {:?}, uid: {}, gid: {} }}",
@@ -182,7 +182,7 @@ pub struct SocketAncillary {
 }
 
 impl Display for SocketAncillary {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let cred = if self.credentials.is_some() {
             format!("{}", self.credentials.as_ref().unwrap())
         } else {
@@ -211,7 +211,7 @@ impl UdsMsgHeader {
     }
 
     fn assign_via_memcpy<T>(&mut self, value: &T) {
-        let memcpy_required_space = std::mem::size_of::<T>();
+        let memcpy_required_space = core::mem::size_of::<T>();
         let required_space = unsafe { posix::CMSG_LEN(memcpy_required_space as _) };
 
         unsafe {
@@ -245,15 +245,15 @@ impl Default for SocketAncillary {
             message_buffer: [0u8; BUFFER_CAPACITY],
             iovec_buffer: [0u8; IOVEC_BUFFER_CAPACITY],
             iovec: posix::iovec {
-                iov_base: std::ptr::null_mut::<posix::void>(),
+                iov_base: core::ptr::null_mut::<posix::void>(),
                 iov_len: IOVEC_BUFFER_CAPACITY,
             },
             message: posix::msghdr {
-                msg_name: std::ptr::null_mut::<posix::void>(),
+                msg_name: core::ptr::null_mut::<posix::void>(),
                 msg_namelen: 0,
-                msg_iov: std::ptr::null_mut::<posix::iovec>(),
+                msg_iov: core::ptr::null_mut::<posix::iovec>(),
                 msg_iovlen: IOVEC_BUFFER_CAPACITY as _,
-                msg_control: std::ptr::null_mut::<posix::void>(),
+                msg_control: core::ptr::null_mut::<posix::void>(),
                 msg_controllen: buffer_capacity() as _,
                 msg_flags: 0,
             },
@@ -261,7 +261,7 @@ impl Default for SocketAncillary {
             credentials: None,
             is_prepared_for_send: false,
             set_memory_to_zero_first: false,
-            _alignment: unsafe { std::mem::zeroed() },
+            _alignment: unsafe { core::mem::zeroed() },
             _pin: PhantomPinned,
         };
 

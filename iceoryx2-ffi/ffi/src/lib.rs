@@ -11,6 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![allow(non_camel_case_types)]
+#![warn(clippy::alloc_instead_of_core)]
+#![warn(clippy::std_instead_of_alloc)]
+#![warn(clippy::std_instead_of_core)]
 
 mod api;
 pub use api::*;

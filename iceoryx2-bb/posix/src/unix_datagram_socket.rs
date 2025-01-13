@@ -121,6 +121,9 @@ use crate::clock::AsTimeval;
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
 use crate::file_descriptor_set::SynchronousMultiplexing;
 use crate::socket_ancillary::*;
+use core::mem::MaybeUninit;
+use core::sync::atomic::Ordering;
+use core::{mem::size_of, time::Duration};
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
@@ -129,9 +132,6 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
-use std::mem::MaybeUninit;
-use std::sync::atomic::Ordering;
-use std::{mem::size_of, time::Duration};
 
 use crate::{config::UNIX_DOMAIN_SOCKET_PATH_LENGTH, file::*, permission::Permission};
 
@@ -354,7 +354,7 @@ impl UnixDatagramSocket {
                 CMSG_SOCKET_LEVEL,
                 socket_option,
                 (value as *const T) as *const posix::void,
-                std::mem::size_of::<T>() as u32,
+                core::mem::size_of::<T>() as u32,
             )
         } == 0
         {
@@ -374,7 +374,7 @@ impl UnixDatagramSocket {
         socket_option: posix::int,
     ) -> Result<T, UnixDatagramGetSocketOptionError> {
         let mut value: MaybeUninit<T> = MaybeUninit::uninit();
-        let mut value_len: posix::socklen_t = std::mem::size_of::<T>() as posix::socklen_t;
+        let mut value_len: posix::socklen_t = core::mem::size_of::<T>() as posix::socklen_t;
 
         if unsafe {
             posix::getsockopt(
@@ -685,7 +685,7 @@ impl UnixDatagramSender {
                 data.as_ptr() as *const posix::void,
                 data.len(),
                 0,
-                std::ptr::null::<posix::sockaddr>(),
+                core::ptr::null::<posix::sockaddr>(),
                 0,
             )
         };
@@ -1031,8 +1031,8 @@ impl UnixDatagramReceiver {
                 buffer.as_mut_ptr() as *mut posix::void,
                 buffer.len(),
                 flags,
-                std::ptr::null_mut::<posix::sockaddr>(),
-                std::ptr::null_mut::<u32>(),
+                core::ptr::null_mut::<posix::sockaddr>(),
+                core::ptr::null_mut::<u32>(),
             )
         };
 

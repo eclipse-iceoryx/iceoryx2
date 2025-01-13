@@ -12,7 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
-use std::{ffi::c_char, ffi::c_int, mem::ManuallyDrop, time::Duration};
+use core::{ffi::c_char, ffi::c_int, mem::ManuallyDrop, time::Duration};
 
 use crate::{
     c_size_t, iox2_callback_context, iox2_callback_progression_e, iox2_file_descriptor_ptr,

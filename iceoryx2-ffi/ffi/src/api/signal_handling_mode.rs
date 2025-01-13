@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::ffi::c_int;
+use core::ffi::c_int;
 
 use iceoryx2::signal_handling_mode::SignalHandlingMode;
 

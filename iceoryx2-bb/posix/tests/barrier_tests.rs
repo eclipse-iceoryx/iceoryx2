@@ -13,7 +13,8 @@
 use iceoryx2_bb_posix::barrier::*;
 use iceoryx2_bb_testing::assert_that;
 
-use std::{sync::atomic::AtomicU64, sync::atomic::Ordering, thread};
+use core::{sync::atomic::AtomicU64, sync::atomic::Ordering};
+use std::thread;
 
 #[test]
 fn barrier_blocks() -> Result<(), BarrierCreationError> {

@@ -19,7 +19,7 @@
 //! ```ignore
 //! use iceoryx2_bb_posix::read_write_mutex::*;
 //! use std::thread;
-//! use std::time::Duration;
+//! use core::time::Duration;
 //! use iceoryx2_bb_posix::clock::ClockType;
 //!
 //! let rw_handle = ReadWriteMutexHandle::new();
@@ -62,7 +62,8 @@ use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
-use std::{
+
+use core::{
     cell::UnsafeCell,
     fmt::Debug,
     ops::{Deref, DerefMut},

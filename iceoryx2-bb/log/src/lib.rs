@@ -10,6 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(clippy::alloc_instead_of_core)]
+#![warn(clippy::std_instead_of_alloc)]
+#![warn(clippy::std_instead_of_core)]
+
 //! Simplistic logger. It has 6 [`LogLevel`]s which can be set via [`set_log_level()`] and read via
 //! [`get_log_level()`].
 //!
@@ -145,10 +149,9 @@ pub mod fail;
 pub mod logger;
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
-use std::{
-    fmt::Arguments,
-    sync::{atomic::Ordering, Once},
-};
+
+use core::{fmt::Arguments, sync::atomic::Ordering};
+use std::sync::Once;
 
 #[cfg(feature = "logger_tracing")]
 static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();

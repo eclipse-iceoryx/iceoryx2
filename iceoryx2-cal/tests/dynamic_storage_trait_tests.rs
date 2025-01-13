@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod dynamic_storage {
+    use core::sync::atomic::{AtomicI64, Ordering};
     use iceoryx2_bb_container::semantic_string::*;
     use iceoryx2_bb_elementary::allocator::*;
     use iceoryx2_bb_system_types::file_name::FileName;
@@ -20,7 +21,6 @@ mod dynamic_storage {
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
-    use std::sync::atomic::{AtomicI64, Ordering};
 
     #[derive(Debug)]
     struct TestData {
@@ -34,7 +34,7 @@ mod dynamic_storage {
         fn new(value: i64) -> Self {
             Self {
                 value: AtomicI64::new(value),
-                supplementary_ptr: std::ptr::null_mut::<u8>(),
+                supplementary_ptr: core::ptr::null_mut::<u8>(),
                 supplementary_len: 0,
                 _lifetime_tracker: None,
             }
@@ -43,7 +43,7 @@ mod dynamic_storage {
         fn new_with_lifetime_tracking(value: i64) -> Self {
             Self {
                 value: AtomicI64::new(value),
-                supplementary_ptr: std::ptr::null_mut::<u8>(),
+                supplementary_ptr: core::ptr::null_mut::<u8>(),
                 supplementary_len: 0,
                 _lifetime_tracker: Some(LifetimeTracker::new()),
             }
@@ -464,7 +464,7 @@ mod dynamic_storage {
             assert_that!(unsafe{<Sut as NamedConceptMgmt>::remove_cfg(&sut_names[i], &config)}, eq Ok(false));
         }
 
-        std::mem::forget(suts);
+        core::mem::forget(suts);
 
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config).unwrap(), len 0);
     }
@@ -515,8 +515,8 @@ mod dynamic_storage {
         assert_that!(*sut_1.name(), eq sut_name);
         assert_that!(*sut_2.name(), eq sut_name);
 
-        std::mem::forget(sut_1);
-        std::mem::forget(sut_2);
+        core::mem::forget(sut_1);
+        core::mem::forget(sut_2);
 
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(true));
         assert_that!(unsafe {<Sut as NamedConceptMgmt>::remove_cfg(&sut_name, &config_1)}, eq Ok(false));
@@ -618,7 +618,7 @@ mod dynamic_storage {
         sut.release_ownership();
         // it leaks a memory mapping here but this we want explicitly to test remove also
         // for platforms that do not support persistent dynamic storage
-        std::mem::forget(sut);
+        core::mem::forget(sut);
 
         assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
         assert_that!(state.number_of_living_instances(), eq 0);
@@ -632,10 +632,10 @@ mod dynamic_storage {
         let state = LifetimeTracker::start_tracking();
         let config = generate_isolated_config::<Sut>();
 
-        if std::any::TypeId::of::<Sut>()
+        if core::any::TypeId::of::<Sut>()
             // skip process local test since the process locality ensures that an initializer
             // never dies
-            != std::any::TypeId::of::<iceoryx2_cal::dynamic_storage::process_local::Storage<TestData>>(
+            != core::any::TypeId::of::<iceoryx2_cal::dynamic_storage::process_local::Storage<TestData>>(
             )
         {
             let storage_name = generate_name();

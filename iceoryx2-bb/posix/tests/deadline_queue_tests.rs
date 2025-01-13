@@ -11,10 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod deadline_queue {
+    use core::time::Duration;
     use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_posix::deadline_queue::*;
     use iceoryx2_bb_testing::assert_that;
-    use std::time::Duration;
 
     #[test]
     fn attach_detach_works() {
