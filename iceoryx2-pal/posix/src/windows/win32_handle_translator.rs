@@ -92,6 +92,7 @@ impl UdsDatagramSocketHandle {
 pub struct SocketHandle {
     pub fd: usize,
     pub recv_timeout: Option<timeval>,
+    pub send_timeout: Option<timeval>,
 }
 
 impl PartialEq for SocketHandle {
