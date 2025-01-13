@@ -17,10 +17,10 @@
 use core::cell::OnceCell;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8};
 use std::time::Instant;
-use windows_sys::Win32::Networking::WinSock::WSAEWOULDBLOCK;
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
+use windows_sys::Win32::Networking::WinSock::{SOCKADDR_UN, WSAEWOULDBLOCK};
 
 use crate::posix::htons;
 use crate::posix::ntohs;
@@ -34,6 +34,7 @@ use crate::win32call;
 
 use super::win32_handle_translator::UdsDatagramSocketHandle;
 use super::win32_handle_translator::{FdHandleEntry, HandleTranslator, SocketHandle};
+use super::{close, remove};
 
 struct GlobalWsaInitializer {
     _wsa_data: WSADATA,
@@ -72,6 +73,80 @@ impl Drop for GlobalWsaInitializer {
 
 unsafe impl Sync for GlobalWsaInitializer {}
 unsafe impl Send for GlobalWsaInitializer {}
+
+pub unsafe fn socketpair(
+    domain: int,
+    socket_type: int,
+    protocol: int,
+    socket_vector: *mut int, // actually it shall be [int; 2]
+) -> int {
+    static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+    let socket_listen = socket(domain, socket_type, protocol);
+    if socket_listen == -1 {
+        return -1;
+    }
+    let socket_data_1 = socket(domain, socket_type, protocol);
+    if socket_data_1 == -1 {
+        close(socket_listen);
+        return -1;
+    }
+
+    let mut address = SOCKADDR_UN {
+        sun_family: domain as _,
+        sun_path: [0; 108],
+    };
+
+    let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let socket_path = String::from("uds_stream_socket_") + &counter.to_string();
+    core::ptr::copy_nonoverlapping(
+        socket_path.as_ptr(),
+        address.sun_path.as_mut_ptr().cast(),
+        socket_path.len(),
+    );
+
+    if bind(
+        socket_listen,
+        (&address as *const SOCKADDR_UN).cast(),
+        core::mem::size_of::<SOCKADDR_UN>() as _,
+    ) == -1
+    {
+        close(socket_listen);
+        close(socket_data_1);
+        return -1;
+    }
+
+    if listen(socket_listen, 20) == -1 {
+        close(socket_listen);
+        close(socket_data_1);
+        return -1;
+    }
+
+    if connect(
+        socket_data_1,
+        (&address as *const SOCKADDR_UN).cast(),
+        core::mem::size_of::<SOCKADDR_UN>() as _,
+    ) == -1
+    {
+        close(socket_listen);
+        close(socket_data_1);
+        return -1;
+    }
+
+    let socket_data_2 = accept(socket_listen, core::ptr::null_mut(), core::ptr::null_mut());
+    if socket_data_2 == -1 {
+        close(socket_listen);
+        close(socket_data_1);
+        return -1;
+    }
+
+    remove(socket_path.as_ptr().cast());
+
+    close(socket_listen);
+    socket_vector.write(socket_data_1);
+    socket_vector.add(1).write(socket_data_2);
+
+    0
+}
 
 pub unsafe fn setsockopt(
     socket: int,
@@ -139,6 +214,42 @@ unsafe fn create_uds_address(port: u16) -> sockaddr_in {
     udp_address.set_s_addr(htonl(localhost));
     udp_address.sin_port = htons(port);
     udp_address
+}
+
+pub unsafe fn accept(socket: int, address: *mut sockaddr, address_len: *mut socklen_t) -> int {
+    let socket_handle = match HandleTranslator::get_instance().get(socket) {
+        Some(FdHandleEntry::Socket(s)) => s.fd,
+        Some(FdHandleEntry::UdsDatagramSocket(s)) => s.fd,
+        None | Some(_) => {
+            Errno::set(Errno::EBADF);
+            return -1;
+        }
+    };
+
+    let (socket, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::accept(socket_handle, address.cast(), address_len.cast())};
+    if socket == INVALID_SOCKET {
+        return -1;
+    }
+
+    HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle { fd: socket }))
+}
+
+pub unsafe fn listen(socket: int, backlog: int) -> int {
+    let socket_handle = match HandleTranslator::get_instance().get(socket) {
+        Some(FdHandleEntry::Socket(s)) => s.fd,
+        Some(FdHandleEntry::UdsDatagramSocket(s)) => s.fd,
+        None | Some(_) => {
+            Errno::set(Errno::EBADF);
+            return -1;
+        }
+    };
+
+    let (listen_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::listen(socket_handle, backlog as _)};
+    if listen_result == SOCKET_ERROR {
+        return -1;
+    }
+
+    0
 }
 
 pub unsafe fn bind(socket: int, address: *const sockaddr, address_len: socklen_t) -> int {

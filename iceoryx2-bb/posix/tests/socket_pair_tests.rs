@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::time::Duration;
+use iceoryx2_bb_log::set_log_level;
 use iceoryx2_bb_posix::socket_pair::*;
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
@@ -23,6 +24,7 @@ const TIMEOUT: Duration = Duration::from_millis(50);
 
 #[test]
 fn try_receive_never_blocks() {
+    set_log_level(iceoryx2_bb_log::LogLevel::Trace);
     let _watchdog = Watchdog::new();
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
