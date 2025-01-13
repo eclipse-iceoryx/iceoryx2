@@ -1,3 +1,31 @@
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+//! Abstraction of a unix streaming socket pair. Every [`StreamingSocket`] can send and receive
+//! data on distinct channels, meaning that a [`StreamingSocket`] will never acquire the data
+//! it has sent via a receive call.
+//!
+//! # Example
+//!
+//! ```
+//! use iceoryx2_bb_posix::socket_pair::*;
+//!
+//! let (socket_1, socket_2) = StreamingSocket::create_pair().unwrap();
+//! socket_1.try_send(b"hello world").unwrap();
+//!
+//! let mut buffer = vec![];
+//! buffer.resize(128, 0);
+//! socket_2.try_receive(&mut buffer).unwrap();
+//! ```
 use core::sync::atomic::Ordering;
 use core::time::Duration;
 use iceoryx2_bb_log::fail;
@@ -13,6 +41,8 @@ use crate::{
 
 const BLOCKING_TIMEOUT: Duration = Duration::from_secs(i16::MAX as _);
 
+/// Defines the errors that can occur when a socket pair is created with
+/// [`StreamingSocket::create_pair()`].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum StreamingSocketPairCreationError {
     FileDescriptorBroken,
@@ -47,6 +77,10 @@ enum SetSockoptError {
     UnknownError(i32),
 }
 
+/// Defines the errors that can occur when a [`StreamingSocket`] sends data via
+/// * [`StreamingSocket::try_send()`]
+/// * [`StreamingSocket::timed_send()`]
+/// * [`StreamingSocket::blocking_send()`]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum StreamingSocketPairSendError {
     InsufficientMemory,
@@ -77,6 +111,11 @@ impl From<FcntlError> for StreamingSocketPairSendError {
     }
 }
 
+/// Defines the errors that can occur when a [`StreamingSocket`] receives data via
+/// * [`StreamingSocket::try_receive()`]
+/// * [`StreamingSocket::timed_receive()`]
+/// * [`StreamingSocket::blocking_receive()`]
+/// * [`StreamingSocket::peek()`]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum StreamingSocketPairReceiveError {
     InsufficientMemory,
@@ -109,11 +148,27 @@ impl From<SetSockoptError> for StreamingSocketPairReceiveError {
     }
 }
 
-pub struct StreamingSocketPairBuilder {}
+/// A single socket in a [`StreamingSocket`] pair.
+#[derive(Debug)]
+pub struct StreamingSocket {
+    file_descriptor: FileDescriptor,
+    is_non_blocking: IoxAtomicBool,
+}
 
-impl StreamingSocketPairBuilder {
-    pub fn create() -> Result<(StreamingSocket, StreamingSocket), StreamingSocketPairCreationError>
-    {
+impl FileDescriptorBased for StreamingSocket {
+    fn file_descriptor(&self) -> &FileDescriptor {
+        &self.file_descriptor
+    }
+}
+
+impl SynchronousMultiplexing for StreamingSocket {}
+
+unsafe impl Send for StreamingSocket {}
+
+impl StreamingSocket {
+    /// Creates a new [`StreamingSocket`] pair.
+    pub fn create_pair(
+    ) -> Result<(StreamingSocket, StreamingSocket), StreamingSocketPairCreationError> {
         let msg = "Unable to create streaming socket pair";
         let origin = "StreamingSocketPairBuilder::create()";
         let mut fd_values = [0, 0];
@@ -164,25 +219,7 @@ impl StreamingSocketPairBuilder {
             v => (UnknownError(v as i32), "{msg} since an unknown error occurred ({v}).")
         )
     }
-}
 
-#[derive(Debug)]
-pub struct StreamingSocket {
-    file_descriptor: FileDescriptor,
-    is_non_blocking: IoxAtomicBool,
-}
-
-impl FileDescriptorBased for StreamingSocket {
-    fn file_descriptor(&self) -> &FileDescriptor {
-        &self.file_descriptor
-    }
-}
-
-impl SynchronousMultiplexing for StreamingSocket {}
-
-unsafe impl Send for StreamingSocket {}
-
-impl StreamingSocket {
     fn fcntl(&self, command: i32, value: i32, msg: &str) -> Result<i32, FcntlError> {
         let result =
             unsafe { posix::fcntl_int(self.file_descriptor.native_handle(), command, value) };
@@ -287,16 +324,20 @@ impl StreamingSocket {
         )
     }
 
-    pub fn try_send(&self, buf: &[u8]) -> Result<usize, StreamingSocketPairSendError> {
+    /// Tries to send the given buffer. It does not block, when the buffer is full it
+    /// returns `0`, otherwise it returns the number of bytes that were sent.
+    pub fn try_send(&self, buffer: &[u8]) -> Result<usize, StreamingSocketPairSendError> {
         let msg = "Unable to try sending message";
         fail!(from self, when self.set_non_blocking(true),
             "{msg} since the socket could not be set into non-blocking mode");
-        self.send_impl(msg, buf)
+        self.send_impl(msg, buffer)
     }
 
+    /// Blocks until either the timeout has passed or until the data could be delivered.
+    /// If the timeout passed it returns `0`, otherwise the number of bytes that were sent.
     pub fn timed_send(
         &self,
-        buf: &[u8],
+        buffer: &[u8],
         timeout: Duration,
     ) -> Result<usize, StreamingSocketPairSendError> {
         let msg = "Unable to send message with a timeout";
@@ -304,16 +345,19 @@ impl StreamingSocket {
             "{msg} ({timeout:?}) since the socket could not be set into blocking mode");
         fail!(from self, when self.set_send_timeout(timeout),
             "{msg} ({timeout:?}) since the socket send timeout could not be set.");
-        self.send_impl(msg, buf)
+        self.send_impl(msg, buffer)
     }
 
-    pub fn blocking_send(&self, buf: &[u8]) -> Result<usize, StreamingSocketPairSendError> {
+    /// Blocks until the data could be delivered.
+    /// Despite the name, the function may not block indefinitely and spurious wakeups can cause
+    /// to return `0` when no data could be delivered.
+    pub fn blocking_send(&self, buffer: &[u8]) -> Result<usize, StreamingSocketPairSendError> {
         let msg = "Unable to send message with blocking behavior";
         fail!(from self, when self.set_non_blocking(false),
             "{msg} since the socket could not be set into blocking mode");
         fail!(from self, when self.set_send_timeout(BLOCKING_TIMEOUT),
             "{msg} since the socket blocking send timeout could not be set.");
-        self.send_impl(msg, buf)
+        self.send_impl(msg, buffer)
     }
 
     fn receive_impl(
@@ -348,6 +392,8 @@ impl StreamingSocket {
         )
     }
 
+    /// Tries to receive date. It does not block, when the buffer is empty it
+    /// returns `0`, otherwise it returns the number of bytes that were received.
     pub fn try_receive(&self, buf: &mut [u8]) -> Result<usize, StreamingSocketPairReceiveError> {
         let msg = "Unable to try receiving message";
         fail!(from self, when self.set_non_blocking(true),
@@ -355,6 +401,8 @@ impl StreamingSocket {
         self.receive_impl(msg, buf, 0)
     }
 
+    /// Blocks until either the timeout has passed or until the data could be received.
+    /// If the timeout passed it returns `0`, otherwise the number of bytes that were received.
     pub fn timed_receive(
         &self,
         buf: &mut [u8],
@@ -368,6 +416,9 @@ impl StreamingSocket {
         self.receive_impl("Unable to try receiving message", buf, 0)
     }
 
+    /// Blocks until the data could be received.
+    /// Despite the name, the function may not block indefinitely and spurious wakeups can cause
+    /// to return `0` when no data could be received.
     pub fn blocking_receive(
         &self,
         buf: &mut [u8],
@@ -381,6 +432,9 @@ impl StreamingSocket {
         self.receive_impl("Unable to try receiving message", buf, 0)
     }
 
+    /// Tries to peek date without removing it from the internal buffer. It does not block, when
+    /// the buffer is empty it returns `0`, otherwise it returns the number of bytes that were
+    /// received.
     pub fn peek(&self, buf: &mut [u8]) -> Result<usize, StreamingSocketPairReceiveError> {
         let msg = "Unable to peek message";
         fail!(from self, when self.set_non_blocking(true),

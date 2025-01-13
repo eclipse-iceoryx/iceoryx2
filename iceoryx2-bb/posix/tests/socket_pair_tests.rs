@@ -1,3 +1,15 @@
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 use core::time::Duration;
 use iceoryx2_bb_posix::socket_pair::*;
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
@@ -13,7 +25,7 @@ const TIMEOUT: Duration = Duration::from_millis(50);
 fn try_receive_never_blocks() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let mut zeros = vec![];
     zeros.resize(10, 0);
@@ -32,7 +44,7 @@ fn try_receive_never_blocks() {
 fn send_receive_works() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let send_data = Vec::from(b"!hello hypnotoad!");
 
@@ -52,7 +64,7 @@ fn send_receive_works() {
 fn bidirectional_send_receive_works() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let send_data = Vec::from(b"hello, is it me you're looking for");
 
@@ -86,7 +98,7 @@ fn bidirectional_send_receive_works() {
 fn cannot_receive_my_own_data() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let send_data_lhs = Vec::from(b"its a dirdy birdy");
     let send_data_rhs = Vec::from(b"meow");
@@ -115,7 +127,7 @@ fn cannot_receive_my_own_data() {
 fn timed_receive_blocks_for_at_least_timeout() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let mut received_data = vec![];
     received_data.resize(10, 0);
@@ -138,7 +150,7 @@ fn timed_receive_blocks_until_message_arrives() {
     let counter = IoxAtomicUsize::new(0);
     let barrier = Barrier::new(2);
     let send_message = Vec::from(b"are you in a deadlock - call Ted Krabovsky");
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
     std::thread::scope(|s| {
         s.spawn(|| {
             let mut buffer = vec![];
@@ -165,7 +177,7 @@ fn blocking_receive_blocks_until_message_arrives() {
     let counter = IoxAtomicUsize::new(0);
     let barrier = Barrier::new(2);
     let send_message = Vec::from(b"are you in a deadlock - call Ted Krabovsky");
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
     std::thread::scope(|s| {
         s.spawn(|| {
             let mut buffer = vec![];
@@ -189,7 +201,7 @@ fn blocking_receive_blocks_until_message_arrives() {
 fn timed_send_blocks_for_at_least_timeout() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, _sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, _sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let mut send_data = vec![];
     send_data.resize(128, 55);
@@ -211,7 +223,7 @@ fn timed_send_blocks_for_at_least_timeout() {
 fn timed_send_blocks_until_message_buffer_is_free_again() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let send_data = Vec::from(b"Q");
     let mut number_of_data_sent = 0;
@@ -252,7 +264,7 @@ fn timed_send_blocks_until_message_buffer_is_free_again() {
 fn blocking_send_blocks_until_message_buffer_is_free_again() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let send_data = Vec::from(b"X");
     let mut number_of_data_sent = 0;
@@ -294,7 +306,7 @@ fn blocking_send_blocks_until_message_buffer_is_free_again() {
 fn peeking_message_does_not_remove_message() {
     let _watchdog = Watchdog::new();
 
-    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
     let send_data = Vec::from(b"get schwifty!");
 
